@@ -84,8 +84,23 @@ The visual layer.
 -   [x] Realistic iPhone 14 Pro Max frame
 -   [x] Dynamic `Device -> App` rendering architecture
 
-## 🔮 Phase 2: Expansion (Next Steps)
--   [ ] **Multiple Apps**: Add support for other apps (e.g., Lock Screen, Home Screen, Instagram).
--   [ ] **Multiple Characters**: Support switching between devices/characters in one episode.
--   [ ] **Advanced Animations**: App open/close transitions, notifications.
--   [ ] **Scripting Engine**: Better tooling to author episodes.
+## ✅ Phase 2: System Apps & Transitions (Completed)
+-   [x] **Dynamic App Switching**: Timeline-based event system.
+-   [x] **System Apps**: Lock Screen and Home Screen with iOS 16 aesthetics.
+-   [x] **Generic Player**: `GenericEpisode` component for dynamic playback.
+
+## 🔮 Phase 3: The "Director" Engine (Current)
+**Goal**: Create a management interface and a global state engine to orchestrate complex multi-character episodes.
+
+### 1. Management Interface (`/manage`)
+-   **Character Creator**: Define characters (e.g., "Michael", "Dwight") with avatars.
+-   **Device Lab**: Assign devices to characters and customize them (Wallpaper, Font, Installed Apps).
+-   **Episode Builder**: Compose episodes from multiple "Scenes".
+
+### 2. Global State & History
+-   **Shared Conversations**: A single conversation history shared between two characters.
+-   **Perspective Rendering**: When rendering Michael's phone, he is "Me". When rendering Dwight's phone, Michael is "Sender".
+
+### 3. CLI Rendering
+-   **JSON-to-Video**: The entire video (multi-scene, multi-character) is generated from a single master JSON file.
+

@@ -45,10 +45,18 @@ export type Device = {
     activeAppId: string;
 };
 
+export type DeviceConfig = {
+    wallpaper: string;
+    theme: 'light' | 'dark';
+    installedApps: AppType[];
+};
+
 export type Character = {
     id: string;
     name: string;
-    device: Device;
+    avatar: string;
+    deviceConfig: DeviceConfig;
+    deviceState: Device; // Runtime state (battery, time, etc.)
 };
 
 export type AppChangeEvent = {
@@ -59,6 +67,25 @@ export type AppChangeEvent = {
 
 export type TimelineEvent = AppChangeEvent;
 
+export type Scene = {
+    id: string;
+    characterId: string; // Whose phone are we looking at?
+    durationSeconds: number;
+    events: TimelineEvent[];
+};
+
+export type MasterEpisode = {
+    id: string;
+    title: string;
+    characters: Character[];
+    scenes: Scene[];
+    // Global state for shared data (like chat history)
+    globalState: {
+        conversations: Record<string, Conversation>; // keyed by conversationId
+    };
+};
+
+// Legacy Episode type (can be deprecated or kept for single-scene compatibility)
 export type Episode = {
     episodeId: string;
     fps: number;
