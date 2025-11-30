@@ -65,7 +65,24 @@ export type AppChangeEvent = {
     appId: string;
 };
 
-export type TimelineEvent = AppChangeEvent;
+export type NotificationEvent = {
+    type: 'notification';
+    atSecond: number;
+    title: string;
+    message: string;
+    appId: string; // e.g., 'whatsapp' to show icon
+    durationSeconds?: number;
+};
+
+export type TouchEvent = {
+    type: 'touch';
+    atSecond: number;
+    x: number; // 0-100 percentage
+    y: number; // 0-100 percentage
+    action: 'tap' | 'swipe_up' | 'swipe_down' | 'swipe_left' | 'swipe_right';
+};
+
+export type TimelineEvent = AppChangeEvent | NotificationEvent | TouchEvent;
 
 export type Scene = {
     id: string;
