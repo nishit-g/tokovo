@@ -35,10 +35,13 @@ const PlusIcon = () => (
 );
 
 export const ChatScreen: React.FC<{
-    conversation: Conversation;
-    visibleMessages: Message[];
+    messages: Message[];
     activeTyping: TypingIndicatorType[];
-}> = ({ conversation, visibleMessages, activeTyping }) => {
+    chatTitle: string;
+    avatarAssetId?: string;
+    wallpaperAssetId?: string;
+    isGroup?: boolean;
+}> = ({ messages, activeTyping, chatTitle, avatarAssetId, wallpaperAssetId, isGroup }) => {
     return (
         <div
             style={{
@@ -54,44 +57,38 @@ export const ChatScreen: React.FC<{
             {/* Header */}
             <div
                 style={{
-                    height: 95, // Taller for status bar + nav
-                    paddingTop: 47, // Space for Dynamic Island
-                    backgroundColor: 'rgba(245, 245, 245, 0.95)', // Translucent iOS header
-                    backdropFilter: 'blur(10px)',
-                    borderBottom: '0.5px solid rgba(0,0,0,0.1)',
+                    height: 60,
+                    backgroundColor: '#f6f6f6',
                     display: 'flex',
                     alignItems: 'center',
-                    paddingLeft: 10,
-                    paddingRight: 15,
-                    justifyContent: 'space-between',
-                    zIndex: 80,
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    right: 0,
+                    padding: '0 10px',
+                    borderBottom: '1px solid #ddd',
+                    zIndex: 10,
                 }}
             >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <BackIcon />
-                    <div
-                        style={{
-                            width: 38,
-                            height: 38,
-                            borderRadius: '50%',
-                            backgroundColor: '#ccc',
-                            overflow: 'hidden',
-                            marginRight: 8,
-                        }}
-                    >
-                        {/* Avatar placeholder */}
-                        <div style={{ width: '100%', height: '100%', backgroundColor: '#999' }} />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                        <div style={{ fontSize: 16, fontWeight: '600', color: '#000', lineHeight: '1.2' }}>
-                            {conversation.chatTitle}
-                        </div>
-                        <div style={{ fontSize: 12, color: '#8e8e93', lineHeight: '1.2' }}>online</div>
-                    </div>
+                <div style={{ fontSize: 24, color: '#007AFF', marginRight: 5 }}>‹</div>
+                <div
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: '50%',
+                        backgroundColor: '#ccc',
+                        marginRight: 10,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        fontSize: 18
+                    }}
+                >
+                    {avatarAssetId && avatarAssetId.startsWith('http') ? (
+                        <img src={avatarAssetId} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                        <span>👤</span>
+                    )}
+                </div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 'bold', fontSize: 16 }}>{chatTitle}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 20 }}>
                     <VideoCallIcon />
@@ -109,13 +106,21 @@ export const ChatScreen: React.FC<{
                     overflow: 'hidden',
                 }}
             >
-                {visibleMessages.map((msg) => (
-                    <MessageBubble
-                        key={msg.id}
-                        message={msg}
-                        isMe={msg.sender !== 'alex'}
-                    />
-                ))}
+                {messages.map((msg) => {
+                    const isMe = msg.sender === 'me';
+                    const showSenderName = isGroup && !isMe;
+
+                    return (
+                        <MessageBubble
+                            key={msg.id}
+                            text={msg.text}
+                            isMe={isMe}
+                            time={new Date(msg.atSecond * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            status={msg.status}
+                            senderName={showSenderName ? msg.sender : undefined}
+                        />
+                    );
+                })}
                 {activeTyping.length > 0 && <TypingIndicator />}
             </div>
 

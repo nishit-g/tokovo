@@ -11,6 +11,9 @@ export type Conversation = {
     chatTitle: string;
     avatarAssetId: string;
     wallpaperAssetId?: string;
+    isGroup?: boolean;
+    participants?: string[]; // List of Character IDs
+    groupName?: string;
     messages: Message[];
 };
 
@@ -25,7 +28,7 @@ export type WhatsAppData = {
     typingIndicators: TypingIndicator[];
 };
 
-export type AppType = 'whatsapp' | 'lockscreen' | 'homescreen';
+export type AppType = 'whatsapp' | 'whatsapp_list' | 'lockscreen' | 'homescreen';
 
 export type App = {
     id: string;

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Device, App, Message, TypingIndicator } from '@tokovo/shared-types';
 import { ChatScreen as WhatsappChatScreen } from './apps/whatsapp/ios/screens/ChatScreen';
+import { WhatsappListScreen } from './apps/whatsapp/ios/screens/WhatsappListScreen';
 import { LockScreen } from './devices/ios/screens/LockScreen';
 import { HomeScreen } from './devices/ios/screens/HomeScreen';
 import { AbsoluteFill } from 'remotion';
@@ -25,11 +26,22 @@ export const DeviceScreen: React.FC<{
             if (!appState) return null; // WhatsApp needs state
             return (
                 <WhatsappChatScreen
-                    conversation={activeApp.data.conversation}
-                    visibleMessages={appState.visibleMessages}
+                    messages={appState.visibleMessages}
                     activeTyping={appState.activeTyping}
+                    chatTitle={activeApp.data.conversation.chatTitle}
+                    avatarAssetId={activeApp.data.conversation.avatarAssetId}
+                    wallpaperAssetId={activeApp.data.conversation.wallpaperAssetId}
+                    isGroup={activeApp.data.conversation.isGroup}
                 />
             );
+        case 'whatsapp_list':
+            // Extract all conversations from installed WhatsApp apps
+            // In a real app, we'd have a centralized store, but here we iterate over apps
+            const conversations = device.apps
+                .filter(app => app.type === 'whatsapp')
+                .map(app => app.data.conversation);
+
+            return <WhatsappListScreen conversations={conversations} device={device} />;
         case 'lockscreen':
             return <LockScreen time={device.time} />;
         case 'homescreen':

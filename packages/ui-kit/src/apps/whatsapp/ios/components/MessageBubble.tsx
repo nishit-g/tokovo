@@ -39,10 +39,13 @@ const CheckIcon = ({ status }: { status: 'sent' | 'delivered' | 'read' }) => {
     );
 };
 
-export const MessageBubble: React.FC<{ message: Message; isMe: boolean }> = ({
-    message,
-    isMe,
-}) => {
+export const MessageBubble: React.FC<{
+    text: string;
+    isMe: boolean;
+    time: string;
+    status: 'sent' | 'delivered' | 'read';
+    senderName?: string;
+}> = ({ text, isMe, time, status, senderName }) => {
     return (
         <div
             style={{
@@ -60,11 +63,23 @@ export const MessageBubble: React.FC<{ message: Message; isMe: boolean }> = ({
                 borderTopLeftRadius: isMe ? 7.5 : 0,
                 color: '#111B21',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+                display: 'flex',
+                flexDirection: 'column'
             }}
         >
             <Tail isMe={isMe} />
+            {senderName && (
+                <div style={{
+                    fontSize: 12,
+                    color: '#e542a3', // WhatsApp-like color for names
+                    marginBottom: 2,
+                    fontWeight: 500
+                }}>
+                    {senderName}
+                </div>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span>{message.text}</span>
+                <span>{text}</span>
                 <div
                     style={{
                         display: 'flex',
@@ -76,8 +91,8 @@ export const MessageBubble: React.FC<{ message: Message; isMe: boolean }> = ({
                         color: 'rgba(17, 27, 33, 0.5)', // WhatsApp timestamp color
                     }}
                 >
-                    <span>22:15</span>
-                    {isMe && <CheckIcon status={message.status} />}
+                    <span>{time}</span>
+                    {isMe && <CheckIcon status={status} />}
                 </div>
             </div>
         </div>
