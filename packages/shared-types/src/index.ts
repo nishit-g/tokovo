@@ -25,10 +25,12 @@ export type WhatsAppData = {
     typingIndicators: TypingIndicator[];
 };
 
+export type AppType = 'whatsapp' | 'lockscreen' | 'homescreen';
+
 export type App = {
     id: string;
-    type: 'whatsapp'; // Extendable for other apps
-    data: WhatsAppData;
+    type: AppType;
+    data: WhatsAppData | Record<string, never>; // Allow empty data for system apps
 };
 
 export type Device = {
@@ -49,9 +51,18 @@ export type Character = {
     device: Device;
 };
 
+export type AppChangeEvent = {
+    type: 'app_change';
+    atSecond: number;
+    appId: string;
+};
+
+export type TimelineEvent = AppChangeEvent;
+
 export type Episode = {
     episodeId: string;
     fps: number;
     durationSeconds: number;
     characters: Character[];
+    events: TimelineEvent[];
 };

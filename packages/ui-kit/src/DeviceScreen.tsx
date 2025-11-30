@@ -1,6 +1,8 @@
 import React from 'react';
 import { Device, App, Message, TypingIndicator } from '@tokovo/shared-types';
 import { ChatScreen as WhatsappChatScreen } from './apps/whatsapp/ios/screens/ChatScreen';
+import { LockScreen } from './devices/ios/screens/LockScreen';
+import { HomeScreen } from './devices/ios/screens/HomeScreen';
 import { AbsoluteFill } from 'remotion';
 
 export const DeviceScreen: React.FC<{
@@ -28,6 +30,10 @@ export const DeviceScreen: React.FC<{
                     activeTyping={appState.activeTyping}
                 />
             );
+        case 'lockscreen':
+            return <LockScreen time={device.time} />;
+        case 'homescreen':
+            return <HomeScreen />;
         default:
             return (
                 <AbsoluteFill style={{ backgroundColor: 'white', justifyContent: 'center', alignItems: 'center' }}>
