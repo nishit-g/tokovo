@@ -1,5 +1,6 @@
 import React from 'react';
-import { Conversation, Message, TypingIndicator as TypingIndicatorType } from '@tokovo/shared-types';
+import { Img, staticFile } from 'remotion';
+import { Message, TypingIndicator as TypingIndicatorType } from '@tokovo/shared-types';
 import { MessageBubble } from '../components/MessageBubble';
 import { TypingIndicator } from '../components/TypingIndicator';
 
@@ -43,6 +44,15 @@ export const ChatScreen: React.FC<{
     isGroup?: boolean;
     senderName?: string;
 }> = ({ messages, activeTyping, chatTitle, avatarAssetId, wallpaperAssetId, isGroup, senderName }) => {
+
+    const resolveAvatar = (id?: string) => {
+        if (!id) return null;
+        if (id.startsWith('http') || id.startsWith('data:')) return id;
+        return staticFile(id);
+    };
+
+    const avatarSrc = resolveAvatar(avatarAssetId);
+
     return (
         <div
             style={{
@@ -82,8 +92,8 @@ export const ChatScreen: React.FC<{
                         fontSize: 18
                     }}
                 >
-                    {avatarAssetId && avatarAssetId.startsWith('http') ? (
-                        <img src={avatarAssetId} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    {avatarSrc ? (
+                        <Img src={avatarSrc} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                         <span>👤</span>
                     )}
@@ -119,6 +129,7 @@ export const ChatScreen: React.FC<{
                             time={new Date(msg.atSecond * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             status={msg.status}
                             senderName={showSenderName ? msg.sender : undefined}
+                            type={msg.type}
                         />
                     );
                 })}

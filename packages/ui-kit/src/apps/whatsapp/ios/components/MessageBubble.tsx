@@ -39,19 +39,30 @@ const CheckIcon = ({ status }: { status: 'sent' | 'delivered' | 'read' }) => {
     );
 };
 
+import { Img, staticFile } from 'remotion';
+
+// ... (Tail and CheckIcon components remain same)
+
 export const MessageBubble: React.FC<{
     text: string;
     isMe: boolean;
     time: string;
     status: 'sent' | 'delivered' | 'read';
     senderName?: string;
-}> = ({ text, isMe, time, status, senderName }) => {
+    type?: 'text' | 'image' | 'audio';
+}> = ({ text, isMe, time, status, senderName, type = 'text' }) => {
+
+    const resolveMedia = (src: string) => {
+        if (src.startsWith('http') || src.startsWith('data:')) return src;
+        return staticFile(src);
+    };
+
     return (
         <div
             style={{
                 alignSelf: isMe ? 'flex-end' : 'flex-start',
                 backgroundColor: isMe ? '#E7FFDB' : '#FFFFFF',
-                padding: '6px 7px 8px 9px',
+                padding: type === 'image' ? '3px 3px 8px 3px' : '6px 7px 8px 9px',
                 borderRadius: 7.5,
                 margin: '2px 15px',
                 maxWidth: '75%',
@@ -73,22 +84,34 @@ export const MessageBubble: React.FC<{
                     fontSize: 12,
                     color: '#e542a3', // WhatsApp-like color for names
                     marginBottom: 2,
-                    fontWeight: 500
+                    fontWeight: 500,
+                    paddingLeft: type === 'image' ? 5 : 0
                 }}>
                     {senderName}
                 </div>
             )}
             <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span>{text}</span>
+                {type === 'image' ? (
+                    <div style={{ marginBottom: 2, borderRadius: 6, overflow: 'hidden' }}>
+                        <Img
+                            src={resolveMedia(text)}
+                            style={{ width: '100%', height: 'auto', display: 'block', maxHeight: 300, objectFit: 'cover' }}
+                        />
+                    </div>
+                ) : (
+                    <span>{text}</span>
+                )}
                 <div
                     style={{
                         display: 'flex',
                         justifyContent: 'flex-end',
                         alignItems: 'center',
                         gap: 3,
-                        marginTop: 2,
+                        marginTop: type === 'image' ? -20 : 2,
+                        marginRight: type === 'image' ? 5 : 0,
                         fontSize: 11,
-                        color: 'rgba(17, 27, 33, 0.5)', // WhatsApp timestamp color
+                        color: type === 'image' ? '#fff' : 'rgba(17, 27, 33, 0.5)', // White timestamp on image
+                        textShadow: type === 'image' ? '0 1px 2px rgba(0,0,0,0.4)' : 'none'
                     }}
                 >
                     <span>{time}</span>

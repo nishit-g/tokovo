@@ -1,12 +1,12 @@
 import React from 'react';
-import { AbsoluteFill, useVideoConfig, interpolate } from 'remotion';
+import { AbsoluteFill, interpolate } from 'remotion';
 import { TouchEvent } from '@tokovo/shared-types';
 
 export const TouchOverlay: React.FC<{
     touches: TouchEvent[];
     currentTime: number;
 }> = ({ touches, currentTime }) => {
-    const { fps } = useVideoConfig();
+    // const { fps } = useVideoConfig();
 
     // Show touch for a short duration (e.g., 0.5s)
     // Filter for active touches based on their animation duration
