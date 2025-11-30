@@ -43,14 +43,22 @@ export type Device = {
     time: string;
     carrier: string;
     batteryPercent: number;
+    batteryState: 'charging' | 'draining' | 'low_power';
+    network: 'wifi' | '5g' | 'lte' | 'none';
     theme: 'light' | 'dark';
     apps: App[];
     activeAppId: string;
+    activeScreen?: string; // For intra-app navigation
 };
 
 export type DeviceConfig = {
+    model: string;
+    color: string;
     wallpaper: string;
     theme: 'light' | 'dark';
+    font: 'san_francisco' | 'roboto' | 'mono';
+    network: 'wifi' | '5g' | 'lte' | 'none';
+    batteryState: 'charging' | 'draining' | 'low_power';
     installedApps: AppType[];
 };
 
@@ -63,12 +71,22 @@ export type Character = {
 };
 
 export type AppChangeEvent = {
+    id: string;
     type: 'app_change';
     atSecond: number;
     appId: string;
 };
 
+export type ScreenChangeEvent = {
+    id: string;
+    type: 'screen_change';
+    atSecond: number;
+    screenId: string; // e.g., 'chat_list', 'chat_details', 'settings'
+    appId: string;
+};
+
 export type NotificationEvent = {
+    id: string;
     type: 'notification';
     atSecond: number;
     title: string;
@@ -78,14 +96,15 @@ export type NotificationEvent = {
 };
 
 export type TouchEvent = {
+    id: string;
     type: 'touch';
     atSecond: number;
     x: number; // 0-100 percentage
     y: number; // 0-100 percentage
-    action: 'tap' | 'swipe_up' | 'swipe_down' | 'swipe_left' | 'swipe_right';
+    action: 'tap' | 'swipe_up' | 'swipe_down' | 'swipe_left' | 'swipe_right' | 'long_press';
 };
 
-export type TimelineEvent = AppChangeEvent | NotificationEvent | TouchEvent;
+export type TimelineEvent = AppChangeEvent | ScreenChangeEvent | NotificationEvent | TouchEvent;
 
 export type Scene = {
     id: string;

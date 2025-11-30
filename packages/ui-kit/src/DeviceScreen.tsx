@@ -24,6 +24,16 @@ export const DeviceScreen: React.FC<{
     switch (activeApp.type) {
         case 'whatsapp':
             if (!appState) return null; // WhatsApp needs state
+            // Check activeScreen to decide what to render
+            // Default to chat screen for now to maintain backward compatibility
+            // But if activeScreen is 'list', show list
+            if (device.activeScreen === 'list') {
+                const conversations = device.apps
+                    .filter(app => app.type === 'whatsapp')
+                    .map(app => app.data.conversation);
+                return <WhatsappListScreen conversations={conversations} device={device} />;
+            }
+
             return (
                 <WhatsappChatScreen
                     messages={appState.visibleMessages}
@@ -32,11 +42,12 @@ export const DeviceScreen: React.FC<{
                     avatarAssetId={activeApp.data.conversation.avatarAssetId}
                     wallpaperAssetId={activeApp.data.conversation.wallpaperAssetId}
                     isGroup={activeApp.data.conversation.isGroup}
+                    senderName={activeApp.data.conversation.isGroup ? activeApp.data.conversation.participants?.[0] : undefined} // Simple default for now
                 />
             );
         case 'whatsapp_list':
-            // Extract all conversations from installed WhatsApp apps
-            // In a real app, we'd have a centralized store, but here we iterate over apps
+            // This app type might be redundant now if we use 'whatsapp' + activeScreen='list'
+            // But keeping it for legacy support or explicit app switcher behavior
             const conversations = device.apps
                 .filter(app => app.type === 'whatsapp')
                 .map(app => app.data.conversation);

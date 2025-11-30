@@ -41,7 +41,8 @@ export const ChatScreen: React.FC<{
     avatarAssetId?: string;
     wallpaperAssetId?: string;
     isGroup?: boolean;
-}> = ({ messages, activeTyping, chatTitle, avatarAssetId, wallpaperAssetId, isGroup }) => {
+    senderName?: string;
+}> = ({ messages, activeTyping, chatTitle, avatarAssetId, wallpaperAssetId, isGroup, senderName }) => {
     return (
         <div
             style={{
