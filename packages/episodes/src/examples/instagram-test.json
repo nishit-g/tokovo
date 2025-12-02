@@ -1,0 +1,80 @@
+{
+    "id": "instagram-dm-test",
+    "title": "Instagram DM Test",
+    "durationInFrames": 300,
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "initialState": {
+        "devices": {
+            "alice_phone": {
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "other",
+                        "text": "Yo! Did you see that post?",
+                        "at": -60,
+                        "liked": false
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "Yeah, crazy right?",
+                        "at": -30,
+                        "liked": true
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "camera": {
+            "type": "static",
+            "deviceId": "alice_phone"
+        }
+    },
+    "timeline": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 95,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "other",
+            "text": "We should go there next week!"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Totally down. Let's book it."
+        }
+    ]
+}

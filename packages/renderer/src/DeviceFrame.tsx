@@ -1,15 +1,23 @@
 import React from "react";
 import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices"; // Import profiles to look them up
 
-export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean; notifications?: any[]; children: React.ReactNode }> = ({ profile, isLocked, notifications, children }) => {
+export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; notifications?: any[]; children: React.ReactNode; variant?: "ios" | "android" }> = ({ profileId, isLocked, notifications, children, variant }) => {
     // Strategy pattern: Select frame component based on profile ID
-    // In a full implementation, this might be a registry lookup
-    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame :
-        profile.id === "pixel" ? PixelFrame : React.Fragment;
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
 
     return (
-        <FrameComponent>
-            <StatusBar time="10:41" />
+        <FrameComponent {...frameProps}>
+            <StatusBar time="10:41" variant={variant} />
             {children}
             {isLocked && (
                 <div style={{

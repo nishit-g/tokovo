@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { WorldState } from "@tokovo/core";
+import { TypingBubble } from "./TypingBubble";
 
 // --- Icons (Scaled 3x: 24 -> 72) ---
 const BackIcon = () => (
@@ -122,31 +123,31 @@ const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) =>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
-    const bottomRef = useRef<HTMLDivElement>(null);
-
-    // Auto-scroll to bottom
-    useEffect(() => {
-        if (layout?.scrollToBottom) {
-            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages.length, layout?.scrollToBottom]);
+const MessageList: React.FC<{ messages: any[]; layout?: any; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
+    const scrollY = layout?.scrollY || 0;
 
     return (
         <div style={{
             flex: 1,
-            padding: "30px 48px", // 10*3, 16*3
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
-            overflowY: "auto",
+            position: "relative",
+            overflow: "hidden", // Hide scrollbar, we control position manually
             backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", // WhatsApp Doodle background
             backgroundSize: "cover"
         }}>
-            {messages.map((msg: any) => (
-                <MessageBubble key={msg.id} msg={msg} layout={layout} />
-            ))}
-            <div ref={bottomRef} />
+            <div style={{
+                padding: "30px 48px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 18,
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.3s ease-out", // Smooth visual transition if scrollY jumps
+                minHeight: "100%"
+            }}>
+                {messages.map((msg: any) => (
+                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
+                ))}
+                {isTyping && <TypingBubble />}
+            </div>
         </div>
     );
 };
@@ -230,22 +231,7 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
     return (
         <WhatsApp.Root>
             <WhatsApp.Header contactName="Alice" />
-            <WhatsApp.MessageList messages={messages} layout={layout} />
-            {isTyping && (
-                <div style={{
-                    padding: "24px 36px",
-                    marginLeft: 48,
-                    marginBottom: 12,
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 48,
-                    borderTopLeftRadius: 12,
-                    alignSelf: "flex-start",
-                    width: "fit-content",
-                    boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
-                }}>
-                    <div style={{ fontSize: 42, color: "#8E8E93" }}>typing...</div>
-                </div>
-            )}
+            <WhatsApp.MessageList messages={messages} layout={layout} isTyping={isTyping} />
             <WhatsApp.InputArea text={draftText} />
             <Keyboard visible={false} />
         </WhatsApp.Root>

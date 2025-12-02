@@ -32,11 +32,21 @@ export const PixelFrame: React.FC<{ children: React.ReactNode }> = ({ children }
             {/* Screen Content */}
             <div style={{
                 flex: 1,
-                backgroundColor: "white",
+                backgroundColor: "#121212", // Dark mode default for Android
                 display: "flex",
                 flexDirection: "column",
-                position: "relative"
+                position: "relative",
+                color: "white"
             }}>
+                {/* Pass variant="android" to StatusBar if it was imported/used here. 
+                    Since StatusBar isn't imported in the original file, I assume it's rendered by the Renderer or needs to be added here.
+                    However, looking at the architecture, DeviceFrame usually renders the StatusBar. 
+                    Let's check packages/renderer/src/DeviceFrame.tsx to see where StatusBar is rendered.
+                    Wait, I should probably just update the style here for now and let the renderer handle the status bar prop if it's passed down.
+                    But the plan said "Pass variant='android' to StatusBar". 
+                    If StatusBar is not in this file, I can't pass it here.
+                    Let me check DeviceFrame.tsx first.
+                */}
                 {children}
             </div>
         </div>

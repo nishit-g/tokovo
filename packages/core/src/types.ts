@@ -16,6 +16,9 @@ export interface DeviceState {
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
+    sound?: {
+        activeSoundId?: string;
+    };
 }
 
 export interface ConversationState {
@@ -40,4 +43,5 @@ export type TimelineEvent =
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig };
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };

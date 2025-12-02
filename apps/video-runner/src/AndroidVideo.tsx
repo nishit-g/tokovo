@@ -22,7 +22,7 @@ export const AndroidVideo: React.FC = () => {
     const t = frame;
 
     // Replay
-    const world = replay(androidEpisode.initialWorld as WorldState, androidEpisode.events as any, t);
+    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
 
     return (
         <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
@@ -34,7 +34,7 @@ export const AndroidVideo: React.FC = () => {
                 width: PixelProfile.dimensions.width,
                 height: PixelProfile.dimensions.height
             }}>
-                <TokovoRenderer world={world} deviceId="bob_phone" deviceProfile={PixelProfile} t={t} />
+                <TokovoRenderer world={world} t={t} />
             </div>
         </div>
     );

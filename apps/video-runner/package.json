@@ -12,6 +12,7 @@
     "dependencies": {
         "@remotion/cli": "4.0.380",
         "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
         "@tokovo/episodes": "workspace:*",
