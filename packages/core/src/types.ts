@@ -12,6 +12,7 @@ export interface DeviceState {
 export interface ConversationState {
     id: ConversationId;
     messages: any[]; // To be defined more specifically if needed
+    typing?: Record<string, boolean>;
 }
 
 export interface CameraViewConfig {

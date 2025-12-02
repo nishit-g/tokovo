@@ -20,10 +20,13 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
             });
             break;
         case "TYPING_START":
-            // Handle typing state
+            if (!conversation.typing) conversation.typing = {};
+            conversation.typing[event.from] = true;
             break;
         case "TYPING_END":
-            // Handle typing state
+            if (conversation.typing) {
+                delete conversation.typing[event.from];
+            }
             break;
     }
 }
