@@ -5,6 +5,10 @@ import { InstagramChatView } from "./views/dm/InstagramChatView";
 import { FeedView } from "./views/feed/FeedView";
 import { StoriesView } from "./views/stories/StoriesView";
 import { ProfileView } from "./views/profile/ProfileView";
+import { ExploreView } from "./views/explore/ExploreView";
+import { NotificationsView } from "./views/notifications/NotificationsView";
+import { ReelsView } from "./views/reels/ReelsView";
+import { PostView } from "./views/post/PostView";
 import { BottomNav } from "./views/BottomNav";
 
 export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
@@ -27,13 +31,13 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: any
             case "profile":
                 return <ProfileView state={appState} />;
             case "post":
-                return <div style={{ color: "white", padding: 50, fontSize: 40 }}>Post View (Coming Soon)</div>;
+                return <PostView state={appState} />;
             case "explore":
-                return <div style={{ color: "white", padding: 50, fontSize: 40 }}>Explore View (Coming Soon)</div>;
+                return <ExploreView state={appState} />;
             case "notifications":
-                return <div style={{ color: "white", padding: 50, fontSize: 40 }}>Notifications View (Coming Soon)</div>;
+                return <NotificationsView state={appState} />;
             case "reels":
-                return <div style={{ color: "white", padding: 50, fontSize: 40 }}>Reels View (Coming Soon)</div>;
+                return <ReelsView state={appState} />;
             default:
                 return <InstagramChatView world={world} t={t} layout={layout} />;
         }

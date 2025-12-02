@@ -102,7 +102,7 @@
             }
         },
         {
-            "at": 90,
+            "at": 60,
             "kind": "APP",
             "appId": "app_instagram",
             "type": "CUSTOM",
@@ -112,13 +112,33 @@
             }
         },
         {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "explore"
+            }
+        },
+        {
             "at": 120,
             "kind": "APP",
             "appId": "app_instagram",
             "type": "CUSTOM",
             "name": "NAVIGATE",
             "payload": {
-                "view": "profile"
+                "view": "reels"
+            }
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "notifications"
             }
         },
         {
@@ -128,17 +148,37 @@
             "type": "CUSTOM",
             "name": "NAVIGATE",
             "payload": {
+                "view": "profile"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "post"
+            }
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
                 "view": "dm"
             }
         },
         {
-            "at": 200,
+            "at": 260,
             "kind": "APP",
             "appId": "app_instagram",
             "type": "MESSAGE_RECEIVED",
             "conversationId": "conv_1",
             "from": "me",
-            "text": "Yeah, looks great!"
+            "text": "Wow, this app is huge!"
         }
     ]
 }
