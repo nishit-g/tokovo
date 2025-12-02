@@ -1,0 +1,56 @@
+{
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": true
+            }
+        },
+        "conversations": {
+            "conv_wa_1": {
+                "id": "conv_wa_1",
+                "messages": [
+                    { "id": "m1", "from": "me", "text": "Hey!", "at": 0 }
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "activeModule": "dm",
+                "dm": {
+                    "conversations": {
+                         "conv_ig_1": {
+                             "id": "conv_ig_1",
+                             "messages": [
+                                 { "id": "ig_m1", "from": "other", "text": "Check out this reel", "at": 0 }
+                             ]
+                         }
+                    }
+                },
+                "feed": { "posts": [], "scrollPosition": 0 },
+                "stories": { "viewedStories": [] },
+                "profile": {}
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        { "at": 10, "kind": "DEVICE", "deviceId": "alice_phone", "type": "UNLOCK" },
+        { "at": 20, "kind": "DEVICE", "deviceId": "alice_phone", "type": "OPEN_APP", "appId": "app_whatsapp" },
+        { "at": 30, "kind": "APP", "appId": "app_whatsapp", "type": "MESSAGE_RECEIVED", "conversationId": "conv_wa_1", "from": "other", "text": "Did you see Insta?" },
+        { "at": 60, "kind": "DEVICE", "deviceId": "alice_phone", "type": "CLOSE_APP", "appId": "app_whatsapp" },
+        { "at": 70, "kind": "DEVICE", "deviceId": "alice_phone", "type": "OPEN_APP", "appId": "app_instagram" },
+        { "at": 80, "kind": "APP", "appId": "app_instagram", "type": "DM_MESSAGE_RECEIVED", "conversationId": "conv_ig_1", "from": "me", "text": "Checking now..." },
+        { "at": 100, "kind": "APP", "appId": "app_instagram", "type": "FEED_SCROLL_POSITION", "y": 0 },
+        { "at": 110, "kind": "APP", "appId": "app_instagram", "type": "FEED_SCROLL_POSITION", "y": 200 },
+        { "at": 140, "kind": "APP", "appId": "app_instagram", "type": "STORY_OPEN", "storyId": "story_1" },
+        { "at": 170, "kind": "APP", "appId": "app_instagram", "type": "PROFILE_OPEN", "username": "alice" },
+        { "at": 200, "kind": "APP", "appId": "app_instagram", "type": "POST_OPEN", "postId": "post_123" },
+        { "at": 230, "kind": "APP", "appId": "app_instagram", "type": "INSTA_NOTIFICATION_OPEN", "notificationId": "notif_1" },
+        { "at": 260, "kind": "APP", "appId": "app_instagram", "type": "REEL_OPEN", "reelId": "reel_1" },
+        { "at": 290, "kind": "APP", "appId": "app_instagram", "type": "POST_OPEN", "postId": "post_final" }
+    ]
+}
