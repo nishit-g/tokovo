@@ -35,6 +35,7 @@ export interface CameraViewConfig {
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
+    appState: Record<AppId, any>; // Generic state for apps (e.g. Instagram feed, stories)
     camera: CameraViewConfig;
 }
 
@@ -43,5 +44,6 @@ export type TimelineEvent =
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
     | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };

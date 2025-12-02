@@ -1,13 +1,8 @@
 {
-    "id": "instagram-dm-test",
-    "title": "Instagram DM Test",
-    "durationInFrames": 300,
-    "fps": 30,
-    "width": 1080,
-    "height": 1920,
     "initialState": {
         "devices": {
             "alice_phone": {
+                "id": "alice_phone",
                 "profileId": "iphone16",
                 "isLocked": false,
                 "foregroundAppId": "app_instagram",
@@ -20,25 +15,79 @@
                 "messages": [
                     {
                         "id": "m1",
-                        "from": "other",
-                        "text": "Yo! Did you see that post?",
-                        "at": -60,
-                        "liked": false
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "Yeah, crazy right?",
-                        "at": -30,
-                        "liked": true
+                        "from": "instagram_user",
+                        "text": "Hey! Did you see my new post?",
+                        "at": 0
                     }
-                ],
-                "typing": {}
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "currentView": "feed",
+                "feed": {
+                    "posts": [
+                        {
+                            "id": "p1",
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "image": "https://picsum.photos/seed/insta1/1080/1080",
+                            "caption": "Living my best life! 🌟 #blessed",
+                            "likes": 1234,
+                            "comments": 42,
+                            "liked": false,
+                            "saved": false
+                        },
+                        {
+                            "id": "p2",
+                            "username": "travel_blogger",
+                            "avatar": "https://i.pravatar.cc/150?u=travel",
+                            "image": "https://picsum.photos/seed/insta2/1080/1080",
+                            "caption": "Sunset vibes 🌅",
+                            "likes": 890,
+                            "comments": 12,
+                            "liked": true,
+                            "saved": true
+                        }
+                    ],
+                    "scrollPosition": 0
+                },
+                "stories": {
+                    "users": [
+                        {
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s1",
+                                    "image": "https://picsum.photos/seed/story1/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        },
+                        {
+                            "username": "friend_1",
+                            "avatar": "https://i.pravatar.cc/150?u=friend1",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s2",
+                                    "image": "https://picsum.photos/seed/story2/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notifications": {
+                    "items": []
+                }
             }
         },
         "camera": {
-            "type": "static",
-            "deviceId": "alice_phone"
+            "type": "APP_VIEW",
+            "appId": "app_instagram"
         }
     },
     "timeline": [
@@ -46,35 +95,50 @@
             "at": 30,
             "kind": "APP",
             "appId": "app_instagram",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "other"
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "stories"
+            }
         },
         {
             "at": 90,
             "kind": "APP",
             "appId": "app_instagram",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "other"
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "feed"
+            }
         },
         {
-            "at": 95,
+            "at": 120,
             "kind": "APP",
             "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "other",
-            "text": "We should go there next week!"
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "profile"
+            }
         },
         {
-            "at": 150,
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "dm"
+            }
+        },
+        {
+            "at": 200,
             "kind": "APP",
             "appId": "app_instagram",
             "type": "MESSAGE_RECEIVED",
             "conversationId": "conv_1",
             "from": "me",
-            "text": "Totally down. Let's book it."
+            "text": "Yeah, looks great!"
         }
     ]
 }

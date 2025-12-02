@@ -1,12 +1,37 @@
-import { produce } from "immer";
 import { WorldState, TimelineEvent } from "@tokovo/core";
 
-export const instagramRuntime = (state: WorldState, event: TimelineEvent) => {
-    if (event.kind !== "APP" || event.appId !== "app_instagram") return state;
+import { initialInstagramState, InstagramState } from "./types";
 
-    return produce(state, (draft) => {
-        const { conversationId, type } = event;
+export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
+    if (event.kind !== "APP" || event.appId !== "app_instagram") return;
 
+    // Initialize app state if missing
+    if (!draft.appState) {
+        draft.appState = {};
+    }
+    if (!draft.appState["app_instagram"]) {
+        draft.appState["app_instagram"] = initialInstagramState;
+    }
+
+    const appState = draft.appState["app_instagram"] as InstagramState;
+
+    // Handle generic custom events
+    if (event.type === "CUSTOM") {
+        console.log(`[InstagramRuntime] Processing CUSTOM event: ${event.name}`, event.payload);
+        switch (event.name) {
+            case "NAVIGATE":
+                appState.currentView = event.payload.view;
+                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView}`);
+                break;
+            // Add other custom events here
+        }
+        return;
+    }
+
+    // Legacy/Specific events (DM)
+    const { conversationId, type } = event as any; // Cast to access specific fields if needed
+
+    if (conversationId) {
         // Ensure conversation exists
         if (!draft.conversations[conversationId]) {
             draft.conversations[conversationId] = {
@@ -40,5 +65,5 @@ export const instagramRuntime = (state: WorldState, event: TimelineEvent) => {
                 }
                 break;
         }
-    });
+    }
 };
