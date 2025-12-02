@@ -3,10 +3,13 @@ import { produce } from "immer";
 import { replay, WorldState, TimelineEvent, ReducerRegistry } from "./index";
 
 // Mock reducer for testing
-const mockReducer = (draft: WorldState, event: TimelineEvent) => {
+const mockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
     if (event.kind === "DEVICE" && event.type === "UNLOCK") {
-        draft.devices[event.deviceId].isLocked = false;
+        return produce(devices, draft => {
+            draft[event.deviceId].isLocked = false;
+        });
     }
+    return devices;
 };
 
 describe("Core Engine", () => {
@@ -54,11 +57,14 @@ describe("Core Engine", () => {
         ];
 
         // Let's use a more comprehensive mock reducer for this test
-        const comprehensiveMockReducer = (draft: WorldState, event: TimelineEvent) => {
+        const comprehensiveMockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
             if (event.kind === "DEVICE") {
-                if (event.type === "UNLOCK") draft.devices[event.deviceId].isLocked = false;
-                if (event.type === "LOCK") draft.devices[event.deviceId].isLocked = true;
+                return produce(devices, draft => {
+                    if (event.type === "UNLOCK") draft[event.deviceId].isLocked = false;
+                    if (event.type === "LOCK") draft[event.deviceId].isLocked = true;
+                });
             }
+            return devices;
         };
         ReducerRegistry.registerDeviceReducer(comprehensiveMockReducer);
 

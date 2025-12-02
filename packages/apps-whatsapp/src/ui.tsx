@@ -222,16 +222,31 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number }> = ({ w
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
 
-    // Determine if typing (mock logic for now, ideally from state)
-    const isTyping = false; // logic to check if 'me' is typing
+    // Check typing state
+    const isTyping = conversation?.typing?.["other"] || false;
     const draftText = ""; // logic to get draft text
 
     return (
         <WhatsApp.Root>
             <WhatsApp.Header contactName="Alice" />
             <WhatsApp.MessageList messages={messages} t={t} />
+            {isTyping && (
+                <div style={{
+                    padding: "24px 36px",
+                    marginLeft: 48,
+                    marginBottom: 12,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 48,
+                    borderTopLeftRadius: 12,
+                    alignSelf: "flex-start",
+                    width: "fit-content",
+                    boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+                }}>
+                    <div style={{ fontSize: 42, color: "#8E8E93" }}>typing...</div>
+                </div>
+            )}
             <WhatsApp.InputArea text={draftText} />
-            <Keyboard visible={isTyping} />
+            <Keyboard visible={false} />
         </WhatsApp.Root>
     );
 };

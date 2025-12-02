@@ -34,11 +34,36 @@ export const TimelineEventSchema = z.discriminatedUnion("kind", [
     CameraEventSchema
 ]);
 
+// --- World State Schemas ---
+
+export const DeviceStateSchema = z.object({
+    id: z.string(),
+    profileId: z.string(),
+    isLocked: z.boolean(),
+    foregroundAppId: z.string().optional(),
+});
+
+export const ConversationStateSchema = z.object({
+    id: z.string(),
+    messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        text: z.string().optional(),
+        at: z.number(),
+    })),
+    typing: z.record(z.boolean()).optional(),
+});
+
+export const CameraViewSchema = z.object({
+    type: z.literal("APP_VIEW"),
+    appId: z.string().optional(),
+});
+
 export const EpisodeSchema = z.object({
     initialWorld: z.object({
-        devices: z.record(z.any()),
-        conversations: z.record(z.any()),
-        camera: z.any()
+        devices: z.record(DeviceStateSchema),
+        conversations: z.record(ConversationStateSchema),
+        camera: CameraViewSchema,
     }),
-    events: z.array(TimelineEventSchema)
+    events: z.array(TimelineEventSchema),
 });

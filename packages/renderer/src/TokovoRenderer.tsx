@@ -3,19 +3,27 @@ import { WorldState } from "@tokovo/core";
 import { DeviceProfile } from "@tokovo/devices";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
+import { computeLayout } from "./LayoutEngine";
 
-export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; deviceProfile: DeviceProfile; t?: number }> = ({ world, deviceId, deviceProfile, t = 0 }) => {
+export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; deviceProfile: DeviceProfile; t: number }> = ({ world, deviceId, deviceProfile, t }) => {
     const deviceState = world.devices[deviceId];
     if (!deviceState) {
         return <div style={{ color: "red" }}>Device {deviceId} not found</div>;
     }
 
-    const activeAppId = deviceState.foregroundAppId;
-    const AppView = activeAppId ? AppRegistry.getView(activeAppId) : null;
+    const activeAppId = deviceState?.foregroundAppId;
+
+    // Compute layout
+    const layout = computeLayout(world);
+
+    let AppView = null;
+    if (activeAppId) {
+        AppView = AppRegistry.getView(activeAppId);
+    }
 
     return (
-        <DeviceFrame profile={deviceProfile}>
-            {AppView ? <AppView world={world} t={t} /> : <div style={{ backgroundColor: "black", height: "100%" }} />}
+        <DeviceFrame profile={deviceProfile} isLocked={deviceState?.isLocked}>
+            {AppView && <AppView world={world} t={t} layout={layout} />}
         </DeviceFrame>
     );
 };

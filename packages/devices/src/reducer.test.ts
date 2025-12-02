@@ -15,7 +15,7 @@ describe("Device Reducer", () => {
     it("should handle UNLOCK event", () => {
         const event: TimelineEvent = { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" };
         const nextState = produce(initialWorld, (draft) => {
-            deviceReducer(draft, event);
+            draft.devices = deviceReducer(draft.devices, event);
         });
         expect(nextState.devices["test_device"].isLocked).toBe(false);
     });
@@ -28,7 +28,7 @@ describe("Device Reducer", () => {
 
         const event: TimelineEvent = { at: 20, kind: "DEVICE", deviceId: "test_device", type: "OPEN_APP", appId: "app_test" };
         const nextState = produce(unlockedState, (draft) => {
-            deviceReducer(draft, event);
+            draft.devices = deviceReducer(draft.devices, event);
         });
         expect(nextState.devices["test_device"].foregroundAppId).toBe("app_test");
     });
@@ -41,7 +41,7 @@ describe("Device Reducer", () => {
 
         const event: TimelineEvent = { at: 30, kind: "DEVICE", deviceId: "test_device", type: "CLOSE_APP" };
         const nextState = produce(openAppState, (draft) => {
-            deviceReducer(draft, event);
+            draft.devices = deviceReducer(draft.devices, event);
         });
         expect(nextState.devices["test_device"].foregroundAppId).toBeUndefined();
     });
