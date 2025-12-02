@@ -81,13 +81,12 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; t: number }> = ({ msg, t }) => {
+const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
 
-    // Animation logic
-    const age = t - msg.at;
-    const opacity = Math.min(Math.max(age / 10, 0), 1); // Fade in over 10 frames
-    const translateY = Math.max(60 - age * 6, 0); // Slide up (scaled)
+    // Animation logic from layout engine
+    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
+    const { opacity, translateY } = animation;
 
     return (
         <div style={{
@@ -123,13 +122,15 @@ const MessageBubble: React.FC<{ msg: any; t: number }> = ({ msg, t }) => {
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; t: number }> = ({ messages, t }) => {
+const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages.length]);
+        if (layout?.scrollToBottom) {
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages.length, layout?.scrollToBottom]);
 
     return (
         <div style={{
@@ -143,7 +144,7 @@ const MessageList: React.FC<{ messages: any[]; t: number }> = ({ messages, t }) 
             backgroundSize: "cover"
         }}>
             {messages.map((msg: any) => (
-                <MessageBubble key={msg.id} msg={msg} t={t} />
+                <MessageBubble key={msg.id} msg={msg} layout={layout} />
             ))}
             <div ref={bottomRef} />
         </div>
@@ -217,7 +218,7 @@ export const WhatsApp = {
     InputArea
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
@@ -229,7 +230,7 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number }> = ({ w
     return (
         <WhatsApp.Root>
             <WhatsApp.Header contactName="Alice" />
-            <WhatsApp.MessageList messages={messages} t={t} />
+            <WhatsApp.MessageList messages={messages} layout={layout} />
             {isTyping && (
                 <div style={{
                     padding: "24px 36px",

@@ -22,6 +22,16 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
             case "CLOSE_APP":
                 device.foregroundAppId = undefined;
                 break;
+            case "SHOW_NOTIFICATION":
+                if (!device.notifications) device.notifications = [];
+                device.notifications.push({
+                    id: `notif_${event.at}_${event.appId}`,
+                    appId: event.appId,
+                    title: event.title,
+                    body: event.body,
+                    at: event.at
+                });
+                break;
         }
     });
 }

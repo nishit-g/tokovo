@@ -1,10 +1,11 @@
 import React from "react";
-import { DeviceProfile, iPhone16Frame, StatusBar } from "@tokovo/devices";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
 
-export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean; children: React.ReactNode }> = ({ profile, isLocked, children }) => {
+export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean; notifications?: any[]; children: React.ReactNode }> = ({ profile, isLocked, notifications, children }) => {
     // Strategy pattern: Select frame component based on profile ID
     // In a full implementation, this might be a registry lookup
-    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame : React.Fragment;
+    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame :
+        profile.id === "pixel" ? PixelFrame : React.Fragment;
 
     return (
         <FrameComponent>
@@ -26,7 +27,29 @@ export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean;
                     color: "white",
                     zIndex: 2000
                 }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold" }}>Locked</div>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+
+                    {/* Notifications Stack */}
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                        {notifications?.map((notif) => (
+                            <div key={notif.id} style={{
+                                backgroundColor: "rgba(255,255,255,0.2)",
+                                backdropFilter: "blur(40px)",
+                                borderRadius: 42,
+                                padding: "36px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12
+                            }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 39, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                                    <span>WhatsApp</span> {/* Hardcoded app name for now */}
+                                    <span style={{ fontWeight: 400, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>now</span>
+                                </div>
+                                <div style={{ fontSize: 42, fontWeight: 600 }}>{notif.title}</div>
+                                <div style={{ fontSize: 42 }}>{notif.body}</div>
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
         </FrameComponent>

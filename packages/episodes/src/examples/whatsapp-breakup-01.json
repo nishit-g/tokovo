@@ -10,30 +10,51 @@
         "conversations": {
             "conv_1": {
                 "id": "conv_1",
-                "messages": []
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "me",
+                        "text": "We need to talk...",
+                        "at": 0
+                    },
+                    {
+                        "id": "m2",
+                        "from": "other",
+                        "text": "Oh no. What happened?",
+                        "at": 30
+                    },
+                    {
+                        "id": "m3",
+                        "from": "me",
+                        "text": "It's not you, it's me.",
+                        "at": 60
+                    }
+                ],
+                "typing": {
+                    "other": false
+                }
             }
         },
         "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_whatsapp"
+            "type": "APP_VIEW"
         }
     },
     "events": [
         {
-            "at": 0,
+            "at": 10,
             "kind": "DEVICE",
             "deviceId": "alice_phone",
             "type": "UNLOCK"
         },
         {
-            "at": 10,
+            "at": 20,
             "kind": "DEVICE",
             "deviceId": "alice_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
         },
         {
-            "at": 30,
+            "at": 40,
             "kind": "APP",
             "appId": "app_whatsapp",
             "type": "TYPING_START",
@@ -41,7 +62,7 @@
             "from": "other"
         },
         {
-            "at": 60,
+            "at": 55,
             "kind": "APP",
             "appId": "app_whatsapp",
             "type": "TYPING_END",
@@ -49,13 +70,13 @@
             "from": "other"
         },
         {
-            "at": 65,
+            "at": 60,
             "kind": "APP",
             "appId": "app_whatsapp",
             "type": "MESSAGE_RECEIVED",
             "conversationId": "conv_1",
             "from": "other",
-            "text": "We need to talk..."
+            "text": "Oh no. What happened?"
         }
     ]
 }

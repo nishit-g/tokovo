@@ -22,7 +22,7 @@ export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; dev
     }
 
     return (
-        <DeviceFrame profile={deviceProfile} isLocked={deviceState?.isLocked}>
+        <DeviceFrame profile={deviceProfile} isLocked={deviceState?.isLocked} notifications={deviceState?.notifications}>
             {AppView && <AppView world={world} t={t} layout={layout} />}
         </DeviceFrame>
     );

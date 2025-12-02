@@ -2,11 +2,20 @@ export type DeviceId = string;
 export type AppId = string;
 export type ConversationId = string;
 
+export interface Notification {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    at: number;
+}
+
 export interface DeviceState {
-    id: DeviceId; // The instance ID (e.g., "alice_phone")
+    id: string; // The instance ID (e.g., "alice_phone")
     profileId: string; // The hardware profile ID (e.g., "iphone16")
     isLocked: boolean;
-    foregroundAppId?: AppId;
+    foregroundAppId?: string;
+    notifications: Notification[];
 }
 
 export interface ConversationState {
@@ -29,5 +38,6 @@ export interface WorldState {
 // Event Union
 export type TimelineEvent =
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig };

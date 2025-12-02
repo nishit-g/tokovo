@@ -6,7 +6,7 @@ import { WorldState, TimelineEvent } from "@tokovo/core";
 describe("Device Reducer", () => {
     const initialWorld: WorldState = {
         devices: {
-            "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
+            "test_device": { id: "test_device", profileId: "test_profile", isLocked: true, notifications: [] }
         },
         conversations: {},
         camera: { type: "APP_VIEW" }
@@ -44,5 +44,22 @@ describe("Device Reducer", () => {
             draft.devices = deviceReducer(draft.devices, event);
         });
         expect(nextState.devices["test_device"].foregroundAppId).toBeUndefined();
+    });
+
+    it("should handle SHOW_NOTIFICATION event", () => {
+        const event: TimelineEvent = {
+            at: 40,
+            kind: "DEVICE",
+            deviceId: "test_device",
+            type: "SHOW_NOTIFICATION",
+            appId: "app_test",
+            title: "Test Title",
+            body: "Test Body"
+        };
+        const nextState = produce(initialWorld, (draft) => {
+            draft.devices = deviceReducer(draft.devices, event);
+        });
+        expect(nextState.devices["test_device"].notifications).toHaveLength(1);
+        expect(nextState.devices["test_device"].notifications[0].title).toBe("Test Title");
     });
 });
