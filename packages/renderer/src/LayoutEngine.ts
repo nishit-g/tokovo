@@ -7,7 +7,7 @@ export interface LayoutState {
 
 export function computeLayout(world: WorldState, t: number = 0): LayoutState {
     const layout: LayoutState = {
-        scrollToBottom: true, // Always scroll to bottom for now
+        scrollToBottom: true,
         messageAnimations: {}
     };
 

@@ -42,7 +42,7 @@ export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean;
                                 gap: 12
                             }}>
                                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 39, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                                    <span>WhatsApp</span> {/* Hardcoded app name for now */}
+                                    <span>{notif.appId === "app_whatsapp" ? "WhatsApp" : notif.appId}</span>
                                     <span style={{ fontWeight: 400, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>now</span>
                                 </div>
                                 <div style={{ fontSize: 42, fontWeight: 600 }}>{notif.title}</div>
