@@ -37,26 +37,9 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
                 }}>
                     <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
 
-                    {/* Notifications Stack */}
+                    {/* Notifications are now handled by NotificationOverlay via layout system */}
                     <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                        {notifications?.map((notif) => (
-                            <div key={notif.id} style={{
-                                backgroundColor: "rgba(255,255,255,0.2)",
-                                backdropFilter: "blur(40px)",
-                                borderRadius: 42,
-                                padding: "36px",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 12
-                            }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 39, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                                    <span>{notif.appId === "app_whatsapp" ? "WhatsApp" : notif.appId}</span>
-                                    <span style={{ fontWeight: 400, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>now</span>
-                                </div>
-                                <div style={{ fontSize: 42, fontWeight: 600 }}>{notif.title}</div>
-                                <div style={{ fontSize: 42 }}>{notif.body}</div>
-                            </div>
-                        ))}
+                        {/* Placeholder for future lock screen widgets if needed */}
                     </div>
                 </div>
             )}

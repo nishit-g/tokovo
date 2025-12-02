@@ -1,5 +1,6 @@
 import React from "react";
-import { Notification, LayoutState, LockscreenLayoutState } from "@tokovo/core";
+import { Notification } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
 
 export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android"; layout?: LayoutState }> = ({ notifications = [], variant = "ios", layout }) => {
     // If we have a Lockscreen layout, use it

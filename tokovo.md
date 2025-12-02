@@ -48,14 +48,35 @@ apps/
       InstagramVideo.tsx
       Root.tsx
       Video.tsx
+    out-refactor-verify-android.mp4
+    out-refactor-verify.mp4
     package.json
     remotion.config.ts
     tsconfig.json
 packages/
   apps-instagram/
     src/
+      views/
+        dm/
+          InstagramChatView.tsx
+        explore/
+          ExploreView.tsx
+        feed/
+          FeedView.tsx
+        notifications/
+          NotificationsView.tsx
+        post/
+          PostView.tsx
+        profile/
+          ProfileView.tsx
+        reels/
+          ReelsView.tsx
+        stories/
+          StoriesView.tsx
+        BottomNav.tsx
       index.ts
       runtime.ts
+      types.ts
       ui.tsx
     package.json
     tsconfig.json
@@ -104,14 +125,25 @@ packages/
     tsconfig.json
   renderer/
     src/
+      layout/
+        strategies/
+          chat.ts
+          feed.ts
+          lockscreen.ts
+          story.ts
+          transition.ts
+        config.ts
+        index.ts
+        types.ts
       DeviceFrame.tsx
       index.ts
-      LayoutEngine.ts
       NotificationOverlay.tsx
       registry.ts
       TokovoRenderer.tsx
+      types.ts
       VisualDebugger.tsx
     package.json
+    README.md
     tsconfig.json
 .gitignore
 .tool-versions
@@ -124,16 +156,465 @@ turbo.json
 
 # Files
 
+## File: packages/renderer/src/layout/strategies/chat.ts
+````typescript
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+
+export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
+    const { world, t, activeConversationId, config, viewportHeight } = ctx;
+    const chatConfig = config!.chat!;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    const messages = conversation.messages.filter(m => m.at <= t);
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = chatConfig.topPadding;
+
+    // 1. Layout messages
+    for (const msg of messages) {
+        // Calculate height
+        // Simple heuristic: chars per line
+        const textLength = msg.text?.length || 0;
+        const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+        const height = lines * chatConfig.lineHeight + 20; // +20 for internal padding
+
+        // Animation: Slide in / Fade in
+        const timeSinceAppear = t - msg.at;
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear < chatConfig.messageAppearDuration) {
+            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
+            // Simple ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+            opacity = ease;
+            translateY = chatConfig.messageAppearOffset * (1 - ease);
+        }
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY
+        };
+
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    // 2. Typing indicator
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+    if (isTyping) {
+        const height = chatConfig.baseBubbleHeight;
+        typingLayout = {
+            y: currentY,
+            height,
+            opacity: 1
+        };
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + chatConfig.bottomPadding;
+
+    // 3. Scroll Position
+    // Lock to bottom logic
+    let scrollY = 0;
+    if (chatConfig.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+        scrollY = maxScroll;
+
+        // TODO: Implement smooth scrolling based on message arrival times if needed
+        // For now, instant snap to bottom is robust
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
+        }
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/feed.ts
+````typescript
+import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
+
+export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
+    const { world, t, activeAppId, config, viewportHeight } = ctx;
+    const feedConfig = config!.feed!;
+
+    // Get feed data from app state
+    // Heuristic: look for "feed" property in the active app state
+    const appState = world.appState?.[activeAppId];
+    const posts = appState?.feed?.posts || [];
+
+    const itemLayouts: Record<string, FeedItemLayout> = {};
+    let currentY = feedConfig.topPadding;
+
+    // 1. Layout posts
+    for (const post of posts) {
+        // Calculate height
+        // Heuristic: base height + caption lines
+        const captionLength = post.caption?.length || 0;
+        const lines = Math.ceil(Math.max(1, captionLength) / feedConfig.charsPerLine);
+        const height = feedConfig.baseCardHeight + (lines * feedConfig.lineHeight);
+
+        itemLayouts[post.id] = {
+            id: post.id,
+            y: currentY,
+            height,
+            opacity: 1,
+            translateY: 0,
+            scale: 1
+        };
+
+        currentY += height + feedConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + feedConfig.bottomPadding;
+
+    // 2. Scroll Position
+    // Default: start at top (0)
+    // If autoScroll is enabled, scroll over time
+    let scrollY = 0;
+    if (feedConfig.autoScroll) {
+        // Simple auto-scroll: 50px per second (assuming 30fps)
+        const speed = 50 / 30;
+        scrollY = t * speed;
+    } else if (appState?.feed?.scrollPosition !== undefined) {
+        // Use scroll position from app state if available (manual control)
+        scrollY = appState.feed.scrollPosition;
+    }
+
+    // Clamp scroll
+    const maxScroll = Math.max(0, contentHeight - viewportHeight);
+    scrollY = Math.min(scrollY, maxScroll);
+
+    return {
+        kind: "FEED",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - maxScroll) < 10,
+        itemLayouts,
+        meta: {
+            // TODO: Calculate visible items
+        }
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/lockscreen.ts
+````typescript
+import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
+
+export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
+    const { world, t, activeDeviceId, config } = ctx;
+    const lockConfig = config!.lockscreen!;
+
+    const device = world.devices[activeDeviceId];
+    const notifications = device?.notifications || [];
+
+    const notificationLayouts: NotificationLayout[] = [];
+    let currentY = lockConfig.topPadding;
+
+    // Layout notifications
+    // Show only the last N notifications
+    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
+
+    for (const notification of visibleNotifications) {
+        // Calculate height
+        // Heuristic: base height + text length
+        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
+        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
+        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
+
+        // Animation: Slide in
+        // Assuming we have an 'at' time for notifications, but the type might not have it.
+        // If not, we just show them.
+        // Let's assume we want them to appear instantly for now.
+
+        notificationLayouts.push({
+            id: notification.id,
+            y: currentY,
+            height,
+            opacity: 1,
+            translateY: 0
+        });
+
+        currentY += height + lockConfig.notificationGap;
+    }
+
+    return {
+        kind: "LOCKSCREEN",
+        notificationLayouts,
+        meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/story.ts
+````typescript
+import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
+
+export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
+    const { world, t, activeAppId, config } = ctx;
+    const storyConfig = config!.story!;
+
+    // Get stories from app state
+    const appState = world.appState?.[activeAppId];
+    // Find active user's stories
+    // Heuristic: activeStoryId format "username:storyId"
+    // Or just use the first user in the stories list for now if no ID
+    const activeStoryId = ctx.activeStoryId || appState?.stories?.activeStoryId;
+
+    let stories: any[] = [];
+    let activeUserIndex = 0;
+
+    if (activeStoryId) {
+        const username = activeStoryId.split(':')[0];
+        const user = appState?.stories?.users.find((u: any) => u.username === username);
+        if (user) {
+            stories = user.stories;
+        }
+    } else if (appState?.stories?.users?.length > 0) {
+        // Fallback to first user
+        stories = appState.stories.users[0].stories;
+    }
+
+    const storyCount = stories.length;
+    if (storyCount === 0) {
+        return {
+            kind: "STORY",
+            activeStoryIndex: 0,
+            storyCount: 0,
+            storyProgress: 0,
+            storyLayouts: []
+        };
+    }
+
+    // Calculate active index based on time
+    // We assume t starts at 0 when the story view opens. 
+    // In a real app, we might need a "startT" in the context or meta.
+    // For now, let's assume global t maps to story progress.
+
+    const totalDuration = storyCount * storyConfig.defaultStoryDuration;
+    // Loop or clamp? Let's clamp.
+    const effectiveT = Math.max(0, Math.min(t, totalDuration - 1));
+
+    const activeStoryIndex = Math.floor(effectiveT / storyConfig.defaultStoryDuration);
+    const timeInStory = effectiveT % storyConfig.defaultStoryDuration;
+    const storyProgress = timeInStory / storyConfig.defaultStoryDuration;
+
+    const storyLayouts: StoryItemLayout[] = stories.map((story: any, index: number) => {
+        let opacity = 0;
+        let scale = 1;
+        let translateX = 0;
+
+        if (index === activeStoryIndex) {
+            opacity = 1;
+            // Subtle zoom effect
+            scale = 1 + (storyProgress * 0.05);
+        } else if (index < activeStoryIndex) {
+            // Previous story
+            opacity = 0;
+            translateX = -100; // Move left
+        } else {
+            // Next story
+            opacity = 0;
+            translateX = 100; // Move right
+        }
+
+        return {
+            id: story.id,
+            index,
+            translateX,
+            translateY: 0,
+            scale,
+            opacity
+        };
+    });
+
+    return {
+        kind: "STORY",
+        activeStoryIndex,
+        storyCount,
+        storyProgress,
+        storyLayouts
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/transition.ts
+````typescript
+import { LayoutContext, TransitionLayoutState } from "../types";
+
+export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutState {
+    const { world, t, config } = ctx;
+    const transitionConfig = config!.transition!;
+
+    // Basic transition logic based on camera state
+    // If camera.type is "TRANSITION", we use its params
+    // Otherwise we use defaults
+
+    let deviceScale = transitionConfig.defaultScale;
+    let deviceTranslateX = 0;
+    let deviceTranslateY = 0;
+    let deviceRotation = 0;
+    let overlayOpacity = 0;
+
+    if (world.camera?.type === "TRANSITION") {
+        // TODO: Implement complex transitions based on camera params
+        // For now, just a placeholder
+    }
+
+    return {
+        kind: "TRANSITION",
+        deviceTranslateX,
+        deviceTranslateY,
+        deviceScale,
+        deviceRotation,
+        overlayOpacity,
+        meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/config.ts
+````typescript
+import { LayoutConfig } from "./types";
+
+export const defaultLayoutConfig: LayoutConfig = {
+    cinematicMode: "NONE",
+    chat: {
+        bubbleWidth: 0.75, // 75% of screen width
+        baseBubbleHeight: 60,
+        charsPerLine: 30,
+        lineHeight: 40,
+        verticalGap: 15,
+        topPadding: 120, // Space for header
+        bottomPadding: 100, // Space for input
+        messageAppearDuration: 15, // frames
+        messageAppearOffset: 10, // px
+        scrollEasingDuration: 20, // frames
+        maxScrollCatchupSpeed: 50, // px/frame
+        lockToBottom: true
+    },
+    feed: {
+        cardWidth: 1.0, // 100% width
+        baseCardHeight: 600,
+        verticalGap: 20,
+        topPadding: 150, // Header + Stories
+        bottomPadding: 150, // Bottom nav
+        charsPerLine: 40,
+        lineHeight: 30,
+        scrollEasingDuration: 20,
+        maxScrollCatchupSpeed: 50,
+        startAtTop: true,
+        autoScroll: false
+    },
+    story: {
+        defaultStoryDuration: 150, // 5 seconds at 30fps
+        progressBarHeight: 4,
+        storyGap: 0,
+        storyTransitionDuration: 15
+    },
+    lockscreen: {
+        topPadding: 150,
+        notificationGap: 10,
+        notificationWidth: 0.9,
+        baseNotificationHeight: 100,
+        charsPerLine: 40,
+        lineHeight: 30,
+        stackMaxNotifications: 5,
+        appearDuration: 15
+    },
+    transition: {
+        defaultScale: 1.0,
+        zoomedScale: 1.2,
+        panDuration: 30,
+        zoomDuration: 30
+    }
+};
+````
+
+## File: packages/renderer/src/layout/index.ts
+````typescript
+import { LayoutContext, LayoutState } from "./types";
+import { defaultLayoutConfig } from "./config";
+import { computeChatLayout } from "./strategies/chat";
+import { computeFeedLayout } from "./strategies/feed";
+import { computeStoryLayout } from "./strategies/story";
+import { computeLockscreenLayout } from "./strategies/lockscreen";
+import { computeTransitionLayout } from "./strategies/transition";
+
+export * from "./types";
+export * from "./config";
+
+export function computeLayout(ctx: LayoutContext): LayoutState {
+    // Merge provided config with defaults
+    const config = { ...defaultLayoutConfig, ...ctx.config };
+    const fullCtx = { ...ctx, config };
+
+    switch (ctx.viewKind) {
+        case "CHAT":
+            return computeChatLayout(fullCtx);
+        case "FEED":
+            return computeFeedLayout(fullCtx);
+        case "STORY":
+            return computeStoryLayout(fullCtx);
+        case "LOCKSCREEN":
+            return computeLockscreenLayout(fullCtx);
+        case "TRANSITION":
+            return computeTransitionLayout(fullCtx);
+        default:
+            // Fallback to empty transition state
+            return {
+                kind: "TRANSITION",
+                deviceTranslateX: 0,
+                deviceTranslateY: 0,
+                deviceScale: 1,
+                deviceRotation: 0,
+                overlayOpacity: 0,
+                meta: {}
+            };
+    }
+}
+````
+
+## File: packages/renderer/src/layout/types.ts
+````typescript
+export * from "@tokovo/core";
+````
+
 ## File: apps/video-runner/src/index.ts
-```typescript
+````typescript
 import { registerRoot } from "remotion";
 import { RemotionRoot } from "./Root";
 
 registerRoot(RemotionRoot);
-```
+````
 
 ## File: apps/video-runner/src/InstagramVideo.tsx
-```typescript
+````typescript
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { replay, WorldState } from "@tokovo/core";
@@ -181,18 +662,18 @@ export const InstagramVideo: React.FC = () => {
         </div>
     );
 };
-```
+````
 
 ## File: apps/video-runner/remotion.config.ts
-```typescript
+````typescript
 import { Config } from "@remotion/cli/config";
 
 Config.setVideoImageFormat("jpeg");
 Config.setOverwriteOutput(true);
-```
+````
 
 ## File: apps/video-runner/tsconfig.json
-```json
+````json
 {
     "extends": "../../tsconfig.base.json",
     "compilerOptions": {
@@ -205,64 +686,1831 @@ Config.setOverwriteOutput(true);
         "remotion.config.ts"
     ]
 }
-```
+````
 
-## File: packages/apps-instagram/src/index.ts
-```typescript
+## File: packages/apps-instagram/src/views/explore/ExploreView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+const SearchBar = () => (
+    <div style={{
+        height: 80,
+        backgroundColor: "#262626",
+        borderRadius: 20,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 30px",
+        margin: "20px 30px",
+        gap: 20
+    }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <div style={{ fontSize: 32, color: "#888" }}>Search</div>
+    </div>
+);
+
+export const ExploreView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Generate some mock explore content
+    const exploreItems = Array.from({ length: 15 }).map((_, i) => ({
+        id: `exp_${i}`,
+        image: `https://picsum.photos/seed/exp${i}/500/500`,
+        isLarge: i % 10 === 0 // Every 10th item is large (2x2)
+    }));
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <div style={{ marginTop: 60 }}>
+                <SearchBar />
+            </div>
+
+            <div style={{
+                flex: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 3,
+                alignContent: "flex-start"
+            }}>
+                {exploreItems.map((item, i) => (
+                    <div key={item.id} style={{
+                        width: item.isLarge ? "calc(66.66% - 2px)" : "calc(33.33% - 2px)",
+                        aspectRatio: item.isLarge ? "1/1" : "1/1",
+                        backgroundColor: "#222",
+                        backgroundImage: `url(${item.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        position: "relative"
+                    }}>
+                        {i % 5 === 0 && (
+                            <div style={{ position: "absolute", top: 10, right: 10 }}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
+                                    <path d="M2 2l20 20" stroke="none" />
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="none" />
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/notifications/NotificationsView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+const NotificationItem: React.FC<{ type: string; username: string; time: string; text?: string; avatar: string }> = ({ type, username, time, text, avatar }) => (
+    <div style={{ display: "flex", alignItems: "center", padding: "20px 30px", gap: 20 }}>
+        <div style={{
+            width: 90,
+            height: 90,
+            borderRadius: "50%",
+            backgroundImage: `url(${avatar})`,
+            backgroundSize: "cover",
+            backgroundColor: "#333"
+        }} />
+        <div style={{ flex: 1, fontSize: 30, lineHeight: "1.3" }}>
+            <span style={{ fontWeight: "bold" }}>{username}</span>
+            {" "}
+            {type === "like" && "liked your photo."}
+            {type === "follow" && "started following you."}
+            {type === "comment" && `commented: ${text}`}
+            {" "}
+            <span style={{ color: "#888" }}>{time}</span>
+        </div>
+        {type === "follow" ? (
+            <div style={{
+                backgroundColor: "#0095f6",
+                color: "white",
+                padding: "10px 30px",
+                borderRadius: 10,
+                fontSize: 28,
+                fontWeight: "600"
+            }}>
+                Follow
+            </div>
+        ) : (
+            <div style={{
+                width: 90,
+                height: 90,
+                backgroundColor: "#333",
+                backgroundImage: `url(https://picsum.photos/seed/post1/100/100)`, // Mock post image
+                backgroundSize: "cover"
+            }} />
+        )}
+    </div>
+);
+
+export const NotificationsView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Mock notifications
+    const notifications = [
+        { id: "n1", type: "like", username: "alice_wonder", time: "2m", avatar: "https://i.pravatar.cc/150?u=alice" },
+        { id: "n2", type: "follow", username: "bob_builder", time: "15m", avatar: "https://i.pravatar.cc/150?u=bob" },
+        { id: "n3", type: "comment", username: "charlie_chaplin", time: "1h", text: "Great shot! 🔥", avatar: "https://i.pravatar.cc/150?u=charlie" },
+        { id: "n4", type: "like", username: "dave_diver", time: "3h", avatar: "https://i.pravatar.cc/150?u=dave" },
+        { id: "n5", type: "follow", username: "eve_hacker", time: "5h", avatar: "https://i.pravatar.cc/150?u=eve" },
+    ];
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <div style={{
+                height: 120,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 30px",
+                marginTop: 60,
+                fontSize: 42,
+                fontWeight: "bold",
+                borderBottom: "1px solid #222"
+            }}>
+                Notifications
+            </div>
+
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                <div style={{ padding: "20px 0" }}>
+                    <div style={{ padding: "0 30px 20px", fontSize: 32, fontWeight: "bold" }}>New</div>
+                    {notifications.slice(0, 2).map(n => (
+                        <NotificationItem key={n.id} {...n} />
+                    ))}
+                    <div style={{ padding: "40px 30px 20px", fontSize: 32, fontWeight: "bold" }}>Today</div>
+                    {notifications.slice(2).map(n => (
+                        <NotificationItem key={n.id} {...n} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/post/PostView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+// Reuse icons from FeedView or create shared icon library
+const BackIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+    </svg>
+);
+
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "#ed4956" : "none"} stroke={filled ? "#ed4956" : "white"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const CommentIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Mock single post data
+    const post = {
+        username: "instagram_user",
+        avatar: "https://i.pravatar.cc/150?u=instagram_user",
+        image: "https://picsum.photos/seed/insta1/1080/1080",
+        caption: "Living my best life! 🌟 #blessed",
+        likes: 1234,
+        comments: 42,
+        liked: false,
+        saved: false
+    };
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Header */}
+            <div style={{
+                height: 120,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 30px",
+                marginTop: 60,
+                borderBottom: "1px solid #222"
+            }}>
+                <BackIcon />
+                <div style={{ marginLeft: 30, fontSize: 36, fontWeight: "bold" }}>Posts</div>
+            </div>
+
+            {/* Post Content (Similar to Feed Item) */}
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", padding: "20px 30px" }}>
+                    <div style={{
+                        width: 70,
+                        height: 70,
+                        borderRadius: "50%",
+                        backgroundImage: `url(${post.avatar})`,
+                        backgroundSize: "cover",
+                        backgroundColor: "#333",
+                        marginRight: 20
+                    }} />
+                    <div style={{ flex: 1, color: "white", fontSize: 32, fontWeight: "600" }}>{post.username}</div>
+                    <div style={{ color: "white", fontSize: 40 }}>...</div>
+                </div>
+
+                <div style={{
+                    width: "100%",
+                    aspectRatio: "1/1",
+                    backgroundColor: "#222",
+                    backgroundImage: `url(${post.image})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center"
+                }} />
+
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 30px" }}>
+                    <div style={{ display: "flex", gap: 40 }}>
+                        <HeartIcon filled={post.liked} />
+                        <CommentIcon />
+                        <ShareIcon />
+                    </div>
+                    <BookmarkIcon filled={post.saved} />
+                </div>
+
+                <div style={{ padding: "0 30px" }}>
+                    <div style={{ color: "white", fontSize: 32, fontWeight: "600", marginBottom: 10 }}>
+                        {post.likes.toLocaleString()} likes
+                    </div>
+                    <div style={{ color: "white", fontSize: 32 }}>
+                        <span style={{ fontWeight: "600", marginRight: 10 }}>{post.username}</span>
+                        {post.caption}
+                    </div>
+                    <div style={{ color: "#888", fontSize: 28, marginTop: 10 }}>
+                        View all {post.comments} comments
+                    </div>
+                    <div style={{ color: "#888", fontSize: 24, marginTop: 10, textTransform: "uppercase" }}>
+                        2 hours ago
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+
+const GridIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+    </svg>
+);
+
+const TaggedIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
+
+const MenuIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+);
+
+const LockIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+);
+
+const PlusIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+);
+
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
+
+export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    // Mock user data for now
+    const user = {
+        username: "instagram_user",
+        name: "Instagram User",
+        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
+        posts: 42,
+        followers: "1.2M",
+        following: 250,
+        avatar: "" // TODO: Add default avatar
+    };
+
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // Hide native scroll
+            position: "relative"
+        }}>
+            {/* Scrollable Content Container */}
+            <div style={{
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.1s linear", // Layout engine drives this
+                width: "100%",
+                minHeight: "100%"
+            }}>
+                {/* Header */}
+                <div style={{
+                    height: 120,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 30px",
+                    marginTop: 60,
+                    zIndex: 10
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <LockIcon />
+                        <div style={{ fontSize: 42, fontWeight: "bold" }}>{user.username}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 40 }}>
+                        <PlusIcon />
+                        <MenuIcon />
+                    </div>
+                </div>
+
+                {/* Profile Info */}
+                <div style={{ padding: "20px 30px" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+                        <div style={{
+                            width: 180,
+                            height: 180,
+                            borderRadius: "50%",
+                            backgroundColor: "#333",
+                            backgroundImage: `url(${user.avatar})`,
+                            backgroundSize: "cover",
+                            marginRight: 60
+                        }} />
+                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", paddingRight: 20 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.posts}</div>
+                                <div style={{ fontSize: 28 }}>Posts</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.followers}</div>
+                                <div style={{ fontSize: 28 }}>Followers</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.following}</div>
+                                <div style={{ fontSize: 28 }}>Following</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 30 }}>
+                        <div style={{ fontSize: 32, fontWeight: "bold", marginBottom: 5 }}>{user.name}</div>
+                        <div style={{ fontSize: 30, whiteSpace: "pre-wrap", lineHeight: "1.3" }}>{user.bio}</div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: "flex", gap: 20, marginBottom: 40 }}>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Edit profile
+                        </div>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Share profile
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div style={{ display: "flex", borderTop: "1px solid #222", height: 100 }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "2px solid white" }}>
+                        <GridIcon active={true} />
+                    </div>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <TaggedIcon active={false} />
+                    </div>
+                </div>
+
+                {/* Grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {state.feed.posts.map(post => (
+                        <div key={post.id} style={{
+                            width: "calc(33.33% - 2px)",
+                            aspectRatio: "1/1",
+                            backgroundColor: "#222",
+                            backgroundImage: `url(${post.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center"
+                        }} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/reels/ReelsView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+const CameraIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+    </svg>
+);
+
+const HeartIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const CommentIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+
+const MusicIcon = () => (
+    <div style={{ width: 60, height: 60, borderRadius: 10, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 30, height: 30, backgroundColor: "white", borderRadius: "50%" }} />
+    </div>
+);
+
+export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Video Background */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: `url(https://picsum.photos/seed/reel1/1080/1920)`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                filter: "brightness(0.9)"
+            }} />
+
+            {/* Header */}
+            <div style={{
+                position: "absolute",
+                top: 60,
+                left: 30,
+                right: 30,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                zIndex: 10
+            }}>
+                <div style={{ fontSize: 42, fontWeight: "bold" }}>Reels</div>
+                <CameraIcon />
+            </div>
+
+            {/* Side Actions */}
+            <div style={{
+                position: "absolute",
+                bottom: 180, // Above bottom nav
+                right: 20,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 40,
+                zIndex: 10
+            }}>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <HeartIcon />
+                    <div style={{ fontSize: 24, marginTop: 5 }}>123K</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                    <CommentIcon />
+                    <div style={{ fontSize: 24, marginTop: 5 }}>456</div>
+                </div>
+                <ShareIcon />
+                <div style={{ fontSize: 32 }}>...</div>
+                <MusicIcon />
+            </div>
+
+            {/* Bottom Info */}
+            <div style={{
+                position: "absolute",
+                bottom: 180,
+                left: 30,
+                zIndex: 10,
+                maxWidth: "70%"
+            }}>
+                <div style={{ display: "flex", alignItems: "center", marginBottom: 20 }}>
+                    <div style={{ width: 60, height: 60, borderRadius: "50%", backgroundImage: `url(https://i.pravatar.cc/150?u=reel)`, backgroundSize: "cover", marginRight: 20 }} />
+                    <div style={{ fontSize: 32, fontWeight: "600", marginRight: 20 }}>reels_creator</div>
+                    <div style={{ border: "1px solid white", borderRadius: 8, padding: "4px 12px", fontSize: 24 }}>Follow</div>
+                </div>
+                <div style={{ fontSize: 30, marginBottom: 20 }}>
+                    Wait for the drop! 🎵🔥 #dance #viral
+                </div>
+                <div style={{ display: "flex", alignItems: "center", fontSize: 28 }}>
+                    <span style={{ marginRight: 10 }}>🎵</span>
+                    Original Audio - reels_creator
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/BottomNav.tsx
+````typescript
+import React from "react";
+import { InstagramView } from "../types";
+
+const HomeIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke="white" strokeWidth={active ? "0" : "2"} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+    </svg>
+);
+
+const SearchIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={active ? "3" : "2"} strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+);
+
+const ReelsIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke="white" strokeWidth={active ? "0" : "2"} strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+        <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+    </svg>
+);
+
+const ShopIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke="white" strokeWidth={active ? "0" : "2"} strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+);
+
+const ProfileIcon = ({ active }: { active: boolean }) => (
+    <div style={{
+        width: 60,
+        height: 60,
+        borderRadius: "50%",
+        border: active ? "2px solid white" : "none",
+        padding: 2
+    }}>
+        <div style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: "50%",
+            backgroundColor: "#555",
+            // backgroundImage: `url(...)` // TODO: Add user avatar
+        }} />
+    </div>
+);
+
+export const BottomNav: React.FC<{ currentView: InstagramView }> = ({ currentView }) => {
+    return (
+        <div style={{
+            height: 150,
+            backgroundColor: "black",
+            borderTop: "1px solid #222",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
+            paddingBottom: 30 // Home indicator spacing
+        }}>
+            <HomeIcon active={currentView === 'feed'} />
+            <SearchIcon active={currentView === 'explore'} />
+            <ReelsIcon active={currentView === 'reels'} />
+            <ShopIcon active={false} />
+            <ProfileIcon active={currentView === 'profile'} />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/types.ts
+````typescript
+export type InstagramView = 'dm' | 'feed' | 'stories' | 'profile' | 'post' | 'explore' | 'notifications' | 'reels';
+
+export interface Post {
+    id: string;
+    username: string;
+    avatar: string;
+    image: string;
+    caption: string;
+    likes: number;
+    comments: number;
+    liked: boolean;
+    saved: boolean;
+}
+
+export interface Story {
+    id: string;
+    image: string;
+    seen: boolean;
+}
+
+export interface StoryUser {
+    username: string;
+    avatar: string;
+    stories: Story[];
+    hasUnseen: boolean;
+}
+
+export interface Notification {
+    id: string;
+    type: 'like' | 'follow' | 'comment' | 'mention';
+    username: string;
+    avatar: string;
+    text?: string;
+    time: string;
+}
+
+export interface InstagramState {
+    currentView: InstagramView;
+    feed: {
+        posts: Post[];
+        scrollPosition: number;
+    };
+    stories: {
+        users: StoryUser[];
+        activeStoryId?: string;
+    };
+    notifications: {
+        items: Notification[];
+    };
+    // Add other module states here
+}
+
+export const initialInstagramState: InstagramState = {
+    currentView: 'dm', // Default to DM for now as it's the most developed
+    feed: {
+        posts: [],
+        scrollPosition: 0
+    },
+    stories: {
+        users: [],
+    },
+    notifications: {
+        items: []
+    }
+};
+````
+
+## File: packages/apps-instagram/package.json
+````json
+{
+    "name": "@tokovo/apps-instagram",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "react": "^18.0.0",
+        "immer": "^10.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.0",
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/apps-instagram/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
 export * from "./runtime";
 export * from "./ui";
-```
+````
 
-## File: packages/apps-instagram/src/runtime.ts
-```typescript
-import { produce } from "immer";
-import { WorldState, TimelineEvent } from "@tokovo/core";
+## File: packages/apps-whatsapp/src/types.ts
+````typescript
+export interface WhatsAppState {
+    // Add specific state if needed, for now using generic ConversationState from core
+}
+````
 
-export const instagramRuntime = (state: WorldState, event: TimelineEvent) => {
-    if (event.kind !== "APP" || event.appId !== "app_instagram") return state;
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
+````typescript
+import React from "react";
 
-    return produce(state, (draft) => {
-        const { conversationId, type } = event;
-
-        // Ensure conversation exists
-        if (!draft.conversations[conversationId]) {
-            draft.conversations[conversationId] = {
-                id: conversationId,
-                messages: [],
-                typing: {}
-            };
-        }
-
-        const conversation = draft.conversations[conversationId];
-
-        switch (type) {
-            case "MESSAGE_RECEIVED":
-                conversation.messages.push({
-                    id: `msg_${Date.now()}_${Math.random()}`,
-                    from: event.from,
-                    text: event.text,
-                    at: event.at,
-                    liked: false // Instagram specific
-                });
-                break;
-
-            case "TYPING_START":
-                if (!conversation.typing) conversation.typing = {};
-                conversation.typing[event.from] = true;
-                break;
-
-            case "TYPING_END":
-                if (conversation.typing) {
-                    conversation.typing[event.from] = false;
-                }
-                break;
-        }
-    });
+export const TypingBubble: React.FC = () => {
+    return (
+        <div style={{
+            padding: "24px 36px",
+            marginLeft: 48,
+            marginBottom: 12,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 48,
+            borderTopLeftRadius: 12,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            height: 66 // Match line height of text
+        }}>
+            <Dot delay={0} />
+            <Dot delay={0.2} />
+            <Dot delay={0.4} />
+        </div>
+    );
 };
+
+const Dot: React.FC<{ delay: number }> = ({ delay }) => (
+    <div style={{
+        width: 18,
+        height: 18,
+        backgroundColor: "#B1B1B1",
+        borderRadius: "50%",
+        animation: `typingBounce 1.4s infinite ease-in-out both`,
+        animationDelay: `${delay}s`
+    }}>
+        <style>{`
+            @keyframes typingBounce {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+        `}</style>
+    </div>
+);
+````
+
+## File: packages/apps-whatsapp/README.md
+````markdown
+# @tokovo/apps-whatsapp
+
+WhatsApp clone app for Tokovo.
+
+## Features
+- **Runtime**: Handles `MESSAGE_RECEIVED`, `TYPING_START`, `TYPING_END`.
+- **UI**: `WhatsappChatView` with high-fidelity styling, animations, and auto-scroll.
+````
+
+## File: packages/apps-whatsapp/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/core/src/engine.ts
+````typescript
+import { produce } from "immer";
+import { TimelineEvent, WorldState, DeviceState } from "./types";
+
+export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
+export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+
+export const ReducerRegistry = {
+    deviceReducer: null as DeviceReducer | null,
+    appReducers: {} as Record<string, AppReducer>,
+
+    registerDeviceReducer(reducer: DeviceReducer) {
+        this.deviceReducer = reducer;
+    },
+    registerAppReducer(appId: string, reducer: AppReducer) {
+        this.appReducers[appId] = reducer;
+    }
+};
+
+export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    const relevant = events.filter(e => e.at <= t);
+
+    return relevant.reduce((state, event) => {
+        return produce(state, draft => {
+            if (event.kind === "DEVICE") {
+                if (ReducerRegistry.deviceReducer) {
+                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+            }
+            if (event.kind === "APP") {
+                const reducer = ReducerRegistry.appReducers[event.appId];
+                reducer?.(draft, event);
+            }
+            if (event.kind === "CAMERA") {
+                draft.camera = event.view;
+            }
+        });
+    }, initial);
+}
+````
+
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+export * from "./engine";
+````
+
+## File: packages/core/package.json
+````json
+{
+    "name": "@tokovo/core",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "immer": "^10.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
+## File: packages/core/README.md
+````markdown
+# @tokovo/core
+
+Core logic for the Tokovo engine.
+
+## Features
+- **Engine**: `replay` function to compute world state from events.
+- **Types**: Core type definitions (`WorldState`, `TimelineEvent`, etc.).
+- **Registry**: `ReducerRegistry` for managing device and app reducers.
+````
+
+## File: packages/core/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/devices/src/iphone16/profile.ts
+````typescript
+import { DeviceProfile } from "../types";
+
+export const iPhone16Profile: DeviceProfile = {
+    id: "iphone16",
+    dimensions: { width: 1290, height: 2796 },
+    statusBarHeight: 110,
+};
+````
+
+## File: packages/devices/src/pixel/profile.ts
+````typescript
+import { DeviceProfile } from "../types";
+
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    dimensions: {
+        width: 1080, // Pixel 7 Pro approx width
+        height: 2400, // Pixel 7 Pro approx height
+    },
+    statusBarHeight: 90, // Approx 30px * 3
+};
+````
+
+## File: packages/devices/src/types.ts
+````typescript
+export interface DeviceProfile {
+    id: string;
+    dimensions: { width: number; height: number };
+    statusBarHeight: number;
+}
+````
+
+## File: packages/devices/README.md
+````markdown
+# @tokovo/devices
+
+Device profiles and reducers.
+
+## Features
+- **Profiles**: `iPhone16Profile` with high-res assets.
+- **Components**: `iPhone16Frame`, `StatusBar`.
+- **Reducer**: `deviceReducer` for handling device events (LOCK, UNLOCK, OPEN_APP).
+````
+
+## File: packages/devices/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/episodes/src/examples/android-test.json
+````json
+{
+    "initialWorld": {
+        "devices": {
+            "bob_phone": {
+                "id": "bob_phone",
+                "profileId": "pixel",
+                "isLocked": true,
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "other",
+                        "text": "Hey Bob!",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 10,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "SHOW_NOTIFICATION",
+            "appId": "app_whatsapp",
+            "title": "Alice",
+            "body": "Hey Bob!"
+        },
+        {
+            "at": 60,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 70,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        }
+    ]
+}
+````
+
+## File: packages/episodes/package.json
+````json
+{
+    "name": "@tokovo/episodes",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
+## File: packages/episodes/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "resolveJsonModule": true
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/renderer/src/index.ts
+````typescript
+export * from "./registry";
+export * from "./LayoutEngine";
+export * from "./DeviceFrame";
+export * from "./TokovoRenderer";
+````
+
+## File: packages/renderer/src/types.ts
+````typescript
+export * from "@tokovo/core";
+````
+
+## File: packages/renderer/src/VisualDebugger.tsx
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+
+export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 50,
+            right: 50,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            color: "#0f0",
+            fontFamily: "monospace",
+            fontSize: 24,
+            padding: 20,
+            borderRadius: 10,
+            zIndex: 9999,
+            pointerEvents: "none",
+            maxWidth: 600
+        }}>
+            <div><strong>Frame:</strong> {t.toFixed(0)}</div>
+            <div><strong>Active App:</strong> {Object.values(world.devices)[0]?.foregroundAppId || "Home"}</div>
+            <div><strong>Events:</strong></div>
+            {/* We would need access to events here, but world state doesn't store history. 
+                Just showing state for now. */}
+            <div style={{ marginTop: 10, fontSize: 18, opacity: 0.8 }}>
+                Camera: {world.camera.type}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/renderer/README.md
+````markdown
+# Tokovo Layout System — Unified Spec (All UI Types)
+
+## 0. Concept
+
+The **Tokovo Layout System** is the layer that turns:
+
+* `WorldState` (devices, conversations, notifications, camera, etc.)
+* episode timeline (via `replay(...)`)
+* current frame/time `t`
+* active device + app + view type
+
+into **view-specific layouts** for:
+
+* Chat views
+* Feed views
+* Story views
+* Lockscreen views
+* Transitional/cinematic scenes
+
+Each layout is:
+
+* deterministic
+* frame-driven
+* Remotion-safe (no DOM measurement / no CSS transitions)
+
+---
+
+## 1. Core Types
+
+### 1.1 ViewKind
+
+```ts
+export type ViewKind =
+  | "CHAT"
+  | "FEED"
+  | "STORY"
+  | "LOCKSCREEN"
+  | "TRANSITION";
 ```
 
-## File: packages/apps-instagram/src/ui.tsx
-```typescript
+### 1.2 LayoutContext (global)
+
+```ts
+export interface LayoutContext {
+  world: WorldState;
+  t: number; // current frame
+  activeDeviceId: string;
+  activeAppId: string;
+  viewKind: ViewKind;
+
+  // View-specific selectors
+  activeConversationId?: string;   // CHAT
+  activeFeedId?: string;           // FEED (e.g. timeline id)
+  activeStoryId?: string;          // STORY (e.g. story reel id)
+
+  viewportWidth: number;
+  viewportHeight: number;
+
+  // Optional configuration overrides
+  config?: Partial<LayoutConfig>;
+}
+```
+
+> **Note:** different view kinds will care about different selectors (e.g., `activeConversationId` only matters for `"CHAT"`).
+
+---
+
+## 2. LayoutConfig (global + per-view strategy)
+
+```ts
+export interface LayoutConfig {
+  // Global-ish things
+  cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
+
+  // Chat-specific
+  chat: ChatLayoutConfig;
+
+  // Feed-specific
+  feed: FeedLayoutConfig;
+
+  // Story-specific
+  story: StoryLayoutConfig;
+
+  // Lock screen
+  lockscreen: LockscreenLayoutConfig;
+
+  // Transitions
+  transition: TransitionLayoutConfig;
+}
+```
+
+You’ll define **per-view configs**:
+
+### 2.1 ChatLayoutConfig (what we already designed)
+
+```ts
+export interface ChatLayoutConfig {
+  bubbleWidth: number;
+  baseBubbleHeight: number;
+  charsPerLine: number;
+  lineHeight: number;
+  verticalGap: number;
+  topPadding: number;
+  bottomPadding: number;
+
+  messageAppearDuration: number;
+  messageAppearOffset: number;
+  scrollEasingDuration: number;
+  maxScrollCatchupSpeed: number;
+
+  lockToBottom: boolean;
+}
+```
+
+### 2.2 FeedLayoutConfig (for Instagram / X / TikTok feeds)
+
+```ts
+export interface FeedLayoutConfig {
+  cardWidth: number;
+  baseCardHeight: number;
+  verticalGap: number;
+  topPadding: number;
+  bottomPadding: number;
+
+  // For variable-height posts, same trick as chat:
+  charsPerLine: number;
+  lineHeight: number;
+
+  scrollEasingDuration: number;
+  maxScrollCatchupSpeed: number;
+
+  startAtTop: boolean;      // typical feed behaviour
+  autoScroll?: boolean;     // for cinematic auto-scroll episodes
+}
+```
+
+### 2.3 StoryLayoutConfig (Instagram Stories / Snap)
+
+```ts
+export interface StoryLayoutConfig {
+  // Each story = full-screen page
+  defaultStoryDuration: number; // in frames
+  progressBarHeight: number;
+  storyGap: number;             // for 3D-ish page stack if needed
+
+  // Animation
+  storyTransitionDuration: number; // frames between stories
+}
+```
+
+### 2.4 LockscreenLayoutConfig
+
+```ts
+export interface LockscreenLayoutConfig {
+  topPadding: number;
+  notificationGap: number;
+  notificationWidth: number;
+  baseNotificationHeight: number;
+  charsPerLine: number;
+  lineHeight: number;
+
+  stackMaxNotifications: number; // older ones collapsed/hidden
+  appearDuration: number;
+}
+```
+
+### 2.5 TransitionLayoutConfig
+
+```ts
+export interface TransitionLayoutConfig {
+  // Device position in composition
+  defaultScale: number;
+  zoomedScale: number;
+  panDuration: number;
+  zoomDuration: number;
+
+  // Optionally, per-transition presets (open app, unlock, etc.)
+}
+```
+
+---
+
+## 3. LayoutState — Tagged Union (all view kinds)
+
+Single function, **multi-view outputs**:
+
+```ts
+export type LayoutState =
+  | ChatLayoutState
+  | FeedLayoutState
+  | StoryLayoutState
+  | LockscreenLayoutState
+  | TransitionLayoutState;
+```
+
+Each state has a `kind` field:
+
+```ts
+export interface BaseLayoutState {
+  kind: ViewKind;
+}
+```
+
+---
+
+### 3.1 ChatLayoutState
+
+```ts
+export interface ChatLayoutState extends BaseLayoutState {
+  kind: "CHAT";
+  scrollY: number;
+  contentHeight: number;
+  isAtBottom: boolean;
+  messageLayouts: Record<string, ChatMessageLayout>;
+  typingLayout?: TypingLayout | null;
+  meta: ChatLayoutMeta;
+}
+```
+
+Where `ChatMessageLayout`, `TypingLayout`, `ChatLayoutMeta` are what we already specced (id, y, height, opacity, translateY, etc.).
+
+---
+
+### 3.2 FeedLayoutState
+
+```ts
+export interface FeedLayoutState extends BaseLayoutState {
+  kind: "FEED";
+  scrollY: number;
+  contentHeight: number;
+  isAtBottom: boolean;
+  itemLayouts: Record<string, FeedItemLayout>;
+  meta: FeedLayoutMeta;
+}
+```
+
+```ts
+export interface FeedItemLayout {
+  id: string;
+  y: number;
+  height: number;
+  opacity: number;
+  translateY: number;
+  scale: number;   // for subtle parallax / entry
+}
+```
+
+`FeedLayoutMeta` can include:
+
+```ts
+export interface FeedLayoutMeta {
+  firstVisibleItemId?: string;
+  lastVisibleItemId?: string;
+  focusedItemId?: string; // for cinematic highlight
+}
+```
+
+The **geometry model** is similar to chat: stack cards with a deterministic height function (based on text length, optional media flags, etc.).
+
+---
+
+### 3.3 StoryLayoutState
+
+```ts
+export interface StoryLayoutState extends BaseLayoutState {
+  kind: "STORY";
+  activeStoryIndex: number;
+  storyCount: number;
+  storyProgress: number; // 0..1 within current story
+  storyLayouts: StoryItemLayout[];
+}
+```
+
+```ts
+export interface StoryItemLayout {
+  id: string;
+  index: number;
+  // For 3D card stack / page-motion effects:
+  translateX: number;
+  translateY: number;
+  scale: number;
+  opacity: number;
+}
+```
+
+Behaviour:
+
+* Given timeline of stories (either from episode or world state),
+* Given `t`, compute which story index is active and the progress inside that story:
+
+  ```ts
+  const storyIndex = floor((t - startT) / storyDuration);
+  const localProgress = ((t - startT) % storyDuration) / storyDuration;
+  ```
+* Use `storyTransitionDuration` to add slide/fade between storyIndex and storyIndex+1.
+
+---
+
+### 3.4 LockscreenLayoutState
+
+```ts
+export interface LockscreenLayoutState extends BaseLayoutState {
+  kind: "LOCKSCREEN";
+  notificationLayouts: NotificationLayout[];
+  meta: LockscreenLayoutMeta;
+}
+```
+
+```ts
+export interface NotificationLayout {
+  id: string;
+  y: number;
+  height: number;
+  opacity: number;
+  translateY: number;
+}
+```
+
+The inputs come from `device.notifications` in `WorldState`. 
+
+Geometry is again deterministic: approximate height from title/body length and stack them with gap & padding. Animation: when a notification appears at `event.at`, fade/slide it in similar to messages.
+
+---
+
+### 3.5 TransitionLayoutState
+
+```ts
+export interface TransitionLayoutState extends BaseLayoutState {
+  kind: "TRANSITION";
+  // These values are for the outer DeviceFrame / TokovoRenderer
+  deviceTranslateX: number;
+  deviceTranslateY: number;
+  deviceScale: number;
+  deviceRotation: number;
+  overlayOpacity: number;
+  meta: TransitionLayoutMeta;
+}
+```
+
+This layer treats the **device as an actor** in the composition:
+
+* Unlock animation: fade in, scale up from center.
+* Open app: slight bump-in, tilt, zoom.
+* Cutscenes: pan device left/right, etc.
+
+The inputs can be:
+
+* Derived from `world.camera` (if you extend it with more camera modes) 
+* Derived from timeline CAMERA events (already defined in your `TimelineEvent` union). 
+
+---
+
+## 4. The Core Function
+
+Single entry point:
+
+```ts
+export function computeLayout(ctx: LayoutContext): LayoutState {
+  switch (ctx.viewKind) {
+    case "CHAT":
+      return computeChatLayout(ctx);
+    case "FEED":
+      return computeFeedLayout(ctx);
+    case "STORY":
+      return computeStoryLayout(ctx);
+    case "LOCKSCREEN":
+      return computeLockscreenLayout(ctx);
+    case "TRANSITION":
+      return computeTransitionLayout(ctx);
+  }
+}
+```
+
+Each `computeXLayout` is:
+
+* pure
+* deterministic
+* uses only `world`, `t`, `config` and known IDs.
+
+---
+
+## 5. Determinism & Remotion Rules (still apply for ALL)
+
+For **every** viewKind:
+
+* ❌ No DOM measurement / `getBoundingClientRect()`
+
+* ❌ No CSS transitions / `transition: ...`
+
+* ❌ No `setTimeout`, `requestAnimationFrame` inside animation logic
+
+* ❌ No randomness (or if used, seed-based deterministic)
+
+* ✅ All animation values: pure math from `(t, world, config)`
+
+* ✅ `useCurrentFrame()` and `useVideoConfig()` only used to get `t` and fps
+
+* ✅ Styling is done in React via inline styles using the LayoutState
+
+This is consistent with Remotion’s SSR + frame-based rendering model and your current `TokovoRenderer` usage. 
+
+---
+
+## 6. Integration in TokovoRenderer
+
+Your `TokovoRenderer` can now:
+
+1. **Decide which viewKind** to use:
+
+   * If device is locked → `LOCKSCREEN`
+   * If app is WhatsApp/IG DM → `CHAT`
+   * If app is Instagram feed → `FEED`
+   * If app is stories → `STORY`
+   * If you insert explicit camera transition scenes → `TRANSITION`
+
+2. Call:
+
+```ts
+const layout = computeLayout({
+  world,
+  t,
+  activeDeviceId,
+  activeAppId,
+  viewKind,
+  activeConversationId,
+  viewportWidth: deviceWidth,
+  viewportHeight: deviceHeight,
+});
+```
+
+3. Pass `layout` down to the specific App View, which will branch based on `layout.kind` and render accordingly.
+````
+
+## File: packages/renderer/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: .gitignore
+````
+# Dependencies
+node_modules
+.pnpm-store
+
+# Next.js
+.next
+out
+build
+dist
+
+# Remotion
+.remotion
+render
+
+# Turbo
+.turbo
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.env.*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+````
+
+## File: .tool-versions
+````
+nodejs 25.2.0
+````
+
+## File: package.json
+````json
+{
+    "name": "tokovo-monorepo",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    },
+    "devDependencies": {
+        "turbo": "latest",
+        "prettier": "latest"
+    },
+    "packageManager": "pnpm@9.0.0",
+    "engines": {
+        "node": ">=18"
+    }
+}
+````
+
+## File: pnpm-workspace.yaml
+````yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+````
+
+## File: repomix.config.json
+````json
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 52428800
+  },
+  "output": {
+    "filePath": "tokovo.md",
+    "style": "markdown",
+    "parsableStyle": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "files": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "compress": false,
+    "topFilesLength": 5,
+    "showLineNumbers": false,
+    "truncateBase64": false,
+    "copyToClipboard": false,
+    "includeFullDirectoryStructure": false,
+    "tokenCountTree": false,
+    "git": {
+      "sortByChanges": true,
+      "sortByChangesMaxCommits": 100,
+      "includeDiffs": false,
+      "includeLogs": false,
+      "includeLogsCount": 50
+    }
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "*.md"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}
+````
+
+## File: tsconfig.base.json
+````json
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "jsx": "react-jsx",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true
+    }
+}
+````
+
+## File: turbo.json
+````json
+{
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "build": {
+            "dependsOn": [
+                "^build"
+            ],
+            "outputs": [
+                ".next/**",
+                "!.next/cache/**",
+                "dist/**"
+            ]
+        },
+        "lint": {},
+        "dev": {
+            "cache": false,
+            "persistent": true
+        }
+    }
+}
+````
+
+## File: apps/video-runner/src/AndroidVideo.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { PixelProfile } from "@tokovo/devices";
+import { androidEpisode } from "@tokovo/episodes";
+
+export const AndroidVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / PixelProfile.dimensions.width;
+    const scaleY = availableHeight / PixelProfile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: PixelProfile.dimensions.width,
+                height: PixelProfile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
+````typescript
 import React from "react";
 import { WorldState } from "@tokovo/core";
 
@@ -342,32 +2590,43 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+
+// ...
+
+const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
-    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
-    const { opacity, translateY } = animation;
+    const { opacity, translateY, height, y } = layout;
 
     return (
         <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
-            backgroundColor: isMe ? "#3797F0" : "#262626", // Instagram Blue or Dark Grey
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 45,
+            right: isMe ? 45 : "auto",
+            height: height - 15, // Gap adjustment
+
+            backgroundColor: isMe ? "#3797F0" : "#262626",
             color: "white",
             padding: "30px 42px",
             borderRadius: 60,
             maxWidth: "70%",
             fontSize: 48,
             lineHeight: "60px",
-            marginBottom: 12,
             opacity,
-            transform: `translateY(${translateY}px)`
+            transform: `translateY(${translateY}px)`,
+            display: "flex",
+            alignItems: "center"
         }}>
             {msg.text}
         </div>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
-    const scrollY = layout?.scrollY || 0;
+const MessageList: React.FC<{ messages: any[]; layout?: LayoutState }> = ({ messages, layout }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
 
     return (
         <div style={{
@@ -376,18 +2635,19 @@ const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, la
             overflow: "hidden"
         }}>
             <div style={{
-                padding: "30px 45px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 15,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: contentHeight,
                 transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.3s ease-out",
-                minHeight: "100%",
-                justifyContent: "flex-end" // Instagram starts from bottom
+                transition: "transform 0.1s linear"
             }}>
-                {messages.map((msg: any) => (
-                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
-                ))}
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
             </div>
         </div>
     );
@@ -421,7 +2681,7 @@ const InputArea: React.FC = () => (
     </div>
 );
 
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
@@ -440,805 +2700,423 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
         </div>
     );
 };
-```
+````
 
-## File: packages/apps-instagram/package.json
-```json
-{
-    "name": "@tokovo/apps-instagram",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "react": "^18.0.0",
-        "immer": "^10.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "^18.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-```
-
-## File: packages/apps-instagram/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
-
-## File: packages/apps-whatsapp/src/index.ts
-```typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-```
-
-## File: packages/apps-whatsapp/src/types.ts
-```typescript
-export interface WhatsAppState {
-    // Add specific state if needed, for now using generic ConversationState from core
-}
-```
-
-## File: packages/apps-whatsapp/src/TypingBubble.tsx
-```typescript
+## File: packages/apps-instagram/src/views/feed/FeedView.tsx
+````typescript
 import React from "react";
+import { InstagramState, Post, StoryUser } from "../../types";
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
-export const TypingBubble: React.FC = () => {
-    return (
-        <div style={{
-            padding: "24px 36px",
-            marginLeft: 48,
-            marginBottom: 12,
-            backgroundColor: "#FFFFFF",
-            borderRadius: 48,
-            borderTopLeftRadius: 12,
-            alignSelf: "flex-start",
-            width: "fit-content",
-            boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            height: 66 // Match line height of text
-        }}>
-            <Dot delay={0} />
-            <Dot delay={0.2} />
-            <Dot delay={0.4} />
-        </div>
-    );
-};
+// --- Icons ---
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "#ed4956" : "none"} stroke={filled ? "#ed4956" : "white"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
 
-const Dot: React.FC<{ delay: number }> = ({ delay }) => (
-    <div style={{
-        width: 18,
-        height: 18,
-        backgroundColor: "#B1B1B1",
-        borderRadius: "50%",
-        animation: `typingBounce 1.4s infinite ease-in-out both`,
-        animationDelay: `${delay}s`
-    }}>
-        <style>{`
-            @keyframes typingBounce {
-                0%, 80%, 100% { transform: scale(0); }
-                40% { transform: scale(1); }
-            }
-        `}</style>
+const CommentIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+const InstagramLogo = () => (
+    <div style={{ fontFamily: "'Billabong', 'Grand Hotel', cursive", fontSize: 72, color: "white" }}>
+        Instagram
     </div>
 );
-```
 
-## File: packages/apps-whatsapp/README.md
-```markdown
-# @tokovo/apps-whatsapp
+const MessengerIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+        <path d="M15 10l-4 4-2-2-4 4" />
+    </svg>
+);
 
-WhatsApp clone app for Tokovo.
+// --- Components ---
 
-## Features
-- **Runtime**: Handles `MESSAGE_RECEIVED`, `TYPING_START`, `TYPING_END`.
-- **UI**: `WhatsappChatView` with high-fidelity styling, animations, and auto-scroll.
-```
+const StoryBubble: React.FC<{ user: StoryUser }> = ({ user }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", marginRight: 30 }}>
+        <div style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            padding: 4,
+            background: user.hasUnseen ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)" : "#555"
+        }}>
+            <div style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                border: "4px solid black",
+                backgroundImage: `url(${user.avatar})`,
+                backgroundSize: "cover",
+                backgroundColor: "#333"
+            }} />
+        </div>
+        <div style={{ color: "white", fontSize: 24, marginTop: 10, maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {user.username}
+        </div>
+    </div>
+);
 
-## File: packages/apps-whatsapp/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
+const PostItem: React.FC<{ post: Post }> = ({ post }) => (
+    <div style={{ marginBottom: 60 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", padding: "20px 30px" }}>
+            <div style={{
+                width: 70,
+                height: 70,
+                borderRadius: "50%",
+                backgroundImage: `url(${post.avatar})`,
+                backgroundSize: "cover",
+                backgroundColor: "#333",
+                marginRight: 20
+            }} />
+            <div style={{ flex: 1, color: "white", fontSize: 32, fontWeight: "600" }}>{post.username}</div>
+            <div style={{ color: "white", fontSize: 40 }}>...</div>
+        </div>
 
-## File: packages/core/src/engine.ts
-```typescript
-import { produce } from "immer";
-import { TimelineEvent, WorldState, DeviceState } from "./types";
+        {/* Image */}
+        <div style={{
+            width: "100%",
+            aspectRatio: "1/1",
+            backgroundColor: "#222",
+            backgroundImage: `url(${post.image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+        }} />
 
-export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
-export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+        {/* Actions */}
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 30px" }}>
+            <div style={{ display: "flex", gap: 40 }}>
+                <HeartIcon filled={post.liked} />
+                <CommentIcon />
+                <ShareIcon />
+            </div>
+            <BookmarkIcon filled={post.saved} />
+        </div>
 
-export const ReducerRegistry = {
-    deviceReducer: null as DeviceReducer | null,
-    appReducers: {} as Record<string, AppReducer>,
+        {/* Likes & Caption */}
+        <div style={{ padding: "0 30px" }}>
+            <div style={{ color: "white", fontSize: 32, fontWeight: "600", marginBottom: 10 }}>
+                {post.likes.toLocaleString()} likes
+            </div>
+            <div style={{ color: "white", fontSize: 32 }}>
+                <span style={{ fontWeight: "600", marginRight: 10 }}>{post.username}</span>
+                {post.caption}
+            </div>
+            <div style={{ color: "#888", fontSize: 28, marginTop: 10 }}>
+                View all {post.comments} comments
+            </div>
+        </div>
+    </div>
+);
 
-    registerDeviceReducer(reducer: DeviceReducer) {
-        this.deviceReducer = reducer;
-    },
-    registerAppReducer(appId: string, reducer: AppReducer) {
-        this.appReducers[appId] = reducer;
-    }
-};
-
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    const relevant = events.filter(e => e.at <= t);
-
-    return relevant.reduce((state, event) => {
-        return produce(state, draft => {
-            if (event.kind === "DEVICE") {
-                if (ReducerRegistry.deviceReducer) {
-                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-                }
-            }
-            if (event.kind === "APP") {
-                const reducer = ReducerRegistry.appReducers[event.appId];
-                reducer?.(draft, event);
-            }
-            if (event.kind === "CAMERA") {
-                draft.camera = event.view;
-            }
-        });
-    }, initial);
-}
-```
-
-## File: packages/core/src/index.ts
-```typescript
-export * from "./types";
-export * from "./engine";
-```
-
-## File: packages/core/package.json
-```json
-{
-    "name": "@tokovo/core",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "immer": "^10.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
-    }
-}
-```
-
-## File: packages/core/README.md
-```markdown
-# @tokovo/core
-
-Core logic for the Tokovo engine.
-
-## Features
-- **Engine**: `replay` function to compute world state from events.
-- **Types**: Core type definitions (`WorldState`, `TimelineEvent`, etc.).
-- **Registry**: `ReducerRegistry` for managing device and app reducers.
-```
-
-## File: packages/core/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
-
-## File: packages/devices/src/iphone16/profile.ts
-```typescript
-import { DeviceProfile } from "../types";
-
-export const iPhone16Profile: DeviceProfile = {
-    id: "iphone16",
-    dimensions: { width: 1290, height: 2796 },
-    statusBarHeight: 110,
-};
-```
-
-## File: packages/devices/src/pixel/profile.ts
-```typescript
-import { DeviceProfile } from "../types";
-
-export const PixelProfile: DeviceProfile = {
-    id: "pixel",
-    dimensions: {
-        width: 1080, // Pixel 7 Pro approx width
-        height: 2400, // Pixel 7 Pro approx height
-    },
-    statusBarHeight: 90, // Approx 30px * 3
-};
-```
-
-## File: packages/devices/src/types.ts
-```typescript
-export interface DeviceProfile {
-    id: string;
-    dimensions: { width: number; height: number };
-    statusBarHeight: number;
-}
-```
-
-## File: packages/devices/README.md
-```markdown
-# @tokovo/devices
-
-Device profiles and reducers.
-
-## Features
-- **Profiles**: `iPhone16Profile` with high-res assets.
-- **Components**: `iPhone16Frame`, `StatusBar`.
-- **Reducer**: `deviceReducer` for handling device events (LOCK, UNLOCK, OPEN_APP).
-```
-
-## File: packages/devices/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
-
-## File: packages/episodes/src/examples/android-test.json
-```json
-{
-    "initialWorld": {
-        "devices": {
-            "bob_phone": {
-                "id": "bob_phone",
-                "profileId": "pixel",
-                "isLocked": true,
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "other",
-                        "text": "Hey Bob!",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 10,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Alice",
-            "body": "Hey Bob!"
-        },
-        {
-            "at": 60,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 70,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        }
-    ]
-}
-```
-
-## File: packages/episodes/src/examples/instagram-test.json
-```json
-{
-    "id": "instagram-dm-test",
-    "title": "Instagram DM Test",
-    "durationInFrames": 300,
-    "fps": 30,
-    "width": 1080,
-    "height": 1920,
-    "initialState": {
-        "devices": {
-            "alice_phone": {
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_instagram",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "other",
-                        "text": "Yo! Did you see that post?",
-                        "at": -60,
-                        "liked": false
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "Yeah, crazy right?",
-                        "at": -30,
-                        "liked": true
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "camera": {
-            "type": "static",
-            "deviceId": "alice_phone"
-        }
-    },
-    "timeline": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "other"
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "other"
-        },
-        {
-            "at": 95,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "other",
-            "text": "We should go there next week!"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "Totally down. Let's book it."
-        }
-    ]
-}
-```
-
-## File: packages/episodes/package.json
-```json
-{
-    "name": "@tokovo/episodes",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
-    }
-}
-```
-
-## File: packages/episodes/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "resolveJsonModule": true
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
-
-## File: packages/renderer/src/index.ts
-```typescript
-export * from "./registry";
-export * from "./LayoutEngine";
-export * from "./DeviceFrame";
-export * from "./TokovoRenderer";
-```
-
-## File: packages/renderer/src/NotificationOverlay.tsx
-```typescript
-import React from "react";
-import { Notification } from "@tokovo/core";
-
-export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android" }> = ({ notifications = [], variant = "ios" }) => {
-    if (!notifications || notifications.length === 0) return null;
-
-    // Only show the latest notification for now
-    const latest = notifications[notifications.length - 1];
-
-    const isAndroid = variant === "android";
+export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
 
     return (
         <div style={{
-            position: "absolute",
-            top: isAndroid ? 40 : 20,
-            left: "50%",
-            transform: "translateX(-50%)",
-            width: "92%",
-            zIndex: 100,
-            pointerEvents: "none" // Let clicks pass through
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
         }}>
+            {/* Header */}
             <div style={{
-                backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
-                backdropFilter: "blur(20px)",
-                borderRadius: isAndroid ? 24 : 36,
-                padding: "30px 40px",
-                boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                height: 150,
                 display: "flex",
                 alignItems: "center",
-                gap: 30,
-                color: isAndroid ? "white" : "black",
-                animation: "slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1)"
+                justifyContent: "space-between",
+                padding: "0 30px",
+                marginTop: 60, // Status bar spacing
+                zIndex: 10,
+                backgroundColor: "black"
+            }}>
+                <InstagramLogo />
+                <div style={{ display: "flex", gap: 40 }}>
+                    <HeartIcon />
+                    <MessengerIcon />
+                </div>
+            </div>
+
+            {/* Scrollable Content */}
+            <div style={{
+                flex: 1,
+                overflow: "hidden",
+                position: "relative"
             }}>
                 <div style={{
-                    width: 100,
-                    height: 100,
-                    borderRadius: 20,
-                    backgroundColor: "#25D366", // WhatsApp Green
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    fontSize: 50,
-                    color: "white"
+                    transform: `translateY(-${scrollY}px)`,
+                    transition: "transform 0.1s linear"
                 }}>
-                    W
-                </div>
-                <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                        <span>{latest.title}</span>
-                        <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
+                    {/* Stories */}
+                    <div style={{
+                        display: "flex",
+                        padding: "20px 30px",
+                        borderBottom: "1px solid #222",
+                        marginBottom: 20,
+                        overflowX: "hidden" // Should be scrollable in real app, but fixed for video usually
+                    }}>
+                        {state.stories.users.map(user => (
+                            <StoryBubble key={user.username} user={user} />
+                        ))}
                     </div>
-                    <div style={{ fontSize: 36, opacity: 0.8 }}>
-                        {latest.body}
-                    </div>
+
+                    {/* Posts */}
+                    {state.feed.posts.map(post => (
+                        <PostItem key={post.id} post={post} />
+                    ))}
                 </div>
             </div>
-            <style>{`
-                @keyframes slideDown {
-                    from { transform: translateY(-150%); opacity: 0; }
-                    to { transform: translateY(0); opacity: 1; }
-                }
-            `}</style>
         </div>
     );
 };
-```
+````
 
-## File: packages/renderer/src/VisualDebugger.tsx
-```typescript
+## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
+````typescript
 import React from "react";
-import { WorldState } from "@tokovo/core";
+import { InstagramState, StoryUser } from "../../types";
+import { LayoutState, StoryLayoutState } from "@tokovo/core";
 
-export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+const CloseIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="1" />
+        <circle cx="19" cy="12" r="1" />
+        <circle cx="5" cy="12" r="1" />
+    </svg>
+);
+
+const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
+    <div style={{ display: "flex", gap: 8, padding: "20px 10px" }}>
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} style={{ flex: 1, height: 4, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{
+                    height: "100%",
+                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
+                    backgroundColor: "white"
+                }} />
+            </div>
+        ))}
+    </div>
+);
+// ... (Icons remain same)
+
+export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
+    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
+
+    // Fallback if no layout provided (shouldn't happen in new system)
+    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
+    // Or derive from layout if we stored user info there? 
+    // LayoutEngine stores IDs. We can look up the user/story from state using the ID in layout.
+    // For now, let's stick to state lookup for data, layout for position/timing.
+
+    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeIndex = storyLayout.activeStoryIndex;
+    const progress = storyLayout.storyProgress;
+    const activeStory = activeUser.stories[activeIndex];
+
+    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
     return (
         <div style={{
-            position: "absolute",
-            bottom: 50,
-            right: 50,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            color: "#0f0",
-            fontFamily: "monospace",
-            fontSize: 24,
-            padding: 20,
-            borderRadius: 10,
-            zIndex: 9999,
-            pointerEvents: "none",
-            maxWidth: 600
+            backgroundColor: "#111",
+            height: "100%",
+            color: "white",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden" // Important for transitions
         }}>
-            <div><strong>Frame:</strong> {t.toFixed(0)}</div>
-            <div><strong>Active App:</strong> {Object.values(world.devices)[0]?.foregroundAppId || "Home"}</div>
-            <div><strong>Events:</strong></div>
-            {/* We would need access to events here, but world state doesn't store history. 
-                Just showing state for now. */}
-            <div style={{ marginTop: 10, fontSize: 18, opacity: 0.8 }}>
-                Camera: {world.camera.type}
+            {/* Render all stories that have layout info (for transitions) */}
+            {storyLayout.storyLayouts.map(sl => {
+                const story = activeUser.stories[sl.index];
+                if (!story) return null;
+
+                return (
+                    <div key={story.id} style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: `url(${story.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        filter: "brightness(0.9)",
+                        opacity: sl.opacity,
+                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`,
+                        transition: "none" // Layout engine handles animation
+                    }} />
+                );
+            })}
+
+            {/* Overlay Content (UI doesn't transition, just stays on top) */}
+            <div style={{ position: "relative", zIndex: 10, paddingTop: 60, paddingLeft: 20, paddingRight: 20 }}>
+                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
+
+                <div style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
+                    <div style={{ width: 64, height: 64, borderRadius: "50%", backgroundImage: `url(${activeUser.avatar})`, backgroundSize: "cover", marginRight: 20 }} />
+                    <div style={{ fontSize: 28, fontWeight: "600", marginRight: 20 }}>{activeUser.username}</div>
+                    <div style={{ fontSize: 28, color: "rgba(255,255,255,0.7)" }}>12h</div>
+                    <div style={{ flex: 1 }} />
+                    <MoreIcon />
+                    <div style={{ width: 20 }} />
+                    <CloseIcon />
+                </div>
+            </div>
+
+            {/* Input / Reactions */}
+            <div style={{ marginTop: "auto", padding: "40px 30px", display: "flex", alignItems: "center", gap: 30, position: "relative", zIndex: 10 }}>
+                <div style={{
+                    flex: 1,
+                    height: 100,
+                    borderRadius: 50,
+                    border: "2px solid rgba(255,255,255,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 40px",
+                    fontSize: 32,
+                    color: "white"
+                }}>
+                    Send message
+                </div>
+                <HeartIcon />
+                <ShareIcon />
             </div>
         </div>
     );
 };
-```
 
-## File: packages/renderer/tsconfig.json
-```json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-```
+const HeartIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
 
-## File: .gitignore
-```
-# Dependencies
-node_modules
-.pnpm-store
+const ShareIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+````
 
-# Next.js
-.next
-out
-build
-dist
+## File: packages/apps-instagram/src/index.ts
+````typescript
+import { ReducerRegistry } from "@tokovo/core";
+import { instagramRuntime } from "./runtime";
 
-# Remotion
-.remotion
-render
+ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
 
-# Turbo
-.turbo
+export * from "./runtime";
+export * from "./ui";
+export * from "./types";
+````
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-*.env.*
+## File: packages/apps-instagram/src/runtime.ts
+````typescript
+import { WorldState, TimelineEvent } from "@tokovo/core";
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+import { initialInstagramState, InstagramState } from "./types";
 
-# OS
-.DS_Store
-Thumbs.db
+export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
+    if (event.kind !== "APP" || event.appId !== "app_instagram") return;
 
-# IDEs
-.vscode
-.idea
-*.swp
-*.swo
-```
-
-## File: .tool-versions
-```
-nodejs 25.2.0
-```
-
-## File: package.json
-```json
-{
-    "name": "tokovo-monorepo",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "build": "turbo run build",
-        "dev": "turbo run dev",
-        "lint": "turbo run lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
-    },
-    "devDependencies": {
-        "turbo": "latest",
-        "prettier": "latest"
-    },
-    "packageManager": "pnpm@9.0.0",
-    "engines": {
-        "node": ">=18"
+    // Initialize app state if missing
+    if (!draft.appState) {
+        draft.appState = {};
     }
-}
-```
-
-## File: pnpm-workspace.yaml
-```yaml
-packages:
-  - "apps/*"
-  - "packages/*"
-```
-
-## File: repomix.config.json
-```json
-{
-  "$schema": "https://repomix.com/schemas/latest/schema.json",
-  "input": {
-    "maxFileSize": 52428800
-  },
-  "output": {
-    "filePath": "tokovo.md",
-    "style": "markdown",
-    "parsableStyle": false,
-    "fileSummary": true,
-    "directoryStructure": true,
-    "files": true,
-    "removeComments": false,
-    "removeEmptyLines": false,
-    "compress": false,
-    "topFilesLength": 5,
-    "showLineNumbers": false,
-    "truncateBase64": false,
-    "copyToClipboard": false,
-    "includeFullDirectoryStructure": false,
-    "tokenCountTree": false,
-    "git": {
-      "sortByChanges": true,
-      "sortByChangesMaxCommits": 100,
-      "includeDiffs": false,
-      "includeLogs": false,
-      "includeLogsCount": 50
+    if (!draft.appState["app_instagram"]) {
+        draft.appState["app_instagram"] = initialInstagramState;
     }
-  },
-  "include": [],
-  "ignore": {
-    "useGitignore": true,
-    "useDotIgnore": true,
-    "useDefaultPatterns": true,
-    "customPatterns": [
-      "*.md"
-    ]
-  },
-  "security": {
-    "enableSecurityCheck": true
-  },
-  "tokenCount": {
-    "encoding": "o200k_base"
-  }
-}
-```
 
-## File: tsconfig.base.json
-```json
-{
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "jsx": "react-jsx",
-        "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true
+    const appState = draft.appState["app_instagram"] as InstagramState;
+
+    // Handle generic custom events
+    if (event.type === "CUSTOM") {
+        console.log(`[InstagramRuntime] Processing CUSTOM event: ${event.name}`, event.payload);
+        switch (event.name) {
+            case "NAVIGATE":
+                appState.currentView = event.payload.view;
+                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView}`);
+                break;
+            // Add other custom events here
+        }
+        return;
     }
-}
-```
 
-## File: turbo.json
-```json
-{
-    "$schema": "https://turbo.build/schema.json",
-    "tasks": {
-        "build": {
-            "dependsOn": [
-                "^build"
-            ],
-            "outputs": [
-                ".next/**",
-                "!.next/cache/**",
-                "dist/**"
-            ]
-        },
-        "lint": {},
-        "dev": {
-            "cache": false,
-            "persistent": true
+    // Legacy/Specific events (DM)
+    const { conversationId, type } = event as any; // Cast to access specific fields if needed
+
+    if (conversationId) {
+        // Ensure conversation exists
+        if (!draft.conversations[conversationId]) {
+            draft.conversations[conversationId] = {
+                id: conversationId,
+                messages: [],
+                typing: {}
+            };
+        }
+
+        const conversation = draft.conversations[conversationId];
+
+        switch (type) {
+            case "MESSAGE_RECEIVED":
+                conversation.messages.push({
+                    id: `msg_${Date.now()}_${Math.random()}`,
+                    from: event.from,
+                    text: event.text,
+                    at: event.at,
+                    liked: false // Instagram specific
+                });
+                break;
+
+            case "TYPING_START":
+                if (!conversation.typing) conversation.typing = {};
+                conversation.typing[event.from] = true;
+                break;
+
+            case "TYPING_END":
+                if (conversation.typing) {
+                    conversation.typing[event.from] = false;
+                }
+                break;
         }
     }
-}
-```
-
-## File: apps/video-runner/src/AndroidVideo.tsx
-```typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { PixelProfile } from "@tokovo/devices";
-import { androidEpisode } from "@tokovo/episodes";
-
-export const AndroidVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / PixelProfile.dimensions.width;
-    const scaleY = availableHeight / PixelProfile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: PixelProfile.dimensions.width,
-                height: PixelProfile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
-            </div>
-        </div>
-    );
 };
-```
+````
 
 ## File: packages/apps-whatsapp/package.json
-```json
+````json
 {
     "name": "@tokovo/apps-whatsapp",
     "version": "0.0.0",
@@ -1258,10 +3136,10 @@ export const AndroidVideo: React.FC = () => {
         "@types/react": "18.2.0"
     }
 }
-```
+````
 
 ## File: packages/devices/src/iphone16/Frame.tsx
-```typescript
+````typescript
 import React from "react";
 import { iPhone16Profile } from "./profile";
 
@@ -1306,10 +3184,10 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ childre
         </div>
     );
 };
-```
+````
 
 ## File: packages/devices/src/pixel/Frame.tsx
-```typescript
+````typescript
 import React from "react";
 import { PixelProfile } from "./profile";
 
@@ -1364,10 +3242,10 @@ export const PixelFrame: React.FC<{ children: React.ReactNode }> = ({ children }
         </div>
     );
 };
-```
+````
 
 ## File: packages/devices/src/reducer.ts
-```typescript
+````typescript
 import { produce } from "immer";
 import { TimelineEvent, DeviceState } from "@tokovo/core";
 import { ReducerRegistry } from "@tokovo/core";
@@ -1408,10 +3286,10 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 
 // Register itself
 ReducerRegistry.registerDeviceReducer(deviceReducer);
-```
+````
 
 ## File: packages/devices/src/StatusBar.tsx
-```typescript
+````typescript
 import React from "react";
 
 export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }> = ({ time = "9:41", variant = "ios" }) => {
@@ -1455,10 +3333,10 @@ export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }>
         </div>
     );
 };
-```
+````
 
 ## File: packages/devices/package.json
-```json
+````json
 {
     "name": "@tokovo/devices",
     "version": "0.0.0",
@@ -1478,10 +3356,96 @@ export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }>
         "@types/react": "18.2.0"
     }
 }
-```
+````
+
+## File: packages/renderer/src/NotificationOverlay.tsx
+````typescript
+import React from "react";
+import { Notification } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
+
+export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android"; layout?: LayoutState }> = ({ notifications = [], variant = "ios", layout }) => {
+    // If we have a Lockscreen layout, use it
+    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+
+    // If no layout provided or not lockscreen, we might still want to show notifications (e.g. heads-up)
+    // But for now, let's assume we only use this for lockscreen stacking or heads-up if layout engine supports it.
+    // If layout is missing, fallback to nothing or old behavior? 
+    // Let's stick to layout-driven. If no layout, no render.
+    if (!lockscreenLayout) return null;
+
+    const isAndroid = variant === "android";
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: "none",
+            zIndex: 100
+        }}>
+            {lockscreenLayout.notificationLayouts.map(nl => {
+                const notification = notifications.find(n => n.id === nl.id);
+                if (!notification) return null;
+
+                return (
+                    <div key={nl.id} style={{
+                        position: "absolute",
+                        top: nl.y,
+                        left: "50%",
+                        transform: `translateX(-50%) translateY(${nl.translateY}px)`,
+                        width: "92%",
+                        opacity: nl.opacity,
+                        height: nl.height
+                    }}>
+                        <div style={{
+                            backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
+                            backdropFilter: "blur(20px)",
+                            borderRadius: isAndroid ? 24 : 36,
+                            padding: "30px 40px",
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 30,
+                            color: isAndroid ? "white" : "black",
+                            height: "100%",
+                            boxSizing: "border-box"
+                        }}>
+                            <div style={{
+                                width: 100,
+                                height: 100,
+                                borderRadius: 20,
+                                backgroundColor: "#25D366", // WhatsApp Green (Mock)
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                fontSize: 50,
+                                color: "white"
+                            }}>
+                                W
+                            </div>
+                            <div style={{ flex: 1, overflow: "hidden" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                                    <span>{notification.title}</span>
+                                    <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
+                                </div>
+                                <div style={{ fontSize: 36, opacity: 0.8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {notification.body}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+````
 
 ## File: apps/video-runner/package.json
-```json
+````json
 {
     "name": "video-runner",
     "version": "0.0.0",
@@ -1514,10 +3478,10 @@ export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }>
         "typescript": "^5.0.0"
     }
 }
-```
+````
 
 ## File: packages/apps-whatsapp/src/runtime.ts
-```typescript
+````typescript
 import { produce } from "immer";
 import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
 
@@ -1553,10 +3517,10 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
 
 // Register itself
 ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
-```
+````
 
 ## File: packages/devices/src/index.ts
-```typescript
+````typescript
 export * from "./types";
 export * from "./iphone16/profile";
 export * from "./iphone16/Frame";
@@ -1564,10 +3528,198 @@ export * from "./pixel/profile";
 export * from "./pixel/Frame";
 export * from "./reducer";
 export * from "./StatusBar";
-```
+````
+
+## File: packages/episodes/src/examples/instagram-test.json
+````json
+{
+    "initialState": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "instagram_user",
+                        "text": "Hey! Did you see my new post?",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "currentView": "feed",
+                "feed": {
+                    "posts": [
+                        {
+                            "id": "p1",
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "image": "https://picsum.photos/seed/insta1/1080/1080",
+                            "caption": "Living my best life! 🌟 #blessed",
+                            "likes": 1234,
+                            "comments": 42,
+                            "liked": false,
+                            "saved": false
+                        },
+                        {
+                            "id": "p2",
+                            "username": "travel_blogger",
+                            "avatar": "https://i.pravatar.cc/150?u=travel",
+                            "image": "https://picsum.photos/seed/insta2/1080/1080",
+                            "caption": "Sunset vibes 🌅",
+                            "likes": 890,
+                            "comments": 12,
+                            "liked": true,
+                            "saved": true
+                        }
+                    ],
+                    "scrollPosition": 0
+                },
+                "stories": {
+                    "users": [
+                        {
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s1",
+                                    "image": "https://picsum.photos/seed/story1/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        },
+                        {
+                            "username": "friend_1",
+                            "avatar": "https://i.pravatar.cc/150?u=friend1",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s2",
+                                    "image": "https://picsum.photos/seed/story2/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notifications": {
+                    "items": []
+                }
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW",
+            "appId": "app_instagram"
+        }
+    },
+    "timeline": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "stories"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "feed"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "explore"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "reels"
+            }
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "notifications"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "profile"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "post"
+            }
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "dm"
+            }
+        },
+        {
+            "at": 260,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Wow, this app is huge!"
+        }
+    ]
+}
+````
 
 ## File: packages/episodes/src/examples/whatsapp-breakup-01.json
-```json
+````json
 {
     "initialWorld": {
         "devices": {
@@ -1650,10 +3802,10 @@ export * from "./StatusBar";
         }
     ]
 }
-```
+````
 
 ## File: packages/episodes/src/index.ts
-```typescript
+````typescript
 import exampleEpisode from "./examples/whatsapp-breakup-01.json";
 
 import androidEpisode from "./examples/android-test.json";
@@ -1662,10 +3814,10 @@ import instagramEpisode from "./examples/instagram-test.json";
 
 export * from "./schema";
 export { exampleEpisode, androidEpisode, instagramEpisode };
-```
+````
 
 ## File: packages/episodes/src/schema.ts
-```typescript
+````typescript
 import { z } from "zod";
 
 export const DeviceEventSchema = z.discriminatedUnion("type", [
@@ -1753,10 +3905,10 @@ export const EpisodeSchema = z.object({
     }),
     events: z.array(TimelineEventSchema),
 });
-```
+````
 
 ## File: packages/renderer/package.json
-```json
+````json
 {
     "name": "@tokovo/renderer",
     "version": "0.0.0",
@@ -1781,10 +3933,10 @@ export const EpisodeSchema = z.object({
         "@types/react-dom": "18.2.0"
     }
 }
-```
+````
 
 ## File: apps/video-runner/src/Root.tsx
-```typescript
+````typescript
 import React from "react";
 import { Composition } from "remotion";
 import { Video } from "./Video";
@@ -1821,104 +3973,71 @@ export const RemotionRoot: React.FC = () => {
         </>
     );
 };
-```
+````
 
-## File: packages/renderer/src/LayoutEngine.ts
-```typescript
-import { WorldState } from "@tokovo/core";
+## File: packages/apps-instagram/src/ui.tsx
+````typescript
+import React from "react";
+import { WorldState, LayoutState } from "@tokovo/core";
+import { InstagramState } from "./types";
+import { InstagramChatView } from "./views/dm/InstagramChatView";
+import { FeedView } from "./views/feed/FeedView";
+import { StoriesView } from "./views/stories/StoriesView";
+import { ProfileView } from "./views/profile/ProfileView";
+import { ExploreView } from "./views/explore/ExploreView";
+import { NotificationsView } from "./views/notifications/NotificationsView";
+import { ReelsView } from "./views/reels/ReelsView";
+import { PostView } from "./views/post/PostView";
+import { BottomNav } from "./views/BottomNav";
 
-export interface LayoutState {
-    scrollToBottom: boolean;
-    scrollY: number;
-    messageAnimations: Record<string, { opacity: number; translateY: number }>;
-}
+export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
+    const appState = world.appState?.["app_instagram"] as InstagramState;
+    const currentView = appState?.currentView || "dm";
 
-export function computeLayout(world: WorldState, t: number = 0): LayoutState {
-    const layout: LayoutState = {
-        scrollToBottom: true,
-        scrollY: 0,
-        messageAnimations: {}
+    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
+
+    // Views that show the bottom navigation
+    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
+
+    const renderView = () => {
+        switch (currentView) {
+            case "dm":
+                return <InstagramChatView world={world} t={t} layout={layout} />;
+            case "feed":
+                return <FeedView state={appState} layout={layout} />;
+            case "stories":
+                return <StoriesView state={appState} t={t} layout={layout} />;
+            case "profile":
+                return <ProfileView state={appState} />;
+            case "post":
+                return <PostView state={appState} />;
+            case "explore":
+                return <ExploreView state={appState} />;
+            case "notifications":
+                return <NotificationsView state={appState} />;
+            case "reels":
+                return <ReelsView state={appState} />;
+            default:
+                return <InstagramChatView world={world} t={t} layout={layout} />;
+        }
     };
 
-    // Calculate message animations
-    let totalHeight = 0;
-    const messageHeights: Record<string, number> = {}; // Mock heights for now, ideally measured
-
-    for (const convId in world.conversations) {
-        const conversation = world.conversations[convId];
-        for (const msg of conversation.messages) {
-            const age = t - msg.at;
-            // Animation logic: Fade in over 10 frames, slide up from 60px
-            const opacity = Math.min(Math.max(age / 10, 0), 1);
-            const translateY = Math.max(60 - age * 6, 0);
-
-            layout.messageAnimations[msg.id] = { opacity, translateY };
-
-            // Estimate height (mock) - in real implementation, this needs measureText or fixed heights
-            const estimatedHeight = 150 + (msg.text?.length || 0) * 2;
-            messageHeights[msg.id] = estimatedHeight;
-
-            if (age >= 0) {
-                totalHeight += estimatedHeight + 20; // 20px gap
-            }
-        }
-    }
-
-    // Smooth scroll logic
-    // Target scroll is totalHeight - viewportHeight (approx 2000 for iPhone)
-    // We want to scroll to the bottom if new messages appear
-    const viewportHeight = 2000;
-    const targetScroll = Math.max(0, totalHeight - viewportHeight + 300); // +300 padding
-
-    // Simple linear interpolation for smoothness, or just snap for now if t is large
-    // For a real spring, we'd need previous state, but here we are pure function of t.
-    // So we make scroll dependent on the latest message timestamp.
-
-    // Find latest message time
-    let lastMsgTime = 0;
-    for (const convId in world.conversations) {
-        for (const msg of world.conversations[convId].messages) {
-            if (msg.at > lastMsgTime && msg.at <= t) lastMsgTime = msg.at;
-        }
-    }
-
-    const timeSinceLastMsg = t - lastMsgTime;
-    // Scroll animation duration = 20 frames
-    const scrollProgress = Math.min(timeSinceLastMsg / 20, 1);
-
-    // This is a simplification. Ideally we interpolate from "previous target" to "current target".
-    // Since we don't have previous state, we can assume the "previous target" was valid at lastMsgTime - 1.
-    // For MVP Phase 2, we will just output the targetScroll. 
-    // The UI component can use CSS transitions for the actual smooth visual if needed, 
-    // OR we can implement a deterministic scroll function here if we knew the history.
-
-    layout.scrollY = targetScroll;
-
-    return layout;
-}
-```
-
-## File: packages/renderer/src/registry.ts
-```typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
-import { InstagramChatView } from "@tokovo/apps-instagram";
-
-export const AppRegistry = {
-    views: {
-        "app_whatsapp": WhatsappChatView,
-        "app_instagram": InstagramChatView
-    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: any }>>,
-
-    getView(appId: string) {
-        return this.views[appId];
-    }
+    return (
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                {renderView()}
+            </div>
+            {showBottomNav && <BottomNav currentView={currentView} />}
+        </div>
+    );
 };
-```
+
+// Re-export specific views if needed externally, but InstagramApp is the main entry
+export { InstagramChatView };
+````
 
 ## File: apps/video-runner/src/Video.tsx
-```typescript
+````typescript
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { replay, WorldState } from "@tokovo/core";
@@ -1964,61 +4083,10 @@ export const Video: React.FC = () => {
         </div>
     );
 };
-```
-
-## File: packages/core/src/types.ts
-```typescript
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-
-export interface Notification {
-    id: string;
-    appId: string;
-    title: string;
-    body: string;
-    at: number;
-}
-
-export interface DeviceState {
-    id: string; // The instance ID (e.g., "alice_phone")
-    profileId: string; // The hardware profile ID (e.g., "iphone16")
-    isLocked: boolean;
-    foregroundAppId?: string;
-    notifications: Notification[];
-    sound?: {
-        activeSoundId?: string;
-    };
-}
-
-export interface ConversationState {
-    id: ConversationId;
-    messages: any[]; // To be defined more specifically if needed
-    typing?: Record<string, boolean>;
-}
-
-export interface CameraViewConfig {
-    type: "APP_VIEW"; // For MVP
-    appId?: AppId;
-}
-
-export interface WorldState {
-    devices: Record<DeviceId, DeviceState>;
-    conversations: Record<ConversationId, ConversationState>;
-    camera: CameraViewConfig;
-}
-
-// Event Union
-export type TimelineEvent =
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
-```
+````
 
 ## File: packages/renderer/src/DeviceFrame.tsx
-```typescript
+````typescript
 import React from "react";
 import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
 import { iPhone16Profile, PixelProfile } from "@tokovo/devices"; // Import profiles to look them up
@@ -2058,36 +4126,40 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
                 }}>
                     <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
 
-                    {/* Notifications Stack */}
+                    {/* Notifications are now handled by NotificationOverlay via LayoutEngine */}
                     <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                        {notifications?.map((notif) => (
-                            <div key={notif.id} style={{
-                                backgroundColor: "rgba(255,255,255,0.2)",
-                                backdropFilter: "blur(40px)",
-                                borderRadius: 42,
-                                padding: "36px",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 12
-                            }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 39, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
-                                    <span>{notif.appId === "app_whatsapp" ? "WhatsApp" : notif.appId}</span>
-                                    <span style={{ fontWeight: 400, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>now</span>
-                                </div>
-                                <div style={{ fontSize: 42, fontWeight: 600 }}>{notif.title}</div>
-                                <div style={{ fontSize: 42 }}>{notif.body}</div>
-                            </div>
-                        ))}
+                        {/* Placeholder for future lock screen widgets if needed */}
                     </div>
                 </div>
             )}
         </FrameComponent>
     );
 };
-```
+````
+
+## File: packages/renderer/src/registry.ts
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { InstagramApp } from "@tokovo/apps-instagram";
+
+import { LayoutState } from "./layout/types";
+
+export const AppRegistry = {
+    views: {
+        "app_whatsapp": WhatsappChatView,
+        "app_instagram": InstagramApp
+    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState }>>,
+
+    getView(appId: string) {
+        return this.views[appId];
+    }
+};
+````
 
 ## File: packages/apps-whatsapp/src/ui.tsx
-```typescript
+````typescript
 import React, { useEffect, useRef } from "react";
 import { WorldState } from "@tokovo/core";
 import { TypingBubble } from "./TypingBubble";
@@ -2172,29 +4244,37 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
-    // Animation logic from layout engine
-    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
-    const { opacity, translateY } = animation;
+// ...
+
+const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, height, y } = layout;
 
     return (
         <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 48,
+            right: isMe ? 48 : "auto",
+            height: height - 20, // Subtract internal padding/gap if needed, or just use height
+            // Actually height from layout includes gap? No, layout engine adds gap to currentY.
+            // height is the bubble height.
+
             backgroundColor: isMe ? "#DCF8C6" : "#FFFFFF",
-            padding: "24px 36px", // 8*3, 12*3
-            borderRadius: 48, // 16*3
+            padding: "24px 36px",
+            borderRadius: 48,
             borderTopLeftRadius: !isMe ? 12 : 48,
             borderTopRightRadius: isMe ? 12 : 48,
             maxWidth: "75%",
-            fontSize: 51, // 17*3
-            lineHeight: "66px", // 22*3
+            fontSize: 51,
+            lineHeight: "66px",
             boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
-            position: "relative",
-            marginBottom: 12,
             opacity,
-            transform: `translateY(${translateY}px)`
+            transform: `translateY(${translateY}px)`,
+            display: "flex",
+            flexDirection: "column"
         }}>
             <div>{msg.text}</div>
             <div style={{
@@ -2203,40 +4283,48 @@ const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) =>
                 alignItems: "center",
                 gap: 12,
                 marginTop: 6,
-                fontSize: 33, // 11*3
+                fontSize: 33,
                 color: "rgba(0,0,0,0.45)"
             }}>
-                <span>10:42</span> {/* Mock time for now */}
+                <span>10:42</span>
                 {isMe && <CheckIcon />}
             </div>
         </div>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
-    const scrollY = layout?.scrollY || 0;
+const MessageList: React.FC<{ messages: any[]; layout?: LayoutState; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
 
     return (
         <div style={{
             flex: 1,
             position: "relative",
-            overflow: "hidden", // Hide scrollbar, we control position manually
-            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", // WhatsApp Doodle background
+            overflow: "hidden",
+            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
             backgroundSize: "cover"
         }}>
             <div style={{
-                padding: "30px 48px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: contentHeight, // Set height to allow scrolling if we were using native scroll, but we use transform
                 transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.3s ease-out", // Smooth visual transition if scrollY jumps
-                minHeight: "100%"
+                transition: "transform 0.1s linear", // Layout engine handles easing? Or we do it here?
+                // Spec says "scrollEasingDuration" in config. Layout engine computes target scrollY?
+                // If layout engine returns instantaneous scrollY, we might want CSS transition.
+                // But layout engine might return interpolated scrollY.
+                // Let's assume layout engine returns the frame-perfect scrollY.
             }}>
-                {messages.map((msg: any) => (
-                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
-                ))}
-                {isTyping && <TypingBubble />}
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
+                {/* Typing indicator would also need layout info */}
             </div>
         </div>
     );
@@ -2309,7 +4397,7 @@ export const WhatsApp = {
     InputArea
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
@@ -2327,60 +4415,423 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
         </WhatsApp.Root>
     );
 };
-```
+````
+
+## File: packages/core/src/types.ts
+````typescript
+export type DeviceId = string;
+export type AppId = string;
+export type ConversationId = string;
+
+export interface Notification {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    at: number;
+}
+
+export interface DeviceState {
+    id: string; // The instance ID (e.g., "alice_phone")
+    profileId: string; // The hardware profile ID (e.g., "iphone16")
+    isLocked: boolean;
+    foregroundAppId?: string;
+    notifications: Notification[];
+    sound?: {
+        activeSoundId?: string;
+    };
+}
+
+export interface ConversationState {
+    id: ConversationId;
+    messages: any[]; // To be defined more specifically if needed
+    typing?: Record<string, boolean>;
+}
+
+export interface CameraViewConfig {
+    type: "APP_VIEW" | "TRANSITION"; // Updated to include TRANSITION
+    appId?: AppId;
+}
+
+export interface WorldState {
+    devices: Record<DeviceId, DeviceState>;
+    conversations: Record<ConversationId, ConversationState>;
+    appState: Record<AppId, any>; // Generic state for apps (e.g. Instagram feed, stories)
+    camera: CameraViewConfig;
+}
+
+// Event Union
+export type TimelineEvent =
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
+
+// --- Layout System Types ---
+
+export type ViewKind =
+    | "CHAT"
+    | "FEED"
+    | "STORY"
+    | "LOCKSCREEN"
+    | "TRANSITION";
+
+export interface LayoutContext {
+    world: WorldState;
+    t: number; // current frame
+    activeDeviceId: string;
+    activeAppId: string;
+    viewKind: ViewKind;
+
+    // View-specific selectors
+    activeConversationId?: string;   // CHAT
+    activeFeedId?: string;           // FEED (e.g. timeline id)
+    activeStoryId?: string;          // STORY (e.g. story reel id)
+
+    viewportWidth: number;
+    viewportHeight: number;
+
+    // Optional configuration overrides
+    config?: Partial<LayoutConfig>;
+}
+
+// --- LayoutConfig ---
+
+export interface LayoutConfig {
+    // Global-ish things
+    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
+
+    // Chat-specific
+    chat: ChatLayoutConfig;
+
+    // Feed-specific
+    feed: FeedLayoutConfig;
+
+    // Story-specific
+    story: StoryLayoutConfig;
+
+    // Lock screen
+    lockscreen: LockscreenLayoutConfig;
+
+    // Transitions
+    transition: TransitionLayoutConfig;
+}
+
+export interface ChatLayoutConfig {
+    bubbleWidth: number;
+    baseBubbleHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    lockToBottom: boolean;
+}
+
+export interface FeedLayoutConfig {
+    cardWidth: number;
+    baseCardHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    // For variable-height posts, same trick as chat:
+    charsPerLine: number;
+    lineHeight: number;
+
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    startAtTop: boolean;      // typical feed behaviour
+    autoScroll?: boolean;     // for cinematic auto-scroll episodes
+}
+
+export interface StoryLayoutConfig {
+    // Each story = full-screen page
+    defaultStoryDuration: number; // in frames
+    progressBarHeight: number;
+    storyGap: number;             // for 3D-ish page stack if needed
+
+    // Animation
+    storyTransitionDuration: number; // frames between stories
+}
+
+export interface LockscreenLayoutConfig {
+    topPadding: number;
+    notificationGap: number;
+    notificationWidth: number;
+    baseNotificationHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+
+    stackMaxNotifications: number; // older ones collapsed/hidden
+    appearDuration: number;
+}
+
+export interface TransitionLayoutConfig {
+    // Device position in composition
+    defaultScale: number;
+    zoomedScale: number;
+    panDuration: number;
+    zoomDuration: number;
+
+    // Optionally, per-transition presets (open app, unlock, etc.)
+}
+
+// --- LayoutState ---
+
+export type LayoutState =
+    | ChatLayoutState
+    | FeedLayoutState
+    | StoryLayoutState
+    | LockscreenLayoutState
+    | TransitionLayoutState;
+
+export interface BaseLayoutState {
+    kind: ViewKind;
+}
+
+// ChatLayoutState
+
+export interface ChatLayoutState extends BaseLayoutState {
+    kind: "CHAT";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    messageLayouts: Record<string, ChatMessageLayout>;
+    typingLayout?: TypingLayout | null;
+    meta: ChatLayoutMeta;
+}
+
+export interface ChatMessageLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+}
+
+export interface TypingLayout {
+    y: number;
+    height: number;
+    opacity: number;
+}
+
+export interface ChatLayoutMeta {
+    lastMessageId?: string;
+}
+
+// FeedLayoutState
+
+export interface FeedLayoutState extends BaseLayoutState {
+    kind: "FEED";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    itemLayouts: Record<string, FeedItemLayout>;
+    meta: FeedLayoutMeta;
+}
+
+export interface FeedItemLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+    scale: number;   // for subtle parallax / entry
+}
+
+export interface FeedLayoutMeta {
+    firstVisibleItemId?: string;
+    lastVisibleItemId?: string;
+    focusedItemId?: string; // for cinematic highlight
+}
+
+// StoryLayoutState
+
+export interface StoryLayoutState extends BaseLayoutState {
+    kind: "STORY";
+    activeStoryIndex: number;
+    storyCount: number;
+    storyProgress: number; // 0..1 within current story
+    storyLayouts: StoryItemLayout[];
+}
+
+export interface StoryItemLayout {
+    id: string;
+    index: number;
+    // For 3D card stack / page-motion effects:
+    translateX: number;
+    translateY: number;
+    scale: number;
+    opacity: number;
+}
+
+// LockscreenLayoutState
+
+export interface LockscreenLayoutState extends BaseLayoutState {
+    kind: "LOCKSCREEN";
+    notificationLayouts: NotificationLayout[];
+    meta: LockscreenLayoutMeta;
+}
+
+export interface NotificationLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+}
+
+export interface LockscreenLayoutMeta {
+    // Add any meta fields if needed
+}
+
+// TransitionLayoutState
+
+export interface TransitionLayoutState extends BaseLayoutState {
+    kind: "TRANSITION";
+    // These values are for the outer DeviceFrame / TokovoRenderer
+    deviceTranslateX: number;
+    deviceTranslateY: number;
+    deviceScale: number;
+    deviceRotation: number;
+    overlayOpacity: number;
+    meta: TransitionLayoutMeta;
+}
+
+export interface TransitionLayoutMeta {
+    // Add any meta fields if needed
+}
+````
 
 ## File: packages/renderer/src/TokovoRenderer.tsx
-```typescript
+````typescript
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
-import { computeLayout } from "./LayoutEngine";
+import { computeLayout } from "./layout";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { VisualDebugger } from "./VisualDebugger";
 import { Audio, staticFile } from "remotion";
+import { ViewKind, LayoutContext } from "./layout/types";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
 
 export const TokovoRenderer: React.FC<{ world: WorldState; t: number; debug?: boolean }> = ({ world, t, debug }) => {
     // 1. Determine active device & app
-    // For MVP, we assume single device "alice_phone" or "bob_phone"
     const deviceId = Object.keys(world.devices)[0];
     const device = world.devices[deviceId];
     const appId = device?.foregroundAppId;
 
-    // 2. Compute Layout
-    const layout = computeLayout(world, t);
+    // 2. Determine ViewKind
+    let viewKind: ViewKind = "TRANSITION";
+    let activeConversationId: string | undefined;
+    let activeStoryId: string | undefined;
 
-    // 3. Select App View
+    if (device.isLocked) {
+        viewKind = "LOCKSCREEN";
+    } else if (appId) {
+        if (appId === "app_whatsapp") {
+            viewKind = "CHAT";
+            // Heuristic: active conversation is the one receiving events or just the first one
+            // Ideally this should be in appState
+            activeConversationId = Object.keys(world.conversations)[0];
+        } else if (appId === "app_instagram") {
+            const appState = world.appState?.["app_instagram"];
+            const currentView = appState?.currentView || "feed";
+
+            switch (currentView) {
+                case "dm":
+                    viewKind = "CHAT";
+                    activeConversationId = Object.keys(world.conversations)[0]; // Simplified
+                    break;
+                case "stories":
+                    viewKind = "STORY";
+                    activeStoryId = appState?.stories?.activeStoryId;
+                    break;
+                case "feed":
+                case "explore":
+                case "profile":
+                case "notifications":
+                case "reels":
+                case "post":
+                    viewKind = "FEED"; // Most of these are feed-like lists
+                    break;
+                default:
+                    viewKind = "FEED";
+            }
+        }
+    }
+
+    // 3. Compute Layout
+    // Select profile for dimensions
+    const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+
+    const layoutContext: LayoutContext = {
+        world,
+        t,
+        activeDeviceId: deviceId,
+        activeAppId: appId || "",
+        viewKind,
+        activeConversationId,
+        activeStoryId,
+        viewportWidth: profile.dimensions.width,
+        viewportHeight: profile.dimensions.height
+    };
+
+    const layout = computeLayout(layoutContext);
+
+    // 4. Select App View
     let AppView = null;
     if (appId && AppRegistry.views[appId]) {
         AppView = AppRegistry.views[appId];
     }
 
-    // 4. Determine Device Variant (simple heuristic for now)
+    // 5. Determine Device Variant
     const isPixel = device.profileId.includes("pixel");
     const variant = isPixel ? "android" : "ios";
 
+    // 6. Apply Device Transforms (from TransitionLayoutState or default)
+    let deviceStyle: React.CSSProperties = {
+        transformOrigin: "center center",
+        transition: "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)" // Smooth default transition
+    };
+
+    if (layout.kind === "TRANSITION") {
+        const transLayout = layout as any; // Cast to TransitionLayoutState (or use type guard)
+        // Note: We need to import TransitionLayoutState to cast properly, or just access props if we trust it.
+        // Better to be safe.
+        const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+
+        deviceStyle.transform = `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`;
+    }
+
     return (
         <div style={{ width: "100%", height: "100%", position: "relative" }}>
-            {/* Audio Layer - Placeholder logic. 
-                In a real implementation, we'd map audio events to <Audio /> components with startFrom/endAt 
-                or use an AudioContext manager. For now, we assume a simple sound effect if triggered.
-            */}
-            {/* <Audio src={staticFile("assets/sounds/typing.mp3")} /> */}
+            <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                <DeviceFrame profileId={device.profileId} variant={variant}>
+                    {AppView && !device.isLocked ? (
+                        <AppView world={world} t={t} layout={layout} />
+                    ) : (
+                        <div style={{ flex: 1, backgroundColor: "black" }} /> // Lock screen / Home
+                    )}
 
-            <DeviceFrame profileId={device.profileId} variant={variant}>
-                {AppView ? (
-                    <AppView world={world} t={t} layout={layout} />
-                ) : (
-                    <div style={{ flex: 1, backgroundColor: "black" }} /> // Lock screen / Home
-                )}
-
-                {/* Overlays */}
-                <NotificationOverlay notifications={device?.notifications} variant={variant} />
-            </DeviceFrame>
+                    {/* Overlays */}
+                    <NotificationOverlay notifications={device?.notifications} variant={variant} layout={layout} />
+                </DeviceFrame>
+            </div>
 
             {debug && <VisualDebugger world={world} t={t} />}
         </div>
     );
 };
-```
+````

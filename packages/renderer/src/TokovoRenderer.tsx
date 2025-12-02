@@ -2,12 +2,12 @@ import React from "react";
 import { WorldState } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
-import { computeLayout } from "./LayoutEngine";
+import { computeLayout } from "./layout";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { VisualDebugger } from "./VisualDebugger";
 import { Audio, staticFile } from "remotion";
-import { ViewKind, LayoutContext } from "./types";
-import { iPhone16Profile } from "@tokovo/devices";
+import { ViewKind, LayoutContext } from "./layout/types";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
 
 export const TokovoRenderer: React.FC<{ world: WorldState; t: number; debug?: boolean }> = ({ world, t, debug }) => {
     // 1. Determine active device & app
@@ -56,6 +56,9 @@ export const TokovoRenderer: React.FC<{ world: WorldState; t: number; debug?: bo
     }
 
     // 3. Compute Layout
+    // Select profile for dimensions
+    const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+
     const layoutContext: LayoutContext = {
         world,
         t,
@@ -64,8 +67,8 @@ export const TokovoRenderer: React.FC<{ world: WorldState; t: number; debug?: bo
         viewKind,
         activeConversationId,
         activeStoryId,
-        viewportWidth: iPhone16Profile.dimensions.width,
-        viewportHeight: iPhone16Profile.dimensions.height
+        viewportWidth: profile.dimensions.width,
+        viewportHeight: profile.dimensions.height
     };
 
     const layout = computeLayout(layoutContext);

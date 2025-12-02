@@ -1,6 +1,7 @@
 import React from "react";
 import { InstagramState } from "../../types";
 
+
 const GridIcon = ({ active }: { active: boolean }) => (
     <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <rect x="3" y="3" width="7" height="7" />
@@ -39,7 +40,9 @@ const PlusIcon = () => (
     </svg>
 );
 
-export const ProfileView: React.FC<{ state: InstagramState }> = ({ state }) => {
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
+
+export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
     // Mock user data for now
     const user = {
         username: "instagram_user",
@@ -51,100 +54,113 @@ export const ProfileView: React.FC<{ state: InstagramState }> = ({ state }) => {
         avatar: "" // TODO: Add default avatar
     };
 
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
+
     return (
         <div style={{
             backgroundColor: "black",
             height: "100%",
             color: "white",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            overflow: "hidden", // Hide native scroll
+            position: "relative"
         }}>
-            {/* Header */}
+            {/* Scrollable Content Container */}
             <div style={{
-                height: 120,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 30px",
-                marginTop: 60,
-                zIndex: 10
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.1s linear", // Layout engine drives this
+                width: "100%",
+                minHeight: "100%"
             }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <LockIcon />
-                    <div style={{ fontSize: 42, fontWeight: "bold" }}>{user.username}</div>
+                {/* Header */}
+                <div style={{
+                    height: 120,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 30px",
+                    marginTop: 60,
+                    zIndex: 10
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <LockIcon />
+                        <div style={{ fontSize: 42, fontWeight: "bold" }}>{user.username}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 40 }}>
+                        <PlusIcon />
+                        <MenuIcon />
+                    </div>
                 </div>
-                <div style={{ display: "flex", gap: 40 }}>
-                    <PlusIcon />
-                    <MenuIcon />
-                </div>
-            </div>
 
-            {/* Profile Info */}
-            <div style={{ padding: "20px 30px" }}>
-                <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
-                    <div style={{
-                        width: 180,
-                        height: 180,
-                        borderRadius: "50%",
-                        backgroundColor: "#333",
-                        backgroundImage: `url(${user.avatar})`,
-                        backgroundSize: "cover",
-                        marginRight: 60
-                    }} />
-                    <div style={{ flex: 1, display: "flex", justifyContent: "space-between", paddingRight: 20 }}>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                            <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.posts}</div>
-                            <div style={{ fontSize: 28 }}>Posts</div>
+                {/* Profile Info */}
+                <div style={{ padding: "20px 30px" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+                        <div style={{
+                            width: 180,
+                            height: 180,
+                            borderRadius: "50%",
+                            backgroundColor: "#333",
+                            backgroundImage: `url(${user.avatar})`,
+                            backgroundSize: "cover",
+                            marginRight: 60
+                        }} />
+                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", paddingRight: 20 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.posts}</div>
+                                <div style={{ fontSize: 28 }}>Posts</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.followers}</div>
+                                <div style={{ fontSize: 28 }}>Followers</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.following}</div>
+                                <div style={{ fontSize: 28 }}>Following</div>
+                            </div>
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                            <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.followers}</div>
-                            <div style={{ fontSize: 28 }}>Followers</div>
+                    </div>
+
+                    <div style={{ marginBottom: 30 }}>
+                        <div style={{ fontSize: 32, fontWeight: "bold", marginBottom: 5 }}>{user.name}</div>
+                        <div style={{ fontSize: 30, whiteSpace: "pre-wrap", lineHeight: "1.3" }}>{user.bio}</div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: "flex", gap: 20, marginBottom: 40 }}>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Edit profile
                         </div>
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                            <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.following}</div>
-                            <div style={{ fontSize: 28 }}>Following</div>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Share profile
                         </div>
                     </div>
                 </div>
 
-                <div style={{ marginBottom: 30 }}>
-                    <div style={{ fontSize: 32, fontWeight: "bold", marginBottom: 5 }}>{user.name}</div>
-                    <div style={{ fontSize: 30, whiteSpace: "pre-wrap", lineHeight: "1.3" }}>{user.bio}</div>
-                </div>
-
-                {/* Buttons */}
-                <div style={{ display: "flex", gap: 20, marginBottom: 40 }}>
-                    <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
-                        Edit profile
+                {/* Tabs */}
+                <div style={{ display: "flex", borderTop: "1px solid #222", height: 100 }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "2px solid white" }}>
+                        <GridIcon active={true} />
                     </div>
-                    <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
-                        Share profile
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <TaggedIcon active={false} />
                     </div>
                 </div>
-            </div>
 
-            {/* Tabs */}
-            <div style={{ display: "flex", borderTop: "1px solid #222", height: 100 }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "2px solid white" }}>
-                    <GridIcon active={true} />
+                {/* Grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {state.feed.posts.map(post => (
+                        <div key={post.id} style={{
+                            width: "calc(33.33% - 2px)",
+                            aspectRatio: "1/1",
+                            backgroundColor: "#222",
+                            backgroundImage: `url(${post.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center"
+                        }} />
+                    ))}
                 </div>
-                <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <TaggedIcon active={false} />
-                </div>
-            </div>
-
-            {/* Grid */}
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                {state.feed.posts.map(post => (
-                    <div key={post.id} style={{
-                        width: "calc(33.33% - 2px)",
-                        aspectRatio: "1/1",
-                        backgroundColor: "#222",
-                        backgroundImage: `url(${post.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center"
-                    }} />
-                ))}
             </div>
         </div>
     );

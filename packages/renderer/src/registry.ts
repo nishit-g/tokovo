@@ -3,7 +3,7 @@ import { WorldState } from "@tokovo/core";
 import { WhatsappChatView } from "@tokovo/apps-whatsapp";
 import { InstagramApp } from "@tokovo/apps-instagram";
 
-import { LayoutState } from "./types";
+import { LayoutState } from "./layout/types";
 
 export const AppRegistry = {
     views: {

@@ -1,4 +1,4 @@
 export * from "./registry";
-export * from "./LayoutEngine";
+export * from "./layout";
 export * from "./DeviceFrame";
 export * from "./TokovoRenderer";
