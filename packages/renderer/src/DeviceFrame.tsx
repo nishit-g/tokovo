@@ -16,8 +16,7 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
     }
 
     return (
-        <FrameComponent {...frameProps}>
-            <StatusBar time="10:41" variant={variant} />
+        <FrameComponent {...frameProps} statusBar={<StatusBar time="10:41" variant={variant} />}>
             {children}
             {isLocked && (
                 <div style={{

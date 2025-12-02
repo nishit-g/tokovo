@@ -22,16 +22,28 @@ export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutSta
         const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
 
         // Animation: Slide in
-        // Assuming we have an 'at' time for notifications, but the type might not have it.
-        // If not, we just show them.
-        // Let's assume we want them to appear instantly for now.
+        const appearAt = notification.at || 0;
+        const timeSinceAppear = t - appearAt;
+
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear < lockConfig.appearDuration) {
+            const progress = Math.max(0, timeSinceAppear / lockConfig.appearDuration);
+            // Cubic bezier approximation for ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            opacity = ease;
+            // Slide down from -50px
+            translateY = -50 * (1 - ease);
+        }
 
         notificationLayouts.push({
             id: notification.id,
             y: currentY,
             height,
-            opacity: 1,
-            translateY: 0
+            opacity,
+            translateY
         });
 
         currentY += height + lockConfig.notificationGap;

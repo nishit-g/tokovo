@@ -110,7 +110,7 @@ const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg,
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: LayoutState }> = ({ messages, layout }) => {
+const MessageList: React.FC<{ messages: any[]; layout?: ChatLayoutState }> = ({ messages, layout }) => {
     const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
     const scrollY = chatLayout?.scrollY || 0;
     const contentHeight = chatLayout?.contentHeight || "100%";
@@ -168,7 +168,7 @@ const InputArea: React.FC = () => (
     </div>
 );
 
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];

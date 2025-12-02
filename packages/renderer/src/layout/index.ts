@@ -10,8 +10,16 @@ export * from "./types";
 export * from "./config";
 
 export function computeLayout(ctx: LayoutContext): LayoutState {
-    // Merge provided config with defaults
-    const config = { ...defaultLayoutConfig, ...ctx.config };
+    // Deep merge provided config with defaults
+    const config = {
+        ...defaultLayoutConfig,
+        ...ctx.config,
+        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
+        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
+        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
+        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
+        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
+    };
     const fullCtx = { ...ctx, config };
 
     switch (ctx.viewKind) {

@@ -1,7 +1,7 @@
 import React from "react";
 import { iPhone16Profile } from "./profile";
 
-export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
     const { width, height } = iPhone16Profile.dimensions;
 
     return (
@@ -16,7 +16,24 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ childre
             display: "flex",
             flexDirection: "column"
         }}>
-            {/* Dynamic Island */}
+            {/* Dynamic Island Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150, // Enough space for status bar
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "40px 60px 0 60px"
+            }}>
+                {/* Status Bar Content (Time, Battery, etc.) */}
+                {statusBar}
+            </div>
+
+            {/* Dynamic Island Cutout */}
             <div style={{
                 position: "absolute",
                 top: 33, // 11 * 3
@@ -26,7 +43,7 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ childre
                 height: 111, // 37 * 3
                 backgroundColor: "black",
                 borderRadius: 60, // 20 * 3
-                zIndex: 1000
+                zIndex: 1001
             }} />
 
             {/* Screen Content */}

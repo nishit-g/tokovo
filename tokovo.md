@@ -48,8 +48,6 @@ apps/
       InstagramVideo.tsx
       Root.tsx
       Video.tsx
-    out-refactor-verify-android.mp4
-    out-refactor-verify.mp4
     package.json
     remotion.config.ts
     tsconfig.json
@@ -155,455 +153,6 @@ turbo.json
 ```
 
 # Files
-
-## File: packages/renderer/src/layout/strategies/chat.ts
-````typescript
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
-
-export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-    const { world, t, activeConversationId, config, viewportHeight } = ctx;
-    const chatConfig = config!.chat!;
-
-    if (!activeConversationId || !world.conversations[activeConversationId]) {
-        return {
-            kind: "CHAT",
-            scrollY: 0,
-            contentHeight: 0,
-            isAtBottom: true,
-            messageLayouts: {},
-            meta: {}
-        };
-    }
-
-    const conversation = world.conversations[activeConversationId];
-    // Filter messages visible at time t
-    const messages = conversation.messages.filter(m => m.at <= t);
-
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = chatConfig.topPadding;
-
-    // 1. Layout messages
-    for (const msg of messages) {
-        // Calculate height
-        // Simple heuristic: chars per line
-        const textLength = msg.text?.length || 0;
-        const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-        const height = lines * chatConfig.lineHeight + 20; // +20 for internal padding
-
-        // Animation: Slide in / Fade in
-        const timeSinceAppear = t - msg.at;
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear < chatConfig.messageAppearDuration) {
-            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
-            // Simple ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
-            opacity = ease;
-            translateY = chatConfig.messageAppearOffset * (1 - ease);
-        }
-
-        messageLayouts[msg.id] = {
-            id: msg.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY
-        };
-
-        currentY += height + chatConfig.verticalGap;
-    }
-
-    // 2. Typing indicator
-    let typingLayout: TypingLayout | null = null;
-    const isTyping = Object.values(conversation.typing || {}).some(v => v);
-    if (isTyping) {
-        const height = chatConfig.baseBubbleHeight;
-        typingLayout = {
-            y: currentY,
-            height,
-            opacity: 1
-        };
-        currentY += height + chatConfig.verticalGap;
-    }
-
-    const contentHeight = currentY + chatConfig.bottomPadding;
-
-    // 3. Scroll Position
-    // Lock to bottom logic
-    let scrollY = 0;
-    if (chatConfig.lockToBottom) {
-        const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
-
-        // TODO: Implement smooth scrolling based on message arrival times if needed
-        // For now, instant snap to bottom is robust
-    }
-
-    return {
-        kind: "CHAT",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
-        messageLayouts,
-        typingLayout,
-        meta: {
-            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
-        }
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/feed.ts
-````typescript
-import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
-
-export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
-    const { world, t, activeAppId, config, viewportHeight } = ctx;
-    const feedConfig = config!.feed!;
-
-    // Get feed data from app state
-    // Heuristic: look for "feed" property in the active app state
-    const appState = world.appState?.[activeAppId];
-    const posts = appState?.feed?.posts || [];
-
-    const itemLayouts: Record<string, FeedItemLayout> = {};
-    let currentY = feedConfig.topPadding;
-
-    // 1. Layout posts
-    for (const post of posts) {
-        // Calculate height
-        // Heuristic: base height + caption lines
-        const captionLength = post.caption?.length || 0;
-        const lines = Math.ceil(Math.max(1, captionLength) / feedConfig.charsPerLine);
-        const height = feedConfig.baseCardHeight + (lines * feedConfig.lineHeight);
-
-        itemLayouts[post.id] = {
-            id: post.id,
-            y: currentY,
-            height,
-            opacity: 1,
-            translateY: 0,
-            scale: 1
-        };
-
-        currentY += height + feedConfig.verticalGap;
-    }
-
-    const contentHeight = currentY + feedConfig.bottomPadding;
-
-    // 2. Scroll Position
-    // Default: start at top (0)
-    // If autoScroll is enabled, scroll over time
-    let scrollY = 0;
-    if (feedConfig.autoScroll) {
-        // Simple auto-scroll: 50px per second (assuming 30fps)
-        const speed = 50 / 30;
-        scrollY = t * speed;
-    } else if (appState?.feed?.scrollPosition !== undefined) {
-        // Use scroll position from app state if available (manual control)
-        scrollY = appState.feed.scrollPosition;
-    }
-
-    // Clamp scroll
-    const maxScroll = Math.max(0, contentHeight - viewportHeight);
-    scrollY = Math.min(scrollY, maxScroll);
-
-    return {
-        kind: "FEED",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - maxScroll) < 10,
-        itemLayouts,
-        meta: {
-            // TODO: Calculate visible items
-        }
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/lockscreen.ts
-````typescript
-import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
-
-export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
-    const { world, t, activeDeviceId, config } = ctx;
-    const lockConfig = config!.lockscreen!;
-
-    const device = world.devices[activeDeviceId];
-    const notifications = device?.notifications || [];
-
-    const notificationLayouts: NotificationLayout[] = [];
-    let currentY = lockConfig.topPadding;
-
-    // Layout notifications
-    // Show only the last N notifications
-    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
-
-    for (const notification of visibleNotifications) {
-        // Calculate height
-        // Heuristic: base height + text length
-        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
-        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
-        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
-
-        // Animation: Slide in
-        // Assuming we have an 'at' time for notifications, but the type might not have it.
-        // If not, we just show them.
-        // Let's assume we want them to appear instantly for now.
-
-        notificationLayouts.push({
-            id: notification.id,
-            y: currentY,
-            height,
-            opacity: 1,
-            translateY: 0
-        });
-
-        currentY += height + lockConfig.notificationGap;
-    }
-
-    return {
-        kind: "LOCKSCREEN",
-        notificationLayouts,
-        meta: {}
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/story.ts
-````typescript
-import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
-
-export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
-    const { world, t, activeAppId, config } = ctx;
-    const storyConfig = config!.story!;
-
-    // Get stories from app state
-    const appState = world.appState?.[activeAppId];
-    // Find active user's stories
-    // Heuristic: activeStoryId format "username:storyId"
-    // Or just use the first user in the stories list for now if no ID
-    const activeStoryId = ctx.activeStoryId || appState?.stories?.activeStoryId;
-
-    let stories: any[] = [];
-    let activeUserIndex = 0;
-
-    if (activeStoryId) {
-        const username = activeStoryId.split(':')[0];
-        const user = appState?.stories?.users.find((u: any) => u.username === username);
-        if (user) {
-            stories = user.stories;
-        }
-    } else if (appState?.stories?.users?.length > 0) {
-        // Fallback to first user
-        stories = appState.stories.users[0].stories;
-    }
-
-    const storyCount = stories.length;
-    if (storyCount === 0) {
-        return {
-            kind: "STORY",
-            activeStoryIndex: 0,
-            storyCount: 0,
-            storyProgress: 0,
-            storyLayouts: []
-        };
-    }
-
-    // Calculate active index based on time
-    // We assume t starts at 0 when the story view opens. 
-    // In a real app, we might need a "startT" in the context or meta.
-    // For now, let's assume global t maps to story progress.
-
-    const totalDuration = storyCount * storyConfig.defaultStoryDuration;
-    // Loop or clamp? Let's clamp.
-    const effectiveT = Math.max(0, Math.min(t, totalDuration - 1));
-
-    const activeStoryIndex = Math.floor(effectiveT / storyConfig.defaultStoryDuration);
-    const timeInStory = effectiveT % storyConfig.defaultStoryDuration;
-    const storyProgress = timeInStory / storyConfig.defaultStoryDuration;
-
-    const storyLayouts: StoryItemLayout[] = stories.map((story: any, index: number) => {
-        let opacity = 0;
-        let scale = 1;
-        let translateX = 0;
-
-        if (index === activeStoryIndex) {
-            opacity = 1;
-            // Subtle zoom effect
-            scale = 1 + (storyProgress * 0.05);
-        } else if (index < activeStoryIndex) {
-            // Previous story
-            opacity = 0;
-            translateX = -100; // Move left
-        } else {
-            // Next story
-            opacity = 0;
-            translateX = 100; // Move right
-        }
-
-        return {
-            id: story.id,
-            index,
-            translateX,
-            translateY: 0,
-            scale,
-            opacity
-        };
-    });
-
-    return {
-        kind: "STORY",
-        activeStoryIndex,
-        storyCount,
-        storyProgress,
-        storyLayouts
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/transition.ts
-````typescript
-import { LayoutContext, TransitionLayoutState } from "../types";
-
-export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutState {
-    const { world, t, config } = ctx;
-    const transitionConfig = config!.transition!;
-
-    // Basic transition logic based on camera state
-    // If camera.type is "TRANSITION", we use its params
-    // Otherwise we use defaults
-
-    let deviceScale = transitionConfig.defaultScale;
-    let deviceTranslateX = 0;
-    let deviceTranslateY = 0;
-    let deviceRotation = 0;
-    let overlayOpacity = 0;
-
-    if (world.camera?.type === "TRANSITION") {
-        // TODO: Implement complex transitions based on camera params
-        // For now, just a placeholder
-    }
-
-    return {
-        kind: "TRANSITION",
-        deviceTranslateX,
-        deviceTranslateY,
-        deviceScale,
-        deviceRotation,
-        overlayOpacity,
-        meta: {}
-    };
-}
-````
-
-## File: packages/renderer/src/layout/config.ts
-````typescript
-import { LayoutConfig } from "./types";
-
-export const defaultLayoutConfig: LayoutConfig = {
-    cinematicMode: "NONE",
-    chat: {
-        bubbleWidth: 0.75, // 75% of screen width
-        baseBubbleHeight: 60,
-        charsPerLine: 30,
-        lineHeight: 40,
-        verticalGap: 15,
-        topPadding: 120, // Space for header
-        bottomPadding: 100, // Space for input
-        messageAppearDuration: 15, // frames
-        messageAppearOffset: 10, // px
-        scrollEasingDuration: 20, // frames
-        maxScrollCatchupSpeed: 50, // px/frame
-        lockToBottom: true
-    },
-    feed: {
-        cardWidth: 1.0, // 100% width
-        baseCardHeight: 600,
-        verticalGap: 20,
-        topPadding: 150, // Header + Stories
-        bottomPadding: 150, // Bottom nav
-        charsPerLine: 40,
-        lineHeight: 30,
-        scrollEasingDuration: 20,
-        maxScrollCatchupSpeed: 50,
-        startAtTop: true,
-        autoScroll: false
-    },
-    story: {
-        defaultStoryDuration: 150, // 5 seconds at 30fps
-        progressBarHeight: 4,
-        storyGap: 0,
-        storyTransitionDuration: 15
-    },
-    lockscreen: {
-        topPadding: 150,
-        notificationGap: 10,
-        notificationWidth: 0.9,
-        baseNotificationHeight: 100,
-        charsPerLine: 40,
-        lineHeight: 30,
-        stackMaxNotifications: 5,
-        appearDuration: 15
-    },
-    transition: {
-        defaultScale: 1.0,
-        zoomedScale: 1.2,
-        panDuration: 30,
-        zoomDuration: 30
-    }
-};
-````
-
-## File: packages/renderer/src/layout/index.ts
-````typescript
-import { LayoutContext, LayoutState } from "./types";
-import { defaultLayoutConfig } from "./config";
-import { computeChatLayout } from "./strategies/chat";
-import { computeFeedLayout } from "./strategies/feed";
-import { computeStoryLayout } from "./strategies/story";
-import { computeLockscreenLayout } from "./strategies/lockscreen";
-import { computeTransitionLayout } from "./strategies/transition";
-
-export * from "./types";
-export * from "./config";
-
-export function computeLayout(ctx: LayoutContext): LayoutState {
-    // Merge provided config with defaults
-    const config = { ...defaultLayoutConfig, ...ctx.config };
-    const fullCtx = { ...ctx, config };
-
-    switch (ctx.viewKind) {
-        case "CHAT":
-            return computeChatLayout(fullCtx);
-        case "FEED":
-            return computeFeedLayout(fullCtx);
-        case "STORY":
-            return computeStoryLayout(fullCtx);
-        case "LOCKSCREEN":
-            return computeLockscreenLayout(fullCtx);
-        case "TRANSITION":
-            return computeTransitionLayout(fullCtx);
-        default:
-            // Fallback to empty transition state
-            return {
-                kind: "TRANSITION",
-                deviceTranslateX: 0,
-                deviceTranslateY: 0,
-                deviceScale: 1,
-                deviceRotation: 0,
-                overlayOpacity: 0,
-                meta: {}
-            };
-    }
-}
-````
-
-## File: packages/renderer/src/layout/types.ts
-````typescript
-export * from "@tokovo/core";
-````
 
 ## File: apps/video-runner/src/index.ts
 ````typescript
@@ -981,177 +530,6 @@ export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
                     <div style={{ color: "#888", fontSize: 24, marginTop: 10, textTransform: "uppercase" }}>
                         2 hours ago
                     </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-
-const GridIcon = ({ active }: { active: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-    </svg>
-);
-
-const TaggedIcon = ({ active }: { active: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-    </svg>
-);
-
-const MenuIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-);
-
-const LockIcon = () => (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-    </svg>
-);
-
-const PlusIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-);
-
-import { LayoutState, FeedLayoutState } from "@tokovo/core";
-
-export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
-    // Mock user data for now
-    const user = {
-        username: "instagram_user",
-        name: "Instagram User",
-        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
-        posts: 42,
-        followers: "1.2M",
-        following: 250,
-        avatar: "" // TODO: Add default avatar
-    };
-
-    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
-    const scrollY = feedLayout?.scrollY || 0;
-
-    return (
-        <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden", // Hide native scroll
-            position: "relative"
-        }}>
-            {/* Scrollable Content Container */}
-            <div style={{
-                transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.1s linear", // Layout engine drives this
-                width: "100%",
-                minHeight: "100%"
-            }}>
-                {/* Header */}
-                <div style={{
-                    height: 120,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0 30px",
-                    marginTop: 60,
-                    zIndex: 10
-                }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <LockIcon />
-                        <div style={{ fontSize: 42, fontWeight: "bold" }}>{user.username}</div>
-                    </div>
-                    <div style={{ display: "flex", gap: 40 }}>
-                        <PlusIcon />
-                        <MenuIcon />
-                    </div>
-                </div>
-
-                {/* Profile Info */}
-                <div style={{ padding: "20px 30px" }}>
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
-                        <div style={{
-                            width: 180,
-                            height: 180,
-                            borderRadius: "50%",
-                            backgroundColor: "#333",
-                            backgroundImage: `url(${user.avatar})`,
-                            backgroundSize: "cover",
-                            marginRight: 60
-                        }} />
-                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", paddingRight: 20 }}>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.posts}</div>
-                                <div style={{ fontSize: 28 }}>Posts</div>
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.followers}</div>
-                                <div style={{ fontSize: 28 }}>Followers</div>
-                            </div>
-                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.following}</div>
-                                <div style={{ fontSize: 28 }}>Following</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style={{ marginBottom: 30 }}>
-                        <div style={{ fontSize: 32, fontWeight: "bold", marginBottom: 5 }}>{user.name}</div>
-                        <div style={{ fontSize: 30, whiteSpace: "pre-wrap", lineHeight: "1.3" }}>{user.bio}</div>
-                    </div>
-
-                    {/* Buttons */}
-                    <div style={{ display: "flex", gap: 20, marginBottom: 40 }}>
-                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
-                            Edit profile
-                        </div>
-                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
-                            Share profile
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tabs */}
-                <div style={{ display: "flex", borderTop: "1px solid #222", height: 100 }}>
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "2px solid white" }}>
-                        <GridIcon active={true} />
-                    </div>
-                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                        <TaggedIcon active={false} />
-                    </div>
-                </div>
-
-                {/* Grid */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                    {state.feed.posts.map(post => (
-                        <div key={post.id} style={{
-                            width: "calc(33.33% - 2px)",
-                            aspectRatio: "1/1",
-                            backgroundColor: "#222",
-                            backgroundImage: `url(${post.image})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center"
-                        }} />
-                    ))}
                 </div>
             </div>
         </div>
@@ -1795,12 +1173,453 @@ Device profiles and reducers.
 }
 ````
 
-## File: packages/renderer/src/index.ts
+## File: packages/renderer/src/layout/strategies/chat.ts
 ````typescript
-export * from "./registry";
-export * from "./LayoutEngine";
-export * from "./DeviceFrame";
-export * from "./TokovoRenderer";
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+
+export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
+    const { world, t, activeConversationId, config, viewportHeight } = ctx;
+    const chatConfig = config!.chat!;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    const messages = conversation.messages.filter(m => m.at <= t);
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = chatConfig.topPadding;
+
+    // 1. Layout messages
+    for (const msg of messages) {
+        // Calculate height
+        // Simple heuristic: chars per line
+        const textLength = msg.text?.length || 0;
+        const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+        const height = lines * chatConfig.lineHeight + 20; // +20 for internal padding
+
+        // Animation: Slide in / Fade in
+        const timeSinceAppear = t - msg.at;
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear < chatConfig.messageAppearDuration) {
+            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
+            // Simple ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+            opacity = ease;
+            translateY = chatConfig.messageAppearOffset * (1 - ease);
+        }
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY
+        };
+
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    // 2. Typing indicator
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+    if (isTyping) {
+        const height = chatConfig.baseBubbleHeight;
+        typingLayout = {
+            y: currentY,
+            height,
+            opacity: 1
+        };
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + chatConfig.bottomPadding;
+
+    // 3. Scroll Position
+    // Lock to bottom logic
+    let scrollY = 0;
+    if (chatConfig.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+        scrollY = maxScroll;
+
+        // TODO: Implement smooth scrolling based on message arrival times if needed
+        // For now, instant snap to bottom is robust
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
+        }
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/feed.ts
+````typescript
+import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
+
+export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
+    const { world, t, activeAppId, config, viewportHeight } = ctx;
+    const feedConfig = config!.feed!;
+
+    // Get feed data from app state
+    // Heuristic: look for "feed" property in the active app state
+    const appState = world.appState?.[activeAppId];
+    const posts = appState?.feed?.posts || [];
+
+    const itemLayouts: Record<string, FeedItemLayout> = {};
+    let currentY = feedConfig.topPadding;
+
+    // 1. Layout posts
+    for (const post of posts) {
+        // Calculate height
+        // Heuristic: base height + caption lines
+        const captionLength = post.caption?.length || 0;
+        const lines = Math.ceil(Math.max(1, captionLength) / feedConfig.charsPerLine);
+        const height = feedConfig.baseCardHeight + (lines * feedConfig.lineHeight);
+
+        itemLayouts[post.id] = {
+            id: post.id,
+            y: currentY,
+            height,
+            opacity: 1,
+            translateY: 0,
+            scale: 1
+        };
+
+        currentY += height + feedConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + feedConfig.bottomPadding;
+
+    // 2. Scroll Position
+    // Default: start at top (0)
+    // If autoScroll is enabled, scroll over time
+    let scrollY = 0;
+    if (feedConfig.autoScroll) {
+        // Simple auto-scroll: 50px per second (assuming 30fps)
+        const speed = 50 / 30;
+        scrollY = t * speed;
+    } else if (appState?.feed?.scrollPosition !== undefined) {
+        // Use scroll position from app state if available (manual control)
+        scrollY = appState.feed.scrollPosition;
+    }
+
+    // Clamp scroll
+    const maxScroll = Math.max(0, contentHeight - viewportHeight);
+    scrollY = Math.min(scrollY, maxScroll);
+
+    return {
+        kind: "FEED",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - maxScroll) < 10,
+        itemLayouts,
+        meta: {
+            // TODO: Calculate visible items
+        }
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/lockscreen.ts
+````typescript
+import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
+
+export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
+    const { world, t, activeDeviceId, config } = ctx;
+    const lockConfig = config!.lockscreen!;
+
+    const device = world.devices[activeDeviceId];
+    const notifications = device?.notifications || [];
+
+    const notificationLayouts: NotificationLayout[] = [];
+    let currentY = lockConfig.topPadding;
+
+    // Layout notifications
+    // Show only the last N notifications
+    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
+
+    for (const notification of visibleNotifications) {
+        // Calculate height
+        // Heuristic: base height + text length
+        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
+        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
+        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
+
+        // Animation: Slide in
+        // Assuming we have an 'at' time for notifications, but the type might not have it.
+        // If not, we just show them.
+        // Let's assume we want them to appear instantly for now.
+
+        notificationLayouts.push({
+            id: notification.id,
+            y: currentY,
+            height,
+            opacity: 1,
+            translateY: 0
+        });
+
+        currentY += height + lockConfig.notificationGap;
+    }
+
+    return {
+        kind: "LOCKSCREEN",
+        notificationLayouts,
+        meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/story.ts
+````typescript
+import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
+
+export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
+    const { world, t, activeAppId, config } = ctx;
+    const storyConfig = config!.story!;
+
+    // Get stories from app state
+    const appState = world.appState?.[activeAppId];
+    // Find active user's stories
+    // Heuristic: activeStoryId format "username:storyId"
+    // Or just use the first user in the stories list for now if no ID
+    const activeStoryId = ctx.activeStoryId || appState?.stories?.activeStoryId;
+
+    let stories: any[] = [];
+    let activeUserIndex = 0;
+
+    if (activeStoryId) {
+        const username = activeStoryId.split(':')[0];
+        const user = appState?.stories?.users.find((u: any) => u.username === username);
+        if (user) {
+            stories = user.stories;
+        }
+    } else if (appState?.stories?.users?.length > 0) {
+        // Fallback to first user
+        stories = appState.stories.users[0].stories;
+    }
+
+    const storyCount = stories.length;
+    if (storyCount === 0) {
+        return {
+            kind: "STORY",
+            activeStoryIndex: 0,
+            storyCount: 0,
+            storyProgress: 0,
+            storyLayouts: []
+        };
+    }
+
+    // Calculate active index based on time
+    // We assume t starts at 0 when the story view opens. 
+    // In a real app, we might need a "startT" in the context or meta.
+    // For now, let's assume global t maps to story progress.
+
+    const totalDuration = storyCount * storyConfig.defaultStoryDuration;
+    // Loop or clamp? Let's clamp.
+    const effectiveT = Math.max(0, Math.min(t, totalDuration - 1));
+
+    const activeStoryIndex = Math.floor(effectiveT / storyConfig.defaultStoryDuration);
+    const timeInStory = effectiveT % storyConfig.defaultStoryDuration;
+    const storyProgress = timeInStory / storyConfig.defaultStoryDuration;
+
+    const storyLayouts: StoryItemLayout[] = stories.map((story: any, index: number) => {
+        let opacity = 0;
+        let scale = 1;
+        let translateX = 0;
+
+        if (index === activeStoryIndex) {
+            opacity = 1;
+            // Subtle zoom effect
+            scale = 1 + (storyProgress * 0.05);
+        } else if (index < activeStoryIndex) {
+            // Previous story
+            opacity = 0;
+            translateX = -100; // Move left
+        } else {
+            // Next story
+            opacity = 0;
+            translateX = 100; // Move right
+        }
+
+        return {
+            id: story.id,
+            index,
+            translateX,
+            translateY: 0,
+            scale,
+            opacity
+        };
+    });
+
+    return {
+        kind: "STORY",
+        activeStoryIndex,
+        storyCount,
+        storyProgress,
+        storyLayouts
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/transition.ts
+````typescript
+import { LayoutContext, TransitionLayoutState } from "../types";
+
+export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutState {
+    const { world, t, config } = ctx;
+    const transitionConfig = config!.transition!;
+
+    // Basic transition logic based on camera state
+    // If camera.type is "TRANSITION", we use its params
+    // Otherwise we use defaults
+
+    let deviceScale = transitionConfig.defaultScale;
+    let deviceTranslateX = 0;
+    let deviceTranslateY = 0;
+    let deviceRotation = 0;
+    let overlayOpacity = 0;
+
+    if (world.camera?.type === "TRANSITION") {
+        // TODO: Implement complex transitions based on camera params
+        // For now, just a placeholder
+    }
+
+    return {
+        kind: "TRANSITION",
+        deviceTranslateX,
+        deviceTranslateY,
+        deviceScale,
+        deviceRotation,
+        overlayOpacity,
+        meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/config.ts
+````typescript
+import { LayoutConfig } from "./types";
+
+export const defaultLayoutConfig: LayoutConfig = {
+    cinematicMode: "NONE",
+    chat: {
+        bubbleWidth: 0.75, // 75% of screen width
+        baseBubbleHeight: 60,
+        charsPerLine: 30,
+        lineHeight: 40,
+        verticalGap: 15,
+        topPadding: 120, // Space for header
+        bottomPadding: 100, // Space for input
+        messageAppearDuration: 15, // frames
+        messageAppearOffset: 10, // px
+        scrollEasingDuration: 20, // frames
+        maxScrollCatchupSpeed: 50, // px/frame
+        lockToBottom: true
+    },
+    feed: {
+        cardWidth: 1.0, // 100% width
+        baseCardHeight: 600,
+        verticalGap: 20,
+        topPadding: 150, // Header + Stories
+        bottomPadding: 150, // Bottom nav
+        charsPerLine: 40,
+        lineHeight: 30,
+        scrollEasingDuration: 20,
+        maxScrollCatchupSpeed: 50,
+        startAtTop: true,
+        autoScroll: false
+    },
+    story: {
+        defaultStoryDuration: 150, // 5 seconds at 30fps
+        progressBarHeight: 4,
+        storyGap: 0,
+        storyTransitionDuration: 15
+    },
+    lockscreen: {
+        topPadding: 150,
+        notificationGap: 10,
+        notificationWidth: 0.9,
+        baseNotificationHeight: 100,
+        charsPerLine: 40,
+        lineHeight: 30,
+        stackMaxNotifications: 5,
+        appearDuration: 15
+    },
+    transition: {
+        defaultScale: 1.0,
+        zoomedScale: 1.2,
+        panDuration: 30,
+        zoomDuration: 30
+    }
+};
+````
+
+## File: packages/renderer/src/layout/index.ts
+````typescript
+import { LayoutContext, LayoutState } from "./types";
+import { defaultLayoutConfig } from "./config";
+import { computeChatLayout } from "./strategies/chat";
+import { computeFeedLayout } from "./strategies/feed";
+import { computeStoryLayout } from "./strategies/story";
+import { computeLockscreenLayout } from "./strategies/lockscreen";
+import { computeTransitionLayout } from "./strategies/transition";
+
+export * from "./types";
+export * from "./config";
+
+export function computeLayout(ctx: LayoutContext): LayoutState {
+    // Merge provided config with defaults
+    const config = { ...defaultLayoutConfig, ...ctx.config };
+    const fullCtx = { ...ctx, config };
+
+    switch (ctx.viewKind) {
+        case "CHAT":
+            return computeChatLayout(fullCtx);
+        case "FEED":
+            return computeFeedLayout(fullCtx);
+        case "STORY":
+            return computeStoryLayout(fullCtx);
+        case "LOCKSCREEN":
+            return computeLockscreenLayout(fullCtx);
+        case "TRANSITION":
+            return computeTransitionLayout(fullCtx);
+        default:
+            // Fallback to empty transition state
+            return {
+                kind: "TRANSITION",
+                deviceTranslateX: 0,
+                deviceTranslateY: 0,
+                deviceScale: 1,
+                deviceRotation: 0,
+                overlayOpacity: 0,
+                meta: {}
+            };
+    }
+}
+````
+
+## File: packages/renderer/src/layout/types.ts
+````typescript
+export * from "@tokovo/core";
 ````
 
 ## File: packages/renderer/src/types.ts
@@ -2891,6 +2710,177 @@ export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }>
 };
 ````
 
+## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+
+const GridIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+    </svg>
+);
+
+const TaggedIcon = ({ active }: { active: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#888"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
+
+const MenuIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+);
+
+const LockIcon = () => (
+    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+        <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+);
+
+const PlusIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="5" x2="12" y2="19" />
+        <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+);
+
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
+
+export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    // Mock user data for now
+    const user = {
+        username: "instagram_user",
+        name: "Instagram User",
+        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
+        posts: 42,
+        followers: "1.2M",
+        following: 250,
+        avatar: "" // TODO: Add default avatar
+    };
+
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden", // Hide native scroll
+            position: "relative"
+        }}>
+            {/* Scrollable Content Container */}
+            <div style={{
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.1s linear", // Layout engine drives this
+                width: "100%",
+                minHeight: "100%"
+            }}>
+                {/* Header */}
+                <div style={{
+                    height: 120,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 30px",
+                    marginTop: 60,
+                    zIndex: 10
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <LockIcon />
+                        <div style={{ fontSize: 42, fontWeight: "bold" }}>{user.username}</div>
+                    </div>
+                    <div style={{ display: "flex", gap: 40 }}>
+                        <PlusIcon />
+                        <MenuIcon />
+                    </div>
+                </div>
+
+                {/* Profile Info */}
+                <div style={{ padding: "20px 30px" }}>
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+                        <div style={{
+                            width: 180,
+                            height: 180,
+                            borderRadius: "50%",
+                            backgroundColor: "#333",
+                            backgroundImage: `url(${user.avatar})`,
+                            backgroundSize: "cover",
+                            marginRight: 60
+                        }} />
+                        <div style={{ flex: 1, display: "flex", justifyContent: "space-between", paddingRight: 20 }}>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.posts}</div>
+                                <div style={{ fontSize: 28 }}>Posts</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.followers}</div>
+                                <div style={{ fontSize: 28 }}>Followers</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold" }}>{user.following}</div>
+                                <div style={{ fontSize: 28 }}>Following</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style={{ marginBottom: 30 }}>
+                        <div style={{ fontSize: 32, fontWeight: "bold", marginBottom: 5 }}>{user.name}</div>
+                        <div style={{ fontSize: 30, whiteSpace: "pre-wrap", lineHeight: "1.3" }}>{user.bio}</div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div style={{ display: "flex", gap: 20, marginBottom: 40 }}>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Edit profile
+                        </div>
+                        <div style={{ flex: 1, height: 70, backgroundColor: "#333", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28, fontWeight: "600" }}>
+                            Share profile
+                        </div>
+                    </div>
+                </div>
+
+                {/* Tabs */}
+                <div style={{ display: "flex", borderTop: "1px solid #222", height: 100 }}>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", borderBottom: "2px solid white" }}>
+                        <GridIcon active={true} />
+                    </div>
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <TaggedIcon active={false} />
+                    </div>
+                </div>
+
+                {/* Grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {state.feed.posts.map(post => (
+                        <div key={post.id} style={{
+                            width: "calc(33.33% - 2px)",
+                            aspectRatio: "1/1",
+                            backgroundColor: "#222",
+                            backgroundImage: `url(${post.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center"
+                        }} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
 ````typescript
 import React from "react";
@@ -3358,90 +3348,12 @@ export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }>
 }
 ````
 
-## File: packages/renderer/src/NotificationOverlay.tsx
+## File: packages/renderer/src/index.ts
 ````typescript
-import React from "react";
-import { Notification } from "@tokovo/core";
-import { LayoutState, LockscreenLayoutState } from "./layout/types";
-
-export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android"; layout?: LayoutState }> = ({ notifications = [], variant = "ios", layout }) => {
-    // If we have a Lockscreen layout, use it
-    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
-
-    // If no layout provided or not lockscreen, we might still want to show notifications (e.g. heads-up)
-    // But for now, let's assume we only use this for lockscreen stacking or heads-up if layout engine supports it.
-    // If layout is missing, fallback to nothing or old behavior? 
-    // Let's stick to layout-driven. If no layout, no render.
-    if (!lockscreenLayout) return null;
-
-    const isAndroid = variant === "android";
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: "none",
-            zIndex: 100
-        }}>
-            {lockscreenLayout.notificationLayouts.map(nl => {
-                const notification = notifications.find(n => n.id === nl.id);
-                if (!notification) return null;
-
-                return (
-                    <div key={nl.id} style={{
-                        position: "absolute",
-                        top: nl.y,
-                        left: "50%",
-                        transform: `translateX(-50%) translateY(${nl.translateY}px)`,
-                        width: "92%",
-                        opacity: nl.opacity,
-                        height: nl.height
-                    }}>
-                        <div style={{
-                            backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
-                            backdropFilter: "blur(20px)",
-                            borderRadius: isAndroid ? 24 : 36,
-                            padding: "30px 40px",
-                            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 30,
-                            color: isAndroid ? "white" : "black",
-                            height: "100%",
-                            boxSizing: "border-box"
-                        }}>
-                            <div style={{
-                                width: 100,
-                                height: 100,
-                                borderRadius: 20,
-                                backgroundColor: "#25D366", // WhatsApp Green (Mock)
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                fontSize: 50,
-                                color: "white"
-                            }}>
-                                W
-                            </div>
-                            <div style={{ flex: 1, overflow: "hidden" }}>
-                                <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                                    <span>{notification.title}</span>
-                                    <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
-                                </div>
-                                <div style={{ fontSize: 36, opacity: 0.8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {notification.body}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
-};
+export * from "./registry";
+export * from "./layout";
+export * from "./DeviceFrame";
+export * from "./TokovoRenderer";
 ````
 
 ## File: apps/video-runner/package.json
@@ -3907,6 +3819,92 @@ export const EpisodeSchema = z.object({
 });
 ````
 
+## File: packages/renderer/src/NotificationOverlay.tsx
+````typescript
+import React from "react";
+import { Notification } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
+
+export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android"; layout?: LayoutState }> = ({ notifications = [], variant = "ios", layout }) => {
+    // If we have a Lockscreen layout, use it
+    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+
+    // If no layout provided or not lockscreen, we might still want to show notifications (e.g. heads-up)
+    // But for now, let's assume we only use this for lockscreen stacking or heads-up if layout engine supports it.
+    // If layout is missing, fallback to nothing or old behavior? 
+    // Let's stick to layout-driven. If no layout, no render.
+    if (!lockscreenLayout) return null;
+
+    const isAndroid = variant === "android";
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            pointerEvents: "none",
+            zIndex: 100
+        }}>
+            {lockscreenLayout.notificationLayouts.map(nl => {
+                const notification = notifications.find(n => n.id === nl.id);
+                if (!notification) return null;
+
+                return (
+                    <div key={nl.id} style={{
+                        position: "absolute",
+                        top: nl.y,
+                        left: "50%",
+                        transform: `translateX(-50%) translateY(${nl.translateY}px)`,
+                        width: "92%",
+                        opacity: nl.opacity,
+                        height: nl.height
+                    }}>
+                        <div style={{
+                            backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
+                            backdropFilter: "blur(20px)",
+                            borderRadius: isAndroid ? 24 : 36,
+                            padding: "30px 40px",
+                            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 30,
+                            color: isAndroid ? "white" : "black",
+                            height: "100%",
+                            boxSizing: "border-box"
+                        }}>
+                            <div style={{
+                                width: 100,
+                                height: 100,
+                                borderRadius: 20,
+                                backgroundColor: "#25D366", // WhatsApp Green (Mock)
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                                fontSize: 50,
+                                color: "white"
+                            }}>
+                                W
+                            </div>
+                            <div style={{ flex: 1, overflow: "hidden" }}>
+                                <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                                    <span>{notification.title}</span>
+                                    <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
+                                </div>
+                                <div style={{ fontSize: 36, opacity: 0.8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                    {notification.body}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+````
+
 ## File: packages/renderer/package.json
 ````json
 {
@@ -4126,7 +4124,7 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
                 }}>
                     <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
 
-                    {/* Notifications are now handled by NotificationOverlay via LayoutEngine */}
+                    {/* Notifications are now handled by NotificationOverlay via layout system */}
                     <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
                         {/* Placeholder for future lock screen widgets if needed */}
                     </div>
@@ -4134,27 +4132,6 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
             )}
         </FrameComponent>
     );
-};
-````
-
-## File: packages/renderer/src/registry.ts
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
-import { InstagramApp } from "@tokovo/apps-instagram";
-
-import { LayoutState } from "./layout/types";
-
-export const AppRegistry = {
-    views: {
-        "app_whatsapp": WhatsappChatView,
-        "app_instagram": InstagramApp
-    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState }>>,
-
-    getView(appId: string) {
-        return this.views[appId];
-    }
 };
 ````
 
@@ -4711,6 +4688,27 @@ export interface TransitionLayoutState extends BaseLayoutState {
 export interface TransitionLayoutMeta {
     // Add any meta fields if needed
 }
+````
+
+## File: packages/renderer/src/registry.ts
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { InstagramApp } from "@tokovo/apps-instagram";
+
+import { LayoutState } from "./layout/types";
+
+export const AppRegistry = {
+    views: {
+        "app_whatsapp": WhatsappChatView,
+        "app_instagram": InstagramApp
+    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState }>>,
+
+    getView(appId: string) {
+        return this.views[appId];
+    }
+};
 ````
 
 ## File: packages/renderer/src/TokovoRenderer.tsx
