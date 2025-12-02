@@ -1,5 +1,5 @@
 import React from "react";
-import { WorldState } from "@tokovo/core";
+import { WorldState, LayoutState } from "@tokovo/core";
 import { InstagramState } from "./types";
 import { InstagramChatView } from "./views/dm/InstagramChatView";
 import { FeedView } from "./views/feed/FeedView";
@@ -11,7 +11,7 @@ import { ReelsView } from "./views/reels/ReelsView";
 import { PostView } from "./views/post/PostView";
 import { BottomNav } from "./views/BottomNav";
 
-export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
     const appState = world.appState?.["app_instagram"] as InstagramState;
     const currentView = appState?.currentView || "dm";
 
@@ -27,7 +27,7 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: any
             case "feed":
                 return <FeedView state={appState} layout={layout} />;
             case "stories":
-                return <StoriesView state={appState} t={t} />;
+                return <StoriesView state={appState} t={t} layout={layout} />;
             case "profile":
                 return <ProfileView state={appState} />;
             case "post":

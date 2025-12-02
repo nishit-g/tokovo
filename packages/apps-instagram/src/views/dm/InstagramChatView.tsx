@@ -77,32 +77,43 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+
+// ...
+
+const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
-    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
-    const { opacity, translateY } = animation;
+    const { opacity, translateY, height, y } = layout;
 
     return (
         <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
-            backgroundColor: isMe ? "#3797F0" : "#262626", // Instagram Blue or Dark Grey
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 45,
+            right: isMe ? 45 : "auto",
+            height: height - 15, // Gap adjustment
+
+            backgroundColor: isMe ? "#3797F0" : "#262626",
             color: "white",
             padding: "30px 42px",
             borderRadius: 60,
             maxWidth: "70%",
             fontSize: 48,
             lineHeight: "60px",
-            marginBottom: 12,
             opacity,
-            transform: `translateY(${translateY}px)`
+            transform: `translateY(${translateY}px)`,
+            display: "flex",
+            alignItems: "center"
         }}>
             {msg.text}
         </div>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
-    const scrollY = layout?.scrollY || 0;
+const MessageList: React.FC<{ messages: any[]; layout?: LayoutState }> = ({ messages, layout }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
 
     return (
         <div style={{
@@ -111,18 +122,19 @@ const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, la
             overflow: "hidden"
         }}>
             <div style={{
-                padding: "30px 45px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 15,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: contentHeight,
                 transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.3s ease-out",
-                minHeight: "100%",
-                justifyContent: "flex-end" // Instagram starts from bottom
+                transition: "transform 0.1s linear"
             }}>
-                {messages.map((msg: any) => (
-                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
-                ))}
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
             </div>
         </div>
     );
@@ -156,7 +168,7 @@ const InputArea: React.FC = () => (
     </div>
 );
 
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];

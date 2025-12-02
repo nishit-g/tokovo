@@ -43,25 +43,34 @@ apps/
           frame.png
           mask.png
     src/
+      AndroidVideo.tsx
       index.ts
+      InstagramVideo.tsx
       Root.tsx
       Video.tsx
     package.json
     remotion.config.ts
     tsconfig.json
 packages/
+  apps-instagram/
+    src/
+      index.ts
+      runtime.ts
+      ui.tsx
+    package.json
+    tsconfig.json
   apps-whatsapp/
     src/
       index.ts
       runtime.ts
       types.ts
+      TypingBubble.tsx
       ui.tsx
     package.json
     README.md
     tsconfig.json
   core/
     src/
-      engine.test.ts
       engine.ts
       index.ts
       types.ts
@@ -77,7 +86,6 @@ packages/
         Frame.tsx
         profile.ts
       index.ts
-      reducer.test.ts
       reducer.ts
       StatusBar.tsx
       types.ts
@@ -88,6 +96,7 @@ packages/
     src/
       examples/
         android-test.json
+        instagram-test.json
         whatsapp-breakup-01.json
       index.ts
       schema.ts
@@ -98,8 +107,10 @@ packages/
       DeviceFrame.tsx
       index.ts
       LayoutEngine.ts
+      NotificationOverlay.tsx
       registry.ts
       TokovoRenderer.tsx
+      VisualDebugger.tsx
     package.json
     tsconfig.json
 .gitignore
@@ -121,39 +132,55 @@ import { RemotionRoot } from "./Root";
 registerRoot(RemotionRoot);
 ```
 
-## File: apps/video-runner/package.json
-```json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "react": "^18.0.0",
-        "react-dom": "^18.0.0",
-        "remotion": "latest",
-        "@remotion/cli": "latest",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "^18.0.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "typescript": "^5.0.0",
-        "prettier": "^3.0.0"
-    }
-}
+## File: apps/video-runner/src/InstagramVideo.tsx
+```typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { instagramEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-instagram";
+
+export const InstagramVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
+    const world = replay(instagramEpisode.initialState as unknown as WorldState, instagramEpisode.timeline as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} debug={true} />
+            </div>
+        </div>
+    );
+};
 ```
 
 ## File: apps/video-runner/remotion.config.ts
@@ -180,6 +207,275 @@ Config.setOverwriteOutput(true);
 }
 ```
 
+## File: packages/apps-instagram/src/index.ts
+```typescript
+export * from "./runtime";
+export * from "./ui";
+```
+
+## File: packages/apps-instagram/src/runtime.ts
+```typescript
+import { produce } from "immer";
+import { WorldState, TimelineEvent } from "@tokovo/core";
+
+export const instagramRuntime = (state: WorldState, event: TimelineEvent) => {
+    if (event.kind !== "APP" || event.appId !== "app_instagram") return state;
+
+    return produce(state, (draft) => {
+        const { conversationId, type } = event;
+
+        // Ensure conversation exists
+        if (!draft.conversations[conversationId]) {
+            draft.conversations[conversationId] = {
+                id: conversationId,
+                messages: [],
+                typing: {}
+            };
+        }
+
+        const conversation = draft.conversations[conversationId];
+
+        switch (type) {
+            case "MESSAGE_RECEIVED":
+                conversation.messages.push({
+                    id: `msg_${Date.now()}_${Math.random()}`,
+                    from: event.from,
+                    text: event.text,
+                    at: event.at,
+                    liked: false // Instagram specific
+                });
+                break;
+
+            case "TYPING_START":
+                if (!conversation.typing) conversation.typing = {};
+                conversation.typing[event.from] = true;
+                break;
+
+            case "TYPING_END":
+                if (conversation.typing) {
+                    conversation.typing[event.from] = false;
+                }
+                break;
+        }
+    });
+};
+```
+
+## File: packages/apps-instagram/src/ui.tsx
+```typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+
+// --- Icons ---
+const BackIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+    </svg>
+);
+
+const VideoIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 7l-7 5 7 5V7z" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+);
+
+const InfoIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="12" cy="12" r="10" />
+        <line x1="12" y1="16" x2="12" y2="12" />
+        <line x1="12" y1="8" x2="12.01" y2="8" />
+    </svg>
+);
+
+const CameraIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+        <circle cx="12" cy="13" r="4" />
+    </svg>
+);
+
+const MicIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+        <line x1="12" y1="19" x2="12" y2="23" />
+        <line x1="8" y1="23" x2="16" y2="23" />
+    </svg>
+);
+
+const ImageIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+        <circle cx="8.5" cy="8.5" r="1.5" />
+        <polyline points="21 15 16 10 5 21" />
+    </svg>
+);
+
+const StickerIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </svg>
+);
+
+// --- Components ---
+
+const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
+    <div style={{
+        height: 200,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 45px",
+        marginTop: 150,
+        zIndex: 10,
+        color: "white"
+    }}>
+        <BackIcon />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", marginLeft: 30 }}>
+            <div style={{ width: 90, height: 90, borderRadius: "50%", backgroundColor: "#333", marginRight: 20 }} />
+            <div style={{ fontSize: 42, fontWeight: "600" }}>{contactName}</div>
+        </div>
+        <div style={{ display: "flex", gap: 60 }}>
+            <VideoIcon />
+            <InfoIcon />
+        </div>
+    </div>
+);
+
+const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
+    const { opacity, translateY } = animation;
+
+    return (
+        <div style={{
+            alignSelf: isMe ? "flex-end" : "flex-start",
+            backgroundColor: isMe ? "#3797F0" : "#262626", // Instagram Blue or Dark Grey
+            color: "white",
+            padding: "30px 42px",
+            borderRadius: 60,
+            maxWidth: "70%",
+            fontSize: 48,
+            lineHeight: "60px",
+            marginBottom: 12,
+            opacity,
+            transform: `translateY(${translateY}px)`
+        }}>
+            {msg.text}
+        </div>
+    );
+};
+
+const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
+    const scrollY = layout?.scrollY || 0;
+
+    return (
+        <div style={{
+            flex: 1,
+            position: "relative",
+            overflow: "hidden"
+        }}>
+            <div style={{
+                padding: "30px 45px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 15,
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.3s ease-out",
+                minHeight: "100%",
+                justifyContent: "flex-end" // Instagram starts from bottom
+            }}>
+                {messages.map((msg: any) => (
+                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const InputArea: React.FC = () => (
+    <div style={{
+        height: 180,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 45px",
+        gap: 30,
+        marginBottom: 60
+    }}>
+        <div style={{
+            flex: 1,
+            height: 130,
+            backgroundColor: "#262626",
+            borderRadius: 65,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 40px",
+            gap: 30
+        }}>
+            <CameraIcon />
+            <div style={{ flex: 1, fontSize: 48, color: "#888" }}>Message...</div>
+            <MicIcon />
+            <ImageIcon />
+            <StickerIcon />
+        </div>
+    </div>
+);
+
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+    const conversationId = Object.keys(world.conversations)[0];
+    const conversation = world.conversations[conversationId];
+    const messages = conversation ? conversation.messages : [];
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            color: "white"
+        }}>
+            <Header contactName="instagram_user" />
+            <MessageList messages={messages} layout={layout} />
+            <InputArea />
+        </div>
+    );
+};
+```
+
+## File: packages/apps-instagram/package.json
+```json
+{
+    "name": "@tokovo/apps-instagram",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "react": "^18.0.0",
+        "immer": "^10.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.0",
+        "typescript": "^5.0.0"
+    }
+}
+```
+
+## File: packages/apps-instagram/tsconfig.json
+```json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+```
+
 ## File: packages/apps-whatsapp/src/index.ts
 ```typescript
 export * from "./types";
@@ -194,27 +490,51 @@ export interface WhatsAppState {
 }
 ```
 
-## File: packages/apps-whatsapp/package.json
-```json
-{
-    "name": "@tokovo/apps-whatsapp",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "^18.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "^18.0.0"
-    }
-}
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
+```typescript
+import React from "react";
+
+export const TypingBubble: React.FC = () => {
+    return (
+        <div style={{
+            padding: "24px 36px",
+            marginLeft: 48,
+            marginBottom: 12,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 48,
+            borderTopLeftRadius: 12,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            height: 66 // Match line height of text
+        }}>
+            <Dot delay={0} />
+            <Dot delay={0.2} />
+            <Dot delay={0.4} />
+        </div>
+    );
+};
+
+const Dot: React.FC<{ delay: number }> = ({ delay }) => (
+    <div style={{
+        width: 18,
+        height: 18,
+        backgroundColor: "#B1B1B1",
+        borderRadius: "50%",
+        animation: `typingBounce 1.4s infinite ease-in-out both`,
+        animationDelay: `${delay}s`
+    }}>
+        <style>{`
+            @keyframes typingBounce {
+                0%, 80%, 100% { transform: scale(0); }
+                40% { transform: scale(1); }
+            }
+        `}</style>
+    </div>
+);
 ```
 
 ## File: packages/apps-whatsapp/README.md
@@ -348,54 +668,6 @@ export const iPhone16Profile: DeviceProfile = {
 };
 ```
 
-## File: packages/devices/src/pixel/Frame.tsx
-```typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1000
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-        </div>
-    );
-};
-```
-
 ## File: packages/devices/src/pixel/profile.ts
 ```typescript
 import { DeviceProfile } from "../types";
@@ -410,69 +682,12 @@ export const PixelProfile: DeviceProfile = {
 };
 ```
 
-## File: packages/devices/src/StatusBar.tsx
-```typescript
-import React from "react";
-
-export const StatusBar: React.FC<{ time?: string }> = ({ time = "9:41" }) => {
-    return (
-        <div style={{
-            width: "100%",
-            height: 60, // Approximate status bar height
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 30px",
-            boxSizing: "border-box",
-            fontSize: 24,
-            fontWeight: "bold",
-            color: "black",
-            position: "absolute",
-            top: 15,
-            left: 0,
-            zIndex: 20
-        }}>
-            <div>{time}</div>
-            <div style={{ display: "flex", gap: 10 }}>
-                {/* Icons placeholders */}
-                <span>📶</span>
-                <span>Wi-Fi</span>
-                <span>🔋</span>
-            </div>
-        </div>
-    );
-};
-```
-
 ## File: packages/devices/src/types.ts
 ```typescript
 export interface DeviceProfile {
     id: string;
     dimensions: { width: number; height: number };
     statusBarHeight: number;
-}
-```
-
-## File: packages/devices/package.json
-```json
-{
-    "name": "@tokovo/devices",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "^18.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "^18.0.0"
-    }
 }
 ```
 
@@ -559,12 +774,88 @@ Device profiles and reducers.
 }
 ```
 
-## File: packages/episodes/src/index.ts
-```typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-
-export * from "./schema";
-export { exampleEpisode };
+## File: packages/episodes/src/examples/instagram-test.json
+```json
+{
+    "id": "instagram-dm-test",
+    "title": "Instagram DM Test",
+    "durationInFrames": 300,
+    "fps": 30,
+    "width": 1080,
+    "height": 1920,
+    "initialState": {
+        "devices": {
+            "alice_phone": {
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "other",
+                        "text": "Yo! Did you see that post?",
+                        "at": -60,
+                        "liked": false
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "Yeah, crazy right?",
+                        "at": -30,
+                        "liked": true
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "camera": {
+            "type": "static",
+            "deviceId": "alice_phone"
+        }
+    },
+    "timeline": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 95,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "other",
+            "text": "We should go there next week!"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Totally down. Let's book it."
+        }
+    ]
+}
 ```
 
 ## File: packages/episodes/package.json
@@ -611,29 +902,107 @@ export * from "./DeviceFrame";
 export * from "./TokovoRenderer";
 ```
 
-## File: packages/renderer/package.json
-```json
-{
-    "name": "@tokovo/renderer",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "react": "^18.0.0",
-        "remotion": "latest"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "^18.0.0"
-    }
-}
+## File: packages/renderer/src/NotificationOverlay.tsx
+```typescript
+import React from "react";
+import { Notification } from "@tokovo/core";
+
+export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android" }> = ({ notifications = [], variant = "ios" }) => {
+    if (!notifications || notifications.length === 0) return null;
+
+    // Only show the latest notification for now
+    const latest = notifications[notifications.length - 1];
+
+    const isAndroid = variant === "android";
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: isAndroid ? 40 : 20,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: "92%",
+            zIndex: 100,
+            pointerEvents: "none" // Let clicks pass through
+        }}>
+            <div style={{
+                backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
+                backdropFilter: "blur(20px)",
+                borderRadius: isAndroid ? 24 : 36,
+                padding: "30px 40px",
+                boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                display: "flex",
+                alignItems: "center",
+                gap: 30,
+                color: isAndroid ? "white" : "black",
+                animation: "slideDown 0.5s cubic-bezier(0.16, 1, 0.3, 1)"
+            }}>
+                <div style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 20,
+                    backgroundColor: "#25D366", // WhatsApp Green
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    fontSize: 50,
+                    color: "white"
+                }}>
+                    W
+                </div>
+                <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
+                        <span>{latest.title}</span>
+                        <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
+                    </div>
+                    <div style={{ fontSize: 36, opacity: 0.8 }}>
+                        {latest.body}
+                    </div>
+                </div>
+            </div>
+            <style>{`
+                @keyframes slideDown {
+                    from { transform: translateY(-150%); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+            `}</style>
+        </div>
+    );
+};
+```
+
+## File: packages/renderer/src/VisualDebugger.tsx
+```typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+
+export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 50,
+            right: 50,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            color: "#0f0",
+            fontFamily: "monospace",
+            fontSize: 24,
+            padding: 20,
+            borderRadius: 10,
+            zIndex: 9999,
+            pointerEvents: "none",
+            maxWidth: 600
+        }}>
+            <div><strong>Frame:</strong> {t.toFixed(0)}</div>
+            <div><strong>Active App:</strong> {Object.values(world.devices)[0]?.foregroundAppId || "Home"}</div>
+            <div><strong>Events:</strong></div>
+            {/* We would need access to events here, but world state doesn't store history. 
+                Just showing state for now. */}
+            <div style={{ marginTop: 10, fontSize: 18, opacity: 0.8 }}>
+                Camera: {world.camera.type}
+            </div>
+        </div>
+    );
+};
 ```
 
 ## File: packages/renderer/tsconfig.json
@@ -823,107 +1192,72 @@ packages:
 }
 ```
 
-## File: apps/video-runner/src/Root.tsx
+## File: apps/video-runner/src/AndroidVideo.tsx
 ```typescript
 import React from "react";
-import { Composition } from "remotion";
-import { Video } from "./Video";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { PixelProfile } from "@tokovo/devices";
+import { androidEpisode } from "@tokovo/episodes";
 
-export const RemotionRoot: React.FC = () => {
+export const AndroidVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / PixelProfile.dimensions.width;
+    const scaleY = availableHeight / PixelProfile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
+
     return (
-        <>
-            <Composition
-                id="TokovoExample"
-                component={Video}
-                durationInFrames={300}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-        </>
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: PixelProfile.dimensions.width,
+                height: PixelProfile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} />
+            </div>
+        </div>
     );
 };
 ```
 
-## File: packages/core/src/engine.test.ts
-```typescript
-import { describe, it, expect } from "vitest";
-import { produce } from "immer";
-import { replay, WorldState, TimelineEvent, ReducerRegistry } from "./index";
-
-// Mock reducer for testing
-const mockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
-    if (event.kind === "DEVICE" && event.type === "UNLOCK") {
-        return produce(devices, draft => {
-            draft[event.deviceId].isLocked = false;
-        });
+## File: packages/apps-whatsapp/package.json
+```json
+{
+    "name": "@tokovo/apps-whatsapp",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
     }
-    return devices;
-};
-
-describe("Core Engine", () => {
-    it("should replay events correctly", () => {
-        // Register mock reducer
-        ReducerRegistry.registerDeviceReducer(mockReducer);
-
-        const initialWorld: WorldState = {
-            devices: {
-                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
-            },
-            conversations: {},
-            camera: { type: "APP_VIEW" }
-        };
-
-        const events: TimelineEvent[] = [
-            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" }
-        ];
-
-        // Replay at t=0 (before event)
-        const world0 = replay(initialWorld, events, 0);
-        expect(world0.devices["test_device"].isLocked).toBe(true);
-
-        // Replay at t=10 (at event)
-        const world10 = replay(initialWorld, events, 10);
-        expect(world10.devices["test_device"].isLocked).toBe(false);
-
-        // Replay at t=20 (after event)
-        const world20 = replay(initialWorld, events, 20);
-        expect(world20.devices["test_device"].isLocked).toBe(false);
-    });
-
-    it("should handle multiple events in order", () => {
-        const initialWorld: WorldState = {
-            devices: {
-                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
-            },
-            conversations: {},
-            camera: { type: "APP_VIEW" }
-        };
-
-        const events: TimelineEvent[] = [
-            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" },
-            { at: 20, kind: "DEVICE", deviceId: "test_device", type: "LOCK" } // Assuming mockReducer handled LOCK, but it doesn't. Let's update mockReducer or just test UNLOCK.
-        ];
-
-        // Let's use a more comprehensive mock reducer for this test
-        const comprehensiveMockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
-            if (event.kind === "DEVICE") {
-                return produce(devices, draft => {
-                    if (event.type === "UNLOCK") draft[event.deviceId].isLocked = false;
-                    if (event.type === "LOCK") draft[event.deviceId].isLocked = true;
-                });
-            }
-            return devices;
-        };
-        ReducerRegistry.registerDeviceReducer(comprehensiveMockReducer);
-
-        const world15 = replay(initialWorld, events, 15);
-        expect(world15.devices["test_device"].isLocked).toBe(false);
-
-        const world25 = replay(initialWorld, events, 25);
-        expect(world25.devices["test_device"].isLocked).toBe(true);
-    });
-});
+}
 ```
 
 ## File: packages/devices/src/iphone16/Frame.tsx
@@ -967,6 +1301,64 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ childre
                 flexDirection: "column",
                 position: "relative"
             }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+```
+
+## File: packages/devices/src/pixel/Frame.tsx
+```typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1000
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white"
+            }}>
+                {/* Pass variant="android" to StatusBar if it was imported/used here. 
+                    Since StatusBar isn't imported in the original file, I assume it's rendered by the Renderer or needs to be added here.
+                    However, looking at the architecture, DeviceFrame usually renders the StatusBar. 
+                    Let's check packages/renderer/src/DeviceFrame.tsx to see where StatusBar is rendered.
+                    Wait, I should probably just update the style here for now and let the renderer handle the status bar prop if it's passed down.
+                    But the plan said "Pass variant='android' to StatusBar". 
+                    If StatusBar is not in this file, I can't pass it here.
+                    Let me check DeviceFrame.tsx first.
+                */}
                 {children}
             </div>
         </div>
@@ -1018,77 +1410,110 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ```
 
-## File: packages/episodes/src/schema.ts
+## File: packages/devices/src/StatusBar.tsx
 ```typescript
-import { z } from "zod";
+import React from "react";
 
-export const DeviceEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("DEVICE"),
-    deviceId: z.string(),
-    type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
-    appId: z.string().optional()
-});
+export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }> = ({ time = "9:41", variant = "ios" }) => {
+    const isAndroid = variant === "android";
 
-export const AppEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("APP"),
-    appId: z.string(),
-    type: z.enum(["MESSAGE_RECEIVED", "TYPING_START", "TYPING_END"]),
-    conversationId: z.string(),
-    from: z.string(),
-    text: z.string().optional()
-});
+    return (
+        <div style={{
+            width: "100%",
+            height: isAndroid ? 90 : 60, // Android status bar is usually taller
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: isAndroid ? "0 45px" : "0 30px",
+            boxSizing: "border-box",
+            fontSize: isAndroid ? 36 : 24,
+            fontWeight: "bold",
+            color: isAndroid ? "white" : "black", // Default to white for Android (usually on dark bg or transparent)
+            position: "absolute",
+            top: isAndroid ? 15 : 15,
+            left: 0,
+            zIndex: 20,
+            fontFamily: isAndroid ? "Roboto, sans-serif" : "inherit"
+        }}>
+            <div>{time}</div>
+            <div style={{ display: "flex", gap: 15, alignItems: "center" }}>
+                {isAndroid ? (
+                    <>
+                        {/* Android Icons */}
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21L24 6H0L12 21Z" /></svg> {/* Wifi-ish */}
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" /></svg> {/* Battery */}
+                    </>
+                ) : (
+                    <>
+                        {/* iOS Icons placeholders */}
+                        <span>📶</span>
+                        <span>Wi-Fi</span>
+                        <span>🔋</span>
+                    </>
+                )}
+            </div>
+        </div>
+    );
+};
+```
 
-export const CameraEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("CAMERA"),
-    type: z.literal("SET_VIEW"),
-    view: z.object({
-        type: z.literal("APP_VIEW"),
-        appId: z.string().optional()
-    })
-});
+## File: packages/devices/package.json
+```json
+{
+    "name": "@tokovo/devices",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
+}
+```
 
-export const TimelineEventSchema = z.discriminatedUnion("kind", [
-    DeviceEventSchema,
-    AppEventSchema,
-    CameraEventSchema
-]);
-
-// --- World State Schemas ---
-
-export const DeviceStateSchema = z.object({
-    id: z.string(),
-    profileId: z.string(),
-    isLocked: z.boolean(),
-    foregroundAppId: z.string().optional(),
-});
-
-export const ConversationStateSchema = z.object({
-    id: z.string(),
-    messages: z.array(z.object({
-        id: z.string(),
-        from: z.string(),
-        text: z.string().optional(),
-        at: z.number(),
-    })),
-    typing: z.record(z.boolean()).optional(),
-});
-
-export const CameraViewSchema = z.object({
-    type: z.literal("APP_VIEW"),
-    appId: z.string().optional(),
-});
-
-export const EpisodeSchema = z.object({
-    initialWorld: z.object({
-        devices: z.record(DeviceStateSchema),
-        conversations: z.record(ConversationStateSchema),
-        camera: CameraViewSchema,
-    }),
-    events: z.array(TimelineEventSchema),
-});
+## File: apps/video-runner/package.json
+```json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
 ```
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -1139,75 +1564,6 @@ export * from "./pixel/profile";
 export * from "./pixel/Frame";
 export * from "./reducer";
 export * from "./StatusBar";
-```
-
-## File: packages/devices/src/reducer.test.ts
-```typescript
-import { describe, it, expect } from "vitest";
-import { produce } from "immer";
-import { deviceReducer } from "./reducer";
-import { WorldState, TimelineEvent } from "@tokovo/core";
-
-describe("Device Reducer", () => {
-    const initialWorld: WorldState = {
-        devices: {
-            "test_device": { id: "test_device", profileId: "test_profile", isLocked: true, notifications: [] }
-        },
-        conversations: {},
-        camera: { type: "APP_VIEW" }
-    };
-
-    it("should handle UNLOCK event", () => {
-        const event: TimelineEvent = { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" };
-        const nextState = produce(initialWorld, (draft) => {
-            draft.devices = deviceReducer(draft.devices, event);
-        });
-        expect(nextState.devices["test_device"].isLocked).toBe(false);
-    });
-
-    it("should handle OPEN_APP event", () => {
-        // First unlock
-        const unlockedState = produce(initialWorld, (draft) => {
-            draft.devices["test_device"].isLocked = false;
-        });
-
-        const event: TimelineEvent = { at: 20, kind: "DEVICE", deviceId: "test_device", type: "OPEN_APP", appId: "app_test" };
-        const nextState = produce(unlockedState, (draft) => {
-            draft.devices = deviceReducer(draft.devices, event);
-        });
-        expect(nextState.devices["test_device"].foregroundAppId).toBe("app_test");
-    });
-
-    it("should handle CLOSE_APP event", () => {
-        const openAppState = produce(initialWorld, (draft) => {
-            draft.devices["test_device"].isLocked = false;
-            draft.devices["test_device"].foregroundAppId = "app_test";
-        });
-
-        const event: TimelineEvent = { at: 30, kind: "DEVICE", deviceId: "test_device", type: "CLOSE_APP" };
-        const nextState = produce(openAppState, (draft) => {
-            draft.devices = deviceReducer(draft.devices, event);
-        });
-        expect(nextState.devices["test_device"].foregroundAppId).toBeUndefined();
-    });
-
-    it("should handle SHOW_NOTIFICATION event", () => {
-        const event: TimelineEvent = {
-            at: 40,
-            kind: "DEVICE",
-            deviceId: "test_device",
-            type: "SHOW_NOTIFICATION",
-            appId: "app_test",
-            title: "Test Title",
-            body: "Test Body"
-        };
-        const nextState = produce(initialWorld, (draft) => {
-            draft.devices = deviceReducer(draft.devices, event);
-        });
-        expect(nextState.devices["test_device"].notifications).toHaveLength(1);
-        expect(nextState.devices["test_device"].notifications[0].title).toBe("Test Title");
-    });
-});
 ```
 
 ## File: packages/episodes/src/examples/whatsapp-breakup-01.json
@@ -1296,22 +1652,198 @@ describe("Device Reducer", () => {
 }
 ```
 
+## File: packages/episodes/src/index.ts
+```typescript
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+
+import androidEpisode from "./examples/android-test.json";
+
+import instagramEpisode from "./examples/instagram-test.json";
+
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode };
+```
+
+## File: packages/episodes/src/schema.ts
+```typescript
+import { z } from "zod";
+
+export const DeviceEventSchema = z.discriminatedUnion("type", [
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
+        appId: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SHOW_NOTIFICATION"),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string()
+    })
+]);
+
+export const AppEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("APP"),
+    appId: z.string(),
+    type: z.enum(["MESSAGE_RECEIVED", "TYPING_START", "TYPING_END"]),
+    conversationId: z.string(),
+    from: z.string(),
+    text: z.string().optional()
+});
+
+export const CameraEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("CAMERA"),
+    type: z.literal("SET_VIEW"),
+    view: z.object({
+        type: z.literal("APP_VIEW"),
+        appId: z.string().optional()
+    })
+});
+
+export const TimelineEventSchema = z.union([
+    DeviceEventSchema,
+    AppEventSchema,
+    CameraEventSchema
+]);
+
+// --- World State Schemas ---
+
+export const DeviceStateSchema = z.object({
+    id: z.string(),
+    profileId: z.string(),
+    isLocked: z.boolean(),
+    foregroundAppId: z.string().optional(),
+    notifications: z.array(z.object({
+        id: z.string(),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string(),
+        at: z.number(),
+    })).optional(),
+});
+
+export const ConversationStateSchema = z.object({
+    id: z.string(),
+    messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        text: z.string().optional(),
+        at: z.number(),
+    })),
+    typing: z.record(z.boolean()).optional(),
+});
+
+export const CameraViewSchema = z.object({
+    type: z.literal("APP_VIEW"),
+    appId: z.string().optional(),
+});
+
+export const EpisodeSchema = z.object({
+    initialWorld: z.object({
+        devices: z.record(DeviceStateSchema),
+        conversations: z.record(ConversationStateSchema),
+        camera: CameraViewSchema,
+    }),
+    events: z.array(TimelineEventSchema),
+});
+```
+
+## File: packages/renderer/package.json
+```json
+{
+    "name": "@tokovo/renderer",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.211"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "@types/react-dom": "18.2.0"
+    }
+}
+```
+
+## File: apps/video-runner/src/Root.tsx
+```typescript
+import React from "react";
+import { Composition } from "remotion";
+import { Video } from "./Video";
+import { AndroidVideo } from "./AndroidVideo";
+import { InstagramVideo } from "./InstagramVideo";
+
+export const RemotionRoot: React.FC = () => {
+    return (
+        <>
+            <Composition
+                id="TokovoExample"
+                component={Video}
+                durationInFrames={300}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="AndroidNotificationTest"
+                component={AndroidVideo}
+                durationInFrames={150}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="InstagramDMTest"
+                component={InstagramVideo}
+                durationInFrames={300}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+        </>
+    );
+};
+```
+
 ## File: packages/renderer/src/LayoutEngine.ts
 ```typescript
 import { WorldState } from "@tokovo/core";
 
 export interface LayoutState {
     scrollToBottom: boolean;
+    scrollY: number;
     messageAnimations: Record<string, { opacity: number; translateY: number }>;
 }
 
 export function computeLayout(world: WorldState, t: number = 0): LayoutState {
     const layout: LayoutState = {
         scrollToBottom: true,
+        scrollY: 0,
         messageAnimations: {}
     };
 
     // Calculate message animations
+    let totalHeight = 0;
+    const messageHeights: Record<string, number> = {}; // Mock heights for now, ideally measured
+
     for (const convId in world.conversations) {
         const conversation = world.conversations[convId];
         for (const msg of conversation.messages) {
@@ -1321,8 +1853,46 @@ export function computeLayout(world: WorldState, t: number = 0): LayoutState {
             const translateY = Math.max(60 - age * 6, 0);
 
             layout.messageAnimations[msg.id] = { opacity, translateY };
+
+            // Estimate height (mock) - in real implementation, this needs measureText or fixed heights
+            const estimatedHeight = 150 + (msg.text?.length || 0) * 2;
+            messageHeights[msg.id] = estimatedHeight;
+
+            if (age >= 0) {
+                totalHeight += estimatedHeight + 20; // 20px gap
+            }
         }
     }
+
+    // Smooth scroll logic
+    // Target scroll is totalHeight - viewportHeight (approx 2000 for iPhone)
+    // We want to scroll to the bottom if new messages appear
+    const viewportHeight = 2000;
+    const targetScroll = Math.max(0, totalHeight - viewportHeight + 300); // +300 padding
+
+    // Simple linear interpolation for smoothness, or just snap for now if t is large
+    // For a real spring, we'd need previous state, but here we are pure function of t.
+    // So we make scroll dependent on the latest message timestamp.
+
+    // Find latest message time
+    let lastMsgTime = 0;
+    for (const convId in world.conversations) {
+        for (const msg of world.conversations[convId].messages) {
+            if (msg.at > lastMsgTime && msg.at <= t) lastMsgTime = msg.at;
+        }
+    }
+
+    const timeSinceLastMsg = t - lastMsgTime;
+    // Scroll animation duration = 20 frames
+    const scrollProgress = Math.min(timeSinceLastMsg / 20, 1);
+
+    // This is a simplification. Ideally we interpolate from "previous target" to "current target".
+    // Since we don't have previous state, we can assume the "previous target" was valid at lastMsgTime - 1.
+    // For MVP Phase 2, we will just output the targetScroll. 
+    // The UI component can use CSS transitions for the actual smooth visual if needed, 
+    // OR we can implement a deterministic scroll function here if we knew the history.
+
+    layout.scrollY = targetScroll;
 
     return layout;
 }
@@ -1333,10 +1903,12 @@ export function computeLayout(world: WorldState, t: number = 0): LayoutState {
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { InstagramChatView } from "@tokovo/apps-instagram";
 
 export const AppRegistry = {
     views: {
-        "app_whatsapp": WhatsappChatView
+        "app_whatsapp": WhatsappChatView,
+        "app_instagram": InstagramChatView
     } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: any }>>,
 
     getView(appId: string) {
@@ -1375,7 +1947,7 @@ export const Video: React.FC = () => {
     const t = frame;
 
     // Replay
-    const world = replay(exampleEpisode.initialWorld as WorldState, exampleEpisode.events as any, t);
+    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
 
     return (
         <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
@@ -1387,7 +1959,7 @@ export const Video: React.FC = () => {
                 width: iPhone16Profile.dimensions.width,
                 height: iPhone16Profile.dimensions.height
             }}>
-                <TokovoRenderer world={world} deviceId="alice_phone" deviceProfile={iPhone16Profile} t={t} />
+                <TokovoRenderer world={world} t={t} />
             </div>
         </div>
     );
@@ -1414,6 +1986,9 @@ export interface DeviceState {
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
+    sound?: {
+        activeSoundId?: string;
+    };
 }
 
 export interface ConversationState {
@@ -1438,23 +2013,32 @@ export type TimelineEvent =
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig };
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
 ```
 
 ## File: packages/renderer/src/DeviceFrame.tsx
 ```typescript
 import React from "react";
 import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices"; // Import profiles to look them up
 
-export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean; notifications?: any[]; children: React.ReactNode }> = ({ profile, isLocked, notifications, children }) => {
+export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; notifications?: any[]; children: React.ReactNode; variant?: "ios" | "android" }> = ({ profileId, isLocked, notifications, children, variant }) => {
     // Strategy pattern: Select frame component based on profile ID
-    // In a full implementation, this might be a registry lookup
-    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame :
-        profile.id === "pixel" ? PixelFrame : React.Fragment;
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
 
     return (
-        <FrameComponent>
-            <StatusBar time="10:41" />
+        <FrameComponent {...frameProps}>
+            <StatusBar time="10:41" variant={variant} />
             {children}
             {isLocked && (
                 <div style={{
@@ -1502,43 +2086,11 @@ export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean;
 };
 ```
 
-## File: packages/renderer/src/TokovoRenderer.tsx
-```typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { DeviceProfile } from "@tokovo/devices";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { computeLayout } from "./LayoutEngine";
-
-export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; deviceProfile: DeviceProfile; t: number }> = ({ world, deviceId, deviceProfile, t }) => {
-    const deviceState = world.devices[deviceId];
-    if (!deviceState) {
-        return <div style={{ color: "red" }}>Device {deviceId} not found</div>;
-    }
-
-    const activeAppId = deviceState?.foregroundAppId;
-
-    // Compute layout
-    const layout = computeLayout(world);
-
-    let AppView = null;
-    if (activeAppId) {
-        AppView = AppRegistry.getView(activeAppId);
-    }
-
-    return (
-        <DeviceFrame profile={deviceProfile} isLocked={deviceState?.isLocked} notifications={deviceState?.notifications}>
-            {AppView && <AppView world={world} t={t} layout={layout} />}
-        </DeviceFrame>
-    );
-};
-```
-
 ## File: packages/apps-whatsapp/src/ui.tsx
 ```typescript
 import React, { useEffect, useRef } from "react";
 import { WorldState } from "@tokovo/core";
+import { TypingBubble } from "./TypingBubble";
 
 // --- Icons (Scaled 3x: 24 -> 72) ---
 const BackIcon = () => (
@@ -1661,31 +2213,31 @@ const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) =>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
-    const bottomRef = useRef<HTMLDivElement>(null);
-
-    // Auto-scroll to bottom
-    useEffect(() => {
-        if (layout?.scrollToBottom) {
-            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [messages.length, layout?.scrollToBottom]);
+const MessageList: React.FC<{ messages: any[]; layout?: any; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
+    const scrollY = layout?.scrollY || 0;
 
     return (
         <div style={{
             flex: 1,
-            padding: "30px 48px", // 10*3, 16*3
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
-            overflowY: "auto",
+            position: "relative",
+            overflow: "hidden", // Hide scrollbar, we control position manually
             backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", // WhatsApp Doodle background
             backgroundSize: "cover"
         }}>
-            {messages.map((msg: any) => (
-                <MessageBubble key={msg.id} msg={msg} layout={layout} />
-            ))}
-            <div ref={bottomRef} />
+            <div style={{
+                padding: "30px 48px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 18,
+                transform: `translateY(-${scrollY}px)`,
+                transition: "transform 0.3s ease-out", // Smooth visual transition if scrollY jumps
+                minHeight: "100%"
+            }}>
+                {messages.map((msg: any) => (
+                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
+                ))}
+                {isTyping && <TypingBubble />}
+            </div>
         </div>
     );
 };
@@ -1769,25 +2321,66 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
     return (
         <WhatsApp.Root>
             <WhatsApp.Header contactName="Alice" />
-            <WhatsApp.MessageList messages={messages} layout={layout} />
-            {isTyping && (
-                <div style={{
-                    padding: "24px 36px",
-                    marginLeft: 48,
-                    marginBottom: 12,
-                    backgroundColor: "#FFFFFF",
-                    borderRadius: 48,
-                    borderTopLeftRadius: 12,
-                    alignSelf: "flex-start",
-                    width: "fit-content",
-                    boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
-                }}>
-                    <div style={{ fontSize: 42, color: "#8E8E93" }}>typing...</div>
-                </div>
-            )}
+            <WhatsApp.MessageList messages={messages} layout={layout} isTyping={isTyping} />
             <WhatsApp.InputArea text={draftText} />
             <Keyboard visible={false} />
         </WhatsApp.Root>
+    );
+};
+```
+
+## File: packages/renderer/src/TokovoRenderer.tsx
+```typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { computeLayout } from "./LayoutEngine";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { VisualDebugger } from "./VisualDebugger";
+import { Audio, staticFile } from "remotion";
+
+export const TokovoRenderer: React.FC<{ world: WorldState; t: number; debug?: boolean }> = ({ world, t, debug }) => {
+    // 1. Determine active device & app
+    // For MVP, we assume single device "alice_phone" or "bob_phone"
+    const deviceId = Object.keys(world.devices)[0];
+    const device = world.devices[deviceId];
+    const appId = device?.foregroundAppId;
+
+    // 2. Compute Layout
+    const layout = computeLayout(world, t);
+
+    // 3. Select App View
+    let AppView = null;
+    if (appId && AppRegistry.views[appId]) {
+        AppView = AppRegistry.views[appId];
+    }
+
+    // 4. Determine Device Variant (simple heuristic for now)
+    const isPixel = device.profileId.includes("pixel");
+    const variant = isPixel ? "android" : "ios";
+
+    return (
+        <div style={{ width: "100%", height: "100%", position: "relative" }}>
+            {/* Audio Layer - Placeholder logic. 
+                In a real implementation, we'd map audio events to <Audio /> components with startFrom/endAt 
+                or use an AudioContext manager. For now, we assume a simple sound effect if triggered.
+            */}
+            {/* <Audio src={staticFile("assets/sounds/typing.mp3")} /> */}
+
+            <DeviceFrame profileId={device.profileId} variant={variant}>
+                {AppView ? (
+                    <AppView world={world} t={t} layout={layout} />
+                ) : (
+                    <div style={{ flex: 1, backgroundColor: "black" }} /> // Lock screen / Home
+                )}
+
+                {/* Overlays */}
+                <NotificationOverlay notifications={device?.notifications} variant={variant} />
+            </DeviceFrame>
+
+            {debug && <VisualDebugger world={world} t={t} />}
+        </div>
     );
 };
 ```

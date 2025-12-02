@@ -82,29 +82,37 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
-    // Animation logic from layout engine
-    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
-    const { opacity, translateY } = animation;
+// ...
+
+const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, height, y } = layout;
 
     return (
         <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 48,
+            right: isMe ? 48 : "auto",
+            height: height - 20, // Subtract internal padding/gap if needed, or just use height
+            // Actually height from layout includes gap? No, layout engine adds gap to currentY.
+            // height is the bubble height.
+
             backgroundColor: isMe ? "#DCF8C6" : "#FFFFFF",
-            padding: "24px 36px", // 8*3, 12*3
-            borderRadius: 48, // 16*3
+            padding: "24px 36px",
+            borderRadius: 48,
             borderTopLeftRadius: !isMe ? 12 : 48,
             borderTopRightRadius: isMe ? 12 : 48,
             maxWidth: "75%",
-            fontSize: 51, // 17*3
-            lineHeight: "66px", // 22*3
+            fontSize: 51,
+            lineHeight: "66px",
             boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
-            position: "relative",
-            marginBottom: 12,
             opacity,
-            transform: `translateY(${translateY}px)`
+            transform: `translateY(${translateY}px)`,
+            display: "flex",
+            flexDirection: "column"
         }}>
             <div>{msg.text}</div>
             <div style={{
@@ -113,40 +121,48 @@ const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) =>
                 alignItems: "center",
                 gap: 12,
                 marginTop: 6,
-                fontSize: 33, // 11*3
+                fontSize: 33,
                 color: "rgba(0,0,0,0.45)"
             }}>
-                <span>10:42</span> {/* Mock time for now */}
+                <span>10:42</span>
                 {isMe && <CheckIcon />}
             </div>
         </div>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: any; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
-    const scrollY = layout?.scrollY || 0;
+const MessageList: React.FC<{ messages: any[]; layout?: LayoutState; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
 
     return (
         <div style={{
             flex: 1,
             position: "relative",
-            overflow: "hidden", // Hide scrollbar, we control position manually
-            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')", // WhatsApp Doodle background
+            overflow: "hidden",
+            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
             backgroundSize: "cover"
         }}>
             <div style={{
-                padding: "30px 48px",
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: contentHeight, // Set height to allow scrolling if we were using native scroll, but we use transform
                 transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.3s ease-out", // Smooth visual transition if scrollY jumps
-                minHeight: "100%"
+                transition: "transform 0.1s linear", // Layout engine handles easing? Or we do it here?
+                // Spec says "scrollEasingDuration" in config. Layout engine computes target scrollY?
+                // If layout engine returns instantaneous scrollY, we might want CSS transition.
+                // But layout engine might return interpolated scrollY.
+                // Let's assume layout engine returns the frame-perfect scrollY.
             }}>
-                {messages.map((msg: any) => (
-                    <MessageBubble key={msg.id} msg={msg} layout={layout} />
-                ))}
-                {isTyping && <TypingBubble />}
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
+                {/* Typing indicator would also need layout info */}
             </div>
         </div>
     );
@@ -219,7 +235,7 @@ export const WhatsApp = {
     InputArea
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];

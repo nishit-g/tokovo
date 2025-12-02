@@ -1,5 +1,6 @@
 import React from "react";
 import { InstagramState, Post, StoryUser } from "../../types";
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
 // --- Icons ---
 const HeartIcon = ({ filled }: { filled?: boolean }) => (
@@ -120,8 +121,9 @@ const PostItem: React.FC<{ post: Post }> = ({ post }) => (
     </div>
 );
 
-export const FeedView: React.FC<{ state: InstagramState; layout?: any }> = ({ state, layout }) => {
-    const scrollY = layout?.scrollY || 0;
+export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
 
     return (
         <div style={{

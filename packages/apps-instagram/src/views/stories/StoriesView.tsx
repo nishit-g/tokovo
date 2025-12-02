@@ -1,5 +1,6 @@
 import React from "react";
 import { InstagramState, StoryUser } from "../../types";
+import { LayoutState, StoryLayoutState } from "@tokovo/core";
 
 const CloseIcon = () => (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -29,14 +30,26 @@ const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: numb
         ))}
     </div>
 );
+// ... (Icons remain same)
 
-export const StoriesView: React.FC<{ state: InstagramState; t: number }> = ({ state, t }) => {
+export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
+    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
+
+    // Fallback if no layout provided (shouldn't happen in new system)
+    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
     const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
+    // Or derive from layout if we stored user info there? 
+    // LayoutEngine stores IDs. We can look up the user/story from state using the ID in layout.
+    // For now, let's stick to state lookup for data, layout for position/timing.
 
     if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
 
-    // Mock progress for now - in real app would be based on time
-    const progress = (t % 150) / 150;
+    const activeIndex = storyLayout.activeStoryIndex;
+    const progress = storyLayout.storyProgress;
+    const activeStory = activeUser.stories[activeIndex];
+
+    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
 
     return (
         <div style={{
@@ -45,24 +58,35 @@ export const StoriesView: React.FC<{ state: InstagramState; t: number }> = ({ st
             color: "white",
             position: "relative",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            overflow: "hidden" // Important for transitions
         }}>
-            {/* Background Image */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `url(${activeUser.stories[0].image})`, // Simplified: always show first story
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                filter: "brightness(0.9)"
-            }} />
+            {/* Render all stories that have layout info (for transitions) */}
+            {storyLayout.storyLayouts.map(sl => {
+                const story = activeUser.stories[sl.index];
+                if (!story) return null;
 
-            {/* Overlay Content */}
+                return (
+                    <div key={story.id} style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: `url(${story.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        filter: "brightness(0.9)",
+                        opacity: sl.opacity,
+                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`,
+                        transition: "none" // Layout engine handles animation
+                    }} />
+                );
+            })}
+
+            {/* Overlay Content (UI doesn't transition, just stays on top) */}
             <div style={{ position: "relative", zIndex: 10, paddingTop: 60, paddingLeft: 20, paddingRight: 20 }}>
-                <ProgressBar count={activeUser.stories.length} activeIndex={0} progress={progress} />
+                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
 
                 <div style={{ display: "flex", alignItems: "center", marginTop: 20 }}>
                     <div style={{ width: 64, height: 64, borderRadius: "50%", backgroundImage: `url(${activeUser.avatar})`, backgroundSize: "cover", marginRight: 20 }} />
