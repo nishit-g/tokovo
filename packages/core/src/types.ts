@@ -3,6 +3,8 @@ export type AppId = string;
 export type ConversationId = string;
 
 export interface DeviceState {
+    id: DeviceId; // The instance ID (e.g., "alice_phone")
+    profileId: string; // The hardware profile ID (e.g., "iphone16")
     isLocked: boolean;
     foregroundAppId?: AppId;
 }

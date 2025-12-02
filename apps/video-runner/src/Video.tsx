@@ -31,7 +31,7 @@ export const Video: React.FC = () => {
     return (
         <div style={{ flex: 1, backgroundColor: "white", display: "flex", justifyContent: "center", alignItems: "center" }}>
             <div style={{ transform: `scale(${scale})` }}>
-                <TokovoRenderer world={world} deviceProfile={iPhone16Profile} />
+                <TokovoRenderer world={world} deviceId="alice_phone" deviceProfile={iPhone16Profile} t={t} />
             </div>
         </div>
     );

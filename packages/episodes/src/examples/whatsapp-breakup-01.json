@@ -1,7 +1,9 @@
 {
     "initialWorld": {
         "devices": {
-            "iphone16": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
                 "isLocked": true
             }
         },
@@ -20,13 +22,13 @@
         {
             "at": 0,
             "kind": "DEVICE",
-            "deviceId": "iphone16",
+            "deviceId": "alice_phone",
             "type": "UNLOCK"
         },
         {
             "at": 10,
             "kind": "DEVICE",
-            "deviceId": "iphone16",
+            "deviceId": "alice_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
         },

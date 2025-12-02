@@ -13,7 +13,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
     switch (event.type) {
         case "MESSAGE_RECEIVED":
             conversation.messages.push({
-                id: Math.random().toString(), // Should be deterministic ideally
+                id: `msg_${event.at}_${event.from}_${event.text?.substring(0, 5)}`, // Deterministic ID
                 from: event.from,
                 text: event.text,
                 at: event.at
