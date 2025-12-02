@@ -1,0 +1,59 @@
+{
+    "initialWorld": {
+        "devices": {
+            "iphone16": {
+                "isLocked": true
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": []
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW",
+            "appId": "app_whatsapp"
+        }
+    },
+    "events": [
+        {
+            "at": 0,
+            "kind": "DEVICE",
+            "deviceId": "iphone16",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 10,
+            "kind": "DEVICE",
+            "deviceId": "iphone16",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        },
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 65,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "other",
+            "text": "We need to talk..."
+        }
+    ]
+}

@@ -1,0 +1,21 @@
+{
+    "name": "@tokovo/renderer",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "react": "^18.0.0",
+        "remotion": "latest"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "^18.0.0"
+    }
+}

@@ -1,0 +1,32 @@
+import { produce } from "immer";
+import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
+
+export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
+    if (event.kind !== "APP" || event.appId !== "app_whatsapp") return;
+
+    const conversationId = event.conversationId;
+    if (!draft.conversations[conversationId]) {
+        draft.conversations[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (event.type) {
+        case "MESSAGE_RECEIVED":
+            conversation.messages.push({
+                id: Math.random().toString(), // Should be deterministic ideally
+                from: event.from,
+                text: event.text,
+                at: event.at
+            });
+            break;
+        case "TYPING_START":
+            // Handle typing state
+            break;
+        case "TYPING_END":
+            // Handle typing state
+            break;
+    }
+}
+
+// Register itself
+ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
