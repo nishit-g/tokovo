@@ -10,22 +10,22 @@
         "test": "eslint src --ext ts,tsx"
     },
     "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/apps-whatsapp": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
         "@tokovo/episodes": "workspace:*",
-        "react": "^18.0.0",
-        "react-dom": "^18.0.0",
-        "remotion": "latest",
-        "@remotion/cli": "latest",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
         "zod": "^3.0.0"
     },
     "devDependencies": {
-        "@types/react": "^18.0.0",
+        "@types/react": "18.2.0",
         "@types/web": "^0.0.61",
         "eslint": "^8.0.0",
-        "typescript": "^5.0.0",
-        "prettier": "^3.0.0"
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
     }
 }

@@ -1,12 +1,23 @@
 import { z } from "zod";
 
-export const DeviceEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("DEVICE"),
-    deviceId: z.string(),
-    type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
-    appId: z.string().optional()
-});
+export const DeviceEventSchema = z.discriminatedUnion("type", [
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
+        appId: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SHOW_NOTIFICATION"),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string()
+    })
+]);
 
 export const AppEventSchema = z.object({
     at: z.number(),
@@ -28,7 +39,7 @@ export const CameraEventSchema = z.object({
     })
 });
 
-export const TimelineEventSchema = z.discriminatedUnion("kind", [
+export const TimelineEventSchema = z.union([
     DeviceEventSchema,
     AppEventSchema,
     CameraEventSchema
@@ -41,6 +52,13 @@ export const DeviceStateSchema = z.object({
     profileId: z.string(),
     isLocked: z.boolean(),
     foregroundAppId: z.string().optional(),
+    notifications: z.array(z.object({
+        id: z.string(),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string(),
+        at: z.number(),
+    })).optional(),
 });
 
 export const ConversationStateSchema = z.object({

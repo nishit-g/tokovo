@@ -73,6 +73,9 @@ packages/
       iphone16/
         Frame.tsx
         profile.ts
+      pixel/
+        Frame.tsx
+        profile.ts
       index.ts
       reducer.test.ts
       reducer.ts
@@ -84,6 +87,7 @@ packages/
   episodes/
     src/
       examples/
+        android-test.json
         whatsapp-breakup-01.json
       index.ts
       schema.ts
@@ -239,81 +243,6 @@ WhatsApp clone app for Tokovo.
 }
 ```
 
-## File: packages/core/src/engine.test.ts
-```typescript
-import { describe, it, expect } from "vitest";
-import { produce } from "immer";
-import { replay, WorldState, TimelineEvent, ReducerRegistry } from "./index";
-
-// Mock reducer for testing
-const mockReducer = (draft: WorldState, event: TimelineEvent) => {
-    if (event.kind === "DEVICE" && event.type === "UNLOCK") {
-        draft.devices[event.deviceId].isLocked = false;
-    }
-};
-
-describe("Core Engine", () => {
-    it("should replay events correctly", () => {
-        // Register mock reducer
-        ReducerRegistry.registerDeviceReducer(mockReducer);
-
-        const initialWorld: WorldState = {
-            devices: {
-                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
-            },
-            conversations: {},
-            camera: { type: "APP_VIEW" }
-        };
-
-        const events: TimelineEvent[] = [
-            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" }
-        ];
-
-        // Replay at t=0 (before event)
-        const world0 = replay(initialWorld, events, 0);
-        expect(world0.devices["test_device"].isLocked).toBe(true);
-
-        // Replay at t=10 (at event)
-        const world10 = replay(initialWorld, events, 10);
-        expect(world10.devices["test_device"].isLocked).toBe(false);
-
-        // Replay at t=20 (after event)
-        const world20 = replay(initialWorld, events, 20);
-        expect(world20.devices["test_device"].isLocked).toBe(false);
-    });
-
-    it("should handle multiple events in order", () => {
-        const initialWorld: WorldState = {
-            devices: {
-                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
-            },
-            conversations: {},
-            camera: { type: "APP_VIEW" }
-        };
-
-        const events: TimelineEvent[] = [
-            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" },
-            { at: 20, kind: "DEVICE", deviceId: "test_device", type: "LOCK" } // Assuming mockReducer handled LOCK, but it doesn't. Let's update mockReducer or just test UNLOCK.
-        ];
-
-        // Let's use a more comprehensive mock reducer for this test
-        const comprehensiveMockReducer = (draft: WorldState, event: TimelineEvent) => {
-            if (event.kind === "DEVICE") {
-                if (event.type === "UNLOCK") draft.devices[event.deviceId].isLocked = false;
-                if (event.type === "LOCK") draft.devices[event.deviceId].isLocked = true;
-            }
-        };
-        ReducerRegistry.registerDeviceReducer(comprehensiveMockReducer);
-
-        const world15 = replay(initialWorld, events, 15);
-        expect(world15.devices["test_device"].isLocked).toBe(false);
-
-        const world25 = replay(initialWorld, events, 25);
-        expect(world25.devices["test_device"].isLocked).toBe(true);
-    });
-});
-```
-
 ## File: packages/core/src/engine.ts
 ```typescript
 import { produce } from "immer";
@@ -408,51 +337,6 @@ Core logic for the Tokovo engine.
 }
 ```
 
-## File: packages/devices/src/iphone16/Frame.tsx
-```typescript
-import React from "react";
-
-export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    return (
-        <div style={{
-            width: 1290,
-            height: 2796,
-            backgroundColor: "black",
-            borderRadius: 160,
-            padding: 30, // Bezel
-            boxSizing: "border-box",
-            position: "relative",
-            boxShadow: "0 0 0 10px #333, 0 0 0 20px #111" // Outer frame simulation
-        }}>
-            {/* Screen Area */}
-            <div style={{
-                width: "100%",
-                height: "100%",
-                backgroundColor: "white",
-                borderRadius: 130,
-                overflow: "hidden",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-
-            {/* Dynamic Island / Notch */}
-            <div style={{
-                position: "absolute",
-                top: 60,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 370,
-                height: 110,
-                backgroundColor: "black",
-                borderRadius: 60,
-                zIndex: 100
-            }} />
-        </div>
-    );
-};
-```
-
 ## File: packages/devices/src/iphone16/profile.ts
 ```typescript
 import { DeviceProfile } from "../types";
@@ -464,101 +348,66 @@ export const iPhone16Profile: DeviceProfile = {
 };
 ```
 
-## File: packages/devices/src/index.ts
+## File: packages/devices/src/pixel/Frame.tsx
 ```typescript
-export * from "./types";
-export * from "./iphone16/profile";
-export * from "./types";
-export * from "./iphone16/profile";
-export * from "./iphone16/Frame";
-export * from "./StatusBar";
-export * from "./reducer";
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1000
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative"
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
 ```
 
-## File: packages/devices/src/reducer.test.ts
+## File: packages/devices/src/pixel/profile.ts
 ```typescript
-import { describe, it, expect } from "vitest";
-import { produce } from "immer";
-import { deviceReducer } from "./reducer";
-import { WorldState, TimelineEvent } from "@tokovo/core";
+import { DeviceProfile } from "../types";
 
-describe("Device Reducer", () => {
-    const initialWorld: WorldState = {
-        devices: {
-            "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
-        },
-        conversations: {},
-        camera: { type: "APP_VIEW" }
-    };
-
-    it("should handle UNLOCK event", () => {
-        const event: TimelineEvent = { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" };
-        const nextState = produce(initialWorld, (draft) => {
-            deviceReducer(draft, event);
-        });
-        expect(nextState.devices["test_device"].isLocked).toBe(false);
-    });
-
-    it("should handle OPEN_APP event", () => {
-        // First unlock
-        const unlockedState = produce(initialWorld, (draft) => {
-            draft.devices["test_device"].isLocked = false;
-        });
-
-        const event: TimelineEvent = { at: 20, kind: "DEVICE", deviceId: "test_device", type: "OPEN_APP", appId: "app_test" };
-        const nextState = produce(unlockedState, (draft) => {
-            deviceReducer(draft, event);
-        });
-        expect(nextState.devices["test_device"].foregroundAppId).toBe("app_test");
-    });
-
-    it("should handle CLOSE_APP event", () => {
-        const openAppState = produce(initialWorld, (draft) => {
-            draft.devices["test_device"].isLocked = false;
-            draft.devices["test_device"].foregroundAppId = "app_test";
-        });
-
-        const event: TimelineEvent = { at: 30, kind: "DEVICE", deviceId: "test_device", type: "CLOSE_APP" };
-        const nextState = produce(openAppState, (draft) => {
-            deviceReducer(draft, event);
-        });
-        expect(nextState.devices["test_device"].foregroundAppId).toBeUndefined();
-    });
-});
-```
-
-## File: packages/devices/src/reducer.ts
-```typescript
-import { produce } from "immer";
-import { TimelineEvent, DeviceState } from "@tokovo/core";
-import { ReducerRegistry } from "@tokovo/core";
-
-export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
-    return produce(devices, draft => {
-        if (event.kind !== "DEVICE") return;
-
-        const device = draft[event.deviceId];
-        if (!device) return; // Or initialize?
-
-        switch (event.type) {
-            case "LOCK":
-                device.isLocked = true;
-                break;
-            case "UNLOCK":
-                device.isLocked = false;
-                break;
-            case "OPEN_APP":
-                device.foregroundAppId = event.appId;
-                break;
-            case "CLOSE_APP":
-                device.foregroundAppId = undefined;
-                break;
-        }
-    });
-}
-
-// Register itself
-ReducerRegistry.registerDeviceReducer(deviceReducer);
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    dimensions: {
+        width: 1080, // Pixel 7 Pro approx width
+        height: 2400, // Pixel 7 Pro approx height
+    },
+    statusBarHeight: 90, // Approx 30px * 3
+};
 ```
 
 ## File: packages/devices/src/StatusBar.tsx
@@ -654,60 +503,68 @@ Device profiles and reducers.
 }
 ```
 
+## File: packages/episodes/src/examples/android-test.json
+```json
+{
+    "initialWorld": {
+        "devices": {
+            "bob_phone": {
+                "id": "bob_phone",
+                "profileId": "pixel",
+                "isLocked": true,
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "other",
+                        "text": "Hey Bob!",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 10,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "SHOW_NOTIFICATION",
+            "appId": "app_whatsapp",
+            "title": "Alice",
+            "body": "Hey Bob!"
+        },
+        {
+            "at": 60,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 70,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        }
+    ]
+}
+```
+
 ## File: packages/episodes/src/index.ts
 ```typescript
 import exampleEpisode from "./examples/whatsapp-breakup-01.json";
 
 export * from "./schema";
 export { exampleEpisode };
-```
-
-## File: packages/episodes/src/schema.ts
-```typescript
-import { z } from "zod";
-
-export const DeviceEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("DEVICE"),
-    deviceId: z.string(),
-    type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
-    appId: z.string().optional()
-});
-
-export const AppEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("APP"),
-    appId: z.string(),
-    type: z.enum(["MESSAGE_RECEIVED", "TYPING_START", "TYPING_END"]),
-    conversationId: z.string(),
-    from: z.string(),
-    text: z.string().optional()
-});
-
-export const CameraEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("CAMERA"),
-    type: z.literal("SET_VIEW"),
-    view: z.object({
-        type: z.literal("APP_VIEW"),
-        appId: z.string().optional()
-    })
-});
-
-export const TimelineEventSchema = z.discriminatedUnion("kind", [
-    DeviceEventSchema,
-    AppEventSchema,
-    CameraEventSchema
-]);
-
-export const EpisodeSchema = z.object({
-    initialWorld: z.object({
-        devices: z.record(z.any()),
-        conversations: z.record(z.any()),
-        camera: z.any()
-    }),
-    events: z.array(TimelineEventSchema)
-});
 ```
 
 ## File: packages/episodes/package.json
@@ -746,44 +603,12 @@ export const EpisodeSchema = z.object({
 }
 ```
 
-## File: packages/renderer/src/DeviceFrame.tsx
-```typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, StatusBar } from "@tokovo/devices";
-
-export const DeviceFrame: React.FC<{ profile: DeviceProfile; children: React.ReactNode }> = ({ profile, children }) => {
-    // Strategy pattern: Select frame component based on profile ID
-    // In a full implementation, this might be a registry lookup
-    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame : React.Fragment;
-
-    return (
-        <FrameComponent>
-            <StatusBar time="10:41" />
-            {children}
-        </FrameComponent>
-    );
-};
-```
-
 ## File: packages/renderer/src/index.ts
 ```typescript
 export * from "./registry";
 export * from "./LayoutEngine";
 export * from "./DeviceFrame";
 export * from "./TokovoRenderer";
-```
-
-## File: packages/renderer/src/LayoutEngine.ts
-```typescript
-import { WorldState } from "@tokovo/core";
-
-export function computeLayout(world: WorldState) {
-    // Placeholder for layout engine logic
-    // In the future, this would compute scroll positions, bubble sizes, etc.
-    return {
-        // ...
-    };
-}
 ```
 
 ## File: packages/renderer/package.json
@@ -1020,111 +845,250 @@ export const RemotionRoot: React.FC = () => {
 };
 ```
 
-## File: packages/episodes/src/examples/whatsapp-breakup-01.json
-```json
-{
-    "initialWorld": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "isLocked": true
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": []
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_whatsapp"
-        }
-    },
-    "events": [
-        {
-            "at": 0,
-            "kind": "DEVICE",
-            "deviceId": "alice_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 10,
-            "kind": "DEVICE",
-            "deviceId": "alice_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "other"
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "other"
-        },
-        {
-            "at": 65,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "other",
-            "text": "We need to talk..."
-        }
-    ]
-}
-```
-
-## File: packages/renderer/src/registry.ts
+## File: packages/core/src/engine.test.ts
 ```typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { describe, it, expect } from "vitest";
+import { produce } from "immer";
+import { replay, WorldState, TimelineEvent, ReducerRegistry } from "./index";
 
-export const AppRegistry = {
-    views: {
-        "app_whatsapp": WhatsappChatView
-    } as Record<string, React.FC<{ world: WorldState; t?: number }>>,
-
-    getView(appId: string) {
-        return this.views[appId];
+// Mock reducer for testing
+const mockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
+    if (event.kind === "DEVICE" && event.type === "UNLOCK") {
+        return produce(devices, draft => {
+            draft[event.deviceId].isLocked = false;
+        });
     }
+    return devices;
 };
+
+describe("Core Engine", () => {
+    it("should replay events correctly", () => {
+        // Register mock reducer
+        ReducerRegistry.registerDeviceReducer(mockReducer);
+
+        const initialWorld: WorldState = {
+            devices: {
+                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
+            },
+            conversations: {},
+            camera: { type: "APP_VIEW" }
+        };
+
+        const events: TimelineEvent[] = [
+            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" }
+        ];
+
+        // Replay at t=0 (before event)
+        const world0 = replay(initialWorld, events, 0);
+        expect(world0.devices["test_device"].isLocked).toBe(true);
+
+        // Replay at t=10 (at event)
+        const world10 = replay(initialWorld, events, 10);
+        expect(world10.devices["test_device"].isLocked).toBe(false);
+
+        // Replay at t=20 (after event)
+        const world20 = replay(initialWorld, events, 20);
+        expect(world20.devices["test_device"].isLocked).toBe(false);
+    });
+
+    it("should handle multiple events in order", () => {
+        const initialWorld: WorldState = {
+            devices: {
+                "test_device": { id: "test_device", profileId: "test_profile", isLocked: true }
+            },
+            conversations: {},
+            camera: { type: "APP_VIEW" }
+        };
+
+        const events: TimelineEvent[] = [
+            { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" },
+            { at: 20, kind: "DEVICE", deviceId: "test_device", type: "LOCK" } // Assuming mockReducer handled LOCK, but it doesn't. Let's update mockReducer or just test UNLOCK.
+        ];
+
+        // Let's use a more comprehensive mock reducer for this test
+        const comprehensiveMockReducer = (devices: Record<string, any>, event: TimelineEvent) => {
+            if (event.kind === "DEVICE") {
+                return produce(devices, draft => {
+                    if (event.type === "UNLOCK") draft[event.deviceId].isLocked = false;
+                    if (event.type === "LOCK") draft[event.deviceId].isLocked = true;
+                });
+            }
+            return devices;
+        };
+        ReducerRegistry.registerDeviceReducer(comprehensiveMockReducer);
+
+        const world15 = replay(initialWorld, events, 15);
+        expect(world15.devices["test_device"].isLocked).toBe(false);
+
+        const world25 = replay(initialWorld, events, 25);
+        expect(world25.devices["test_device"].isLocked).toBe(true);
+    });
+});
 ```
 
-## File: packages/renderer/src/TokovoRenderer.tsx
+## File: packages/devices/src/iphone16/Frame.tsx
 ```typescript
 import React from "react";
-import { WorldState } from "@tokovo/core";
-import { DeviceProfile } from "@tokovo/devices";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
+import { iPhone16Profile } from "./profile";
 
-export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; deviceProfile: DeviceProfile; t?: number }> = ({ world, deviceId, deviceProfile, t = 0 }) => {
-    const deviceState = world.devices[deviceId];
-    if (!deviceState) {
-        return <div style={{ color: "red" }}>Device {deviceId} not found</div>;
-    }
-
-    const activeAppId = deviceState.foregroundAppId;
-    const AppView = activeAppId ? AppRegistry.getView(activeAppId) : null;
+export const iPhone16Frame: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+    const { width, height } = iPhone16Profile.dimensions;
 
     return (
-        <DeviceFrame profile={deviceProfile}>
-            {AppView ? <AppView world={world} t={t} /> : <div style={{ backgroundColor: "black", height: "100%" }} />}
-        </DeviceFrame>
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 165, // Scaled radius (55 * 3)
+            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Dynamic Island */}
+            <div style={{
+                position: "absolute",
+                top: 33, // 11 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 378, // 126 * 3
+                height: 111, // 37 * 3
+                backgroundColor: "black",
+                borderRadius: 60, // 20 * 3
+                zIndex: 1000
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative"
+            }}>
+                {children}
+            </div>
+        </div>
     );
 };
+```
+
+## File: packages/devices/src/reducer.ts
+```typescript
+import { produce } from "immer";
+import { TimelineEvent, DeviceState } from "@tokovo/core";
+import { ReducerRegistry } from "@tokovo/core";
+
+export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
+    return produce(devices, draft => {
+        if (event.kind !== "DEVICE") return;
+
+        const device = draft[event.deviceId];
+        if (!device) return; // Or initialize?
+
+        switch (event.type) {
+            case "LOCK":
+                device.isLocked = true;
+                break;
+            case "UNLOCK":
+                device.isLocked = false;
+                break;
+            case "OPEN_APP":
+                device.foregroundAppId = event.appId;
+                break;
+            case "CLOSE_APP":
+                device.foregroundAppId = undefined;
+                break;
+            case "SHOW_NOTIFICATION":
+                if (!device.notifications) device.notifications = [];
+                device.notifications.push({
+                    id: `notif_${event.at}_${event.appId}`,
+                    appId: event.appId,
+                    title: event.title,
+                    body: event.body,
+                    at: event.at
+                });
+                break;
+        }
+    });
+}
+
+// Register itself
+ReducerRegistry.registerDeviceReducer(deviceReducer);
+```
+
+## File: packages/episodes/src/schema.ts
+```typescript
+import { z } from "zod";
+
+export const DeviceEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("DEVICE"),
+    deviceId: z.string(),
+    type: z.enum(["LOCK", "UNLOCK", "OPEN_APP", "CLOSE_APP"]),
+    appId: z.string().optional()
+});
+
+export const AppEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("APP"),
+    appId: z.string(),
+    type: z.enum(["MESSAGE_RECEIVED", "TYPING_START", "TYPING_END"]),
+    conversationId: z.string(),
+    from: z.string(),
+    text: z.string().optional()
+});
+
+export const CameraEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("CAMERA"),
+    type: z.literal("SET_VIEW"),
+    view: z.object({
+        type: z.literal("APP_VIEW"),
+        appId: z.string().optional()
+    })
+});
+
+export const TimelineEventSchema = z.discriminatedUnion("kind", [
+    DeviceEventSchema,
+    AppEventSchema,
+    CameraEventSchema
+]);
+
+// --- World State Schemas ---
+
+export const DeviceStateSchema = z.object({
+    id: z.string(),
+    profileId: z.string(),
+    isLocked: z.boolean(),
+    foregroundAppId: z.string().optional(),
+});
+
+export const ConversationStateSchema = z.object({
+    id: z.string(),
+    messages: z.array(z.object({
+        id: z.string(),
+        from: z.string(),
+        text: z.string().optional(),
+        at: z.number(),
+    })),
+    typing: z.record(z.boolean()).optional(),
+});
+
+export const CameraViewSchema = z.object({
+    type: z.literal("APP_VIEW"),
+    appId: z.string().optional(),
+});
+
+export const EpisodeSchema = z.object({
+    initialWorld: z.object({
+        devices: z.record(DeviceStateSchema),
+        conversations: z.record(ConversationStateSchema),
+        camera: CameraViewSchema,
+    }),
+    events: z.array(TimelineEventSchema),
+});
 ```
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -1164,6 +1128,411 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
 
 // Register itself
 ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
+```
+
+## File: packages/devices/src/index.ts
+```typescript
+export * from "./types";
+export * from "./iphone16/profile";
+export * from "./iphone16/Frame";
+export * from "./pixel/profile";
+export * from "./pixel/Frame";
+export * from "./reducer";
+export * from "./StatusBar";
+```
+
+## File: packages/devices/src/reducer.test.ts
+```typescript
+import { describe, it, expect } from "vitest";
+import { produce } from "immer";
+import { deviceReducer } from "./reducer";
+import { WorldState, TimelineEvent } from "@tokovo/core";
+
+describe("Device Reducer", () => {
+    const initialWorld: WorldState = {
+        devices: {
+            "test_device": { id: "test_device", profileId: "test_profile", isLocked: true, notifications: [] }
+        },
+        conversations: {},
+        camera: { type: "APP_VIEW" }
+    };
+
+    it("should handle UNLOCK event", () => {
+        const event: TimelineEvent = { at: 10, kind: "DEVICE", deviceId: "test_device", type: "UNLOCK" };
+        const nextState = produce(initialWorld, (draft) => {
+            draft.devices = deviceReducer(draft.devices, event);
+        });
+        expect(nextState.devices["test_device"].isLocked).toBe(false);
+    });
+
+    it("should handle OPEN_APP event", () => {
+        // First unlock
+        const unlockedState = produce(initialWorld, (draft) => {
+            draft.devices["test_device"].isLocked = false;
+        });
+
+        const event: TimelineEvent = { at: 20, kind: "DEVICE", deviceId: "test_device", type: "OPEN_APP", appId: "app_test" };
+        const nextState = produce(unlockedState, (draft) => {
+            draft.devices = deviceReducer(draft.devices, event);
+        });
+        expect(nextState.devices["test_device"].foregroundAppId).toBe("app_test");
+    });
+
+    it("should handle CLOSE_APP event", () => {
+        const openAppState = produce(initialWorld, (draft) => {
+            draft.devices["test_device"].isLocked = false;
+            draft.devices["test_device"].foregroundAppId = "app_test";
+        });
+
+        const event: TimelineEvent = { at: 30, kind: "DEVICE", deviceId: "test_device", type: "CLOSE_APP" };
+        const nextState = produce(openAppState, (draft) => {
+            draft.devices = deviceReducer(draft.devices, event);
+        });
+        expect(nextState.devices["test_device"].foregroundAppId).toBeUndefined();
+    });
+
+    it("should handle SHOW_NOTIFICATION event", () => {
+        const event: TimelineEvent = {
+            at: 40,
+            kind: "DEVICE",
+            deviceId: "test_device",
+            type: "SHOW_NOTIFICATION",
+            appId: "app_test",
+            title: "Test Title",
+            body: "Test Body"
+        };
+        const nextState = produce(initialWorld, (draft) => {
+            draft.devices = deviceReducer(draft.devices, event);
+        });
+        expect(nextState.devices["test_device"].notifications).toHaveLength(1);
+        expect(nextState.devices["test_device"].notifications[0].title).toBe("Test Title");
+    });
+});
+```
+
+## File: packages/episodes/src/examples/whatsapp-breakup-01.json
+```json
+{
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": true
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "me",
+                        "text": "We need to talk...",
+                        "at": 0
+                    },
+                    {
+                        "id": "m2",
+                        "from": "other",
+                        "text": "Oh no. What happened?",
+                        "at": 30
+                    },
+                    {
+                        "id": "m3",
+                        "from": "me",
+                        "text": "It's not you, it's me.",
+                        "at": 60
+                    }
+                ],
+                "typing": {
+                    "other": false
+                }
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 10,
+            "kind": "DEVICE",
+            "deviceId": "alice_phone",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 20,
+            "kind": "DEVICE",
+            "deviceId": "alice_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        },
+        {
+            "at": 40,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 55,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "other"
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "other",
+            "text": "Oh no. What happened?"
+        }
+    ]
+}
+```
+
+## File: packages/renderer/src/LayoutEngine.ts
+```typescript
+import { WorldState } from "@tokovo/core";
+
+export interface LayoutState {
+    scrollToBottom: boolean;
+    messageAnimations: Record<string, { opacity: number; translateY: number }>;
+}
+
+export function computeLayout(world: WorldState, t: number = 0): LayoutState {
+    const layout: LayoutState = {
+        scrollToBottom: true,
+        messageAnimations: {}
+    };
+
+    // Calculate message animations
+    for (const convId in world.conversations) {
+        const conversation = world.conversations[convId];
+        for (const msg of conversation.messages) {
+            const age = t - msg.at;
+            // Animation logic: Fade in over 10 frames, slide up from 60px
+            const opacity = Math.min(Math.max(age / 10, 0), 1);
+            const translateY = Math.max(60 - age * 6, 0);
+
+            layout.messageAnimations[msg.id] = { opacity, translateY };
+        }
+    }
+
+    return layout;
+}
+```
+
+## File: packages/renderer/src/registry.ts
+```typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+
+export const AppRegistry = {
+    views: {
+        "app_whatsapp": WhatsappChatView
+    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: any }>>,
+
+    getView(appId: string) {
+        return this.views[appId];
+    }
+};
+```
+
+## File: apps/video-runner/src/Video.tsx
+```typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { exampleEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+
+export const Video: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(exampleEpisode.initialWorld as WorldState, exampleEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} deviceId="alice_phone" deviceProfile={iPhone16Profile} t={t} />
+            </div>
+        </div>
+    );
+};
+```
+
+## File: packages/core/src/types.ts
+```typescript
+export type DeviceId = string;
+export type AppId = string;
+export type ConversationId = string;
+
+export interface Notification {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    at: number;
+}
+
+export interface DeviceState {
+    id: string; // The instance ID (e.g., "alice_phone")
+    profileId: string; // The hardware profile ID (e.g., "iphone16")
+    isLocked: boolean;
+    foregroundAppId?: string;
+    notifications: Notification[];
+}
+
+export interface ConversationState {
+    id: ConversationId;
+    messages: any[]; // To be defined more specifically if needed
+    typing?: Record<string, boolean>;
+}
+
+export interface CameraViewConfig {
+    type: "APP_VIEW"; // For MVP
+    appId?: AppId;
+}
+
+export interface WorldState {
+    devices: Record<DeviceId, DeviceState>;
+    conversations: Record<ConversationId, ConversationState>;
+    camera: CameraViewConfig;
+}
+
+// Event Union
+export type TimelineEvent =
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig };
+```
+
+## File: packages/renderer/src/DeviceFrame.tsx
+```typescript
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+
+export const DeviceFrame: React.FC<{ profile: DeviceProfile; isLocked?: boolean; notifications?: any[]; children: React.ReactNode }> = ({ profile, isLocked, notifications, children }) => {
+    // Strategy pattern: Select frame component based on profile ID
+    // In a full implementation, this might be a registry lookup
+    const FrameComponent = profile.id === "iphone16" ? iPhone16Frame :
+        profile.id === "pixel" ? PixelFrame : React.Fragment;
+
+    return (
+        <FrameComponent>
+            <StatusBar time="10:41" />
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)", // Dimmed lock screen
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+
+                    {/* Notifications Stack */}
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                        {notifications?.map((notif) => (
+                            <div key={notif.id} style={{
+                                backgroundColor: "rgba(255,255,255,0.2)",
+                                backdropFilter: "blur(40px)",
+                                borderRadius: 42,
+                                padding: "36px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 12
+                            }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 39, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
+                                    <span>{notif.appId === "app_whatsapp" ? "WhatsApp" : notif.appId}</span>
+                                    <span style={{ fontWeight: 400, fontSize: 36, color: "rgba(255,255,255,0.6)" }}>now</span>
+                                </div>
+                                <div style={{ fontSize: 42, fontWeight: 600 }}>{notif.title}</div>
+                                <div style={{ fontSize: 42 }}>{notif.body}</div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
+```
+
+## File: packages/renderer/src/TokovoRenderer.tsx
+```typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { DeviceProfile } from "@tokovo/devices";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { computeLayout } from "./LayoutEngine";
+
+export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; deviceProfile: DeviceProfile; t: number }> = ({ world, deviceId, deviceProfile, t }) => {
+    const deviceState = world.devices[deviceId];
+    if (!deviceState) {
+        return <div style={{ color: "red" }}>Device {deviceId} not found</div>;
+    }
+
+    const activeAppId = deviceState?.foregroundAppId;
+
+    // Compute layout
+    const layout = computeLayout(world);
+
+    let AppView = null;
+    if (activeAppId) {
+        AppView = AppRegistry.getView(activeAppId);
+    }
+
+    return (
+        <DeviceFrame profile={deviceProfile} isLocked={deviceState?.isLocked} notifications={deviceState?.notifications}>
+            {AppView && <AppView world={world} t={t} layout={layout} />}
+        </DeviceFrame>
+    );
+};
 ```
 
 ## File: packages/apps-whatsapp/src/ui.tsx
@@ -1251,13 +1620,12 @@ const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
     </div>
 );
 
-const MessageBubble: React.FC<{ msg: any; t: number }> = ({ msg, t }) => {
+const MessageBubble: React.FC<{ msg: any; layout?: any }> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
 
-    // Animation logic
-    const age = t - msg.at;
-    const opacity = Math.min(Math.max(age / 10, 0), 1); // Fade in over 10 frames
-    const translateY = Math.max(60 - age * 6, 0); // Slide up (scaled)
+    // Animation logic from layout engine
+    const animation = layout?.messageAnimations?.[msg.id] || { opacity: 1, translateY: 0 };
+    const { opacity, translateY } = animation;
 
     return (
         <div style={{
@@ -1293,13 +1661,15 @@ const MessageBubble: React.FC<{ msg: any; t: number }> = ({ msg, t }) => {
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; t: number }> = ({ messages, t }) => {
+const MessageList: React.FC<{ messages: any[]; layout?: any }> = ({ messages, layout }) => {
     const bottomRef = useRef<HTMLDivElement>(null);
 
     // Auto-scroll to bottom
     useEffect(() => {
-        bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, [messages.length]);
+        if (layout?.scrollToBottom) {
+            bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [messages.length, layout?.scrollToBottom]);
 
     return (
         <div style={{
@@ -1313,7 +1683,7 @@ const MessageList: React.FC<{ messages: any[]; t: number }> = ({ messages, t }) 
             backgroundSize: "cover"
         }}>
             {messages.map((msg: any) => (
-                <MessageBubble key={msg.id} msg={msg} t={t} />
+                <MessageBubble key={msg.id} msg={msg} layout={layout} />
             ))}
             <div ref={bottomRef} />
         </div>
@@ -1387,108 +1757,37 @@ export const WhatsApp = {
     InputArea
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: any }> = ({ world, t, layout }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
 
-    // Determine if typing (mock logic for now, ideally from state)
-    const isTyping = false; // logic to check if 'me' is typing
+    // Check typing state
+    const isTyping = conversation?.typing?.["other"] || false;
     const draftText = ""; // logic to get draft text
 
     return (
         <WhatsApp.Root>
             <WhatsApp.Header contactName="Alice" />
-            <WhatsApp.MessageList messages={messages} t={t} />
+            <WhatsApp.MessageList messages={messages} layout={layout} />
+            {isTyping && (
+                <div style={{
+                    padding: "24px 36px",
+                    marginLeft: 48,
+                    marginBottom: 12,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 48,
+                    borderTopLeftRadius: 12,
+                    alignSelf: "flex-start",
+                    width: "fit-content",
+                    boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+                }}>
+                    <div style={{ fontSize: 42, color: "#8E8E93" }}>typing...</div>
+                </div>
+            )}
             <WhatsApp.InputArea text={draftText} />
-            <Keyboard visible={isTyping} />
+            <Keyboard visible={false} />
         </WhatsApp.Root>
-    );
-};
-```
-
-## File: packages/core/src/types.ts
-```typescript
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-
-export interface DeviceState {
-    id: DeviceId; // The instance ID (e.g., "alice_phone")
-    profileId: string; // The hardware profile ID (e.g., "iphone16")
-    isLocked: boolean;
-    foregroundAppId?: AppId;
-}
-
-export interface ConversationState {
-    id: ConversationId;
-    messages: any[]; // To be defined more specifically if needed
-    typing?: Record<string, boolean>;
-}
-
-export interface CameraViewConfig {
-    type: "APP_VIEW"; // For MVP
-    appId?: AppId;
-}
-
-export interface WorldState {
-    devices: Record<DeviceId, DeviceState>;
-    conversations: Record<ConversationId, ConversationState>;
-    camera: CameraViewConfig;
-}
-
-// Event Union
-export type TimelineEvent =
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig };
-```
-
-## File: apps/video-runner/src/Video.tsx
-```typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { exampleEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-
-export const Video: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(exampleEpisode.initialWorld as WorldState, exampleEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} deviceId="alice_phone" deviceProfile={iPhone16Profile} t={t} />
-            </div>
-        </div>
     );
 };
 ```

@@ -13,8 +13,8 @@ export const TokovoRenderer: React.FC<{ world: WorldState; deviceId: string; dev
 
     const activeAppId = deviceState?.foregroundAppId;
 
-    // Compute layout
-    const layout = computeLayout(world);
+    // Compute layout for the current frame
+    const layout = computeLayout(world, t);
 
     let AppView = null;
     if (activeAppId) {
