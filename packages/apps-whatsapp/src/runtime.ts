@@ -4,6 +4,9 @@ import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
 export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
     if (event.kind !== "APP" || event.appId !== "app_whatsapp") return;
 
+    // Check compatibility with existing event types
+    if (event.type !== "MESSAGE_RECEIVED" && event.type !== "TYPING_START" && event.type !== "TYPING_END") return;
+
     const conversationId = event.conversationId;
     if (!draft.conversations[conversationId]) {
         draft.conversations[conversationId] = { id: conversationId, messages: [] };
