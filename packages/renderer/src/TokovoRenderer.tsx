@@ -30,14 +30,16 @@ export const TokovoRenderer: React.FC<{
     t: number;
     debug?: boolean;
     notificationConfig?: NotificationConfig;
-}> = ({ world, t, debug, notificationConfig = {} }) => {
+    focusDeviceId?: string;  // Which device to render (for multi-device POV)
+}> = ({ world, t, debug, notificationConfig = {}, focusDeviceId }) => {
     const {
         headsUpDuration = 150,
         showHeadsUpWhenAppOpen = true
     } = notificationConfig;
 
     // 1. Determine active device & app
-    const deviceId = Object.keys(world.devices)[0];
+    // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
+    const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
     const device = world.devices[deviceId];
     const appId = device?.foregroundAppId;
 
@@ -118,8 +120,11 @@ export const TokovoRenderer: React.FC<{
     const isPixel = device.profileId.includes("pixel");
     const variant = isPixel ? "android" : "ios";
 
-    // 6. Get Camera Transform from world state
-    const cameraTransform: CameraTransform = world.camera?.transform ?? DEFAULT_CAMERA_TRANSFORM;
+    // 6. Get Camera Transform for this specific device
+    const cameraTransform: CameraTransform =
+        (world.camera?.deviceTransforms?.[deviceId]) ||
+        world.camera?.transform ||
+        DEFAULT_CAMERA_TRANSFORM;
 
     // 7. Build camera transform style
     // The transform-origin uses the originX/originY from camera to zoom toward specific point
@@ -211,7 +216,7 @@ export const TokovoRenderer: React.FC<{
 
                         {/* App View / Lockscreen / Home Screen */}
                         {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView world={world} t={t} layout={layout} platform={variant} />
+                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
                         ) : !hasActiveCall && device.isLocked ? (
                             <LockscreenView
                                 notifications={device.notifications}

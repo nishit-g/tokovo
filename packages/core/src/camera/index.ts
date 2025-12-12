@@ -457,6 +457,7 @@ export function createActiveEffect(
         effect,
         startFrame: at,
         endFrame: at + duration,
+        deviceId: params.deviceId,  // Per-device targeting
     };
 }
 

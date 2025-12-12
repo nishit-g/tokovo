@@ -239,6 +239,7 @@ interface MessageListProps {
     isTyping?: boolean;
     conversationType?: "dm" | "group";
     platform?: Platform;
+    ownerName?: string;  // Device owner for POV - their messages appear on right
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -246,7 +247,8 @@ const MessageList: React.FC<MessageListProps> = ({
     layout,
     isTyping,
     conversationType,
-    platform = "ios"
+    platform = "ios",
+    ownerName = "me"  // Default to "me" for backward compatibility
 }) => {
     const isGroup = conversationType === "group";
     const config = getAppConfig("whatsapp", platform) as any;
@@ -312,7 +314,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render voice messages
                     if (msg.type === "voice") {
-                        const isMe = msg.from === "me";
+                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -339,7 +341,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render Deleted Message
                     if (msg.type === "deleted") {
-                        const isMe = msg.from === "me";
+                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -415,7 +417,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render Missed Call (Psychotic feature)
                     if (msg.type === "call_missed") {
-                        const isMe = msg.from === "me"; // Generally you miss calls from others, but logic holds
+                        const isMe = msg.from === ownerName; // Generally you miss calls from others, but logic holds
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -454,7 +456,7 @@ const MessageList: React.FC<MessageListProps> = ({
                     }
 
                     // Render regular text messages
-                    const isMe = msg.from === "me";
+                    const isMe = msg.from === ownerName;
                     return (
                         <div key={msg.id} style={{
                             position: "absolute",
@@ -960,12 +962,17 @@ export const WhatsApp = {
     VoiceMessageBubble
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState; deviceId?: string }> = ({ world, t, layout, deviceId }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
     const isTyping = conversation?.typing?.["other"] || false;
     const draftText = "";
+
+    // Get device owner for POV alignment
+    const activeDeviceId = deviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+    const device = world.devices[activeDeviceId];
+    const ownerName = device?.ownerName || "me";
 
     // Check if it's a group
     const isGroup = conversation?.type === "group";
@@ -984,6 +991,7 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
                 layout={layout}
                 isTyping={isTyping}
                 conversationType={conversation?.type}
+                ownerName={ownerName}
             />
             <WhatsApp.InputArea text={draftText} />
             <HomeIndicator />

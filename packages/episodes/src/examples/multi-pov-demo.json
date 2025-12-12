@@ -9,6 +9,7 @@
             "alice_phone": {
                 "id": "alice_phone",
                 "profileId": "iphone16",
+                "ownerName": "Alice",
                 "isLocked": false,
                 "foregroundAppId": "app_whatsapp",
                 "notifications": []
@@ -16,6 +17,7 @@
             "bob_phone": {
                 "id": "bob_phone",
                 "profileId": "iphone16",
+                "ownerName": "Bob",
                 "isLocked": false,
                 "foregroundAppId": "app_whatsapp",
                 "notifications": []
@@ -62,7 +64,8 @@
                 "originY": 0.5,
                 "shakeX": 0,
                 "shakeY": 0
-            }
+            },
+            "deviceTransforms": {}
         }
     },
     "events": [
@@ -196,6 +199,7 @@
             "at": 720,
             "kind": "CAMERA",
             "type": "SHAKE",
+            "deviceId": "alice_phone",
             "intensity": 8,
             "frequency": 15,
             "decay": 0.5,

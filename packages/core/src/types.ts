@@ -26,6 +26,7 @@ export interface CallState {
 export interface DeviceState {
     id: string;
     profileId: string;
+    ownerName?: string;            // Who owns this device (for POV - their messages on right)
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
@@ -193,6 +194,7 @@ export interface ActiveCameraEffect {
     effect: CameraEffect;
     startFrame: number;
     endFrame: number;
+    deviceId?: string;       // Target device (undefined = primary/active device)
 }
 
 // Computed camera transform (result of all active effects at time t)
@@ -226,14 +228,13 @@ export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-rig
 // Layout configuration for multi-device views
 export interface ViewLayout {
     mode: ViewLayoutMode;
-    primaryDeviceId: string;          // Main device (for PIP: the large one)
-    secondaryDeviceId?: string;       // Secondary device (for SPLIT/PIP)
-    pipPosition?: PIPPosition;        // PIP overlay position
-    pipScale?: number;                // PIP size (0-1), default 0.3
-    transitionProgress?: number;      // 0-1 for animated layout transitions
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: PIPPosition;
+    pipScale?: number;
 }
 
-// Default view layout (single device)
+// Default view layout
 export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
     mode: "SINGLE",
     primaryDeviceId: "main_phone",
@@ -246,17 +247,17 @@ export interface CameraState {
     appId?: AppId;
 
     // Multi-device support
-    activeDeviceId: string;           // Currently focused/primary device
-    layout: ViewLayout;               // Current layout mode
+    activeDeviceId: string;
+    layout: ViewLayout;
 
-    // Active effects (from timeline)
+    // Active effects (from timeline) - global + per-device
     activeEffects: ActiveCameraEffect[];
 
-    // Computed transform at current frame (for primary device)
+    // Computed transform for primary device
     transform: CameraTransform;
 
-    // Per-device transforms (optional override for secondary devices)
-    deviceTransforms?: Record<DeviceId, CameraTransform>;
+    // Per-device transforms (computed by engine)
+    deviceTransforms: Record<DeviceId, CameraTransform>;
 }
 
 // Default camera transform
@@ -278,6 +279,7 @@ export const DEFAULT_CAMERA_STATE: CameraState = {
     layout: { ...DEFAULT_VIEW_LAYOUT },
     activeEffects: [],
     transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    deviceTransforms: {},
 };
 
 // Legacy type for backward compatibility
@@ -290,7 +292,7 @@ export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
     appState: Record<AppId, any>;
-    camera: CameraState;  // Updated to use full CameraState
+    camera: CameraState;
 }
 
 // Event Union
@@ -316,13 +318,13 @@ export type TimelineEvent =
     | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
     // App events - custom
     | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events - CINEMATIC SYSTEM
-    | { at: number; kind: "CAMERA"; type: "ZOOM"; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "PAN"; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SHAKE"; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
-    | { at: number; kind: "CAMERA"; type: "FOCUS"; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
+    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
+    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
+    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
     | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
-    | { at: number; kind: "CAMERA"; type: "RESET"; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }

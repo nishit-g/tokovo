@@ -9,7 +9,7 @@ export const AppRegistry = {
     views: {
         "app_whatsapp": WhatsappChatView,
         "app_instagram": InstagramApp
-    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState; platform?: string }>>,
+    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState; platform?: string; deviceId?: string }>>,
 
     getView(appId: string) {
         return this.views[appId];

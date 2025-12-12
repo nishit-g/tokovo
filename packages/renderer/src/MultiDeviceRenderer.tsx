@@ -152,7 +152,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={world} t={t} debug={debug} />
+                <TokovoRenderer world={world} t={t} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );
@@ -416,7 +416,7 @@ const DevicePane: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} />
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );
@@ -467,7 +467,7 @@ const DevicePaneFit: React.FC<{
             }}
         >
             <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} />
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
             </div>
         </div>
     );

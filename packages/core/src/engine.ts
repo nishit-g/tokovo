@@ -137,15 +137,38 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
     }, initialWithCamera);
 
     // Compute camera transform at current time t
-    // This filters active effects and composes them
+    // This filters active effects and composes them, per-device
     return produce(stateAfterEvents, draft => {
         // Clean up expired effects (optimization)
         draft.camera.activeEffects = draft.camera.activeEffects.filter(
             ae => t <= ae.endFrame + 30 // Keep for 1 second after end for smooth transitions
         );
 
-        // Compute final transform
-        draft.camera.transform = cameraController.computeTransform(draft.camera, t);
+        // Ensure deviceTransforms exists
+        if (!draft.camera.deviceTransforms) {
+            draft.camera.deviceTransforms = {};
+        }
+
+        // Compute transform for each device
+        for (const deviceId of Object.keys(draft.devices)) {
+            // Filter effects for this device (global effects + device-specific)
+            const deviceEffects = draft.camera.activeEffects.filter(
+                ae => !ae.deviceId || ae.deviceId === deviceId
+            );
+
+            // Create a temporary camera state with only this device's effects
+            const deviceCameraState = {
+                ...draft.camera,
+                activeEffects: deviceEffects,
+            };
+
+            // Compute transform for this device
+            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+        }
+
+        // Primary device transform (for backward compatibility)
+        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
     });
 }
 
