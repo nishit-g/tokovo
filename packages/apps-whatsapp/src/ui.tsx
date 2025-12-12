@@ -1,7 +1,10 @@
 import React from "react";
-import { WorldState } from "@tokovo/core";
+import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens, androidTokens } from "@tokovo/core";
 import { TypingBubble } from "./TypingBubble";
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+
+// Get platform-specific config
+const getWhatsAppConfig = (platform: Platform) => getAppConfig("whatsapp", platform);
 
 // ============================================================================
 // AUTHENTIC iOS WHATSAPP ICONS (Pixel-Perfect SVG Replicas)
@@ -56,94 +59,103 @@ const DoubleCheckIcon: React.FC<{ read?: boolean }> = ({ read = false }) => (
 );
 
 // ============================================================================
-// HEADER COMPONENT - Authentic WhatsApp iOS Navigation Bar
+// HEADER COMPONENT - Fully Configurable WhatsApp Navigation Bar
 // ============================================================================
 
 interface HeaderProps {
     contactName: string;
     avatarUrl?: string;
     status?: string;
+    platform?: Platform;
 }
 
-const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, status = "online" }) => (
-    <div style={{
-        height: 270, // 90pt * 3
-        backgroundColor: "#F6F6F6",
-        display: "flex",
-        alignItems: "center",
-        padding: "0 36px",
-        marginTop: 144, // Below dynamic island
-        borderBottom: "1px solid rgba(0,0,0,0.1)",
-        zIndex: 10
-    }}>
-        {/* Back button with unread count */}
-        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-            <ChevronLeftIcon />
-            <span style={{
-                fontSize: 51,
-                color: "#007AFF",
-                fontWeight: "400",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                4
-            </span>
-        </div>
+const Header: React.FC<HeaderProps> = ({
+    contactName,
+    avatarUrl,
+    status = "online",
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
 
-        {/* Avatar + Name + Status (centered group) */}
+    return (
         <div style={{
-            flex: 1,
+            height: config.headerHeight,
+            backgroundColor: config.headerBg,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            marginLeft: -60 // Offset for visual centering
+            padding: `0 ${config.bubbleMarginHorizontal}px`,
+            marginTop: config.statusBarHeight,
+            borderBottom: "1px solid rgba(0,0,0,0.1)",
+            zIndex: 10,
+            fontFamily: tokens.fontFamily
         }}>
-            {/* Avatar */}
+            {/* Back button with unread count */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                <ChevronLeftIcon />
+                <span style={{
+                    fontSize: config.headerTitleSize,
+                    color: platform === "ios" ? "#007AFF" : "#FFFFFF",
+                    fontWeight: "400"
+                }}>
+                    4
+                </span>
+            </div>
+
+            {/* Avatar + Name + Status (centered group) */}
             <div style={{
-                width: 111,
-                height: 111,
-                borderRadius: "50%",
-                background: avatarUrl
-                    ? `url(${avatarUrl}) center/cover`
-                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                marginRight: 24,
+                flex: 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "white",
-                fontSize: 45,
-                fontWeight: "600"
+                marginLeft: -60
             }}>
-                {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                {/* Avatar */}
+                <div style={{
+                    width: config.avatarSize,
+                    height: config.avatarSize,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    marginRight: config.avatarMargin,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: config.avatarSize * 0.4,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Name & Status */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                    <span style={{
+                        fontSize: config.headerTitleSize,
+                        fontWeight: "600",
+                        color: platform === "ios" ? "#000000" : "#FFFFFF",
+                        letterSpacing: -0.5
+                    }}>
+                        {contactName}
+                    </span>
+                    <span style={{
+                        fontSize: config.headerSubtitleSize,
+                        color: platform === "ios" ? "#8E8E93" : "rgba(255,255,255,0.7)"
+                    }}>
+                        {status}
+                    </span>
+                </div>
             </div>
 
-            {/* Name & Status */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
-                <span style={{
-                    fontSize: 51,
-                    fontWeight: "600",
-                    color: "#000",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-                    letterSpacing: -0.5
-                }}>
-                    {contactName}
-                </span>
-                <span style={{
-                    fontSize: 36,
-                    color: "#8E8E93",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {status}
-                </span>
+            {/* Action icons */}
+            <div style={{ display: "flex", gap: config.headerIconGap, alignItems: "center" }}>
+                <VideoCallIcon />
+                <PhoneCallIcon />
             </div>
         </div>
-
-        {/* Action icons */}
-        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
-            <VideoCallIcon />
-            <PhoneCallIcon />
-        </div>
-    </div>
-);
+    );
+};
 
 // ============================================================================
 // MESSAGE BUBBLE - Authentic WhatsApp iOS Styling
@@ -225,9 +237,20 @@ interface MessageListProps {
     messages: any[];
     layout?: ChatLayoutState;
     isTyping?: boolean;
+    conversationType?: "dm" | "group";
+    platform?: Platform;
 }
 
-const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping }) => {
+const MessageList: React.FC<MessageListProps> = ({
+    messages,
+    layout,
+    isTyping,
+    conversationType,
+    platform = "ios"
+}) => {
+    const isGroup = conversationType === "group";
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
     const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
     const scrollY = chatLayout?.scrollY || 0;
     const contentHeight = chatLayout?.contentHeight || 1500;
@@ -237,7 +260,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
             flex: 1,
             position: "relative",
             overflow: "hidden",
-            backgroundColor: "#ECE5DD",
+            backgroundColor: config.chatBackground,
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c0b8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}>
             {/* Scrollable content container */}
@@ -252,8 +275,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
             }}>
                 {messages.map((msg: any) => {
                     const msgLayout = chatLayout?.messageLayouts[msg.id];
-
-                    // Get position from layout or calculate fallback
                     const y = msgLayout?.y ?? 0;
                     const opacity = msgLayout?.opacity ?? 1;
                     const translateY = msgLayout?.translateY ?? 0;
@@ -270,17 +291,17 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                                 transform: `translateY(${translateY}px)`,
                                 display: "flex",
                                 justifyContent: "center",
-                                padding: "0 60px"
+                                padding: `0 ${config.bubbleMarginHorizontal * 1.5}px`
                             }}>
                                 <div style={{
                                     backgroundColor: "rgba(225, 218, 208, 0.9)",
-                                    padding: "18px 36px",
-                                    borderRadius: 24
+                                    padding: `${config.bubblePadding * 0.75}px ${config.bubblePaddingHorizontal}px`,
+                                    borderRadius: config.bubbleRadius
                                 }}>
                                     <span style={{
-                                        fontSize: 36,
+                                        fontSize: config.timestampSize,
                                         color: "#54656F",
-                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                                        fontFamily: tokens.fontFamily
                                     }}>
                                         {msg.text}
                                     </span>
@@ -296,9 +317,9 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                             <div key={msg.id} style={{
                                 position: "absolute",
                                 top: y,
-                                left: isMe ? "auto" : 36,
-                                right: isMe ? 36 : "auto",
-                                maxWidth: "78%",
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
@@ -319,29 +340,29 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                         <div key={msg.id} style={{
                             position: "absolute",
                             top: y,
-                            left: isMe ? "auto" : 36,
-                            right: isMe ? 36 : "auto",
-                            maxWidth: "78%",
+                            left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                            right: isMe ? config.bubbleMarginHorizontal : "auto",
+                            maxWidth: config.bubbleMaxWidth,
                             opacity,
                             transform: `translateY(${translateY}px)`
                         }}>
                             <div style={{
-                                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
-                                padding: "24px 36px",
-                                borderRadius: 24,
-                                borderTopLeftRadius: isMe ? 24 : 6,
-                                borderTopRightRadius: isMe ? 6 : 24,
-                                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                                backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+                                padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                                borderRadius: config.bubbleRadius,
+                                borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+                                borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+                                boxShadow: config.bubbleShadow,
                                 display: "flex",
                                 flexDirection: "column",
-                                gap: 6
+                                gap: config.bubbleGap / 2
                             }}>
-                                {/* Sender name for group chats (not "me") */}
-                                {!isMe && msg.from !== "system" && (
+                                {/* Sender name for GROUP chats only */}
+                                {isGroup && !isMe && msg.from !== "system" && (
                                     <div style={{
-                                        fontSize: 33,
+                                        fontSize: config.senderNameSize,
                                         fontWeight: 600,
-                                        color: "#25D366",
+                                        color: config.senderNameColor,
                                         marginBottom: 3
                                     }}>
                                         {msg.from}
@@ -350,10 +371,10 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
 
                                 {/* Message text */}
                                 <span style={{
-                                    fontSize: 48,
-                                    lineHeight: "66px",
-                                    color: "#111B21",
-                                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                    fontSize: config.messageTextSize,
+                                    lineHeight: `${config.messageLineHeight}px`,
+                                    color: config.bubbleTextColor,
+                                    fontFamily: tokens.fontFamily,
                                     wordWrap: "break-word"
                                 }}>
                                     {msg.text}
@@ -364,13 +385,13 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                                     display: "flex",
                                     justifyContent: "flex-end",
                                     alignItems: "center",
-                                    gap: 9,
+                                    gap: config.bubbleGap * 0.75,
                                     marginTop: 3
                                 }}>
                                     <span style={{
-                                        fontSize: 33,
-                                        color: "#667781",
-                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                                        fontSize: config.timestampSize,
+                                        color: config.timestampColor,
+                                        fontFamily: tokens.fontFamily
                                     }}>
                                         10:42
                                     </span>
@@ -386,7 +407,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                     <div style={{
                         position: "absolute",
                         top: chatLayout.typingLayout.y,
-                        left: 36,
+                        left: config.bubbleMarginHorizontal,
                         opacity: chatLayout.typingLayout.opacity
                     }}>
                         <TypingBubble />
@@ -766,7 +787,12 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
             ) : (
                 <WhatsApp.Header contactName={conversation?.name || "Alice"} status="online" />
             )}
-            <WhatsApp.MessageList messages={messages} layout={layout} isTyping={isTyping} />
+            <WhatsApp.MessageList
+                messages={messages}
+                layout={layout}
+                isTyping={isTyping}
+                conversationType={conversation?.type}
+            />
             <WhatsApp.InputArea text={draftText} />
             <HomeIndicator />
         </WhatsApp.Root>

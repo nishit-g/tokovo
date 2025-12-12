@@ -146,6 +146,27 @@ export function getTokens(platform: Platform) {
     return platform === "ios" ? iOSTokens : androidTokens;
 }
 
+// Unified typography that maps semantic names to platform-specific styles
+type SemanticTypography = "largeTitle" | "title" | "headline" | "body" | "callout" | "caption" | "footnote";
+
+const typographyMap: Record<SemanticTypography, { ios: keyof typeof iOSTokens.typography; android: keyof typeof androidTokens.typography }> = {
+    largeTitle: { ios: "largeTitle", android: "displaySmall" },
+    title: { ios: "title1", android: "headlineLarge" },
+    headline: { ios: "headline", android: "titleMedium" },
+    body: { ios: "body", android: "bodyLarge" },
+    callout: { ios: "callout", android: "bodyMedium" },
+    caption: { ios: "caption1", android: "bodySmall" },
+    footnote: { ios: "footnote", android: "labelMedium" }
+};
+
+export function getTypography(platform: Platform, semantic: SemanticTypography) {
+    const map = typographyMap[semantic];
+    if (platform === "ios") {
+        return iOSTokens.typography[map.ios];
+    }
+    return androidTokens.typography[map.android];
+}
+
 // =============================================================================
 // SHARED STYLES
 // =============================================================================
@@ -191,20 +212,94 @@ export const sharedStyles = {
 export const appConfigs = {
     whatsapp: {
         ios: {
+            // Header
             headerHeight: 270,
+            headerBg: "#F6F6F6",
+            statusBarHeight: 144,
+            avatarSize: 111,
+            avatarMargin: 24,
+            headerTitleSize: 51,
+            headerSubtitleSize: 36,
+            headerIconGap: 54,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
             inputHeight: 180,
+
+            // Message bubbles
+            bubblePadding: 24,
+            bubblePaddingHorizontal: 36,
+            bubbleRadius: 24,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 36,
+            bubbleGap: 12,  // Gap between consecutive messages
+            bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+
+            // Bubble colors
             bubbleMyColor: "#E7FFDB",
             bubbleOtherColor: "#FFFFFF",
-            chatBackground: "#ECE5DD",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 48,
+            messageLineHeight: 66,
+            timestampSize: 33,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 33,
+            senderNameColor: "#25D366",
+
+            // Read receipts
             accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
         },
         android: {
+            // Header
             headerHeight: 255,
+            headerBg: "#008069",
+            statusBarHeight: 120,
+            avatarSize: 105,
+            avatarMargin: 24,
+            headerTitleSize: 48,
+            headerSubtitleSize: 33,
+            headerIconGap: 48,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
             inputHeight: 165,
+
+            // Message bubbles
+            bubblePadding: 21,
+            bubblePaddingHorizontal: 33,
+            bubbleRadius: 21,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 30,
+            bubbleGap: 9,
+            bubbleShadow: "0 1px 1px rgba(0,0,0,0.1)",
+
+            // Bubble colors
             bubbleMyColor: "#E7FFDB",
             bubbleOtherColor: "#FFFFFF",
-            chatBackground: "#ECE5DD",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 45,
+            messageLineHeight: 63,
+            timestampSize: 30,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 30,
+            senderNameColor: "#25D366",
+
+            // Read receipts
             accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
         }
     },
     instagram: {
