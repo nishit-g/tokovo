@@ -41,7 +41,13 @@ export const TokovoRenderer: React.FC<{
     // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
     const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
     const device = world.devices[deviceId];
-    const appId = device?.foregroundAppId;
+
+    if (!device) {
+        console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
+        return null;
+    }
+
+    const appId = device.foregroundAppId;
 
     // 2. Determine ViewKind
     let viewKind: ViewKind = "TRANSITION";

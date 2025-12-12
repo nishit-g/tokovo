@@ -95,10 +95,15 @@ tokovo/
     ├── core/                  # 🧠 Brain - Types, Engine, Camera
     │   └── src/
     │       ├── types.ts       # ALL type definitions
-    │       ├── engine.ts      # replay() function
-    │       ├── camera/        # Camera controller
+    │       ├── engine.ts      # replay() function + ReducerRegistry
+    │       ├── camera/        # Camera controller (memoized)
     │       ├── tokens.ts      # Design tokens (iOS/Android)
-    │       └── sounds.ts      # Sound ID registry
+    │       ├── sounds.ts      # Sound ID registry
+    │       ├── constants.ts   # ✨ Magic numbers (TIMING, LAYOUT, DEFAULTS)
+    │       ├── typeGuards.ts  # ✨ 25+ type guards for events
+    │       ├── plugin.ts      # ✨ Plugin system (PluginManager)
+    │       ├── transitions.ts # ✨ Transition system (8 types, 6 presets)
+    │       └── eventUtils.ts  # ✨ Event indexing for performance
     │
     ├── renderer/              # 🎨 Visual - React components
     │   └── src/
@@ -107,7 +112,7 @@ tokovo/
     │       ├── DeviceFrame.tsx         # Phone bezel
     │       ├── AudioLayer.tsx          # Sound playback
     │       ├── layout/                 # Layout computation
-    │       └── registry.ts             # App → Component mapping
+    │       └── registry.ts             # AppRegistry (class-based)
     │
     ├── devices/               # 📱 Device profiles
     │   └── src/
@@ -120,8 +125,13 @@ tokovo/
     │
     ├── apps-whatsapp/         # 💬 WhatsApp clone
     │   └── src/
-    │       ├── ui.tsx         # UI components
-    │       └── runtime.ts     # Event reducer
+    │       ├── ui.tsx         # Main UI view
+    │       ├── runtime.ts     # Event reducer (type-safe)
+    │       ├── plugin.ts      # ✨ WhatsApp plugin definition
+    │       └── components/    # ✨ Split components
+    │           ├── icons/     # SVG icon components
+    │           ├── Header.tsx
+    │           └── MessageBubble.tsx
     │
     └── apps-instagram/        # 📸 Instagram clone
         └── src/
@@ -901,6 +911,143 @@ Set in each device:
 | `wallpaper` | - | Lock/home background (URL/CSS) |
 | `statusBarStyle` | `light` | Status bar text color |
 | `accentColor` | - | App tint color override |
+
+---
+
+# Plugin System
+
+Tokovo uses a **plugin architecture** to manage apps. Each app (WhatsApp, Instagram) is a self-contained plugin.
+
+## Creating a Plugin
+
+```typescript
+// apps-whatsapp/src/plugin.ts
+import { definePlugin, PluginManager } from "@tokovo/core";
+
+export const WhatsAppPlugin = definePlugin({
+    id: "app_whatsapp",
+    name: "WhatsApp",
+    icon: "whatsapp-icon.png",
+    primaryColor: "#25D366",
+    
+    // The React component for the app view
+    appView: WhatsappChatView,
+    
+    // The Redux-style reducer for state
+    reducer: whatsappReducer,
+    
+    // Sound effects map
+    sounds: {
+        "message_in": "whatsapp-received.mp3"
+    }
+});
+
+// Register it
+PluginManager.register(WhatsAppPlugin);
+```
+
+---
+
+# Transition System
+
+The engine supports cinematic transitions between screens and apps.
+
+## Key Concepts
+
+- **TransitionType**: The animation style (`FADE`, `SLIDE_LEFT`, `ZOOM_IN`, etc.)
+- **Preset**: Pre-configured animations for common actions (`appOpen`, `push`, `pop`)
+- **Event**: How you trigger it in the timeline
+
+## Transition Types
+
+| Type | Description |
+|------|-------------|
+| `FADE` | Opacity fade |
+| `SLIDE_LEFT/RIGHT` | Standard navigation slides |
+| `SLIDE_UP/DOWN` | Modal presentations |
+| `ZOOM_IN/OUT` | iOS app open/close effect |
+| `CROSS_DISSOLVE` | Smooth blending |
+
+## Event Example
+
+```json
+{
+    "at": 60,
+    "kind": "TRANSITION",
+    "type": "ZOOM_IN",
+    "from": "homescreen",
+    "to": "app_whatsapp",
+    "duration": 15
+}
+```
+
+---
+
+# Design System
+
+Tokovo uses **authentic platform tokens** to ensure pixel-perfect replication of iOS/Android UIs.
+
+## Tokens (`@tokovo/core`)
+
+```typescript
+import { iOSTokens } from "@tokovo/core";
+
+const styles = {
+    fontFamily: iOSTokens.fontFamily,
+    backgroundColor: iOSTokens.colors.systemGroupedBackground,
+    borderRadius: iOSTokens.radii.l // 12px
+};
+```
+
+## Icons
+
+Use **SVG replications** instead of generic icon libraries (Lucide/FontAwesome) to match the platform look exactly.
+
+---
+
+---
+
+# Core Utilities (`@tokovo/core`)
+
+We provide built-in utilities to ensure type safety and code consistency.
+
+## Constants
+
+Avoid magic numbers. Use `constants.ts`.
+
+```typescript
+import { TIMING, LAYOUT, DEFAULTS } from "@tokovo/core";
+
+// ❌ bad
+setTimeout(fn, 1000);
+
+// ✅ good
+setTimeout(fn, TIMING.MOMENT); // 1.5s
+```
+
+## Type Guards
+
+Safely narrow types in reducers and components.
+
+```typescript
+import { isAppEvent, isTypingStartEvent } from "@tokovo/core";
+
+if (isAppEvent(event) && isTypingStartEvent(event)) {
+    // event is typed as AppTypingStartEvent
+    console.log(event.from);
+}
+```
+
+## Event Utils
+
+Optimized for frame-by-frame lookups.
+
+```typescript
+import { getEventsAtFrame } from "@tokovo/core";
+
+// O(1) lookup instead of O(n) filter
+const frameEvents = getEventsAtFrame(events, frame);
+```
 
 ---
 

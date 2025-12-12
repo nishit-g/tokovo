@@ -1,5 +1,5 @@
 {
-    "initialState": {
+    "initialWorld": {
         "devices": {
             "alice_phone": {
                 "id": "alice_phone",
@@ -90,7 +90,7 @@
             "appId": "app_instagram"
         }
     },
-    "timeline": [
+    "events": [
         {
             "at": 30,
             "kind": "APP",
