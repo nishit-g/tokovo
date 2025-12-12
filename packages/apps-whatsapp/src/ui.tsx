@@ -1,92 +1,160 @@
-import React, { useEffect, useRef } from "react";
+import React from "react";
 import { WorldState } from "@tokovo/core";
 import { TypingBubble } from "./TypingBubble";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
-// --- Icons (Scaled 3x: 24 -> 72) ---
-const BackIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 18l-6-6 6-6" />
+// ============================================================================
+// AUTHENTIC iOS WHATSAPP ICONS (Pixel-Perfect SVG Replicas)
+// ============================================================================
+
+const ChevronLeftIcon = () => (
+    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
 const VideoCallIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M23 7l-7 5 7 5V7z" />
-        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    <svg width="84" height="60" viewBox="0 0 28 20" fill="none">
+        <rect x="1" y="3" width="18" height="14" rx="3" stroke="#007AFF" strokeWidth="1.8" />
+        <path d="M19 8L26 4V16L19 12V8Z" stroke="#007AFF" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
 );
 
-const PhoneIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+const PhoneCallIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 20 20" fill="none">
+        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke="#007AFF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const PlusIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19" />
-        <line x1="5" y1="12" x2="19" y2="12" />
+const PlusCircleIcon = () => (
+    <svg width="90" height="90" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="14" stroke="#007AFF" strokeWidth="1.8" />
+        <path d="M15 8V22M8 15H22" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-const CameraIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-        <circle cx="12" cy="13" r="4" />
+const CameraFillIcon = () => (
+    <svg width="84" height="72" viewBox="0 0 28 24" fill="#007AFF">
+        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
     </svg>
 );
 
-const MicIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-        <line x1="12" y1="19" x2="12" y2="23" />
-        <line x1="8" y1="23" x2="16" y2="23" />
+const MicrophoneFillIcon = () => (
+    <svg width="66" height="90" viewBox="0 0 22 30" fill="#007AFF">
+        <rect x="6" y="2" width="10" height="16" rx="5" />
+        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" fill="none" />
+        <path d="M11 23V28M8 28H14" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-const CheckIcon = () => (
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#34B7F1" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="20 6 9 17 4 12" />
+// Double checkmark for read receipts
+const DoubleCheckIcon: React.FC<{ read?: boolean }> = ({ read = false }) => (
+    <svg width="48" height="30" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-// --- Components ---
+// ============================================================================
+// HEADER COMPONENT - Authentic WhatsApp iOS Navigation Bar
+// ============================================================================
 
-const Header: React.FC<{ contactName: string }> = ({ contactName }) => (
+interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    status?: string;
+}
+
+const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, status = "online" }) => (
     <div style={{
-        height: 270, // 90 * 3
-        backgroundColor: "rgba(245, 245, 245, 0.95)",
-        backdropFilter: "blur(30px)",
+        height: 270, // 90pt * 3
+        backgroundColor: "#F6F6F6",
         display: "flex",
         alignItems: "center",
-        padding: "0 45px", // 15 * 3
-        borderBottom: "3px solid #d1d1d6",
-        marginTop: 150, // Below status bar (approx)
+        padding: "0 36px",
+        marginTop: 144, // Below dynamic island
+        borderBottom: "1px solid rgba(0,0,0,0.1)",
         zIndex: 10
     }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 15, color: "#007AFF", fontSize: 51 }}>
-            <BackIcon />
-            <span style={{ marginRight: 15 }}>98</span>
+        {/* Back button with unread count */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <ChevronLeftIcon />
+            <span style={{
+                fontSize: 51,
+                color: "#007AFF",
+                fontWeight: "400",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                4
+            </span>
         </div>
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ width: 120, height: 120, borderRadius: "50%", backgroundColor: "#8E8E93", marginBottom: 6 }} />
-            <div style={{ fontSize: 42, fontWeight: "600", color: "black" }}>{contactName}</div>
+        {/* Avatar + Name + Status (centered group) */}
+        <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: -60 // Offset for visual centering
+        }}>
+            {/* Avatar */}
+            <div style={{
+                width: 111,
+                height: 111,
+                borderRadius: "50%",
+                background: avatarUrl
+                    ? `url(${avatarUrl}) center/cover`
+                    : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                marginRight: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: 45,
+                fontWeight: "600"
+            }}>
+                {!avatarUrl && contactName.charAt(0).toUpperCase()}
+            </div>
+
+            {/* Name & Status */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                <span style={{
+                    fontSize: 51,
+                    fontWeight: "600",
+                    color: "#000",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+                    letterSpacing: -0.5
+                }}>
+                    {contactName}
+                </span>
+                <span style={{
+                    fontSize: 36,
+                    color: "#8E8E93",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {status}
+                </span>
+            </div>
         </div>
 
-        <div style={{ display: "flex", gap: 60 }}>
+        {/* Action icons */}
+        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
             <VideoCallIcon />
-            <PhoneIcon />
+            <PhoneCallIcon />
         </div>
     </div>
 );
 
-import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+// ============================================================================
+// MESSAGE BUBBLE - Authentic WhatsApp iOS Styling
+// ============================================================================
 
-// ...
+interface MessageBubbleProps {
+    msg: { id: string; from: string; text: string; timestamp?: string; read?: boolean };
+    layout: ChatMessageLayout;
+}
 
-const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg, layout }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
     const { opacity, translateY, height, y } = layout;
 
@@ -94,44 +162,72 @@ const MessageBubble: React.FC<{ msg: any; layout: ChatMessageLayout }> = ({ msg,
         <div style={{
             position: "absolute",
             top: y,
-            left: isMe ? "auto" : 48,
-            right: isMe ? 48 : "auto",
-            height: height - 20, // Subtract internal padding/gap if needed, or just use height
-            // Actually height from layout includes gap? No, layout engine adds gap to currentY.
-            // height is the bubble height.
-
-            backgroundColor: isMe ? "#DCF8C6" : "#FFFFFF",
-            padding: "24px 36px",
-            borderRadius: 48,
-            borderTopLeftRadius: !isMe ? 12 : 48,
-            borderTopRightRadius: isMe ? 12 : 48,
-            maxWidth: "75%",
-            fontSize: 51,
-            lineHeight: "66px",
-            boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+            left: isMe ? "auto" : 36,
+            right: isMe ? 36 : "auto",
+            maxWidth: "78%",
             opacity,
             transform: `translateY(${translateY}px)`,
-            display: "flex",
-            flexDirection: "column"
         }}>
-            <div>{msg.text}</div>
+            {/* Bubble with tail */}
             <div style={{
+                position: "relative",
+                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
+                padding: "24px 36px",
+                borderRadius: 24,
+                // Asymmetric corners for tail effect
+                borderTopLeftRadius: isMe ? 24 : 6,
+                borderTopRightRadius: isMe ? 6 : 24,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
                 display: "flex",
-                justifyContent: "flex-end",
-                alignItems: "center",
-                gap: 12,
-                marginTop: 6,
-                fontSize: 33,
-                color: "rgba(0,0,0,0.45)"
+                flexDirection: "column",
+                gap: 6
             }}>
-                <span>10:42</span>
-                {isMe && <CheckIcon />}
+                {/* Message text */}
+                <span style={{
+                    fontSize: 48,
+                    lineHeight: "66px",
+                    color: "#111B21",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    wordWrap: "break-word"
+                }}>
+                    {msg.text}
+                </span>
+
+                {/* Timestamp + Read receipts */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 9,
+                    marginTop: 3
+                }}>
+                    <span style={{
+                        fontSize: 33,
+                        color: "#667781",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {msg.timestamp || "10:42"}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={msg.read !== false} />}
+                </div>
             </div>
         </div>
     );
 };
 
-const MessageList: React.FC<{ messages: any[]; layout?: ChatLayoutState; isTyping?: boolean }> = ({ messages, layout, isTyping }) => {
+// ============================================================================
+// MESSAGE LIST - With Authentic WhatsApp Background
+// ============================================================================
+
+interface MessageListProps {
+    messages: any[];
+    layout?: ChatLayoutState;
+    isTyping?: boolean;
+}
+
+const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping }) => {
     const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
     const scrollY = chatLayout?.scrollY || 0;
     const contentHeight = chatLayout?.contentHeight || "100%";
@@ -141,92 +237,139 @@ const MessageList: React.FC<{ messages: any[]; layout?: ChatLayoutState; isTypin
             flex: 1,
             position: "relative",
             overflow: "hidden",
-            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
-            backgroundSize: "cover"
+            // Authentic WhatsApp iOS background (beige/cream with subtle pattern)
+            backgroundColor: "#ECE5DD",
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c0b8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}>
             <div style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
-                height: contentHeight, // Set height to allow scrolling if we were using native scroll, but we use transform
+                height: contentHeight,
                 transform: `translateY(-${scrollY}px)`,
-                transition: "transform 0.1s linear", // Layout engine handles easing? Or we do it here?
-                // Spec says "scrollEasingDuration" in config. Layout engine computes target scrollY?
-                // If layout engine returns instantaneous scrollY, we might want CSS transition.
-                // But layout engine might return interpolated scrollY.
-                // Let's assume layout engine returns the frame-perfect scrollY.
+                paddingTop: 30,
+                paddingBottom: 30
             }}>
                 {messages.map((msg: any) => {
                     const msgLayout = chatLayout?.messageLayouts[msg.id];
                     if (!msgLayout) return null;
                     return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
                 })}
-                {/* Typing indicator would also need layout info */}
+                {isTyping && (
+                    <div style={{ marginLeft: 36, marginTop: 15 }}>
+                        <TypingBubble />
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
-const InputArea: React.FC<{ text?: string }> = ({ text }) => (
+// ============================================================================
+// INPUT AREA - Authentic WhatsApp iOS Composer
+// ============================================================================
+
+interface InputAreaProps {
+    text?: string;
+}
+
+const InputArea: React.FC<InputAreaProps> = ({ text }) => (
     <div style={{
-        minHeight: 180, // 60*3
         backgroundColor: "#F6F6F6",
         display: "flex",
         alignItems: "center",
-        padding: "0 30px",
-        borderTop: "3px solid #d1d1d6",
-        gap: 30
+        padding: "24px 30px",
+        gap: 24,
+        borderTop: "1px solid rgba(0,0,0,0.1)"
     }}>
-        <PlusIcon />
+        {/* Plus button */}
+        <PlusCircleIcon />
+
+        {/* Input field */}
         <div style={{
             flex: 1,
-            minHeight: 108, // 36*3
-            backgroundColor: "white",
-            borderRadius: 54, // 18*3
-            padding: "24px 48px",
+            minHeight: 120,
+            backgroundColor: "#FFFFFF",
+            borderRadius: 60,
+            padding: "27px 48px",
             display: "flex",
             alignItems: "center",
-            fontSize: 51,
-            color: text ? "black" : "#C7C7CC",
-            border: "3px solid #E5E5EA"
+            fontSize: 48,
+            color: text ? "#111B21" : "#8E8E93",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            border: "1px solid #E5E5EA",
+            boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
         }}>
-            {text || "iMessage"}
+            {text || "Message"}
         </div>
+
+        {/* Right icons */}
         {text ? (
-            <div style={{ color: "#007AFF", fontWeight: "bold", fontSize: 51 }}>Send</div>
+            <div style={{
+                width: 105,
+                height: 105,
+                borderRadius: "50%",
+                backgroundColor: "#25D366",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+            }}>
+                <svg width="54" height="54" viewBox="0 0 18 18" fill="white">
+                    <path d="M2 9L9 2L16 9M9 2V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="rotate(90 9 9)" />
+                </svg>
+            </div>
         ) : (
             <>
-                <CameraIcon />
-                <MicIcon />
+                <CameraFillIcon />
+                <MicrophoneFillIcon />
             </>
         )}
     </div>
 );
 
-const Keyboard: React.FC<{ visible: boolean }> = ({ visible }) => {
-    if (!visible) return <div style={{ height: 102 }} />; // Home indicator spacer (34*3)
-    return (
+// ============================================================================
+// HOME INDICATOR SPACER
+// ============================================================================
+
+const HomeIndicator: React.FC = () => (
+    <div style={{
+        height: 102, // 34pt * 3
+        backgroundColor: "#F6F6F6",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-end",
+        paddingBottom: 24
+    }}>
         <div style={{
-            height: 870, // 290*3
-            backgroundColor: "#D1D5DB",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            fontSize: 72,
-            color: "#555",
-            borderTop: "3px solid #ccc"
-        }}>
-            Keyboard
-        </div>
-    );
-};
+            width: 402,
+            height: 15,
+            backgroundColor: "#000",
+            borderRadius: 9,
+            opacity: 0.2
+        }} />
+    </div>
+);
+
+// ============================================================================
+// ROOT CONTAINER
+// ============================================================================
 
 const Root: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-    <div style={{ backgroundColor: "#E5E5EA", height: "100%", display: "flex", flexDirection: "column" }}>
+    <div style={{
+        backgroundColor: "#F6F6F6",
+        height: "100%",
+        display: "flex",
+        flexDirection: "column",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
+    }}>
         {children}
     </div>
 );
+
+// ============================================================================
+// EXPORTS
+// ============================================================================
 
 export const WhatsApp = {
     Root,
@@ -239,17 +382,15 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
-
-    // Check typing state
     const isTyping = conversation?.typing?.["other"] || false;
-    const draftText = ""; // logic to get draft text
+    const draftText = "";
 
     return (
         <WhatsApp.Root>
-            <WhatsApp.Header contactName="Alice" />
+            <WhatsApp.Header contactName="Alice" status="online" />
             <WhatsApp.MessageList messages={messages} layout={layout} isTyping={isTyping} />
             <WhatsApp.InputArea text={draftText} />
-            <Keyboard visible={false} />
+            <HomeIndicator />
         </WhatsApp.Root>
     );
 };

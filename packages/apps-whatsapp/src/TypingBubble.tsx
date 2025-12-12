@@ -1,43 +1,50 @@
 import React from "react";
 
+/**
+ * WhatsApp iOS Typing Indicator
+ * Three bouncing grey dots in a white bubble that matches the incoming message style
+ */
 export const TypingBubble: React.FC = () => {
     return (
         <div style={{
-            padding: "24px 36px",
-            marginLeft: 48,
-            marginBottom: 12,
             backgroundColor: "#FFFFFF",
-            borderRadius: 48,
-            borderTopLeftRadius: 12,
+            padding: "27px 36px",
+            borderRadius: 24,
+            borderTopLeftRadius: 6,
             alignSelf: "flex-start",
             width: "fit-content",
-            boxShadow: "0 3px 3px rgba(0,0,0,0.1)",
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
             display: "flex",
             alignItems: "center",
-            gap: 12,
-            height: 66 // Match line height of text
+            gap: 15,
+            height: 72
         }}>
             <Dot delay={0} />
-            <Dot delay={0.2} />
-            <Dot delay={0.4} />
+            <Dot delay={0.15} />
+            <Dot delay={0.3} />
+            <style>{`
+                @keyframes whatsappTyping {
+                    0%, 60%, 100% {
+                        transform: translateY(0);
+                        opacity: 0.4;
+                    }
+                    30% {
+                        transform: translateY(-9px);
+                        opacity: 1;
+                    }
+                }
+            `}</style>
         </div>
     );
 };
 
 const Dot: React.FC<{ delay: number }> = ({ delay }) => (
     <div style={{
-        width: 18,
-        height: 18,
-        backgroundColor: "#B1B1B1",
+        width: 24,
+        height: 24,
+        backgroundColor: "#8696A0",
         borderRadius: "50%",
-        animation: `typingBounce 1.4s infinite ease-in-out both`,
+        animation: `whatsappTyping 1.2s infinite ease-in-out`,
         animationDelay: `${delay}s`
-    }}>
-        <style>{`
-            @keyframes typingBounce {
-                0%, 80%, 100% { transform: scale(0); }
-                40% { transform: scale(1); }
-            }
-        `}</style>
-    </div>
+    }} />
 );

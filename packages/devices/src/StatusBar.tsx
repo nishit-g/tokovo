@@ -1,43 +1,151 @@
 import React from "react";
 
-export const StatusBar: React.FC<{ time?: string; variant?: "ios" | "android" }> = ({ time = "9:41", variant = "ios" }) => {
-    const isAndroid = variant === "android";
+/**
+ * Authentic iOS Status Bar Component
+ * Pixel-perfect SVG icons for signal, WiFi, and battery
+ */
 
+// iOS Signal Bars (4 bars, varying heights)
+const SignalBarsIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
+        <rect x="0" y="8" width="3" height="3" rx="0.5" />
+        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" />
+        <rect x="9" y="3" width="3" height="8" rx="0.5" />
+        <rect x="13.5" y="0" width="3" height="11" rx="0.5" />
+    </svg>
+);
+
+// iOS WiFi Icon (3 arcs)
+const WifiIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M1 4C4 1 12 1 15 4" />
+        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" />
+        <path d="M6 9C7 8 9 8 10 9" />
+        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
+    </svg>
+);
+
+// iOS Battery Icon
+const BatteryIcon: React.FC<{ color?: string; percentage?: number }> = ({ color = "currentColor", percentage = 100 }) => (
+    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+        {/* Battery body */}
+        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
+        {/* Battery fill */}
+        <rect
+            x="2"
+            y="2"
+            width={Math.max(0, (percentage / 100) * 18)}
+            height="8"
+            rx="1"
+            fill={percentage > 20 ? color : "#FF3B30"}
+        />
+        {/* Battery cap */}
+        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
+    </svg>
+);
+
+interface StatusBarProps {
+    time?: string;
+    variant?: "ios" | "android";
+    theme?: "light" | "dark";
+    batteryPercentage?: number;
+}
+
+export const StatusBar: React.FC<StatusBarProps> = ({
+    time = "9:41",
+    variant = "ios",
+    theme = "light",
+    batteryPercentage = 100
+}) => {
+    const isAndroid = variant === "android";
+    const textColor = theme === "dark" ? "white" : "black";
+
+    if (isAndroid) {
+        return (
+            <div style={{
+                width: "100%",
+                height: 90,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "0 45px",
+                boxSizing: "border-box",
+                fontSize: 36,
+                fontWeight: "500",
+                color: "white",
+                position: "absolute",
+                top: 15,
+                left: 0,
+                zIndex: 20,
+                fontFamily: "Roboto, sans-serif"
+            }}>
+                <div>{time}</div>
+                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                    <SignalBarsIcon color="white" />
+                    <WifiIcon color="white" />
+                    <BatteryIcon color="white" percentage={batteryPercentage} />
+                </div>
+            </div>
+        );
+    }
+
+    // iOS Status Bar
     return (
         <div style={{
             width: "100%",
-            height: isAndroid ? 90 : 60, // Android status bar is usually taller
+            height: 132, // 44pt * 3
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "center",
-            padding: isAndroid ? "0 45px" : "0 30px",
+            alignItems: "flex-start",
+            padding: "45px 72px 0 72px",
             boxSizing: "border-box",
-            fontSize: isAndroid ? 36 : 24,
-            fontWeight: "bold",
-            color: isAndroid ? "white" : "black", // Default to white for Android (usually on dark bg or transparent)
+            color: textColor,
             position: "absolute",
-            top: isAndroid ? 15 : 15,
+            top: 0,
             left: 0,
-            zIndex: 20,
-            fontFamily: isAndroid ? "Roboto, sans-serif" : "inherit"
+            zIndex: 20
         }}>
-            <div>{time}</div>
-            <div style={{ display: "flex", gap: 15, alignItems: "center" }}>
-                {isAndroid ? (
-                    <>
-                        {/* Android Icons */}
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21L24 6H0L12 21Z" /></svg> {/* Wifi-ish */}
-                        <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" /></svg> {/* Battery */}
-                    </>
-                ) : (
-                    <>
-                        {/* iOS Icons placeholders */}
-                        <span>📶</span>
-                        <span>Wi-Fi</span>
-                        <span>🔋</span>
-                    </>
-                )}
+            {/* Left side - Time */}
+            <div style={{
+                fontSize: 51,
+                fontWeight: "600",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                letterSpacing: 0.5
+            }}>
+                {time}
+            </div>
+
+            {/* Right side - Status icons */}
+            <div style={{
+                display: "flex",
+                gap: 15,
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                <SignalBarsIcon color={textColor} />
+                <WifiIcon color={textColor} />
+                <BatteryIcon color={textColor} percentage={batteryPercentage} />
             </div>
         </div>
     );
 };
+
+/**
+ * iOS Status Bar specifically styled for dark backgrounds (Instagram, etc.)
+ */
+export const DarkStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar time={time} theme="dark" batteryPercentage={batteryPercentage} />
+);
+
+/**
+ * iOS Status Bar specifically styled for light backgrounds (WhatsApp, etc.)
+ */
+export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
+);
