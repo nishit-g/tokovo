@@ -1,6 +1,6 @@
 import React from "react";
 import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens, androidTokens } from "@tokovo/core";
-import { TypingBubble } from "./TypingBubble";
+
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
 // Get platform-specific config
@@ -410,7 +410,7 @@ const MessageList: React.FC<MessageListProps> = ({
                         left: config.bubbleMarginHorizontal,
                         opacity: chatLayout.typingLayout.opacity
                     }}>
-                        <TypingBubble />
+                        <TypingBubble platform={platform} />
                     </div>
                 )}
             </div>
@@ -426,59 +426,93 @@ interface InputAreaProps {
     text?: string;
 }
 
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        backgroundColor: "#F6F6F6",
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 30px",
-        gap: 24,
-        borderTop: "1px solid rgba(0,0,0,0.1)"
-    }}>
-        {/* Plus button */}
-        <PlusCircleIcon />
+const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, platform = "ios" }) => {
+    // ... implementation ...
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
 
-        {/* Input field */}
+    return (
         <div style={{
-            flex: 1,
-            minHeight: 120,
-            backgroundColor: "#FFFFFF",
-            borderRadius: 60,
-            padding: "27px 48px",
+            backgroundColor: config.headerBg,
             display: "flex",
             alignItems: "center",
-            fontSize: 48,
-            color: text ? "#111B21" : "#8E8E93",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            border: "1px solid #E5E5EA",
-            boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
+            padding: `${config.bubblePadding}px 30px`,
+            gap: 24,
+            borderTop: "1px solid rgba(0,0,0,0.1)"
         }}>
-            {text || "Message"}
-        </div>
+            {/* Plus button */}
+            <PlusCircleIcon />
 
-        {/* Right icons */}
-        {text ? (
+            {/* Input field */}
             <div style={{
-                width: 105,
-                height: 105,
-                borderRadius: "50%",
-                backgroundColor: "#25D366",
+                flex: 1,
+                minHeight: 120,
+                backgroundColor: config.inputBg,
+                borderRadius: config.inputBorderRadius,
+                padding: "27px 48px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                fontSize: 48,
+                color: text ? config.inputTextColor : config.inputPlaceholderColor,
+                fontFamily: tokens.fontFamily,
+                border: "1px solid #E5E5EA",
+                boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
             }}>
-                <svg width="54" height="54" viewBox="0 0 18 18" fill="white">
-                    <path d="M2 9L9 2L16 9M9 2V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="rotate(90 9 9)" />
-                </svg>
+                {text || "Message"}
             </div>
-        ) : (
-            <>
-                <CameraFillIcon />
-                <MicrophoneFillIcon />
-            </>
-        )}
-    </div>
-);
+
+            {/* Right icons */}
+            {text ? (
+                <div style={{
+                    width: 105,
+                    height: 105,
+                    borderRadius: "50%",
+                    backgroundColor: config.sendButtonColor,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                    <svg width="54" height="54" viewBox="0 0 18 18" fill="white">
+                        <path d="M2 9L9 2L16 9M9 2V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="rotate(90 9 9)" />
+                    </svg>
+                </div>
+            ) : (
+                <>
+                    <CameraFillIcon />
+                    <MicrophoneFillIcon />
+                </>
+            )}
+        </div>
+    );
+};
+
+// ... (HomeIndicator, SystemMessage, VoiceMessageBubble unchanged) ...
+
+// ============================================================================
+// TYPING INDICATOR BUBBLE
+// ============================================================================
+
+const TypingBubble: React.FC<{ platform?: Platform }> = ({ platform = "ios" }) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+
+    return (
+        <div style={{
+            backgroundColor: config.typingBubbleColor,
+            padding: "36px 45px",
+            borderRadius: config.bubbleRadius,
+            borderBottomLeftRadius: config.bubbleTailRadius,
+            boxShadow: config.bubbleShadow,
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            height: 120
+        }}>
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "-0.32s" }} />
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "-0.16s" }} />
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both" }} />
+        </div>
+    );
+};
 
 // ============================================================================
 // HOME INDICATOR SPACER

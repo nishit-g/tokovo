@@ -255,6 +255,23 @@ export const appConfigs = {
             accentColor: "#25D366",
             readReceiptColor: "#53BDEB",
             unreadReceiptColor: "#8696A0",
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 45,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#25D366",
+
+            // Typing indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 24,
         },
         android: {
             // Header
@@ -300,7 +317,24 @@ export const appConfigs = {
             accentColor: "#25D366",
             readReceiptColor: "#53BDEB",
             unreadReceiptColor: "#8696A0",
-        }
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 42,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#008069", // Android Teal
+
+            // Typing indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 21,
+        },
     },
     instagram: {
         ios: {
@@ -318,6 +352,13 @@ export const appConfigs = {
     },
     imessage: {
         ios: {
+            bubbleMyColor: "#007AFF",
+            bubbleMyTextColor: "#FFFFFF",
+            bubbleOtherColor: "#E9E9EB",
+            bubbleOtherTextColor: "#000000",
+            accentColor: "#007AFF",
+        },
+        android: {
             bubbleMyColor: "#007AFF",
             bubbleMyTextColor: "#FFFFFF",
             bubbleOtherColor: "#E9E9EB",

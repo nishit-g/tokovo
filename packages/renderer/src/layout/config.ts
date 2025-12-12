@@ -3,18 +3,18 @@ import { LayoutConfig } from "./types";
 export const defaultLayoutConfig: LayoutConfig = {
     cinematicMode: "NONE",
     chat: {
-        bubbleWidth: 0.75,
-        baseBubbleHeight: 75,
-        charsPerLine: 28,
-        lineHeight: 54,
-        verticalGap: 24,
-        topPadding: 120,
-        bottomPadding: 100,
-        messageAppearDuration: 15,
-        messageAppearOffset: 15,
-        scrollEasingDuration: 20,
-        maxScrollCatchupSpeed: 50,
-        lockToBottom: true
+        bubbleWidth: 0.78,              // 78% max width for bubbles
+        baseBubbleHeight: 120,          // Base height for message bubble (increased)
+        charsPerLine: 26,               // Characters per line before wrap
+        lineHeight: 66,                 // Line height for text (3x of 22px)
+        verticalGap: 36,                // Gap between messages (3x of 12px)
+        topPadding: 48,                 // Padding from top (reduced)
+        bottomPadding: 120,             // Padding at bottom
+        messageAppearDuration: 15,      // Animation duration (frames)
+        messageAppearOffset: 30,        // Slide-in offset
+        scrollEasingDuration: 20,       // Scroll animation duration
+        maxScrollCatchupSpeed: 50,      // Max scroll speed
+        lockToBottom: true              // Keep scrolled to bottom
     },
     feed: {
         cardWidth: 1.0, // 100% width

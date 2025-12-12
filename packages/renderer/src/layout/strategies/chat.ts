@@ -31,18 +31,26 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
         if (msg.type === "system") {
             // System messages are shorter (single line centered pill)
-            height = 100;
+            height = 80;
         } else if (msg.type === "voice") {
             // Voice messages have fixed height
-            height = 200;
+            height = 180;
         } else {
             // Text messages: calculate based on text length
             const textLength = msg.text?.length || 0;
             const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-            // Add extra height for sender name in group chats
+
+            // Height breakdown:
+            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
+            // - Text: lines * lineHeight
+            // - Timestamp row: ~40px (at 3x = 120)
+            // - Sender name (groups): additional 50px
+            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
+            const timestampHeight = 40;     // Timestamp row
             const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
-            const senderNameHeight = hasSenderName ? 50 : 0;
-            height = lines * chatConfig.lineHeight + 45 + senderNameHeight;
+            const senderNameHeight = hasSenderName ? 45 : 0;
+
+            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
         }
 
         // Animation: Slide in / Fade in
