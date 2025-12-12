@@ -6,10 +6,19 @@ import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
+import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="CameraShowcase"
+                component={CameraShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="TokovoExample"
                 component={Video}

@@ -1,5 +1,5 @@
 import React from "react";
-import { WorldState, Notification } from "@tokovo/core";
+import { WorldState, Notification, CameraTransform, DEFAULT_CAMERA_TRANSFORM } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
 import { computeLayout } from "./layout";
@@ -118,16 +118,41 @@ export const TokovoRenderer: React.FC<{
     const isPixel = device.profileId.includes("pixel");
     const variant = isPixel ? "android" : "ios";
 
-    // 6. Apply Device Transforms
-    let deviceStyle: React.CSSProperties = {
-        transformOrigin: "center center",
-        transition: "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)"
+    // 6. Get Camera Transform from world state
+    const cameraTransform: CameraTransform = world.camera?.transform ?? DEFAULT_CAMERA_TRANSFORM;
+
+    // 7. Build camera transform style
+    // The transform-origin uses the originX/originY from camera to zoom toward specific point
+    // Origin is in 0-1 range where (0.5, 0.5) is center
+    const cameraTransformString = `
+        translate(${cameraTransform.translateX + cameraTransform.shakeX}px, ${cameraTransform.translateY + cameraTransform.shakeY}px)
+        scale(${cameraTransform.scale})
+        rotate(${cameraTransform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+    // Camera wrapper needs explicit dimensions for transform-origin to work correctly
+    // Use device profile dimensions
+    const cameraStyle: React.CSSProperties = {
+        width: profile.dimensions.width,
+        height: profile.dimensions.height,
+        transformOrigin: `${cameraTransform.originX * 100}% ${cameraTransform.originY * 100}%`,
+        transform: cameraTransformString,
+        // No CSS transition - we handle all animation in JS for frame-perfect sync
+        transition: 'none',
     };
+
+    // 8. Device-specific transforms (legacy layout system)
+    let deviceStyle: React.CSSProperties = {};
 
     if (layout.kind === "TRANSITION") {
         const transLayout = layout as any;
         const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-        deviceStyle.transform = `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`;
+        if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+            deviceStyle = {
+                transformOrigin: "center center",
+                transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+            };
+        }
     }
 
     // 7. Find active notifications for heads-up display
@@ -164,53 +189,62 @@ export const TokovoRenderer: React.FC<{
     const hasActiveCall = device.call && device.call.status !== "ended";
 
     return (
-        <div style={{ width: "100%", height: "100%", position: "relative" }}>
-            <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                <DeviceFrame profileId={device.profileId} variant={variant}>
-                    {/* Call Overlay (takes precedence over everything) */}
-                    {hasActiveCall && (
-                        <CallOverlay
-                            call={device.call!}
-                            currentTime={t}
-                            variant={variant}
-                        />
-                    )}
+        <div style={{
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            position: "relative",
+            overflow: "hidden"
+        }}>
+            {/* Camera wrapper - applies cinematic transforms */}
+            <div style={cameraStyle}>
+                {/* Device wrapper - applies layout transforms */}
+                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                    <DeviceFrame profileId={device.profileId} variant={variant}>
+                        {/* Call Overlay (takes precedence over everything) */}
+                        {hasActiveCall && (
+                            <CallOverlay
+                                call={device.call!}
+                                currentTime={t}
+                                variant={variant}
+                            />
+                        )}
 
-                    {/* App View / Lockscreen / Home Screen */}
-                    {!hasActiveCall && AppView && !device.isLocked ? (
-                        <AppView world={world} t={t} layout={layout} platform={variant} />
-                    ) : !hasActiveCall && device.isLocked ? (
-                        <LockscreenView
-                            notifications={device.notifications}
+                        {/* App View / Lockscreen / Home Screen */}
+                        {!hasActiveCall && AppView && !device.isLocked ? (
+                            <AppView world={world} t={t} layout={layout} platform={variant} />
+                        ) : !hasActiveCall && device.isLocked ? (
+                            <LockscreenView
+                                notifications={device.notifications}
+                                layout={layout}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && device.homeScreen ? (
+                            <HomeScreenView
+                                config={device.homeScreen}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && (
+                            <div style={{ flex: 1, backgroundColor: "black" }} />
+                        )}
+
+                        {/* Lockscreen Notification Overlay */}
+                        <NotificationOverlay
+                            notifications={device?.notifications}
+                            variant={variant}
                             layout={layout}
-                            variant={variant}
                         />
-                    ) : !hasActiveCall && device.homeScreen ? (
-                        <HomeScreenView
-                            config={device.homeScreen}
-                            variant={variant}
-                        />
-                    ) : !hasActiveCall && (
-                        <div style={{ flex: 1, backgroundColor: "black" }} />
-                    )}
 
-                    {/* Lockscreen Notification Overlay */}
-                    <NotificationOverlay
-                        notifications={device?.notifications}
-                        variant={variant}
-                        layout={layout}
-                    />
-
-                    {/* Heads-Up Notification (when unlocked) */}
-                    {activeHeadsUp && !hasActiveCall && (
-                        <HeadsUpNotification
-                            notification={activeHeadsUp}
-                            currentTime={t}
-                            variant={variant}
-                            autoDismissAfter={headsUpDuration}
-                        />
-                    )}
-                </DeviceFrame>
+                        {/* Heads-Up Notification (when unlocked) */}
+                        {activeHeadsUp && !hasActiveCall && (
+                            <HeadsUpNotification
+                                notification={activeHeadsUp}
+                                currentTime={t}
+                                variant={variant}
+                                autoDismissAfter={headsUpDuration}
+                            />
+                        )}
+                    </DeviceFrame>
+                </div>
             </div>
 
             {debug && <VisualDebugger world={world} t={t} />}

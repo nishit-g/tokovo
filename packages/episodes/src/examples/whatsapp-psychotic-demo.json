@@ -47,7 +47,18 @@
             }
         },
         "camera": {
-            "type": "APP_VIEW"
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
         }
     },
     "events": [

@@ -1,0 +1,246 @@
+{
+    "meta": {
+        "title": "Camera Showcase - Cinematic Demo",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_demo": {
+                "id": "conv_demo",
+                "type": "dm",
+                "name": "Camera Director 🎬",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Camera Director 🎬",
+                        "text": "Welcome to the Camera Showcase!",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "Show me what you've got!",
+                        "type": "text",
+                        "status": "delivered"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "activeApp": "whatsapp",
+            "whatsapp": {
+                "screen": "chat",
+                "conversationId": "conv_demo"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "🎥 First up: ZOOM IN",
+                "status": "read"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.4,
+            "originX": 0.5,
+            "originY": 0.7,
+            "duration": 45,
+            "easing": "cinematic"
+        },
+        {
+            "at": 120,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 30,
+            "easing": "ease-out"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m4",
+                "type": "text",
+                "text": "📱 Now watch this SHAKE!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "intensity": 12,
+            "frequency": 20,
+            "decay": 0.4,
+            "duration": 45
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m5",
+                "type": "text",
+                "text": "👆 Smooth PAN coming up",
+                "status": "read"
+            }
+        },
+        {
+            "at": 270,
+            "kind": "CAMERA",
+            "type": "PAN",
+            "translateX": -100,
+            "translateY": -80,
+            "duration": 60,
+            "easing": "ease-in-out"
+        },
+        {
+            "at": 345,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 30,
+            "easing": "cinematic"
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m6",
+                "type": "text",
+                "text": "🎯 FOCUS on the message!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 420,
+            "kind": "CAMERA",
+            "type": "FOCUS",
+            "target": {
+                "type": "point",
+                "x": 0.7,
+                "y": 0.6
+            },
+            "scale": 1.8,
+            "duration": 60,
+            "easing": "ease-out"
+        },
+        {
+            "at": 510,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 45,
+            "easing": "cinematic"
+        },
+        {
+            "at": 570,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "🔥 COMBO: Zoom + Shake!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 600,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.3,
+            "originX": 0.5,
+            "originY": 0.5,
+            "duration": 90,
+            "easing": "ease-out"
+        },
+        {
+            "at": 615,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "intensity": 10,
+            "frequency": 18,
+            "decay": 0.5,
+            "duration": 75
+        },
+        {
+            "at": 720,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 45,
+            "easing": "ease-in-out"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m8",
+                "type": "text",
+                "text": "🎬 That's a wrap! You're now a Director.",
+                "status": "read"
+            }
+        },
+        {
+            "at": 810,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 0.9,
+            "duration": 60,
+            "easing": "cinematic"
+        }
+    ]
+}

@@ -103,16 +103,155 @@ export interface Message {
     status?: "sending" | "sent" | "delivered" | "read";
 }
 
+// =============================================================================
+// CAMERA SYSTEM TYPES
+// =============================================================================
+
+// Easing types for smooth cinematic motion
+export type EasingType =
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "bounce"
+    | "elastic"
+    | "cinematic";  // Custom S-curve for film-like motion
+
+// Camera effect types
+export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
+
+// Targets for FOCUS effect - general purpose, not app-specific
+export type FocusTarget =
+    | { type: "app"; appId?: string }                                    // Focus on app viewport
+    | { type: "notification"; notificationId?: string }                  // Focus on notification
+    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
+    | { type: "device"; deviceId?: string }                              // Focus on device
+    | { type: "element"; selector: string }                              // Focus on CSS selector
+    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
+
+// Individual camera effect definitions
+export interface CameraZoomEffect {
+    type: "ZOOM";
+    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
+    originX?: number;        // 0-1, default 0.5 (center)
+    originY?: number;        // 0-1, default 0.5 (center)
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraPanEffect {
+    type: "PAN";
+    translateX: number;      // pixels (or normalized 0-1 if relative)
+    translateY: number;      // pixels
+    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraShakeEffect {
+    type: "SHAKE";
+    intensity: number;       // amplitude in pixels
+    frequency: number;       // shakes per second
+    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
+    duration: number;        // frames
+    seed?: number;           // for deterministic randomness
+}
+
+export interface CameraFocusEffect {
+    type: "FOCUS";
+    target: FocusTarget;
+    scale?: number;          // zoom level when focused, default 1.5
+    duration: number;        // frames
+    easing?: EasingType;
+    holdDuration?: number;   // frames to hold at focus before returning
+}
+
+export interface CameraCutEffect {
+    type: "CUT";
+    toDeviceId?: string;     // switch to different device
+    toView?: "app" | "lockscreen" | "homescreen";
+    fadeMs?: number;         // optional fade transition (0 = hard cut)
+}
+
+export interface CameraResetEffect {
+    type: "RESET";
+    duration: number;        // frames to animate back to default
+    easing?: EasingType;
+}
+
+export type CameraEffect =
+    | CameraZoomEffect
+    | CameraPanEffect
+    | CameraShakeEffect
+    | CameraFocusEffect
+    | CameraCutEffect
+    | CameraResetEffect;
+
+// Active camera effect (with timing info)
+export interface ActiveCameraEffect {
+    id: string;              // unique ID for this effect instance
+    effect: CameraEffect;
+    startFrame: number;
+    endFrame: number;
+}
+
+// Computed camera transform (result of all active effects at time t)
+export interface CameraTransform {
+    translateX: number;
+    translateY: number;
+    scale: number;
+    rotation: number;        // degrees
+    originX: number;         // 0-1
+    originY: number;         // 0-1
+
+    // Shake offsets (added on top of main transform)
+    shakeX: number;
+    shakeY: number;
+}
+
+// Full camera state (stored in WorldState)
+export interface CameraState {
+    // Base view (for backward compatibility)
+    baseView: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+
+    // Active effects (from timeline)
+    activeEffects: ActiveCameraEffect[];
+
+    // Computed transform at current frame (populated by camera engine)
+    transform: CameraTransform;
+}
+
+// Default camera transform
+export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+    rotation: 0,
+    originX: 0.5,
+    originY: 0.5,
+    shakeX: 0,
+    shakeY: 0,
+};
+
+// Default camera state
+export const DEFAULT_CAMERA_STATE: CameraState = {
+    baseView: "APP_VIEW",
+    activeEffects: [],
+    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+};
+
+// Legacy type for backward compatibility
 export interface CameraViewConfig {
-    type: "APP_VIEW" | "TRANSITION"; // Updated to include TRANSITION
+    type: "APP_VIEW" | "TRANSITION";
     appId?: AppId;
 }
 
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
-    appState: Record<AppId, any>; // Generic state for apps (e.g. Instagram feed, stories)
-    camera: CameraViewConfig;
+    appState: Record<AppId, any>;
+    camera: CameraState;  // Updated to use full CameraState
 }
 
 // Event Union
@@ -138,8 +277,14 @@ export type TimelineEvent =
     | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
     // App events - custom
     | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
+    // Camera events - CINEMATIC SYSTEM
+    | { at: number; kind: "CAMERA"; type: "ZOOM"; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "PAN"; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SHAKE"; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
+    | { at: number; kind: "CAMERA"; type: "FOCUS"; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
+    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
+    | { at: number; kind: "CAMERA"; type: "RESET"; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Audio events
     | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
 
