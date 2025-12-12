@@ -8,6 +8,19 @@ export interface Notification {
     title: string;
     body: string;
     at: number;
+    dismissedAt?: number;         // When auto-dismissed or manually dismissed
+    mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
+    icon?: string;                // App icon URL (optional)
+}
+
+export interface CallState {
+    status: "incoming" | "active" | "ended";
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    startedAt?: number;
+    endedAt?: number;
 }
 
 export interface DeviceState {
@@ -16,6 +29,7 @@ export interface DeviceState {
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
+    call?: CallState;             // Active call state
     sound?: {
         activeSoundId?: string;
     };
@@ -41,11 +55,20 @@ export interface WorldState {
 
 // Event Union
 export type TimelineEvent =
+    // Device events
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
+    // Call events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
+    // App events
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
     | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
+    // Camera events
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
+    // Audio events
     | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
 
 // --- Layout System Types ---

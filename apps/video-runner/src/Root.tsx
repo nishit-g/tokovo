@@ -3,6 +3,7 @@ import { Composition } from "remotion";
 import { Video } from "./Video";
 import { AndroidVideo } from "./AndroidVideo";
 import { InstagramVideo } from "./InstagramVideo";
+import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
@@ -27,6 +28,14 @@ export const RemotionRoot: React.FC = () => {
                 id="InstagramDMTest"
                 component={InstagramVideo}
                 durationInFrames={300}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="NotificationCallDemo"
+                component={NotificationCallDemoVideo}
+                durationInFrames={480}
                 fps={30}
                 width={1080}
                 height={1920}
