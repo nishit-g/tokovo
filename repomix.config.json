@@ -33,7 +33,8 @@
     "useDotIgnore": true,
     "useDefaultPatterns": true,
     "customPatterns": [
-      "*.md"
+      "*.md",
+      "*.mp3"
     ]
   },
   "security": {

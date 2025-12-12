@@ -28,7 +28,7 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching these patterns are excluded: *.md
+- Files matching these patterns are excluded: *.md, *.mp3
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -42,14 +42,21 @@ apps/
         iphone16/
           frame.png
           mask.png
+      sounds/
+        notification.mp3
+        whatsapp-received.mp3
+        whatsapp-sent.mp3
     src/
       AndroidVideo.tsx
+      CameraShowcaseVideo.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
       InstagramVideo.tsx
+      MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
       Root.tsx
       Video.tsx
+      WhatsappPsychoticDemoVideo.tsx
     package.json
     remotion.config.ts
     tsconfig.json
@@ -92,8 +99,11 @@ packages/
     tsconfig.json
   core/
     src/
+      camera/
+        index.ts
       engine.ts
       index.ts
+      sounds.ts
       tokens.ts
       types.ts
     package.json
@@ -118,10 +128,13 @@ packages/
     src/
       examples/
         android-test.json
+        camera-showcase.json
         homescreen-group-demo.json
         instagram-test.json
+        multi-pov-demo.json
         notification-call-demo.json
         whatsapp-breakup-01.json
+        whatsapp-psychotic-demo.json
       index.ts
       schema.ts
     package.json
@@ -142,12 +155,14 @@ packages/
         Components.tsx
         index.ts
       AppTransition.tsx
+      AudioLayer.tsx
       CallOverlay.tsx
       DeviceFrame.tsx
       HeadsUpNotification.tsx
       HomeScreenView.tsx
       index.ts
       LockscreenView.tsx
+      MultiDeviceRenderer.tsx
       NotificationOverlay.tsx
       registry.ts
       TokovoRenderer.tsx
@@ -166,6 +181,69 @@ turbo.json
 ```
 
 # Files
+
+## File: apps/video-runner/src/CameraShowcaseVideo.tsx
+````typescript
+import React from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { cameraShowcase } from "@tokovo/episodes";
+import { replay, WorldState, TimelineEvent } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * CameraShowcaseVideo
+ * Demonstrates the cinematic camera system:
+ * - ZOOM with different easing functions
+ * - PAN for smooth translation
+ * - SHAKE with frequency and decay
+ * - FOCUS on specific points
+ * - RESET to return to default view
+ * - Combo effects (zoom + shake)
+ */
+export const CameraShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Episode data
+    const episode = cameraShowcase as { initialWorld: WorldState; events: TimelineEvent[] };
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
 
 ## File: apps/video-runner/src/HomeScreenGroupDemoVideo.tsx
 ````typescript
@@ -287,6 +365,52 @@ export const InstagramVideo: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/MultiPovDemoVideo.tsx
+````typescript
+import React from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { multiPovDemo } from "@tokovo/episodes";
+import { replay, WorldState, TimelineEvent } from "@tokovo/core";
+import { MultiDeviceRenderer } from "@tokovo/renderer";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * MultiPovDemoVideo
+ * Demonstrates the multi-device POV system:
+ * - Multiple phones (Alice and Bob)
+ * - CUT between devices
+ * - SPLIT_HORIZONTAL layout (side by side)
+ * - SPLIT_VERTICAL layout (stacked)
+ * - PIP layout (picture in picture)
+ */
+export const MultiPovDemoVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Episode data
+    const episode = multiPovDemo as { initialWorld: WorldState; events: TimelineEvent[] };
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+        }}>
+            <MultiDeviceRenderer
+                world={world}
+                t={t}
+                debug={false}
+                compositionWidth={1080}
+                compositionHeight={1920}
+            />
+        </AbsoluteFill>
+    );
+};
+````
+
 ## File: apps/video-runner/src/NotificationCallDemoVideo.tsx
 ````typescript
 import React from "react";
@@ -346,6 +470,68 @@ export const NotificationCallDemoVideo: React.FC = () => {
                         headsUpDuration: 150, // 5 seconds
                         showHeadsUpWhenAppOpen: true
                     }}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
+## File: apps/video-runner/src/WhatsappPsychoticDemoVideo.tsx
+````typescript
+import React from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { whatsappPsychoticDemo } from "@tokovo/episodes";
+import { replay, WorldState, TimelineEvent } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * WhatsappPsychoticDemoVideo
+ * Demonstrates advanced "psychotic" messaging features:
+ * - Missed calls
+ * - Deleted messages
+ * - Screenshot alerts
+ * - Voice notes with waveforms
+ * - Edited messages
+ */
+export const WhatsappPsychoticDemoVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Episode data
+    const episode = whatsappPsychoticDemo as { initialWorld: WorldState; events: TimelineEvent[] };
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
                 />
             </div>
         </AbsoluteFill>
@@ -820,45 +1006,49 @@ WhatsApp clone app for Tokovo.
 }
 ````
 
-## File: packages/core/src/engine.ts
+## File: packages/core/src/sounds.ts
 ````typescript
-import { produce } from "immer";
-import { TimelineEvent, WorldState, DeviceState } from "./types";
+/**
+ * Sound Registry - Maps sound IDs to audio files
+ * 
+ * Place audio files in apps/video-runner/public/sounds/
+ */
 
-export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
-export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+export const SOUND_REGISTRY: Record<string, string> = {
+    // WhatsApp sounds
+    "whatsapp_sent": "whatsapp-sent.mp3",
+    "whatsapp_received": "whatsapp-received.mp3",
+    "whatsapp_typing": "typing.mp3",
 
-export const ReducerRegistry = {
-    deviceReducer: null as DeviceReducer | null,
-    appReducers: {} as Record<string, AppReducer>,
+    // Notification sounds
+    "notification": "notification.mp3",
+    "notification_soft": "notification-soft.mp3",
 
-    registerDeviceReducer(reducer: DeviceReducer) {
-        this.deviceReducer = reducer;
-    },
-    registerAppReducer(appId: string, reducer: AppReducer) {
-        this.appReducers[appId] = reducer;
-    }
+    // Call sounds
+    "ringtone": "ringtone.mp3",
+    "call_end": "call-end.mp3",
+
+    // UI sounds
+    "camera_shutter": "camera-shutter.mp3",
+    "screenshot": "screenshot.mp3",
+    "lock": "lock.mp3",
+    "unlock": "unlock.mp3",
+
+    // Ambient / Music
+    "suspense": "suspense.mp3",
+    "dramatic": "dramatic.mp3",
 };
 
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    const relevant = events.filter(e => e.at <= t);
-
-    return relevant.reduce((state, event) => {
-        return produce(state, draft => {
-            if (event.kind === "DEVICE") {
-                if (ReducerRegistry.deviceReducer) {
-                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-                }
-            }
-            if (event.kind === "APP") {
-                const reducer = ReducerRegistry.appReducers[event.appId];
-                reducer?.(draft, event);
-            }
-            if (event.kind === "CAMERA") {
-                draft.camera = event.view;
-            }
-        });
-    }, initial);
+/**
+ * Get sound file path for a sound ID
+ */
+export function getSoundPath(soundId: string): string {
+    const filename = SOUND_REGISTRY[soundId];
+    if (!filename) {
+        console.warn(`Unknown sound ID: ${soundId}`);
+        return `sounds/${soundId}.mp3`; // Fallback to direct ID
+    }
+    return `sounds/${filename}`;
 }
 ````
 
@@ -1838,6 +2028,112 @@ export const UnlockTransition: React.FC<UnlockTransitionProps> = ({
 };
 ````
 
+## File: packages/renderer/src/AudioLayer.tsx
+````typescript
+/**
+ * AudioLayer - Renders audio for the Tokovo timeline
+ * 
+ * Uses Remotion's <Audio> component to play sounds synchronized with video frames.
+ * Supports both global sounds and per-device sounds.
+ */
+
+import React from "react";
+import { Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
+import { WorldState, ActiveSound } from "@tokovo/core";
+import { getSoundPath } from "@tokovo/core";
+
+interface AudioLayerProps {
+    world: WorldState;
+    t: number;
+    focusDeviceId?: string;  // If provided, only play sounds for this device
+}
+
+/**
+ * AudioLayer component - renders all active sounds as Remotion Audio components
+ */
+export const AudioLayer: React.FC<AudioLayerProps> = ({ world, t, focusDeviceId }) => {
+    const frame = useCurrentFrame();
+
+    // Get audio state with safety check
+    const audio = world.audio;
+    if (!audio) {
+        return null;
+    }
+
+    // Filter sounds based on focusDeviceId
+    const activeSounds = Object.entries(audio.activeSounds).filter(([_, sound]) => {
+        // If no deviceId on sound, it's global - always play
+        if (!sound.deviceId) return true;
+        // If no focusDeviceId specified, play all sounds
+        if (!focusDeviceId) return true;
+        // Only play if device matches
+        return sound.deviceId === focusDeviceId;
+    });
+
+    return (
+        <>
+            {/* Active sounds */}
+            {activeSounds.map(([instanceId, sound]) => (
+                <SoundInstance
+                    key={instanceId}
+                    instanceId={instanceId}
+                    sound={sound}
+                    currentFrame={t}
+                />
+            ))}
+
+            {/* Background music */}
+            {audio.backgroundMusic && (
+                <Sequence from={audio.backgroundMusic.startFrame}>
+                    <Audio
+                        src={staticFile(getSoundPath(audio.backgroundMusic.soundId))}
+                        volume={audio.backgroundMusic.volume}
+                        loop={audio.backgroundMusic.loop}
+                    />
+                </Sequence>
+            )}
+        </>
+    );
+};
+
+/**
+ * Individual sound instance - handles timing and volume
+ */
+const SoundInstance: React.FC<{
+    instanceId: string;
+    sound: ActiveSound;
+    currentFrame: number;
+}> = ({ instanceId, sound, currentFrame }) => {
+    // Calculate if sound should be playing
+    const soundFrame = currentFrame - sound.startFrame;
+
+    // If sound has a duration and we're past it, don't render
+    if (sound.duration && soundFrame > sound.duration) {
+        return null;
+    }
+
+    // Calculate volume (could be fading)
+    let volume = sound.volume;
+    const fadeSound = sound as any;
+    if (fadeSound.fadeTarget !== undefined && fadeSound.fadeStartFrame !== undefined) {
+        const fadeProgress = Math.min(1, (currentFrame - fadeSound.fadeStartFrame) / fadeSound.fadeDuration);
+        volume = sound.volume + (fadeSound.fadeTarget - sound.volume) * fadeProgress;
+    }
+
+    return (
+        <Sequence from={sound.startFrame} durationInFrames={sound.duration || undefined}>
+            <Audio
+                src={staticFile(getSoundPath(sound.soundId))}
+                volume={Math.max(0, Math.min(1, volume))}
+                loop={sound.loop}
+            />
+        </Sequence>
+    );
+};
+
+export default AudioLayer;
+````
+
 ## File: packages/renderer/src/HeadsUpNotification.tsx
 ````typescript
 import React from "react";
@@ -1985,286 +2281,6 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
                     </div>
                 </div>
             </div>
-        </div>
-    );
-};
-````
-
-## File: packages/renderer/src/HomeScreenView.tsx
-````typescript
-import React from "react";
-import { HomeScreenConfig, AppIcon, AppFolder } from "@tokovo/core";
-
-// ============================================================================
-// APP ICON COMPONENT
-// ============================================================================
-
-interface AppIconItemProps {
-    app: AppIcon;
-    size?: number;
-}
-
-const AppIconItem: React.FC<AppIconItemProps> = ({ app, size = 180 }) => {
-    const isEmoji = /^\p{Emoji}/u.test(app.icon);
-    const iconSize = size * 0.75;
-
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            width: size,
-            gap: 12
-        }}>
-            {/* Icon */}
-            <div style={{
-                width: iconSize,
-                height: iconSize,
-                borderRadius: iconSize * 0.22,
-                position: "relative",
-                backgroundColor: isEmoji ? "rgba(255,255,255,0.15)" : "#333",
-                backgroundImage: !isEmoji ? `url(${app.icon})` : undefined,
-                backgroundSize: "cover",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center"
-            }}>
-                {isEmoji && (
-                    <span style={{ fontSize: iconSize * 0.5 }}>{app.icon}</span>
-                )}
-
-                {/* Badge */}
-                {app.badge && app.badge > 0 && (
-                    <div style={{
-                        position: "absolute",
-                        top: -12,
-                        right: -12,
-                        minWidth: 54,
-                        height: 54,
-                        borderRadius: 27,
-                        backgroundColor: "#FF3B30",
-                        color: "white",
-                        fontSize: 33,
-                        fontWeight: 600,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "0 15px",
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                    }}>
-                        {app.badge > 99 ? "99+" : app.badge}
-                    </div>
-                )}
-            </div>
-
-            {/* Label */}
-            <span style={{
-                fontSize: 33,
-                color: "white",
-                textAlign: "center",
-                maxWidth: size,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {app.label}
-            </span>
-        </div>
-    );
-};
-
-// ============================================================================
-// FOLDER COMPONENT
-// ============================================================================
-
-interface FolderItemProps {
-    folder: AppFolder;
-    size?: number;
-}
-
-const FolderItem: React.FC<FolderItemProps> = ({ folder, size = 180 }) => {
-    const iconSize = size * 0.75;
-    const miniSize = (iconSize - 30) / 3;
-
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            width: size,
-            gap: 12
-        }}>
-            {/* Folder icon with mini app previews */}
-            <div style={{
-                width: iconSize,
-                height: iconSize,
-                borderRadius: iconSize * 0.22,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                backdropFilter: "blur(30px)",
-                display: "grid",
-                gridTemplateColumns: `repeat(3, ${miniSize}px)`,
-                gridTemplateRows: `repeat(3, ${miniSize}px)`,
-                gap: 9,
-                padding: 15
-            }}>
-                {folder.apps.slice(0, 9).map((app, i) => (
-                    <div key={i} style={{
-                        width: miniSize,
-                        height: miniSize,
-                        borderRadius: miniSize * 0.2,
-                        backgroundColor: "rgba(255,255,255,0.3)",
-                        backgroundImage: !/^\p{Emoji}/u.test(app.icon) ? `url(${app.icon})` : undefined,
-                        backgroundSize: "cover",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: miniSize * 0.6
-                    }}>
-                        {/^\p{Emoji}/u.test(app.icon) && app.icon}
-                    </div>
-                ))}
-            </div>
-
-            {/* Label */}
-            <span style={{
-                fontSize: 33,
-                color: "white",
-                textAlign: "center"
-            }}>
-                {folder.name}
-            </span>
-        </div>
-    );
-};
-
-// ============================================================================
-// DOCK COMPONENT
-// ============================================================================
-
-interface DockProps {
-    apps: AppIcon[];
-}
-
-const Dock: React.FC<DockProps> = ({ apps }) => (
-    <div style={{
-        position: "absolute",
-        bottom: 60,
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: "92%",
-        height: 270,
-        borderRadius: 90,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        backdropFilter: "blur(60px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-around",
-        padding: "0 30px"
-    }}>
-        {apps.slice(0, 4).map((app, i) => (
-            <AppIconItem key={i} app={app} size={150} />
-        ))}
-    </div>
-);
-
-// ============================================================================
-// PAGE DOTS
-// ============================================================================
-
-interface PageDotsProps {
-    count: number;
-    activeIndex: number;
-}
-
-const PageDots: React.FC<PageDotsProps> = ({ count, activeIndex }) => (
-    <div style={{
-        display: "flex",
-        gap: 18,
-        marginBottom: 30
-    }}>
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} style={{
-                width: 21,
-                height: 21,
-                borderRadius: "50%",
-                backgroundColor: i === activeIndex ? "white" : "rgba(255,255,255,0.4)"
-            }} />
-        ))}
-    </div>
-);
-
-// ============================================================================
-// HOME SCREEN VIEW
-// ============================================================================
-
-interface HomeScreenViewProps {
-    config: HomeScreenConfig;
-    variant?: "ios" | "android";
-    activePage?: number;
-}
-
-export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
-    config,
-    variant = "ios",
-    activePage = 0
-}) => {
-    const currentPage = config.pages[activePage] || config.pages[0];
-    const wallpaper = config.wallpaper || "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)";
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: wallpaper.startsWith("http") ? `url(${wallpaper}) center/cover` : wallpaper,
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-        }}>
-            {/* App Grid */}
-            <div style={{
-                flex: 1,
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gridTemplateRows: "repeat(6, auto)",
-                gap: "36px 0",
-                padding: "240px 30px 0",
-                justifyItems: "center",
-                overflow: "hidden"
-            }}>
-                {currentPage?.apps.map((item, i) => (
-                    'type' in item && item.type === "folder"
-                        ? <FolderItem key={i} folder={item} />
-                        : <AppIconItem key={i} app={item as AppIcon} />
-                ))}
-            </div>
-
-            {/* Page Dots */}
-            <div style={{
-                display: "flex",
-                justifyContent: "center",
-                marginBottom: 12
-            }}>
-                <PageDots count={config.pages.length} activeIndex={activePage} />
-            </div>
-
-            {/* Dock */}
-            <Dock apps={config.dock} />
-
-            {/* Home Indicator */}
-            <div style={{
-                position: "absolute",
-                bottom: 24,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 405,
-                height: 15,
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
-                borderRadius: 15
-            }} />
         </div>
     );
 };
@@ -2876,7 +2892,8 @@ packages:
     "useDotIgnore": true,
     "useDefaultPatterns": true,
     "customPatterns": [
-      "*.md"
+      "*.md",
+      "*.mp3"
     ]
   },
   "security": {
@@ -3293,389 +3310,479 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
 }
 ````
 
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-export * from "./engine";
-export * from "./tokens";
-````
-
-## File: packages/core/src/tokens.ts
+## File: packages/core/src/camera/index.ts
 ````typescript
 /**
- * Shared Design Tokens & UI Primitives
- * Ensures consistent styling across WhatsApp, Instagram, and future apps
+ * Camera Module - Cinematic Camera System for Tokovo
+ * 
+ * This module provides production-grade camera effects including:
+ * - ZOOM: Scale with configurable origin and easing
+ * - PAN: Translation with smooth easing
+ * - SHAKE: Screen shake with frequency, intensity, and decay
+ * - FOCUS: Target-based zoom (app, notification, message, point)
+ * - CUT: Instant transitions between views
+ * - RESET: Smooth return to default camera position
  */
 
-// =============================================================================
-// DESIGN TOKENS
-// =============================================================================
-
-export const iOSTokens = {
-    // Colors
-    colors: {
-        // System colors
-        primary: "#007AFF",
-        success: "#34C759",
-        warning: "#FF9500",
-        danger: "#FF3B30",
-
-        // Grays
-        label: "#000000",
-        secondaryLabel: "#8E8E93",
-        tertiaryLabel: "#C7C7CC",
-        background: "#FFFFFF",
-        secondaryBackground: "#F2F2F7",
-        separator: "rgba(60, 60, 67, 0.36)",
-
-        // App-specific
-        whatsappGreen: "#25D366",
-        whatsappTeal: "#128C7E",
-        instagramPink: "#E4405F",
-        instagramPurple: "#833AB4",
-        iMessageBlue: "#007AFF",
-    },
-
-    // Typography (in 3x scale for Remotion)
-    typography: {
-        largeTitle: { fontSize: 102, fontWeight: "700" as const, lineHeight: 123 },
-        title1: { fontSize: 84, fontWeight: "700" as const, lineHeight: 102 },
-        title2: { fontSize: 66, fontWeight: "700" as const, lineHeight: 78 },
-        title3: { fontSize: 60, fontWeight: "600" as const, lineHeight: 72 },
-        headline: { fontSize: 51, fontWeight: "600" as const, lineHeight: 63 },
-        body: { fontSize: 51, fontWeight: "400" as const, lineHeight: 66 },
-        callout: { fontSize: 48, fontWeight: "400" as const, lineHeight: 60 },
-        subhead: { fontSize: 45, fontWeight: "400" as const, lineHeight: 57 },
-        footnote: { fontSize: 39, fontWeight: "400" as const, lineHeight: 51 },
-        caption1: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
-        caption2: { fontSize: 33, fontWeight: "400" as const, lineHeight: 42 },
-    },
-
-    // Spacing (in 3x scale)
-    spacing: {
-        xs: 12,
-        sm: 24,
-        md: 48,
-        lg: 72,
-        xl: 96,
-    },
-
-    // Radii (in 3x scale)
-    radii: {
-        sm: 12,
-        md: 24,
-        lg: 36,
-        xl: 48,
-        pill: 999,
-    },
-
-    // Shadows
-    shadows: {
-        sm: "0 3px 9px rgba(0,0,0,0.08)",
-        md: "0 6px 18px rgba(0,0,0,0.12)",
-        lg: "0 12px 36px rgba(0,0,0,0.16)",
-    },
-
-    // Font family
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
-};
-
-export const androidTokens = {
-    // Colors (Material You)
-    colors: {
-        primary: "#1A73E8",
-        success: "#34A853",
-        warning: "#FBBC04",
-        danger: "#EA4335",
-
-        label: "#202124",
-        secondaryLabel: "#5F6368",
-        tertiaryLabel: "#9AA0A6",
-        background: "#FFFFFF",
-        secondaryBackground: "#F8F9FA",
-        separator: "rgba(0, 0, 0, 0.12)",
-
-        whatsappGreen: "#25D366",
-        instagramPink: "#E4405F",
-    },
-
-    // Typography (Material 3, in 3x scale)
-    typography: {
-        displayLarge: { fontSize: 171, fontWeight: "400" as const, lineHeight: 192 },
-        displayMedium: { fontSize: 135, fontWeight: "400" as const, lineHeight: 156 },
-        displaySmall: { fontSize: 108, fontWeight: "400" as const, lineHeight: 132 },
-        headlineLarge: { fontSize: 96, fontWeight: "400" as const, lineHeight: 120 },
-        headlineMedium: { fontSize: 84, fontWeight: "400" as const, lineHeight: 108 },
-        headlineSmall: { fontSize: 72, fontWeight: "400" as const, lineHeight: 96 },
-        titleLarge: { fontSize: 66, fontWeight: "400" as const, lineHeight: 84 },
-        titleMedium: { fontSize: 48, fontWeight: "500" as const, lineHeight: 72 },
-        titleSmall: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
-        bodyLarge: { fontSize: 48, fontWeight: "400" as const, lineHeight: 72 },
-        bodyMedium: { fontSize: 42, fontWeight: "400" as const, lineHeight: 60 },
-        bodySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
-        labelLarge: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
-        labelMedium: { fontSize: 36, fontWeight: "500" as const, lineHeight: 48 },
-        labelSmall: { fontSize: 33, fontWeight: "500" as const, lineHeight: 48 },
-    },
-
-    // Spacing
-    spacing: {
-        xs: 12,
-        sm: 24,
-        md: 48,
-        lg: 72,
-        xl: 96,
-    },
-
-    // Radii
-    radii: {
-        sm: 12,
-        md: 24,
-        lg: 42,
-        xl: 84,
-        pill: 999,
-    },
-
-    // Font family
-    fontFamily: "'Roboto', 'Google Sans', sans-serif",
-};
+import {
+    CameraState,
+    CameraTransform,
+    CameraEffect,
+    ActiveCameraEffect,
+    EasingType,
+    DEFAULT_CAMERA_TRANSFORM,
+    CameraZoomEffect,
+    CameraPanEffect,
+    CameraShakeEffect,
+    CameraFocusEffect,
+    CameraResetEffect,
+} from "../types";
 
 // =============================================================================
-// UTILITY FUNCTIONS
+// EASING FUNCTIONS
 // =============================================================================
 
-export type Platform = "ios" | "android";
+/**
+ * Easing functions library - cinematic-grade timing curves
+ * Input: t (0-1), Output: eased value (0-1)
+ */
+export const easingFunctions: Record<EasingType, (t: number) => number> = {
+    "linear": (t) => t,
 
-export function getTokens(platform: Platform) {
-    return platform === "ios" ? iOSTokens : androidTokens;
-}
+    "ease-in": (t) => t * t * t,
 
-// Unified typography that maps semantic names to platform-specific styles
-type SemanticTypography = "largeTitle" | "title" | "headline" | "body" | "callout" | "caption" | "footnote";
+    "ease-out": (t) => 1 - Math.pow(1 - t, 3),
 
-const typographyMap: Record<SemanticTypography, { ios: keyof typeof iOSTokens.typography; android: keyof typeof androidTokens.typography }> = {
-    largeTitle: { ios: "largeTitle", android: "displaySmall" },
-    title: { ios: "title1", android: "headlineLarge" },
-    headline: { ios: "headline", android: "titleMedium" },
-    body: { ios: "body", android: "bodyLarge" },
-    callout: { ios: "callout", android: "bodyMedium" },
-    caption: { ios: "caption1", android: "bodySmall" },
-    footnote: { ios: "footnote", android: "labelMedium" }
-};
+    "ease-in-out": (t) => t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2,
 
-export function getTypography(platform: Platform, semantic: SemanticTypography) {
-    const map = typographyMap[semantic];
-    if (platform === "ios") {
-        return iOSTokens.typography[map.ios];
-    }
-    return androidTokens.typography[map.android];
-}
-
-// =============================================================================
-// SHARED STYLES
-// =============================================================================
-
-export const sharedStyles = {
-    // Flexbox utilities
-    flexCenter: {
-        display: "flex" as const,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-    },
-    flexBetween: {
-        display: "flex" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-    },
-    flexColumn: {
-        display: "flex" as const,
-        flexDirection: "column" as const,
-    },
-
-    // Full size
-    absoluteFill: {
-        position: "absolute" as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-
-    // Text truncation
-    truncate: {
-        overflow: "hidden" as const,
-        textOverflow: "ellipsis" as const,
-        whiteSpace: "nowrap" as const,
-    },
-};
-
-// =============================================================================
-// APP-SPECIFIC CONFIG
-// =============================================================================
-
-export const appConfigs = {
-    whatsapp: {
-        ios: {
-            // Header
-            headerHeight: 270,
-            headerBg: "#F6F6F6",
-            statusBarHeight: 144,
-            avatarSize: 111,
-            avatarMargin: 24,
-            headerTitleSize: 51,
-            headerSubtitleSize: 36,
-            headerIconGap: 54,
-
-            // Chat area
-            chatBackground: "#ECE5DD",
-            inputHeight: 180,
-
-            // Message bubbles
-            bubblePadding: 24,
-            bubblePaddingHorizontal: 36,
-            bubbleRadius: 24,
-            bubbleTailRadius: 6,
-            bubbleMaxWidth: "78%",
-            bubbleMarginHorizontal: 36,
-            bubbleGap: 12,  // Gap between consecutive messages
-            bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-
-            // Bubble colors
-            bubbleMyColor: "#E7FFDB",
-            bubbleOtherColor: "#FFFFFF",
-            bubbleTextColor: "#111B21",
-
-            // Message text
-            messageTextSize: 48,
-            messageLineHeight: 66,
-            timestampSize: 33,
-            timestampColor: "#667781",
-
-            // Sender name (groups)
-            senderNameSize: 33,
-            senderNameColor: "#25D366",
-
-            // Read receipts
-            accentColor: "#25D366",
-            readReceiptColor: "#53BDEB",
-            unreadReceiptColor: "#8696A0",
-
-            // Avatar (for contacts without photos)
-            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            avatarFontSize: 45,
-
-            // Input area
-            inputBg: "#FFFFFF",
-            inputBorderRadius: 60,
-            inputPlaceholderColor: "#8E8E93",
-            inputTextColor: "#000000",
-            inputIconColor: "#8E8E93",
-            sendButtonColor: "#25D366",
-
-            // Typing indicator
-            typingBubbleColor: "#FFFFFF",
-            typingDotColor: "#8E8E93",
-            typingDotSize: 24,
-        },
-        android: {
-            // Header
-            headerHeight: 255,
-            headerBg: "#008069",
-            statusBarHeight: 120,
-            avatarSize: 105,
-            avatarMargin: 24,
-            headerTitleSize: 48,
-            headerSubtitleSize: 33,
-            headerIconGap: 48,
-
-            // Chat area
-            chatBackground: "#ECE5DD",
-            inputHeight: 165,
-
-            // Message bubbles
-            bubblePadding: 21,
-            bubblePaddingHorizontal: 33,
-            bubbleRadius: 21,
-            bubbleTailRadius: 6,
-            bubbleMaxWidth: "78%",
-            bubbleMarginHorizontal: 30,
-            bubbleGap: 9,
-            bubbleShadow: "0 1px 1px rgba(0,0,0,0.1)",
-
-            // Bubble colors
-            bubbleMyColor: "#E7FFDB",
-            bubbleOtherColor: "#FFFFFF",
-            bubbleTextColor: "#111B21",
-
-            // Message text
-            messageTextSize: 45,
-            messageLineHeight: 63,
-            timestampSize: 30,
-            timestampColor: "#667781",
-
-            // Sender name (groups)
-            senderNameSize: 30,
-            senderNameColor: "#25D366",
-
-            // Read receipts
-            accentColor: "#25D366",
-            readReceiptColor: "#53BDEB",
-            unreadReceiptColor: "#8696A0",
-
-            // Avatar (for contacts without photos)
-            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            avatarFontSize: 42,
-
-            // Input area
-            inputBg: "#FFFFFF",
-            inputBorderRadius: 60,
-            inputPlaceholderColor: "#8E8E93",
-            inputTextColor: "#000000",
-            inputIconColor: "#8E8E93",
-            sendButtonColor: "#008069", // Android Teal
-
-            // Typing indicator
-            typingBubbleColor: "#FFFFFF",
-            typingDotColor: "#8E8E93",
-            typingDotSize: 21,
-        },
-    },
-    instagram: {
-        ios: {
-            headerHeight: 264,
-            navHeight: 147,
-            storySize: 210,
-            accentColor: "#E4405F",
-        },
-        android: {
-            headerHeight: 252,
-            navHeight: 144,
-            storySize: 200,
-            accentColor: "#E4405F",
+    "bounce": (t) => {
+        const n1 = 7.5625;
+        const d1 = 2.75;
+        if (t < 1 / d1) {
+            return n1 * t * t;
+        } else if (t < 2 / d1) {
+            return n1 * (t -= 1.5 / d1) * t + 0.75;
+        } else if (t < 2.5 / d1) {
+            return n1 * (t -= 2.25 / d1) * t + 0.9375;
+        } else {
+            return n1 * (t -= 2.625 / d1) * t + 0.984375;
         }
     },
-    imessage: {
-        ios: {
-            bubbleMyColor: "#007AFF",
-            bubbleMyTextColor: "#FFFFFF",
-            bubbleOtherColor: "#E9E9EB",
-            bubbleOtherTextColor: "#000000",
-            accentColor: "#007AFF",
+
+    "elastic": (t) => {
+        const c4 = (2 * Math.PI) / 3;
+        return t === 0 ? 0 : t === 1 ? 1
+            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    },
+
+    // Cinematic S-curve - smooth start, linear middle, smooth end
+    // Inspired by film camera movements
+    "cinematic": (t) => {
+        // Custom bezier-like curve for film-quality motion
+        if (t < 0.2) {
+            // Smooth ease-in for first 20%
+            return 0.5 * Math.pow(t / 0.2, 2) * 0.2;
+        } else if (t > 0.8) {
+            // Smooth ease-out for last 20%
+            const localT = (t - 0.8) / 0.2;
+            return 0.8 + 0.2 * (1 - Math.pow(1 - localT, 2));
+        } else {
+            // Linear middle section (60%)
+            return 0.1 + (t - 0.2) * (0.7 / 0.6);
         }
-    }
+    },
 };
 
+/**
+ * Apply easing to a progress value
+ */
+export function applyEasing(progress: number, easing: EasingType = "ease-out"): number {
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    return easingFunctions[easing](clampedProgress);
+}
+
 // =============================================================================
-// EXPORT CONFIG GETTER
+// SEEDED RANDOM FOR DETERMINISTIC SHAKE
 // =============================================================================
 
-export function getAppConfig<T extends keyof typeof appConfigs>(
-    app: T,
-    platform: Platform
-): typeof appConfigs[T][Platform] {
-    const config = appConfigs[app];
-    return (config as any)[platform] || (config as any).ios;
+/**
+ * Seeded random number generator for deterministic shake effects
+ * Uses mulberry32 algorithm for speed and quality
+ */
+function seededRandom(seed: number): () => number {
+    return function () {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
 }
+
+/**
+ * Generate shake offset for a given frame
+ * Returns values between -1 and 1
+ */
+function getShakeOffset(frame: number, seed: number, frequency: number, fps: number = 30): { x: number; y: number } {
+    // Calculate how many shake cycles per frame
+    const cyclesPerSecond = frequency;
+    const cyclesPerFrame = cyclesPerSecond / fps;
+
+    // Create deterministic random based on frame and seed
+    const rng = seededRandom(seed + Math.floor(frame * cyclesPerFrame));
+
+    // Generate offset (-1 to 1)
+    const x = (rng() - 0.5) * 2;
+    const y = (rng() - 0.5) * 2;
+
+    return { x, y };
+}
+
+// =============================================================================
+// CAMERA CONTROLLER
+// =============================================================================
+
+/**
+ * CameraController - Computes camera transforms at any given frame
+ * 
+ * This is the heart of the cinematic system. It takes:
+ * - Current camera state (with active effects)
+ * - Current frame number
+ * 
+ * And produces a final CameraTransform with all effects composited.
+ */
+export class CameraController {
+    private fps: number;
+
+    constructor(fps: number = 30) {
+        this.fps = fps;
+    }
+
+    /**
+     * Compute the final camera transform at frame t
+     * 
+     * Effects are applied in layers:
+     * 1. Completed effects that ended before t - their final state persists
+     * 2. Active effects at time t - animated based on progress
+     * 
+     * For overlapping effects:
+     * - Scale is multiplicative (zoom 1.2 + zoom 1.5 = zoom 1.8)
+     * - Translate is additive
+     * - Origin uses the most recent effect's origin
+     * - Shake is additive
+     */
+    computeTransform(state: CameraState, t: number): CameraTransform {
+        // Start with default transform
+        const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+        // Track the "base" scale that completed zoom effects have settled to
+        let baseScale = 1.0;
+        let baseTranslateX = 0;
+        let baseTranslateY = 0;
+
+        // Sort effects by start time for consistent processing
+        const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
+
+        for (const activeEffect of sortedEffects) {
+            const { effect, startFrame, endFrame } = activeEffect;
+
+            // Skip effects that haven't started yet
+            if (t < startFrame) continue;
+
+            const duration = endFrame - startFrame;
+
+            // Calculate progress (0 to 1 during effect, 1 after completion)
+            let progress: number;
+            if (t >= endFrame) {
+                // Effect completed - use final state
+                progress = 1;
+            } else {
+                // Effect in progress
+                progress = duration > 0 ? (t - startFrame) / duration : 1;
+            }
+
+            // Apply effect based on type
+            switch (effect.type) {
+                case "ZOOM": {
+                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+                    // Zoom goes from 1.0 to target, scaled by eased progress
+                    const zoomFactor = 1 + (effect.scale - 1) * easedProgress;
+                    baseScale *= zoomFactor / (progress >= 1 ? 1 : 1); // For completed effects
+                    transform.scale = baseScale * (progress >= 1 ? 1 : zoomFactor);
+
+                    // Actually, simpler: just set scale directly
+                    transform.scale = 1 + (effect.scale - 1) * easedProgress;
+
+                    // Set origin
+                    if (effect.originX !== undefined) transform.originX = effect.originX;
+                    if (effect.originY !== undefined) transform.originY = effect.originY;
+                    break;
+                }
+                case "PAN": {
+                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+                    transform.translateX += effect.translateX * easedProgress;
+                    transform.translateY += effect.translateY * easedProgress;
+                    break;
+                }
+                case "SHAKE": {
+                    const frameInEffect = t - startFrame;
+                    const seed = effect.seed ?? startFrame;
+                    const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
+                    const decay = effect.decay ?? 0.3;
+                    const decayMultiplier = 1 - (progress * decay);
+
+                    // Shake is additive and separate from main transform
+                    transform.shakeX += offset.x * effect.intensity * decayMultiplier;
+                    transform.shakeY += offset.y * effect.intensity * decayMultiplier;
+                    break;
+                }
+                case "FOCUS": {
+                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+                    const targetScale = effect.scale ?? 1.5;
+                    transform.scale = 1 + (targetScale - 1) * easedProgress;
+
+                    if (effect.target.type === "point") {
+                        transform.originX = effect.target.x;
+                        transform.originY = effect.target.y;
+                    }
+                    break;
+                }
+                case "RESET": {
+                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+                    // Blend current values toward defaults
+                    transform.translateX *= (1 - easedProgress);
+                    transform.translateY *= (1 - easedProgress);
+                    transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
+                    transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
+                    transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
+                    break;
+                }
+            }
+        }
+
+        return transform;
+    }
+
+    /**
+     * Apply a single effect to the transform
+     */
+    private applyEffect(transform: CameraTransform, activeEffect: ActiveCameraEffect, t: number): void {
+        const { effect, startFrame, endFrame } = activeEffect;
+        const duration = endFrame - startFrame;
+        const localT = duration > 0 ? (t - startFrame) / duration : 1;
+
+        switch (effect.type) {
+            case "ZOOM":
+                this.applyZoom(transform, effect, localT);
+                break;
+            case "PAN":
+                this.applyPan(transform, effect, localT);
+                break;
+            case "SHAKE":
+                this.applyShake(transform, effect, localT, t, startFrame);
+                break;
+            case "FOCUS":
+                this.applyFocus(transform, effect, localT);
+                break;
+            case "RESET":
+                this.applyReset(transform, effect, localT);
+                break;
+            // CUT is handled by the reducer, not here
+        }
+    }
+
+    /**
+     * ZOOM effect - scale with origin
+     */
+    private applyZoom(transform: CameraTransform, effect: CameraZoomEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate from current scale to target scale
+        const startScale = transform.scale;
+        const targetScale = effect.scale;
+        transform.scale = startScale + (targetScale - startScale) * easedProgress;
+
+        // Set transform origin if specified
+        if (effect.originX !== undefined) {
+            transform.originX = effect.originX;
+        }
+        if (effect.originY !== undefined) {
+            transform.originY = effect.originY;
+        }
+    }
+
+    /**
+     * PAN effect - translate position
+     */
+    private applyPan(transform: CameraTransform, effect: CameraPanEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Add translation (effects are additive for pan)
+        transform.translateX += effect.translateX * easedProgress;
+        transform.translateY += effect.translateY * easedProgress;
+    }
+
+    /**
+     * SHAKE effect - screen tremor with decay
+     */
+    private applyShake(
+        transform: CameraTransform,
+        effect: CameraShakeEffect,
+        progress: number,
+        absoluteFrame: number,
+        startFrame: number
+    ): void {
+        const frameInEffect = absoluteFrame - startFrame;
+        const seed = effect.seed ?? startFrame; // Use start frame as default seed for determinism
+
+        // Get shake offset for this frame
+        const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
+
+        // Apply decay (1 = instant decay, 0 = no decay)
+        const decay = effect.decay ?? 0.3; // Default 30% decay
+        const decayMultiplier = 1 - (progress * decay);
+
+        // Apply intensity and decay
+        transform.shakeX += offset.x * effect.intensity * decayMultiplier;
+        transform.shakeY += offset.y * effect.intensity * decayMultiplier;
+    }
+
+    /**
+     * FOCUS effect - zoom to a target
+     * Note: Actual target position calculation happens in the renderer
+     * Here we just handle the zoom/pan animation
+     */
+    private applyFocus(transform: CameraTransform, effect: CameraFocusEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+        const holdDuration = effect.holdDuration ?? 0;
+
+        // If we have a hold duration, adjust the animation curve
+        let animProgress = easedProgress;
+        if (holdDuration > 0 && progress > 0.5) {
+            // Hold at peak for specified duration
+            animProgress = 1;
+        }
+
+        // Apply zoom (FOCUS is essentially targeted ZOOM)
+        const targetScale = effect.scale ?? 1.5;
+        transform.scale = 1 + (targetScale - 1) * animProgress;
+
+        // Target-based origin will be set by renderer based on target position
+        // For now, we handle point-based targets
+        if (effect.target.type === "point") {
+            transform.originX = effect.target.x;
+            transform.originY = effect.target.y;
+        }
+    }
+
+    /**
+     * RESET effect - return to default camera position
+     */
+    private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate all values toward defaults
+        transform.translateX = transform.translateX * (1 - easedProgress);
+        transform.translateY = transform.translateY * (1 - easedProgress);
+        transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
+        transform.rotation = transform.rotation * (1 - easedProgress);
+        transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
+        transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
+    }
+}
+
+// =============================================================================
+// CAMERA EVENT PROCESSING
+// =============================================================================
+
+/**
+ * Convert a timeline camera event to an ActiveCameraEffect
+ */
+export function createActiveEffect(
+    event: { at: number; kind: "CAMERA"; type: string;[key: string]: any },
+    id: string
+): ActiveCameraEffect | null {
+    const { at, type, ...params } = event;
+
+    // Skip non-effect events
+    if (type === "SET_VIEW" || type === "CUT") {
+        return null;
+    }
+
+    // Build effect based on type
+    let effect: CameraEffect;
+    const duration = params.duration ?? 30; // Default 1 second at 30fps
+
+    switch (type) {
+        case "ZOOM":
+            effect = {
+                type: "ZOOM",
+                scale: params.scale ?? 1,
+                originX: params.originX,
+                originY: params.originY,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "PAN":
+            effect = {
+                type: "PAN",
+                translateX: params.translateX ?? 0,
+                translateY: params.translateY ?? 0,
+                relative: params.relative,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "SHAKE":
+            effect = {
+                type: "SHAKE",
+                intensity: params.intensity ?? 10,
+                frequency: params.frequency ?? 15,
+                decay: params.decay,
+                duration,
+                seed: params.seed,
+            };
+            break;
+        case "FOCUS":
+            effect = {
+                type: "FOCUS",
+                target: params.target ?? { type: "device" },
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                holdDuration: params.holdDuration,
+            };
+            break;
+        case "RESET":
+            effect = {
+                type: "RESET",
+                duration,
+                easing: params.easing,
+            };
+            break;
+        default:
+            return null;
+    }
+
+    return {
+        id,
+        effect,
+        startFrame: at,
+        endFrame: at + duration,
+        deviceId: params.deviceId,  // Per-device targeting
+    };
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export { seededRandom, getShakeOffset };
+
+// Default controller instance
+export const defaultCameraController = new CameraController(30);
 ````
 
 ## File: packages/devices/package.json
@@ -3698,6 +3805,256 @@ export function getAppConfig<T extends keyof typeof appConfigs>(
         "@types/node": "^20.0.0",
         "@types/react": "18.2.0"
     }
+}
+````
+
+## File: packages/episodes/src/examples/camera-showcase.json
+````json
+{
+    "meta": {
+        "title": "Camera Showcase - Cinematic Demo",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_demo": {
+                "id": "conv_demo",
+                "type": "dm",
+                "name": "Camera Director 🎬",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Camera Director 🎬",
+                        "text": "Welcome to the Camera Showcase!",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "Show me what you've got!",
+                        "type": "text",
+                        "status": "delivered"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "activeApp": "whatsapp",
+            "whatsapp": {
+                "screen": "chat",
+                "conversationId": "conv_demo"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "🎥 First up: ZOOM IN",
+                "status": "read"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.5,
+            "originX": 0.2,
+            "originY": 0.2,
+            "duration": 45,
+            "easing": "ease-out"
+        },
+        {
+            "at": 120,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 30,
+            "easing": "ease-out"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m4",
+                "type": "text",
+                "text": "📱 Now watch this SHAKE!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "intensity": 12,
+            "frequency": 20,
+            "decay": 0.4,
+            "duration": 45
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m5",
+                "type": "text",
+                "text": "👆 Smooth PAN coming up",
+                "status": "read"
+            }
+        },
+        {
+            "at": 270,
+            "kind": "CAMERA",
+            "type": "PAN",
+            "translateX": -100,
+            "translateY": -80,
+            "duration": 60,
+            "easing": "ease-in-out"
+        },
+        {
+            "at": 345,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 30,
+            "easing": "cinematic"
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m6",
+                "type": "text",
+                "text": "🎯 FOCUS on the message!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 420,
+            "kind": "CAMERA",
+            "type": "FOCUS",
+            "target": {
+                "type": "point",
+                "x": 0.7,
+                "y": 0.6
+            },
+            "scale": 1.8,
+            "duration": 60,
+            "easing": "ease-out"
+        },
+        {
+            "at": 510,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 45,
+            "easing": "cinematic"
+        },
+        {
+            "at": 570,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "🔥 COMBO: Zoom + Shake!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 600,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.3,
+            "originX": 0.5,
+            "originY": 0.5,
+            "duration": 90,
+            "easing": "ease-out"
+        },
+        {
+            "at": 615,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "intensity": 10,
+            "frequency": 18,
+            "decay": 0.5,
+            "duration": 75
+        },
+        {
+            "at": 720,
+            "kind": "CAMERA",
+            "type": "RESET",
+            "duration": 45,
+            "easing": "ease-in-out"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_demo",
+            "from": "Camera Director 🎬",
+            "message": {
+                "id": "m8",
+                "type": "text",
+                "text": "🎬 That's a wrap! You're now a Director.",
+                "status": "read"
+            }
+        },
+        {
+            "at": 810,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 0.9,
+            "duration": 60,
+            "easing": "cinematic"
+        }
+    ]
 }
 ````
 
@@ -4219,6 +4576,121 @@ export function getAppConfig<T extends keyof typeof appConfigs>(
 }
 ````
 
+## File: packages/episodes/src/examples/whatsapp-psychotic-demo.json
+````json
+{
+    "meta": {
+        "title": "WhatsApp Features Demo",
+        "fps": 30,
+        "durationInFrames": 600
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_psycho": {
+                "id": "conv_psycho",
+                "type": "dm",
+                "name": "Toxic Ex 🚩",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Toxic Ex 🚩",
+                        "text": "",
+                        "type": "call_missed",
+                        "status": "read"
+                    },
+                    {
+                        "id": "m2",
+                        "from": "Toxic Ex 🚩",
+                        "text": "",
+                        "type": "deleted",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "activeApp": "whatsapp",
+            "whatsapp": {
+                "screen": "chat",
+                "conversationId": "conv_psycho"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        }
+    },
+    "events": [
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_psycho",
+            "from": "Toxic Ex 🚩",
+            "message": {
+                "id": "m3",
+                "type": "voice",
+                "duration": 45,
+                "status": "read"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_psycho",
+            "from": "Toxic Ex 🚩",
+            "text": "Took a screenshot!",
+            "message": {
+                "id": "m4",
+                "type": "screenshot_alert",
+                "text": "Took a screenshot!",
+                "status": "read"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_SENT",
+            "conversationId": "conv_psycho",
+            "from": "me",
+            "text": "Why are you doing this?",
+            "message": {
+                "id": "m5",
+                "type": "text",
+                "text": "Why are you doing this?",
+                "status": "sent",
+                "edited": true
+            }
+        }
+    ]
+}
+````
+
 ## File: packages/renderer/src/layout/strategies/lockscreen.ts
 ````typescript
 import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
@@ -4278,64 +4750,6 @@ export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutSta
         meta: {}
     };
 }
-````
-
-## File: packages/renderer/src/layout/config.ts
-````typescript
-import { LayoutConfig } from "./types";
-
-export const defaultLayoutConfig: LayoutConfig = {
-    cinematicMode: "NONE",
-    chat: {
-        bubbleWidth: 0.78,              // 78% max width for bubbles
-        baseBubbleHeight: 120,          // Base height for message bubble (increased)
-        charsPerLine: 26,               // Characters per line before wrap
-        lineHeight: 66,                 // Line height for text (3x of 22px)
-        verticalGap: 36,                // Gap between messages (3x of 12px)
-        topPadding: 48,                 // Padding from top (reduced)
-        bottomPadding: 120,             // Padding at bottom
-        messageAppearDuration: 15,      // Animation duration (frames)
-        messageAppearOffset: 30,        // Slide-in offset
-        scrollEasingDuration: 20,       // Scroll animation duration
-        maxScrollCatchupSpeed: 50,      // Max scroll speed
-        lockToBottom: true              // Keep scrolled to bottom
-    },
-    feed: {
-        cardWidth: 1.0, // 100% width
-        baseCardHeight: 600,
-        verticalGap: 20,
-        topPadding: 150, // Header + Stories
-        bottomPadding: 150, // Bottom nav
-        charsPerLine: 40,
-        lineHeight: 30,
-        scrollEasingDuration: 20,
-        maxScrollCatchupSpeed: 50,
-        startAtTop: true,
-        autoScroll: false
-    },
-    story: {
-        defaultStoryDuration: 150, // 5 seconds at 30fps
-        progressBarHeight: 4,
-        storyGap: 0,
-        storyTransitionDuration: 15
-    },
-    lockscreen: {
-        topPadding: 150,
-        notificationGap: 10,
-        notificationWidth: 0.9,
-        baseNotificationHeight: 100,
-        charsPerLine: 40,
-        lineHeight: 30,
-        stackMaxNotifications: 5,
-        appearDuration: 15
-    },
-    transition: {
-        defaultScale: 1.0,
-        zoomedScale: 1.2,
-        panDuration: 30,
-        zoomDuration: 30
-    }
-};
 ````
 
 ## File: packages/renderer/src/layout/index.ts
@@ -4672,6 +5086,314 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                         size="large"
                     />
                 </div>
+            )}
+        </div>
+    );
+};
+````
+
+## File: packages/renderer/src/HomeScreenView.tsx
+````typescript
+import React from "react";
+import { HomeScreenConfig, AppIcon, AppFolder, Platform, getAppConfig } from "@tokovo/core";
+
+// ============================================================================
+// APP ICON COMPONENT
+// ============================================================================
+
+// ============================================================================
+// APP ICON COMPONENT
+// ============================================================================
+
+interface AppIconItemProps {
+    app: AppIcon;
+    size?: number;
+    styleConfig: any; // Using any to avoid complex type drilling for now
+}
+
+const AppIconItem: React.FC<AppIconItemProps> = ({ app, size, styleConfig }) => {
+    const iconSize = size || styleConfig.iconSize;
+    // Android icons are often circular or different shape; iOS are rounded rects
+    const isEmoji = /^\p{Emoji}/u.test(app.icon);
+
+    // Scale radius if size is overridden (e.g. in dock)
+    const scale = iconSize / styleConfig.iconSize;
+    const radius = styleConfig.iconRadius * scale;
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: iconSize,
+            gap: styleConfig.iconLabelGap
+        }}>
+            {/* Icon */}
+            <div style={{
+                width: iconSize,
+                height: iconSize,
+                borderRadius: radius,
+                position: "relative",
+                backgroundColor: isEmoji ? "rgba(255,255,255,0.15)" : "#333",
+                backgroundImage: !isEmoji ? `url(${app.icon})` : undefined,
+                backgroundSize: "cover",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center"
+            }}>
+                {isEmoji && (
+                    <span style={{ fontSize: iconSize * 0.5 }}>{app.icon}</span>
+                )}
+
+                {/* Badge - Keeping hardcoded red for now as it's standard notification color */}
+                {app.badge && app.badge > 0 && (
+                    <div style={{
+                        position: "absolute",
+                        top: -12 * scale,
+                        right: -12 * scale,
+                        minWidth: 54 * scale,
+                        height: 54 * scale,
+                        borderRadius: 27 * scale,
+                        backgroundColor: "#FF3B30",
+                        color: "white",
+                        fontSize: 33 * scale,
+                        fontWeight: 600,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: `0 ${15 * scale}px`,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {app.badge > 99 ? "99+" : app.badge}
+                    </div>
+                )}
+            </div>
+
+            {/* Label */}
+            <span style={{
+                fontSize: styleConfig.iconLabelSize,
+                color: styleConfig.iconLabelColor,
+                textAlign: "center",
+                maxWidth: iconSize + 20,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                textShadow: "0 1px 4px rgba(0,0,0,0.4)"
+            }}>
+                {app.label}
+            </span>
+        </div>
+    );
+};
+
+// ============================================================================
+// FOLDER COMPONENT
+// ============================================================================
+
+interface FolderItemProps {
+    folder: AppFolder;
+    size?: number;
+    styleConfig: any;
+}
+
+const FolderItem: React.FC<FolderItemProps> = ({ folder, size, styleConfig }) => {
+    const iconSize = size || styleConfig.iconSize;
+    const miniSize = (iconSize - 30) / 3; // Approx calculation for 3x3 grid
+    const scale = iconSize / styleConfig.iconSize;
+    const radius = styleConfig.iconRadius * scale;
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            width: iconSize,
+            gap: styleConfig.iconLabelGap
+        }}>
+            {/* Folder icon with mini app previews */}
+            <div style={{
+                width: iconSize,
+                height: iconSize,
+                borderRadius: radius,
+                backgroundColor: styleConfig.folderBackdrop,
+                backdropFilter: `blur(${styleConfig.folderBlur})`,
+                display: "grid",
+                gridTemplateColumns: `repeat(3, ${miniSize}px)`,
+                gridTemplateRows: `repeat(3, ${miniSize}px)`,
+                gap: styleConfig.folderPreviewGap * scale,
+                padding: 15 * scale,
+                justifyContent: "center",
+                alignContent: "center"
+            }}>
+                {folder.apps.slice(0, 9).map((app, i) => (
+                    <div key={i} style={{
+                        width: miniSize,
+                        height: miniSize,
+                        borderRadius: miniSize * styleConfig.folderMiniIconRadius,
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                        backgroundImage: !/^\p{Emoji}/u.test(app.icon) ? `url(${app.icon})` : undefined,
+                        backgroundSize: "cover",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: miniSize * 0.6
+                    }}>
+                        {/^\p{Emoji}/u.test(app.icon) && app.icon}
+                    </div>
+                ))}
+            </div>
+
+            {/* Label */}
+            <span style={{
+                fontSize: styleConfig.iconLabelSize,
+                color: styleConfig.iconLabelColor,
+                textAlign: "center",
+                textShadow: "0 1px 4px rgba(0,0,0,0.4)"
+            }}>
+                {folder.name}
+            </span>
+        </div>
+    );
+};
+
+// ============================================================================
+// DOCK COMPONENT
+// ============================================================================
+
+interface DockProps {
+    apps: AppIcon[];
+    styleConfig: any;
+}
+
+const Dock: React.FC<DockProps> = ({ apps, styleConfig }) => (
+    <div style={{
+        position: "absolute",
+        bottom: styleConfig.dockBottom,
+        left: "50%",
+        transform: "translateX(-50%)",
+        width: styleConfig.dockWidth,
+        height: styleConfig.dockHeight,
+        borderRadius: styleConfig.dockRadius,
+        backgroundColor: styleConfig.dockBackdrop,
+        backdropFilter: `blur(${styleConfig.dockBlur})`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-around",
+        padding: "0 30px"
+    }}>
+        {apps.slice(0, 4).map((app, i) => (
+            <AppIconItem key={i} app={app} size={styleConfig.dockIconSize} styleConfig={styleConfig} />
+        ))}
+    </div>
+);
+
+// ============================================================================
+// PAGE DOTS
+// ============================================================================
+
+interface PageDotsProps {
+    count: number;
+    activeIndex: number;
+    styleConfig: any;
+}
+
+const PageDots: React.FC<PageDotsProps> = ({ count, activeIndex, styleConfig }) => (
+    <div style={{
+        display: "flex",
+        gap: styleConfig.dotGap,
+        marginBottom: styleConfig.dotMarginBottom
+    }}>
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} style={{
+                width: styleConfig.dotSize,
+                height: styleConfig.dotSize,
+                borderRadius: "50%",
+                backgroundColor: i === activeIndex ? styleConfig.dotActiveColor : styleConfig.dotInactiveColor,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
+            }} />
+        ))}
+    </div>
+);
+
+// ============================================================================
+// HOME SCREEN VIEW
+// ============================================================================
+
+interface HomeScreenViewProps {
+    config: HomeScreenConfig;
+    variant?: "ios" | "android";
+    activePage?: number;
+    platform?: Platform; // Add platform prop to match other views
+}
+
+export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
+    config,
+    variant = "ios",
+    activePage = 0,
+    platform
+}) => {
+    // Use platform prop if provided, otherwise fallback to variant
+    const effectivePlatform = (platform || variant) as Platform;
+    const styleConfig = getAppConfig("homescreen", effectivePlatform) as any;
+
+    const currentPage = config.pages[activePage] || config.pages[0];
+    const wallpaper = config.wallpaper || "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)";
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: wallpaper.startsWith("http") ? `url(${wallpaper}) center/cover` : wallpaper,
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+        }}>
+            {/* App Grid */}
+            <div style={{
+                flex: 1,
+                display: "grid",
+                gridTemplateColumns: `repeat(${styleConfig.gridColumns}, 1fr)`,
+                gridTemplateRows: `repeat(${styleConfig.gridRows}, auto)`,
+                gap: `${styleConfig.gridGapRow}px ${styleConfig.gridGapCol}px`,
+                padding: `${styleConfig.gridPaddingTop}px ${styleConfig.gridPaddingHorizontal}px 0`,
+                justifyItems: "center",
+                overflow: "hidden"
+            }}>
+                {currentPage?.apps.map((item, i) => (
+                    'type' in item && item.type === "folder"
+                        ? <FolderItem key={i} folder={item} styleConfig={styleConfig} />
+                        : <AppIconItem key={i} app={item as AppIcon} styleConfig={styleConfig} />
+                ))}
+            </div>
+
+            {/* Page Dots */}
+            <div style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 12
+            }}>
+                <PageDots count={config.pages.length} activeIndex={activePage} styleConfig={styleConfig} />
+            </div>
+
+            {/* Dock */}
+            <Dock apps={config.dock} styleConfig={styleConfig} />
+
+            {/* Home Indicator - Visible on iOS */}
+            {effectivePlatform === "ios" && (
+                <div style={{
+                    position: "absolute",
+                    bottom: 24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 405,
+                    height: 15,
+                    backgroundColor: "rgba(255, 255, 255, 0.5)",
+                    borderRadius: 15
+                }} />
             )}
         </div>
     );
@@ -5739,17 +6461,6 @@ export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React
 };
 ````
 
-## File: packages/devices/src/index.ts
-````typescript
-export * from "./types";
-export * from "./iphone16/profile";
-export * from "./iphone16/Frame";
-export * from "./pixel/profile";
-export * from "./pixel/Frame";
-export * from "./reducer";
-export * from "./StatusBar";
-````
-
 ## File: packages/devices/src/StatusBar.tsx
 ````typescript
 import React from "react";
@@ -6093,126 +6804,818 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 }
 ````
 
-## File: packages/renderer/src/layout/strategies/chat.ts
-````typescript
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
-
-export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-    const { world, t, activeConversationId, config, viewportHeight } = ctx;
-    const chatConfig = config!.chat!;
-
-    if (!activeConversationId || !world.conversations[activeConversationId]) {
-        return {
-            kind: "CHAT",
-            scrollY: 0,
-            contentHeight: 0,
-            isAtBottom: true,
-            messageLayouts: {},
-            meta: {}
-        };
-    }
-
-    const conversation = world.conversations[activeConversationId];
-    // Filter messages visible at time t
-    // Messages without 'at' field (initial messages) are always visible
-    // Messages with 'at' field are visible when at <= t
-    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
-
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = chatConfig.topPadding;
-
-    // 1. Layout messages
-    for (const msg of messages) {
-        // Calculate height based on message type
-        let height: number;
-
-        if (msg.type === "system") {
-            // System messages are shorter (single line centered pill)
-            height = 80;
-        } else if (msg.type === "voice") {
-            // Voice messages have fixed height
-            height = 180;
-        } else {
-            // Text messages: calculate based on text length
-            const textLength = msg.text?.length || 0;
-            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-
-            // Height breakdown:
-            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
-            // - Text: lines * lineHeight
-            // - Timestamp row: ~40px (at 3x = 120)
-            // - Sender name (groups): additional 50px
-            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
-            const timestampHeight = 40;     // Timestamp row
-            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
-            const senderNameHeight = hasSenderName ? 45 : 0;
-
-            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
+## File: packages/episodes/src/examples/multi-pov-demo.json
+````json
+{
+    "meta": {
+        "title": "Two Sides of the Story - Multi-POV Demo",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "ownerName": "Alice",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            },
+            "bob_phone": {
+                "id": "bob_phone",
+                "profileId": "iphone16",
+                "ownerName": "Bob",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "alice_bob_chat": {
+                "id": "alice_bob_chat",
+                "type": "dm",
+                "name": "Alice",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Alice",
+                        "text": "Hey, where are you?",
+                        "type": "text",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "app_whatsapp": {
+                "screen": "chat",
+                "conversationId": "alice_bob_chat"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeDeviceId": "alice_phone",
+            "layout": {
+                "mode": "SINGLE",
+                "primaryDeviceId": "alice_phone"
+            },
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            },
+            "deviceTransforms": {}
+        },
+        "audio": {
+            "activeSounds": {}
         }
-
-        // Animation: Slide in / Fade in
-        const messageAt = msg.at ?? 0;
-        const timeSinceAppear = t - messageAt;
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
-            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
-            // Simple ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
-            opacity = ease;
-            translateY = chatConfig.messageAppearOffset * (1 - ease);
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m2",
+                "type": "text",
+                "text": "On my way! 🚗",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 30,
+            "kind": "AUDIO",
+            "type": "PLAY_SOUND",
+            "soundId": "whatsapp_received"
+        },
+        {
+            "at": 90,
+            "kind": "CAMERA",
+            "type": "CUT",
+            "toDeviceId": "bob_phone"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "You said that 20 minutes ago 😤",
+                "status": "read"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "AUDIO",
+            "type": "PLAY_SOUND",
+            "soundId": "whatsapp_received"
+        },
+        {
+            "at": 180,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SPLIT_HORIZONTAL",
+            "primaryDeviceId": "alice_phone",
+            "secondaryDeviceId": "bob_phone"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m4",
+                "type": "text",
+                "text": "Traffic is crazy! 😅",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m5",
+                "type": "text",
+                "text": "Send me your location",
+                "status": "read"
+            }
+        },
+        {
+            "at": 360,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "PIP",
+            "primaryDeviceId": "bob_phone",
+            "secondaryDeviceId": "alice_phone",
+            "pipPosition": "top-right",
+            "pipScale": 0.35
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m6",
+                "type": "text",
+                "text": "📍 Sharing location...",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 510,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.3,
+            "originX": 0.5,
+            "originY": 0.6,
+            "duration": 45,
+            "easing": "ease-out"
+        },
+        {
+            "at": 600,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SPLIT_VERTICAL",
+            "primaryDeviceId": "alice_phone",
+            "secondaryDeviceId": "bob_phone"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "Wait... that's not the way here 🤔",
+                "status": "read"
+            }
+        },
+        {
+            "at": 720,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "deviceId": "alice_phone",
+            "intensity": 8,
+            "frequency": 15,
+            "decay": 0.5,
+            "duration": 30
+        },
+        {
+            "at": 780,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SINGLE",
+            "primaryDeviceId": "alice_phone"
+        },
+        {
+            "at": 810,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m8",
+                "type": "text",
+                "text": "WHERE ARE YOU GOING?! 😡",
+                "status": "read"
+            }
+        },
+        {
+            "at": 870,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.5,
+            "originX": 0.5,
+            "originY": 0.7,
+            "duration": 30,
+            "easing": "ease-out"
         }
-
-        messageLayouts[msg.id] = {
-            id: msg.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY
-        };
-
-        currentY += height + chatConfig.verticalGap;
-    }
-
-    // 2. Typing indicator
-    let typingLayout: TypingLayout | null = null;
-    const isTyping = Object.values(conversation.typing || {}).some(v => v);
-    if (isTyping) {
-        const height = chatConfig.baseBubbleHeight;
-        typingLayout = {
-            y: currentY,
-            height,
-            opacity: 1
-        };
-        currentY += height + chatConfig.verticalGap;
-    }
-
-    const contentHeight = currentY + chatConfig.bottomPadding;
-
-    // 3. Scroll Position
-    // Lock to bottom logic
-    let scrollY = 0;
-    if (chatConfig.lockToBottom) {
-        const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
-
-        // TODO: Implement smooth scrolling based on message arrival times if needed
-        // For now, instant snap to bottom is robust
-    }
-
-    return {
-        kind: "CHAT",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
-        messageLayouts,
-        typingLayout,
-        meta: {
-            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
-        }
-    };
+    ]
 }
+````
+
+## File: packages/renderer/src/layout/config.ts
+````typescript
+import { LayoutConfig } from "./types";
+
+export const defaultLayoutConfig: LayoutConfig = {
+    cinematicMode: "NONE",
+    chat: {
+        bubbleWidth: 0.78,              // 78% max width for bubbles
+        baseBubbleHeight: 120,          // Base height for message bubble (increased)
+        charsPerLine: 26,               // Characters per line before wrap
+        lineHeight: 66,                 // Line height for text (3x of 22px)
+        verticalGap: 36,                // Gap between messages (3x of 12px)
+        topPadding: 48,                 // Padding from top (reduced)
+        bottomPadding: 120,             // Padding at bottom
+        messageAppearDuration: 15,      // Animation duration (frames)
+        messageAppearOffset: 30,        // Slide-in offset
+        scrollEasingDuration: 20,       // Scroll animation duration
+        maxScrollCatchupSpeed: 50,      // Max scroll speed
+        lockToBottom: true              // Keep scrolled to bottom
+    },
+    feed: {
+        cardWidth: 1.0, // 100% width
+        baseCardHeight: 600,
+        verticalGap: 20,
+        topPadding: 150, // Header + Stories
+        bottomPadding: 150, // Bottom nav
+        charsPerLine: 40,
+        lineHeight: 30,
+        scrollEasingDuration: 20,
+        maxScrollCatchupSpeed: 50,
+        startAtTop: true,
+        autoScroll: false
+    },
+    story: {
+        defaultStoryDuration: 150, // 5 seconds at 30fps
+        progressBarHeight: 4,
+        storyGap: 0,
+        storyTransitionDuration: 15
+    },
+    lockscreen: {
+        topPadding: 150,
+        notificationGap: 10,
+        notificationWidth: 0.9,
+        baseNotificationHeight: 100,
+        charsPerLine: 40,
+        lineHeight: 30,
+        stackMaxNotifications: 5,
+        appearDuration: 15
+    },
+    transition: {
+        defaultScale: 1.0,
+        zoomedScale: 1.2,
+        panDuration: 30,
+        zoomDuration: 30
+    }
+};
+````
+
+## File: packages/renderer/src/MultiDeviceRenderer.tsx
+````typescript
+import React from "react";
+import {
+    WorldState,
+    ViewLayoutMode,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    DeviceId,
+} from "@tokovo/core";
+import { TokovoRenderer } from "./TokovoRenderer";
+import { AudioLayer } from "./AudioLayer";
+import { getDeviceProfile } from "@tokovo/devices";
+
+/**
+ * MultiDeviceRenderer
+ * 
+ * Renders multiple devices based on the current ViewLayout mode.
+ * Supports SINGLE, SPLIT_HORIZONTAL, SPLIT_VERTICAL, and PIP layouts.
+ */
+export const MultiDeviceRenderer: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    compositionWidth?: number;
+    compositionHeight?: number;
+}> = ({ world, t, debug = false, compositionWidth = 1080, compositionHeight = 1920 }) => {
+    const layout = world.camera?.layout;
+
+    if (!layout) {
+        // Fallback to single device if no layout
+        return (
+            <>
+                <AudioLayer world={world} t={t} />
+                <SingleDeviceLayout
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={Object.keys(world.devices)[0]}
+                    width={compositionWidth}
+                    height={compositionHeight}
+                />
+            </>
+        );
+    }
+
+    switch (layout.mode) {
+        case "SINGLE":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
+
+        case "SPLIT_HORIZONTAL":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitHorizontalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
+
+        case "SPLIT_VERTICAL":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitVerticalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
+
+        case "PIP":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <PIPLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        pipPosition={layout.pipPosition || "bottom-right"}
+                        pipScale={layout.pipScale || 0.3}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
+
+        default:
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
+    }
+};
+
+// =============================================================================
+// LAYOUT COMPONENTS
+// =============================================================================
+
+interface LayoutProps {
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    width: number;
+    height: number;
+}
+
+/**
+ * SingleDeviceLayout - One device fills the entire frame
+ */
+const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
+    world,
+    t,
+    debug,
+    deviceId,
+    width,
+    height,
+}) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return <div style={{ width, height, background: "#1a1a2e" }} />;
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = width / profile.dimensions.width;
+    const scaleY = height / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0a0a1a",
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={world} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * SplitHorizontalLayout - Two devices side by side
+ * ┌─────────┬─────────┐
+ * │  Left   │  Right  │
+ * │  (50%)  │  (50%)  │
+ * └─────────┴─────────┘
+ */
+const SplitHorizontalLayout: React.FC<
+    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+    const halfWidth = width / 2;
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                flexDirection: "row",
+                background: "#0a0a1a",
+                overflow: "hidden",
+            }}
+        >
+            {/* Left - Primary Device */}
+            <DevicePane
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                paneWidth={halfWidth}
+                paneHeight={height}
+            />
+
+            {/* Divider */}
+            <div style={{ width: 2, background: "#333" }} />
+
+            {/* Right - Secondary Device */}
+            {secondaryDeviceId && (
+                <DevicePane
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={secondaryDeviceId}
+                    paneWidth={halfWidth - 2}
+                    paneHeight={height}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
+ * SplitVerticalLayout - Two devices stacked top/bottom
+ * ┌─────────────────┐
+ * │      Top        │
+ * │     (50%)       │
+ * ├─────────────────┤
+ * │     Bottom      │
+ * │     (50%)       │
+ * └─────────────────┘
+ */
+const SplitVerticalLayout: React.FC<
+    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+    const halfHeight = height / 2;
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                flexDirection: "column",
+                background: "#0a0a1a",
+                overflow: "hidden",
+            }}
+        >
+            {/* Top - Primary Device */}
+            <DevicePane
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                paneWidth={width}
+                paneHeight={halfHeight}
+            />
+
+            {/* Divider */}
+            <div style={{ height: 2, background: "#333" }} />
+
+            {/* Bottom - Secondary Device */}
+            {secondaryDeviceId && (
+                <DevicePane
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={secondaryDeviceId}
+                    paneWidth={width}
+                    paneHeight={halfHeight - 2}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
+ * PIPLayout - Picture in Picture (main device + small overlay)
+ * ┌─────────────────┐
+ * │           ┌───┐ │
+ * │   Main    │PIP│ │
+ * │           └───┘ │
+ * │                 │
+ * └─────────────────┘
+ */
+const PIPLayout: React.FC<
+    LayoutProps & {
+        primaryDeviceId: string;
+        secondaryDeviceId?: string;
+        pipPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+        pipScale: number;
+    }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
+    // PIP window size
+    const pipWidth = width * pipScale;
+    const pipHeight = height * pipScale;
+    const margin = 20;
+
+    // Position based on pipPosition
+    const pipStyle: React.CSSProperties = {
+        position: "absolute",
+        width: pipWidth,
+        height: pipHeight,
+        borderRadius: 12,
+        overflow: "hidden",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        border: "2px solid rgba(255,255,255,0.1)",
+    };
+
+    switch (pipPosition) {
+        case "top-left":
+            pipStyle.top = margin;
+            pipStyle.left = margin;
+            break;
+        case "top-right":
+            pipStyle.top = margin;
+            pipStyle.right = margin;
+            break;
+        case "bottom-left":
+            pipStyle.bottom = margin;
+            pipStyle.left = margin;
+            break;
+        case "bottom-right":
+        default:
+            pipStyle.bottom = margin;
+            pipStyle.right = margin;
+            break;
+    }
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                position: "relative",
+                background: "#0a0a1a",
+                overflow: "hidden",
+            }}
+        >
+            {/* Main device (full frame) */}
+            <SingleDeviceLayout
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                width={width}
+                height={height}
+            />
+
+            {/* PIP overlay */}
+            {secondaryDeviceId && (
+                <div style={pipStyle}>
+                    <DevicePaneFit
+                        world={world}
+                        t={t}
+                        debug={false} // No debug overlay on PIP
+                        deviceId={secondaryDeviceId}
+                        paneWidth={pipWidth}
+                        paneHeight={pipHeight}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
+// HELPER COMPONENTS
+// =============================================================================
+
+/**
+ * DevicePane - Renders a device within a specific pane size
+ * Used for split layouts
+ */
+const DevicePane: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    deviceId: string;
+    paneWidth: number;
+    paneHeight: number;
+}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return (
+            <div
+                style={{
+                    width: paneWidth,
+                    height: paneHeight,
+                    background: "#1a1a2e",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "#666",
+                }}
+            >
+                Device not found
+            </div>
+        );
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = paneWidth / profile.dimensions.width;
+    const scaleY = paneHeight / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
+
+    // Create a world view focused on this specific device
+    const deviceWorld: WorldState = {
+        ...world,
+        camera: {
+            ...world.camera,
+            activeDeviceId: deviceId,
+            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
+        },
+    };
+
+    return (
+        <div
+            style={{
+                width: paneWidth,
+                height: paneHeight,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0d0d1a",
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * DevicePaneFit - Renders a device to fit exactly within pane (for PIP)
+ * Fills the entire pane without padding
+ */
+const DevicePaneFit: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    deviceId: string;
+    paneWidth: number;
+    paneHeight: number;
+}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = paneWidth / profile.dimensions.width;
+    const scaleY = paneHeight / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Create a world view focused on this specific device
+    const deviceWorld: WorldState = {
+        ...world,
+        camera: {
+            ...world.camera,
+            activeDeviceId: deviceId,
+            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
+        },
+    };
+
+    return (
+        <div
+            style={{
+                width: paneWidth,
+                height: paneHeight,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0d0d1a",
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/renderer/src/NotificationOverlay.tsx
@@ -6976,108 +8379,539 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
 export { InstagramChatView };
 ````
 
-## File: packages/apps-whatsapp/src/runtime.ts
+## File: packages/core/src/index.ts
 ````typescript
-import { produce } from "immer";
-import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
+export * from "./types";
+export * from "./engine";
+export * from "./tokens";
+export * from "./camera";
+export * from "./sounds";
+````
 
-export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
-    if (event.kind !== "APP" || event.appId !== "app_whatsapp") return;
+## File: packages/core/src/tokens.ts
+````typescript
+/**
+ * Shared Design Tokens & UI Primitives
+ * Ensures consistent styling across WhatsApp, Instagram, and future apps
+ */
 
-    const conversationId = (event as any).conversationId;
-    if (!conversationId) return;
+// =============================================================================
+// DESIGN TOKENS
+// =============================================================================
 
-    if (!draft.conversations[conversationId]) {
-        draft.conversations[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
+export const iOSTokens = {
+    // Colors
+    colors: {
+        // System colors
+        primary: "#007AFF",
+        success: "#34C759",
+        warning: "#FF9500",
+        danger: "#FF3B30",
 
-    switch (event.type) {
-        case "MESSAGE_RECEIVED":
-            conversation.messages.push({
-                id: `msg_${event.at}_${(event as any).from}_${(event as any).text?.substring(0, 5)}`,
-                from: (event as any).from,
-                text: (event as any).text,
-                type: "text",
-                at: event.at,
-                status: "delivered"
-            });
-            break;
+        // Grays
+        label: "#000000",
+        secondaryLabel: "#8E8E93",
+        tertiaryLabel: "#C7C7CC",
+        background: "#FFFFFF",
+        secondaryBackground: "#F2F2F7",
+        separator: "rgba(60, 60, 67, 0.36)",
 
-        case "TYPING_START":
-            if (!conversation.typing) conversation.typing = {};
-            conversation.typing[(event as any).from] = true;
-            break;
+        // App-specific
+        whatsappGreen: "#25D366",
+        whatsappTeal: "#128C7E",
+        instagramPink: "#E4405F",
+        instagramPurple: "#833AB4",
+        iMessageBlue: "#007AFF",
+    },
 
-        case "TYPING_END":
-            if (conversation.typing) {
-                delete conversation.typing[(event as any).from];
-            }
-            break;
+    // Typography (in 3x scale for Remotion)
+    typography: {
+        largeTitle: { fontSize: 102, fontWeight: "700" as const, lineHeight: 123 },
+        title1: { fontSize: 84, fontWeight: "700" as const, lineHeight: 102 },
+        title2: { fontSize: 66, fontWeight: "700" as const, lineHeight: 78 },
+        title3: { fontSize: 60, fontWeight: "600" as const, lineHeight: 72 },
+        headline: { fontSize: 51, fontWeight: "600" as const, lineHeight: 63 },
+        body: { fontSize: 51, fontWeight: "400" as const, lineHeight: 66 },
+        callout: { fontSize: 48, fontWeight: "400" as const, lineHeight: 60 },
+        subhead: { fontSize: 45, fontWeight: "400" as const, lineHeight: 57 },
+        footnote: { fontSize: 39, fontWeight: "400" as const, lineHeight: 51 },
+        caption1: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
+        caption2: { fontSize: 33, fontWeight: "400" as const, lineHeight: 42 },
+    },
 
-        case "GROUP_MEMBER_ADDED":
-            // Add system message
-            const addedBy = (event as any).addedBy === "me" ? "You" : (event as any).addedBy;
-            conversation.messages.push({
-                id: `sys_${event.at}_added_${(event as any).memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${(event as any).memberName}`,
-                targetMember: (event as any).memberName,
-                actorName: addedBy,
-                at: event.at
-            });
-            // Add member to list
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: (event as any).memberId,
-                name: (event as any).memberName
-            });
-            break;
+    // Spacing (in 3x scale)
+    spacing: {
+        xs: 12,
+        sm: 24,
+        md: 48,
+        lg: 72,
+        xl: 96,
+    },
 
-        case "GROUP_MEMBER_REMOVED":
-            const removedBy = (event as any).removedBy === "me" ? "You" : (event as any).removedBy;
-            conversation.messages.push({
-                id: `sys_${event.at}_removed_${(event as any).memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${(event as any).memberName}`,
-                targetMember: (event as any).memberName,
-                actorName: removedBy,
-                at: event.at
-            });
-            // Remove member from list
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: any) => m.id !== (event as any).memberId
-                );
-            }
-            break;
+    // Radii (in 3x scale)
+    radii: {
+        sm: 12,
+        md: 24,
+        lg: 36,
+        xl: 48,
+        pill: 999,
+    },
 
-        case "VOICE_MESSAGE_RECEIVED":
-            conversation.messages.push({
-                id: `voice_${event.at}_${(event as any).from}`,
-                from: (event as any).from,
-                type: "voice",
-                duration: (event as any).duration,
-                at: event.at,
-                status: "delivered"
-            });
-            break;
+    // Shadows
+    shadows: {
+        sm: "0 3px 9px rgba(0,0,0,0.08)",
+        md: "0 6px 18px rgba(0,0,0,0.12)",
+        lg: "0 12px 36px rgba(0,0,0,0.16)",
+    },
 
-        case "MESSAGE_READ":
-            const msg = conversation.messages.find((m: any) => m.id === (event as any).messageId);
-            if (msg) {
-                msg.status = "read";
-            }
-            break;
-    }
+    // Font family
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
+};
+
+export const androidTokens = {
+    // Colors (Material You)
+    colors: {
+        primary: "#1A73E8",
+        success: "#34A853",
+        warning: "#FBBC04",
+        danger: "#EA4335",
+
+        label: "#202124",
+        secondaryLabel: "#5F6368",
+        tertiaryLabel: "#9AA0A6",
+        background: "#FFFFFF",
+        secondaryBackground: "#F8F9FA",
+        separator: "rgba(0, 0, 0, 0.12)",
+
+        whatsappGreen: "#25D366",
+        instagramPink: "#E4405F",
+    },
+
+    // Typography (Material 3, in 3x scale)
+    typography: {
+        displayLarge: { fontSize: 171, fontWeight: "400" as const, lineHeight: 192 },
+        displayMedium: { fontSize: 135, fontWeight: "400" as const, lineHeight: 156 },
+        displaySmall: { fontSize: 108, fontWeight: "400" as const, lineHeight: 132 },
+        headlineLarge: { fontSize: 96, fontWeight: "400" as const, lineHeight: 120 },
+        headlineMedium: { fontSize: 84, fontWeight: "400" as const, lineHeight: 108 },
+        headlineSmall: { fontSize: 72, fontWeight: "400" as const, lineHeight: 96 },
+        titleLarge: { fontSize: 66, fontWeight: "400" as const, lineHeight: 84 },
+        titleMedium: { fontSize: 48, fontWeight: "500" as const, lineHeight: 72 },
+        titleSmall: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
+        bodyLarge: { fontSize: 48, fontWeight: "400" as const, lineHeight: 72 },
+        bodyMedium: { fontSize: 42, fontWeight: "400" as const, lineHeight: 60 },
+        bodySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
+        labelLarge: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
+        labelMedium: { fontSize: 36, fontWeight: "500" as const, lineHeight: 48 },
+        labelSmall: { fontSize: 33, fontWeight: "500" as const, lineHeight: 48 },
+    },
+
+    // Spacing
+    spacing: {
+        xs: 12,
+        sm: 24,
+        md: 48,
+        lg: 72,
+        xl: 96,
+    },
+
+    // Radii
+    radii: {
+        sm: 12,
+        md: 24,
+        lg: 42,
+        xl: 84,
+        pill: 999,
+    },
+
+    // Font family
+    fontFamily: "'Roboto', 'Google Sans', sans-serif",
+};
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+export type Platform = "ios" | "android";
+
+export function getTokens(platform: Platform) {
+    return platform === "ios" ? iOSTokens : androidTokens;
 }
 
-// Register itself
-ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
+// Unified typography that maps semantic names to platform-specific styles
+type SemanticTypography = "largeTitle" | "title" | "headline" | "body" | "callout" | "caption" | "footnote";
+
+const typographyMap: Record<SemanticTypography, { ios: keyof typeof iOSTokens.typography; android: keyof typeof androidTokens.typography }> = {
+    largeTitle: { ios: "largeTitle", android: "displaySmall" },
+    title: { ios: "title1", android: "headlineLarge" },
+    headline: { ios: "headline", android: "titleMedium" },
+    body: { ios: "body", android: "bodyLarge" },
+    callout: { ios: "callout", android: "bodyMedium" },
+    caption: { ios: "caption1", android: "bodySmall" },
+    footnote: { ios: "footnote", android: "labelMedium" }
+};
+
+export function getTypography(platform: Platform, semantic: SemanticTypography) {
+    const map = typographyMap[semantic];
+    if (platform === "ios") {
+        return iOSTokens.typography[map.ios];
+    }
+    return androidTokens.typography[map.android];
+}
+
+// =============================================================================
+// SHARED STYLES
+// =============================================================================
+
+export const sharedStyles = {
+    // Flexbox utilities
+    flexCenter: {
+        display: "flex" as const,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+    },
+    flexBetween: {
+        display: "flex" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+    },
+    flexColumn: {
+        display: "flex" as const,
+        flexDirection: "column" as const,
+    },
+
+    // Full size
+    absoluteFill: {
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+
+    // Text truncation
+    truncate: {
+        overflow: "hidden" as const,
+        textOverflow: "ellipsis" as const,
+        whiteSpace: "nowrap" as const,
+    },
+};
+
+// =============================================================================
+// APP-SPECIFIC CONFIG
+// =============================================================================
+
+export const appConfigs = {
+    whatsapp: {
+        ios: {
+            // Header
+            headerHeight: 270,
+            headerBg: "#F6F6F6",
+            statusBarHeight: 144,
+            avatarSize: 111,
+            avatarMargin: 24,
+            headerTitleSize: 51,
+            headerSubtitleSize: 36,
+            headerIconGap: 54,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
+            inputHeight: 180,
+
+            // Message bubbles
+            bubblePadding: 24,
+            bubblePaddingHorizontal: 36,
+            bubbleRadius: 24,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 36,
+            bubbleGap: 12,  // Gap between consecutive messages
+            bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+
+            // Bubble colors
+            bubbleMyColor: "#E7FFDB",
+            bubbleOtherColor: "#FFFFFF",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 48,
+            messageLineHeight: 66,
+            timestampSize: 33,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 33,
+            senderNameColor: "#25D366",
+
+            // Read receipts
+            accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 45,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#25D366",
+
+            // Tuning indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 24,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 30,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#667781",
+
+            waveformActiveColor: "#007AFF",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
+        },
+        android: {
+            // Header
+            headerHeight: 255,
+            headerBg: "#008069",
+            statusBarHeight: 120,
+            avatarSize: 105,
+            avatarMargin: 24,
+            headerTitleSize: 48,
+            headerSubtitleSize: 33,
+            headerIconGap: 48,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
+            inputHeight: 165,
+
+            // Message bubbles
+            bubblePadding: 21,
+            bubblePaddingHorizontal: 33,
+            bubbleRadius: 21,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 30,
+            bubbleGap: 9,
+            bubbleShadow: "0 1px 1px rgba(0,0,0,0.1)",
+
+            // Bubble colors
+            bubbleMyColor: "#E7FFDB",
+            bubbleOtherColor: "#FFFFFF",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 45,
+            messageLineHeight: 63,
+            timestampSize: 30,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 30,
+            senderNameColor: "#25D366",
+
+            // Read receipts
+            accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 42,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#008069", // Android Teal
+
+            // Typing indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 21,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 27,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#54656F",
+
+            waveformActiveColor: "#008069",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
+        },
+    },
+    instagram: {
+        ios: {
+            headerHeight: 264,
+            navHeight: 147,
+            storySize: 210,
+            accentColor: "#E4405F",
+        },
+        android: {
+            headerHeight: 252,
+            navHeight: 144,
+            storySize: 200,
+            accentColor: "#E4405F",
+        }
+    },
+    imessage: {
+        ios: {
+            bubbleMyColor: "#007AFF",
+            bubbleMyTextColor: "#FFFFFF",
+            bubbleOtherColor: "#E9E9EB",
+            bubbleOtherTextColor: "#000000",
+            accentColor: "#007AFF",
+        },
+        android: {
+            bubbleMyColor: "#007AFF",
+            bubbleMyTextColor: "#FFFFFF",
+            bubbleOtherColor: "#E9E9EB",
+            bubbleOtherTextColor: "#000000",
+            accentColor: "#007AFF",
+        }
+    },
+    homescreen: {
+        ios: {
+            // Grid
+            gridColumns: 4,
+            gridRows: 6,
+            gridGapRow: 36,
+            gridGapCol: 0,
+            gridPaddingTop: 240,
+            gridPaddingHorizontal: 30,
+
+            // Icons
+            iconSize: 180,
+            iconRadius: 40, // 180 * 0.22 roughly
+            iconLabelSize: 33,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 12,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.2)",
+            folderBlur: "30px",
+            folderPreviewGap: 9,
+            folderMiniIconRadius: 0.2, // relative to mini size
+
+            // Dock
+            dockHeight: 270,
+            dockRadius: 90,
+            dockBottom: 60,
+            dockWidth: "92%",
+            dockBackdrop: "rgba(255,255,255,0.2)",
+            dockBlur: "60px",
+            dockIconSize: 150,
+
+            // Page Dots
+            dotSize: 21,
+            dotGap: 18,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 30,
+        },
+        android: {
+            // Grid
+            gridColumns: 5,
+            gridRows: 6,
+            gridGapRow: 48,
+            gridGapCol: 0,
+            gridPaddingTop: 150,
+            gridPaddingHorizontal: 24,
+
+            // Icons
+            iconSize: 165,
+            iconRadius: 82.5, // Circular
+            iconLabelSize: 30,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 15,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.15)",
+            folderBlur: "20px",
+            folderPreviewGap: 12,
+            folderMiniIconRadius: 0.5,
+
+            // Dock (Android usually simpler / just icons)
+            dockHeight: 240,
+            dockRadius: 0, // No dock background conventionally
+            dockBottom: 30,
+            dockWidth: "100%",
+            dockBackdrop: "transparent",
+            dockBlur: "0px",
+            dockIconSize: 165,
+
+            // Page Dots
+            dotSize: 18,
+            dotGap: 24,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 45,
+        }
+    }
+};
+
+// =============================================================================
+// EXPORT CONFIG GETTER
+// =============================================================================
+
+export function getAppConfig<T extends keyof typeof appConfigs>(
+    app: T,
+    platform: Platform
+): typeof appConfigs[T][Platform] {
+    const config = appConfigs[app];
+    return (config as any)[platform] || (config as any).ios;
+}
+````
+
+## File: packages/devices/src/index.ts
+````typescript
+export * from "./types";
+export * from "./iphone16/profile";
+export * from "./iphone16/Frame";
+export * from "./pixel/profile";
+export * from "./pixel/Frame";
+export * from "./reducer";
+export * from "./StatusBar";
+
+// Device profile registry for dynamic lookup
+import { DeviceProfile } from "./types";
+import { iPhone16Profile } from "./iphone16/profile";
+import { PixelProfile } from "./pixel/profile";
+
+const deviceProfileRegistry: Record<string, DeviceProfile> = {
+    "iphone16": iPhone16Profile,
+    "pixel": PixelProfile,
+    "pixel9": PixelProfile,
+};
+
+/**
+ * Get device profile by ID
+ * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
+ * @returns DeviceProfile or default iPhone16Profile if not found
+ */
+export function getDeviceProfile(profileId: string): DeviceProfile {
+    return deviceProfileRegistry[profileId] || iPhone16Profile;
+}
 ````
 
 ## File: packages/devices/src/reducer.ts
@@ -7497,6 +9331,128 @@ ReducerRegistry.registerDeviceReducer(deviceReducer);
 }
 ````
 
+## File: packages/renderer/src/layout/strategies/chat.ts
+````typescript
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+
+export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
+    const { world, t, activeConversationId, config, viewportHeight } = ctx;
+    const chatConfig = config!.chat!;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    // Messages without 'at' field (initial messages) are always visible
+    // Messages with 'at' field are visible when at <= t
+    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = chatConfig.topPadding;
+
+    // 1. Layout messages
+    for (const msg of messages) {
+        // Calculate height based on message type
+        let height: number;
+
+        if (msg.type === "system") {
+            // System messages are shorter (single line centered pill)
+            height = 80;
+        } else if (msg.type === "voice") {
+            // Voice messages have fixed height
+            height = 180;
+        } else {
+            // Text messages: calculate based on text length
+            const textLength = msg.text?.length || 0;
+            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+
+            // Height breakdown:
+            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
+            // - Text: lines * lineHeight
+            // - Timestamp row: ~40px (at 3x = 120)
+            // - Sender name (groups): additional 50px
+            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
+            const timestampHeight = 40;     // Timestamp row
+            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
+            const senderNameHeight = hasSenderName ? 45 : 0;
+
+            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
+        }
+
+        // Animation: Slide in / Fade in
+        const messageAt = msg.at ?? 0;
+        const timeSinceAppear = t - messageAt;
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
+            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
+            // Simple ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+            opacity = ease;
+            translateY = chatConfig.messageAppearOffset * (1 - ease);
+        }
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY
+        };
+
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    // 2. Typing indicator
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+    if (isTyping) {
+        const height = chatConfig.baseBubbleHeight;
+        typingLayout = {
+            y: currentY,
+            height,
+            opacity: 1
+        };
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + chatConfig.bottomPadding;
+
+    // 3. Scroll Position
+    // Lock to bottom logic
+    let scrollY = 0;
+    if (chatConfig.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+        scrollY = maxScroll;
+
+        // TODO: Implement smooth scrolling based on message arrival times if needed
+        // For now, instant snap to bottom is robust
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
+        }
+    };
+}
+````
+
 ## File: apps/video-runner/src/Video.tsx
 ````typescript
 import React from "react";
@@ -7903,16 +9859,363 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
 };
 ````
 
-## File: packages/episodes/src/index.ts
+## File: packages/apps-whatsapp/src/runtime.ts
 ````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import { produce } from "immer";
+import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
 
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo };
+export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
+    if (event.kind !== "APP" || event.appId !== "app_whatsapp") return;
+
+    const conversationId = (event as any).conversationId;
+    if (!conversationId) return;
+
+    if (!draft.conversations[conversationId]) {
+        draft.conversations[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (event.type) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT":
+            const msgPayload = (event as any).message || {};
+            conversation.messages.push({
+                id: msgPayload.id || `msg_${event.at}_${(event as any).from}`,
+                from: (event as any).from,
+                text: (event as any).text || msgPayload.text,
+                type: msgPayload.type || "text",
+                at: event.at,
+                status: msgPayload.status || "delivered",
+                ...msgPayload
+            });
+            break;
+
+        case "TYPING_START":
+            if (!conversation.typing) conversation.typing = {};
+            conversation.typing[(event as any).from] = true;
+            break;
+
+        case "TYPING_END":
+            if (conversation.typing) {
+                delete conversation.typing[(event as any).from];
+            }
+            break;
+
+        case "GROUP_MEMBER_ADDED":
+            // Add system message
+            const addedBy = (event as any).addedBy === "me" ? "You" : (event as any).addedBy;
+            conversation.messages.push({
+                id: `sys_${event.at}_added_${(event as any).memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${(event as any).memberName}`,
+                targetMember: (event as any).memberName,
+                actorName: addedBy,
+                at: event.at
+            });
+            // Add member to list
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: (event as any).memberId,
+                name: (event as any).memberName
+            });
+            break;
+
+        case "GROUP_MEMBER_REMOVED":
+            const removedBy = (event as any).removedBy === "me" ? "You" : (event as any).removedBy;
+            conversation.messages.push({
+                id: `sys_${event.at}_removed_${(event as any).memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${(event as any).memberName}`,
+                targetMember: (event as any).memberName,
+                actorName: removedBy,
+                at: event.at
+            });
+            // Remove member from list
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: any) => m.id !== (event as any).memberId
+                );
+            }
+            break;
+
+        case "VOICE_MESSAGE_RECEIVED":
+            conversation.messages.push({
+                id: `voice_${event.at}_${(event as any).from}`,
+                from: (event as any).from,
+                type: "voice",
+                duration: (event as any).duration,
+                at: event.at,
+                status: "delivered"
+            });
+            break;
+
+        case "MESSAGE_READ":
+            const msg = conversation.messages.find((m: any) => m.id === (event as any).messageId);
+            if (msg) {
+                msg.status = "read";
+            }
+            break;
+    }
+}
+
+// Register itself
+ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
+````
+
+## File: packages/core/src/engine.ts
+````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    WorldState,
+    DeviceState,
+    CameraState,
+    ActiveCameraEffect,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_CAMERA_TRANSFORM,
+    DEFAULT_AUDIO_STATE,
+} from "./types";
+import { CameraController, createActiveEffect } from "./camera";
+
+export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
+export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+
+export const ReducerRegistry = {
+    deviceReducer: null as DeviceReducer | null,
+    appReducers: {} as Record<string, AppReducer>,
+
+    registerDeviceReducer(reducer: DeviceReducer) {
+        this.deviceReducer = reducer;
+    },
+    registerAppReducer(appId: string, reducer: AppReducer) {
+        this.appReducers[appId] = reducer;
+    }
+};
+
+// Camera controller instance
+const cameraController = new CameraController(30);
+
+/**
+ * Process camera event and update camera state
+ */
+function processCameraEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "CAMERA" },
+    eventIndex: number
+): void {
+    // Ensure camera state exists with all required properties
+    if (!draft.camera || !draft.camera.activeEffects) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
+    }
+
+    switch (event.type) {
+        case "SET_VIEW":
+            // Legacy support - just update base view
+            draft.camera.baseView = event.view.type;
+            draft.camera.appId = event.view.appId;
+            break;
+
+        case "CUT":
+            // Hard cut - reset all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId;
+                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            }
+
+            // Update base view if specified
+            if (event.toView) {
+                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: event.mode,
+                primaryDeviceId: event.primaryDeviceId,
+                secondaryDeviceId: event.secondaryDeviceId,
+                pipPosition: event.pipPosition,
+                pipScale: event.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = event.primaryDeviceId;
+            break;
+
+        case "ZOOM":
+        case "PAN":
+        case "SHAKE":
+        case "FOCUS":
+        case "RESET": {
+            // Create active effect and add to list
+            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            if (activeEffect) {
+                draft.camera.activeEffects.push(activeEffect);
+            }
+            break;
+        }
+    }
+}
+
+/**
+ * Process audio event and update audio state
+ */
+function processAudioEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "AUDIO" },
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = { activeSounds: {} };
+    }
+
+    switch (event.type) {
+        case "PLAY_SOUND": {
+            // Generate instance ID if not provided
+            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+
+            draft.audio.activeSounds[instanceId] = {
+                soundId: event.soundId,
+                startFrame: event.at,
+                volume: event.volume ?? 1,
+                loop: event.loop ?? false,
+                deviceId: event.deviceId,
+                duration: event.duration,
+            };
+            break;
+        }
+
+        case "STOP_SOUND": {
+            delete draft.audio.activeSounds[event.instanceId];
+            break;
+        }
+
+        case "FADE_VOLUME": {
+            const sound = draft.audio.activeSounds[event.instanceId];
+            if (sound) {
+                // Store target volume - renderer will interpolate
+                (sound as any).fadeTarget = event.toVolume;
+                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeStartFrame = event.at;
+            }
+            break;
+        }
+
+        case "BACKGROUND_MUSIC": {
+            draft.audio.backgroundMusic = {
+                soundId: event.soundId,
+                volume: event.volume ?? 0.5,
+                loop: event.loop ?? true,
+                startFrame: event.at,
+            };
+            break;
+        }
+    }
+}
+/**
+ * Replay function - computes WorldState at time t by applying all events
+ * 
+ * This is called every frame by Remotion. Performance is critical.
+ */
+export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    // Ensure initial state has proper camera and audio state
+    const initialWithCamera: WorldState = {
+        ...initial,
+        camera: initial.camera && 'activeEffects' in initial.camera
+            ? initial.camera
+            : {
+                ...DEFAULT_CAMERA_STATE,
+                baseView: (initial.camera as any)?.type || "APP_VIEW",
+                appId: (initial.camera as any)?.appId,
+            },
+        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
+    };
+
+    // Filter events up to current time
+    const relevant = events.filter(e => e.at <= t);
+
+    // Apply events to build state
+    const stateAfterEvents = relevant.reduce((state, event, index) => {
+        return produce(state, draft => {
+            if (event.kind === "DEVICE") {
+                if (ReducerRegistry.deviceReducer) {
+                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+            }
+            if (event.kind === "APP") {
+                const reducer = ReducerRegistry.appReducers[event.appId];
+                reducer?.(draft, event);
+            }
+            if (event.kind === "CAMERA") {
+                processCameraEvent(draft, event, index);
+            }
+            if (event.kind === "AUDIO") {
+                processAudioEvent(draft, event, index);
+            }
+        });
+    }, initialWithCamera);
+
+    // Compute camera transform at current time t
+    // This filters active effects and composes them, per-device
+    return produce(stateAfterEvents, draft => {
+        // Clean up expired effects (optimization)
+        draft.camera.activeEffects = draft.camera.activeEffects.filter(
+            ae => t <= ae.endFrame + 30 // Keep for 1 second after end for smooth transitions
+        );
+
+        // Ensure deviceTransforms exists
+        if (!draft.camera.deviceTransforms) {
+            draft.camera.deviceTransforms = {};
+        }
+
+        // Compute transform for each device
+        for (const deviceId of Object.keys(draft.devices)) {
+            // Filter effects for this device (global effects + device-specific)
+            const deviceEffects = draft.camera.activeEffects.filter(
+                ae => !ae.deviceId || ae.deviceId === deviceId
+            );
+
+            // Create a temporary camera state with only this device's effects
+            const deviceCameraState = {
+                ...draft.camera,
+                activeEffects: deviceEffects,
+            };
+
+            // Compute transform for this device
+            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+        }
+
+        // Primary device transform (for backward compatibility)
+        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
+    });
+}
+
+/**
+ * Get default initial world state with camera
+ */
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
+    return {
+        devices: {},
+        conversations: {},
+        appState: {},
+        camera: { ...DEFAULT_CAMERA_STATE },
+        audio: { ...DEFAULT_AUDIO_STATE },
+        ...partial,
+    };
+}
 ````
 
 ## File: packages/episodes/src/schema.ts
@@ -8228,20 +10531,6 @@ export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 ````
 
-## File: packages/renderer/src/index.ts
-````typescript
-export { TokovoRenderer } from "./TokovoRenderer";
-export { DeviceFrame } from "./DeviceFrame";
-export { NotificationOverlay } from "./NotificationOverlay";
-export { HeadsUpNotification } from "./HeadsUpNotification";
-export { CallOverlay } from "./CallOverlay";
-export { LockscreenView } from "./LockscreenView";
-export { HomeScreenView } from "./HomeScreenView";
-export { AppTransition, FaceIDAnimation, UnlockTransition } from "./AppTransition";
-export { AppRegistry } from "./registry";
-export * from "./layout";
-````
-
 ## File: packages/renderer/src/DeviceFrame.tsx
 ````typescript
 import React from "react";
@@ -8293,6 +10582,40 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
 };
 ````
 
+## File: packages/episodes/src/index.ts
+````typescript
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+import androidEpisode from "./examples/android-test.json";
+import instagramEpisode from "./examples/instagram-test.json";
+import notificationCallDemo from "./examples/notification-call-demo.json";
+import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
+import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
+
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo };
+````
+
+## File: packages/renderer/src/index.ts
+````typescript
+export { TokovoRenderer } from "./TokovoRenderer";
+export { DeviceFrame } from "./DeviceFrame";
+export { computeLayout } from "./layout";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export { VisualDebugger } from "./VisualDebugger";
+export { NotificationOverlay } from "./NotificationOverlay";
+export { HeadsUpNotification } from "./HeadsUpNotification";
+export { CallOverlay } from "./CallOverlay";
+export { LockscreenView } from "./LockscreenView";
+export { HomeScreenView } from "./HomeScreenView";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
+export { AudioLayer } from "./AudioLayer";
+export { UnlockTransition } from "./AppTransition";
+export { AppRegistry } from "./registry";
+export * from "./layout";
+````
+
 ## File: packages/renderer/src/registry.ts
 ````typescript
 import React from "react";
@@ -8306,7 +10629,7 @@ export const AppRegistry = {
     views: {
         "app_whatsapp": WhatsappChatView,
         "app_instagram": InstagramApp
-    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState }>>,
+    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState; platform?: string; deviceId?: string }>>,
 
     getView(appId: string) {
         return this.views[appId];
@@ -8323,10 +10646,29 @@ import { AndroidVideo } from "./AndroidVideo";
 import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
+import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
+import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
+import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="MultiPovDemo"
+                component={MultiPovDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="CameraShowcase"
+                component={CameraShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="TokovoExample"
                 component={Video}
@@ -8367,6 +10709,14 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            <Composition
+                id="WhatsappPsychoticDemo"
+                component={WhatsappPsychoticDemoVideo}
+                durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
         </>
     );
 };
@@ -8402,6 +10752,7 @@ export interface CallState {
 export interface DeviceState {
     id: string;
     profileId: string;
+    ownerName?: string;            // Who owns this device (for POV - their messages on right)
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
@@ -8479,16 +10830,226 @@ export interface Message {
     status?: "sending" | "sent" | "delivered" | "read";
 }
 
+// =============================================================================
+// CAMERA SYSTEM TYPES
+// =============================================================================
+
+// Easing types for smooth cinematic motion
+export type EasingType =
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "bounce"
+    | "elastic"
+    | "cinematic";  // Custom S-curve for film-like motion
+
+// Camera effect types
+export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
+
+// Targets for FOCUS effect - general purpose, not app-specific
+export type FocusTarget =
+    | { type: "app"; appId?: string }                                    // Focus on app viewport
+    | { type: "notification"; notificationId?: string }                  // Focus on notification
+    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
+    | { type: "device"; deviceId?: string }                              // Focus on device
+    | { type: "element"; selector: string }                              // Focus on CSS selector
+    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
+
+// Individual camera effect definitions
+export interface CameraZoomEffect {
+    type: "ZOOM";
+    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
+    originX?: number;        // 0-1, default 0.5 (center)
+    originY?: number;        // 0-1, default 0.5 (center)
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraPanEffect {
+    type: "PAN";
+    translateX: number;      // pixels (or normalized 0-1 if relative)
+    translateY: number;      // pixels
+    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraShakeEffect {
+    type: "SHAKE";
+    intensity: number;       // amplitude in pixels
+    frequency: number;       // shakes per second
+    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
+    duration: number;        // frames
+    seed?: number;           // for deterministic randomness
+}
+
+export interface CameraFocusEffect {
+    type: "FOCUS";
+    target: FocusTarget;
+    scale?: number;          // zoom level when focused, default 1.5
+    duration: number;        // frames
+    easing?: EasingType;
+    holdDuration?: number;   // frames to hold at focus before returning
+}
+
+export interface CameraCutEffect {
+    type: "CUT";
+    toDeviceId?: string;     // switch to different device
+    toView?: "app" | "lockscreen" | "homescreen";
+    fadeMs?: number;         // optional fade transition (0 = hard cut)
+}
+
+export interface CameraResetEffect {
+    type: "RESET";
+    duration: number;        // frames to animate back to default
+    easing?: EasingType;
+}
+
+export type CameraEffect =
+    | CameraZoomEffect
+    | CameraPanEffect
+    | CameraShakeEffect
+    | CameraFocusEffect
+    | CameraCutEffect
+    | CameraResetEffect;
+
+// Active camera effect (with timing info)
+export interface ActiveCameraEffect {
+    id: string;              // unique ID for this effect instance
+    effect: CameraEffect;
+    startFrame: number;
+    endFrame: number;
+    deviceId?: string;       // Target device (undefined = primary/active device)
+}
+
+// Computed camera transform (result of all active effects at time t)
+export interface CameraTransform {
+    translateX: number;
+    translateY: number;
+    scale: number;
+    rotation: number;        // degrees
+    originX: number;         // 0-1
+    originY: number;         // 0-1
+
+    // Shake offsets (added on top of main transform)
+    shakeX: number;
+    shakeY: number;
+}
+
+// =============================================================================
+// MULTI-DEVICE / POV TYPES
+// =============================================================================
+
+// View layout modes for multi-device rendering
+export type ViewLayoutMode =
+    | "SINGLE"              // One device fills the frame
+    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
+    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
+    | "PIP";                // Picture-in-Picture (main + small overlay)
+
+// PIP position options
+export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+// Layout configuration for multi-device views
+export interface ViewLayout {
+    mode: ViewLayoutMode;
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: PIPPosition;
+    pipScale?: number;
+}
+
+// Default view layout
+export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
+    mode: "SINGLE",
+    primaryDeviceId: "main_phone",
+};
+
+// Full camera state (stored in WorldState)
+export interface CameraState {
+    // Base view (for backward compatibility)
+    baseView: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+
+    // Multi-device support
+    activeDeviceId: string;
+    layout: ViewLayout;
+
+    // Active effects (from timeline) - global + per-device
+    activeEffects: ActiveCameraEffect[];
+
+    // Computed transform for primary device
+    transform: CameraTransform;
+
+    // Per-device transforms (computed by engine)
+    deviceTransforms: Record<DeviceId, CameraTransform>;
+}
+
+// Default camera transform
+export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+    rotation: 0,
+    originX: 0.5,
+    originY: 0.5,
+    shakeX: 0,
+    shakeY: 0,
+};
+
+// Default camera state
+export const DEFAULT_CAMERA_STATE: CameraState = {
+    baseView: "APP_VIEW",
+    activeDeviceId: "main_phone",
+    layout: { ...DEFAULT_VIEW_LAYOUT },
+    activeEffects: [],
+    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    deviceTransforms: {},
+};
+
+// Legacy type for backward compatibility
 export interface CameraViewConfig {
-    type: "APP_VIEW" | "TRANSITION"; // Updated to include TRANSITION
+    type: "APP_VIEW" | "TRANSITION";
     appId?: AppId;
 }
+
+// =============================================================================
+// AUDIO SYSTEM TYPES
+// =============================================================================
+
+// Active sound instance
+export interface ActiveSound {
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;  // If set, only plays for this device's context
+    duration?: number;  // Optional duration in frames
+}
+
+// Audio state (stored in WorldState)
+export interface AudioState {
+    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
+    backgroundMusic?: {
+        soundId: string;
+        volume: number;
+        loop: boolean;
+        startFrame: number;
+    };
+}
+
+// Default audio state
+export const DEFAULT_AUDIO_STATE: AudioState = {
+    activeSounds: {},
+};
 
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
-    appState: Record<AppId, any>; // Generic state for apps (e.g. Instagram feed, stories)
-    camera: CameraViewConfig;
+    appState: Record<AppId, any>;
+    camera: CameraState;
+    audio: AudioState;
 }
 
 // Event Union
@@ -8514,10 +11075,21 @@ export type TimelineEvent =
     | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
     // App events - custom
     | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
-    // Audio events
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
+    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
+    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
+    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
+    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
+    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
+    // Camera events - MULTI-DEVICE / POV
+    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
+    // Audio events - SOUND SYSTEM
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
+    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
+    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
+    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean };
 
 // --- Layout System Types ---
 
@@ -8767,7 +11339,7 @@ export interface TransitionLayoutMeta {
 ## File: packages/renderer/src/TokovoRenderer.tsx
 ````typescript
 import React from "react";
-import { WorldState, Notification } from "@tokovo/core";
+import { WorldState, Notification, CameraTransform, DEFAULT_CAMERA_TRANSFORM } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
 import { computeLayout } from "./layout";
@@ -8798,14 +11370,16 @@ export const TokovoRenderer: React.FC<{
     t: number;
     debug?: boolean;
     notificationConfig?: NotificationConfig;
-}> = ({ world, t, debug, notificationConfig = {} }) => {
+    focusDeviceId?: string;  // Which device to render (for multi-device POV)
+}> = ({ world, t, debug, notificationConfig = {}, focusDeviceId }) => {
     const {
         headsUpDuration = 150,
         showHeadsUpWhenAppOpen = true
     } = notificationConfig;
 
     // 1. Determine active device & app
-    const deviceId = Object.keys(world.devices)[0];
+    // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
+    const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
     const device = world.devices[deviceId];
     const appId = device?.foregroundAppId;
 
@@ -8886,16 +11460,44 @@ export const TokovoRenderer: React.FC<{
     const isPixel = device.profileId.includes("pixel");
     const variant = isPixel ? "android" : "ios";
 
-    // 6. Apply Device Transforms
-    let deviceStyle: React.CSSProperties = {
-        transformOrigin: "center center",
-        transition: "transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)"
+    // 6. Get Camera Transform for this specific device
+    const cameraTransform: CameraTransform =
+        (world.camera?.deviceTransforms?.[deviceId]) ||
+        world.camera?.transform ||
+        DEFAULT_CAMERA_TRANSFORM;
+
+    // 7. Build camera transform style
+    // The transform-origin uses the originX/originY from camera to zoom toward specific point
+    // Origin is in 0-1 range where (0.5, 0.5) is center
+    const cameraTransformString = `
+        translate(${cameraTransform.translateX + cameraTransform.shakeX}px, ${cameraTransform.translateY + cameraTransform.shakeY}px)
+        scale(${cameraTransform.scale})
+        rotate(${cameraTransform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+    // Camera wrapper needs explicit dimensions for transform-origin to work correctly
+    // Use device profile dimensions
+    const cameraStyle: React.CSSProperties = {
+        width: profile.dimensions.width,
+        height: profile.dimensions.height,
+        transformOrigin: `${cameraTransform.originX * 100}% ${cameraTransform.originY * 100}%`,
+        transform: cameraTransformString,
+        // No CSS transition - we handle all animation in JS for frame-perfect sync
+        transition: 'none',
     };
+
+    // 8. Device-specific transforms (legacy layout system)
+    let deviceStyle: React.CSSProperties = {};
 
     if (layout.kind === "TRANSITION") {
         const transLayout = layout as any;
         const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-        deviceStyle.transform = `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`;
+        if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+            deviceStyle = {
+                transformOrigin: "center center",
+                transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+            };
+        }
     }
 
     // 7. Find active notifications for heads-up display
@@ -8932,53 +11534,62 @@ export const TokovoRenderer: React.FC<{
     const hasActiveCall = device.call && device.call.status !== "ended";
 
     return (
-        <div style={{ width: "100%", height: "100%", position: "relative" }}>
-            <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                <DeviceFrame profileId={device.profileId} variant={variant}>
-                    {/* Call Overlay (takes precedence over everything) */}
-                    {hasActiveCall && (
-                        <CallOverlay
-                            call={device.call!}
-                            currentTime={t}
-                            variant={variant}
-                        />
-                    )}
+        <div style={{
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            position: "relative",
+            overflow: "hidden"
+        }}>
+            {/* Camera wrapper - applies cinematic transforms */}
+            <div style={cameraStyle}>
+                {/* Device wrapper - applies layout transforms */}
+                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                    <DeviceFrame profileId={device.profileId} variant={variant}>
+                        {/* Call Overlay (takes precedence over everything) */}
+                        {hasActiveCall && (
+                            <CallOverlay
+                                call={device.call!}
+                                currentTime={t}
+                                variant={variant}
+                            />
+                        )}
 
-                    {/* App View / Lockscreen / Home Screen */}
-                    {!hasActiveCall && AppView && !device.isLocked ? (
-                        <AppView world={world} t={t} layout={layout} />
-                    ) : !hasActiveCall && device.isLocked ? (
-                        <LockscreenView
-                            notifications={device.notifications}
+                        {/* App View / Lockscreen / Home Screen */}
+                        {!hasActiveCall && AppView && !device.isLocked ? (
+                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                        ) : !hasActiveCall && device.isLocked ? (
+                            <LockscreenView
+                                notifications={device.notifications}
+                                layout={layout}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && device.homeScreen ? (
+                            <HomeScreenView
+                                config={device.homeScreen}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && (
+                            <div style={{ flex: 1, backgroundColor: "black" }} />
+                        )}
+
+                        {/* Lockscreen Notification Overlay */}
+                        <NotificationOverlay
+                            notifications={device?.notifications}
+                            variant={variant}
                             layout={layout}
-                            variant={variant}
                         />
-                    ) : !hasActiveCall && device.homeScreen ? (
-                        <HomeScreenView
-                            config={device.homeScreen}
-                            variant={variant}
-                        />
-                    ) : !hasActiveCall && (
-                        <div style={{ flex: 1, backgroundColor: "black" }} />
-                    )}
 
-                    {/* Lockscreen Notification Overlay */}
-                    <NotificationOverlay
-                        notifications={device?.notifications}
-                        variant={variant}
-                        layout={layout}
-                    />
-
-                    {/* Heads-Up Notification (when unlocked) */}
-                    {activeHeadsUp && !hasActiveCall && (
-                        <HeadsUpNotification
-                            notification={activeHeadsUp}
-                            currentTime={t}
-                            variant={variant}
-                            autoDismissAfter={headsUpDuration}
-                        />
-                    )}
-                </DeviceFrame>
+                        {/* Heads-Up Notification (when unlocked) */}
+                        {activeHeadsUp && !hasActiveCall && (
+                            <HeadsUpNotification
+                                notification={activeHeadsUp}
+                                currentTime={t}
+                                variant={variant}
+                                autoDismissAfter={headsUpDuration}
+                            />
+                        )}
+                    </DeviceFrame>
+                </div>
             </div>
 
             {debug && <VisualDebugger world={world} t={t} />}
@@ -8991,7 +11602,7 @@ export const TokovoRenderer: React.FC<{
 ````typescript
 import React from "react";
 import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens, androidTokens } from "@tokovo/core";
-import { TypingBubble } from "./TypingBubble";
+
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
 // Get platform-specific config
@@ -9230,6 +11841,7 @@ interface MessageListProps {
     isTyping?: boolean;
     conversationType?: "dm" | "group";
     platform?: Platform;
+    ownerName?: string;  // Device owner for POV - their messages appear on right
 }
 
 const MessageList: React.FC<MessageListProps> = ({
@@ -9237,7 +11849,8 @@ const MessageList: React.FC<MessageListProps> = ({
     layout,
     isTyping,
     conversationType,
-    platform = "ios"
+    platform = "ios",
+    ownerName = "me"  // Default to "me" for backward compatibility
 }) => {
     const isGroup = conversationType === "group";
     const config = getAppConfig("whatsapp", platform) as any;
@@ -9303,7 +11916,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render voice messages
                     if (msg.type === "voice") {
-                        const isMe = msg.from === "me";
+                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -9320,13 +11933,132 @@ const MessageList: React.FC<MessageListProps> = ({
                                     isPlaying={msg.isPlaying}
                                     progress={msg.playProgress || 0}
                                     read={msg.status === "read"}
+                                    platform={platform} // Pass platform prop
                                 />
                             </div>
                         );
                     }
 
+
+
+                    // Render Deleted Message
+                    if (msg.type === "deleted") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <div style={{
+                                    backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+                                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                                    borderRadius: config.bubbleRadius,
+                                    borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+                                    borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+                                    boxShadow: config.bubbleShadow,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    fontStyle: "italic",
+                                    color: config.timestampColor
+                                }}>
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                    </svg>
+                                    <span style={{ fontSize: config.messageTextSize * 0.9 }}>
+                                        This message was deleted
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Render Screenshot Alert (Psychotic feature)
+                    if (msg.type === "screenshot_alert") {
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <div style={{
+                                    backgroundColor: config.screenshotAlertBg,
+                                    padding: "15px 45px",
+                                    borderRadius: 45,
+                                    border: `1px solid ${config.screenshotAlertText}`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 15
+                                }}>
+                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={config.screenshotAlertText} strokeWidth="2">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg>
+                                    <span style={{
+                                        fontSize: 30,
+                                        color: config.screenshotAlertText,
+                                        fontWeight: 600,
+                                        fontFamily: tokens.fontFamily
+                                    }}>
+                                        Took a screenshot!
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Render Missed Call (Psychotic feature)
+                    if (msg.type === "call_missed") {
+                        const isMe = msg.from === ownerName; // Generally you miss calls from others, but logic holds
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: "50%",
+                                transform: `translateX(-50%) translateY(${translateY}px)`,
+                                opacity
+                            }}>
+                                <div style={{
+                                    backgroundColor: config.missedCallBubbleColor,
+                                    padding: "24px 45px",
+                                    borderRadius: 24,
+                                    boxShadow: config.bubbleShadow,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: 9
+                                }}>
+                                    <span style={{
+                                        fontSize: config.messageTextSize,
+                                        color: config.bubbleTextColor,
+                                        fontWeight: 500,
+                                        fontFamily: tokens.fontFamily
+                                    }}>
+                                        Missed voice call
+                                    </span>
+                                    <span style={{
+                                        fontSize: config.timestampSize,
+                                        color: config.timestampColor
+                                    }}>
+                                        10:45
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }
+
                     // Render regular text messages
-                    const isMe = msg.from === "me";
+                    const isMe = msg.from === ownerName;
                     return (
                         <div key={msg.id} style={{
                             position: "absolute",
@@ -9371,7 +12103,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                     {msg.text}
                                 </span>
 
-                                {/* Timestamp + Read receipts */}
+                                {/* Timestamp + Read receipts + Edited */}
                                 <div style={{
                                     display: "flex",
                                     justifyContent: "flex-end",
@@ -9379,6 +12111,16 @@ const MessageList: React.FC<MessageListProps> = ({
                                     gap: config.bubbleGap * 0.75,
                                     marginTop: 3
                                 }}>
+                                    {(msg as any).edited && (
+                                        <span style={{
+                                            fontSize: config.editedLabelSize,
+                                            color: config.editedLabelColor,
+                                            fontFamily: tokens.fontFamily,
+                                            marginRight: 6
+                                        }}>
+                                            Edited
+                                        </span>
+                                    )}
                                     <span style={{
                                         fontSize: config.timestampSize,
                                         color: config.timestampColor,
@@ -9389,23 +12131,26 @@ const MessageList: React.FC<MessageListProps> = ({
                                     {isMe && <DoubleCheckIcon read={msg.status === "read"} />}
                                 </div>
                             </div>
+
                         </div>
                     );
                 })}
 
                 {/* Typing indicator */}
-                {isTyping && chatLayout?.typingLayout && (
-                    <div style={{
-                        position: "absolute",
-                        top: chatLayout.typingLayout.y,
-                        left: config.bubbleMarginHorizontal,
-                        opacity: chatLayout.typingLayout.opacity
-                    }}>
-                        <TypingBubble />
-                    </div>
-                )}
-            </div>
-        </div>
+                {
+                    isTyping && chatLayout?.typingLayout && (
+                        <div style={{
+                            position: "absolute",
+                            top: chatLayout.typingLayout.y,
+                            left: config.bubbleMarginHorizontal,
+                            opacity: chatLayout.typingLayout.opacity
+                        }}>
+                            <TypingBubble platform={platform} />
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 };
 
@@ -9417,59 +12162,93 @@ interface InputAreaProps {
     text?: string;
 }
 
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        backgroundColor: "#F6F6F6",
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 30px",
-        gap: 24,
-        borderTop: "1px solid rgba(0,0,0,0.1)"
-    }}>
-        {/* Plus button */}
-        <PlusCircleIcon />
+const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, platform = "ios" }) => {
+    // ... implementation ...
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
 
-        {/* Input field */}
+    return (
         <div style={{
-            flex: 1,
-            minHeight: 120,
-            backgroundColor: "#FFFFFF",
-            borderRadius: 60,
-            padding: "27px 48px",
+            backgroundColor: config.headerBg,
             display: "flex",
             alignItems: "center",
-            fontSize: 48,
-            color: text ? "#111B21" : "#8E8E93",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            border: "1px solid #E5E5EA",
-            boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
+            padding: `${config.bubblePadding}px 30px`,
+            gap: 24,
+            borderTop: "1px solid rgba(0,0,0,0.1)"
         }}>
-            {text || "Message"}
-        </div>
+            {/* Plus button */}
+            <PlusCircleIcon />
 
-        {/* Right icons */}
-        {text ? (
+            {/* Input field */}
             <div style={{
-                width: 105,
-                height: 105,
-                borderRadius: "50%",
-                backgroundColor: "#25D366",
+                flex: 1,
+                minHeight: 120,
+                backgroundColor: config.inputBg,
+                borderRadius: config.inputBorderRadius,
+                padding: "27px 48px",
                 display: "flex",
                 alignItems: "center",
-                justifyContent: "center"
+                fontSize: 48,
+                color: text ? config.inputTextColor : config.inputPlaceholderColor,
+                fontFamily: tokens.fontFamily,
+                border: "1px solid #E5E5EA",
+                boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
             }}>
-                <svg width="54" height="54" viewBox="0 0 18 18" fill="white">
-                    <path d="M2 9L9 2L16 9M9 2V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="rotate(90 9 9)" />
-                </svg>
+                {text || "Message"}
             </div>
-        ) : (
-            <>
-                <CameraFillIcon />
-                <MicrophoneFillIcon />
-            </>
-        )}
-    </div>
-);
+
+            {/* Right icons */}
+            {text ? (
+                <div style={{
+                    width: 105,
+                    height: 105,
+                    borderRadius: "50%",
+                    backgroundColor: config.sendButtonColor,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                    <svg width="54" height="54" viewBox="0 0 18 18" fill="white">
+                        <path d="M2 9L9 2L16 9M9 2V16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="rotate(90 9 9)" />
+                    </svg>
+                </div>
+            ) : (
+                <>
+                    <CameraFillIcon />
+                    <MicrophoneFillIcon />
+                </>
+            )}
+        </div>
+    );
+};
+
+// ... (HomeIndicator, SystemMessage, VoiceMessageBubble unchanged) ...
+
+// ============================================================================
+// TYPING INDICATOR BUBBLE
+// ============================================================================
+
+const TypingBubble: React.FC<{ platform?: Platform }> = ({ platform = "ios" }) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+
+    return (
+        <div style={{
+            backgroundColor: config.typingBubbleColor,
+            padding: "36px 45px",
+            borderRadius: config.bubbleRadius,
+            borderBottomLeftRadius: config.bubbleTailRadius,
+            boxShadow: config.bubbleShadow,
+            display: "flex",
+            gap: 12,
+            alignItems: "center",
+            height: 120
+        }}>
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "-0.32s" }} />
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both", animationDelay: "-0.16s" }} />
+            <div className="typing-dot" style={{ width: config.typingDotSize, height: config.typingDotSize, backgroundColor: config.typingDotColor, borderRadius: "50%", animation: "bounce 1.4s infinite ease-in-out both" }} />
+        </div>
+    );
+};
 
 // ============================================================================
 // HOME INDICATOR SPACER
@@ -9555,14 +12334,23 @@ const PauseIcon = () => (
     </svg>
 );
 
-const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platform }> = ({
     isMe,
     duration,
     isPlaying = false,
     progress = 0,
     timestamp,
-    read
+    read,
+    platform = "ios"
 }) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+
+    // Waveform simulation
+    const bars = 45;
+    const wave = React.useMemo(() => {
+        return Array.from({ length: bars }).map(() => Math.random() * 0.6 + 0.2);
+    }, []);
+
     const formatDuration = (secs: number) => {
         const mins = Math.floor(secs / 60);
         const s = secs % 60;
@@ -9573,15 +12361,15 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
         <div style={{
             display: "flex",
             justifyContent: isMe ? "flex-end" : "flex-start",
-            padding: "6px 36px"
+            padding: `6px ${config.bubbleMarginHorizontal}px`
         }}>
             <div style={{
-                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
-                padding: "24px 30px",
-                borderRadius: 24,
-                borderTopLeftRadius: isMe ? 24 : 6,
-                borderTopRightRadius: isMe ? 6 : 24,
-                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+                padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                borderRadius: config.bubbleRadius,
+                borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+                borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+                boxShadow: config.bubbleShadow,
                 display: "flex",
                 alignItems: "center",
                 gap: 18,
@@ -9589,10 +12377,8 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
             }}>
                 {/* Play/Pause Button */}
                 <div style={{
-                    width: 84,
-                    height: 84,
-                    borderRadius: "50%",
-                    backgroundColor: isMe ? "#D4F5C8" : "#F0F0F0",
+                    width: 54, // slightly larger
+                    height: 54,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -9601,44 +12387,63 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
                 </div>
 
                 {/* Waveform */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 9 }}>
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        height: 60
-                    }}>
-                        {Array.from({ length: 30 }).map((_, i) => {
-                            const height = Math.sin(i * 0.6) * 20 + 25;
-                            const isActive = i < 30 * progress;
-                            return (
-                                <div key={i} style={{
-                                    width: 6,
-                                    height: `${height}px`,
-                                    backgroundColor: isActive ? "#25D366" : "#92B09E",
-                                    borderRadius: 3
-                                }} />
-                            );
-                        })}
-                    </div>
+                <div style={{
+                    flex: 1,
+                    height: 54, // expanded height
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
+                    opacity: 0.8
+                }}>
+                    {wave.map((h, i) => {
+                        const isPlayed = (i / bars) < (progress / duration);
+                        return (
+                            <div key={i} style={{
+                                width: 4,
+                                height: `${h * 100}%`,
+                                backgroundColor: isPlayed ? config.waveformActiveColor : config.waveformInactiveColor,
+                                borderRadius: 2,
+                                transition: "background-color 0.2s"
+                            }} />
+                        );
+                    })}
+                </div>
 
-                    {/* Duration + Status */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 30, color: "#667781" }}>
-                            {formatDuration(Math.floor(duration * (isPlaying ? progress : 1)))}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                            <span style={{ fontSize: 30, color: "#667781" }}>
-                                {timestamp || "10:42"}
-                            </span>
-                            {isMe && <DoubleCheckIcon read={read !== false} />}
-                        </div>
-                    </div>
+                {/* Duration & Profile (Avatar for Other) - mimicking new WA style */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 90,
+                    fontSize: config.timestampSize,
+                    color: config.timestampColor,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {formatDuration(duration)}
+                </div>
+
+                {/* Timestamp + Read receipts */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: config.bubbleGap * 0.75,
+                    marginTop: 36, // Push down
+                    marginLeft: 12
+                }}>
+                    <span style={{
+                        fontSize: config.timestampSize,
+                        color: config.timestampColor,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {timestamp || "10:42"}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} />}
                 </div>
             </div>
         </div>
     );
 };
+
 
 // ============================================================================
 // GROUP HEADER - Shows group info instead of contact
@@ -9759,12 +12564,17 @@ export const WhatsApp = {
     VoiceMessageBubble
 };
 
-export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
+export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState; deviceId?: string }> = ({ world, t, layout, deviceId }) => {
     const conversationId = Object.keys(world.conversations)[0];
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
     const isTyping = conversation?.typing?.["other"] || false;
     const draftText = "";
+
+    // Get device owner for POV alignment
+    const activeDeviceId = deviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+    const device = world.devices[activeDeviceId];
+    const ownerName = device?.ownerName || "me";
 
     // Check if it's a group
     const isGroup = conversation?.type === "group";
@@ -9783,6 +12593,7 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
                 layout={layout}
                 isTyping={isTyping}
                 conversationType={conversation?.type}
+                ownerName={ownerName}
             />
             <WhatsApp.InputArea text={draftText} />
             <HomeIndicator />
