@@ -1,6 +1,6 @@
 {
     "name": "Notification & Call Demo",
-    "description": "Comprehensive test of all notification and call features",
+    "description": "Comprehensive test of lockscreen, notifications, and call features",
     "initialWorld": {
         "devices": {
             "user_phone": {
@@ -34,7 +34,7 @@
             "mode": "lockscreen"
         },
         {
-            "at": 30,
+            "at": 45,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "SHOW_NOTIFICATION",
@@ -44,20 +44,20 @@
             "mode": "lockscreen"
         },
         {
-            "at": 60,
+            "at": 90,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "UNLOCK"
         },
         {
-            "at": 75,
+            "at": 105,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
         },
         {
-            "at": 90,
+            "at": 120,
             "kind": "APP",
             "appId": "app_whatsapp",
             "type": "MESSAGE_RECEIVED",
@@ -66,7 +66,7 @@
             "text": "Are you there?"
         },
         {
-            "at": 120,
+            "at": 150,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "SHOW_NOTIFICATION",
@@ -76,7 +76,7 @@
             "mode": "headsup"
         },
         {
-            "at": 180,
+            "at": 210,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "INCOMING_CALL",
@@ -86,19 +86,19 @@
             "isVideo": false
         },
         {
-            "at": 240,
+            "at": 270,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "CALL_ANSWERED"
         },
         {
-            "at": 330,
+            "at": 390,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "CALL_ENDED"
         },
         {
-            "at": 345,
+            "at": 420,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "SHOW_NOTIFICATION",
@@ -108,7 +108,7 @@
             "mode": "headsup"
         },
         {
-            "at": 400,
+            "at": 510,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "INCOMING_CALL",
@@ -117,7 +117,13 @@
             "isVideo": true
         },
         {
-            "at": 460,
+            "at": 570,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "CALL_ANSWERED"
+        },
+        {
+            "at": 660,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "CALL_ENDED"

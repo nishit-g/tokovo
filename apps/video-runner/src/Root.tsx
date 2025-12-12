@@ -35,7 +35,7 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="NotificationCallDemo"
                 component={NotificationCallDemoVideo}
-                durationInFrames={480}
+                durationInFrames={720}
                 fps={30}
                 width={1080}
                 height={1920}
