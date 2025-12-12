@@ -28,7 +28,7 @@ export const InstagramVideo: React.FC = () => {
 
     // Replay
     // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
-    const world = replay(instagramEpisode.initialState as unknown as WorldState, instagramEpisode.timeline as any, t);
+    const world = replay(instagramEpisode.initialWorld as unknown as WorldState, instagramEpisode.events as any, t);
 
     return (
         <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>

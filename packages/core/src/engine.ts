@@ -212,6 +212,17 @@ function processAudioEvent(
  * This is called every frame by Remotion. Performance is critical.
  */
 export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    if (!initial) {
+        console.warn("[Engine] Replay called with undefined initial state");
+        return {
+            devices: {},
+            conversations: {},
+            appState: {},
+            camera: { ...DEFAULT_CAMERA_STATE },
+            audio: { ...DEFAULT_AUDIO_STATE }
+        };
+    }
+
     // Ensure initial state has proper camera and audio state
     const initialWithCamera: WorldState = {
         ...initial,
