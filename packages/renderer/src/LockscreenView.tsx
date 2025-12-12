@@ -3,12 +3,63 @@ import { Notification } from "@tokovo/core";
 import { LayoutState, LockscreenLayoutState } from "@tokovo/core";
 
 /**
- * iOS 16+ Lockscreen View
- * - Time at top (below Dynamic Island)
- * - Date below time
- * - Notifications stacked at BOTTOM (iOS 16+ style)
- * - Flashlight & Camera buttons
+ * iOS 17/18 Lockscreen View
+ * - Ultra-thin clock (font-weight: 100)
+ * - Single-line date
+ * - Notifications stacked at bottom
+ * - App logo icons in notifications
  */
+
+// App icons as actual images/gradients
+const APP_LOGOS: Record<string, React.ReactNode> = {
+    app_whatsapp: (
+        <div style={{
+            width: 66,
+            height: 66,
+            borderRadius: 15,
+            background: "#25D366",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+            </svg>
+        </div>
+    ),
+    app_instagram: (
+        <div style={{
+            width: 66,
+            height: 66,
+            borderRadius: 15,
+            background: "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
+                <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" strokeWidth="2" fill="none" />
+                <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" fill="none" />
+                <circle cx="18" cy="6" r="1.5" fill="white" />
+            </svg>
+        </div>
+    ),
+    app_messages: (
+        <div style={{
+            width: 66,
+            height: 66,
+            borderRadius: 15,
+            background: "#34C759",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+            </svg>
+        </div>
+    )
+};
 
 interface LockscreenViewProps {
     notifications?: Notification[];
@@ -29,7 +80,6 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
     const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
     const displayDate = date || formatDate();
 
-    // Filter active notifications for lockscreen
     const activeNotifications = notifications.filter(n => {
         if (n.dismissedAt !== undefined) return false;
         const mode = n.mode || "both";
@@ -43,34 +93,32 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
             left: 0,
             right: 0,
             bottom: 0,
-            background: isAndroid
-                ? "linear-gradient(180deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"
-                : "linear-gradient(180deg, #000000 0%, #1C1C1E 100%)",
+            background: "linear-gradient(180deg, #000000 0%, #1C1C1E 100%)",
             display: "flex",
             flexDirection: "column",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
             color: "white"
         }}>
-            {/* Time Display - Top area after Dynamic Island */}
+            {/* Time Display - iOS 17 style ultra-thin */}
             <div style={{
-                marginTop: 330,
+                marginTop: 300,
                 textAlign: "center"
             }}>
                 <div style={{
-                    fontSize: isAndroid ? 240 : 270,
-                    fontWeight: isAndroid ? "400" : "200",
-                    letterSpacing: isAndroid ? 0 : -6,
-                    lineHeight: 1,
+                    fontSize: 300,
+                    fontWeight: 100,  // Ultra-thin
+                    letterSpacing: -12,
+                    lineHeight: 0.9,
                     fontVariantNumeric: "tabular-nums"
                 }}>
                     {time}
                 </div>
                 <div style={{
-                    marginTop: 18,
-                    fontSize: 60,
-                    fontWeight: "400",
+                    marginTop: 12,
+                    fontSize: 54,
+                    fontWeight: 500,
                     opacity: 0.9,
-                    letterSpacing: 1
+                    letterSpacing: 0
                 }}>
                     {displayDate}
                 </div>
@@ -79,73 +127,65 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
             {/* Spacer */}
             <div style={{ flex: 1 }} />
 
-            {/* iOS 16+ Style Notifications - Bottom Stack */}
+            {/* iOS 16+ Notifications - Bottom Stack */}
             {activeNotifications.length > 0 && (
                 <div style={{
-                    paddingBottom: 240,
-                    paddingLeft: 45,
-                    paddingRight: 45
+                    paddingBottom: 270,
+                    paddingLeft: 48,
+                    paddingRight: 48
                 }}>
-                    {/* Notification Stack - shows latest on top */}
                     {activeNotifications.slice(-3).reverse().map((notification, index) => {
-                        // Get layout for animation if available
                         const nl = lockscreenLayout?.notificationLayouts.find(l => l.id === notification.id);
                         const opacity = nl?.opacity ?? 1;
                         const translateY = nl?.translateY ?? 0;
-
-                        // Stack effect: Each card slightly smaller and offset
-                        const stackOffset = index * 12;
+                        const stackOffset = index * 15;
                         const stackScale = 1 - (index * 0.02);
 
                         return (
                             <div
                                 key={notification.id}
                                 style={{
-                                    marginBottom: index === 0 ? 0 : -135, // Overlap cards
-                                    opacity: opacity * (1 - index * 0.15),
+                                    marginBottom: index === 0 ? 0 : -120,
+                                    opacity: opacity * (1 - index * 0.2),
                                     transform: `translateY(${translateY + stackOffset}px) scale(${stackScale})`,
                                     transformOrigin: "bottom center",
                                     zIndex: 10 - index
                                 }}
                             >
-                                <NotificationCard
-                                    notification={notification}
-                                    variant={variant}
-                                />
+                                <NotificationCard notification={notification} variant={variant} />
                             </div>
                         );
                     })}
 
-                    {/* Notification count if more than shown */}
                     {activeNotifications.length > 3 && (
                         <div style={{
                             textAlign: "center",
-                            marginTop: 24,
+                            marginTop: 30,
                             fontSize: 36,
-                            opacity: 0.6
+                            opacity: 0.5
                         }}>
-                            +{activeNotifications.length - 3} more notification{activeNotifications.length > 4 ? 's' : ''}
+                            +{activeNotifications.length - 3} more
                         </div>
                     )}
                 </div>
             )}
 
-            {/* Bottom Controls Area */}
+            {/* Bottom Buttons */}
             <div style={{
                 position: "absolute",
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 240,
+                height: 270,
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                padding: "0 75px"
+                padding: "0 60px"
             }}>
                 {!isAndroid && (
                     <>
-                        <ControlButton icon="flashlight" />
-                        <ControlButton icon="camera" />
+                        <LockscreenButton icon="flashlight" />
+                        <LockscreenButton icon="camera" />
                     </>
                 )}
             </div>
@@ -158,7 +198,7 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
                 transform: "translateX(-50%)",
                 width: 405,
                 height: 15,
-                backgroundColor: "rgba(255, 255, 255, 0.6)",
+                backgroundColor: "rgba(255, 255, 255, 0.5)",
                 borderRadius: 15
             }} />
         </div>
@@ -166,103 +206,95 @@ export const LockscreenView: React.FC<LockscreenViewProps> = ({
 };
 
 /**
- * Bottom control button (Flashlight/Camera)
+ * Lockscreen control button
  */
-const ControlButton: React.FC<{ icon: "flashlight" | "camera" }> = ({ icon }) => (
+const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({ icon }) => (
     <div style={{
         width: 150,
         height: 150,
         borderRadius: "50%",
-        backgroundColor: "rgba(255, 255, 255, 0.25)",
+        backgroundColor: "rgba(255, 255, 255, 0.2)",
         backdropFilter: "blur(20px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center"
     }}>
-        <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-            {icon === "flashlight" ? (
-                <path d="M9 2v6l-2 2v12h10V10l-2-2V2H9zm2 2h2v4h-2V4zm-1 7h4v9h-4v-9z" />
-            ) : (
+        {icon === "flashlight" ? (
+            <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
+                <path d="M9 2h6v6l2 2v12H7V10l2-2V2zm2 2v4h2V4h-2zm-1 7.5v8h4v-8l-2-2-2 2z" />
+            </svg>
+        ) : (
+            <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
                 <circle cx="12" cy="12" r="9" stroke="white" strokeWidth="2" fill="none" />
-            )}
-        </svg>
+                <circle cx="12" cy="12" r="4" fill="white" />
+            </svg>
+        )}
     </div>
 );
 
 /**
- * iOS 16+ Style Notification Card
+ * Notification Card with app icon
  */
 const NotificationCard: React.FC<{
     notification: Notification;
     variant?: "ios" | "android";
 }> = ({ notification, variant = "ios" }) => {
-    const isAndroid = variant === "android";
+    const appLogo = APP_LOGOS[notification.appId] || (
+        <div style={{
+            width: 66,
+            height: 66,
+            borderRadius: 15,
+            background: "#8E8E93",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 30,
+            color: "white"
+        }}>📱</div>
+    );
 
-    const APP_ICONS: Record<string, { bg: string; icon: string; name: string }> = {
-        app_whatsapp: { bg: "#25D366", icon: "W", name: "WhatsApp" },
-        app_instagram: { bg: "linear-gradient(135deg, #833AB4, #FD1D1D, #FCAF45)", icon: "📷", name: "Instagram" },
-        app_messages: { bg: "#34C759", icon: "💬", name: "Messages" },
+    const appNames: Record<string, string> = {
+        app_whatsapp: "WHATSAPP",
+        app_instagram: "INSTAGRAM",
+        app_messages: "MESSAGES"
     };
-
-    const appInfo = APP_ICONS[notification.appId] || { bg: "#8E8E93", icon: "📱", name: "App" };
+    const appName = appNames[notification.appId] || "APP";
 
     return (
         <div style={{
-            backgroundColor: isAndroid ? "rgba(48, 48, 48, 0.95)" : "rgba(30, 30, 30, 0.85)",
+            backgroundColor: "rgba(40, 40, 40, 0.8)",
             backdropFilter: "blur(60px)",
             WebkitBackdropFilter: "blur(60px)",
-            borderRadius: 48,
-            padding: "33px 42px",
+            borderRadius: 54,
+            padding: "36px 42px",
             color: "white"
         }}>
-            {/* Header with app icon and name */}
+            {/* Header */}
             <div style={{
                 display: "flex",
                 alignItems: "center",
                 gap: 18,
                 marginBottom: 15
             }}>
-                {/* Small app icon */}
-                <div style={{
-                    width: 54,
-                    height: 54,
-                    borderRadius: 12,
-                    background: appInfo.bg,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    fontSize: 27,
-                    color: "white"
-                }}>
-                    {appInfo.icon}
-                </div>
+                {appLogo}
                 <span style={{
-                    fontSize: 33,
-                    opacity: 0.7,
-                    textTransform: "uppercase",
-                    letterSpacing: 1,
-                    fontWeight: "500"
+                    fontSize: 30,
+                    opacity: 0.6,
+                    fontWeight: 600,
+                    letterSpacing: 1.5
                 }}>
-                    {appInfo.name}
+                    {appName}
                 </span>
-                <span style={{ marginLeft: "auto", fontSize: 30, opacity: 0.5 }}>
+                <span style={{ marginLeft: "auto", fontSize: 27, opacity: 0.4 }}>
                     now
                 </span>
             </div>
 
-            {/* Title and body */}
-            <div style={{
-                fontSize: 42,
-                fontWeight: "600",
-                marginBottom: 9
-            }}>
+            {/* Content */}
+            <div style={{ fontSize: 45, fontWeight: 600, marginBottom: 9 }}>
                 {notification.title}
             </div>
-            <div style={{
-                fontSize: 39,
-                opacity: 0.9,
-                lineHeight: 1.3
-            }}>
+            <div style={{ fontSize: 42, opacity: 0.9, lineHeight: 1.35 }}>
                 {notification.body}
             </div>
         </div>
@@ -270,17 +302,12 @@ const NotificationCard: React.FC<{
 };
 
 /**
- * Format current date for display
+ * Format date
  */
 function formatDate(): string {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const months = ["January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December"];
-
     const now = new Date();
-    const day = days[now.getDay()];
-    const month = months[now.getMonth()];
-    const date = now.getDate();
-
-    return `${day}, ${month} ${date}`;
+    return `${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}`;
 }

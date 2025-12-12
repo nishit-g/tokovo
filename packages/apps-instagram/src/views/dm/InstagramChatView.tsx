@@ -252,7 +252,7 @@ const InputArea: React.FC<InputAreaProps> = ({ text }) => (
         padding: "24px 42px",
         gap: 24
     }}>
-        {/* Input container - dark pill */}
+        {/* Input container */}
         <div style={{
             flex: 1,
             minHeight: 132,
@@ -278,16 +278,29 @@ const InputArea: React.FC<InputAreaProps> = ({ text }) => (
                 {text || "Message..."}
             </div>
 
-            {/* Right icons */}
-            <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-                <MicrophoneIcon />
-                <ImageIcon />
-                <StickerIcon />
-            </div>
+            {/* Right icons - hidden when typing */}
+            {!text && (
+                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
+                    <MicrophoneIcon />
+                    <ImageIcon />
+                    <StickerIcon />
+                </div>
+            )}
         </div>
 
-        {/* Heart/Like button outside input */}
-        {!text && <HeartIcon />}
+        {/* Heart or Send button */}
+        {text ? (
+            <span style={{
+                color: "#0095F6",
+                fontSize: 48,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                Send
+            </span>
+        ) : (
+            <HeartIcon />
+        )}
     </div>
 );
 
