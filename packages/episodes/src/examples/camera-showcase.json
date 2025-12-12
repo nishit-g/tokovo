@@ -80,11 +80,11 @@
             "at": 60,
             "kind": "CAMERA",
             "type": "ZOOM",
-            "scale": 1.4,
-            "originX": 0.5,
-            "originY": 0.7,
+            "scale": 1.5,
+            "originX": 0.2,
+            "originY": 0.2,
             "duration": 45,
-            "easing": "cinematic"
+            "easing": "ease-out"
         },
         {
             "at": 120,
