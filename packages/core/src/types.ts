@@ -129,6 +129,34 @@ export type EasingType =
     | "elastic"
     | "cinematic";  // Custom S-curve for film-like motion
 
+// =============================================================================
+// TRANSITION SYSTEM TYPES
+// =============================================================================
+
+// Transition types for screen animations
+export type TransitionType =
+    | "FADE"
+    | "SLIDE_LEFT"
+    | "SLIDE_RIGHT"
+    | "SLIDE_UP"
+    | "SLIDE_DOWN"
+    | "ZOOM_IN"
+    | "ZOOM_OUT"
+    | "CROSS_DISSOLVE";
+
+// =============================================================================
+// HIGHLIGHT SYSTEM TYPES
+// =============================================================================
+
+// Highlight styles for message emphasis
+export type HighlightStyle =
+    | "pulse"
+    | "glow"
+    | "shake"
+    | "bounce"
+    | "spotlight"
+    | "scale";
+
 // Camera effect types
 export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
 
@@ -420,7 +448,13 @@ export type TimelineEvent =
     | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
     | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
     | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
-    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean };
+    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
+    // Transition events - SCREEN ANIMATIONS
+    | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
+    // Highlight events - MESSAGE EMPHASIS
+    | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string };
 
 // --- Layout System Types ---
 

@@ -141,8 +141,23 @@ function getShakeOffset(frame: number, seed: number, frequency: number, fps: num
 export class CameraController {
     private fps: number;
 
+    // Memoization cache for performance (LRU with max 500 entries)
+    private transformCache = new Map<string, CameraTransform>();
+    private readonly MAX_CACHE_SIZE = 500;
+
     constructor(fps: number = 30) {
         this.fps = fps;
+    }
+
+    /**
+     * Generate cache key from camera state and frame
+     */
+    private getCacheKey(state: CameraState, t: number): string {
+        // Key includes frame number and effect IDs with their start frames
+        const effectsKey = state.activeEffects
+            .map(e => `${e.id}:${e.startFrame}:${e.endFrame}`)
+            .join('|');
+        return `${t}:${effectsKey}`;
     }
 
     /**
@@ -157,8 +172,17 @@ export class CameraController {
      * - Translate is additive
      * - Origin uses the most recent effect's origin
      * - Shake is additive
+     * 
+     * Memoized for performance.
      */
     computeTransform(state: CameraState, t: number): CameraTransform {
+        // Check cache first
+        const cacheKey = this.getCacheKey(state, t);
+        const cached = this.transformCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
         // Start with default transform
         const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
 
@@ -174,7 +198,25 @@ export class CameraController {
             this.applyEffect(transform, activeEffect, t);
         }
 
+        // Cache the result
+        this.transformCache.set(cacheKey, transform);
+
+        // LRU eviction - remove oldest entries if over limit
+        if (this.transformCache.size > this.MAX_CACHE_SIZE) {
+            const firstKey = this.transformCache.keys().next().value;
+            if (firstKey) {
+                this.transformCache.delete(firstKey);
+            }
+        }
+
         return transform;
+    }
+
+    /**
+     * Clear the transform cache (call when starting a new video)
+     */
+    clearCache(): void {
+        this.transformCache.clear();
     }
 
     /**

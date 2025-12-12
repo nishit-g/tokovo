@@ -5,3 +5,4 @@ export * from "./camera";
 export * from "./sounds";
 export * from "./constants";
 export * from "./typeGuards";
+export * from "./eventUtils";
