@@ -1,5 +1,9 @@
 import React from "react";
-import { HomeScreenConfig, AppIcon, AppFolder } from "@tokovo/core";
+import { HomeScreenConfig, AppIcon, AppFolder, Platform, getAppConfig } from "@tokovo/core";
+
+// ============================================================================
+// APP ICON COMPONENT
+// ============================================================================
 
 // ============================================================================
 // APP ICON COMPONENT
@@ -8,25 +12,31 @@ import { HomeScreenConfig, AppIcon, AppFolder } from "@tokovo/core";
 interface AppIconItemProps {
     app: AppIcon;
     size?: number;
+    styleConfig: any; // Using any to avoid complex type drilling for now
 }
 
-const AppIconItem: React.FC<AppIconItemProps> = ({ app, size = 180 }) => {
+const AppIconItem: React.FC<AppIconItemProps> = ({ app, size, styleConfig }) => {
+    const iconSize = size || styleConfig.iconSize;
+    // Android icons are often circular or different shape; iOS are rounded rects
     const isEmoji = /^\p{Emoji}/u.test(app.icon);
-    const iconSize = size * 0.75;
+
+    // Scale radius if size is overridden (e.g. in dock)
+    const scale = iconSize / styleConfig.iconSize;
+    const radius = styleConfig.iconRadius * scale;
 
     return (
         <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            width: size,
-            gap: 12
+            width: iconSize,
+            gap: styleConfig.iconLabelGap
         }}>
             {/* Icon */}
             <div style={{
                 width: iconSize,
                 height: iconSize,
-                borderRadius: iconSize * 0.22,
+                borderRadius: radius,
                 position: "relative",
                 backgroundColor: isEmoji ? "rgba(255,255,255,0.15)" : "#333",
                 backgroundImage: !isEmoji ? `url(${app.icon})` : undefined,
@@ -39,23 +49,23 @@ const AppIconItem: React.FC<AppIconItemProps> = ({ app, size = 180 }) => {
                     <span style={{ fontSize: iconSize * 0.5 }}>{app.icon}</span>
                 )}
 
-                {/* Badge */}
+                {/* Badge - Keeping hardcoded red for now as it's standard notification color */}
                 {app.badge && app.badge > 0 && (
                     <div style={{
                         position: "absolute",
-                        top: -12,
-                        right: -12,
-                        minWidth: 54,
-                        height: 54,
-                        borderRadius: 27,
+                        top: -12 * scale,
+                        right: -12 * scale,
+                        minWidth: 54 * scale,
+                        height: 54 * scale,
+                        borderRadius: 27 * scale,
                         backgroundColor: "#FF3B30",
                         color: "white",
-                        fontSize: 33,
+                        fontSize: 33 * scale,
                         fontWeight: 600,
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        padding: "0 15px",
+                        padding: `0 ${15 * scale}px`,
                         fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
                     }}>
                         {app.badge > 99 ? "99+" : app.badge}
@@ -65,14 +75,15 @@ const AppIconItem: React.FC<AppIconItemProps> = ({ app, size = 180 }) => {
 
             {/* Label */}
             <span style={{
-                fontSize: 33,
-                color: "white",
+                fontSize: styleConfig.iconLabelSize,
+                color: styleConfig.iconLabelColor,
                 textAlign: "center",
-                maxWidth: size,
+                maxWidth: iconSize + 20,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
                 whiteSpace: "nowrap",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                textShadow: "0 1px 4px rgba(0,0,0,0.4)"
             }}>
                 {app.label}
             </span>
@@ -87,38 +98,43 @@ const AppIconItem: React.FC<AppIconItemProps> = ({ app, size = 180 }) => {
 interface FolderItemProps {
     folder: AppFolder;
     size?: number;
+    styleConfig: any;
 }
 
-const FolderItem: React.FC<FolderItemProps> = ({ folder, size = 180 }) => {
-    const iconSize = size * 0.75;
-    const miniSize = (iconSize - 30) / 3;
+const FolderItem: React.FC<FolderItemProps> = ({ folder, size, styleConfig }) => {
+    const iconSize = size || styleConfig.iconSize;
+    const miniSize = (iconSize - 30) / 3; // Approx calculation for 3x3 grid
+    const scale = iconSize / styleConfig.iconSize;
+    const radius = styleConfig.iconRadius * scale;
 
     return (
         <div style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            width: size,
-            gap: 12
+            width: iconSize,
+            gap: styleConfig.iconLabelGap
         }}>
             {/* Folder icon with mini app previews */}
             <div style={{
                 width: iconSize,
                 height: iconSize,
-                borderRadius: iconSize * 0.22,
-                backgroundColor: "rgba(255,255,255,0.2)",
-                backdropFilter: "blur(30px)",
+                borderRadius: radius,
+                backgroundColor: styleConfig.folderBackdrop,
+                backdropFilter: `blur(${styleConfig.folderBlur})`,
                 display: "grid",
                 gridTemplateColumns: `repeat(3, ${miniSize}px)`,
                 gridTemplateRows: `repeat(3, ${miniSize}px)`,
-                gap: 9,
-                padding: 15
+                gap: styleConfig.folderPreviewGap * scale,
+                padding: 15 * scale,
+                justifyContent: "center",
+                alignContent: "center"
             }}>
                 {folder.apps.slice(0, 9).map((app, i) => (
                     <div key={i} style={{
                         width: miniSize,
                         height: miniSize,
-                        borderRadius: miniSize * 0.2,
+                        borderRadius: miniSize * styleConfig.folderMiniIconRadius,
                         backgroundColor: "rgba(255,255,255,0.3)",
                         backgroundImage: !/^\p{Emoji}/u.test(app.icon) ? `url(${app.icon})` : undefined,
                         backgroundSize: "cover",
@@ -134,9 +150,10 @@ const FolderItem: React.FC<FolderItemProps> = ({ folder, size = 180 }) => {
 
             {/* Label */}
             <span style={{
-                fontSize: 33,
-                color: "white",
-                textAlign: "center"
+                fontSize: styleConfig.iconLabelSize,
+                color: styleConfig.iconLabelColor,
+                textAlign: "center",
+                textShadow: "0 1px 4px rgba(0,0,0,0.4)"
             }}>
                 {folder.name}
             </span>
@@ -150,26 +167,27 @@ const FolderItem: React.FC<FolderItemProps> = ({ folder, size = 180 }) => {
 
 interface DockProps {
     apps: AppIcon[];
+    styleConfig: any;
 }
 
-const Dock: React.FC<DockProps> = ({ apps }) => (
+const Dock: React.FC<DockProps> = ({ apps, styleConfig }) => (
     <div style={{
         position: "absolute",
-        bottom: 60,
+        bottom: styleConfig.dockBottom,
         left: "50%",
         transform: "translateX(-50%)",
-        width: "92%",
-        height: 270,
-        borderRadius: 90,
-        backgroundColor: "rgba(255,255,255,0.2)",
-        backdropFilter: "blur(60px)",
+        width: styleConfig.dockWidth,
+        height: styleConfig.dockHeight,
+        borderRadius: styleConfig.dockRadius,
+        backgroundColor: styleConfig.dockBackdrop,
+        backdropFilter: `blur(${styleConfig.dockBlur})`,
         display: "flex",
         alignItems: "center",
         justifyContent: "space-around",
         padding: "0 30px"
     }}>
         {apps.slice(0, 4).map((app, i) => (
-            <AppIconItem key={i} app={app} size={150} />
+            <AppIconItem key={i} app={app} size={styleConfig.dockIconSize} styleConfig={styleConfig} />
         ))}
     </div>
 );
@@ -181,20 +199,22 @@ const Dock: React.FC<DockProps> = ({ apps }) => (
 interface PageDotsProps {
     count: number;
     activeIndex: number;
+    styleConfig: any;
 }
 
-const PageDots: React.FC<PageDotsProps> = ({ count, activeIndex }) => (
+const PageDots: React.FC<PageDotsProps> = ({ count, activeIndex, styleConfig }) => (
     <div style={{
         display: "flex",
-        gap: 18,
-        marginBottom: 30
+        gap: styleConfig.dotGap,
+        marginBottom: styleConfig.dotMarginBottom
     }}>
         {Array.from({ length: count }).map((_, i) => (
             <div key={i} style={{
-                width: 21,
-                height: 21,
+                width: styleConfig.dotSize,
+                height: styleConfig.dotSize,
                 borderRadius: "50%",
-                backgroundColor: i === activeIndex ? "white" : "rgba(255,255,255,0.4)"
+                backgroundColor: i === activeIndex ? styleConfig.dotActiveColor : styleConfig.dotInactiveColor,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.2)"
             }} />
         ))}
     </div>
@@ -208,13 +228,19 @@ interface HomeScreenViewProps {
     config: HomeScreenConfig;
     variant?: "ios" | "android";
     activePage?: number;
+    platform?: Platform; // Add platform prop to match other views
 }
 
 export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
     config,
     variant = "ios",
-    activePage = 0
+    activePage = 0,
+    platform
 }) => {
+    // Use platform prop if provided, otherwise fallback to variant
+    const effectivePlatform = (platform || variant) as Platform;
+    const styleConfig = getAppConfig("homescreen", effectivePlatform) as any;
+
     const currentPage = config.pages[activePage] || config.pages[0];
     const wallpaper = config.wallpaper || "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)";
 
@@ -234,17 +260,17 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
             <div style={{
                 flex: 1,
                 display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gridTemplateRows: "repeat(6, auto)",
-                gap: "36px 0",
-                padding: "240px 30px 0",
+                gridTemplateColumns: `repeat(${styleConfig.gridColumns}, 1fr)`,
+                gridTemplateRows: `repeat(${styleConfig.gridRows}, auto)`,
+                gap: `${styleConfig.gridGapRow}px ${styleConfig.gridGapCol}px`,
+                padding: `${styleConfig.gridPaddingTop}px ${styleConfig.gridPaddingHorizontal}px 0`,
                 justifyItems: "center",
                 overflow: "hidden"
             }}>
                 {currentPage?.apps.map((item, i) => (
                     'type' in item && item.type === "folder"
-                        ? <FolderItem key={i} folder={item} />
-                        : <AppIconItem key={i} app={item as AppIcon} />
+                        ? <FolderItem key={i} folder={item} styleConfig={styleConfig} />
+                        : <AppIconItem key={i} app={item as AppIcon} styleConfig={styleConfig} />
                 ))}
             </div>
 
@@ -254,23 +280,25 @@ export const HomeScreenView: React.FC<HomeScreenViewProps> = ({
                 justifyContent: "center",
                 marginBottom: 12
             }}>
-                <PageDots count={config.pages.length} activeIndex={activePage} />
+                <PageDots count={config.pages.length} activeIndex={activePage} styleConfig={styleConfig} />
             </div>
 
             {/* Dock */}
-            <Dock apps={config.dock} />
+            <Dock apps={config.dock} styleConfig={styleConfig} />
 
-            {/* Home Indicator */}
-            <div style={{
-                position: "absolute",
-                bottom: 24,
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 405,
-                height: 15,
-                backgroundColor: "rgba(255, 255, 255, 0.5)",
-                borderRadius: 15
-            }} />
+            {/* Home Indicator - Visible on iOS */}
+            {effectivePlatform === "ios" && (
+                <div style={{
+                    position: "absolute",
+                    bottom: 24,
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 405,
+                    height: 15,
+                    backgroundColor: "rgba(255, 255, 255, 0.5)",
+                    borderRadius: 15
+                }} />
+            )}
         </div>
     );
 };

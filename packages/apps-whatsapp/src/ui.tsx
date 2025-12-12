@@ -329,7 +329,126 @@ const MessageList: React.FC<MessageListProps> = ({
                                     isPlaying={msg.isPlaying}
                                     progress={msg.playProgress || 0}
                                     read={msg.status === "read"}
+                                    platform={platform} // Pass platform prop
                                 />
+                            </div>
+                        );
+                    }
+
+
+
+                    // Render Deleted Message
+                    if (msg.type === "deleted") {
+                        const isMe = msg.from === "me";
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <div style={{
+                                    backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+                                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                                    borderRadius: config.bubbleRadius,
+                                    borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+                                    borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+                                    boxShadow: config.bubbleShadow,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 12,
+                                    fontStyle: "italic",
+                                    color: config.timestampColor
+                                }}>
+                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10"></circle>
+                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                    </svg>
+                                    <span style={{ fontSize: config.messageTextSize * 0.9 }}>
+                                        This message was deleted
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Render Screenshot Alert (Psychotic feature)
+                    if (msg.type === "screenshot_alert") {
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                width: "100%",
+                                display: "flex",
+                                justifyContent: "center",
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <div style={{
+                                    backgroundColor: config.screenshotAlertBg,
+                                    padding: "15px 45px",
+                                    borderRadius: 45,
+                                    border: `1px solid ${config.screenshotAlertText}`,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 15
+                                }}>
+                                    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke={config.screenshotAlertText} strokeWidth="2">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                                        <circle cx="12" cy="13" r="4"></circle>
+                                    </svg>
+                                    <span style={{
+                                        fontSize: 30,
+                                        color: config.screenshotAlertText,
+                                        fontWeight: 600,
+                                        fontFamily: tokens.fontFamily
+                                    }}>
+                                        Took a screenshot!
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    }
+
+                    // Render Missed Call (Psychotic feature)
+                    if (msg.type === "call_missed") {
+                        const isMe = msg.from === "me"; // Generally you miss calls from others, but logic holds
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: "50%",
+                                transform: `translateX(-50%) translateY(${translateY}px)`,
+                                opacity
+                            }}>
+                                <div style={{
+                                    backgroundColor: config.missedCallBubbleColor,
+                                    padding: "24px 45px",
+                                    borderRadius: 24,
+                                    boxShadow: config.bubbleShadow,
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    gap: 9
+                                }}>
+                                    <span style={{
+                                        fontSize: config.messageTextSize,
+                                        color: config.bubbleTextColor,
+                                        fontWeight: 500,
+                                        fontFamily: tokens.fontFamily
+                                    }}>
+                                        Missed voice call
+                                    </span>
+                                    <span style={{
+                                        fontSize: config.timestampSize,
+                                        color: config.timestampColor
+                                    }}>
+                                        10:45
+                                    </span>
+                                </div>
                             </div>
                         );
                     }
@@ -380,7 +499,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                     {msg.text}
                                 </span>
 
-                                {/* Timestamp + Read receipts */}
+                                {/* Timestamp + Read receipts + Edited */}
                                 <div style={{
                                     display: "flex",
                                     justifyContent: "flex-end",
@@ -388,6 +507,16 @@ const MessageList: React.FC<MessageListProps> = ({
                                     gap: config.bubbleGap * 0.75,
                                     marginTop: 3
                                 }}>
+                                    {(msg as any).edited && (
+                                        <span style={{
+                                            fontSize: config.editedLabelSize,
+                                            color: config.editedLabelColor,
+                                            fontFamily: tokens.fontFamily,
+                                            marginRight: 6
+                                        }}>
+                                            Edited
+                                        </span>
+                                    )}
                                     <span style={{
                                         fontSize: config.timestampSize,
                                         color: config.timestampColor,
@@ -398,23 +527,26 @@ const MessageList: React.FC<MessageListProps> = ({
                                     {isMe && <DoubleCheckIcon read={msg.status === "read"} />}
                                 </div>
                             </div>
+
                         </div>
                     );
                 })}
 
                 {/* Typing indicator */}
-                {isTyping && chatLayout?.typingLayout && (
-                    <div style={{
-                        position: "absolute",
-                        top: chatLayout.typingLayout.y,
-                        left: config.bubbleMarginHorizontal,
-                        opacity: chatLayout.typingLayout.opacity
-                    }}>
-                        <TypingBubble platform={platform} />
-                    </div>
-                )}
-            </div>
-        </div>
+                {
+                    isTyping && chatLayout?.typingLayout && (
+                        <div style={{
+                            position: "absolute",
+                            top: chatLayout.typingLayout.y,
+                            left: config.bubbleMarginHorizontal,
+                            opacity: chatLayout.typingLayout.opacity
+                        }}>
+                            <TypingBubble platform={platform} />
+                        </div>
+                    )
+                }
+            </div >
+        </div >
     );
 };
 
@@ -598,14 +730,23 @@ const PauseIcon = () => (
     </svg>
 );
 
-const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platform }> = ({
     isMe,
     duration,
     isPlaying = false,
     progress = 0,
     timestamp,
-    read
+    read,
+    platform = "ios"
 }) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+
+    // Waveform simulation
+    const bars = 45;
+    const wave = React.useMemo(() => {
+        return Array.from({ length: bars }).map(() => Math.random() * 0.6 + 0.2);
+    }, []);
+
     const formatDuration = (secs: number) => {
         const mins = Math.floor(secs / 60);
         const s = secs % 60;
@@ -616,15 +757,15 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
         <div style={{
             display: "flex",
             justifyContent: isMe ? "flex-end" : "flex-start",
-            padding: "6px 36px"
+            padding: `6px ${config.bubbleMarginHorizontal}px`
         }}>
             <div style={{
-                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
-                padding: "24px 30px",
-                borderRadius: 24,
-                borderTopLeftRadius: isMe ? 24 : 6,
-                borderTopRightRadius: isMe ? 6 : 24,
-                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+                padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                borderRadius: config.bubbleRadius,
+                borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+                borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+                boxShadow: config.bubbleShadow,
                 display: "flex",
                 alignItems: "center",
                 gap: 18,
@@ -632,10 +773,8 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
             }}>
                 {/* Play/Pause Button */}
                 <div style={{
-                    width: 84,
-                    height: 84,
-                    borderRadius: "50%",
-                    backgroundColor: isMe ? "#D4F5C8" : "#F0F0F0",
+                    width: 54, // slightly larger
+                    height: 54,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -644,44 +783,63 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
                 </div>
 
                 {/* Waveform */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 9 }}>
-                    <div style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        height: 60
-                    }}>
-                        {Array.from({ length: 30 }).map((_, i) => {
-                            const height = Math.sin(i * 0.6) * 20 + 25;
-                            const isActive = i < 30 * progress;
-                            return (
-                                <div key={i} style={{
-                                    width: 6,
-                                    height: `${height}px`,
-                                    backgroundColor: isActive ? "#25D366" : "#92B09E",
-                                    borderRadius: 3
-                                }} />
-                            );
-                        })}
-                    </div>
+                <div style={{
+                    flex: 1,
+                    height: 54, // expanded height
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
+                    opacity: 0.8
+                }}>
+                    {wave.map((h, i) => {
+                        const isPlayed = (i / bars) < (progress / duration);
+                        return (
+                            <div key={i} style={{
+                                width: 4,
+                                height: `${h * 100}%`,
+                                backgroundColor: isPlayed ? config.waveformActiveColor : config.waveformInactiveColor,
+                                borderRadius: 2,
+                                transition: "background-color 0.2s"
+                            }} />
+                        );
+                    })}
+                </div>
 
-                    {/* Duration + Status */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 30, color: "#667781" }}>
-                            {formatDuration(Math.floor(duration * (isPlaying ? progress : 1)))}
-                        </span>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                            <span style={{ fontSize: 30, color: "#667781" }}>
-                                {timestamp || "10:42"}
-                            </span>
-                            {isMe && <DoubleCheckIcon read={read !== false} />}
-                        </div>
-                    </div>
+                {/* Duration & Profile (Avatar for Other) - mimicking new WA style */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 90,
+                    fontSize: config.timestampSize,
+                    color: config.timestampColor,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {formatDuration(duration)}
+                </div>
+
+                {/* Timestamp + Read receipts */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: config.bubbleGap * 0.75,
+                    marginTop: 36, // Push down
+                    marginLeft: 12
+                }}>
+                    <span style={{
+                        fontSize: config.timestampSize,
+                        color: config.timestampColor,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {timestamp || "10:42"}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} />}
                 </div>
             </div>
         </div>
     );
 };
+
 
 // ============================================================================
 // GROUP HEADER - Shows group info instead of contact

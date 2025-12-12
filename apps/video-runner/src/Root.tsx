@@ -5,6 +5,7 @@ import { AndroidVideo } from "./AndroidVideo";
 import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
+import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
@@ -45,6 +46,14 @@ export const RemotionRoot: React.FC = () => {
                 id="HomeScreenGroupDemo"
                 component={HomeScreenGroupDemoVideo}
                 durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappPsychoticDemo"
+                component={WhatsappPsychoticDemoVideo}
+                durationInFrames={600}
                 fps={30}
                 width={1080}
                 height={1920}

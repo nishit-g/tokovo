@@ -268,10 +268,26 @@ export const appConfigs = {
             inputIconColor: "#8E8E93",
             sendButtonColor: "#25D366",
 
-            // Typing indicator
+            // Tuning indicator
             typingBubbleColor: "#FFFFFF",
             typingDotColor: "#8E8E93",
             typingDotSize: 24,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 30,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#667781",
+
+            waveformActiveColor: "#007AFF",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
         },
         android: {
             // Header
@@ -334,6 +350,22 @@ export const appConfigs = {
             typingBubbleColor: "#FFFFFF",
             typingDotColor: "#8E8E93",
             typingDotSize: 21,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 27,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#54656F",
+
+            waveformActiveColor: "#008069",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
         },
     },
     instagram: {
@@ -364,6 +396,84 @@ export const appConfigs = {
             bubbleOtherColor: "#E9E9EB",
             bubbleOtherTextColor: "#000000",
             accentColor: "#007AFF",
+        }
+    },
+    homescreen: {
+        ios: {
+            // Grid
+            gridColumns: 4,
+            gridRows: 6,
+            gridGapRow: 36,
+            gridGapCol: 0,
+            gridPaddingTop: 240,
+            gridPaddingHorizontal: 30,
+
+            // Icons
+            iconSize: 180,
+            iconRadius: 40, // 180 * 0.22 roughly
+            iconLabelSize: 33,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 12,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.2)",
+            folderBlur: "30px",
+            folderPreviewGap: 9,
+            folderMiniIconRadius: 0.2, // relative to mini size
+
+            // Dock
+            dockHeight: 270,
+            dockRadius: 90,
+            dockBottom: 60,
+            dockWidth: "92%",
+            dockBackdrop: "rgba(255,255,255,0.2)",
+            dockBlur: "60px",
+            dockIconSize: 150,
+
+            // Page Dots
+            dotSize: 21,
+            dotGap: 18,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 30,
+        },
+        android: {
+            // Grid
+            gridColumns: 5,
+            gridRows: 6,
+            gridGapRow: 48,
+            gridGapCol: 0,
+            gridPaddingTop: 150,
+            gridPaddingHorizontal: 24,
+
+            // Icons
+            iconSize: 165,
+            iconRadius: 82.5, // Circular
+            iconLabelSize: 30,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 15,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.15)",
+            folderBlur: "20px",
+            folderPreviewGap: 12,
+            folderMiniIconRadius: 0.5,
+
+            // Dock (Android usually simpler / just icons)
+            dockHeight: 240,
+            dockRadius: 0, // No dock background conventionally
+            dockBottom: 30,
+            dockWidth: "100%",
+            dockBackdrop: "transparent",
+            dockBlur: "0px",
+            dockIconSize: 165,
+
+            // Page Dots
+            dotSize: 18,
+            dotGap: 24,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 45,
         }
     }
 };

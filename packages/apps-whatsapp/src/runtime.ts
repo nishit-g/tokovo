@@ -14,13 +14,16 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
 
     switch (event.type) {
         case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT":
+            const msgPayload = (event as any).message || {};
             conversation.messages.push({
-                id: `msg_${event.at}_${(event as any).from}_${(event as any).text?.substring(0, 5)}`,
+                id: msgPayload.id || `msg_${event.at}_${(event as any).from}`,
                 from: (event as any).from,
-                text: (event as any).text,
-                type: "text",
+                text: (event as any).text || msgPayload.text,
+                type: msgPayload.type || "text",
                 at: event.at,
-                status: "delivered"
+                status: msgPayload.status || "delivered",
+                ...msgPayload
             });
             break;
 

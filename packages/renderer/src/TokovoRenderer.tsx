@@ -178,7 +178,7 @@ export const TokovoRenderer: React.FC<{
 
                     {/* App View / Lockscreen / Home Screen */}
                     {!hasActiveCall && AppView && !device.isLocked ? (
-                        <AppView world={world} t={t} layout={layout} />
+                        <AppView world={world} t={t} layout={layout} platform={variant} />
                     ) : !hasActiveCall && device.isLocked ? (
                         <LockscreenView
                             notifications={device.notifications}
