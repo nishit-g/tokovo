@@ -36,9 +36,13 @@ function processCameraEvent(
     event: TimelineEvent & { kind: "CAMERA" },
     eventIndex: number
 ): void {
-    // Ensure camera state exists
+    // Ensure camera state exists with all required properties
     if (!draft.camera || !draft.camera.activeEffects) {
         draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
     }
 
     switch (event.type) {
@@ -49,12 +53,33 @@ function processCameraEvent(
             break;
 
         case "CUT":
-            // Hard cut - reset all effects and update view
+            // Hard cut - reset all effects
             draft.camera.activeEffects = [];
             draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId;
+                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            }
+
+            // Update base view if specified
             if (event.toView) {
                 draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
             }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: event.mode,
+                primaryDeviceId: event.primaryDeviceId,
+                secondaryDeviceId: event.secondaryDeviceId,
+                pipPosition: event.pipPosition,
+                pipScale: event.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = event.primaryDeviceId;
             break;
 
         case "ZOOM":

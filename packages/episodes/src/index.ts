@@ -5,6 +5,7 @@ import notificationCallDemo from "./examples/notification-call-demo.json";
 import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
 import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
 import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
 
 export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase };
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo };

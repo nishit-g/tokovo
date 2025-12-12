@@ -1,4 +1,5 @@
 export { TokovoRenderer } from "./TokovoRenderer";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
 export { DeviceFrame } from "./DeviceFrame";
 export { NotificationOverlay } from "./NotificationOverlay";
 export { HeadsUpNotification } from "./HeadsUpNotification";

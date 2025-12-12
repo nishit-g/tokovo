@@ -7,10 +7,19 @@ import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
+import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="MultiPovDemo"
+                component={MultiPovDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="CameraShowcase"
                 component={CameraShowcaseVideo}

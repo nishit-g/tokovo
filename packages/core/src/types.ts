@@ -209,17 +209,54 @@ export interface CameraTransform {
     shakeY: number;
 }
 
+// =============================================================================
+// MULTI-DEVICE / POV TYPES
+// =============================================================================
+
+// View layout modes for multi-device rendering
+export type ViewLayoutMode =
+    | "SINGLE"              // One device fills the frame
+    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
+    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
+    | "PIP";                // Picture-in-Picture (main + small overlay)
+
+// PIP position options
+export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+// Layout configuration for multi-device views
+export interface ViewLayout {
+    mode: ViewLayoutMode;
+    primaryDeviceId: string;          // Main device (for PIP: the large one)
+    secondaryDeviceId?: string;       // Secondary device (for SPLIT/PIP)
+    pipPosition?: PIPPosition;        // PIP overlay position
+    pipScale?: number;                // PIP size (0-1), default 0.3
+    transitionProgress?: number;      // 0-1 for animated layout transitions
+}
+
+// Default view layout (single device)
+export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
+    mode: "SINGLE",
+    primaryDeviceId: "main_phone",
+};
+
 // Full camera state (stored in WorldState)
 export interface CameraState {
     // Base view (for backward compatibility)
     baseView: "APP_VIEW" | "TRANSITION";
     appId?: AppId;
 
+    // Multi-device support
+    activeDeviceId: string;           // Currently focused/primary device
+    layout: ViewLayout;               // Current layout mode
+
     // Active effects (from timeline)
     activeEffects: ActiveCameraEffect[];
 
-    // Computed transform at current frame (populated by camera engine)
+    // Computed transform at current frame (for primary device)
     transform: CameraTransform;
+
+    // Per-device transforms (optional override for secondary devices)
+    deviceTransforms?: Record<DeviceId, CameraTransform>;
 }
 
 // Default camera transform
@@ -237,6 +274,8 @@ export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
 // Default camera state
 export const DEFAULT_CAMERA_STATE: CameraState = {
     baseView: "APP_VIEW",
+    activeDeviceId: "main_phone",
+    layout: { ...DEFAULT_VIEW_LAYOUT },
     activeEffects: [],
     transform: { ...DEFAULT_CAMERA_TRANSFORM },
 };
@@ -285,6 +324,8 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
     | { at: number; kind: "CAMERA"; type: "RESET"; duration: number; easing?: EasingType }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
+    // Camera events - MULTI-DEVICE / POV
+    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
     // Audio events
     | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
 

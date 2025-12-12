@@ -1,0 +1,236 @@
+{
+    "meta": {
+        "title": "Two Sides of the Story - Multi-POV Demo",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            },
+            "bob_phone": {
+                "id": "bob_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "alice_bob_chat": {
+                "id": "alice_bob_chat",
+                "type": "dm",
+                "name": "Alice",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Alice",
+                        "text": "Hey, where are you?",
+                        "type": "text",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "app_whatsapp": {
+                "screen": "chat",
+                "conversationId": "alice_bob_chat"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeDeviceId": "alice_phone",
+            "layout": {
+                "mode": "SINGLE",
+                "primaryDeviceId": "alice_phone"
+            },
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m2",
+                "type": "text",
+                "text": "On my way! 🚗",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "CAMERA",
+            "type": "CUT",
+            "toDeviceId": "bob_phone"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "You said that 20 minutes ago 😤",
+                "status": "read"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SPLIT_HORIZONTAL",
+            "primaryDeviceId": "alice_phone",
+            "secondaryDeviceId": "bob_phone"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m4",
+                "type": "text",
+                "text": "Traffic is crazy! 😅",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m5",
+                "type": "text",
+                "text": "Send me your location",
+                "status": "read"
+            }
+        },
+        {
+            "at": 360,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "PIP",
+            "primaryDeviceId": "bob_phone",
+            "secondaryDeviceId": "alice_phone",
+            "pipPosition": "top-right",
+            "pipScale": 0.35
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Bob",
+            "message": {
+                "id": "m6",
+                "type": "text",
+                "text": "📍 Sharing location...",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 510,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.3,
+            "originX": 0.5,
+            "originY": 0.6,
+            "duration": 45,
+            "easing": "ease-out"
+        },
+        {
+            "at": 600,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SPLIT_VERTICAL",
+            "primaryDeviceId": "alice_phone",
+            "secondaryDeviceId": "bob_phone"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "Wait... that's not the way here 🤔",
+                "status": "read"
+            }
+        },
+        {
+            "at": 720,
+            "kind": "CAMERA",
+            "type": "SHAKE",
+            "intensity": 8,
+            "frequency": 15,
+            "decay": 0.5,
+            "duration": 30
+        },
+        {
+            "at": 780,
+            "kind": "CAMERA",
+            "type": "LAYOUT",
+            "mode": "SINGLE",
+            "primaryDeviceId": "alice_phone"
+        },
+        {
+            "at": 810,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "alice_bob_chat",
+            "from": "Alice",
+            "message": {
+                "id": "m8",
+                "type": "text",
+                "text": "WHERE ARE YOU GOING?! 😡",
+                "status": "read"
+            }
+        },
+        {
+            "at": 870,
+            "kind": "CAMERA",
+            "type": "ZOOM",
+            "scale": 1.5,
+            "originX": 0.5,
+            "originY": 0.7,
+            "duration": 30,
+            "easing": "ease-out"
+        }
+    ]
+}
