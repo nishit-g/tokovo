@@ -6,3 +6,5 @@ export * from "./sounds";
 export * from "./constants";
 export * from "./typeGuards";
 export * from "./eventUtils";
+export * from "./plugin";
+export * from "./transitions";
