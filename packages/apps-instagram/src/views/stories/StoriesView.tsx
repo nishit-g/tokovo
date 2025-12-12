@@ -18,13 +18,21 @@ const MoreIcon = () => (
 );
 
 const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
-    <div style={{ display: "flex", gap: 8, padding: "20px 10px" }}>
+    <div style={{ display: "flex", gap: 6, padding: "30px 15px 15px 15px" }}>
         {Array.from({ length: count }).map((_, i) => (
-            <div key={i} style={{ flex: 1, height: 4, backgroundColor: "rgba(255,255,255,0.3)", borderRadius: 2, overflow: "hidden" }}>
+            <div key={i} style={{
+                flex: 1,
+                height: 6,
+                backgroundColor: "rgba(255,255,255,0.35)",
+                borderRadius: 3,
+                overflow: "hidden"
+            }}>
                 <div style={{
                     height: "100%",
                     width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
-                    backgroundColor: "white"
+                    backgroundColor: "white",
+                    borderRadius: 3,
+                    boxShadow: i === activeIndex ? "0 0 4px rgba(255,255,255,0.5)" : "none"
                 }} />
             </div>
         ))}

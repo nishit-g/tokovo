@@ -2,34 +2,72 @@ import React from "react";
 import { InstagramState } from "../../types";
 
 const CameraIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-        <circle cx="12" cy="13" r="4" />
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" fill="none" />
+        <path d="M11 9L15 12L11 15V9Z" fill="white" />
     </svg>
 );
 
-const HeartIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+// Filled heart with like count
+const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
+    <svg width="78" height="78" viewBox="0 0 24 24">
+        <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            fill={filled ? "#FF3040" : "none"}
+            stroke={filled ? "#FF3040" : "white"}
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
     </svg>
 );
 
+// Comment bubble icon
 const CommentIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none">
+        <path
+            d="M20.656 17.008a9.993 9.993 0 1 0-3.59 3.615L22 22l-1.344-4.992z"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
     </svg>
 );
 
+// Share/Send icon
 const ShareIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13" />
-        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none">
+        <path
+            d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
     </svg>
 );
 
+// Rotating music disc placeholder
 const MusicIcon = () => (
-    <div style={{ width: 60, height: 60, borderRadius: 10, border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 30, height: 30, backgroundColor: "white", borderRadius: "50%" }} />
+    <div style={{
+        width: 90,
+        height: 90,
+        borderRadius: 15,
+        border: "2px solid rgba(255,255,255,0.8)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(135deg, #405DE6 0%, #833AB4 50%, #C13584 100%)",
+        overflow: "hidden"
+    }}>
+        <div style={{
+            width: 45,
+            height: 45,
+            backgroundColor: "white",
+            borderRadius: "50%",
+            border: "3px solid #333"
+        }} />
     </div>
 );
 

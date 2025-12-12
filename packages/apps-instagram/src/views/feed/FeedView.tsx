@@ -28,16 +28,53 @@ const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
     </svg>
 );
 
+// Instagram wordmark with dropdown chevron
 const InstagramLogo = () => (
-    <div style={{ fontFamily: "'Billabong', 'Grand Hotel', cursive", fontSize: 72, color: "white" }}>
-        Instagram
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+    }}>
+        <span style={{
+            fontFamily: "'Billabong', 'Grand Hotel', cursive",
+            fontSize: 84,
+            color: "white",
+            letterSpacing: 1
+        }}>
+            Instagram
+        </span>
+        {/* Dropdown chevron */}
+        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
     </div>
 );
 
+// Authentic Instagram DM/Messenger icon
 const MessengerIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-        <path d="M15 10l-4 4-2-2-4 4" />
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        {/* Paper airplane style DM icon */}
+        <path
+            d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
+    </svg>
+);
+
+// Notification heart icon for header
+const NotificationHeartIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            stroke="white"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        />
     </svg>
 );
 
@@ -145,8 +182,8 @@ export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }>
                 backgroundColor: "black"
             }}>
                 <InstagramLogo />
-                <div style={{ display: "flex", gap: 40 }}>
-                    <HeartIcon />
+                <div style={{ display: "flex", gap: 54 }}>
+                    <NotificationHeartIcon />
                     <MessengerIcon />
                 </div>
             </div>
