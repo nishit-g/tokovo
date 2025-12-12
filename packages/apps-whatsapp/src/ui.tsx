@@ -230,7 +230,7 @@ interface MessageListProps {
 const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping }) => {
     const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
     const scrollY = chatLayout?.scrollY || 0;
-    const contentHeight = chatLayout?.contentHeight || "100%";
+    const contentHeight = chatLayout?.contentHeight || 1500;
 
     return (
         <div style={{
@@ -240,6 +240,7 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
             backgroundColor: "#ECE5DD",
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c0b8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}>
+            {/* Scrollable content container */}
             <div style={{
                 position: "absolute",
                 top: 0,
@@ -247,85 +248,147 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                 right: 0,
                 height: contentHeight,
                 transform: `translateY(-${scrollY}px)`,
-                paddingTop: 30,
-                paddingBottom: 30
+                transition: "transform 0.15s ease-out"
             }}>
                 {messages.map((msg: any) => {
-                    // Render system messages
-                    if (msg.type === "system") {
-                        return <SystemMessage key={msg.id} text={msg.text} />;
-                    }
-
-                    // Render voice messages
-                    if (msg.type === "voice") {
-                        return (
-                            <VoiceMessageBubble
-                                key={msg.id}
-                                isMe={msg.from === "me"}
-                                duration={msg.duration || 15}
-                                isPlaying={msg.isPlaying}
-                                progress={msg.playProgress || 0}
-                                read={msg.status === "read"}
-                            />
-                        );
-                    }
-
-                    // Render regular text messages
                     const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) {
-                        // Fallback if no layout (for messages without layout engine)
+
+                    // Get position from layout or calculate fallback
+                    const y = msgLayout?.y ?? 0;
+                    const opacity = msgLayout?.opacity ?? 1;
+                    const translateY = msgLayout?.translateY ?? 0;
+
+                    // Render system messages (centered pills)
+                    if (msg.type === "system") {
                         return (
                             <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: 0,
+                                right: 0,
+                                opacity,
+                                transform: `translateY(${translateY}px)`,
                                 display: "flex",
-                                justifyContent: msg.from === "me" ? "flex-end" : "flex-start",
-                                padding: "6px 36px"
+                                justifyContent: "center",
+                                padding: "0 60px"
                             }}>
                                 <div style={{
-                                    backgroundColor: msg.from === "me" ? "#E7FFDB" : "#FFFFFF",
-                                    padding: "24px 36px",
-                                    borderRadius: 24,
-                                    borderTopLeftRadius: msg.from === "me" ? 24 : 6,
-                                    borderTopRightRadius: msg.from === "me" ? 6 : 24,
-                                    boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-                                    maxWidth: "78%"
+                                    backgroundColor: "rgba(225, 218, 208, 0.9)",
+                                    padding: "18px 36px",
+                                    borderRadius: 24
                                 }}>
-                                    {/* Sender name for group chats */}
-                                    {msg.from !== "me" && msg.from !== "system" && (
-                                        <div style={{
-                                            fontSize: 33,
-                                            fontWeight: 600,
-                                            color: "#25D366",
-                                            marginBottom: 6
-                                        }}>
-                                            {msg.from}
-                                        </div>
-                                    )}
                                     <span style={{
-                                        fontSize: 48,
-                                        lineHeight: "66px",
-                                        color: "#111B21",
-                                        wordWrap: "break-word"
+                                        fontSize: 36,
+                                        color: "#54656F",
+                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
                                     }}>
                                         {msg.text}
                                     </span>
-                                    <div style={{
-                                        display: "flex",
-                                        justifyContent: "flex-end",
-                                        alignItems: "center",
-                                        gap: 9,
-                                        marginTop: 3
-                                    }}>
-                                        <span style={{ fontSize: 33, color: "#667781" }}>10:42</span>
-                                        {msg.from === "me" && <DoubleCheckIcon read={msg.status === "read"} />}
-                                    </div>
                                 </div>
                             </div>
                         );
                     }
-                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+
+                    // Render voice messages
+                    if (msg.type === "voice") {
+                        const isMe = msg.from === "me";
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : 36,
+                                right: isMe ? 36 : "auto",
+                                maxWidth: "78%",
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <VoiceMessageBubble
+                                    isMe={isMe}
+                                    duration={msg.duration || 15}
+                                    isPlaying={msg.isPlaying}
+                                    progress={msg.playProgress || 0}
+                                    read={msg.status === "read"}
+                                />
+                            </div>
+                        );
+                    }
+
+                    // Render regular text messages
+                    const isMe = msg.from === "me";
+                    return (
+                        <div key={msg.id} style={{
+                            position: "absolute",
+                            top: y,
+                            left: isMe ? "auto" : 36,
+                            right: isMe ? 36 : "auto",
+                            maxWidth: "78%",
+                            opacity,
+                            transform: `translateY(${translateY}px)`
+                        }}>
+                            <div style={{
+                                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
+                                padding: "24px 36px",
+                                borderRadius: 24,
+                                borderTopLeftRadius: isMe ? 24 : 6,
+                                borderTopRightRadius: isMe ? 6 : 24,
+                                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 6
+                            }}>
+                                {/* Sender name for group chats (not "me") */}
+                                {!isMe && msg.from !== "system" && (
+                                    <div style={{
+                                        fontSize: 33,
+                                        fontWeight: 600,
+                                        color: "#25D366",
+                                        marginBottom: 3
+                                    }}>
+                                        {msg.from}
+                                    </div>
+                                )}
+
+                                {/* Message text */}
+                                <span style={{
+                                    fontSize: 48,
+                                    lineHeight: "66px",
+                                    color: "#111B21",
+                                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                    wordWrap: "break-word"
+                                }}>
+                                    {msg.text}
+                                </span>
+
+                                {/* Timestamp + Read receipts */}
+                                <div style={{
+                                    display: "flex",
+                                    justifyContent: "flex-end",
+                                    alignItems: "center",
+                                    gap: 9,
+                                    marginTop: 3
+                                }}>
+                                    <span style={{
+                                        fontSize: 33,
+                                        color: "#667781",
+                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                                    }}>
+                                        10:42
+                                    </span>
+                                    {isMe && <DoubleCheckIcon read={msg.status === "read"} />}
+                                </div>
+                            </div>
+                        </div>
+                    );
                 })}
-                {isTyping && (
-                    <div style={{ marginLeft: 36, marginTop: 15 }}>
+
+                {/* Typing indicator */}
+                {isTyping && chatLayout?.typingLayout && (
+                    <div style={{
+                        position: "absolute",
+                        top: chatLayout.typingLayout.y,
+                        left: 36,
+                        opacity: chatLayout.typingLayout.opacity
+                    }}>
                         <TypingBubble />
                     </div>
                 )}

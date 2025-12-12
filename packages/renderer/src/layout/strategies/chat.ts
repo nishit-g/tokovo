@@ -17,25 +17,41 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
     const conversation = world.conversations[activeConversationId];
     // Filter messages visible at time t
-    const messages = conversation.messages.filter(m => m.at <= t);
+    // Messages without 'at' field (initial messages) are always visible
+    // Messages with 'at' field are visible when at <= t
+    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
 
     const messageLayouts: Record<string, ChatMessageLayout> = {};
     let currentY = chatConfig.topPadding;
 
     // 1. Layout messages
     for (const msg of messages) {
-        // Calculate height
-        // Simple heuristic: chars per line
-        const textLength = msg.text?.length || 0;
-        const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-        const height = lines * chatConfig.lineHeight + 20; // +20 for internal padding
+        // Calculate height based on message type
+        let height: number;
+
+        if (msg.type === "system") {
+            // System messages are shorter (single line centered pill)
+            height = 90;
+        } else if (msg.type === "voice") {
+            // Voice messages have fixed height
+            height = 180;
+        } else {
+            // Text messages: calculate based on text length
+            const textLength = msg.text?.length || 0;
+            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+            // Add extra height for sender name in group chats
+            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
+            const senderNameHeight = hasSenderName ? 45 : 0;
+            height = lines * chatConfig.lineHeight + 30 + senderNameHeight;
+        }
 
         // Animation: Slide in / Fade in
-        const timeSinceAppear = t - msg.at;
+        const messageAt = msg.at ?? 0;
+        const timeSinceAppear = t - messageAt;
         let opacity = 1;
         let translateY = 0;
 
-        if (timeSinceAppear < chatConfig.messageAppearDuration) {
+        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
             const progress = timeSinceAppear / chatConfig.messageAppearDuration;
             // Simple ease-out
             const ease = 1 - Math.pow(1 - progress, 3);
