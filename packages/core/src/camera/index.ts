@@ -162,89 +162,16 @@ export class CameraController {
         // Start with default transform
         const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
 
-        // Track the "base" scale that completed zoom effects have settled to
-        let baseScale = 1.0;
-        let baseTranslateX = 0;
-        let baseTranslateY = 0;
-
         // Sort effects by start time for consistent processing
         const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
 
+        // Apply each effect using the helper methods
         for (const activeEffect of sortedEffects) {
-            const { effect, startFrame, endFrame } = activeEffect;
-
             // Skip effects that haven't started yet
-            if (t < startFrame) continue;
+            if (t < activeEffect.startFrame) continue;
 
-            const duration = endFrame - startFrame;
-
-            // Calculate progress (0 to 1 during effect, 1 after completion)
-            let progress: number;
-            if (t >= endFrame) {
-                // Effect completed - use final state
-                progress = 1;
-            } else {
-                // Effect in progress
-                progress = duration > 0 ? (t - startFrame) / duration : 1;
-            }
-
-            // Apply effect based on type
-            switch (effect.type) {
-                case "ZOOM": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    // Zoom goes from 1.0 to target, scaled by eased progress
-                    const zoomFactor = 1 + (effect.scale - 1) * easedProgress;
-                    baseScale *= zoomFactor / (progress >= 1 ? 1 : 1); // For completed effects
-                    transform.scale = baseScale * (progress >= 1 ? 1 : zoomFactor);
-
-                    // Actually, simpler: just set scale directly
-                    transform.scale = 1 + (effect.scale - 1) * easedProgress;
-
-                    // Set origin
-                    if (effect.originX !== undefined) transform.originX = effect.originX;
-                    if (effect.originY !== undefined) transform.originY = effect.originY;
-                    break;
-                }
-                case "PAN": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    transform.translateX += effect.translateX * easedProgress;
-                    transform.translateY += effect.translateY * easedProgress;
-                    break;
-                }
-                case "SHAKE": {
-                    const frameInEffect = t - startFrame;
-                    const seed = effect.seed ?? startFrame;
-                    const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
-                    const decay = effect.decay ?? 0.3;
-                    const decayMultiplier = 1 - (progress * decay);
-
-                    // Shake is additive and separate from main transform
-                    transform.shakeX += offset.x * effect.intensity * decayMultiplier;
-                    transform.shakeY += offset.y * effect.intensity * decayMultiplier;
-                    break;
-                }
-                case "FOCUS": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    const targetScale = effect.scale ?? 1.5;
-                    transform.scale = 1 + (targetScale - 1) * easedProgress;
-
-                    if (effect.target.type === "point") {
-                        transform.originX = effect.target.x;
-                        transform.originY = effect.target.y;
-                    }
-                    break;
-                }
-                case "RESET": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    // Blend current values toward defaults
-                    transform.translateX *= (1 - easedProgress);
-                    transform.translateY *= (1 - easedProgress);
-                    transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
-                    transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
-                    transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
-                    break;
-                }
-            }
+            // Apply effect using the unified method
+            this.applyEffect(transform, activeEffect, t);
         }
 
         return transform;

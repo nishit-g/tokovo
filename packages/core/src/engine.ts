@@ -10,24 +10,76 @@ import {
     DEFAULT_AUDIO_STATE,
 } from "./types";
 import { CameraController, createActiveEffect } from "./camera";
+import { TIMING } from "./constants";
 
 export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
 
-export const ReducerRegistry = {
-    deviceReducer: null as DeviceReducer | null,
-    appReducers: {} as Record<string, AppReducer>,
+/**
+ * ReducerRegistry - Manages app and device reducers
+ * 
+ * This registry allows apps to self-register their event handlers.
+ * The engine dispatches events to the appropriate registered reducers.
+ */
+class ReducerRegistryClass {
+    private _deviceReducer: DeviceReducer | null = null;
+    private _appReducers = new Map<string, AppReducer>();
 
-    registerDeviceReducer(reducer: DeviceReducer) {
-        this.deviceReducer = reducer;
-    },
-    registerAppReducer(appId: string, reducer: AppReducer) {
-        this.appReducers[appId] = reducer;
+    /**
+     * Register a device reducer (handles DEVICE events)
+     */
+    registerDeviceReducer(reducer: DeviceReducer): void {
+        this._deviceReducer = reducer;
     }
-};
 
-// Camera controller instance
-const cameraController = new CameraController(30);
+    /**
+     * Register an app reducer (handles APP events for a specific appId)
+     */
+    registerAppReducer(appId: string, reducer: AppReducer): void {
+        if (this._appReducers.has(appId)) {
+            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
+        }
+        this._appReducers.set(appId, reducer);
+    }
+
+    /**
+     * Get the device reducer
+     */
+    get deviceReducer(): DeviceReducer | null {
+        return this._deviceReducer;
+    }
+
+    /**
+     * Get an app reducer by appId
+     */
+    getAppReducer(appId: string): AppReducer | undefined {
+        return this._appReducers.get(appId);
+    }
+
+    /**
+     * Check if an app reducer is registered
+     */
+    hasAppReducer(appId: string): boolean {
+        return this._appReducers.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._appReducers.keys());
+    }
+
+    // Legacy compatibility - access appReducers as object
+    get appReducers(): Record<string, AppReducer> {
+        return Object.fromEntries(this._appReducers);
+    }
+}
+
+export const ReducerRegistry = new ReducerRegistryClass();
+
+// Camera controller instance - uses FPS from constants
+const cameraController = new CameraController(TIMING.FPS_DEFAULT);
 
 /**
  * Process camera event and update camera state
@@ -176,33 +228,40 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
     // Filter events up to current time
     const relevant = events.filter(e => e.at <= t);
 
-    // Apply events to build state
-    const stateAfterEvents = relevant.reduce((state, event, index) => {
-        return produce(state, draft => {
-            if (event.kind === "DEVICE") {
+    // Event handlers by kind (Strategy Pattern)
+    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
+        switch (event.kind) {
+            case "DEVICE":
                 if (ReducerRegistry.deviceReducer) {
                     draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
                 }
-            }
-            if (event.kind === "APP") {
-                const reducer = ReducerRegistry.appReducers[event.appId];
+                break;
+            case "APP":
+                const reducer = ReducerRegistry.getAppReducer(event.appId);
                 reducer?.(draft, event);
-            }
-            if (event.kind === "CAMERA") {
+                break;
+            case "CAMERA":
                 processCameraEvent(draft, event, index);
-            }
-            if (event.kind === "AUDIO") {
+                break;
+            case "AUDIO":
                 processAudioEvent(draft, event, index);
-            }
+                break;
+        }
+    };
+
+    // Apply events to build state
+    const stateAfterEvents = relevant.reduce((state, event, index) => {
+        return produce(state, draft => {
+            handleEvent(draft, event, index);
         });
     }, initialWithCamera);
 
     // Compute camera transform at current time t
     // This filters active effects and composes them, per-device
     return produce(stateAfterEvents, draft => {
-        // Clean up expired effects (optimization)
+        // Clean up expired effects (optimization) - use constant
         draft.camera.activeEffects = draft.camera.activeEffects.filter(
-            ae => t <= ae.endFrame + 30 // Keep for 1 second after end for smooth transitions
+            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
         );
 
         // Ensure deviceTransforms exists

@@ -1,5 +1,5 @@
 import React from "react";
-import { WorldState, Notification, CameraTransform, DEFAULT_CAMERA_TRANSFORM } from "@tokovo/core";
+import { WorldState, Notification, CameraTransform, DEFAULT_CAMERA_TRANSFORM, LAYOUT } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
 import { computeLayout } from "./layout";
@@ -88,12 +88,9 @@ export const TokovoRenderer: React.FC<{
     const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
 
     // For chat views, reduce viewport height to account for header and input area
-    // Header: ~414px (270px header + 144px status bar area)
-    // Input: ~272px (input field + home indicator)
-    const chatHeaderHeight = 414;
-    const chatInputHeight = 272;
+    // Use constants instead of magic numbers
     const effectiveViewportHeight = viewKind === "CHAT"
-        ? profile.dimensions.height - chatHeaderHeight - chatInputHeight
+        ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
         : profile.dimensions.height;
 
     const layoutContext: LayoutContext = {
