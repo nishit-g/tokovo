@@ -1,18 +1,18 @@
 {
     "meta": {
-        "title": "Home Screen & Group Chat Demo",
+        "title": "Home Screen & Group Chat Complete Demo",
         "fps": 30,
-        "durationInFrames": 600
+        "durationInFrames": 900
     },
     "initialWorld": {
         "devices": {
             "user_phone": {
                 "id": "user_phone",
                 "profileId": "iphone16",
-                "isLocked": false,
+                "isLocked": true,
                 "notifications": [],
                 "homeScreen": {
-                    "wallpaper": "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+                    "wallpaper": "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f64f59 100%)",
                     "pages": [
                         {
                             "apps": [
@@ -65,7 +65,8 @@
                                 {
                                     "appId": "app_reminders",
                                     "label": "Reminders",
-                                    "icon": "✅"
+                                    "icon": "✅",
+                                    "badge": 3
                                 },
                                 {
                                     "appId": "app_news",
@@ -104,7 +105,8 @@
                         {
                             "appId": "app_phone",
                             "label": "Phone",
-                            "icon": "📞"
+                            "icon": "📞",
+                            "badge": 2
                         },
                         {
                             "appId": "app_messages",
@@ -116,7 +118,7 @@
                             "appId": "app_whatsapp",
                             "label": "WhatsApp",
                             "icon": "💬",
-                            "badge": 3
+                            "badge": 8
                         },
                         {
                             "appId": "app_instagram",
@@ -142,38 +144,69 @@
                         "name": "Dad"
                     },
                     {
-                        "id": "sister",
+                        "id": "sarah",
                         "name": "Sarah"
-                    },
-                    {
-                        "id": "me",
-                        "name": "You"
                     }
                 ],
                 "admins": [
-                    "mom",
-                    "me"
+                    "mom"
                 ],
                 "messages": [
                     {
                         "id": "msg1",
                         "from": "mom",
-                        "text": "Don't forget about dinner tomorrow!",
+                        "text": "Good morning everyone! ☀️",
+                        "type": "text",
                         "status": "read"
                     },
                     {
                         "id": "msg2",
-                        "from": "me",
-                        "text": "I'll be there! 🍕",
+                        "from": "dad",
+                        "text": "Morning! How's everyone doing?",
+                        "type": "text",
                         "status": "read"
                     },
                     {
-                        "id": "sys1",
-                        "from": "system",
-                        "type": "system",
-                        "systemType": "member_added",
-                        "targetMember": "Sarah",
-                        "actorName": "Mom"
+                        "id": "msg3",
+                        "from": "me",
+                        "text": "Hi mom! Hi dad! 👋",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg4",
+                        "from": "sarah",
+                        "text": "Just woke up lol",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg5",
+                        "from": "mom",
+                        "text": "Don't forget we have dinner at 7pm tomorrow!",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg6",
+                        "from": "me",
+                        "text": "I'll be there! Should I bring anything? 🍕",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg7",
+                        "from": "dad",
+                        "text": "Just bring yourself 😊",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg8",
+                        "from": "sarah",
+                        "text": "Can I bring a friend?",
+                        "type": "text",
+                        "status": "delivered"
                     }
                 ],
                 "typing": {}
@@ -189,63 +222,157 @@
             "at": 0,
             "kind": "DEVICE",
             "deviceId": "user_phone",
-            "type": "GO_HOME"
+            "type": "SHOW_NOTIFICATION",
+            "appId": "app_whatsapp",
+            "title": "Family Group 👨‍👩‍👧",
+            "body": "Mom: Don't forget dinner tomorrow!",
+            "mode": "lockscreen"
+        },
+        {
+            "at": 60,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "UNLOCK"
         },
         {
             "at": 90,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "GO_HOME"
+        },
+        {
+            "at": 180,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
         },
         {
-            "at": 150,
+            "at": 240,
             "kind": "APP",
             "appId": "app_whatsapp",
             "type": "TYPING_START",
             "conversationId": "group_family",
-            "from": "sister"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "group_family",
-            "from": "sister"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "sister",
-            "text": "Can I bring a friend?"
+            "from": "mom"
         },
         {
             "at": 300,
             "kind": "APP",
             "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "group_family",
+            "from": "mom"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "mom",
+            "text": "Of course Sarah! Who do you want to bring?"
+        },
+        {
+            "at": 360,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "group_family",
+            "from": "sarah"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "group_family",
+            "from": "sarah"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "sarah",
+            "text": "My friend Emma! She's really nice 😊"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
             "type": "GROUP_MEMBER_ADDED",
             "conversationId": "group_family",
-            "memberId": "friend",
+            "memberId": "emma",
             "memberName": "Emma",
             "addedBy": "Sarah"
         },
         {
-            "at": 400,
+            "at": 540,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "group_family",
+            "from": "emma"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "group_family",
+            "from": "emma"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "emma",
+            "text": "Hi everyone! Thanks for having me! 🙏"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "mom",
+            "text": "Welcome Emma! We're happy to have you 💕"
+        },
+        {
+            "at": 720,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "me",
+            "text": "Looking forward to it! See you all tomorrow!"
+        },
+        {
+            "at": 780,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "GO_HOME"
         },
         {
-            "at": 420,
+            "at": 780,
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "SET_BADGE",
             "appId": "app_whatsapp",
-            "count": 5
+            "count": 0
+        },
+        {
+            "at": 840,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "SHOW_NOTIFICATION",
+            "appId": "app_whatsapp",
+            "title": "Emma",
+            "body": "Thanks for adding me! 🙏",
+            "mode": "headsup"
         }
     ]
 }

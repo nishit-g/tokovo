@@ -237,7 +237,6 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
             flex: 1,
             position: "relative",
             overflow: "hidden",
-            // Authentic WhatsApp iOS background (beige/cream with subtle pattern)
             backgroundColor: "#ECE5DD",
             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23c8c0b8' fill-opacity='0.15'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }}>
@@ -252,8 +251,77 @@ const MessageList: React.FC<MessageListProps> = ({ messages, layout, isTyping })
                 paddingBottom: 30
             }}>
                 {messages.map((msg: any) => {
+                    // Render system messages
+                    if (msg.type === "system") {
+                        return <SystemMessage key={msg.id} text={msg.text} />;
+                    }
+
+                    // Render voice messages
+                    if (msg.type === "voice") {
+                        return (
+                            <VoiceMessageBubble
+                                key={msg.id}
+                                isMe={msg.from === "me"}
+                                duration={msg.duration || 15}
+                                isPlaying={msg.isPlaying}
+                                progress={msg.playProgress || 0}
+                                read={msg.status === "read"}
+                            />
+                        );
+                    }
+
+                    // Render regular text messages
                     const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) return null;
+                    if (!msgLayout) {
+                        // Fallback if no layout (for messages without layout engine)
+                        return (
+                            <div key={msg.id} style={{
+                                display: "flex",
+                                justifyContent: msg.from === "me" ? "flex-end" : "flex-start",
+                                padding: "6px 36px"
+                            }}>
+                                <div style={{
+                                    backgroundColor: msg.from === "me" ? "#E7FFDB" : "#FFFFFF",
+                                    padding: "24px 36px",
+                                    borderRadius: 24,
+                                    borderTopLeftRadius: msg.from === "me" ? 24 : 6,
+                                    borderTopRightRadius: msg.from === "me" ? 6 : 24,
+                                    boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                                    maxWidth: "78%"
+                                }}>
+                                    {/* Sender name for group chats */}
+                                    {msg.from !== "me" && msg.from !== "system" && (
+                                        <div style={{
+                                            fontSize: 33,
+                                            fontWeight: 600,
+                                            color: "#25D366",
+                                            marginBottom: 6
+                                        }}>
+                                            {msg.from}
+                                        </div>
+                                    )}
+                                    <span style={{
+                                        fontSize: 48,
+                                        lineHeight: "66px",
+                                        color: "#111B21",
+                                        wordWrap: "break-word"
+                                    }}>
+                                        {msg.text}
+                                    </span>
+                                    <div style={{
+                                        display: "flex",
+                                        justifyContent: "flex-end",
+                                        alignItems: "center",
+                                        gap: 9,
+                                        marginTop: 3
+                                    }}>
+                                        <span style={{ fontSize: 33, color: "#667781" }}>10:42</span>
+                                        {msg.from === "me" && <DoubleCheckIcon read={msg.status === "read"} />}
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    }
                     return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
                 })}
                 {isTyping && (
