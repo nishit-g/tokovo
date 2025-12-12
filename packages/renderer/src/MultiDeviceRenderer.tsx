@@ -5,10 +5,22 @@ import {
     CameraTransform,
     DEFAULT_CAMERA_TRANSFORM,
     DeviceId,
+    VideoConfig,
+    DEFAULT_VIDEO_CONFIG,
 } from "@tokovo/core";
 import { TokovoRenderer } from "./TokovoRenderer";
 import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";
+
+// Helper to get video config with defaults
+const getVideoConfig = (world: WorldState): VideoConfig => ({
+    ...DEFAULT_VIDEO_CONFIG,
+    ...world.config,
+    layout: {
+        ...DEFAULT_VIDEO_CONFIG.layout,
+        ...world.config?.layout,
+    },
+});
 
 /**
  * MultiDeviceRenderer
@@ -166,7 +178,7 @@ const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
-                background: "#0a0a1a",
+                background: getVideoConfig(world).backgroundColor,
                 overflow: "hidden",
             }}
         >
@@ -211,7 +223,7 @@ const SplitHorizontalLayout: React.FC<
             />
 
             {/* Divider */}
-            <div style={{ width: 2, background: "#333" }} />
+            <div style={{ width: getVideoConfig(world).layout?.splitLineWidth || 2, background: getVideoConfig(world).layout?.splitLineColor || "#333" }} />
 
             {/* Right - Secondary Device */}
             {secondaryDeviceId && (
@@ -250,7 +262,7 @@ const SplitVerticalLayout: React.FC<
                 height,
                 display: "flex",
                 flexDirection: "column",
-                background: "#0a0a1a",
+                background: getVideoConfig(world).backgroundColor,
                 overflow: "hidden",
             }}
         >
@@ -265,7 +277,7 @@ const SplitVerticalLayout: React.FC<
             />
 
             {/* Divider */}
-            <div style={{ height: 2, background: "#333" }} />
+            <div style={{ height: getVideoConfig(world).layout?.splitLineWidth || 2, background: getVideoConfig(world).layout?.splitLineColor || "#333" }} />
 
             {/* Bottom - Secondary Device */}
             {secondaryDeviceId && (
@@ -341,7 +353,7 @@ const PIPLayout: React.FC<
                 width,
                 height,
                 position: "relative",
-                background: "#0a0a1a",
+                background: getVideoConfig(world).backgroundColor,
                 overflow: "hidden",
             }}
         >

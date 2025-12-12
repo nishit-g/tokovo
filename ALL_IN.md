@@ -835,6 +835,75 @@ export const AppRegistry = {
 
 ---
 
+# Configuration System
+
+Everything is configurable via `world.config` and `device.theme`.
+
+## VideoConfig (Global)
+
+Set in `initialWorld.config`:
+
+```json
+{
+    "initialWorld": {
+        "config": {
+            "backgroundColor": "#1a1a2e",
+            "layout": {
+                "splitLineColor": "#444444",
+                "splitLineWidth": 3,
+                "pipBorderColor": "#ffffff",
+                "pipShadow": "0 10px 40px rgba(0,0,0,0.7)"
+            },
+            "watermark": {
+                "text": "@myhandle",
+                "position": "bottom-right",
+                "opacity": 0.5
+            }
+        }
+    }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `backgroundColor` | `#0a0a1a` | Video canvas background |
+| `layout.splitLineColor` | `#333333` | Divider color in split views |
+| `layout.splitLineWidth` | `2` | Divider thickness (px) |
+| `layout.pipBorderColor` | `#333333` | PIP overlay border |
+| `layout.pipShadow` | Drop shadow | PIP box shadow |
+
+## DeviceTheme (Per-Device)
+
+Set in each device:
+
+```json
+{
+    "devices": {
+        "alice_phone": {
+            "id": "alice_phone",
+            "profileId": "iphone16",
+            "theme": {
+                "platform": "ios",
+                "frameColor": "#1a1a1a",
+                "wallpaper": "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                "statusBarStyle": "light",
+                "accentColor": "#ff6b35"
+            }
+        }
+    }
+}
+```
+
+| Property | Default | Description |
+|----------|---------|-------------|
+| `platform` | `ios` | UI style (ios/android) |
+| `frameColor` | `black` | Device bezel color |
+| `wallpaper` | - | Lock/home background (URL/CSS) |
+| `statusBarStyle` | `light` | Status bar text color |
+| `accentColor` | - | App tint color override |
+
+---
+
 # File Locations
 
 | What | Where |

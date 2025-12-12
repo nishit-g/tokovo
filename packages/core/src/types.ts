@@ -35,6 +35,17 @@ export interface DeviceState {
     sound?: {
         activeSoundId?: string;
     };
+    // Theming & Configuration
+    theme?: DeviceTheme;
+}
+
+// Device-level theme configuration
+export interface DeviceTheme {
+    platform?: "ios" | "android";          // UI style (default: ios)
+    frameColor?: string;                    // Device bezel color (default: black)
+    wallpaper?: string;                     // Lock/home screen wallpaper (URL or CSS gradient)
+    statusBarStyle?: "light" | "dark";     // Status bar text color
+    accentColor?: string;                   // App tint color override
 }
 
 // --- Home Screen Types ---
@@ -318,12 +329,58 @@ export const DEFAULT_AUDIO_STATE: AudioState = {
     activeSounds: {},
 };
 
+// =============================================================================
+// VIDEO CONFIGURATION
+// =============================================================================
+
+// Global video configuration (applies to entire composition)
+export interface VideoConfig {
+    // Canvas
+    backgroundColor?: string;               // Video background (default: #0a0a1a)
+    width?: number;                         // Composition width (default: 1080)
+    height?: number;                        // Composition height (default: 1920)
+    fps?: number;                           // Frames per second (default: 30)
+
+    // Multi-device layout theming
+    layout?: {
+        splitLineColor?: string;            // Divider color in split views
+        splitLineWidth?: number;            // Divider thickness
+        pipBorderColor?: string;            // PIP overlay border
+        pipBorderWidth?: number;            // PIP border thickness
+        pipShadow?: string;                 // PIP drop shadow
+    };
+
+    // Watermark (optional)
+    watermark?: {
+        text?: string;
+        image?: string;
+        position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+        opacity?: number;
+    };
+}
+
+// Default video config
+export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
+    backgroundColor: "#0a0a1a",
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    layout: {
+        splitLineColor: "#333333",
+        splitLineWidth: 2,
+        pipBorderColor: "#333333",
+        pipBorderWidth: 2,
+        pipShadow: "0 10px 40px rgba(0,0,0,0.5)",
+    },
+};
+
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
     appState: Record<AppId, any>;
     camera: CameraState;
     audio: AudioState;
+    config?: VideoConfig;                   // Global video configuration
 }
 
 // Event Union
