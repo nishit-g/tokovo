@@ -288,11 +288,42 @@ export interface CameraViewConfig {
     appId?: AppId;
 }
 
+// =============================================================================
+// AUDIO SYSTEM TYPES
+// =============================================================================
+
+// Active sound instance
+export interface ActiveSound {
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;  // If set, only plays for this device's context
+    duration?: number;  // Optional duration in frames
+}
+
+// Audio state (stored in WorldState)
+export interface AudioState {
+    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
+    backgroundMusic?: {
+        soundId: string;
+        volume: number;
+        loop: boolean;
+        startFrame: number;
+    };
+}
+
+// Default audio state
+export const DEFAULT_AUDIO_STATE: AudioState = {
+    activeSounds: {},
+};
+
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
     appState: Record<AppId, any>;
     camera: CameraState;
+    audio: AudioState;
 }
 
 // Event Union
@@ -328,8 +359,11 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
-    // Audio events
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; volume?: number };
+    // Audio events - SOUND SYSTEM
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
+    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
+    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
+    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean };
 
 // --- Layout System Types ---
 

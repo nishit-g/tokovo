@@ -7,6 +7,7 @@ import {
     ActiveCameraEffect,
     DEFAULT_CAMERA_STATE,
     DEFAULT_CAMERA_TRANSFORM,
+    DEFAULT_AUDIO_STATE,
 } from "./types";
 import { CameraController, createActiveEffect } from "./camera";
 
@@ -98,12 +99,68 @@ function processCameraEvent(
 }
 
 /**
+ * Process audio event and update audio state
+ */
+function processAudioEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "AUDIO" },
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = { activeSounds: {} };
+    }
+
+    switch (event.type) {
+        case "PLAY_SOUND": {
+            // Generate instance ID if not provided
+            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+
+            draft.audio.activeSounds[instanceId] = {
+                soundId: event.soundId,
+                startFrame: event.at,
+                volume: event.volume ?? 1,
+                loop: event.loop ?? false,
+                deviceId: event.deviceId,
+                duration: event.duration,
+            };
+            break;
+        }
+
+        case "STOP_SOUND": {
+            delete draft.audio.activeSounds[event.instanceId];
+            break;
+        }
+
+        case "FADE_VOLUME": {
+            const sound = draft.audio.activeSounds[event.instanceId];
+            if (sound) {
+                // Store target volume - renderer will interpolate
+                (sound as any).fadeTarget = event.toVolume;
+                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeStartFrame = event.at;
+            }
+            break;
+        }
+
+        case "BACKGROUND_MUSIC": {
+            draft.audio.backgroundMusic = {
+                soundId: event.soundId,
+                volume: event.volume ?? 0.5,
+                loop: event.loop ?? true,
+                startFrame: event.at,
+            };
+            break;
+        }
+    }
+}
+/**
  * Replay function - computes WorldState at time t by applying all events
  * 
  * This is called every frame by Remotion. Performance is critical.
  */
 export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    // Ensure initial state has proper camera state
+    // Ensure initial state has proper camera and audio state
     const initialWithCamera: WorldState = {
         ...initial,
         camera: initial.camera && 'activeEffects' in initial.camera
@@ -112,7 +169,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 ...DEFAULT_CAMERA_STATE,
                 baseView: (initial.camera as any)?.type || "APP_VIEW",
                 appId: (initial.camera as any)?.appId,
-            }
+            },
+        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
     };
 
     // Filter events up to current time
@@ -132,6 +190,9 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             }
             if (event.kind === "CAMERA") {
                 processCameraEvent(draft, event, index);
+            }
+            if (event.kind === "AUDIO") {
+                processAudioEvent(draft, event, index);
             }
         });
     }, initialWithCamera);
@@ -181,6 +242,7 @@ export function createInitialWorld(partial: Partial<WorldState> = {}): WorldStat
         conversations: {},
         appState: {},
         camera: { ...DEFAULT_CAMERA_STATE },
+        audio: { ...DEFAULT_AUDIO_STATE },
         ...partial,
     };
 }

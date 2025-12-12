@@ -66,6 +66,9 @@
                 "shakeY": 0
             },
             "deviceTransforms": {}
+        },
+        "audio": {
+            "activeSounds": {}
         }
     },
     "events": [
@@ -82,6 +85,12 @@
                 "text": "On my way! 🚗",
                 "status": "delivered"
             }
+        },
+        {
+            "at": 30,
+            "kind": "AUDIO",
+            "type": "PLAY_SOUND",
+            "soundId": "whatsapp_received"
         },
         {
             "at": 90,
@@ -102,6 +111,12 @@
                 "text": "You said that 20 minutes ago 😤",
                 "status": "read"
             }
+        },
+        {
+            "at": 120,
+            "kind": "AUDIO",
+            "type": "PLAY_SOUND",
+            "soundId": "whatsapp_received"
         },
         {
             "at": 180,

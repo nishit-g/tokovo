@@ -7,6 +7,7 @@ import {
     DeviceId,
 } from "@tokovo/core";
 import { TokovoRenderer } from "./TokovoRenderer";
+import { AudioLayer } from "./AudioLayer";
 import { getDeviceProfile } from "@tokovo/devices";
 
 /**
@@ -27,81 +28,99 @@ export const MultiDeviceRenderer: React.FC<{
     if (!layout) {
         // Fallback to single device if no layout
         return (
-            <SingleDeviceLayout
-                world={world}
-                t={t}
-                debug={debug}
-                deviceId={Object.keys(world.devices)[0]}
-                width={compositionWidth}
-                height={compositionHeight}
-            />
+            <>
+                <AudioLayer world={world} t={t} />
+                <SingleDeviceLayout
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={Object.keys(world.devices)[0]}
+                    width={compositionWidth}
+                    height={compositionHeight}
+                />
+            </>
         );
     }
 
     switch (layout.mode) {
         case "SINGLE":
             return (
-                <SingleDeviceLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={layout.primaryDeviceId}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
             );
 
         case "SPLIT_HORIZONTAL":
             return (
-                <SplitHorizontalLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    primaryDeviceId={layout.primaryDeviceId}
-                    secondaryDeviceId={layout.secondaryDeviceId}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitHorizontalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
             );
 
         case "SPLIT_VERTICAL":
             return (
-                <SplitVerticalLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    primaryDeviceId={layout.primaryDeviceId}
-                    secondaryDeviceId={layout.secondaryDeviceId}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitVerticalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
             );
 
         case "PIP":
             return (
-                <PIPLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    primaryDeviceId={layout.primaryDeviceId}
-                    secondaryDeviceId={layout.secondaryDeviceId}
-                    pipPosition={layout.pipPosition || "bottom-right"}
-                    pipScale={layout.pipScale || 0.3}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <PIPLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        pipPosition={layout.pipPosition || "bottom-right"}
+                        pipScale={layout.pipScale || 0.3}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
             );
 
         default:
             return (
-                <SingleDeviceLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={layout.primaryDeviceId}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
             );
     }
 };

@@ -1,11 +1,15 @@
 export { TokovoRenderer } from "./TokovoRenderer";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
 export { DeviceFrame } from "./DeviceFrame";
+export { computeLayout } from "./layout";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export { VisualDebugger } from "./VisualDebugger";
 export { NotificationOverlay } from "./NotificationOverlay";
 export { HeadsUpNotification } from "./HeadsUpNotification";
 export { CallOverlay } from "./CallOverlay";
 export { LockscreenView } from "./LockscreenView";
 export { HomeScreenView } from "./HomeScreenView";
-export { AppTransition, FaceIDAnimation, UnlockTransition } from "./AppTransition";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
+export { AudioLayer } from "./AudioLayer";
+export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
 export * from "./layout";
