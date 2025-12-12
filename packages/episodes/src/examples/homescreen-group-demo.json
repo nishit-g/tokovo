@@ -1,0 +1,251 @@
+{
+    "meta": {
+        "title": "Home Screen & Group Chat Demo",
+        "fps": 30,
+        "durationInFrames": 600
+    },
+    "initialWorld": {
+        "devices": {
+            "user_phone": {
+                "id": "user_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "notifications": [],
+                "homeScreen": {
+                    "wallpaper": "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)",
+                    "pages": [
+                        {
+                            "apps": [
+                                {
+                                    "appId": "app_facetime",
+                                    "label": "FaceTime",
+                                    "icon": "📹"
+                                },
+                                {
+                                    "appId": "app_calendar",
+                                    "label": "Calendar",
+                                    "icon": "📅"
+                                },
+                                {
+                                    "appId": "app_photos",
+                                    "label": "Photos",
+                                    "icon": "📸"
+                                },
+                                {
+                                    "appId": "app_camera",
+                                    "label": "Camera",
+                                    "icon": "📷"
+                                },
+                                {
+                                    "appId": "app_mail",
+                                    "label": "Mail",
+                                    "icon": "✉️",
+                                    "badge": 12
+                                },
+                                {
+                                    "appId": "app_clock",
+                                    "label": "Clock",
+                                    "icon": "🕐"
+                                },
+                                {
+                                    "appId": "app_maps",
+                                    "label": "Maps",
+                                    "icon": "🗺️"
+                                },
+                                {
+                                    "appId": "app_wallet",
+                                    "label": "Wallet",
+                                    "icon": "💳"
+                                },
+                                {
+                                    "appId": "app_notes",
+                                    "label": "Notes",
+                                    "icon": "📝"
+                                },
+                                {
+                                    "appId": "app_reminders",
+                                    "label": "Reminders",
+                                    "icon": "✅"
+                                },
+                                {
+                                    "appId": "app_news",
+                                    "label": "News",
+                                    "icon": "📰"
+                                },
+                                {
+                                    "appId": "app_health",
+                                    "label": "Health",
+                                    "icon": "❤️"
+                                },
+                                {
+                                    "appId": "app_settings",
+                                    "label": "Settings",
+                                    "icon": "⚙️"
+                                },
+                                {
+                                    "appId": "app_music",
+                                    "label": "Music",
+                                    "icon": "🎵"
+                                },
+                                {
+                                    "appId": "app_appstore",
+                                    "label": "App Store",
+                                    "icon": "🛒"
+                                },
+                                {
+                                    "appId": "app_files",
+                                    "label": "Files",
+                                    "icon": "📁"
+                                }
+                            ]
+                        }
+                    ],
+                    "dock": [
+                        {
+                            "appId": "app_phone",
+                            "label": "Phone",
+                            "icon": "📞"
+                        },
+                        {
+                            "appId": "app_messages",
+                            "label": "Messages",
+                            "icon": "💬",
+                            "badge": 5
+                        },
+                        {
+                            "appId": "app_whatsapp",
+                            "label": "WhatsApp",
+                            "icon": "💬",
+                            "badge": 3
+                        },
+                        {
+                            "appId": "app_instagram",
+                            "label": "Instagram",
+                            "icon": "📷"
+                        }
+                    ]
+                }
+            }
+        },
+        "conversations": {
+            "group_family": {
+                "id": "group_family",
+                "type": "group",
+                "name": "Family Group 👨‍👩‍👧",
+                "members": [
+                    {
+                        "id": "mom",
+                        "name": "Mom"
+                    },
+                    {
+                        "id": "dad",
+                        "name": "Dad"
+                    },
+                    {
+                        "id": "sister",
+                        "name": "Sarah"
+                    },
+                    {
+                        "id": "me",
+                        "name": "You"
+                    }
+                ],
+                "admins": [
+                    "mom",
+                    "me"
+                ],
+                "messages": [
+                    {
+                        "id": "msg1",
+                        "from": "mom",
+                        "text": "Don't forget about dinner tomorrow!",
+                        "status": "read"
+                    },
+                    {
+                        "id": "msg2",
+                        "from": "me",
+                        "text": "I'll be there! 🍕",
+                        "status": "read"
+                    },
+                    {
+                        "id": "sys1",
+                        "from": "system",
+                        "type": "system",
+                        "systemType": "member_added",
+                        "targetMember": "Sarah",
+                        "actorName": "Mom"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {},
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 0,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "GO_HOME"
+        },
+        {
+            "at": 90,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "group_family",
+            "from": "sister"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "group_family",
+            "from": "sister"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "group_family",
+            "from": "sister",
+            "text": "Can I bring a friend?"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "GROUP_MEMBER_ADDED",
+            "conversationId": "group_family",
+            "memberId": "friend",
+            "memberName": "Emma",
+            "addedBy": "Sarah"
+        },
+        {
+            "at": 400,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "GO_HOME"
+        },
+        {
+            "at": 420,
+            "kind": "DEVICE",
+            "deviceId": "user_phone",
+            "type": "SET_BADGE",
+            "appId": "app_whatsapp",
+            "count": 5
+        }
+    ]
+}

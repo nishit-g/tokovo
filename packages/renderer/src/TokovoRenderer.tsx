@@ -7,6 +7,7 @@ import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
 import { CallOverlay } from "./CallOverlay";
 import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
 import { Audio, staticFile } from "remotion";
 import { ViewKind, LayoutContext } from "./layout/types";
@@ -76,6 +77,9 @@ export const TokovoRenderer: React.FC<{
                     viewKind = "FEED";
             }
         }
+    } else {
+        // No app open, show home screen
+        viewKind = "HOMESCREEN";
     }
 
     // 3. Compute Layout
@@ -163,13 +167,18 @@ export const TokovoRenderer: React.FC<{
                         />
                     )}
 
-                    {/* App View (when not on call or when call is active and app is behind) */}
+                    {/* App View / Lockscreen / Home Screen */}
                     {!hasActiveCall && AppView && !device.isLocked ? (
                         <AppView world={world} t={t} layout={layout} />
                     ) : !hasActiveCall && device.isLocked ? (
                         <LockscreenView
                             notifications={device.notifications}
                             layout={layout}
+                            variant={variant}
+                        />
+                    ) : !hasActiveCall && device.homeScreen ? (
+                        <HomeScreenView
+                            config={device.homeScreen}
                             variant={variant}
                         />
                     ) : !hasActiveCall && (

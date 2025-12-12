@@ -334,7 +334,7 @@ const InputArea: React.FC<InputAreaProps> = ({ text }) => (
 
 const HomeIndicator: React.FC = () => (
     <div style={{
-        height: 102, // 34pt * 3
+        height: 102,
         backgroundColor: "#F6F6F6",
         display: "flex",
         justifyContent: "center",
@@ -348,6 +348,241 @@ const HomeIndicator: React.FC = () => (
             borderRadius: 9,
             opacity: 0.2
         }} />
+    </div>
+);
+
+// ============================================================================
+// SYSTEM MESSAGE - For group events (member added/removed/admin change)
+// ============================================================================
+
+interface SystemMessageProps {
+    text: string;
+    timestamp?: string;
+}
+
+const SystemMessage: React.FC<SystemMessageProps> = ({ text, timestamp }) => (
+    <div style={{
+        display: "flex",
+        justifyContent: "center",
+        padding: "18px 60px",
+        marginBottom: 12
+    }}>
+        <div style={{
+            backgroundColor: "rgba(225, 218, 208, 0.85)",
+            padding: "15px 30px",
+            borderRadius: 21,
+            maxWidth: "85%"
+        }}>
+            <span style={{
+                fontSize: 36,
+                color: "#667781",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                textAlign: "center"
+            }}>
+                {text}
+            </span>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// VOICE MESSAGE BUBBLE - With waveform and play button
+// ============================================================================
+
+interface VoiceMessageBubbleProps {
+    isMe: boolean;
+    duration: number;
+    isPlaying?: boolean;
+    progress?: number;
+    timestamp?: string;
+    read?: boolean;
+}
+
+// Play button icon
+const PlayIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="#25D366">
+        <path d="M8 5v14l11-7z" />
+    </svg>
+);
+
+const PauseIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="#25D366">
+        <rect x="6" y="5" width="4" height="14" />
+        <rect x="14" y="5" width="4" height="14" />
+    </svg>
+);
+
+const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+    isMe,
+    duration,
+    isPlaying = false,
+    progress = 0,
+    timestamp,
+    read
+}) => {
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: isMe ? "flex-end" : "flex-start",
+            padding: "6px 36px"
+        }}>
+            <div style={{
+                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
+                padding: "24px 30px",
+                borderRadius: 24,
+                borderTopLeftRadius: isMe ? 24 : 6,
+                borderTopRightRadius: isMe ? 6 : 24,
+                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+                minWidth: 450
+            }}>
+                {/* Play/Pause Button */}
+                <div style={{
+                    width: 84,
+                    height: 84,
+                    borderRadius: "50%",
+                    backgroundColor: isMe ? "#D4F5C8" : "#F0F0F0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center"
+                }}>
+                    {isPlaying ? <PauseIcon /> : <PlayIcon />}
+                </div>
+
+                {/* Waveform */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 9 }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        height: 60
+                    }}>
+                        {Array.from({ length: 30 }).map((_, i) => {
+                            const height = Math.sin(i * 0.6) * 20 + 25;
+                            const isActive = i < 30 * progress;
+                            return (
+                                <div key={i} style={{
+                                    width: 6,
+                                    height: `${height}px`,
+                                    backgroundColor: isActive ? "#25D366" : "#92B09E",
+                                    borderRadius: 3
+                                }} />
+                            );
+                        })}
+                    </div>
+
+                    {/* Duration + Status */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 30, color: "#667781" }}>
+                            {formatDuration(Math.floor(duration * (isPlaying ? progress : 1)))}
+                        </span>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                            <span style={{ fontSize: 30, color: "#667781" }}>
+                                {timestamp || "10:42"}
+                            </span>
+                            {isMe && <DoubleCheckIcon read={read !== false} />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// GROUP HEADER - Shows group info instead of contact
+// ============================================================================
+
+interface GroupHeaderProps {
+    groupName: string;
+    memberCount: number;
+    avatarUrl?: string;
+}
+
+const GroupHeader: React.FC<GroupHeaderProps> = ({ groupName, memberCount, avatarUrl }) => (
+    <div style={{
+        height: 270,
+        backgroundColor: "#F6F6F6",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 36px",
+        marginTop: 144,
+        borderBottom: "1px solid rgba(0,0,0,0.1)",
+        zIndex: 10
+    }}>
+        {/* Back button */}
+        <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+            <ChevronLeftIcon />
+            <span style={{
+                fontSize: 51,
+                color: "#007AFF",
+                fontWeight: "400",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                4
+            </span>
+        </div>
+
+        {/* Group info */}
+        <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            marginLeft: -60
+        }}>
+            {/* Group avatar */}
+            <div style={{
+                width: 111,
+                height: 111,
+                borderRadius: "50%",
+                background: avatarUrl
+                    ? `url(${avatarUrl}) center/cover`
+                    : "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
+                marginRight: 24,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: 45,
+                fontWeight: "600"
+            }}>
+                {!avatarUrl && "👥"}
+            </div>
+
+            {/* Name & member count */}
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                <span style={{
+                    fontSize: 51,
+                    fontWeight: "600",
+                    color: "#000",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+                }}>
+                    {groupName}
+                </span>
+                <span style={{
+                    fontSize: 33,
+                    color: "#8E8E93",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {memberCount} members
+                </span>
+            </div>
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
+            <VideoCallIcon />
+            <PhoneCallIcon />
+        </div>
     </div>
 );
 
@@ -374,8 +609,11 @@ const Root: React.FC<{ children: React.ReactNode }> = ({ children }) => (
 export const WhatsApp = {
     Root,
     Header,
+    GroupHeader,
     MessageList,
-    InputArea
+    InputArea,
+    SystemMessage,
+    VoiceMessageBubble
 };
 
 export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
@@ -385,9 +623,18 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
     const isTyping = conversation?.typing?.["other"] || false;
     const draftText = "";
 
+    // Check if it's a group
+    const isGroup = conversation?.type === "group";
+    const groupName = conversation?.name || "Group";
+    const memberCount = conversation?.members?.length || 0;
+
     return (
         <WhatsApp.Root>
-            <WhatsApp.Header contactName="Alice" status="online" />
+            {isGroup ? (
+                <WhatsApp.GroupHeader groupName={groupName} memberCount={memberCount} />
+            ) : (
+                <WhatsApp.Header contactName={conversation?.name || "Alice"} status="online" />
+            )}
             <WhatsApp.MessageList messages={messages} layout={layout} isTyping={isTyping} />
             <WhatsApp.InputArea text={draftText} />
             <HomeIndicator />

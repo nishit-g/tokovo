@@ -4,14 +4,14 @@ import { ReducerRegistry } from "@tokovo/core";
 
 /**
  * Device Reducer
- * Handles all DEVICE events: lock/unlock, app open/close, notifications, and calls
+ * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls, home screen
  */
 export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
     return produce(devices, draft => {
         if (event.kind !== "DEVICE") return;
 
         const device = draft[event.deviceId];
-        if (!device) return; // Device not found
+        if (!device) return;
 
         switch (event.type) {
             // --- Lock/Unlock ---
@@ -28,6 +28,28 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
                 break;
             case "CLOSE_APP":
                 device.foregroundAppId = undefined;
+                break;
+            case "GO_HOME":
+                device.foregroundAppId = undefined;
+                break;
+
+            // --- Badge ---
+            case "SET_BADGE":
+                if (device.homeScreen) {
+                    // Update badge in dock
+                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
+                    if (dockIcon) {
+                        dockIcon.badge = event.count > 0 ? event.count : undefined;
+                    }
+                    // Update badge in pages
+                    device.homeScreen.pages.forEach(page => {
+                        page.apps.forEach(item => {
+                            if ('appId' in item && item.appId === event.appId) {
+                                item.badge = event.count > 0 ? event.count : undefined;
+                            }
+                        });
+                    });
+                }
                 break;
 
             // --- Notifications ---

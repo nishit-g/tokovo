@@ -24,21 +24,83 @@ export interface CallState {
 }
 
 export interface DeviceState {
-    id: string; // The instance ID (e.g., "alice_phone")
-    profileId: string; // The hardware profile ID (e.g., "iphone16")
+    id: string;
+    profileId: string;
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
-    call?: CallState;             // Active call state
+    call?: CallState;
+    homeScreen?: HomeScreenConfig;
     sound?: {
         activeSoundId?: string;
     };
 }
 
+// --- Home Screen Types ---
+
+export interface HomeScreenConfig {
+    wallpaper?: string;              // URL or CSS gradient
+    pages: HomeScreenPage[];
+    dock: AppIcon[];
+}
+
+export interface HomeScreenPage {
+    apps: (AppIcon | AppFolder)[];
+}
+
+export interface AppIcon {
+    appId: string;
+    label: string;
+    icon: string;                    // URL or emoji
+    badge?: number;
+}
+
+export interface AppFolder {
+    type: "folder";
+    name: string;
+    apps: AppIcon[];
+}
+
 export interface ConversationState {
     id: ConversationId;
-    messages: any[]; // To be defined more specifically if needed
+    type?: "dm" | "group";
+    name?: string;                   // Contact or group name
+    avatar?: string;
+
+    // Group-specific
+    members?: GroupMember[];
+    admins?: string[];               // Member IDs who are admins
+
+    messages: Message[];
     typing?: Record<string, boolean>;
+}
+
+export interface GroupMember {
+    id: string;
+    name: string;
+    avatar?: string;
+    phone?: string;
+}
+
+export interface Message {
+    id: string;
+    from: string;                    // "me" or member ID
+    text?: string;
+    type?: "text" | "image" | "voice" | "system";
+    at?: number;                     // Timestamp frame
+
+    // System message
+    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
+    targetMember?: string;
+    actorName?: string;
+
+    // Voice message
+    duration?: number;
+    isPlaying?: boolean;
+    playProgress?: number;
+
+    // Read status
+    status?: "sending" | "sent" | "delivered" | "read";
 }
 
 export interface CameraViewConfig {
@@ -56,15 +118,25 @@ export interface WorldState {
 // Event Union
 export type TimelineEvent =
     // Device events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP"; appId?: AppId }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
     // Call events
     | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
-    // App events
+    // App events - messaging
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
+    // App events - voice message
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
+    // App events - group
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
+    // App events - custom
     | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
     // Camera events
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }
@@ -78,6 +150,7 @@ export type ViewKind =
     | "FEED"
     | "STORY"
     | "LOCKSCREEN"
+    | "HOMESCREEN"
     | "TRANSITION";
 
 export interface LayoutContext {
