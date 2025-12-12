@@ -5,5 +5,6 @@ export { HeadsUpNotification } from "./HeadsUpNotification";
 export { CallOverlay } from "./CallOverlay";
 export { LockscreenView } from "./LockscreenView";
 export { HomeScreenView } from "./HomeScreenView";
+export { AppTransition, FaceIDAnimation, UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
 export * from "./layout";
