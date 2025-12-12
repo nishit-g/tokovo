@@ -3,17 +3,17 @@ import { LayoutConfig } from "./types";
 export const defaultLayoutConfig: LayoutConfig = {
     cinematicMode: "NONE",
     chat: {
-        bubbleWidth: 0.75, // 75% of screen width
-        baseBubbleHeight: 60,
-        charsPerLine: 30,
-        lineHeight: 40,
-        verticalGap: 15,
-        topPadding: 120, // Space for header
-        bottomPadding: 100, // Space for input
-        messageAppearDuration: 15, // frames
-        messageAppearOffset: 10, // px
-        scrollEasingDuration: 20, // frames
-        maxScrollCatchupSpeed: 50, // px/frame
+        bubbleWidth: 0.75,
+        baseBubbleHeight: 75,
+        charsPerLine: 28,
+        lineHeight: 54,
+        verticalGap: 24,
+        topPadding: 120,
+        bottomPadding: 100,
+        messageAppearDuration: 15,
+        messageAppearOffset: 15,
+        scrollEasingDuration: 20,
+        maxScrollCatchupSpeed: 50,
         lockToBottom: true
     },
     feed: {

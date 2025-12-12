@@ -85,6 +85,15 @@ export const TokovoRenderer: React.FC<{
     // 3. Compute Layout
     const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
 
+    // For chat views, reduce viewport height to account for header and input area
+    // Header: ~414px (270px header + 144px status bar area)
+    // Input: ~272px (input field + home indicator)
+    const chatHeaderHeight = 414;
+    const chatInputHeight = 272;
+    const effectiveViewportHeight = viewKind === "CHAT"
+        ? profile.dimensions.height - chatHeaderHeight - chatInputHeight
+        : profile.dimensions.height;
+
     const layoutContext: LayoutContext = {
         world,
         t,
@@ -94,7 +103,7 @@ export const TokovoRenderer: React.FC<{
         activeConversationId,
         activeStoryId,
         viewportWidth: profile.dimensions.width,
-        viewportHeight: profile.dimensions.height
+        viewportHeight: effectiveViewportHeight
     };
 
     const layout = computeLayout(layoutContext);
