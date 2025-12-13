@@ -89,7 +89,14 @@ packages/
     tsconfig.json
   apps-whatsapp/
     src/
+      components/
+        icons/
+          index.tsx
+        Header.tsx
+        index.ts
+        MessageBubble.tsx
       index.ts
+      plugin.ts
       runtime.ts
       types.ts
       TypingBubble.tsx
@@ -101,10 +108,21 @@ packages/
     src/
       camera/
         index.ts
+      director-lite/
+        derive.ts
+        index.ts
+        rules.ts
+        signals.ts
+        types.ts
+      constants.ts
       engine.ts
+      eventUtils.ts
       index.ts
+      plugin.ts
       sounds.ts
       tokens.ts
+      transitions.ts
+      typeGuards.ts
       types.ts
     package.json
     README.md
@@ -149,6 +167,7 @@ packages/
           story.ts
           transition.ts
         config.ts
+        director-adapter.ts
         index.ts
         types.ts
       shared/
@@ -157,6 +176,7 @@ packages/
       AppTransition.tsx
       AudioLayer.tsx
       CallOverlay.tsx
+      camera-composer.ts
       DeviceFrame.tsx
       HeadsUpNotification.tsx
       HomeScreenView.tsx
@@ -314,57 +334,6 @@ import { RemotionRoot } from "./Root";
 registerRoot(RemotionRoot);
 ````
 
-## File: apps/video-runner/src/InstagramVideo.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { instagramEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-instagram";
-
-export const InstagramVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
-    const world = replay(instagramEpisode.initialState as unknown as WorldState, instagramEpisode.timeline as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} debug={true} />
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: apps/video-runner/src/MultiPovDemoVideo.tsx
 ````typescript
 import React from "react";
@@ -470,68 +439,6 @@ export const NotificationCallDemoVideo: React.FC = () => {
                         headsUpDuration: 150, // 5 seconds
                         showHeadsUpWhenAppOpen: true
                     }}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/WhatsappPsychoticDemoVideo.tsx
-````typescript
-import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { whatsappPsychoticDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * WhatsappPsychoticDemoVideo
- * Demonstrates advanced "psychotic" messaging features:
- * - Missed calls
- * - Deleted messages
- * - Screenshot alerts
- * - Voice notes with waveforms
- * - Edited messages
- */
-export const WhatsappPsychoticDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data
-    const episode = whatsappPsychoticDemo as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
                 />
             </div>
         </AbsoluteFill>
@@ -966,11 +873,347 @@ export const initialInstagramState: InstagramState = {
 }
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
+## File: packages/apps-whatsapp/src/components/icons/index.tsx
 ````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
+/**
+ * WhatsApp Icons - Authentic iOS SVG replicas
+ */
+
+import React from "react";
+
+export const ChevronLeftIcon = () => (
+    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const VideoCallIcon = () => (
+    <svg width="84" height="60" viewBox="0 0 28 20" fill="none">
+        <rect x="1" y="3" width="18" height="14" rx="3" stroke="#007AFF" strokeWidth="1.8" />
+        <path d="M19 8L26 4V16L19 12V8Z" stroke="#007AFF" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PhoneCallIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 20 20" fill="none">
+        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke="#007AFF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PlusCircleIcon = () => (
+    <svg width="90" height="90" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="14" stroke="#007AFF" strokeWidth="1.8" />
+        <path d="M15 8V22M8 15H22" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const CameraFillIcon = () => (
+    <svg width="84" height="72" viewBox="0 0 28 24" fill="#007AFF">
+        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
+    </svg>
+);
+
+export const MicrophoneFillIcon = () => (
+    <svg width="66" height="90" viewBox="0 0 22 30" fill="#007AFF">
+        <rect x="6" y="2" width="10" height="16" rx="5" />
+        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" fill="none" />
+        <path d="M11 23V28M8 28H14" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const DoubleCheckIcon: React.FC<{ read?: boolean }> = ({ read = false }) => (
+    <svg width="48" height="30" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PlayIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <path d="M8 5V19L19 12L8 5Z" />
+    </svg>
+);
+
+export const PauseIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
+        <rect x="6" y="5" width="4" height="14" />
+        <rect x="14" y="5" width="4" height="14" />
+    </svg>
+);
+````
+
+## File: packages/apps-whatsapp/src/components/Header.tsx
+````typescript
+/**
+ * WhatsApp Header Component
+ * 
+ * Authentic iOS WhatsApp navigation bar with configurable contact info.
+ */
+
+import React from "react";
+import { Platform, getAppConfig, getTokens } from "@tokovo/core";
+import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./icons";
+
+export interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    status?: string;
+    platform?: Platform;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+    contactName,
+    avatarUrl,
+    status = "online",
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            height: config.headerHeight,
+            backgroundColor: config.headerBg,
+            display: "flex",
+            alignItems: "center",
+            padding: `0 ${config.bubbleMarginHorizontal}px`,
+            marginTop: config.statusBarHeight,
+            borderBottom: "1px solid rgba(0,0,0,0.1)",
+            zIndex: 10,
+            fontFamily: tokens.fontFamily
+        }}>
+            {/* Back button with unread count */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                <ChevronLeftIcon />
+                <span style={{
+                    fontSize: config.headerTitleSize,
+                    color: platform === "ios" ? "#007AFF" : "#FFFFFF",
+                    fontWeight: "400"
+                }}>
+                    4
+                </span>
+            </div>
+
+            {/* Avatar + Name + Status (centered group) */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: -60
+            }}>
+                {/* Avatar */}
+                <div style={{
+                    width: config.avatarSize,
+                    height: config.avatarSize,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    marginRight: config.avatarMargin,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: config.avatarSize * 0.4,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Name & Status */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                    <span style={{
+                        fontSize: config.headerTitleSize,
+                        fontWeight: "600",
+                        color: platform === "ios" ? "#000000" : "#FFFFFF",
+                        letterSpacing: -0.5
+                    }}>
+                        {contactName}
+                    </span>
+                    <span style={{
+                        fontSize: config.headerSubtitleSize,
+                        color: platform === "ios" ? "#8E8E93" : "rgba(255,255,255,0.7)"
+                    }}>
+                        {status}
+                    </span>
+                </div>
+            </div>
+
+            {/* Action icons */}
+            <div style={{ display: "flex", gap: config.headerIconGap, alignItems: "center" }}>
+                <VideoCallIcon />
+                <PhoneCallIcon />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/index.ts
+````typescript
+/**
+ * WhatsApp Components Index
+ * 
+ * Re-exports all WhatsApp UI components for easy importing.
+ */
+
+// Icons
+export * from "./icons";
+
+// Components
+export { Header, type HeaderProps } from "./Header";
+export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
+````
+
+## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
+````typescript
+/**
+ * WhatsApp Message Bubble Component
+ * 
+ * Authentic iOS WhatsApp message styling with timestamps and read receipts.
+ */
+
+import React from "react";
+import { ChatMessageLayout } from "@tokovo/core";
+import { DoubleCheckIcon } from "./icons";
+
+export interface MessageData {
+    id: string;
+    from: string;
+    text?: string;
+    timestamp?: string;
+    read?: boolean;
+    type?: "text" | "image" | "voice" | "system";
+}
+
+export interface MessageBubbleProps {
+    msg: MessageData;
+    layout: ChatMessageLayout;
+}
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, y } = layout;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 36,
+            right: isMe ? 36 : "auto",
+            maxWidth: "78%",
+            opacity,
+            transform: `translateY(${translateY}px)`,
+        }}>
+            {/* Bubble with tail */}
+            <div style={{
+                position: "relative",
+                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
+                padding: "24px 36px",
+                borderRadius: 24,
+                // Asymmetric corners for tail effect
+                borderTopLeftRadius: isMe ? 24 : 6,
+                borderTopRightRadius: isMe ? 6 : 24,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6
+            }}>
+                {/* Message text */}
+                <span style={{
+                    fontSize: 48,
+                    lineHeight: "66px",
+                    color: "#111B21",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    wordWrap: "break-word"
+                }}>
+                    {msg.text}
+                </span>
+
+                {/* Timestamp + Read receipts */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 9,
+                    marginTop: 3
+                }}>
+                    <span style={{
+                        fontSize: 33,
+                        color: "#667781",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {msg.timestamp || "10:42"}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={msg.read !== false} />}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/plugin.ts
+````typescript
+/**
+ * WhatsApp Plugin Definition
+ * 
+ * Self-contained plugin registration for the WhatsApp app.
+ * Registers reducer, view, sounds, and metadata with the PluginManager.
+ */
+
+import { definePlugin, PluginManager, APP_IDS, TokovoPlugin, AppViewComponent } from "@tokovo/core";
+import { whatsappReducer } from "./runtime";
+import { WhatsappChatView } from "./ui";
+
+/**
+ * WhatsApp Plugin Configuration
+ */
+export const WhatsAppPlugin: TokovoPlugin = definePlugin({
+    id: APP_IDS.WHATSAPP,
+    name: "WhatsApp",
+    version: "1.0.0",
+
+    // Branding
+    icon: "whatsapp-icon.png",
+    primaryColor: "#25D366",
+
+    // Core functionality - cast to match AppViewComponent signature
+    appView: WhatsappChatView as unknown as AppViewComponent,
+    reducer: whatsappReducer,
+
+    // Event types this plugin handles
+    eventTypes: [
+        "MESSAGE_RECEIVED",
+        "MESSAGE_SENT",
+        "TYPING_START",
+        "TYPING_END",
+        "MESSAGE_READ",
+        "VOICE_MESSAGE_RECEIVED",
+        "VOICE_MESSAGE_PLAY",
+        "GROUP_MEMBER_ADDED",
+        "GROUP_MEMBER_REMOVED",
+    ],
+
+    // Sound effects
+    sounds: {
+        "message_in": "whatsapp-received.mp3",
+        "message_out": "whatsapp-sent.mp3",
+        "typing": "whatsapp-typing.mp3",
+    },
+
+    notificationSound: "whatsapp-notification.mp3",
+});
+
+/**
+ * Register the WhatsApp plugin
+ */
+export function registerWhatsAppPlugin(): void {
+    PluginManager.register(WhatsAppPlugin);
+}
 ````
 
 ## File: packages/apps-whatsapp/src/types.ts
@@ -1003,6 +1246,1087 @@ WhatsApp clone app for Tokovo.
     "include": [
         "src/**/*"
     ]
+}
+````
+
+## File: packages/core/src/director-lite/derive.ts
+````typescript
+/**
+ * DirectorLite Derive
+ *
+ * Pure function that derives camera effects for frame t.
+ * Stateless, deterministic, scrubbing-safe.
+ *
+ * FIXES from review:
+ * - Cooldown uses inline lastSeen (no map key mismatch)
+ * - Signals assumed pre-sorted; debug guard if not
+ * - Manual camera skip policy: if any manual camera active, skip director
+ * - viewport removed from this function (only needed in composer)
+ */
+
+import {
+    DirectorSignal,
+    DirectorLayoutModel,
+    DirectorOutput,
+    DerivedCameraEffect,
+    DirectorDebug,
+    LayoutRect,
+} from "./types";
+import { Rule, RULES_BY_SIGNAL } from "./rules";
+import { applyEasing } from "../camera";
+import { ActiveCameraEffect } from "../types";
+
+// =============================================================================
+// MAIN ENTRY
+// =============================================================================
+
+export interface DeriveContext {
+    t: number;
+    signals: DirectorSignal[]; // Must be pre-sorted by `at`
+    layoutModel: DirectorLayoutModel;
+    seed?: number;
+    debug?: boolean;
+    // Manual camera skip: if any active effects from timeline, skip director
+    manualCameraEffects?: ActiveCameraEffect[];
+}
+
+/**
+ * Derive camera effects for frame t.
+ *
+ * PURE FUNCTION: No internal state.
+ * O(n) complexity with inline cooldown tracking.
+ */
+export function deriveDirectorEffects(ctx: DeriveContext): DirectorOutput {
+    const {
+        t,
+        signals,
+        layoutModel,
+        seed = 0,
+        debug: debugEnabled = false,
+        manualCameraEffects = [],
+    } = ctx;
+
+    // Policy A: Skip director if any manual camera event is active
+    if (manualCameraEffects.length > 0) {
+        const hasActiveManual = manualCameraEffects.some(
+            (ae) => t >= ae.startFrame && t < ae.endFrame
+        );
+        if (hasActiveManual) {
+            return {
+                effects: [],
+                skipped: "manual-camera-active",
+                debug: debugEnabled
+                    ? {
+                        signalsInWindow: signals.length,
+                        matchedRules: 0,
+                        skippedCooldown: 0,
+                    }
+                    : undefined,
+            };
+        }
+    }
+
+    // Debug guard: check signals are sorted
+    if (debugEnabled && signals.length > 1) {
+        for (let i = 1; i < signals.length; i++) {
+            if (signals[i].at < signals[i - 1].at) {
+                console.warn(
+                    `[DirectorLite] Signals not sorted! at[${i}]=${signals[i].at} < at[${i - 1}]=${signals[i - 1].at}`
+                );
+                break;
+            }
+        }
+    }
+
+    // Match rules with INLINE cooldown tracking (no separate map)
+    const matches: Match[] = [];
+    let skippedCooldown = 0;
+
+    // Track last seen time per cooldown key (inline, as we iterate sorted signals)
+    const lastSeenByKey = new Map<string, number>();
+
+    for (const signal of signals) {
+        const cooldownKey = getCooldownKey(signal);
+        const prevAt = lastSeenByKey.get(cooldownKey) ?? -Infinity;
+
+        // Get rules for this signal type (O(1) lookup)
+        const rules = RULES_BY_SIGNAL[signal.type] || [];
+
+        for (const rule of rules) {
+            const startFrame = signal.at;
+            const endFrame = startFrame + rule.durationFrames;
+
+            // Active at time t?
+            if (t < startFrame || t >= endFrame) continue;
+
+            // Cooldown check
+            const framesSinceLast = signal.at - prevAt;
+            if (framesSinceLast < rule.cooldownFrames && prevAt !== -Infinity) {
+                skippedCooldown++;
+                continue;
+            }
+
+            matches.push({ rule, signal, startFrame, endFrame });
+        }
+
+        // Update lastSeen after processing this signal
+        lastSeenByKey.set(cooldownKey, signal.at);
+    }
+
+    // Generate effects
+    const allEffects: DerivedCameraEffect[] = [];
+
+    for (const match of matches) {
+        const effect = generateEffect(match, layoutModel, t, seed);
+        if (effect) allEffects.push(effect);
+    }
+
+    // Arbitrate: 1 framing wins, shake stacks (max 2)
+    const finalEffects = arbitrate(allEffects);
+
+    // Debug (only if enabled)
+    let debug: DirectorDebug | undefined;
+    if (debugEnabled) {
+        const framingWinner = finalEffects.find((e) => e.category === "framing");
+        debug = {
+            signalsInWindow: signals.length,
+            matchedRules: matches.length,
+            winningFraming: framingWinner?.type,
+            skippedCooldown,
+        };
+    }
+
+    return { effects: finalEffects, debug };
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+interface Match {
+    rule: Rule;
+    signal: DirectorSignal;
+    startFrame: number;
+    endFrame: number;
+}
+
+/**
+ * Cooldown key includes conversation to scope properly.
+ * Typing in chat A won't cooldown typing in chat B.
+ */
+function getCooldownKey(signal: DirectorSignal): string {
+    return `${signal.type}:${signal.deviceId}:${signal.appId}:${signal.conversationId ?? ""}`;
+}
+
+function generateEffect(
+    match: Match,
+    layout: DirectorLayoutModel,
+    t: number,
+    seed: number
+): DerivedCameraEffect | null {
+    const { rule, signal, startFrame, endFrame } = match;
+    const duration = endFrame - startFrame;
+    const localProgress = (t - startFrame) / duration;
+    const progress = applyEasing(
+        Math.min(1, Math.max(0, localProgress)),
+        "ease-out"
+    );
+
+    // Resolve target
+    const target = resolveTarget(signal, layout, rule.targetType);
+    if (!target && rule.category === "framing" && rule.effect !== "PullBack") {
+        return null;
+    }
+
+    return {
+        type: rule.effect,
+        category: rule.category,
+        priority: rule.priority,
+        progress,
+        target: target ?? undefined,
+        scale: rule.scale,
+        intensity: rule.intensity,
+        seed: seed + signal.at,
+    };
+}
+
+function resolveTarget(
+    signal: DirectorSignal,
+    layout: DirectorLayoutModel,
+    targetType: string
+): LayoutRect | null {
+    switch (targetType) {
+        case "message":
+            return signal.messageId ? layout.messageRects[signal.messageId] : null;
+        case "inputArea":
+            return layout.inputAreaRect;
+        case "lastMessage":
+            return layout.lastMessageRect ?? null;
+        default:
+            return null;
+    }
+}
+
+/**
+ * Arbitrate effects by category.
+ * - Framing: exactly 1 wins (highest priority)
+ * - Shake: max 2, stacks
+ */
+function arbitrate(effects: DerivedCameraEffect[]): DerivedCameraEffect[] {
+    const result: DerivedCameraEffect[] = [];
+
+    // Framing: exactly 1 wins (highest priority)
+    const framing = effects
+        .filter((e) => e.category === "framing")
+        .sort((a, b) => b.priority - a.priority);
+
+    if (framing.length > 0) {
+        result.push(framing[0]);
+    }
+
+    // Shake: max 2
+    const shake = effects
+        .filter((e) => e.category === "shake")
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 2);
+
+    result.push(...shake);
+
+    return result;
+}
+````
+
+## File: packages/core/src/director-lite/index.ts
+````typescript
+/**
+ * DirectorLite
+ *
+ * Minimal, shippable camera director.
+ * One baked style (ViralDramaV1), no framework.
+ */
+
+export * from "./types";
+export { deriveDirectorEffects } from "./derive";
+export type { DeriveContext } from "./derive";
+export { extractSignals } from "./signals";
+export { RULES, RULES_BY_SIGNAL } from "./rules";
+export type { Rule } from "./rules";
+````
+
+## File: packages/core/src/director-lite/rules.ts
+````typescript
+/**
+ * DirectorLite Rules
+ *
+ * ViralDramaV1 - The only style. Opinionated. Ships.
+ * Pre-indexed by signal type for O(1) lookup.
+ */
+
+import { SignalType, EffectCategory } from "./types";
+
+export interface Rule {
+    id: string;
+    signal: SignalType;
+    effect: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    category: EffectCategory;
+    priority: number;
+    cooldownFrames: number;
+    durationFrames: number;
+    targetType: "message" | "inputArea" | "lastMessage";
+    scale?: number;
+    intensity?: number;
+}
+
+/**
+ * ViralDramaV1 - Baked rules for dramatic chat videos.
+ */
+export const RULES: Rule[] = [
+    {
+        id: "typing-push",
+        signal: "TypingStarted",
+        effect: "PushIn",
+        category: "framing",
+        priority: 10,
+        cooldownFrames: 90,
+        durationFrames: 45,
+        targetType: "inputArea", // Always exists (not typing rect!)
+        scale: 1.12,
+    },
+    {
+        id: "message-zoom",
+        signal: "NewMessage",
+        effect: "ZoomToRect",
+        category: "framing",
+        priority: 30,
+        cooldownFrames: 20,
+        durationFrames: 25,
+        targetType: "message",
+        scale: 1.2,
+    },
+    {
+        id: "read-zoom",
+        signal: "MessageRead",
+        effect: "ZoomToRect",
+        category: "framing",
+        priority: 40,
+        cooldownFrames: 45,
+        durationFrames: 18,
+        targetType: "message",
+        scale: 1.08,
+    },
+    {
+        id: "deleted-shake",
+        signal: "MessageDeleted",
+        effect: "MicroShake",
+        category: "shake",
+        priority: 25,
+        cooldownFrames: 60,
+        durationFrames: 12,
+        targetType: "message",
+        intensity: 6,
+    },
+    {
+        id: "call-pullback",
+        signal: "CallIncoming",
+        effect: "PullBack",
+        category: "framing",
+        priority: 50,
+        cooldownFrames: 0,
+        durationFrames: 40,
+        targetType: "inputArea",
+        scale: 0.88,
+    },
+];
+
+/**
+ * Pre-indexed rules by signal type for O(1) lookup.
+ * Built once at module load.
+ */
+export const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
+    (acc, rule) => {
+        if (!acc[rule.signal]) acc[rule.signal] = [];
+        acc[rule.signal].push(rule);
+        return acc;
+    },
+    {} as Record<SignalType, Rule[]>
+);
+````
+
+## File: packages/core/src/director-lite/signals.ts
+````typescript
+/**
+ * DirectorLite Signal Extraction
+ *
+ * Extract DirectorSignals from timeline events.
+ * Uses REAL message IDs from event payloads.
+ */
+
+import { TimelineEvent } from "../types";
+import { DirectorSignal, SignalType } from "./types";
+
+/**
+ * Extract director signals from timeline events.
+ *
+ * @param events - Events in the signal window (caller filters by frame range)
+ * @param deviceId - Scope signals to this device
+ * @param appId - Scope signals to this app
+ * @returns Signals sorted by `at` (ascending)
+ */
+export function extractSignals(
+    events: TimelineEvent[],
+    deviceId: string,
+    appId: string
+): DirectorSignal[] {
+    const signals: DirectorSignal[] = [];
+
+    for (const event of events) {
+        const base = {
+            deviceId,
+            appId,
+            at: event.at,
+        };
+
+        if (event.kind === "APP" && (event as any).appId === appId) {
+            const appEvent = event as any;
+
+            switch (event.type) {
+                case "TYPING_START":
+                    signals.push({
+                        ...base,
+                        type: "TypingStarted",
+                        conversationId: appEvent.conversationId,
+                        from: appEvent.from,
+                    });
+                    break;
+
+                case "TYPING_END":
+                    signals.push({
+                        ...base,
+                        type: "TypingEnded",
+                        conversationId: appEvent.conversationId,
+                        from: appEvent.from,
+                    });
+                    break;
+
+                case "MESSAGE_RECEIVED": {
+                    // REAL ID: Use message.id from payload, fallback to runtime pattern
+                    const messageId =
+                        appEvent.message?.id || `msg_${event.at}_${appEvent.from}`;
+                    signals.push({
+                        ...base,
+                        type: "NewMessage",
+                        conversationId: appEvent.conversationId,
+                        messageId,
+                        from: appEvent.from,
+                    });
+                    break;
+                }
+
+                case "MESSAGE_READ":
+                    if (appEvent.messageId) {
+                        signals.push({
+                            ...base,
+                            type: "MessageRead",
+                            conversationId: appEvent.conversationId,
+                            messageId: appEvent.messageId,
+                        });
+                    }
+                    break;
+            }
+        }
+
+        if (event.kind === "DEVICE") {
+            const deviceEvent = event as any;
+            if (deviceEvent.deviceId === deviceId) {
+                switch (event.type) {
+                    case "INCOMING_CALL":
+                        signals.push({
+                            ...base,
+                            type: "CallIncoming",
+                        });
+                        break;
+                }
+            }
+        }
+    }
+
+    // Return sorted by `at` (ascending) - required by derive function
+    return signals.sort((a, b) => a.at - b.at);
+}
+````
+
+## File: packages/core/src/director-lite/types.ts
+````typescript
+/**
+ * DirectorLite Types
+ *
+ * Minimal types for the camera director system.
+ * No framework, no configurability - just what ships.
+ */
+
+// =============================================================================
+// LAYOUT
+// =============================================================================
+
+export interface LayoutRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+export interface DirectorLayoutModel {
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    messageRects: Record<string, LayoutRect>;
+    inputAreaRect: LayoutRect; // Always available
+    typingIndicatorRect?: LayoutRect; // Only when typing
+    lastMessageRect?: LayoutRect;
+}
+
+// =============================================================================
+// SIGNALS
+// =============================================================================
+
+export type SignalType =
+    | "TypingStarted"
+    | "TypingEnded"
+    | "NewMessage"
+    | "MessageRead"
+    | "MessageDeleted"
+    | "CallIncoming";
+
+export interface DirectorSignal {
+    type: SignalType;
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    at: number;
+    messageId?: string;
+    from?: string;
+}
+
+// =============================================================================
+// EFFECTS
+// =============================================================================
+
+export type EffectCategory = "framing" | "shake";
+
+export interface DerivedCameraEffect {
+    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    category: EffectCategory;
+    priority: number;
+    progress: number;
+    // Framing effects
+    target?: LayoutRect;
+    scale?: number;
+    // Shake effects
+    intensity?: number;
+    seed?: number;
+}
+
+// =============================================================================
+// OUTPUT
+// =============================================================================
+
+export interface DirectorOutput {
+    effects: DerivedCameraEffect[];
+    debug?: DirectorDebug;
+    skipped?: "manual-camera-active";
+}
+
+export interface DirectorDebug {
+    signalsInWindow: number;
+    matchedRules: number;
+    winningFraming?: string;
+    skippedCooldown: number;
+}
+````
+
+## File: packages/core/src/constants.ts
+````typescript
+/**
+ * Constants - Centralized configuration values
+ * 
+ * All magic numbers and default values should be defined here.
+ * This makes the codebase more maintainable and configurable.
+ */
+
+// =============================================================================
+// TIMING CONSTANTS
+// =============================================================================
+
+export const TIMING = {
+    /** Default frames per second */
+    FPS_DEFAULT: 30,
+
+    /** Duration of heads-up notification in frames (5 seconds at 30fps) */
+    HEADS_UP_DURATION: 150,
+
+    /** Buffer frames to keep effects after they end (for smooth transitions) */
+    EFFECT_CLEANUP_BUFFER: 30,
+
+    /** Default typing indicator animation duration in frames */
+    TYPING_ANIMATION_DURATION: 90,
+
+    /** Default message appear animation duration in frames */
+    MESSAGE_ANIMATION_DURATION: 15,
+} as const;
+
+// =============================================================================
+// LAYOUT CONSTANTS (in 3x scale for Remotion)
+// =============================================================================
+
+export const LAYOUT = {
+    /** Chat header height (status bar + nav bar) */
+    CHAT_HEADER_HEIGHT: 414,
+
+    /** Chat input area height (input field + home indicator) */
+    CHAT_INPUT_HEIGHT: 272,
+
+    /** Status bar height */
+    STATUS_BAR_HEIGHT: 144,
+
+    /** Navigation bar height */
+    NAV_BAR_HEIGHT: 270,
+
+    /** Home indicator height */
+    HOME_INDICATOR_HEIGHT: 102,
+
+    /** Split layout divider width */
+    SPLIT_DIVIDER_WIDTH: 2,
+
+    /** Message bubble max width ratio (0-1) */
+    MESSAGE_BUBBLE_MAX_WIDTH: 0.75,
+
+    /** Message bubble border radius */
+    MESSAGE_BUBBLE_RADIUS: 54,
+
+    /** Message spacing */
+    MESSAGE_GAP: 12,
+} as const;
+
+// =============================================================================
+// DEFAULT VALUES
+// =============================================================================
+
+export const DEFAULTS = {
+    /** Default audio volume (0-1) */
+    VOLUME: 1,
+
+    /** Default background music volume */
+    BACKGROUND_MUSIC_VOLUME: 0.5,
+
+    /** Default video background color */
+    BACKGROUND_COLOR: "#0a0a1a",
+
+    /** Default split layout divider color */
+    SPLIT_LINE_COLOR: "#333333",
+
+    /** Default zoom scale */
+    ZOOM_SCALE: 1.3,
+
+    /** Default shake intensity */
+    SHAKE_INTENSITY: 10,
+
+    /** Default shake frequency (shakes per second) */
+    SHAKE_FREQUENCY: 16,
+
+    /** Default shake decay */
+    SHAKE_DECAY: 0.3,
+
+    /** Default camera easing */
+    CAMERA_EASING: "ease-out" as const,
+
+    /** Default PIP scale */
+    PIP_SCALE: 0.3,
+
+    /** Default PIP position */
+    PIP_POSITION: "bottom-right" as const,
+} as const;
+
+// =============================================================================
+// APP IDENTIFIERS
+// =============================================================================
+
+export const APP_IDS = {
+    WHATSAPP: "app_whatsapp",
+    INSTAGRAM: "app_instagram",
+    IMESSAGE: "app_imessage",
+    TIKTOK: "app_tiktok",
+    TWITTER: "app_twitter",
+} as const;
+
+// =============================================================================
+// DEVICE IDENTIFIERS
+// =============================================================================
+
+export const DEVICE_PROFILES = {
+    IPHONE_16: "iphone16",
+    PIXEL: "pixel",
+} as const;
+
+// =============================================================================
+// EVENT KINDS
+// =============================================================================
+
+export const EVENT_KINDS = {
+    DEVICE: "DEVICE",
+    APP: "APP",
+    CAMERA: "CAMERA",
+    AUDIO: "AUDIO",
+} as const;
+
+// =============================================================================
+// SOUND IDENTIFIERS
+// =============================================================================
+
+export const SOUND_IDS = {
+    WHATSAPP_RECEIVED: "whatsapp_received",
+    WHATSAPP_SENT: "whatsapp_sent",
+    NOTIFICATION: "notification",
+    RINGTONE: "ringtone",
+    TYPING: "typing",
+    CAMERA_SHUTTER: "camera_shutter",
+} as const;
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Convert seconds to frames at given FPS
+ */
+export function secondsToFrames(seconds: number, fps: number = TIMING.FPS_DEFAULT): number {
+    return Math.round(seconds * fps);
+}
+
+/**
+ * Convert frames to seconds at given FPS
+ */
+export function framesToSeconds(frames: number, fps: number = TIMING.FPS_DEFAULT): number {
+    return frames / fps;
+}
+
+/**
+ * Get timing value in frames for common durations
+ */
+export const DURATION_FRAMES = {
+    /** 0.5 seconds */
+    HALF_SECOND: secondsToFrames(0.5),
+    /** 1 second */
+    ONE_SECOND: secondsToFrames(1),
+    /** 2 seconds */
+    TWO_SECONDS: secondsToFrames(2),
+    /** 3 seconds */
+    THREE_SECONDS: secondsToFrames(3),
+    /** 5 seconds */
+    FIVE_SECONDS: secondsToFrames(5),
+    /** 10 seconds */
+    TEN_SECONDS: secondsToFrames(10),
+} as const;
+````
+
+## File: packages/core/src/eventUtils.ts
+````typescript
+/**
+ * Event Utilities - Performance optimizations for event processing
+ * 
+ * These utilities help avoid O(n) filtering on every frame.
+ */
+
+import { TimelineEvent } from "./types";
+
+// =============================================================================
+// EVENT INDEXING
+// =============================================================================
+
+/**
+ * EventIndex - Pre-processed event lookup for efficient frame-based access
+ * 
+ * Instead of filtering all events on every frame, events are indexed by
+ * their `at` value for O(1) lookup per unique frame.
+ */
+export interface EventIndex {
+    /** Events indexed by frame number */
+    byFrame: Map<number, TimelineEvent[]>;
+
+    /** Maximum frame number in the events */
+    maxFrame: number;
+
+    /** Total event count */
+    totalEvents: number;
+
+    /** Sorted unique frame numbers */
+    frames: number[];
+}
+
+/**
+ * Create an event index from a list of events
+ * 
+ * @param events - Array of timeline events
+ * @returns Indexed events for efficient lookup
+ */
+export function createEventIndex(events: TimelineEvent[]): EventIndex {
+    const byFrame = new Map<number, TimelineEvent[]>();
+    let maxFrame = 0;
+
+    for (const event of events) {
+        const frameEvents = byFrame.get(event.at) || [];
+        frameEvents.push(event);
+        byFrame.set(event.at, frameEvents);
+        maxFrame = Math.max(maxFrame, event.at);
+    }
+
+    const frames = Array.from(byFrame.keys()).sort((a, b) => a - b);
+
+    return {
+        byFrame,
+        maxFrame,
+        totalEvents: events.length,
+        frames,
+    };
+}
+
+/**
+ * Get all events up to and including frame t
+ * 
+ * @param index - Pre-computed event index
+ * @param t - Current frame number
+ * @returns All events with `at <= t`
+ */
+export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
+    const result: TimelineEvent[] = [];
+
+    for (const frame of index.frames) {
+        if (frame > t) break;
+        const events = index.byFrame.get(frame);
+        if (events) {
+            result.push(...events);
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Get events that occur exactly at frame t
+ * 
+ * @param index - Pre-computed event index
+ * @param t - Frame number to query
+ * @returns Events at frame t (or empty array)
+ */
+export function getEventsAt(index: EventIndex, t: number): TimelineEvent[] {
+    return index.byFrame.get(t) || [];
+}
+
+/**
+ * Get events within a frame range (inclusive)
+ * 
+ * @param index - Pre-computed event index
+ * @param start - Start frame
+ * @param end - End frame
+ * @returns Events where `start <= at <= end`
+ */
+export function getEventsInRange(index: EventIndex, start: number, end: number): TimelineEvent[] {
+    const result: TimelineEvent[] = [];
+
+    for (const frame of index.frames) {
+        if (frame < start) continue;
+        if (frame > end) break;
+        const events = index.byFrame.get(frame);
+        if (events) {
+            result.push(...events);
+        }
+    }
+
+    return result;
+}
+
+// =============================================================================
+// EVENT FILTERING UTILITIES  
+// =============================================================================
+
+/**
+ * Filter events by kind
+ */
+export function filterEventsByKind<K extends TimelineEvent["kind"]>(
+    events: TimelineEvent[],
+    kind: K
+): Extract<TimelineEvent, { kind: K }>[] {
+    return events.filter(e => e.kind === kind) as any;
+}
+
+/**
+ * Filter events by app ID
+ */
+export function filterEventsForApp(events: TimelineEvent[], appId: string): TimelineEvent[] {
+    return events.filter(e => e.kind === "APP" && (e as any).appId === appId);
+}
+
+/**
+ * Filter events by device ID
+ */
+export function filterEventsForDevice(events: TimelineEvent[], deviceId: string): TimelineEvent[] {
+    return events.filter(e => {
+        if (e.kind === "DEVICE") return (e as any).deviceId === deviceId;
+        if (e.kind === "CAMERA" || e.kind === "AUDIO") {
+            const d = (e as any).deviceId;
+            return !d || d === deviceId;
+        }
+        return true;
+    });
+}
+````
+
+## File: packages/core/src/plugin.ts
+````typescript
+/**
+ * Plugin System - Self-contained app registration
+ * 
+ * Apps register themselves as plugins with all their dependencies:
+ * - UI components
+ * - State reducers  
+ * - Sound effects
+ * - Event types they handle
+ */
+
+import { WorldState } from "./types";
+import { AppReducer, ReducerRegistry } from "./engine";
+
+// =============================================================================
+// PLUGIN TYPES
+// =============================================================================
+
+/**
+ * Props passed to all app view components
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: any;
+    platform?: "ios" | "android";
+    deviceId?: string;
+}
+
+/**
+ * App view component type (generic, will be React.FC in renderer)
+ */
+export type AppViewComponent = (props: AppViewProps) => any;
+
+/**
+ * Plugin definition - everything an app needs to function
+ */
+export interface TokovoPlugin {
+    /** Unique app ID (e.g., "app_whatsapp") */
+    id: string;
+
+    /** Display name */
+    name: string;
+
+    /** Plugin version */
+    version: string;
+
+    /** App icon for notifications/home screen */
+    icon?: string;
+
+    /** Primary color for theming */
+    primaryColor?: string;
+
+    /** React component to render the app view */
+    appView?: AppViewComponent;
+
+    /** State reducer for APP events */
+    reducer?: AppReducer;
+
+    /** Event types this plugin handles */
+    eventTypes?: string[];
+
+    /** Sound effect mappings */
+    sounds?: Record<string, string>;
+
+    /** Notification sound */
+    notificationSound?: string;
+
+    /** Default app state */
+    defaultState?: any;
+}
+
+// =============================================================================
+// PLUGIN MANAGER
+// =============================================================================
+
+/**
+ * PluginManager - Central registry for all app plugins
+ */
+class PluginManagerClass {
+    private plugins = new Map<string, TokovoPlugin>();
+    private viewRegistry = new Map<string, AppViewComponent>();
+
+    /**
+     * Register a plugin
+     */
+    register(plugin: TokovoPlugin): void {
+        if (this.plugins.has(plugin.id)) {
+            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+        }
+
+        this.plugins.set(plugin.id, plugin);
+
+        // Auto-register reducer
+        if (plugin.reducer) {
+            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+        }
+
+        // Store view component
+        if (plugin.appView) {
+            this.viewRegistry.set(plugin.id, plugin.appView);
+        }
+
+        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
+    }
+
+    /**
+     * Get a plugin by ID
+     */
+    get(id: string): TokovoPlugin | undefined {
+        return this.plugins.get(id);
+    }
+
+    /**
+     * Get app view component
+     */
+    getView(id: string): AppViewComponent | undefined {
+        return this.viewRegistry.get(id);
+    }
+
+    /**
+     * Get all registered plugins
+     */
+    getAll(): TokovoPlugin[] {
+        return Array.from(this.plugins.values());
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getAppIds(): string[] {
+        return Array.from(this.plugins.keys());
+    }
+
+    /**
+     * Check if plugin is registered
+     */
+    has(id: string): boolean {
+        return this.plugins.has(id);
+    }
+
+    /**
+     * Get plugin metadata for display
+     */
+    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+        const plugin = this.plugins.get(id);
+        if (!plugin) return undefined;
+        return {
+            name: plugin.name,
+            icon: plugin.icon,
+            color: plugin.primaryColor,
+        };
+    }
+
+    /**
+     * Get sound for an event from plugin
+     */
+    getSound(pluginId: string, soundKey: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.sounds?.[soundKey];
+    }
+}
+
+export const PluginManager = new PluginManagerClass();
+
+// =============================================================================
+// PLUGIN HELPERS
+// =============================================================================
+
+/**
+ * Create a plugin definition with defaults
+ */
+export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
+    return {
+        ...config,
+        version: config.version ?? "1.0.0",
+        eventTypes: config.eventTypes ?? [],
+        sounds: config.sounds ?? {},
+    } as TokovoPlugin;
+}
+
+/**
+ * Register multiple plugins at once
+ */
+export function registerPlugins(plugins: TokovoPlugin[]): void {
+    plugins.forEach(plugin => PluginManager.register(plugin));
 }
 ````
 
@@ -1049,6 +2373,535 @@ export function getSoundPath(soundId: string): string {
         return `sounds/${soundId}.mp3`; // Fallback to direct ID
     }
     return `sounds/${filename}`;
+}
+````
+
+## File: packages/core/src/transitions.ts
+````typescript
+/**
+ * Transition System - Screen transition rendering and state
+ * 
+ * Handles animated transitions between screens/apps.
+ */
+
+import { TransitionType, EasingType } from "./types";
+
+// =============================================================================
+// TRANSITION STATE
+// =============================================================================
+
+/**
+ * Active transition state
+ */
+export interface TransitionState {
+    active?: {
+        type: TransitionType;
+        from: string;
+        to: string;
+        startFrame: number;
+        duration: number;
+        easing?: EasingType;
+    };
+}
+
+/**
+ * Default transition state
+ */
+export const DEFAULT_TRANSITION_STATE: TransitionState = {};
+
+// =============================================================================
+// TRANSITION COMPUTATION
+// =============================================================================
+
+/**
+ * Compute transition progress at frame t
+ * Returns 0-1 progress value with easing applied
+ */
+export function computeTransitionProgress(
+    transition: TransitionState["active"],
+    t: number,
+    applyEasing: (progress: number, easing: EasingType) => number
+): number {
+    if (!transition) return 1;
+
+    const { startFrame, duration, easing = "ease-out" } = transition;
+    const endFrame = startFrame + duration;
+
+    if (t < startFrame) return 0;
+    if (t >= endFrame) return 1;
+
+    const rawProgress = (t - startFrame) / duration;
+    return applyEasing(rawProgress, easing);
+}
+
+// =============================================================================
+// TRANSITION STYLES
+// =============================================================================
+
+/**
+ * CSS Properties type (compatible with React.CSSProperties)
+ */
+type CSSProperties = Record<string, string | number | undefined>;
+
+/**
+ * CSS transform/opacity for transition animations
+ */
+export interface TransitionStyles {
+    from: CSSProperties;
+    to: CSSProperties;
+}
+
+/**
+ * Get CSS styles for a transition type at given progress
+ */
+export function getTransitionStyles(
+    type: TransitionType,
+    progress: number,
+    isFrom: boolean
+): CSSProperties {
+    // Progress 0 = transition start, 1 = transition end
+    // For "from" view: starts at 1 opacity, ends at 0
+    // For "to" view: starts at 0 opacity, ends at 1
+
+    const t = isFrom ? 1 - progress : progress;
+
+    switch (type) {
+        case "FADE":
+            return {
+                opacity: t,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "SLIDE_LEFT":
+            return {
+                transform: isFrom
+                    ? `translateX(${-progress * 100}%)`
+                    : `translateX(${(1 - progress) * 100}%)`,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "SLIDE_RIGHT":
+            return {
+                transform: isFrom
+                    ? `translateX(${progress * 100}%)`
+                    : `translateX(${-(1 - progress) * 100}%)`,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "SLIDE_UP":
+            return {
+                transform: isFrom
+                    ? `translateY(${-progress * 100}%)`
+                    : `translateY(${(1 - progress) * 100}%)`,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "SLIDE_DOWN":
+            return {
+                transform: isFrom
+                    ? `translateY(${progress * 100}%)`
+                    : `translateY(${-(1 - progress) * 100}%)`,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "ZOOM_IN":
+            return {
+                transform: isFrom
+                    ? `scale(${1 + progress * 0.2})`
+                    : `scale(${0.8 + progress * 0.2})`,
+                opacity: t,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "ZOOM_OUT":
+            return {
+                transform: isFrom
+                    ? `scale(${1 - progress * 0.2})`
+                    : `scale(${1.2 - progress * 0.2})`,
+                opacity: t,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+
+        case "CROSS_DISSOLVE":
+            return {
+                opacity: t,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                mixBlendMode: "normal" as const,
+            };
+
+        default:
+            return {
+                opacity: t,
+                position: "absolute" as const,
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+            };
+    }
+}
+
+// =============================================================================
+// TRANSITION PRESETS
+// =============================================================================
+
+/**
+ * Common transition presets
+ */
+export const TRANSITION_PRESETS = {
+    /** iOS app open animation */
+    appOpen: {
+        type: "ZOOM_IN" as TransitionType,
+        duration: 15,
+        easing: "ease-out" as EasingType,
+    },
+
+    /** iOS app close animation */
+    appClose: {
+        type: "ZOOM_OUT" as TransitionType,
+        duration: 12,
+        easing: "ease-in" as EasingType,
+    },
+
+    /** Standard navigation push */
+    push: {
+        type: "SLIDE_LEFT" as TransitionType,
+        duration: 18,
+        easing: "ease-out" as EasingType,
+    },
+
+    /** Standard navigation pop */
+    pop: {
+        type: "SLIDE_RIGHT" as TransitionType,
+        duration: 18,
+        easing: "ease-out" as EasingType,
+    },
+
+    /** Modal presentation */
+    modal: {
+        type: "SLIDE_UP" as TransitionType,
+        duration: 20,
+        easing: "ease-out" as EasingType,
+    },
+
+    /** Lock screen unlock */
+    unlock: {
+        type: "FADE" as TransitionType,
+        duration: 10,
+        easing: "ease-out" as EasingType,
+    },
+} as const;
+````
+
+## File: packages/core/src/typeGuards.ts
+````typescript
+/**
+ * Type Guards - Type-safe event discrimination
+ * 
+ * These guards eliminate the need for `as any` casts when handling events.
+ * Each guard narrows the TimelineEvent type to a specific variant.
+ */
+
+import { TimelineEvent, Message } from "./types";
+
+// =============================================================================
+// DEVICE EVENT GUARDS
+// =============================================================================
+
+export function isDeviceEvent(e: TimelineEvent): e is TimelineEvent & { kind: "DEVICE" } {
+    return e.kind === "DEVICE";
+}
+
+export function isLockEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "DEVICE";
+    type: "LOCK";
+    deviceId: string;
+} {
+    return e.kind === "DEVICE" && e.type === "LOCK";
+}
+
+export function isUnlockEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "DEVICE";
+    type: "UNLOCK";
+    deviceId: string;
+} {
+    return e.kind === "DEVICE" && e.type === "UNLOCK";
+}
+
+export function isOpenAppEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "DEVICE";
+    type: "OPEN_APP";
+    deviceId: string;
+    appId: string;
+} {
+    return e.kind === "DEVICE" && e.type === "OPEN_APP";
+}
+
+export function isShowNotificationEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "DEVICE";
+    type: "SHOW_NOTIFICATION";
+    deviceId: string;
+    appId: string;
+    title: string;
+    body: string;
+    mode?: "lockscreen" | "headsup" | "both";
+    icon?: string;
+} {
+    return e.kind === "DEVICE" && e.type === "SHOW_NOTIFICATION";
+}
+
+export function isIncomingCallEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "DEVICE";
+    type: "INCOMING_CALL";
+    deviceId: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+} {
+    return e.kind === "DEVICE" && e.type === "INCOMING_CALL";
+}
+
+// =============================================================================
+// APP EVENT GUARDS
+// =============================================================================
+
+export function isAppEvent(e: TimelineEvent): e is TimelineEvent & { kind: "APP" } {
+    return e.kind === "APP";
+}
+
+/** Message payload type for type safety */
+export interface MessagePayload {
+    id: string;
+    type?: "text" | "image" | "voice" | "system";
+    text?: string;
+    status?: "sending" | "sent" | "delivered" | "read";
+    timestamp?: string;
+}
+
+export function isMessageReceivedEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "MESSAGE_RECEIVED";
+    appId: string;
+    conversationId: string;
+    from: string;
+    text?: string;
+    message?: MessagePayload;
+} {
+    return e.kind === "APP" && e.type === "MESSAGE_RECEIVED";
+}
+
+export function isTypingStartEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "TYPING_START";
+    appId: string;
+    conversationId: string;
+    from: string;
+} {
+    return e.kind === "APP" && e.type === "TYPING_START";
+}
+
+export function isTypingEndEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "TYPING_END";
+    appId: string;
+    conversationId: string;
+    from: string;
+} {
+    return e.kind === "APP" && e.type === "TYPING_END";
+}
+
+export function isTypingEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "TYPING_START" | "TYPING_END";
+    appId: string;
+    conversationId: string;
+    from: string;
+} {
+    return e.kind === "APP" && (e.type === "TYPING_START" || e.type === "TYPING_END");
+}
+
+export function isMessageReadEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "MESSAGE_READ";
+    appId: string;
+    conversationId: string;
+    messageId: string;
+} {
+    return e.kind === "APP" && e.type === "MESSAGE_READ";
+}
+
+export function isVoiceMessageReceivedEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "VOICE_MESSAGE_RECEIVED";
+    appId: string;
+    conversationId: string;
+    from: string;
+    duration: number;
+} {
+    return e.kind === "APP" && e.type === "VOICE_MESSAGE_RECEIVED";
+}
+
+export function isGroupMemberAddedEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "GROUP_MEMBER_ADDED";
+    appId: string;
+    conversationId: string;
+    memberId: string;
+    memberName: string;
+    addedBy: string;
+} {
+    return e.kind === "APP" && e.type === "GROUP_MEMBER_ADDED";
+}
+
+export function isGroupMemberRemovedEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "APP";
+    type: "GROUP_MEMBER_REMOVED";
+    appId: string;
+    conversationId: string;
+    memberId: string;
+    memberName: string;
+    removedBy: string;
+} {
+    return e.kind === "APP" && e.type === "GROUP_MEMBER_REMOVED";
+}
+
+// =============================================================================
+// CAMERA EVENT GUARDS
+// =============================================================================
+
+export function isCameraEvent(e: TimelineEvent): e is TimelineEvent & { kind: "CAMERA" } {
+    return e.kind === "CAMERA";
+}
+
+export function isZoomEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "CAMERA";
+    type: "ZOOM";
+    scale: number;
+    originX?: number;
+    originY?: number;
+    duration: number;
+    deviceId?: string;
+} {
+    return e.kind === "CAMERA" && e.type === "ZOOM";
+}
+
+export function isPanEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "CAMERA";
+    type: "PAN";
+    translateX: number;
+    translateY: number;
+    duration: number;
+    deviceId?: string;
+} {
+    return e.kind === "CAMERA" && e.type === "PAN";
+}
+
+export function isShakeEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "CAMERA";
+    type: "SHAKE";
+    intensity: number;
+    frequency: number;
+    duration: number;
+    deviceId?: string;
+} {
+    return e.kind === "CAMERA" && e.type === "SHAKE";
+}
+
+export function isLayoutEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "CAMERA";
+    type: "LAYOUT";
+    mode: string;
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+} {
+    return e.kind === "CAMERA" && e.type === "LAYOUT";
+}
+
+// =============================================================================
+// AUDIO EVENT GUARDS
+// =============================================================================
+
+export function isAudioEvent(e: TimelineEvent): e is TimelineEvent & { kind: "AUDIO" } {
+    return e.kind === "AUDIO";
+}
+
+export function isPlaySoundEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "AUDIO";
+    type: "PLAY_SOUND";
+    soundId: string;
+    instanceId?: string;
+    volume?: number;
+    loop?: boolean;
+    deviceId?: string;
+} {
+    return e.kind === "AUDIO" && e.type === "PLAY_SOUND";
+}
+
+export function isBackgroundMusicEvent(e: TimelineEvent): e is TimelineEvent & {
+    kind: "AUDIO";
+    type: "BACKGROUND_MUSIC";
+    soundId: string;
+    volume?: number;
+    loop?: boolean;
+} {
+    return e.kind === "AUDIO" && e.type === "BACKGROUND_MUSIC";
+}
+
+// =============================================================================
+// UTILITY GUARDS
+// =============================================================================
+
+/**
+ * Check if event belongs to a specific app
+ */
+export function isEventForApp(e: TimelineEvent, appId: string): boolean {
+    return e.kind === "APP" && (e as any).appId === appId;
+}
+
+/**
+ * Check if event belongs to a specific device
+ */
+export function isEventForDevice(e: TimelineEvent, deviceId: string): boolean {
+    if (e.kind === "DEVICE") {
+        return (e as any).deviceId === deviceId;
+    }
+    if (e.kind === "CAMERA" || e.kind === "AUDIO") {
+        return (e as any).deviceId === deviceId || !(e as any).deviceId;
+    }
+    return true; // APP events apply to all
 }
 ````
 
@@ -1442,6 +3295,63 @@ export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutSta
         deviceRotation,
         overlayOpacity,
         meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/director-adapter.ts
+````typescript
+/**
+ * Director Layout Adapter
+ *
+ * Creates DirectorLayoutModel from computed chat layout.
+ * This is the ONLY place layout rects are extracted for the director.
+ */
+
+import { DirectorLayoutModel, LayoutRect } from "@tokovo/core";
+import { ChatLayoutState } from "./types";
+
+/**
+ * Create DirectorLayoutModel from computed chat layout.
+ * Both UI and Director use the same source (chat strategy computed rects).
+ */
+export function createDirectorLayoutModel(
+    chatLayout: ChatLayoutState,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    viewportHeight: number
+): DirectorLayoutModel {
+    const messageRects: Record<string, LayoutRect> = {};
+
+    for (const [id, layout] of Object.entries(chatLayout.messageLayouts)) {
+        if (layout.rect) {
+            messageRects[id] = layout.rect;
+        }
+    }
+
+    // Input area rect (always at bottom of viewport)
+    const inputAreaRect: LayoutRect = {
+        x: 0,
+        y: viewportHeight - 120, // Approximate input area position
+        width: 1080, // Will be refined by caller
+        height: 120,
+    };
+
+    // Last message rect
+    const lastMessageId = chatLayout.meta?.lastMessageId;
+    const lastMessageRect = lastMessageId
+        ? messageRects[lastMessageId]
+        : undefined;
+
+    return {
+        deviceId,
+        appId,
+        conversationId,
+        messageRects,
+        inputAreaRect,
+        typingIndicatorRect: chatLayout.typingLayout?.rect,
+        lastMessageRect,
     };
 }
 ````
@@ -2132,6 +4042,117 @@ const SoundInstance: React.FC<{
 };
 
 export default AudioLayer;
+````
+
+## File: packages/renderer/src/camera-composer.ts
+````typescript
+/**
+ * Camera Composer
+ *
+ * Applies director effects to create final camera transform.
+ * Director owns framing when enabled - base transform should be neutral.
+ */
+
+import {
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+} from "@tokovo/core";
+import { DerivedCameraEffect, LayoutRect } from "@tokovo/core";
+
+export interface Viewport {
+    width: number;
+    height: number;
+    scrollY: number;
+}
+
+/**
+ * Apply director effects to create final transform.
+ *
+ * POLICY: Director owns framing when enabled.
+ * When director effects exist, we start from neutral and apply them.
+ */
+export function applyDirectorEffects(
+    effects: DerivedCameraEffect[],
+    viewport: Viewport
+): CameraTransform {
+    // Start fresh - director owns the frame
+    const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+    // Apply framing (there's at most 1 after arbitration)
+    const framing = effects.find((e) => e.category === "framing");
+    if (framing) {
+        applyFramingEffect(transform, framing, viewport);
+    }
+
+    // Apply shake (additive, can stack)
+    const shakes = effects.filter((e) => e.category === "shake");
+    for (const shake of shakes) {
+        applyShakeEffect(transform, shake);
+    }
+
+    return transform;
+}
+
+function applyFramingEffect(
+    transform: CameraTransform,
+    effect: DerivedCameraEffect,
+    viewport: Viewport
+): void {
+    const { progress, scale, target } = effect;
+
+    switch (effect.type) {
+        case "PushIn":
+        case "ZoomToRect": {
+            if (!scale || !target) return;
+
+            // Scale interpolation
+            transform.scale = 1 + (scale - 1) * progress;
+
+            // Origin: center on target rect (adjusted for scroll)
+            const centerX = target.x + target.width / 2;
+            const centerY = target.y + target.height / 2 - viewport.scrollY;
+
+            transform.originX = centerX / viewport.width;
+            transform.originY = centerY / viewport.height;
+            break;
+        }
+
+        case "PullBack": {
+            if (!scale) return;
+            transform.scale = 1 + (scale - 1) * progress;
+            // Origin stays centered for pullback
+            transform.originX = 0.5;
+            transform.originY = 0.5;
+            break;
+        }
+    }
+}
+
+function applyShakeEffect(
+    transform: CameraTransform,
+    effect: DerivedCameraEffect
+): void {
+    const { intensity, seed, progress } = effect;
+    if (!intensity || seed === undefined) return;
+
+    // Decay shake over progress
+    const decay = 1 - progress;
+    const amp = intensity * decay;
+
+    // Deterministic shake
+    transform.shakeX += (seededRandom(seed) - 0.5) * 2 * amp;
+    transform.shakeY += (seededRandom(seed + 1) - 0.5) * 2 * amp;
+}
+
+/**
+ * Deterministic random (mulberry32)
+ */
+function seededRandom(seed: number): number {
+    let t = seed + 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
 ````
 
 ## File: packages/renderer/src/HeadsUpNotification.tsx
@@ -2855,56 +4876,6 @@ packages:
   - "packages/*"
 ````
 
-## File: repomix.config.json
-````json
-{
-  "$schema": "https://repomix.com/schemas/latest/schema.json",
-  "input": {
-    "maxFileSize": 52428800
-  },
-  "output": {
-    "filePath": "tokovo.md",
-    "style": "markdown",
-    "parsableStyle": false,
-    "fileSummary": true,
-    "directoryStructure": true,
-    "files": true,
-    "removeComments": false,
-    "removeEmptyLines": false,
-    "compress": false,
-    "topFilesLength": 5,
-    "showLineNumbers": false,
-    "truncateBase64": false,
-    "copyToClipboard": false,
-    "includeFullDirectoryStructure": false,
-    "tokenCountTree": false,
-    "git": {
-      "sortByChanges": true,
-      "sortByChangesMaxCommits": 100,
-      "includeDiffs": false,
-      "includeLogs": false,
-      "includeLogsCount": 50
-    }
-  },
-  "include": [],
-  "ignore": {
-    "useGitignore": true,
-    "useDotIgnore": true,
-    "useDefaultPatterns": true,
-    "customPatterns": [
-      "*.md",
-      "*.mp3"
-    ]
-  },
-  "security": {
-    "enableSecurityCheck": true
-  },
-  "tokenCount": {
-    "encoding": "o200k_base"
-  }
-}
-````
-
 ## File: tsconfig.base.json
 ````json
 {
@@ -2989,6 +4960,130 @@ export const AndroidVideo: React.FC = () => {
                 <TokovoRenderer world={world} t={t} />
             </div>
         </div>
+    );
+};
+````
+
+## File: apps/video-runner/src/InstagramVideo.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { instagramEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-instagram";
+
+export const InstagramVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
+    const world = replay(instagramEpisode.initialWorld as unknown as WorldState, instagramEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} debug={true} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: apps/video-runner/src/WhatsappPsychoticDemoVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { whatsappPsychoticDemo } from "@tokovo/episodes";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * WhatsappPsychoticDemoVideo
+ * Demonstrates advanced "psychotic" messaging features:
+ * - Missed calls
+ * - Deleted messages
+ * - Screenshot alerts
+ * - Voice notes with waveforms
+ * - Edited messages
+ * 
+ * DirectorLite enabled - camera will automatically react to events
+ */
+export const WhatsappPsychoticDemoVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Episode data
+    const episode = whatsappPsychoticDemo as { initialWorld: WorldState; events: TimelineEvent[] };
+
+    // Create event index once for DirectorLite (memoized)
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={true}  // Enable debug logging for testing
+                />
+            </div>
+        </AbsoluteFill>
     );
 };
 ````
@@ -3233,6 +5328,15 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
 };
 ````
 
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+````
+
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
 ````typescript
 import React from "react";
@@ -3308,481 +5412,6 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
         "@types/react": "18.2.0"
     }
 }
-````
-
-## File: packages/core/src/camera/index.ts
-````typescript
-/**
- * Camera Module - Cinematic Camera System for Tokovo
- * 
- * This module provides production-grade camera effects including:
- * - ZOOM: Scale with configurable origin and easing
- * - PAN: Translation with smooth easing
- * - SHAKE: Screen shake with frequency, intensity, and decay
- * - FOCUS: Target-based zoom (app, notification, message, point)
- * - CUT: Instant transitions between views
- * - RESET: Smooth return to default camera position
- */
-
-import {
-    CameraState,
-    CameraTransform,
-    CameraEffect,
-    ActiveCameraEffect,
-    EasingType,
-    DEFAULT_CAMERA_TRANSFORM,
-    CameraZoomEffect,
-    CameraPanEffect,
-    CameraShakeEffect,
-    CameraFocusEffect,
-    CameraResetEffect,
-} from "../types";
-
-// =============================================================================
-// EASING FUNCTIONS
-// =============================================================================
-
-/**
- * Easing functions library - cinematic-grade timing curves
- * Input: t (0-1), Output: eased value (0-1)
- */
-export const easingFunctions: Record<EasingType, (t: number) => number> = {
-    "linear": (t) => t,
-
-    "ease-in": (t) => t * t * t,
-
-    "ease-out": (t) => 1 - Math.pow(1 - t, 3),
-
-    "ease-in-out": (t) => t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2,
-
-    "bounce": (t) => {
-        const n1 = 7.5625;
-        const d1 = 2.75;
-        if (t < 1 / d1) {
-            return n1 * t * t;
-        } else if (t < 2 / d1) {
-            return n1 * (t -= 1.5 / d1) * t + 0.75;
-        } else if (t < 2.5 / d1) {
-            return n1 * (t -= 2.25 / d1) * t + 0.9375;
-        } else {
-            return n1 * (t -= 2.625 / d1) * t + 0.984375;
-        }
-    },
-
-    "elastic": (t) => {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1
-            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-    },
-
-    // Cinematic S-curve - smooth start, linear middle, smooth end
-    // Inspired by film camera movements
-    "cinematic": (t) => {
-        // Custom bezier-like curve for film-quality motion
-        if (t < 0.2) {
-            // Smooth ease-in for first 20%
-            return 0.5 * Math.pow(t / 0.2, 2) * 0.2;
-        } else if (t > 0.8) {
-            // Smooth ease-out for last 20%
-            const localT = (t - 0.8) / 0.2;
-            return 0.8 + 0.2 * (1 - Math.pow(1 - localT, 2));
-        } else {
-            // Linear middle section (60%)
-            return 0.1 + (t - 0.2) * (0.7 / 0.6);
-        }
-    },
-};
-
-/**
- * Apply easing to a progress value
- */
-export function applyEasing(progress: number, easing: EasingType = "ease-out"): number {
-    const clampedProgress = Math.max(0, Math.min(1, progress));
-    return easingFunctions[easing](clampedProgress);
-}
-
-// =============================================================================
-// SEEDED RANDOM FOR DETERMINISTIC SHAKE
-// =============================================================================
-
-/**
- * Seeded random number generator for deterministic shake effects
- * Uses mulberry32 algorithm for speed and quality
- */
-function seededRandom(seed: number): () => number {
-    return function () {
-        let t = seed += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-}
-
-/**
- * Generate shake offset for a given frame
- * Returns values between -1 and 1
- */
-function getShakeOffset(frame: number, seed: number, frequency: number, fps: number = 30): { x: number; y: number } {
-    // Calculate how many shake cycles per frame
-    const cyclesPerSecond = frequency;
-    const cyclesPerFrame = cyclesPerSecond / fps;
-
-    // Create deterministic random based on frame and seed
-    const rng = seededRandom(seed + Math.floor(frame * cyclesPerFrame));
-
-    // Generate offset (-1 to 1)
-    const x = (rng() - 0.5) * 2;
-    const y = (rng() - 0.5) * 2;
-
-    return { x, y };
-}
-
-// =============================================================================
-// CAMERA CONTROLLER
-// =============================================================================
-
-/**
- * CameraController - Computes camera transforms at any given frame
- * 
- * This is the heart of the cinematic system. It takes:
- * - Current camera state (with active effects)
- * - Current frame number
- * 
- * And produces a final CameraTransform with all effects composited.
- */
-export class CameraController {
-    private fps: number;
-
-    constructor(fps: number = 30) {
-        this.fps = fps;
-    }
-
-    /**
-     * Compute the final camera transform at frame t
-     * 
-     * Effects are applied in layers:
-     * 1. Completed effects that ended before t - their final state persists
-     * 2. Active effects at time t - animated based on progress
-     * 
-     * For overlapping effects:
-     * - Scale is multiplicative (zoom 1.2 + zoom 1.5 = zoom 1.8)
-     * - Translate is additive
-     * - Origin uses the most recent effect's origin
-     * - Shake is additive
-     */
-    computeTransform(state: CameraState, t: number): CameraTransform {
-        // Start with default transform
-        const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-        // Track the "base" scale that completed zoom effects have settled to
-        let baseScale = 1.0;
-        let baseTranslateX = 0;
-        let baseTranslateY = 0;
-
-        // Sort effects by start time for consistent processing
-        const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
-
-        for (const activeEffect of sortedEffects) {
-            const { effect, startFrame, endFrame } = activeEffect;
-
-            // Skip effects that haven't started yet
-            if (t < startFrame) continue;
-
-            const duration = endFrame - startFrame;
-
-            // Calculate progress (0 to 1 during effect, 1 after completion)
-            let progress: number;
-            if (t >= endFrame) {
-                // Effect completed - use final state
-                progress = 1;
-            } else {
-                // Effect in progress
-                progress = duration > 0 ? (t - startFrame) / duration : 1;
-            }
-
-            // Apply effect based on type
-            switch (effect.type) {
-                case "ZOOM": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    // Zoom goes from 1.0 to target, scaled by eased progress
-                    const zoomFactor = 1 + (effect.scale - 1) * easedProgress;
-                    baseScale *= zoomFactor / (progress >= 1 ? 1 : 1); // For completed effects
-                    transform.scale = baseScale * (progress >= 1 ? 1 : zoomFactor);
-
-                    // Actually, simpler: just set scale directly
-                    transform.scale = 1 + (effect.scale - 1) * easedProgress;
-
-                    // Set origin
-                    if (effect.originX !== undefined) transform.originX = effect.originX;
-                    if (effect.originY !== undefined) transform.originY = effect.originY;
-                    break;
-                }
-                case "PAN": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    transform.translateX += effect.translateX * easedProgress;
-                    transform.translateY += effect.translateY * easedProgress;
-                    break;
-                }
-                case "SHAKE": {
-                    const frameInEffect = t - startFrame;
-                    const seed = effect.seed ?? startFrame;
-                    const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
-                    const decay = effect.decay ?? 0.3;
-                    const decayMultiplier = 1 - (progress * decay);
-
-                    // Shake is additive and separate from main transform
-                    transform.shakeX += offset.x * effect.intensity * decayMultiplier;
-                    transform.shakeY += offset.y * effect.intensity * decayMultiplier;
-                    break;
-                }
-                case "FOCUS": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    const targetScale = effect.scale ?? 1.5;
-                    transform.scale = 1 + (targetScale - 1) * easedProgress;
-
-                    if (effect.target.type === "point") {
-                        transform.originX = effect.target.x;
-                        transform.originY = effect.target.y;
-                    }
-                    break;
-                }
-                case "RESET": {
-                    const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-                    // Blend current values toward defaults
-                    transform.translateX *= (1 - easedProgress);
-                    transform.translateY *= (1 - easedProgress);
-                    transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
-                    transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
-                    transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
-                    break;
-                }
-            }
-        }
-
-        return transform;
-    }
-
-    /**
-     * Apply a single effect to the transform
-     */
-    private applyEffect(transform: CameraTransform, activeEffect: ActiveCameraEffect, t: number): void {
-        const { effect, startFrame, endFrame } = activeEffect;
-        const duration = endFrame - startFrame;
-        const localT = duration > 0 ? (t - startFrame) / duration : 1;
-
-        switch (effect.type) {
-            case "ZOOM":
-                this.applyZoom(transform, effect, localT);
-                break;
-            case "PAN":
-                this.applyPan(transform, effect, localT);
-                break;
-            case "SHAKE":
-                this.applyShake(transform, effect, localT, t, startFrame);
-                break;
-            case "FOCUS":
-                this.applyFocus(transform, effect, localT);
-                break;
-            case "RESET":
-                this.applyReset(transform, effect, localT);
-                break;
-            // CUT is handled by the reducer, not here
-        }
-    }
-
-    /**
-     * ZOOM effect - scale with origin
-     */
-    private applyZoom(transform: CameraTransform, effect: CameraZoomEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Interpolate from current scale to target scale
-        const startScale = transform.scale;
-        const targetScale = effect.scale;
-        transform.scale = startScale + (targetScale - startScale) * easedProgress;
-
-        // Set transform origin if specified
-        if (effect.originX !== undefined) {
-            transform.originX = effect.originX;
-        }
-        if (effect.originY !== undefined) {
-            transform.originY = effect.originY;
-        }
-    }
-
-    /**
-     * PAN effect - translate position
-     */
-    private applyPan(transform: CameraTransform, effect: CameraPanEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Add translation (effects are additive for pan)
-        transform.translateX += effect.translateX * easedProgress;
-        transform.translateY += effect.translateY * easedProgress;
-    }
-
-    /**
-     * SHAKE effect - screen tremor with decay
-     */
-    private applyShake(
-        transform: CameraTransform,
-        effect: CameraShakeEffect,
-        progress: number,
-        absoluteFrame: number,
-        startFrame: number
-    ): void {
-        const frameInEffect = absoluteFrame - startFrame;
-        const seed = effect.seed ?? startFrame; // Use start frame as default seed for determinism
-
-        // Get shake offset for this frame
-        const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
-
-        // Apply decay (1 = instant decay, 0 = no decay)
-        const decay = effect.decay ?? 0.3; // Default 30% decay
-        const decayMultiplier = 1 - (progress * decay);
-
-        // Apply intensity and decay
-        transform.shakeX += offset.x * effect.intensity * decayMultiplier;
-        transform.shakeY += offset.y * effect.intensity * decayMultiplier;
-    }
-
-    /**
-     * FOCUS effect - zoom to a target
-     * Note: Actual target position calculation happens in the renderer
-     * Here we just handle the zoom/pan animation
-     */
-    private applyFocus(transform: CameraTransform, effect: CameraFocusEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-        const holdDuration = effect.holdDuration ?? 0;
-
-        // If we have a hold duration, adjust the animation curve
-        let animProgress = easedProgress;
-        if (holdDuration > 0 && progress > 0.5) {
-            // Hold at peak for specified duration
-            animProgress = 1;
-        }
-
-        // Apply zoom (FOCUS is essentially targeted ZOOM)
-        const targetScale = effect.scale ?? 1.5;
-        transform.scale = 1 + (targetScale - 1) * animProgress;
-
-        // Target-based origin will be set by renderer based on target position
-        // For now, we handle point-based targets
-        if (effect.target.type === "point") {
-            transform.originX = effect.target.x;
-            transform.originY = effect.target.y;
-        }
-    }
-
-    /**
-     * RESET effect - return to default camera position
-     */
-    private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Interpolate all values toward defaults
-        transform.translateX = transform.translateX * (1 - easedProgress);
-        transform.translateY = transform.translateY * (1 - easedProgress);
-        transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
-        transform.rotation = transform.rotation * (1 - easedProgress);
-        transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
-        transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
-    }
-}
-
-// =============================================================================
-// CAMERA EVENT PROCESSING
-// =============================================================================
-
-/**
- * Convert a timeline camera event to an ActiveCameraEffect
- */
-export function createActiveEffect(
-    event: { at: number; kind: "CAMERA"; type: string;[key: string]: any },
-    id: string
-): ActiveCameraEffect | null {
-    const { at, type, ...params } = event;
-
-    // Skip non-effect events
-    if (type === "SET_VIEW" || type === "CUT") {
-        return null;
-    }
-
-    // Build effect based on type
-    let effect: CameraEffect;
-    const duration = params.duration ?? 30; // Default 1 second at 30fps
-
-    switch (type) {
-        case "ZOOM":
-            effect = {
-                type: "ZOOM",
-                scale: params.scale ?? 1,
-                originX: params.originX,
-                originY: params.originY,
-                duration,
-                easing: params.easing,
-            };
-            break;
-        case "PAN":
-            effect = {
-                type: "PAN",
-                translateX: params.translateX ?? 0,
-                translateY: params.translateY ?? 0,
-                relative: params.relative,
-                duration,
-                easing: params.easing,
-            };
-            break;
-        case "SHAKE":
-            effect = {
-                type: "SHAKE",
-                intensity: params.intensity ?? 10,
-                frequency: params.frequency ?? 15,
-                decay: params.decay,
-                duration,
-                seed: params.seed,
-            };
-            break;
-        case "FOCUS":
-            effect = {
-                type: "FOCUS",
-                target: params.target ?? { type: "device" },
-                scale: params.scale,
-                duration,
-                easing: params.easing,
-                holdDuration: params.holdDuration,
-            };
-            break;
-        case "RESET":
-            effect = {
-                type: "RESET",
-                duration,
-                easing: params.easing,
-            };
-            break;
-        default:
-            return null;
-    }
-
-    return {
-        id,
-        effect,
-        startFrame: at,
-        endFrame: at + duration,
-        deviceId: params.deviceId,  // Per-device targeting
-    };
-}
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export { seededRandom, getShakeOffset };
-
-// Default controller instance
-export const defaultCameraController = new CameraController(30);
 ````
 
 ## File: packages/devices/package.json
@@ -5717,6 +7346,56 @@ function formatDate(): string {
 }
 ````
 
+## File: repomix.config.json
+````json
+{
+  "$schema": "https://repomix.com/schemas/latest/schema.json",
+  "input": {
+    "maxFileSize": 52428800
+  },
+  "output": {
+    "filePath": "tokovo.md",
+    "style": "markdown",
+    "parsableStyle": false,
+    "fileSummary": true,
+    "directoryStructure": true,
+    "files": true,
+    "removeComments": false,
+    "removeEmptyLines": false,
+    "compress": false,
+    "topFilesLength": 5,
+    "showLineNumbers": false,
+    "truncateBase64": false,
+    "copyToClipboard": false,
+    "includeFullDirectoryStructure": false,
+    "tokenCountTree": false,
+    "git": {
+      "sortByChanges": true,
+      "sortByChangesMaxCommits": 100,
+      "includeDiffs": false,
+      "includeLogs": false,
+      "includeLogsCount": 50
+    }
+  },
+  "include": [],
+  "ignore": {
+    "useGitignore": true,
+    "useDotIgnore": true,
+    "useDefaultPatterns": true,
+    "customPatterns": [
+      "*.md",
+      "*.mp3"
+    ]
+  },
+  "security": {
+    "enableSecurityCheck": true
+  },
+  "tokenCount": {
+    "encoding": "o200k_base"
+  }
+}
+````
+
 ## File: apps/video-runner/package.json
 ````json
 {
@@ -6616,194 +8295,6 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 );
 ````
 
-## File: packages/episodes/src/examples/instagram-test.json
-````json
-{
-    "initialState": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_instagram",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "instagram_user",
-                        "text": "Hey! Did you see my new post?",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "appState": {
-            "app_instagram": {
-                "currentView": "feed",
-                "feed": {
-                    "posts": [
-                        {
-                            "id": "p1",
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "image": "https://picsum.photos/seed/insta1/1080/1080",
-                            "caption": "Living my best life! 🌟 #blessed",
-                            "likes": 1234,
-                            "comments": 42,
-                            "liked": false,
-                            "saved": false
-                        },
-                        {
-                            "id": "p2",
-                            "username": "travel_blogger",
-                            "avatar": "https://i.pravatar.cc/150?u=travel",
-                            "image": "https://picsum.photos/seed/insta2/1080/1080",
-                            "caption": "Sunset vibes 🌅",
-                            "likes": 890,
-                            "comments": 12,
-                            "liked": true,
-                            "saved": true
-                        }
-                    ],
-                    "scrollPosition": 0
-                },
-                "stories": {
-                    "users": [
-                        {
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s1",
-                                    "image": "https://picsum.photos/seed/story1/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        },
-                        {
-                            "username": "friend_1",
-                            "avatar": "https://i.pravatar.cc/150?u=friend1",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s2",
-                                    "image": "https://picsum.photos/seed/story2/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "notifications": {
-                    "items": []
-                }
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_instagram"
-        }
-    },
-    "timeline": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "stories"
-            }
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "feed"
-            }
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "explore"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "reels"
-            }
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "notifications"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "profile"
-            }
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "post"
-            }
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "dm"
-            }
-        },
-        {
-            "at": 260,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "Wow, this app is huge!"
-        }
-    ]
-}
-````
-
 ## File: packages/episodes/src/examples/multi-pov-demo.json
 ````json
 {
@@ -7118,503 +8609,6 @@ export const defaultLayoutConfig: LayoutConfig = {
         panDuration: 30,
         zoomDuration: 30
     }
-};
-````
-
-## File: packages/renderer/src/MultiDeviceRenderer.tsx
-````typescript
-import React from "react";
-import {
-    WorldState,
-    ViewLayoutMode,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    DeviceId,
-} from "@tokovo/core";
-import { TokovoRenderer } from "./TokovoRenderer";
-import { AudioLayer } from "./AudioLayer";
-import { getDeviceProfile } from "@tokovo/devices";
-
-/**
- * MultiDeviceRenderer
- * 
- * Renders multiple devices based on the current ViewLayout mode.
- * Supports SINGLE, SPLIT_HORIZONTAL, SPLIT_VERTICAL, and PIP layouts.
- */
-export const MultiDeviceRenderer: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    compositionWidth?: number;
-    compositionHeight?: number;
-}> = ({ world, t, debug = false, compositionWidth = 1080, compositionHeight = 1920 }) => {
-    const layout = world.camera?.layout;
-
-    if (!layout) {
-        // Fallback to single device if no layout
-        return (
-            <>
-                <AudioLayer world={world} t={t} />
-                <SingleDeviceLayout
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={Object.keys(world.devices)[0]}
-                    width={compositionWidth}
-                    height={compositionHeight}
-                />
-            </>
-        );
-    }
-
-    switch (layout.mode) {
-        case "SINGLE":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SingleDeviceLayout
-                        world={world}
-                        t={t}
-                        debug={debug}
-                        deviceId={layout.primaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-
-        case "SPLIT_HORIZONTAL":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SplitHorizontalLayout
-                        world={world}
-                        t={t}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-
-        case "SPLIT_VERTICAL":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SplitVerticalLayout
-                        world={world}
-                        t={t}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-
-        case "PIP":
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <PIPLayout
-                        world={world}
-                        t={t}
-                        debug={debug}
-                        primaryDeviceId={layout.primaryDeviceId}
-                        secondaryDeviceId={layout.secondaryDeviceId}
-                        pipPosition={layout.pipPosition || "bottom-right"}
-                        pipScale={layout.pipScale || 0.3}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-
-        default:
-            return (
-                <>
-                    <AudioLayer world={world} t={t} />
-                    <SingleDeviceLayout
-                        world={world}
-                        t={t}
-                        debug={debug}
-                        deviceId={layout.primaryDeviceId}
-                        width={compositionWidth}
-                        height={compositionHeight}
-                    />
-                </>
-            );
-    }
-};
-
-// =============================================================================
-// LAYOUT COMPONENTS
-// =============================================================================
-
-interface LayoutProps {
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    width: number;
-    height: number;
-}
-
-/**
- * SingleDeviceLayout - One device fills the entire frame
- */
-const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
-    world,
-    t,
-    debug,
-    deviceId,
-    width,
-    height,
-}) => {
-    const device = world.devices[deviceId];
-    if (!device) {
-        return <div style={{ width, height, background: "#1a1a2e" }} />;
-    }
-
-    const profile = getDeviceProfile(device.profileId);
-    const scaleX = width / profile.dimensions.width;
-    const scaleY = height / profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <div
-            style={{
-                width,
-                height,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0a0a1a",
-                overflow: "hidden",
-            }}
-        >
-            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={world} t={t} debug={debug} focusDeviceId={deviceId} />
-            </div>
-        </div>
-    );
-};
-
-/**
- * SplitHorizontalLayout - Two devices side by side
- * ┌─────────┬─────────┐
- * │  Left   │  Right  │
- * │  (50%)  │  (50%)  │
- * └─────────┴─────────┘
- */
-const SplitHorizontalLayout: React.FC<
-    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
-    const halfWidth = width / 2;
-
-    return (
-        <div
-            style={{
-                width,
-                height,
-                display: "flex",
-                flexDirection: "row",
-                background: "#0a0a1a",
-                overflow: "hidden",
-            }}
-        >
-            {/* Left - Primary Device */}
-            <DevicePane
-                world={world}
-                t={t}
-                debug={debug}
-                deviceId={primaryDeviceId}
-                paneWidth={halfWidth}
-                paneHeight={height}
-            />
-
-            {/* Divider */}
-            <div style={{ width: 2, background: "#333" }} />
-
-            {/* Right - Secondary Device */}
-            {secondaryDeviceId && (
-                <DevicePane
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={secondaryDeviceId}
-                    paneWidth={halfWidth - 2}
-                    paneHeight={height}
-                />
-            )}
-        </div>
-    );
-};
-
-/**
- * SplitVerticalLayout - Two devices stacked top/bottom
- * ┌─────────────────┐
- * │      Top        │
- * │     (50%)       │
- * ├─────────────────┤
- * │     Bottom      │
- * │     (50%)       │
- * └─────────────────┘
- */
-const SplitVerticalLayout: React.FC<
-    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
-    const halfHeight = height / 2;
-
-    return (
-        <div
-            style={{
-                width,
-                height,
-                display: "flex",
-                flexDirection: "column",
-                background: "#0a0a1a",
-                overflow: "hidden",
-            }}
-        >
-            {/* Top - Primary Device */}
-            <DevicePane
-                world={world}
-                t={t}
-                debug={debug}
-                deviceId={primaryDeviceId}
-                paneWidth={width}
-                paneHeight={halfHeight}
-            />
-
-            {/* Divider */}
-            <div style={{ height: 2, background: "#333" }} />
-
-            {/* Bottom - Secondary Device */}
-            {secondaryDeviceId && (
-                <DevicePane
-                    world={world}
-                    t={t}
-                    debug={debug}
-                    deviceId={secondaryDeviceId}
-                    paneWidth={width}
-                    paneHeight={halfHeight - 2}
-                />
-            )}
-        </div>
-    );
-};
-
-/**
- * PIPLayout - Picture in Picture (main device + small overlay)
- * ┌─────────────────┐
- * │           ┌───┐ │
- * │   Main    │PIP│ │
- * │           └───┘ │
- * │                 │
- * └─────────────────┘
- */
-const PIPLayout: React.FC<
-    LayoutProps & {
-        primaryDeviceId: string;
-        secondaryDeviceId?: string;
-        pipPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-        pipScale: number;
-    }
-> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
-    // PIP window size
-    const pipWidth = width * pipScale;
-    const pipHeight = height * pipScale;
-    const margin = 20;
-
-    // Position based on pipPosition
-    const pipStyle: React.CSSProperties = {
-        position: "absolute",
-        width: pipWidth,
-        height: pipHeight,
-        borderRadius: 12,
-        overflow: "hidden",
-        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-        border: "2px solid rgba(255,255,255,0.1)",
-    };
-
-    switch (pipPosition) {
-        case "top-left":
-            pipStyle.top = margin;
-            pipStyle.left = margin;
-            break;
-        case "top-right":
-            pipStyle.top = margin;
-            pipStyle.right = margin;
-            break;
-        case "bottom-left":
-            pipStyle.bottom = margin;
-            pipStyle.left = margin;
-            break;
-        case "bottom-right":
-        default:
-            pipStyle.bottom = margin;
-            pipStyle.right = margin;
-            break;
-    }
-
-    return (
-        <div
-            style={{
-                width,
-                height,
-                position: "relative",
-                background: "#0a0a1a",
-                overflow: "hidden",
-            }}
-        >
-            {/* Main device (full frame) */}
-            <SingleDeviceLayout
-                world={world}
-                t={t}
-                debug={debug}
-                deviceId={primaryDeviceId}
-                width={width}
-                height={height}
-            />
-
-            {/* PIP overlay */}
-            {secondaryDeviceId && (
-                <div style={pipStyle}>
-                    <DevicePaneFit
-                        world={world}
-                        t={t}
-                        debug={false} // No debug overlay on PIP
-                        deviceId={secondaryDeviceId}
-                        paneWidth={pipWidth}
-                        paneHeight={pipHeight}
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
-
-// =============================================================================
-// HELPER COMPONENTS
-// =============================================================================
-
-/**
- * DevicePane - Renders a device within a specific pane size
- * Used for split layouts
- */
-const DevicePane: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    deviceId: string;
-    paneWidth: number;
-    paneHeight: number;
-}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
-    const device = world.devices[deviceId];
-    if (!device) {
-        return (
-            <div
-                style={{
-                    width: paneWidth,
-                    height: paneHeight,
-                    background: "#1a1a2e",
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: "#666",
-                }}
-            >
-                Device not found
-            </div>
-        );
-    }
-
-    const profile = getDeviceProfile(device.profileId);
-    const scaleX = paneWidth / profile.dimensions.width;
-    const scaleY = paneHeight / profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
-
-    // Create a world view focused on this specific device
-    const deviceWorld: WorldState = {
-        ...world,
-        camera: {
-            ...world.camera,
-            activeDeviceId: deviceId,
-            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
-        },
-    };
-
-    return (
-        <div
-            style={{
-                width: paneWidth,
-                height: paneHeight,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0d0d1a",
-                overflow: "hidden",
-            }}
-        >
-            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
-            </div>
-        </div>
-    );
-};
-
-/**
- * DevicePaneFit - Renders a device to fit exactly within pane (for PIP)
- * Fills the entire pane without padding
- */
-const DevicePaneFit: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    deviceId: string;
-    paneWidth: number;
-    paneHeight: number;
-}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
-    const device = world.devices[deviceId];
-    if (!device) {
-        return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
-    }
-
-    const profile = getDeviceProfile(device.profileId);
-    const scaleX = paneWidth / profile.dimensions.width;
-    const scaleY = paneHeight / profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Create a world view focused on this specific device
-    const deviceWorld: WorldState = {
-        ...world,
-        camera: {
-            ...world.camera,
-            activeDeviceId: deviceId,
-            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
-        },
-    };
-
-    return (
-        <div
-            style={{
-                width: paneWidth,
-                height: paneHeight,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                background: "#0d0d1a",
-                overflow: "hidden",
-            }}
-        >
-            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
-            </div>
-        </div>
-    );
 };
 ````
 
@@ -8379,13 +9373,448 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
 export { InstagramChatView };
 ````
 
-## File: packages/core/src/index.ts
+## File: packages/core/src/camera/index.ts
 ````typescript
-export * from "./types";
-export * from "./engine";
-export * from "./tokens";
-export * from "./camera";
-export * from "./sounds";
+/**
+ * Camera Module - Cinematic Camera System for Tokovo
+ * 
+ * This module provides production-grade camera effects including:
+ * - ZOOM: Scale with configurable origin and easing
+ * - PAN: Translation with smooth easing
+ * - SHAKE: Screen shake with frequency, intensity, and decay
+ * - FOCUS: Target-based zoom (app, notification, message, point)
+ * - CUT: Instant transitions between views
+ * - RESET: Smooth return to default camera position
+ */
+
+import {
+    CameraState,
+    CameraTransform,
+    CameraEffect,
+    ActiveCameraEffect,
+    EasingType,
+    DEFAULT_CAMERA_TRANSFORM,
+    CameraZoomEffect,
+    CameraPanEffect,
+    CameraShakeEffect,
+    CameraFocusEffect,
+    CameraResetEffect,
+} from "../types";
+
+// =============================================================================
+// EASING FUNCTIONS
+// =============================================================================
+
+/**
+ * Easing functions library - cinematic-grade timing curves
+ * Input: t (0-1), Output: eased value (0-1)
+ */
+export const easingFunctions: Record<EasingType, (t: number) => number> = {
+    "linear": (t) => t,
+
+    "ease-in": (t) => t * t * t,
+
+    "ease-out": (t) => 1 - Math.pow(1 - t, 3),
+
+    "ease-in-out": (t) => t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2,
+
+    "bounce": (t) => {
+        const n1 = 7.5625;
+        const d1 = 2.75;
+        if (t < 1 / d1) {
+            return n1 * t * t;
+        } else if (t < 2 / d1) {
+            return n1 * (t -= 1.5 / d1) * t + 0.75;
+        } else if (t < 2.5 / d1) {
+            return n1 * (t -= 2.25 / d1) * t + 0.9375;
+        } else {
+            return n1 * (t -= 2.625 / d1) * t + 0.984375;
+        }
+    },
+
+    "elastic": (t) => {
+        const c4 = (2 * Math.PI) / 3;
+        return t === 0 ? 0 : t === 1 ? 1
+            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    },
+
+    // Cinematic S-curve - smooth start, linear middle, smooth end
+    // Inspired by film camera movements
+    "cinematic": (t) => {
+        // Custom bezier-like curve for film-quality motion
+        if (t < 0.2) {
+            // Smooth ease-in for first 20%
+            return 0.5 * Math.pow(t / 0.2, 2) * 0.2;
+        } else if (t > 0.8) {
+            // Smooth ease-out for last 20%
+            const localT = (t - 0.8) / 0.2;
+            return 0.8 + 0.2 * (1 - Math.pow(1 - localT, 2));
+        } else {
+            // Linear middle section (60%)
+            return 0.1 + (t - 0.2) * (0.7 / 0.6);
+        }
+    },
+};
+
+/**
+ * Apply easing to a progress value
+ */
+export function applyEasing(progress: number, easing: EasingType = "ease-out"): number {
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    return easingFunctions[easing](clampedProgress);
+}
+
+// =============================================================================
+// SEEDED RANDOM FOR DETERMINISTIC SHAKE
+// =============================================================================
+
+/**
+ * Seeded random number generator for deterministic shake effects
+ * Uses mulberry32 algorithm for speed and quality
+ */
+function seededRandom(seed: number): () => number {
+    return function () {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Generate shake offset for a given frame
+ * Returns values between -1 and 1
+ */
+function getShakeOffset(frame: number, seed: number, frequency: number, fps: number = 30): { x: number; y: number } {
+    // Calculate how many shake cycles per frame
+    const cyclesPerSecond = frequency;
+    const cyclesPerFrame = cyclesPerSecond / fps;
+
+    // Create deterministic random based on frame and seed
+    const rng = seededRandom(seed + Math.floor(frame * cyclesPerFrame));
+
+    // Generate offset (-1 to 1)
+    const x = (rng() - 0.5) * 2;
+    const y = (rng() - 0.5) * 2;
+
+    return { x, y };
+}
+
+// =============================================================================
+// CAMERA CONTROLLER
+// =============================================================================
+
+/**
+ * CameraController - Computes camera transforms at any given frame
+ * 
+ * This is the heart of the cinematic system. It takes:
+ * - Current camera state (with active effects)
+ * - Current frame number
+ * 
+ * And produces a final CameraTransform with all effects composited.
+ */
+export class CameraController {
+    private fps: number;
+
+    // Memoization cache for performance (LRU with max 500 entries)
+    private transformCache = new Map<string, CameraTransform>();
+    private readonly MAX_CACHE_SIZE = 500;
+
+    constructor(fps: number = 30) {
+        this.fps = fps;
+    }
+
+    /**
+     * Generate cache key from camera state and frame
+     */
+    private getCacheKey(state: CameraState, t: number): string {
+        // Key includes frame number and effect IDs with their start frames
+        const effectsKey = state.activeEffects
+            .map(e => `${e.id}:${e.startFrame}:${e.endFrame}`)
+            .join('|');
+        return `${t}:${effectsKey}`;
+    }
+
+    /**
+     * Compute the final camera transform at frame t
+     * 
+     * Effects are applied in layers:
+     * 1. Completed effects that ended before t - their final state persists
+     * 2. Active effects at time t - animated based on progress
+     * 
+     * For overlapping effects:
+     * - Scale is multiplicative (zoom 1.2 + zoom 1.5 = zoom 1.8)
+     * - Translate is additive
+     * - Origin uses the most recent effect's origin
+     * - Shake is additive
+     * 
+     * Memoized for performance.
+     */
+    computeTransform(state: CameraState, t: number): CameraTransform {
+        // Check cache first
+        const cacheKey = this.getCacheKey(state, t);
+        const cached = this.transformCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        // Start with default transform
+        const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+        // Sort effects by start time for consistent processing
+        const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
+
+        // Apply each effect using the helper methods
+        for (const activeEffect of sortedEffects) {
+            // Skip effects that haven't started yet
+            if (t < activeEffect.startFrame) continue;
+
+            // Apply effect using the unified method
+            this.applyEffect(transform, activeEffect, t);
+        }
+
+        // Cache the result
+        this.transformCache.set(cacheKey, transform);
+
+        // LRU eviction - remove oldest entries if over limit
+        if (this.transformCache.size > this.MAX_CACHE_SIZE) {
+            const firstKey = this.transformCache.keys().next().value;
+            if (firstKey) {
+                this.transformCache.delete(firstKey);
+            }
+        }
+
+        return transform;
+    }
+
+    /**
+     * Clear the transform cache (call when starting a new video)
+     */
+    clearCache(): void {
+        this.transformCache.clear();
+    }
+
+    /**
+     * Apply a single effect to the transform
+     */
+    private applyEffect(transform: CameraTransform, activeEffect: ActiveCameraEffect, t: number): void {
+        const { effect, startFrame, endFrame } = activeEffect;
+        const duration = endFrame - startFrame;
+        const localT = duration > 0 ? (t - startFrame) / duration : 1;
+
+        switch (effect.type) {
+            case "ZOOM":
+                this.applyZoom(transform, effect, localT);
+                break;
+            case "PAN":
+                this.applyPan(transform, effect, localT);
+                break;
+            case "SHAKE":
+                this.applyShake(transform, effect, localT, t, startFrame);
+                break;
+            case "FOCUS":
+                this.applyFocus(transform, effect, localT);
+                break;
+            case "RESET":
+                this.applyReset(transform, effect, localT);
+                break;
+            // CUT is handled by the reducer, not here
+        }
+    }
+
+    /**
+     * ZOOM effect - scale with origin
+     */
+    private applyZoom(transform: CameraTransform, effect: CameraZoomEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate from current scale to target scale
+        const startScale = transform.scale;
+        const targetScale = effect.scale;
+        transform.scale = startScale + (targetScale - startScale) * easedProgress;
+
+        // Set transform origin if specified
+        if (effect.originX !== undefined) {
+            transform.originX = effect.originX;
+        }
+        if (effect.originY !== undefined) {
+            transform.originY = effect.originY;
+        }
+    }
+
+    /**
+     * PAN effect - translate position
+     */
+    private applyPan(transform: CameraTransform, effect: CameraPanEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Add translation (effects are additive for pan)
+        transform.translateX += effect.translateX * easedProgress;
+        transform.translateY += effect.translateY * easedProgress;
+    }
+
+    /**
+     * SHAKE effect - screen tremor with decay
+     */
+    private applyShake(
+        transform: CameraTransform,
+        effect: CameraShakeEffect,
+        progress: number,
+        absoluteFrame: number,
+        startFrame: number
+    ): void {
+        const frameInEffect = absoluteFrame - startFrame;
+        const seed = effect.seed ?? startFrame; // Use start frame as default seed for determinism
+
+        // Get shake offset for this frame
+        const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
+
+        // Apply decay (1 = instant decay, 0 = no decay)
+        const decay = effect.decay ?? 0.3; // Default 30% decay
+        const decayMultiplier = 1 - (progress * decay);
+
+        // Apply intensity and decay
+        transform.shakeX += offset.x * effect.intensity * decayMultiplier;
+        transform.shakeY += offset.y * effect.intensity * decayMultiplier;
+    }
+
+    /**
+     * FOCUS effect - zoom to a target
+     * Note: Actual target position calculation happens in the renderer
+     * Here we just handle the zoom/pan animation
+     */
+    private applyFocus(transform: CameraTransform, effect: CameraFocusEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+        const holdDuration = effect.holdDuration ?? 0;
+
+        // If we have a hold duration, adjust the animation curve
+        let animProgress = easedProgress;
+        if (holdDuration > 0 && progress > 0.5) {
+            // Hold at peak for specified duration
+            animProgress = 1;
+        }
+
+        // Apply zoom (FOCUS is essentially targeted ZOOM)
+        const targetScale = effect.scale ?? 1.5;
+        transform.scale = 1 + (targetScale - 1) * animProgress;
+
+        // Target-based origin will be set by renderer based on target position
+        // For now, we handle point-based targets
+        if (effect.target.type === "point") {
+            transform.originX = effect.target.x;
+            transform.originY = effect.target.y;
+        }
+    }
+
+    /**
+     * RESET effect - return to default camera position
+     */
+    private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate all values toward defaults
+        transform.translateX = transform.translateX * (1 - easedProgress);
+        transform.translateY = transform.translateY * (1 - easedProgress);
+        transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
+        transform.rotation = transform.rotation * (1 - easedProgress);
+        transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
+        transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
+    }
+}
+
+// =============================================================================
+// CAMERA EVENT PROCESSING
+// =============================================================================
+
+/**
+ * Convert a timeline camera event to an ActiveCameraEffect
+ */
+export function createActiveEffect(
+    event: { at: number; kind: "CAMERA"; type: string;[key: string]: any },
+    id: string
+): ActiveCameraEffect | null {
+    const { at, type, ...params } = event;
+
+    // Skip non-effect events
+    if (type === "SET_VIEW" || type === "CUT") {
+        return null;
+    }
+
+    // Build effect based on type
+    let effect: CameraEffect;
+    const duration = params.duration ?? 30; // Default 1 second at 30fps
+
+    switch (type) {
+        case "ZOOM":
+            effect = {
+                type: "ZOOM",
+                scale: params.scale ?? 1,
+                originX: params.originX,
+                originY: params.originY,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "PAN":
+            effect = {
+                type: "PAN",
+                translateX: params.translateX ?? 0,
+                translateY: params.translateY ?? 0,
+                relative: params.relative,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "SHAKE":
+            effect = {
+                type: "SHAKE",
+                intensity: params.intensity ?? 10,
+                frequency: params.frequency ?? 15,
+                decay: params.decay,
+                duration,
+                seed: params.seed,
+            };
+            break;
+        case "FOCUS":
+            effect = {
+                type: "FOCUS",
+                target: params.target ?? { type: "device" },
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                holdDuration: params.holdDuration,
+            };
+            break;
+        case "RESET":
+            effect = {
+                type: "RESET",
+                duration,
+                easing: params.easing,
+            };
+            break;
+        default:
+            return null;
+    }
+
+    return {
+        id,
+        effect,
+        startFrame: at,
+        endFrame: at + duration,
+        deviceId: params.deviceId,  // Per-device targeting
+    };
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export { seededRandom, getShakeOffset };
+
+// Default controller instance
+export const defaultCameraController = new CameraController(30);
 ````
 
 ## File: packages/core/src/tokens.ts
@@ -9025,6 +10454,194 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
+## File: packages/episodes/src/examples/instagram-test.json
+````json
+{
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "instagram_user",
+                        "text": "Hey! Did you see my new post?",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "currentView": "feed",
+                "feed": {
+                    "posts": [
+                        {
+                            "id": "p1",
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "image": "https://picsum.photos/seed/insta1/1080/1080",
+                            "caption": "Living my best life! 🌟 #blessed",
+                            "likes": 1234,
+                            "comments": 42,
+                            "liked": false,
+                            "saved": false
+                        },
+                        {
+                            "id": "p2",
+                            "username": "travel_blogger",
+                            "avatar": "https://i.pravatar.cc/150?u=travel",
+                            "image": "https://picsum.photos/seed/insta2/1080/1080",
+                            "caption": "Sunset vibes 🌅",
+                            "likes": 890,
+                            "comments": 12,
+                            "liked": true,
+                            "saved": true
+                        }
+                    ],
+                    "scrollPosition": 0
+                },
+                "stories": {
+                    "users": [
+                        {
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s1",
+                                    "image": "https://picsum.photos/seed/story1/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        },
+                        {
+                            "username": "friend_1",
+                            "avatar": "https://i.pravatar.cc/150?u=friend1",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s2",
+                                    "image": "https://picsum.photos/seed/story2/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notifications": {
+                    "items": []
+                }
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW",
+            "appId": "app_instagram"
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "stories"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "feed"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "explore"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "reels"
+            }
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "notifications"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "profile"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "post"
+            }
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "dm"
+            }
+        },
+        {
+            "at": 260,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Wow, this app is huge!"
+        }
+    ]
+}
+````
+
 ## File: packages/episodes/src/examples/whatsapp-breakup-01.json
 ````json
 {
@@ -9331,126 +10948,513 @@ ReducerRegistry.registerDeviceReducer(deviceReducer);
 }
 ````
 
-## File: packages/renderer/src/layout/strategies/chat.ts
+## File: packages/renderer/src/MultiDeviceRenderer.tsx
 ````typescript
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import React from "react";
+import {
+    WorldState,
+    ViewLayoutMode,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    DeviceId,
+    VideoConfig,
+    DEFAULT_VIDEO_CONFIG,
+} from "@tokovo/core";
+import { TokovoRenderer } from "./TokovoRenderer";
+import { AudioLayer } from "./AudioLayer";
+import { getDeviceProfile } from "@tokovo/devices";
 
-export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-    const { world, t, activeConversationId, config, viewportHeight } = ctx;
-    const chatConfig = config!.chat!;
+// Helper to get video config with defaults
+const getVideoConfig = (world: WorldState): VideoConfig => ({
+    ...DEFAULT_VIDEO_CONFIG,
+    ...world.config,
+    layout: {
+        ...DEFAULT_VIDEO_CONFIG.layout,
+        ...world.config?.layout,
+    },
+});
 
-    if (!activeConversationId || !world.conversations[activeConversationId]) {
-        return {
-            kind: "CHAT",
-            scrollY: 0,
-            contentHeight: 0,
-            isAtBottom: true,
-            messageLayouts: {},
-            meta: {}
-        };
+/**
+ * MultiDeviceRenderer
+ * 
+ * Renders multiple devices based on the current ViewLayout mode.
+ * Supports SINGLE, SPLIT_HORIZONTAL, SPLIT_VERTICAL, and PIP layouts.
+ */
+export const MultiDeviceRenderer: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    compositionWidth?: number;
+    compositionHeight?: number;
+}> = ({ world, t, debug = false, compositionWidth = 1080, compositionHeight = 1920 }) => {
+    const layout = world.camera?.layout;
+
+    if (!layout) {
+        // Fallback to single device if no layout
+        return (
+            <>
+                <AudioLayer world={world} t={t} />
+                <SingleDeviceLayout
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={Object.keys(world.devices)[0]}
+                    width={compositionWidth}
+                    height={compositionHeight}
+                />
+            </>
+        );
     }
 
-    const conversation = world.conversations[activeConversationId];
-    // Filter messages visible at time t
-    // Messages without 'at' field (initial messages) are always visible
-    // Messages with 'at' field are visible when at <= t
-    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+    switch (layout.mode) {
+        case "SINGLE":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
 
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = chatConfig.topPadding;
+        case "SPLIT_HORIZONTAL":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitHorizontalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
 
-    // 1. Layout messages
-    for (const msg of messages) {
-        // Calculate height based on message type
-        let height: number;
+        case "SPLIT_VERTICAL":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SplitVerticalLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
 
-        if (msg.type === "system") {
-            // System messages are shorter (single line centered pill)
-            height = 80;
-        } else if (msg.type === "voice") {
-            // Voice messages have fixed height
-            height = 180;
-        } else {
-            // Text messages: calculate based on text length
-            const textLength = msg.text?.length || 0;
-            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+        case "PIP":
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <PIPLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        primaryDeviceId={layout.primaryDeviceId}
+                        secondaryDeviceId={layout.secondaryDeviceId}
+                        pipPosition={layout.pipPosition || "bottom-right"}
+                        pipScale={layout.pipScale || 0.3}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
 
-            // Height breakdown:
-            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
-            // - Text: lines * lineHeight
-            // - Timestamp row: ~40px (at 3x = 120)
-            // - Sender name (groups): additional 50px
-            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
-            const timestampHeight = 40;     // Timestamp row
-            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
-            const senderNameHeight = hasSenderName ? 45 : 0;
-
-            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
-        }
-
-        // Animation: Slide in / Fade in
-        const messageAt = msg.at ?? 0;
-        const timeSinceAppear = t - messageAt;
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
-            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
-            // Simple ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
-            opacity = ease;
-            translateY = chatConfig.messageAppearOffset * (1 - ease);
-        }
-
-        messageLayouts[msg.id] = {
-            id: msg.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY
-        };
-
-        currentY += height + chatConfig.verticalGap;
+        default:
+            return (
+                <>
+                    <AudioLayer world={world} t={t} />
+                    <SingleDeviceLayout
+                        world={world}
+                        t={t}
+                        debug={debug}
+                        deviceId={layout.primaryDeviceId}
+                        width={compositionWidth}
+                        height={compositionHeight}
+                    />
+                </>
+            );
     }
+};
 
-    // 2. Typing indicator
-    let typingLayout: TypingLayout | null = null;
-    const isTyping = Object.values(conversation.typing || {}).some(v => v);
-    if (isTyping) {
-        const height = chatConfig.baseBubbleHeight;
-        typingLayout = {
-            y: currentY,
-            height,
-            opacity: 1
-        };
-        currentY += height + chatConfig.verticalGap;
-    }
+// =============================================================================
+// LAYOUT COMPONENTS
+// =============================================================================
 
-    const contentHeight = currentY + chatConfig.bottomPadding;
-
-    // 3. Scroll Position
-    // Lock to bottom logic
-    let scrollY = 0;
-    if (chatConfig.lockToBottom) {
-        const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
-
-        // TODO: Implement smooth scrolling based on message arrival times if needed
-        // For now, instant snap to bottom is robust
-    }
-
-    return {
-        kind: "CHAT",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
-        messageLayouts,
-        typingLayout,
-        meta: {
-            lastMessageId: messages.length > 0 ? messages[messages.length - 1].id : undefined
-        }
-    };
+interface LayoutProps {
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    width: number;
+    height: number;
 }
+
+/**
+ * SingleDeviceLayout - One device fills the entire frame
+ */
+const SingleDeviceLayout: React.FC<LayoutProps & { deviceId: string }> = ({
+    world,
+    t,
+    debug,
+    deviceId,
+    width,
+    height,
+}) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return <div style={{ width, height, background: "#1a1a2e" }} />;
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = width / profile.dimensions.width;
+    const scaleY = height / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: getVideoConfig(world).backgroundColor,
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={world} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * SplitHorizontalLayout - Two devices side by side
+ * ┌─────────┬─────────┐
+ * │  Left   │  Right  │
+ * │  (50%)  │  (50%)  │
+ * └─────────┴─────────┘
+ */
+const SplitHorizontalLayout: React.FC<
+    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+    const halfWidth = width / 2;
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                flexDirection: "row",
+                background: "#0a0a1a",
+                overflow: "hidden",
+            }}
+        >
+            {/* Left - Primary Device */}
+            <DevicePane
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                paneWidth={halfWidth}
+                paneHeight={height}
+            />
+
+            {/* Divider */}
+            <div style={{ width: getVideoConfig(world).layout?.splitLineWidth || 2, background: getVideoConfig(world).layout?.splitLineColor || "#333" }} />
+
+            {/* Right - Secondary Device */}
+            {secondaryDeviceId && (
+                <DevicePane
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={secondaryDeviceId}
+                    paneWidth={halfWidth - 2}
+                    paneHeight={height}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
+ * SplitVerticalLayout - Two devices stacked top/bottom
+ * ┌─────────────────┐
+ * │      Top        │
+ * │     (50%)       │
+ * ├─────────────────┤
+ * │     Bottom      │
+ * │     (50%)       │
+ * └─────────────────┘
+ */
+const SplitVerticalLayout: React.FC<
+    LayoutProps & { primaryDeviceId: string; secondaryDeviceId?: string }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, width, height }) => {
+    const halfHeight = height / 2;
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                display: "flex",
+                flexDirection: "column",
+                background: getVideoConfig(world).backgroundColor,
+                overflow: "hidden",
+            }}
+        >
+            {/* Top - Primary Device */}
+            <DevicePane
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                paneWidth={width}
+                paneHeight={halfHeight}
+            />
+
+            {/* Divider */}
+            <div style={{ height: getVideoConfig(world).layout?.splitLineWidth || 2, background: getVideoConfig(world).layout?.splitLineColor || "#333" }} />
+
+            {/* Bottom - Secondary Device */}
+            {secondaryDeviceId && (
+                <DevicePane
+                    world={world}
+                    t={t}
+                    debug={debug}
+                    deviceId={secondaryDeviceId}
+                    paneWidth={width}
+                    paneHeight={halfHeight - 2}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
+ * PIPLayout - Picture in Picture (main device + small overlay)
+ * ┌─────────────────┐
+ * │           ┌───┐ │
+ * │   Main    │PIP│ │
+ * │           └───┘ │
+ * │                 │
+ * └─────────────────┘
+ */
+const PIPLayout: React.FC<
+    LayoutProps & {
+        primaryDeviceId: string;
+        secondaryDeviceId?: string;
+        pipPosition: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+        pipScale: number;
+    }
+> = ({ world, t, debug, primaryDeviceId, secondaryDeviceId, pipPosition, pipScale, width, height }) => {
+    // PIP window size
+    const pipWidth = width * pipScale;
+    const pipHeight = height * pipScale;
+    const margin = 20;
+
+    // Position based on pipPosition
+    const pipStyle: React.CSSProperties = {
+        position: "absolute",
+        width: pipWidth,
+        height: pipHeight,
+        borderRadius: 12,
+        overflow: "hidden",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        border: "2px solid rgba(255,255,255,0.1)",
+    };
+
+    switch (pipPosition) {
+        case "top-left":
+            pipStyle.top = margin;
+            pipStyle.left = margin;
+            break;
+        case "top-right":
+            pipStyle.top = margin;
+            pipStyle.right = margin;
+            break;
+        case "bottom-left":
+            pipStyle.bottom = margin;
+            pipStyle.left = margin;
+            break;
+        case "bottom-right":
+        default:
+            pipStyle.bottom = margin;
+            pipStyle.right = margin;
+            break;
+    }
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                position: "relative",
+                background: getVideoConfig(world).backgroundColor,
+                overflow: "hidden",
+            }}
+        >
+            {/* Main device (full frame) */}
+            <SingleDeviceLayout
+                world={world}
+                t={t}
+                debug={debug}
+                deviceId={primaryDeviceId}
+                width={width}
+                height={height}
+            />
+
+            {/* PIP overlay */}
+            {secondaryDeviceId && (
+                <div style={pipStyle}>
+                    <DevicePaneFit
+                        world={world}
+                        t={t}
+                        debug={false} // No debug overlay on PIP
+                        deviceId={secondaryDeviceId}
+                        paneWidth={pipWidth}
+                        paneHeight={pipHeight}
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
+// HELPER COMPONENTS
+// =============================================================================
+
+/**
+ * DevicePane - Renders a device within a specific pane size
+ * Used for split layouts
+ */
+const DevicePane: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    deviceId: string;
+    paneWidth: number;
+    paneHeight: number;
+}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return (
+            <div
+                style={{
+                    width: paneWidth,
+                    height: paneHeight,
+                    background: "#1a1a2e",
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    color: "#666",
+                }}
+            >
+                Device not found
+            </div>
+        );
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = paneWidth / profile.dimensions.width;
+    const scaleY = paneHeight / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY) * 0.9; // 90% to add some padding
+
+    // Create a world view focused on this specific device
+    const deviceWorld: WorldState = {
+        ...world,
+        camera: {
+            ...world.camera,
+            activeDeviceId: deviceId,
+            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
+        },
+    };
+
+    return (
+        <div
+            style={{
+                width: paneWidth,
+                height: paneHeight,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0d0d1a",
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * DevicePaneFit - Renders a device to fit exactly within pane (for PIP)
+ * Fills the entire pane without padding
+ */
+const DevicePaneFit: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    deviceId: string;
+    paneWidth: number;
+    paneHeight: number;
+}> = ({ world, t, debug, deviceId, paneWidth, paneHeight }) => {
+    const device = world.devices[deviceId];
+    if (!device) {
+        return <div style={{ width: paneWidth, height: paneHeight, background: "#1a1a2e" }} />;
+    }
+
+    const profile = getDeviceProfile(device.profileId);
+    const scaleX = paneWidth / profile.dimensions.width;
+    const scaleY = paneHeight / profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Create a world view focused on this specific device
+    const deviceWorld: WorldState = {
+        ...world,
+        camera: {
+            ...world.camera,
+            activeDeviceId: deviceId,
+            layout: { mode: "SINGLE", primaryDeviceId: deviceId },
+        },
+    };
+
+    return (
+        <div
+            style={{
+                width: paneWidth,
+                height: paneHeight,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                background: "#0d0d1a",
+                overflow: "hidden",
+            }}
+        >
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer world={deviceWorld} t={t} debug={debug} focusDeviceId={deviceId} />
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: apps/video-runner/src/Video.tsx
@@ -9859,365 +11863,6 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
 };
 ````
 
-## File: packages/apps-whatsapp/src/runtime.ts
-````typescript
-import { produce } from "immer";
-import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
-
-export function whatsappReducer(draft: WorldState, event: TimelineEvent) {
-    if (event.kind !== "APP" || event.appId !== "app_whatsapp") return;
-
-    const conversationId = (event as any).conversationId;
-    if (!conversationId) return;
-
-    if (!draft.conversations[conversationId]) {
-        draft.conversations[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
-
-    switch (event.type) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT":
-            const msgPayload = (event as any).message || {};
-            conversation.messages.push({
-                id: msgPayload.id || `msg_${event.at}_${(event as any).from}`,
-                from: (event as any).from,
-                text: (event as any).text || msgPayload.text,
-                type: msgPayload.type || "text",
-                at: event.at,
-                status: msgPayload.status || "delivered",
-                ...msgPayload
-            });
-            break;
-
-        case "TYPING_START":
-            if (!conversation.typing) conversation.typing = {};
-            conversation.typing[(event as any).from] = true;
-            break;
-
-        case "TYPING_END":
-            if (conversation.typing) {
-                delete conversation.typing[(event as any).from];
-            }
-            break;
-
-        case "GROUP_MEMBER_ADDED":
-            // Add system message
-            const addedBy = (event as any).addedBy === "me" ? "You" : (event as any).addedBy;
-            conversation.messages.push({
-                id: `sys_${event.at}_added_${(event as any).memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${(event as any).memberName}`,
-                targetMember: (event as any).memberName,
-                actorName: addedBy,
-                at: event.at
-            });
-            // Add member to list
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: (event as any).memberId,
-                name: (event as any).memberName
-            });
-            break;
-
-        case "GROUP_MEMBER_REMOVED":
-            const removedBy = (event as any).removedBy === "me" ? "You" : (event as any).removedBy;
-            conversation.messages.push({
-                id: `sys_${event.at}_removed_${(event as any).memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${(event as any).memberName}`,
-                targetMember: (event as any).memberName,
-                actorName: removedBy,
-                at: event.at
-            });
-            // Remove member from list
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: any) => m.id !== (event as any).memberId
-                );
-            }
-            break;
-
-        case "VOICE_MESSAGE_RECEIVED":
-            conversation.messages.push({
-                id: `voice_${event.at}_${(event as any).from}`,
-                from: (event as any).from,
-                type: "voice",
-                duration: (event as any).duration,
-                at: event.at,
-                status: "delivered"
-            });
-            break;
-
-        case "MESSAGE_READ":
-            const msg = conversation.messages.find((m: any) => m.id === (event as any).messageId);
-            if (msg) {
-                msg.status = "read";
-            }
-            break;
-    }
-}
-
-// Register itself
-ReducerRegistry.registerAppReducer("app_whatsapp", whatsappReducer);
-````
-
-## File: packages/core/src/engine.ts
-````typescript
-import { produce } from "immer";
-import {
-    TimelineEvent,
-    WorldState,
-    DeviceState,
-    CameraState,
-    ActiveCameraEffect,
-    DEFAULT_CAMERA_STATE,
-    DEFAULT_CAMERA_TRANSFORM,
-    DEFAULT_AUDIO_STATE,
-} from "./types";
-import { CameraController, createActiveEffect } from "./camera";
-
-export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
-export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
-
-export const ReducerRegistry = {
-    deviceReducer: null as DeviceReducer | null,
-    appReducers: {} as Record<string, AppReducer>,
-
-    registerDeviceReducer(reducer: DeviceReducer) {
-        this.deviceReducer = reducer;
-    },
-    registerAppReducer(appId: string, reducer: AppReducer) {
-        this.appReducers[appId] = reducer;
-    }
-};
-
-// Camera controller instance
-const cameraController = new CameraController(30);
-
-/**
- * Process camera event and update camera state
- */
-function processCameraEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "CAMERA" },
-    eventIndex: number
-): void {
-    // Ensure camera state exists with all required properties
-    if (!draft.camera || !draft.camera.activeEffects) {
-        draft.camera = { ...DEFAULT_CAMERA_STATE };
-    }
-    // Ensure layout exists
-    if (!draft.camera.layout) {
-        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
-    }
-
-    switch (event.type) {
-        case "SET_VIEW":
-            // Legacy support - just update base view
-            draft.camera.baseView = event.view.type;
-            draft.camera.appId = event.view.appId;
-            break;
-
-        case "CUT":
-            // Hard cut - reset all effects
-            draft.camera.activeEffects = [];
-            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-            // Switch to new device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId;
-                draft.camera.layout.primaryDeviceId = event.toDeviceId;
-            }
-
-            // Update base view if specified
-            if (event.toView) {
-                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
-            }
-            break;
-
-        case "LAYOUT":
-            // Change view layout mode
-            draft.camera.layout = {
-                mode: event.mode,
-                primaryDeviceId: event.primaryDeviceId,
-                secondaryDeviceId: event.secondaryDeviceId,
-                pipPosition: event.pipPosition,
-                pipScale: event.pipScale,
-            };
-            // Update active device to match primary
-            draft.camera.activeDeviceId = event.primaryDeviceId;
-            break;
-
-        case "ZOOM":
-        case "PAN":
-        case "SHAKE":
-        case "FOCUS":
-        case "RESET": {
-            // Create active effect and add to list
-            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
-            if (activeEffect) {
-                draft.camera.activeEffects.push(activeEffect);
-            }
-            break;
-        }
-    }
-}
-
-/**
- * Process audio event and update audio state
- */
-function processAudioEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "AUDIO" },
-    eventIndex: number
-): void {
-    // Ensure audio state exists
-    if (!draft.audio) {
-        draft.audio = { activeSounds: {} };
-    }
-
-    switch (event.type) {
-        case "PLAY_SOUND": {
-            // Generate instance ID if not provided
-            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
-
-            draft.audio.activeSounds[instanceId] = {
-                soundId: event.soundId,
-                startFrame: event.at,
-                volume: event.volume ?? 1,
-                loop: event.loop ?? false,
-                deviceId: event.deviceId,
-                duration: event.duration,
-            };
-            break;
-        }
-
-        case "STOP_SOUND": {
-            delete draft.audio.activeSounds[event.instanceId];
-            break;
-        }
-
-        case "FADE_VOLUME": {
-            const sound = draft.audio.activeSounds[event.instanceId];
-            if (sound) {
-                // Store target volume - renderer will interpolate
-                (sound as any).fadeTarget = event.toVolume;
-                (sound as any).fadeDuration = event.duration;
-                (sound as any).fadeStartFrame = event.at;
-            }
-            break;
-        }
-
-        case "BACKGROUND_MUSIC": {
-            draft.audio.backgroundMusic = {
-                soundId: event.soundId,
-                volume: event.volume ?? 0.5,
-                loop: event.loop ?? true,
-                startFrame: event.at,
-            };
-            break;
-        }
-    }
-}
-/**
- * Replay function - computes WorldState at time t by applying all events
- * 
- * This is called every frame by Remotion. Performance is critical.
- */
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    // Ensure initial state has proper camera and audio state
-    const initialWithCamera: WorldState = {
-        ...initial,
-        camera: initial.camera && 'activeEffects' in initial.camera
-            ? initial.camera
-            : {
-                ...DEFAULT_CAMERA_STATE,
-                baseView: (initial.camera as any)?.type || "APP_VIEW",
-                appId: (initial.camera as any)?.appId,
-            },
-        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
-    };
-
-    // Filter events up to current time
-    const relevant = events.filter(e => e.at <= t);
-
-    // Apply events to build state
-    const stateAfterEvents = relevant.reduce((state, event, index) => {
-        return produce(state, draft => {
-            if (event.kind === "DEVICE") {
-                if (ReducerRegistry.deviceReducer) {
-                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-                }
-            }
-            if (event.kind === "APP") {
-                const reducer = ReducerRegistry.appReducers[event.appId];
-                reducer?.(draft, event);
-            }
-            if (event.kind === "CAMERA") {
-                processCameraEvent(draft, event, index);
-            }
-            if (event.kind === "AUDIO") {
-                processAudioEvent(draft, event, index);
-            }
-        });
-    }, initialWithCamera);
-
-    // Compute camera transform at current time t
-    // This filters active effects and composes them, per-device
-    return produce(stateAfterEvents, draft => {
-        // Clean up expired effects (optimization)
-        draft.camera.activeEffects = draft.camera.activeEffects.filter(
-            ae => t <= ae.endFrame + 30 // Keep for 1 second after end for smooth transitions
-        );
-
-        // Ensure deviceTransforms exists
-        if (!draft.camera.deviceTransforms) {
-            draft.camera.deviceTransforms = {};
-        }
-
-        // Compute transform for each device
-        for (const deviceId of Object.keys(draft.devices)) {
-            // Filter effects for this device (global effects + device-specific)
-            const deviceEffects = draft.camera.activeEffects.filter(
-                ae => !ae.deviceId || ae.deviceId === deviceId
-            );
-
-            // Create a temporary camera state with only this device's effects
-            const deviceCameraState = {
-                ...draft.camera,
-                activeEffects: deviceEffects,
-            };
-
-            // Compute transform for this device
-            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
-        }
-
-        // Primary device transform (for backward compatibility)
-        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
-        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
-    });
-}
-
-/**
- * Get default initial world state with camera
- */
-export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
-    return {
-        devices: {},
-        conversations: {},
-        appState: {},
-        camera: { ...DEFAULT_CAMERA_STATE },
-        audio: { ...DEFAULT_AUDIO_STATE },
-        ...partial,
-    };
-}
-````
-
 ## File: packages/episodes/src/schema.ts
 ````typescript
 import { z } from "zod";
@@ -10531,6 +12176,640 @@ export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 ````
 
+## File: packages/renderer/src/layout/strategies/chat.ts
+````typescript
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+
+// Constants for rect calculation (match WhatsApp UI)
+const BUBBLE_MARGIN_HORIZONTAL = 36;
+const BUBBLE_MAX_WIDTH_PERCENT = 0.78;
+const TYPING_BUBBLE_WIDTH = 150;
+
+export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
+    const { world, t, activeConversationId, config, viewportHeight, viewportWidth } = ctx;
+    const chatConfig = config!.chat!;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    // Messages without 'at' field (initial messages) are always visible
+    // Messages with 'at' field are visible when at <= t
+    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = chatConfig.topPadding;
+    let lastMessageId: string | undefined;
+
+    // 1. Layout messages
+    for (const msg of messages) {
+        // Calculate height based on message type
+        let height: number;
+        let bubbleWidth: number;
+
+        if (msg.type === "system") {
+            // System messages are shorter (single line centered pill)
+            height = 80;
+            bubbleWidth = viewportWidth * 0.6; // Centered system message
+        } else if (msg.type === "voice") {
+            // Voice messages have fixed height
+            height = 180;
+            bubbleWidth = 450; // Fixed voice message width
+        } else {
+            // Text messages: calculate based on text length
+            const textLength = msg.text?.length || 0;
+            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
+
+            // Height breakdown:
+            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
+            // - Text: lines * lineHeight
+            // - Timestamp row: ~40px (at 3x = 120)
+            // - Sender name (groups): additional 50px
+            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
+            const timestampHeight = 40;     // Timestamp row
+            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
+            const senderNameHeight = hasSenderName ? 45 : 0;
+
+            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
+
+            // Width: Use same line-wrap logic as height
+            // Width based on actual content lines, not raw length
+            const avgCharWidth = 14; // Approximate at 3x scale
+            const maxCharsOnLine = Math.min(textLength, chatConfig.charsPerLine);
+            const textWidth = maxCharsOnLine * avgCharWidth + 72; // + padding
+            bubbleWidth = Math.min(viewportWidth * BUBBLE_MAX_WIDTH_PERCENT, Math.max(textWidth, 150));
+        }
+
+        // Animation: Slide in / Fade in
+        const messageAt = msg.at ?? 0;
+        const timeSinceAppear = t - messageAt;
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
+            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
+            // Simple ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+            opacity = ease;
+            translateY = chatConfig.messageAppearOffset * (1 - ease);
+        }
+
+        // Compute rect for director targeting
+        const isMe = msg.from === "me";
+        const rectX = isMe
+            ? viewportWidth - BUBBLE_MARGIN_HORIZONTAL - bubbleWidth
+            : BUBBLE_MARGIN_HORIZONTAL;
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY,
+            rect: {
+                x: rectX,
+                y: currentY,
+                width: bubbleWidth,
+                height,
+            },
+        };
+
+        lastMessageId = msg.id;
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    // 2. Typing indicator
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+    if (isTyping) {
+        const height = chatConfig.baseBubbleHeight;
+        typingLayout = {
+            y: currentY,
+            height,
+            opacity: 1,
+            rect: {
+                x: BUBBLE_MARGIN_HORIZONTAL,
+                y: currentY,
+                width: TYPING_BUBBLE_WIDTH,
+                height,
+            },
+        };
+        currentY += height + chatConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + chatConfig.bottomPadding;
+
+    // 3. Scroll Position
+    // Lock to bottom logic
+    let scrollY = 0;
+    if (chatConfig.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+        scrollY = maxScroll;
+
+        // TODO: Implement smooth scrolling based on message arrival times if needed
+        // For now, instant snap to bottom is robust
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId
+        }
+    };
+}
+````
+
+## File: packages/apps-whatsapp/src/runtime.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: {
+            id?: string;
+            type?: string;
+            text?: string;
+            status?: string;
+            timestamp?: string;
+            imageUrl?: string;
+        };
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        duration?: number;
+        messageId?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        draft.conversations[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (event.type) {
+        case "MESSAGE_RECEIVED": {
+            const msgPayload = appEvent.message || {};
+            conversation.messages.push({
+                ...msgPayload,
+                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                text: appEvent.text || msgPayload.text,
+                type: (msgPayload.type as "text" | "image" | "voice" | "system") || "text",
+                at: event.at,
+                status: (msgPayload.status as "sending" | "sent" | "delivered" | "read") || "delivered",
+            });
+            break;
+        }
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            if (appEvent.from) {
+                conversation.typing[appEvent.from] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            if (conversation.typing && appEvent.from) {
+                delete conversation.typing[appEvent.from];
+            }
+            break;
+        }
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            conversation.messages.push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            });
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            conversation.messages.push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            });
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            conversation.messages.push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            });
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+    }
+}
+
+// Register the reducer with the core engine
+ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
+````
+
+## File: packages/core/src/engine.ts
+````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    WorldState,
+    DeviceState,
+    CameraState,
+    ActiveCameraEffect,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_CAMERA_TRANSFORM,
+    DEFAULT_AUDIO_STATE,
+} from "./types";
+import { CameraController, createActiveEffect } from "./camera";
+import { TIMING } from "./constants";
+
+export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
+export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+
+/**
+ * ReducerRegistry - Manages app and device reducers
+ * 
+ * This registry allows apps to self-register their event handlers.
+ * The engine dispatches events to the appropriate registered reducers.
+ */
+class ReducerRegistryClass {
+    private _deviceReducer: DeviceReducer | null = null;
+    private _appReducers = new Map<string, AppReducer>();
+
+    /**
+     * Register a device reducer (handles DEVICE events)
+     */
+    registerDeviceReducer(reducer: DeviceReducer): void {
+        this._deviceReducer = reducer;
+    }
+
+    /**
+     * Register an app reducer (handles APP events for a specific appId)
+     */
+    registerAppReducer(appId: string, reducer: AppReducer): void {
+        if (this._appReducers.has(appId)) {
+            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
+        }
+        this._appReducers.set(appId, reducer);
+    }
+
+    /**
+     * Get the device reducer
+     */
+    get deviceReducer(): DeviceReducer | null {
+        return this._deviceReducer;
+    }
+
+    /**
+     * Get an app reducer by appId
+     */
+    getAppReducer(appId: string): AppReducer | undefined {
+        return this._appReducers.get(appId);
+    }
+
+    /**
+     * Check if an app reducer is registered
+     */
+    hasAppReducer(appId: string): boolean {
+        return this._appReducers.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._appReducers.keys());
+    }
+
+    // Legacy compatibility - access appReducers as object
+    get appReducers(): Record<string, AppReducer> {
+        return Object.fromEntries(this._appReducers);
+    }
+}
+
+export const ReducerRegistry = new ReducerRegistryClass();
+
+// Camera controller instance - uses FPS from constants
+const cameraController = new CameraController(TIMING.FPS_DEFAULT);
+
+/**
+ * Process camera event and update camera state
+ */
+function processCameraEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "CAMERA" },
+    eventIndex: number
+): void {
+    // Ensure camera state exists with all required properties
+    if (!draft.camera || !draft.camera.activeEffects) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
+    }
+
+    switch (event.type) {
+        case "SET_VIEW":
+            // Legacy support - just update base view
+            draft.camera.baseView = event.view.type;
+            draft.camera.appId = event.view.appId;
+            break;
+
+        case "CUT":
+            // Hard cut - reset all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId;
+                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            }
+
+            // Update base view if specified
+            if (event.toView) {
+                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: event.mode,
+                primaryDeviceId: event.primaryDeviceId,
+                secondaryDeviceId: event.secondaryDeviceId,
+                pipPosition: event.pipPosition,
+                pipScale: event.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = event.primaryDeviceId;
+            break;
+
+        case "ZOOM":
+        case "PAN":
+        case "SHAKE":
+        case "FOCUS":
+        case "RESET": {
+            // Create active effect and add to list
+            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            if (activeEffect) {
+                draft.camera.activeEffects.push(activeEffect);
+            }
+            break;
+        }
+    }
+}
+
+/**
+ * Process audio event and update audio state
+ */
+function processAudioEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "AUDIO" },
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = { activeSounds: {} };
+    }
+
+    switch (event.type) {
+        case "PLAY_SOUND": {
+            // Generate instance ID if not provided
+            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+
+            draft.audio.activeSounds[instanceId] = {
+                soundId: event.soundId,
+                startFrame: event.at,
+                volume: event.volume ?? 1,
+                loop: event.loop ?? false,
+                deviceId: event.deviceId,
+                duration: event.duration,
+            };
+            break;
+        }
+
+        case "STOP_SOUND": {
+            delete draft.audio.activeSounds[event.instanceId];
+            break;
+        }
+
+        case "FADE_VOLUME": {
+            const sound = draft.audio.activeSounds[event.instanceId];
+            if (sound) {
+                // Store target volume - renderer will interpolate
+                (sound as any).fadeTarget = event.toVolume;
+                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeStartFrame = event.at;
+            }
+            break;
+        }
+
+        case "BACKGROUND_MUSIC": {
+            draft.audio.backgroundMusic = {
+                soundId: event.soundId,
+                volume: event.volume ?? 0.5,
+                loop: event.loop ?? true,
+                startFrame: event.at,
+            };
+            break;
+        }
+    }
+}
+/**
+ * Replay function - computes WorldState at time t by applying all events
+ * 
+ * This is called every frame by Remotion. Performance is critical.
+ */
+export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    if (!initial) {
+        console.warn("[Engine] Replay called with undefined initial state");
+        return {
+            devices: {},
+            conversations: {},
+            appState: {},
+            camera: { ...DEFAULT_CAMERA_STATE },
+            audio: { ...DEFAULT_AUDIO_STATE }
+        };
+    }
+
+    // Ensure initial state has proper camera and audio state
+    const initialWithCamera: WorldState = {
+        ...initial,
+        camera: initial.camera && 'activeEffects' in initial.camera
+            ? initial.camera
+            : {
+                ...DEFAULT_CAMERA_STATE,
+                baseView: (initial.camera as any)?.type || "APP_VIEW",
+                appId: (initial.camera as any)?.appId,
+            },
+        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
+    };
+
+    // Filter events up to current time
+    const relevant = events.filter(e => e.at <= t);
+
+    // Event handlers by kind (Strategy Pattern)
+    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
+        switch (event.kind) {
+            case "DEVICE":
+                if (ReducerRegistry.deviceReducer) {
+                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+                break;
+            case "APP":
+                const reducer = ReducerRegistry.getAppReducer(event.appId);
+                reducer?.(draft, event);
+                break;
+            case "CAMERA":
+                processCameraEvent(draft, event, index);
+                break;
+            case "AUDIO":
+                processAudioEvent(draft, event, index);
+                break;
+        }
+    };
+
+    // Apply events to build state
+    const stateAfterEvents = relevant.reduce((state, event, index) => {
+        return produce(state, draft => {
+            handleEvent(draft, event, index);
+        });
+    }, initialWithCamera);
+
+    // Compute camera transform at current time t
+    // This filters active effects and composes them, per-device
+    return produce(stateAfterEvents, draft => {
+        // Clean up expired effects (optimization) - use constant
+        draft.camera.activeEffects = draft.camera.activeEffects.filter(
+            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
+        );
+
+        // Ensure deviceTransforms exists
+        if (!draft.camera.deviceTransforms) {
+            draft.camera.deviceTransforms = {};
+        }
+
+        // Compute transform for each device
+        for (const deviceId of Object.keys(draft.devices)) {
+            // Filter effects for this device (global effects + device-specific)
+            const deviceEffects = draft.camera.activeEffects.filter(
+                ae => !ae.deviceId || ae.deviceId === deviceId
+            );
+
+            // Create a temporary camera state with only this device's effects
+            const deviceCameraState = {
+                ...draft.camera,
+                activeEffects: deviceEffects,
+            };
+
+            // Compute transform for this device
+            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+        }
+
+        // Primary device transform (for backward compatibility)
+        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
+    });
+}
+
+/**
+ * Get default initial world state with camera
+ */
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
+    return {
+        devices: {},
+        conversations: {},
+        appState: {},
+        camera: { ...DEFAULT_CAMERA_STATE },
+        audio: { ...DEFAULT_AUDIO_STATE },
+        ...partial,
+    };
+}
+````
+
 ## File: packages/renderer/src/DeviceFrame.tsx
 ````typescript
 import React from "react";
@@ -10582,6 +12861,21 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
 };
 ````
 
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+export * from "./engine";
+export * from "./tokens";
+export * from "./camera";
+export * from "./sounds";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./transitions";
+export * from "./director-lite";
+````
+
 ## File: packages/episodes/src/index.ts
 ````typescript
 import exampleEpisode from "./examples/whatsapp-breakup-01.json";
@@ -10618,23 +12912,86 @@ export * from "./layout";
 
 ## File: packages/renderer/src/registry.ts
 ````typescript
+/**
+ * AppRegistry - Maps app IDs to their React view components
+ * 
+ * Apps self-register their components here.
+ * The renderer uses this registry to display the correct app view.
+ */
+
 import React from "react";
-import { WorldState } from "@tokovo/core";
+import { WorldState, APP_IDS } from "@tokovo/core";
 import { WhatsappChatView } from "@tokovo/apps-whatsapp";
 import { InstagramApp } from "@tokovo/apps-instagram";
 
 import { LayoutState } from "./layout/types";
 
-export const AppRegistry = {
-    views: {
-        "app_whatsapp": WhatsappChatView,
-        "app_instagram": InstagramApp
-    } as Record<string, React.FC<{ world: WorldState; t?: number; layout?: LayoutState; platform?: string; deviceId?: string }>>,
+/**
+ * Props that all app view components receive
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: LayoutState;
+    platform?: string;
+    deviceId?: string;
+}
 
-    getView(appId: string) {
-        return this.views[appId];
+/**
+ * Type for app view components
+ */
+export type AppViewComponent = React.FC<AppViewProps>;
+
+/**
+ * AppRegistry class - manages app view components
+ */
+class AppRegistryClass {
+    private _views = new Map<string, AppViewComponent>();
+
+    constructor() {
+        // Register built-in apps
+        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
+        this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
     }
-};
+
+    /**
+     * Register an app view component
+     */
+    register(appId: string, component: AppViewComponent): void {
+        if (this._views.has(appId)) {
+            console.warn(`[AppRegistry] Overwriting view for ${appId}`);
+        }
+        this._views.set(appId, component);
+    }
+
+    /**
+     * Get an app view component by ID
+     */
+    getView(appId: string): AppViewComponent | undefined {
+        return this._views.get(appId);
+    }
+
+    /**
+     * Check if an app view is registered
+     */
+    hasView(appId: string): boolean {
+        return this._views.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._views.keys());
+    }
+
+    // Legacy compatibility - access views as object
+    get views(): Record<string, AppViewComponent> {
+        return Object.fromEntries(this._views);
+    }
+}
+
+export const AppRegistry = new AppRegistryClass();
 ````
 
 ## File: apps/video-runner/src/Root.tsx
@@ -10718,882 +13075,6 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
         </>
-    );
-};
-````
-
-## File: packages/core/src/types.ts
-````typescript
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-
-export interface Notification {
-    id: string;
-    appId: string;
-    title: string;
-    body: string;
-    at: number;
-    dismissedAt?: number;         // When auto-dismissed or manually dismissed
-    mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
-    icon?: string;                // App icon URL (optional)
-}
-
-export interface CallState {
-    status: "incoming" | "active" | "ended";
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo?: boolean;
-    startedAt?: number;
-    endedAt?: number;
-}
-
-export interface DeviceState {
-    id: string;
-    profileId: string;
-    ownerName?: string;            // Who owns this device (for POV - their messages on right)
-    isLocked: boolean;
-    foregroundAppId?: string;
-    notifications: Notification[];
-    call?: CallState;
-    homeScreen?: HomeScreenConfig;
-    sound?: {
-        activeSoundId?: string;
-    };
-}
-
-// --- Home Screen Types ---
-
-export interface HomeScreenConfig {
-    wallpaper?: string;              // URL or CSS gradient
-    pages: HomeScreenPage[];
-    dock: AppIcon[];
-}
-
-export interface HomeScreenPage {
-    apps: (AppIcon | AppFolder)[];
-}
-
-export interface AppIcon {
-    appId: string;
-    label: string;
-    icon: string;                    // URL or emoji
-    badge?: number;
-}
-
-export interface AppFolder {
-    type: "folder";
-    name: string;
-    apps: AppIcon[];
-}
-
-export interface ConversationState {
-    id: ConversationId;
-    type?: "dm" | "group";
-    name?: string;                   // Contact or group name
-    avatar?: string;
-
-    // Group-specific
-    members?: GroupMember[];
-    admins?: string[];               // Member IDs who are admins
-
-    messages: Message[];
-    typing?: Record<string, boolean>;
-}
-
-export interface GroupMember {
-    id: string;
-    name: string;
-    avatar?: string;
-    phone?: string;
-}
-
-export interface Message {
-    id: string;
-    from: string;                    // "me" or member ID
-    text?: string;
-    type?: "text" | "image" | "voice" | "system";
-    at?: number;                     // Timestamp frame
-
-    // System message
-    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
-    targetMember?: string;
-    actorName?: string;
-
-    // Voice message
-    duration?: number;
-    isPlaying?: boolean;
-    playProgress?: number;
-
-    // Read status
-    status?: "sending" | "sent" | "delivered" | "read";
-}
-
-// =============================================================================
-// CAMERA SYSTEM TYPES
-// =============================================================================
-
-// Easing types for smooth cinematic motion
-export type EasingType =
-    | "linear"
-    | "ease-in"
-    | "ease-out"
-    | "ease-in-out"
-    | "bounce"
-    | "elastic"
-    | "cinematic";  // Custom S-curve for film-like motion
-
-// Camera effect types
-export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
-
-// Targets for FOCUS effect - general purpose, not app-specific
-export type FocusTarget =
-    | { type: "app"; appId?: string }                                    // Focus on app viewport
-    | { type: "notification"; notificationId?: string }                  // Focus on notification
-    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
-    | { type: "device"; deviceId?: string }                              // Focus on device
-    | { type: "element"; selector: string }                              // Focus on CSS selector
-    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
-
-// Individual camera effect definitions
-export interface CameraZoomEffect {
-    type: "ZOOM";
-    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
-    originX?: number;        // 0-1, default 0.5 (center)
-    originY?: number;        // 0-1, default 0.5 (center)
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraPanEffect {
-    type: "PAN";
-    translateX: number;      // pixels (or normalized 0-1 if relative)
-    translateY: number;      // pixels
-    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraShakeEffect {
-    type: "SHAKE";
-    intensity: number;       // amplitude in pixels
-    frequency: number;       // shakes per second
-    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
-    duration: number;        // frames
-    seed?: number;           // for deterministic randomness
-}
-
-export interface CameraFocusEffect {
-    type: "FOCUS";
-    target: FocusTarget;
-    scale?: number;          // zoom level when focused, default 1.5
-    duration: number;        // frames
-    easing?: EasingType;
-    holdDuration?: number;   // frames to hold at focus before returning
-}
-
-export interface CameraCutEffect {
-    type: "CUT";
-    toDeviceId?: string;     // switch to different device
-    toView?: "app" | "lockscreen" | "homescreen";
-    fadeMs?: number;         // optional fade transition (0 = hard cut)
-}
-
-export interface CameraResetEffect {
-    type: "RESET";
-    duration: number;        // frames to animate back to default
-    easing?: EasingType;
-}
-
-export type CameraEffect =
-    | CameraZoomEffect
-    | CameraPanEffect
-    | CameraShakeEffect
-    | CameraFocusEffect
-    | CameraCutEffect
-    | CameraResetEffect;
-
-// Active camera effect (with timing info)
-export interface ActiveCameraEffect {
-    id: string;              // unique ID for this effect instance
-    effect: CameraEffect;
-    startFrame: number;
-    endFrame: number;
-    deviceId?: string;       // Target device (undefined = primary/active device)
-}
-
-// Computed camera transform (result of all active effects at time t)
-export interface CameraTransform {
-    translateX: number;
-    translateY: number;
-    scale: number;
-    rotation: number;        // degrees
-    originX: number;         // 0-1
-    originY: number;         // 0-1
-
-    // Shake offsets (added on top of main transform)
-    shakeX: number;
-    shakeY: number;
-}
-
-// =============================================================================
-// MULTI-DEVICE / POV TYPES
-// =============================================================================
-
-// View layout modes for multi-device rendering
-export type ViewLayoutMode =
-    | "SINGLE"              // One device fills the frame
-    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
-    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
-    | "PIP";                // Picture-in-Picture (main + small overlay)
-
-// PIP position options
-export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-
-// Layout configuration for multi-device views
-export interface ViewLayout {
-    mode: ViewLayoutMode;
-    primaryDeviceId: string;
-    secondaryDeviceId?: string;
-    pipPosition?: PIPPosition;
-    pipScale?: number;
-}
-
-// Default view layout
-export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
-    mode: "SINGLE",
-    primaryDeviceId: "main_phone",
-};
-
-// Full camera state (stored in WorldState)
-export interface CameraState {
-    // Base view (for backward compatibility)
-    baseView: "APP_VIEW" | "TRANSITION";
-    appId?: AppId;
-
-    // Multi-device support
-    activeDeviceId: string;
-    layout: ViewLayout;
-
-    // Active effects (from timeline) - global + per-device
-    activeEffects: ActiveCameraEffect[];
-
-    // Computed transform for primary device
-    transform: CameraTransform;
-
-    // Per-device transforms (computed by engine)
-    deviceTransforms: Record<DeviceId, CameraTransform>;
-}
-
-// Default camera transform
-export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
-    translateX: 0,
-    translateY: 0,
-    scale: 1,
-    rotation: 0,
-    originX: 0.5,
-    originY: 0.5,
-    shakeX: 0,
-    shakeY: 0,
-};
-
-// Default camera state
-export const DEFAULT_CAMERA_STATE: CameraState = {
-    baseView: "APP_VIEW",
-    activeDeviceId: "main_phone",
-    layout: { ...DEFAULT_VIEW_LAYOUT },
-    activeEffects: [],
-    transform: { ...DEFAULT_CAMERA_TRANSFORM },
-    deviceTransforms: {},
-};
-
-// Legacy type for backward compatibility
-export interface CameraViewConfig {
-    type: "APP_VIEW" | "TRANSITION";
-    appId?: AppId;
-}
-
-// =============================================================================
-// AUDIO SYSTEM TYPES
-// =============================================================================
-
-// Active sound instance
-export interface ActiveSound {
-    soundId: string;
-    startFrame: number;
-    volume: number;
-    loop?: boolean;
-    deviceId?: string;  // If set, only plays for this device's context
-    duration?: number;  // Optional duration in frames
-}
-
-// Audio state (stored in WorldState)
-export interface AudioState {
-    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
-    backgroundMusic?: {
-        soundId: string;
-        volume: number;
-        loop: boolean;
-        startFrame: number;
-    };
-}
-
-// Default audio state
-export const DEFAULT_AUDIO_STATE: AudioState = {
-    activeSounds: {},
-};
-
-export interface WorldState {
-    devices: Record<DeviceId, DeviceState>;
-    conversations: Record<ConversationId, ConversationState>;
-    appState: Record<AppId, any>;
-    camera: CameraState;
-    audio: AudioState;
-}
-
-// Event Union
-export type TimelineEvent =
-    // Device events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
-    // Call events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
-    // App events - messaging
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
-    // App events - voice message
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
-    // App events - group
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
-    // App events - custom
-    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
-    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
-    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
-    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
-    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
-    // Camera events - MULTI-DEVICE / POV
-    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
-    // Audio events - SOUND SYSTEM
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
-    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
-    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
-    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean };
-
-// --- Layout System Types ---
-
-export type ViewKind =
-    | "CHAT"
-    | "FEED"
-    | "STORY"
-    | "LOCKSCREEN"
-    | "HOMESCREEN"
-    | "TRANSITION";
-
-export interface LayoutContext {
-    world: WorldState;
-    t: number; // current frame
-    activeDeviceId: string;
-    activeAppId: string;
-    viewKind: ViewKind;
-
-    // View-specific selectors
-    activeConversationId?: string;   // CHAT
-    activeFeedId?: string;           // FEED (e.g. timeline id)
-    activeStoryId?: string;          // STORY (e.g. story reel id)
-
-    viewportWidth: number;
-    viewportHeight: number;
-
-    // Optional configuration overrides
-    config?: Partial<LayoutConfig>;
-}
-
-// --- LayoutConfig ---
-
-export interface LayoutConfig {
-    // Global-ish things
-    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
-
-    // Chat-specific
-    chat: ChatLayoutConfig;
-
-    // Feed-specific
-    feed: FeedLayoutConfig;
-
-    // Story-specific
-    story: StoryLayoutConfig;
-
-    // Lock screen
-    lockscreen: LockscreenLayoutConfig;
-
-    // Transitions
-    transition: TransitionLayoutConfig;
-}
-
-export interface ChatLayoutConfig {
-    bubbleWidth: number;
-    baseBubbleHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    lockToBottom: boolean;
-}
-
-export interface FeedLayoutConfig {
-    cardWidth: number;
-    baseCardHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    // For variable-height posts, same trick as chat:
-    charsPerLine: number;
-    lineHeight: number;
-
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    startAtTop: boolean;      // typical feed behaviour
-    autoScroll?: boolean;     // for cinematic auto-scroll episodes
-}
-
-export interface StoryLayoutConfig {
-    // Each story = full-screen page
-    defaultStoryDuration: number; // in frames
-    progressBarHeight: number;
-    storyGap: number;             // for 3D-ish page stack if needed
-
-    // Animation
-    storyTransitionDuration: number; // frames between stories
-}
-
-export interface LockscreenLayoutConfig {
-    topPadding: number;
-    notificationGap: number;
-    notificationWidth: number;
-    baseNotificationHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-
-    stackMaxNotifications: number; // older ones collapsed/hidden
-    appearDuration: number;
-}
-
-export interface TransitionLayoutConfig {
-    // Device position in composition
-    defaultScale: number;
-    zoomedScale: number;
-    panDuration: number;
-    zoomDuration: number;
-
-    // Optionally, per-transition presets (open app, unlock, etc.)
-}
-
-// --- LayoutState ---
-
-export type LayoutState =
-    | ChatLayoutState
-    | FeedLayoutState
-    | StoryLayoutState
-    | LockscreenLayoutState
-    | TransitionLayoutState;
-
-export interface BaseLayoutState {
-    kind: ViewKind;
-}
-
-// ChatLayoutState
-
-export interface ChatLayoutState extends BaseLayoutState {
-    kind: "CHAT";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    messageLayouts: Record<string, ChatMessageLayout>;
-    typingLayout?: TypingLayout | null;
-    meta: ChatLayoutMeta;
-}
-
-export interface ChatMessageLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-}
-
-export interface TypingLayout {
-    y: number;
-    height: number;
-    opacity: number;
-}
-
-export interface ChatLayoutMeta {
-    lastMessageId?: string;
-}
-
-// FeedLayoutState
-
-export interface FeedLayoutState extends BaseLayoutState {
-    kind: "FEED";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    itemLayouts: Record<string, FeedItemLayout>;
-    meta: FeedLayoutMeta;
-}
-
-export interface FeedItemLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    scale: number;   // for subtle parallax / entry
-}
-
-export interface FeedLayoutMeta {
-    firstVisibleItemId?: string;
-    lastVisibleItemId?: string;
-    focusedItemId?: string; // for cinematic highlight
-}
-
-// StoryLayoutState
-
-export interface StoryLayoutState extends BaseLayoutState {
-    kind: "STORY";
-    activeStoryIndex: number;
-    storyCount: number;
-    storyProgress: number; // 0..1 within current story
-    storyLayouts: StoryItemLayout[];
-}
-
-export interface StoryItemLayout {
-    id: string;
-    index: number;
-    // For 3D card stack / page-motion effects:
-    translateX: number;
-    translateY: number;
-    scale: number;
-    opacity: number;
-}
-
-// LockscreenLayoutState
-
-export interface LockscreenLayoutState extends BaseLayoutState {
-    kind: "LOCKSCREEN";
-    notificationLayouts: NotificationLayout[];
-    meta: LockscreenLayoutMeta;
-}
-
-export interface NotificationLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-}
-
-export interface LockscreenLayoutMeta {
-    // Add any meta fields if needed
-}
-
-// TransitionLayoutState
-
-export interface TransitionLayoutState extends BaseLayoutState {
-    kind: "TRANSITION";
-    // These values are for the outer DeviceFrame / TokovoRenderer
-    deviceTranslateX: number;
-    deviceTranslateY: number;
-    deviceScale: number;
-    deviceRotation: number;
-    overlayOpacity: number;
-    meta: TransitionLayoutMeta;
-}
-
-export interface TransitionLayoutMeta {
-    // Add any meta fields if needed
-}
-````
-
-## File: packages/renderer/src/TokovoRenderer.tsx
-````typescript
-import React from "react";
-import { WorldState, Notification, CameraTransform, DEFAULT_CAMERA_TRANSFORM } from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { computeLayout } from "./layout";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
-import { VisualDebugger } from "./VisualDebugger";
-import { Audio, staticFile } from "remotion";
-import { ViewKind, LayoutContext } from "./layout/types";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
-
-/**
- * Configuration for heads-up notification behavior
- */
-interface NotificationConfig {
-    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
-    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
-}
-
-/**
- * TokovoRenderer
- * Main rendering component that orchestrates device frame, app views, and overlays
- */
-export const TokovoRenderer: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;  // Which device to render (for multi-device POV)
-}> = ({ world, t, debug, notificationConfig = {}, focusDeviceId }) => {
-    const {
-        headsUpDuration = 150,
-        showHeadsUpWhenAppOpen = true
-    } = notificationConfig;
-
-    // 1. Determine active device & app
-    // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
-    const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
-    const device = world.devices[deviceId];
-    const appId = device?.foregroundAppId;
-
-    // 2. Determine ViewKind
-    let viewKind: ViewKind = "TRANSITION";
-    let activeConversationId: string | undefined;
-    let activeStoryId: string | undefined;
-
-    if (device.isLocked) {
-        viewKind = "LOCKSCREEN";
-    } else if (appId) {
-        if (appId === "app_whatsapp") {
-            viewKind = "CHAT";
-            activeConversationId = Object.keys(world.conversations)[0];
-        } else if (appId === "app_instagram") {
-            const appState = world.appState?.["app_instagram"];
-            const currentView = appState?.currentView || "feed";
-
-            switch (currentView) {
-                case "dm":
-                    viewKind = "CHAT";
-                    activeConversationId = Object.keys(world.conversations)[0];
-                    break;
-                case "stories":
-                    viewKind = "STORY";
-                    activeStoryId = appState?.stories?.activeStoryId;
-                    break;
-                case "feed":
-                case "explore":
-                case "profile":
-                case "notifications":
-                case "reels":
-                case "post":
-                    viewKind = "FEED";
-                    break;
-                default:
-                    viewKind = "FEED";
-            }
-        }
-    } else {
-        // No app open, show home screen
-        viewKind = "HOMESCREEN";
-    }
-
-    // 3. Compute Layout
-    const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-
-    // For chat views, reduce viewport height to account for header and input area
-    // Header: ~414px (270px header + 144px status bar area)
-    // Input: ~272px (input field + home indicator)
-    const chatHeaderHeight = 414;
-    const chatInputHeight = 272;
-    const effectiveViewportHeight = viewKind === "CHAT"
-        ? profile.dimensions.height - chatHeaderHeight - chatInputHeight
-        : profile.dimensions.height;
-
-    const layoutContext: LayoutContext = {
-        world,
-        t,
-        activeDeviceId: deviceId,
-        activeAppId: appId || "",
-        viewKind,
-        activeConversationId,
-        activeStoryId,
-        viewportWidth: profile.dimensions.width,
-        viewportHeight: effectiveViewportHeight
-    };
-
-    const layout = computeLayout(layoutContext);
-
-    // 4. Select App View
-    let AppView = null;
-    if (appId && AppRegistry.views[appId]) {
-        AppView = AppRegistry.views[appId];
-    }
-
-    // 5. Determine Device Variant
-    const isPixel = device.profileId.includes("pixel");
-    const variant = isPixel ? "android" : "ios";
-
-    // 6. Get Camera Transform for this specific device
-    const cameraTransform: CameraTransform =
-        (world.camera?.deviceTransforms?.[deviceId]) ||
-        world.camera?.transform ||
-        DEFAULT_CAMERA_TRANSFORM;
-
-    // 7. Build camera transform style
-    // The transform-origin uses the originX/originY from camera to zoom toward specific point
-    // Origin is in 0-1 range where (0.5, 0.5) is center
-    const cameraTransformString = `
-        translate(${cameraTransform.translateX + cameraTransform.shakeX}px, ${cameraTransform.translateY + cameraTransform.shakeY}px)
-        scale(${cameraTransform.scale})
-        rotate(${cameraTransform.rotation}deg)
-    `.replace(/\s+/g, ' ').trim();
-
-    // Camera wrapper needs explicit dimensions for transform-origin to work correctly
-    // Use device profile dimensions
-    const cameraStyle: React.CSSProperties = {
-        width: profile.dimensions.width,
-        height: profile.dimensions.height,
-        transformOrigin: `${cameraTransform.originX * 100}% ${cameraTransform.originY * 100}%`,
-        transform: cameraTransformString,
-        // No CSS transition - we handle all animation in JS for frame-perfect sync
-        transition: 'none',
-    };
-
-    // 8. Device-specific transforms (legacy layout system)
-    let deviceStyle: React.CSSProperties = {};
-
-    if (layout.kind === "TRANSITION") {
-        const transLayout = layout as any;
-        const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-        if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-            deviceStyle = {
-                transformOrigin: "center center",
-                transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-            };
-        }
-    }
-
-    // 7. Find active notifications for heads-up display
-    const getActiveHeadsUpNotification = (): Notification | null => {
-        if (!device.notifications || device.isLocked) return null;
-        if (!showHeadsUpWhenAppOpen && appId) return null;
-
-        // Find the most recent notification that should show as heads-up
-        const headsUpNotifs = device.notifications.filter(n => {
-            // Check mode
-            const mode = n.mode || "both";
-            if (mode === "lockscreen") return false;
-
-            // Check if not dismissed and within display window
-            if (n.dismissedAt !== undefined) return false;
-
-            const timeSinceAppear = t - n.at;
-            if (timeSinceAppear < 0) return false; // Not yet visible
-            if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
-
-            // Don't show notification from current app
-            if (n.appId === appId) return false;
-
-            return true;
-        });
-
-        // Return the most recent one
-        return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-    };
-
-    const activeHeadsUp = getActiveHeadsUpNotification();
-
-    // 8. Check for active call
-    const hasActiveCall = device.call && device.call.status !== "ended";
-
-    return (
-        <div style={{
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            {/* Camera wrapper - applies cinematic transforms */}
-            <div style={cameraStyle}>
-                {/* Device wrapper - applies layout transforms */}
-                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <DeviceFrame profileId={device.profileId} variant={variant}>
-                        {/* Call Overlay (takes precedence over everything) */}
-                        {hasActiveCall && (
-                            <CallOverlay
-                                call={device.call!}
-                                currentTime={t}
-                                variant={variant}
-                            />
-                        )}
-
-                        {/* App View / Lockscreen / Home Screen */}
-                        {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
-                        ) : !hasActiveCall && device.isLocked ? (
-                            <LockscreenView
-                                notifications={device.notifications}
-                                layout={layout}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && device.homeScreen ? (
-                            <HomeScreenView
-                                config={device.homeScreen}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && (
-                            <div style={{ flex: 1, backgroundColor: "black" }} />
-                        )}
-
-                        {/* Lockscreen Notification Overlay */}
-                        <NotificationOverlay
-                            notifications={device?.notifications}
-                            variant={variant}
-                            layout={layout}
-                        />
-
-                        {/* Heads-Up Notification (when unlocked) */}
-                        {activeHeadsUp && !hasActiveCall && (
-                            <HeadsUpNotification
-                                notification={activeHeadsUp}
-                                currentTime={t}
-                                variant={variant}
-                                autoDismissAfter={headsUpDuration}
-                            />
-                        )}
-                    </DeviceFrame>
-                </div>
-            </div>
-
-            {debug && <VisualDebugger world={world} t={t} />}
-        </div>
     );
 };
 ````
@@ -12600,4 +14081,1065 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
         </WhatsApp.Root>
     );
 };
+````
+
+## File: packages/core/src/types.ts
+````typescript
+export type DeviceId = string;
+export type AppId = string;
+export type ConversationId = string;
+
+export interface Notification {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    at: number;
+    dismissedAt?: number;         // When auto-dismissed or manually dismissed
+    mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
+    icon?: string;                // App icon URL (optional)
+}
+
+export interface CallState {
+    status: "incoming" | "active" | "ended";
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    startedAt?: number;
+    endedAt?: number;
+}
+
+export interface DeviceState {
+    id: string;
+    profileId: string;
+    ownerName?: string;            // Who owns this device (for POV - their messages on right)
+    isLocked: boolean;
+    foregroundAppId?: string;
+    notifications: Notification[];
+    call?: CallState;
+    homeScreen?: HomeScreenConfig;
+    sound?: {
+        activeSoundId?: string;
+    };
+    // Theming & Configuration
+    theme?: DeviceTheme;
+}
+
+// Device-level theme configuration
+export interface DeviceTheme {
+    platform?: "ios" | "android";          // UI style (default: ios)
+    frameColor?: string;                    // Device bezel color (default: black)
+    wallpaper?: string;                     // Lock/home screen wallpaper (URL or CSS gradient)
+    statusBarStyle?: "light" | "dark";     // Status bar text color
+    accentColor?: string;                   // App tint color override
+}
+
+// --- Home Screen Types ---
+
+export interface HomeScreenConfig {
+    wallpaper?: string;              // URL or CSS gradient
+    pages: HomeScreenPage[];
+    dock: AppIcon[];
+}
+
+export interface HomeScreenPage {
+    apps: (AppIcon | AppFolder)[];
+}
+
+export interface AppIcon {
+    appId: string;
+    label: string;
+    icon: string;                    // URL or emoji
+    badge?: number;
+}
+
+export interface AppFolder {
+    type: "folder";
+    name: string;
+    apps: AppIcon[];
+}
+
+export interface ConversationState {
+    id: ConversationId;
+    type?: "dm" | "group";
+    name?: string;                   // Contact or group name
+    avatar?: string;
+
+    // Group-specific
+    members?: GroupMember[];
+    admins?: string[];               // Member IDs who are admins
+
+    messages: Message[];
+    typing?: Record<string, boolean>;
+}
+
+export interface GroupMember {
+    id: string;
+    name: string;
+    avatar?: string;
+    phone?: string;
+}
+
+export interface Message {
+    id: string;
+    from: string;                    // "me" or member ID
+    text?: string;
+    type?: "text" | "image" | "voice" | "system";
+    at?: number;                     // Timestamp frame
+
+    // System message
+    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
+    targetMember?: string;
+    actorName?: string;
+
+    // Voice message
+    duration?: number;
+    isPlaying?: boolean;
+    playProgress?: number;
+
+    // Read status
+    status?: "sending" | "sent" | "delivered" | "read";
+}
+
+// =============================================================================
+// CAMERA SYSTEM TYPES
+// =============================================================================
+
+// Easing types for smooth cinematic motion
+export type EasingType =
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "bounce"
+    | "elastic"
+    | "cinematic";  // Custom S-curve for film-like motion
+
+// =============================================================================
+// TRANSITION SYSTEM TYPES
+// =============================================================================
+
+// Transition types for screen animations
+export type TransitionType =
+    | "FADE"
+    | "SLIDE_LEFT"
+    | "SLIDE_RIGHT"
+    | "SLIDE_UP"
+    | "SLIDE_DOWN"
+    | "ZOOM_IN"
+    | "ZOOM_OUT"
+    | "CROSS_DISSOLVE";
+
+// =============================================================================
+// HIGHLIGHT SYSTEM TYPES
+// =============================================================================
+
+// Highlight styles for message emphasis
+export type HighlightStyle =
+    | "pulse"
+    | "glow"
+    | "shake"
+    | "bounce"
+    | "spotlight"
+    | "scale";
+
+// Camera effect types
+export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
+
+// Targets for FOCUS effect - general purpose, not app-specific
+export type FocusTarget =
+    | { type: "app"; appId?: string }                                    // Focus on app viewport
+    | { type: "notification"; notificationId?: string }                  // Focus on notification
+    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
+    | { type: "device"; deviceId?: string }                              // Focus on device
+    | { type: "element"; selector: string }                              // Focus on CSS selector
+    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
+
+// Individual camera effect definitions
+export interface CameraZoomEffect {
+    type: "ZOOM";
+    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
+    originX?: number;        // 0-1, default 0.5 (center)
+    originY?: number;        // 0-1, default 0.5 (center)
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraPanEffect {
+    type: "PAN";
+    translateX: number;      // pixels (or normalized 0-1 if relative)
+    translateY: number;      // pixels
+    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraShakeEffect {
+    type: "SHAKE";
+    intensity: number;       // amplitude in pixels
+    frequency: number;       // shakes per second
+    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
+    duration: number;        // frames
+    seed?: number;           // for deterministic randomness
+}
+
+export interface CameraFocusEffect {
+    type: "FOCUS";
+    target: FocusTarget;
+    scale?: number;          // zoom level when focused, default 1.5
+    duration: number;        // frames
+    easing?: EasingType;
+    holdDuration?: number;   // frames to hold at focus before returning
+}
+
+export interface CameraCutEffect {
+    type: "CUT";
+    toDeviceId?: string;     // switch to different device
+    toView?: "app" | "lockscreen" | "homescreen";
+    fadeMs?: number;         // optional fade transition (0 = hard cut)
+}
+
+export interface CameraResetEffect {
+    type: "RESET";
+    duration: number;        // frames to animate back to default
+    easing?: EasingType;
+}
+
+export type CameraEffect =
+    | CameraZoomEffect
+    | CameraPanEffect
+    | CameraShakeEffect
+    | CameraFocusEffect
+    | CameraCutEffect
+    | CameraResetEffect;
+
+// Active camera effect (with timing info)
+export interface ActiveCameraEffect {
+    id: string;              // unique ID for this effect instance
+    effect: CameraEffect;
+    startFrame: number;
+    endFrame: number;
+    deviceId?: string;       // Target device (undefined = primary/active device)
+}
+
+// Computed camera transform (result of all active effects at time t)
+export interface CameraTransform {
+    translateX: number;
+    translateY: number;
+    scale: number;
+    rotation: number;        // degrees
+    originX: number;         // 0-1
+    originY: number;         // 0-1
+
+    // Shake offsets (added on top of main transform)
+    shakeX: number;
+    shakeY: number;
+}
+
+// =============================================================================
+// MULTI-DEVICE / POV TYPES
+// =============================================================================
+
+// View layout modes for multi-device rendering
+export type ViewLayoutMode =
+    | "SINGLE"              // One device fills the frame
+    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
+    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
+    | "PIP";                // Picture-in-Picture (main + small overlay)
+
+// PIP position options
+export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+// Layout configuration for multi-device views
+export interface ViewLayout {
+    mode: ViewLayoutMode;
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: PIPPosition;
+    pipScale?: number;
+}
+
+// Default view layout
+export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
+    mode: "SINGLE",
+    primaryDeviceId: "main_phone",
+};
+
+// Full camera state (stored in WorldState)
+export interface CameraState {
+    // Base view (for backward compatibility)
+    baseView: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+
+    // Multi-device support
+    activeDeviceId: string;
+    layout: ViewLayout;
+
+    // Active effects (from timeline) - global + per-device
+    activeEffects: ActiveCameraEffect[];
+
+    // Computed transform for primary device
+    transform: CameraTransform;
+
+    // Per-device transforms (computed by engine)
+    deviceTransforms: Record<DeviceId, CameraTransform>;
+}
+
+// Default camera transform
+export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+    rotation: 0,
+    originX: 0.5,
+    originY: 0.5,
+    shakeX: 0,
+    shakeY: 0,
+};
+
+// Default camera state
+export const DEFAULT_CAMERA_STATE: CameraState = {
+    baseView: "APP_VIEW",
+    activeDeviceId: "main_phone",
+    layout: { ...DEFAULT_VIEW_LAYOUT },
+    activeEffects: [],
+    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    deviceTransforms: {},
+};
+
+// Legacy type for backward compatibility
+export interface CameraViewConfig {
+    type: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+}
+
+// =============================================================================
+// AUDIO SYSTEM TYPES
+// =============================================================================
+
+// Active sound instance
+export interface ActiveSound {
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;  // If set, only plays for this device's context
+    duration?: number;  // Optional duration in frames
+}
+
+// Audio state (stored in WorldState)
+export interface AudioState {
+    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
+    backgroundMusic?: {
+        soundId: string;
+        volume: number;
+        loop: boolean;
+        startFrame: number;
+    };
+}
+
+// Default audio state
+export const DEFAULT_AUDIO_STATE: AudioState = {
+    activeSounds: {},
+};
+
+// =============================================================================
+// VIDEO CONFIGURATION
+// =============================================================================
+
+// Global video configuration (applies to entire composition)
+export interface VideoConfig {
+    // Canvas
+    backgroundColor?: string;               // Video background (default: #0a0a1a)
+    width?: number;                         // Composition width (default: 1080)
+    height?: number;                        // Composition height (default: 1920)
+    fps?: number;                           // Frames per second (default: 30)
+
+    // Multi-device layout theming
+    layout?: {
+        splitLineColor?: string;            // Divider color in split views
+        splitLineWidth?: number;            // Divider thickness
+        pipBorderColor?: string;            // PIP overlay border
+        pipBorderWidth?: number;            // PIP border thickness
+        pipShadow?: string;                 // PIP drop shadow
+    };
+
+    // Watermark (optional)
+    watermark?: {
+        text?: string;
+        image?: string;
+        position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+        opacity?: number;
+    };
+}
+
+// Default video config
+export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
+    backgroundColor: "#0a0a1a",
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    layout: {
+        splitLineColor: "#333333",
+        splitLineWidth: 2,
+        pipBorderColor: "#333333",
+        pipBorderWidth: 2,
+        pipShadow: "0 10px 40px rgba(0,0,0,0.5)",
+    },
+};
+
+export interface WorldState {
+    devices: Record<DeviceId, DeviceState>;
+    conversations: Record<ConversationId, ConversationState>;
+    appState: Record<AppId, any>;
+    camera: CameraState;
+    audio: AudioState;
+    config?: VideoConfig;                   // Global video configuration
+}
+
+// Event Union
+export type TimelineEvent =
+    // Device events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
+    // Call events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
+    // App events - messaging
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
+    // App events - voice message
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
+    // App events - group
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
+    // App events - custom
+    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
+    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
+    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
+    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
+    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
+    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
+    // Camera events - MULTI-DEVICE / POV
+    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
+    // Audio events - SOUND SYSTEM
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
+    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
+    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
+    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
+    // Transition events - SCREEN ANIMATIONS
+    | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
+    // Highlight events - MESSAGE EMPHASIS
+    | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string };
+
+// --- Layout System Types ---
+
+export type ViewKind =
+    | "CHAT"
+    | "FEED"
+    | "STORY"
+    | "LOCKSCREEN"
+    | "HOMESCREEN"
+    | "TRANSITION";
+
+export interface LayoutContext {
+    world: WorldState;
+    t: number; // current frame
+    activeDeviceId: string;
+    activeAppId: string;
+    viewKind: ViewKind;
+
+    // View-specific selectors
+    activeConversationId?: string;   // CHAT
+    activeFeedId?: string;           // FEED (e.g. timeline id)
+    activeStoryId?: string;          // STORY (e.g. story reel id)
+
+    viewportWidth: number;
+    viewportHeight: number;
+
+    // Optional configuration overrides
+    config?: Partial<LayoutConfig>;
+}
+
+// --- LayoutConfig ---
+
+export interface LayoutConfig {
+    // Global-ish things
+    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
+
+    // Chat-specific
+    chat: ChatLayoutConfig;
+
+    // Feed-specific
+    feed: FeedLayoutConfig;
+
+    // Story-specific
+    story: StoryLayoutConfig;
+
+    // Lock screen
+    lockscreen: LockscreenLayoutConfig;
+
+    // Transitions
+    transition: TransitionLayoutConfig;
+}
+
+export interface ChatLayoutConfig {
+    bubbleWidth: number;
+    baseBubbleHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    lockToBottom: boolean;
+}
+
+export interface FeedLayoutConfig {
+    cardWidth: number;
+    baseCardHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    // For variable-height posts, same trick as chat:
+    charsPerLine: number;
+    lineHeight: number;
+
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    startAtTop: boolean;      // typical feed behaviour
+    autoScroll?: boolean;     // for cinematic auto-scroll episodes
+}
+
+export interface StoryLayoutConfig {
+    // Each story = full-screen page
+    defaultStoryDuration: number; // in frames
+    progressBarHeight: number;
+    storyGap: number;             // for 3D-ish page stack if needed
+
+    // Animation
+    storyTransitionDuration: number; // frames between stories
+}
+
+export interface LockscreenLayoutConfig {
+    topPadding: number;
+    notificationGap: number;
+    notificationWidth: number;
+    baseNotificationHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+
+    stackMaxNotifications: number; // older ones collapsed/hidden
+    appearDuration: number;
+}
+
+export interface TransitionLayoutConfig {
+    // Device position in composition
+    defaultScale: number;
+    zoomedScale: number;
+    panDuration: number;
+    zoomDuration: number;
+
+    // Optionally, per-transition presets (open app, unlock, etc.)
+}
+
+// --- LayoutState ---
+
+export type LayoutState =
+    | ChatLayoutState
+    | FeedLayoutState
+    | StoryLayoutState
+    | LockscreenLayoutState
+    | TransitionLayoutState;
+
+export interface BaseLayoutState {
+    kind: ViewKind;
+}
+
+// ChatLayoutState
+
+export interface ChatLayoutState extends BaseLayoutState {
+    kind: "CHAT";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    messageLayouts: Record<string, ChatMessageLayout>;
+    typingLayout?: TypingLayout | null;
+    meta: ChatLayoutMeta;
+}
+
+export interface ChatMessageLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+    // Rect for director targeting (x, y relative to content, not viewport)
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+export interface TypingLayout {
+    y: number;
+    height: number;
+    opacity: number;
+    // Rect for director targeting
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+export interface ChatLayoutMeta {
+    lastMessageId?: string;
+}
+
+// FeedLayoutState
+
+export interface FeedLayoutState extends BaseLayoutState {
+    kind: "FEED";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    itemLayouts: Record<string, FeedItemLayout>;
+    meta: FeedLayoutMeta;
+}
+
+export interface FeedItemLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+    scale: number;   // for subtle parallax / entry
+}
+
+export interface FeedLayoutMeta {
+    firstVisibleItemId?: string;
+    lastVisibleItemId?: string;
+    focusedItemId?: string; // for cinematic highlight
+}
+
+// StoryLayoutState
+
+export interface StoryLayoutState extends BaseLayoutState {
+    kind: "STORY";
+    activeStoryIndex: number;
+    storyCount: number;
+    storyProgress: number; // 0..1 within current story
+    storyLayouts: StoryItemLayout[];
+}
+
+export interface StoryItemLayout {
+    id: string;
+    index: number;
+    // For 3D card stack / page-motion effects:
+    translateX: number;
+    translateY: number;
+    scale: number;
+    opacity: number;
+}
+
+// LockscreenLayoutState
+
+export interface LockscreenLayoutState extends BaseLayoutState {
+    kind: "LOCKSCREEN";
+    notificationLayouts: NotificationLayout[];
+    meta: LockscreenLayoutMeta;
+}
+
+export interface NotificationLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+}
+
+export interface LockscreenLayoutMeta {
+    // Add any meta fields if needed
+}
+
+// TransitionLayoutState
+
+export interface TransitionLayoutState extends BaseLayoutState {
+    kind: "TRANSITION";
+    // These values are for the outer DeviceFrame / TokovoRenderer
+    deviceTranslateX: number;
+    deviceTranslateY: number;
+    deviceScale: number;
+    deviceRotation: number;
+    overlayOpacity: number;
+    meta: TransitionLayoutMeta;
+}
+
+export interface TransitionLayoutMeta {
+    // Add any meta fields if needed
+}
+````
+
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+import React from "react";
+import {
+    WorldState,
+    Notification,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    LAYOUT,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+} from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { computeLayout } from "./layout";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { HeadsUpNotification } from "./HeadsUpNotification";
+import { CallOverlay } from "./CallOverlay";
+import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
+import { VisualDebugger } from "./VisualDebugger";
+import { Audio, staticFile } from "remotion";
+import { ViewKind, LayoutContext } from "./layout/types";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
+import { createDirectorLayoutModel } from "./layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "./camera-composer";
+
+/**
+ * Configuration for heads-up notification behavior
+ */
+interface NotificationConfig {
+    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
+    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
+}
+
+/**
+ * TokovoRenderer
+ * Main rendering component that orchestrates device frame, app views, and overlays
+ */
+export const TokovoRenderer: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;  // Which device to render (for multi-device POV)
+    // DirectorLite integration
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+}) => {
+        const {
+            headsUpDuration = 150,
+            showHeadsUpWhenAppOpen = true
+        } = notificationConfig;
+
+        // 1. Determine active device & app
+        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
+        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+        const device = world.devices[deviceId];
+
+        if (!device) {
+            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
+            return null;
+        }
+
+        const appId = device.foregroundAppId;
+
+        // 2. Determine ViewKind
+        let viewKind: ViewKind = "TRANSITION";
+        let activeConversationId: string | undefined;
+        let activeStoryId: string | undefined;
+
+        if (device.isLocked) {
+            viewKind = "LOCKSCREEN";
+        } else if (appId) {
+            if (appId === "app_whatsapp") {
+                viewKind = "CHAT";
+                activeConversationId = Object.keys(world.conversations)[0];
+            } else if (appId === "app_instagram") {
+                const appState = world.appState?.["app_instagram"];
+                const currentView = appState?.currentView || "feed";
+
+                switch (currentView) {
+                    case "dm":
+                        viewKind = "CHAT";
+                        activeConversationId = Object.keys(world.conversations)[0];
+                        break;
+                    case "stories":
+                        viewKind = "STORY";
+                        activeStoryId = appState?.stories?.activeStoryId;
+                        break;
+                    case "feed":
+                    case "explore":
+                    case "profile":
+                    case "notifications":
+                    case "reels":
+                    case "post":
+                        viewKind = "FEED";
+                        break;
+                    default:
+                        viewKind = "FEED";
+                }
+            }
+        } else {
+            // No app open, show home screen
+            viewKind = "HOMESCREEN";
+        }
+
+        // 3. Compute Layout
+        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+
+        // For chat views, reduce viewport height to account for header and input area
+        // Use constants instead of magic numbers
+        const effectiveViewportHeight = viewKind === "CHAT"
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
+            : profile.dimensions.height;
+
+        const layoutContext: LayoutContext = {
+            world,
+            t,
+            activeDeviceId: deviceId,
+            activeAppId: appId || "",
+            viewKind,
+            activeConversationId,
+            activeStoryId,
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: effectiveViewportHeight
+        };
+
+        const layout = computeLayout(layoutContext);
+
+        // 4. Select App View
+        let AppView = null;
+        if (appId && AppRegistry.views[appId]) {
+            AppView = AppRegistry.views[appId];
+        }
+
+        // 5. Determine Device Variant
+        const isPixel = device.profileId.includes("pixel");
+        const variant = isPixel ? "android" : "ios";
+
+        // 6. Get Base Camera Transform (from timeline events)
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        // 6b. DirectorLite Integration
+        let finalCameraTransform = baseCameraTransform;
+
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                effectiveViewportHeight
+            );
+
+            // Derive effects (PURE FUNCTION - no state)
+            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            // Log debug info if enabled
+            if (directorDebug && directorDebugOutput) {
+                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!skipped && effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(effects, viewport);
+            }
+        }
+
+        // 7. Build camera transform style
+        // The transform-origin uses the originX/originY from camera to zoom toward specific point
+        // Origin is in 0-1 range where (0.5, 0.5) is center
+        const cameraTransformString = `
+        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+        scale(${finalCameraTransform.scale})
+        rotate(${finalCameraTransform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
+        // Use device profile dimensions
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            // No CSS transition - we handle all animation in JS for frame-perfect sync
+            transition: 'none',
+        };
+
+        // 8. Device-specific transforms (legacy layout system)
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        // 9. Find active notifications for heads-up display
+        const getActiveHeadsUpNotification = (): Notification | null => {
+            if (!device.notifications || device.isLocked) return null;
+            if (!showHeadsUpWhenAppOpen && appId) return null;
+
+            // Find the most recent notification that should show as heads-up
+            const headsUpNotifs = device.notifications.filter(n => {
+                // Check mode
+                const mode = n.mode || "both";
+                if (mode === "lockscreen") return false;
+
+                // Check if not dismissed and within display window
+                if (n.dismissedAt !== undefined) return false;
+
+                const timeSinceAppear = t - n.at;
+                if (timeSinceAppear < 0) return false; // Not yet visible
+                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
+
+                // Don't show notification from current app
+                if (n.appId === appId) return false;
+
+                return true;
+            });
+
+            // Return the most recent one
+            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
+        };
+
+        const activeHeadsUp = getActiveHeadsUpNotification();
+
+        // 10. Check for active call
+        const hasActiveCall = device.call && device.call.status !== "ended";
+
+        return (
+            <div style={{
+                width: profile.dimensions.width,
+                height: profile.dimensions.height,
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                {/* Camera wrapper - applies cinematic transforms */}
+                <div style={cameraStyle}>
+                    {/* Device wrapper - applies layout transforms */}
+                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                        <DeviceFrame profileId={device.profileId} variant={variant}>
+                            {/* Call Overlay (takes precedence over everything) */}
+                            {hasActiveCall && (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            )}
+
+                            {/* App View / Lockscreen / Home Screen */}
+                            {!hasActiveCall && AppView && !device.isLocked ? (
+                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                            ) : !hasActiveCall && device.isLocked ? (
+                                <LockscreenView
+                                    notifications={device.notifications}
+                                    layout={layout}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && device.homeScreen ? (
+                                <HomeScreenView
+                                    config={device.homeScreen}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && (
+                                <div style={{ flex: 1, backgroundColor: "black" }} />
+                            )}
+
+                            {/* Lockscreen Notification Overlay */}
+                            <NotificationOverlay
+                                notifications={device?.notifications}
+                                variant={variant}
+                                layout={layout}
+                            />
+
+                            {/* Heads-Up Notification (when unlocked) */}
+                            {activeHeadsUp && !hasActiveCall && (
+                                <HeadsUpNotification
+                                    notification={activeHeadsUp}
+                                    currentTime={t}
+                                    variant={variant}
+                                    autoDismissAfter={headsUpDuration}
+                                />
+                            )}
+                        </DeviceFrame>
+                    </div>
+                </div>
+
+                {debug && <VisualDebugger world={world} t={t} />}
+            </div>
+        );
+    };
 ````

@@ -16,11 +16,12 @@
 8. [Device System](#device-system)
 9. [App System](#app-system)
 10. [Camera System](#camera-system)
-11. [Audio System](#audio-system)
-12. [Multi-Device & POV](#multi-device--pov)
-13. [Renderer Architecture](#renderer-architecture)
-14. [Creating New Apps](#creating-new-apps)
-15. [Quick Reference](#quick-reference)
+11. [DirectorLite (Automatic Camera)](#directorlite-automatic-camera)
+12. [Audio System](#audio-system)
+13. [Multi-Device & POV](#multi-device--pov)
+14. [Renderer Architecture](#renderer-architecture)
+15. [Creating New Apps](#creating-new-apps)
+16. [Quick Reference](#quick-reference)
 
 ---
 
@@ -97,6 +98,11 @@ tokovo/
     │       ├── types.ts       # ALL type definitions
     │       ├── engine.ts      # replay() function + ReducerRegistry
     │       ├── camera/        # Camera controller (memoized)
+    │       ├── director-lite/ # ✨ DirectorLite (automatic camera)
+    │       │   ├── types.ts   # Signals, effects, layout model
+    │       │   ├── rules.ts   # ViralDramaV1 baked rules
+    │       │   ├── derive.ts  # Pure function: deriveDirectorEffects()
+    │       │   └── signals.ts # Extract signals from timeline
     │       ├── tokens.ts      # Design tokens (iOS/Android)
     │       ├── sounds.ts      # Sound ID registry
     │       ├── constants.ts   # ✨ Magic numbers (TIMING, LAYOUT, DEFAULTS)
@@ -591,6 +597,137 @@ Only Alice's phone shakes; other devices stay still.
 
 ---
 
+# DirectorLite (Automatic Camera)
+
+DirectorLite is an **automated camera director** that reacts to chat events in real-time. It creates TikTok-style dramatic camera movements without requiring manual CAMERA events.
+
+## How It Works
+
+```
+Timeline Events → Signal Extraction → Rule Matching → Effect Generation → Camera Transform
+```
+
+1. **Signal Extraction**: Scans events in a window (`t-90` to `t+15` frames)
+2. **Rule Matching**: Matches signals to baked rules ("ViralDramaV1")
+3. **Cooldown**: Prevents effect spam (configurable per-rule)
+4. **Arbitration**: Only 1 framing effect wins; shake effects can stack
+5. **Composition**: Applies winning effects to camera transform
+
+## Enabling DirectorLite
+
+Pass `eventIndex` to TokovoRenderer:
+
+```tsx
+import { createEventIndex } from "@tokovo/core";
+
+const eventIndex = useMemo(
+    () => createEventIndex(episode.events),
+    [episode.events]
+);
+
+<TokovoRenderer
+    world={world}
+    t={t}
+    eventIndex={eventIndex}
+    directorEnabled={true}
+    directorDebug={false}  // Set true to log per-frame decisions
+/>
+```
+
+## Baked Rules (ViralDramaV1)
+
+| Signal | Effect | Scale | Duration | Cooldown |
+|--------|--------|-------|----------|----------|
+| `TypingStarted` | PushIn | 1.12x | 45 frames | 90 frames |
+| `NewMessage` | ZoomToRect | 1.2x | 25 frames | 20 frames |
+| `MessageRead` | ZoomToRect | 1.08x | 18 frames | 45 frames |
+| `MessageDeleted` | MicroShake | intensity=6 | 12 frames | 60 frames |
+| `CallIncoming` | PullBack | 0.88x | 40 frames | 0 frames |
+
+## Effect Categories
+
+- **Framing Effects** (`PushIn`, `ZoomToRect`, `PullBack`): Only 1 wins per frame (highest priority)
+- **Shake Effects** (`MicroShake`): Stack up to 2, decay over progress
+
+## Targeting
+
+| Target Type | What It Targets |
+|-------------|----------------|
+| `message` | The specific message bubble (by `messageId`) |
+| `inputArea` | The chat input area (always exists) |
+| `lastMessage` | The most recent message in the conversation |
+
+## Manual Camera Override
+
+If the timeline has active CAMERA events, DirectorLite automatically **skips** to avoid conflicts:
+
+```
+Timeline CAMERA event active at frame t → Director returns empty effects
+```
+
+This allows episodes like `camera-showcase.json` to use manual camera without interference.
+
+## Disabling DirectorLite
+
+```tsx
+<TokovoRenderer
+    world={world}
+    t={t}
+    directorEnabled={false}  // Only use timeline CAMERA events
+/>
+```
+
+## Console Debug Output
+
+With `directorDebug={true}`:
+
+```
+[DirectorLite] t=45 { signalsInWindow: 3, matchedRules: 1, winningFraming: "PushIn", skippedCooldown: 0 }
+[DirectorLite] t=120 { signalsInWindow: 5, matchedRules: 2, winningFraming: "ZoomToRect", skippedCooldown: 1 }
+```
+
+## File Structure
+
+```
+packages/core/src/director-lite/
+├── types.ts        # LayoutRect, DirectorSignal, DerivedCameraEffect
+├── rules.ts        # ViralDramaV1 baked rules (pre-indexed)
+├── signals.ts      # Extract signals from timeline events
+├── derive.ts       # Pure function: deriveDirectorEffects()
+└── index.ts        # Module exports
+
+packages/renderer/src/
+├── camera-composer.ts        # Apply effects to camera transform
+└── layout/director-adapter.ts # Create layout model for targeting
+```
+
+## Tuning the Feel
+
+Edit `packages/core/src/director-lite/rules.ts`:
+
+```typescript
+{
+    id: "message-zoom",
+    signal: "NewMessage",
+    effect: "ZoomToRect",
+    category: "framing",
+    priority: 30,
+    cooldownFrames: 20,    // Adjust for more/less frequent
+    durationFrames: 25,    // Adjust for faster/slower
+    targetType: "message",
+    scale: 1.2,            // Adjust zoom intensity
+}
+```
+
+## Key Design Decisions
+
+1. **Pure Function**: `deriveDirectorEffects()` has no internal state — safe for scrubbing
+2. **Deterministic**: Same frame always produces same result
+3. **Director Owns Framing**: When effects fire, they replace base camera transform
+4. **Single Source of Truth**: Layout rects are computed once in the renderer
+
+---
+
 # Audio System
 
 ## Sound Registry
@@ -1058,7 +1195,9 @@ const frameEvents = getEventsAtFrame(events, frame);
 | Episode JSON | `packages/episodes/src/examples/` |
 | Core Types | `packages/core/src/types.ts` |
 | Engine | `packages/core/src/engine.ts` |
+| **DirectorLite** | `packages/core/src/director-lite/` |
 | Renderer | `packages/renderer/src/TokovoRenderer.tsx` |
+| Camera Composer | `packages/renderer/src/camera-composer.ts` |
 | WhatsApp UI | `packages/apps-whatsapp/src/ui.tsx` |
 | Device Profiles | `packages/devices/src/` |
 | Sound Files | `apps/video-runner/public/sounds/` |
