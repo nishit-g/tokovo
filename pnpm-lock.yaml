@@ -67,6 +67,16 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/adapters:
+    dependencies:
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/apps-instagram:
     dependencies:
       '@tokovo/core':
@@ -108,6 +118,16 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/compiler:
+    dependencies:
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/core:
     dependencies:
       immer:
@@ -143,6 +163,16 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/dsl:
+    dependencies:
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
+    devDependencies:
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/episodes:
     dependencies:
       '@tokovo/core':
@@ -155,6 +185,12 @@ importers:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/ir:
+    devDependencies:
       typescript:
         specifier: ^5.0.0
         version: 5.9.3

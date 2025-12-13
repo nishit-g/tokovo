@@ -1,0 +1,20 @@
+{
+    "name": "@tokovo/adapters",
+    "version": "0.0.1",
+    "description": "Tokovo Adapters - Timeline IR to Runtime Events",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}

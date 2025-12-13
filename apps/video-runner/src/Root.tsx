@@ -8,10 +8,19 @@ import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
+import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="BreakupDramaDSL"
+                component={BreakupDramaDSLVideo}
+                durationInFrames={420}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="MultiPovDemo"
                 component={MultiPovDemoVideo}
