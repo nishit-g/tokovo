@@ -2,107 +2,107 @@
 
 This document verifies that **every file, topic, and code module** in Tokovo is documented.
 
+Last verified: **2025-12-13**
+
+---
+
+## ✅ Repository Root Files
+
+| File | Status | Purpose |
+|------|--------|---------|
+| [`DOCS_MASTER_PLAN.md`](file:///Users/nishit.gupta/personal/tokovo/DOCS_MASTER_PLAN.md) | ✅ | Documentation constitution |
+| [`CONTRIBUTING.md`](file:///Users/nishit.gupta/personal/tokovo/CONTRIBUTING.md) | ✅ | Contributor guide |
+| [`DESIGN_PHILOSOPHY.md`](file:///Users/nishit.gupta/personal/tokovo/DESIGN_PHILOSOPHY.md) | ✅ | Design decisions |
+| [`ALL_IN.md`](file:///Users/nishit.gupta/personal/tokovo/ALL_IN.md) | ✅ | Complete reference |
+| `README.md` | ⏳ | Project overview |
+
 ---
 
 ## ✅ Package Coverage
 
-### packages/ir
+### packages/ir (8 files)
 
 | File | Documented | Page |
 |------|------------|------|
 | `scene.ts` | ✅ | [Scene IR](/ir/scene-ir) |
 | `timeline.ts` | ✅ | [Timeline IR](/ir/timeline-ir) |
+| `semantic.ts` | ✅ | [Semantic](/dsl/semantic) |
 | `trace.ts` | ✅ | [Traces](/ir/trace) |
-| `semantic.ts` | ✅ | [Semantic Annotations](/dsl/semantic) |
 | `ordering.ts` | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
-| `constraints.ts` | ✅ | [Scene IR - Constraints](/ir/scene-ir#reserved-signals) |
-| `validate.ts` | ✅ | [Compiler - Validation](/compiler/passes#5-validate) |
-| `index.ts` | ✅ | [IR Overview - Imports](/ir#type-imports) |
+| `constraints.ts` | ✅ | [Constraints](/ir/constraints) |
+| `validate.ts` | ✅ | [Constraints](/ir/constraints) |
+| `index.ts` | ✅ | [IR Overview](/ir) |
 
----
-
-### packages/dsl
+### packages/dsl (5 files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `src/author/episode-builder.ts` | ✅ | [episode()](/dsl/episode) |
-| `src/author/device-builder.ts` | ✅ | [Device Builder](/dsl/device) |
-| `src/author/beat-builder.ts` | ✅ | [Beat Builder](/dsl/beat) |
-| `src/types.ts` | ✅ | [episode() - EpisodeConfig](/dsl/episode#episodeconfig-reference) |
-| `src/index.ts` | ✅ | [DSL Overview](/dsl) |
+| `episode-builder.ts` | ✅ | [episode()](/dsl/episode) |
+| `device-builder.ts` | ✅ | [Device Builder](/dsl/device) |
+| `beat-builder.ts` | ✅ | [Beat Builder](/dsl/beat) |
+| `types.ts` | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
+| `index.ts` | ✅ | [DSL Overview](/dsl) |
 
----
-
-### packages/compiler
+### packages/compiler (9 files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `src/compile.ts` | ✅ | [Compiler Overview](/compiler) |
-| `src/context.ts` | ✅ | [Compiler Overview](/compiler#usage) |
-| `src/passes/normalize.ts` | ✅ | [Passes - normalize](/compiler/passes#1-normalize) |
-| `src/passes/resolve-refs.ts` | ✅ | [Passes - resolveRefs](/compiler/passes#2-resolverefs) |
-| `src/passes/virtual-device.ts` | ✅ | [Passes - virtualDevice](/compiler/passes#3-virtualdevice) |
-| `src/passes/time-lowering.ts` | ✅ | [Passes - timeLowering](/compiler/passes#4-timelowering) |
-| `src/passes/validate.ts` | ✅ | [Passes - validate](/compiler/passes#5-validate) |
-| `src/passes/sort.ts` | ✅ | [Passes - sort](/compiler/passes#6-sort) |
-| `src/index.ts` | ✅ | [Compiler Overview](/compiler) |
+| `compile.ts` | ✅ | [Compiler](/compiler) |
+| `context.ts` | ✅ | [Compiler](/compiler) |
+| `passes/normalize.ts` | ✅ | [Passes](/compiler/passes#1-normalize) |
+| `passes/resolve-refs.ts` | ✅ | [Passes](/compiler/passes#2-resolverefs) |
+| `passes/virtual-device.ts` | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
+| `passes/time-lowering.ts` | ✅ | [Passes](/compiler/passes#4-timelowering) |
+| `passes/validate.ts` | ✅ | [Passes](/compiler/passes#5-validate) |
+| `passes/sort.ts` | ✅ | [Passes](/compiler/passes#6-sort) |
+| `index.ts` | ✅ | [Compiler](/compiler) |
 
----
-
-### packages/adapters
+### packages/adapters (4 files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `src/adapter.ts` | ✅ | [Adapters - Interface](/compiler/adapters#adapter-interface) |
-| `src/registry.ts` | ✅ | [Adapters - Registry](/compiler/adapters#using-the-registry) |
-| `src/whatsapp/index.ts` | ✅ | [Adapters - WhatsApp](/compiler/adapters#whatsapp-adapter) |
-| `src/index.ts` | ✅ | [Adapters Overview](/compiler/adapters) |
+| `adapter.ts` | ✅ | [Adapters](/compiler/adapters) |
+| `registry.ts` | ✅ | [Adapters](/compiler/adapters#adapter-registration) |
+| `whatsapp/index.ts` | ✅ | [Adapters](/compiler/adapters#whatsapp-adapter) |
+| `index.ts` | ✅ | [Adapters](/compiler/adapters) |
 
----
-
-### packages/core
+### packages/core (10+ files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `src/engine/` | ✅ | [Engine](/runtime/engine) |
-| `src/types.ts` | ✅ | [Runtime Overview](/runtime) |
-| `src/camera/` | ✅ | [DirectorLite - Effects](/director/effects) |
-| `src/director-lite/types.ts` | ✅ | [DirectorLite Overview](/director) |
-| `src/director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
-| `src/director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
-| `src/director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
-
----
+| `types.ts` | ✅ | [WorldState](/runtime/world-state) |
+| `engine.ts` | ✅ | [Engine](/runtime/engine) |
+| `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `director-lite/types.ts` | ✅ | [DirectorLite](/director) |
+| `director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
+| `director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
+| `director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
+| `camera/` | ✅ | [Effects](/director/effects) |
+| `tokens.ts` | ✅ | [Glossary](/glossary) |
+| `constants.ts` | ✅ | Embedded in relevant docs |
 
 ### packages/renderer
 
 | File | Documented | Page |
 |------|------------|------|
-| `TokovoRenderer` | ✅ | [Runtime Overview](/runtime#tokovorenderer-props) |
-| Device rendering | ✅ | [Custom Apps](/guides/custom-apps) |
-
----
-
-### packages/apps-whatsapp
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Component structure | ✅ | [Custom Apps - UI Components](/guides/custom-apps#step-5-create-ui-components) |
-| State shape | ✅ | [Engine - AppState](/runtime/engine#appstate-whatsapp) |
+| `TokovoRenderer.tsx` | ✅ | [Runtime](/runtime) |
+| `MultiDeviceRenderer.tsx` | ✅ | [Multi-Device](/guides/multi-device) |
+| `DeviceFrame.tsx` | ✅ | [Custom Apps](/guides/custom-apps) |
+| `registry.ts` | ✅ | [Plugins](/architecture/plugins) |
 
 ---
 
 ## ✅ Topic Coverage
 
-### Architecture
+### Architecture (11 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
-| Four layers | ✅ | [Architecture Overview](/architecture) |
+| Four layers | ✅ | [Architecture](/architecture) |
 | Layer boundaries | ✅ | [Boundaries](/architecture/boundaries) |
 | Determinism | ✅ | [Determinism](/architecture/determinism) |
 | Data flow | ✅ | [Data Flow](/architecture/data-flow) |
-| Package dependencies | ✅ | [Architecture Overview](/architecture#package-dependencies) |
+| Package dependencies | ✅ | [Architecture](/architecture) |
 | Monorepo structure | ✅ | [Monorepo](/architecture/monorepo) |
 | Turborepo config | ✅ | [Monorepo](/architecture/monorepo#turborepo-configuration) |
 | pnpm workspaces | ✅ | [Monorepo](/architecture/monorepo#pnpm-workspaces) |
@@ -110,99 +110,93 @@ This document verifies that **every file, topic, and code module** in Tokovo is 
 | PluginManager API | ✅ | [Plugins](/architecture/plugins#pluginmanager-api) |
 | Creating plugins | ✅ | [Plugins](/architecture/plugins#creating-a-plugin) |
 
----
-
-### DSL (Domain Specific Language)
+### DSL (17 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
-| episode() entry point | ✅ | [episode()](/dsl/episode) |
+| episode() | ✅ | [episode()](/dsl/episode) |
 | EpisodeConfig | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
-| Device builder | ✅ | [Device Builder](/dsl/device) |
-| Conversation setup | ✅ | [Device Builder - conversation()](/dsl/device#conversationid-config) |
-| Beat builder | ✅ | [Beat Builder](/dsl/beat) |
-| wait() | ✅ | [Beat Builder - wait](/dsl/beat#waitduration) |
-| typing() | ✅ | [Beat Builder - typing](/dsl/beat#typingactorforduration) |
-| send() | ✅ | [Beat Builder - send](/dsl/beat#sendtext-options) |
-| receive() | ✅ | [Beat Builder - receive](/dsl/beat#receiveactor-text-options) |
-| read() | ✅ | [Beat Builder - read](/dsl/beat#readref) |
-| delete() | ✅ | [Beat Builder - delete](/dsl/beat#deleteref) |
-| concurrent() | ✅ | [Beat Builder - concurrent](/dsl/beat#concurrent-operations) |
-| pov() | ✅ | [POV Control](/dsl/pov) |
-| splitPov() | ✅ | [POV Control - Split](/dsl/pov#split-pov) |
-| Semantic annotations | ✅ | [Semantic Annotations](/dsl/semantic) |
-| BeatMeta | ✅ | [Semantic - Beat Metadata](/dsl/semantic#beat-metadata) |
+| Device builder | ✅ | [Device](/dsl/device) |
+| conversation() | ✅ | [Device](/dsl/device#conversationid-config) |
+| Beat builder | ✅ | [Beat](/dsl/beat) |
+| wait() | ✅ | [Beat](/dsl/beat#waitduration) |
+| typing() | ✅ | [Beat](/dsl/beat#typingactorforduration) |
+| send() | ✅ | [Beat](/dsl/beat#sendtext-options) |
+| receive() | ✅ | [Beat](/dsl/beat#receiveactor-text-options) |
+| read() | ✅ | [Beat](/dsl/beat#readref) |
+| delete() | ✅ | [Beat](/dsl/beat#deleteref) |
+| concurrent() | ✅ | [Beat](/dsl/beat#concurrent-operations) |
+| pov() | ✅ | [POV](/dsl/pov) |
+| splitPov() | ✅ | [POV](/dsl/pov#split-pov) |
+| SemanticMeta | ✅ | [Semantic](/dsl/semantic) |
+| BeatMeta | ✅ | [Semantic](/dsl/semantic#beat-metadata) |
+| Mood values | ✅ | [Semantic](/dsl/semantic#mood) |
 
----
-
-### IR (Intermediate Representation)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| IR overview | ✅ | [IR Overview](/ir) |
-| Scene IR types | ✅ | [Scene IR](/ir/scene-ir) |
-| Timeline IR types | ✅ | [Timeline IR](/ir/timeline-ir) |
-| Trace model | ✅ | [Traces](/ir/trace) |
-| Ordering (phases) | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
-| Duration expressions | ✅ | [Scene IR - Duration](/ir/scene-ir#duration-expressions) |
-| MessageRef | ✅ | [Scene IR - MessageRef](/ir/scene-ir#messageref) |
-
----
-
-### Compiler
+### IR (10 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
-| compile() function | ✅ | [Compiler Overview](/compiler) |
+| IR overview | ✅ | [IR](/ir) |
+| Scene IR | ✅ | [Scene IR](/ir/scene-ir) |
+| SceneOp types | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
+| Timeline IR | ✅ | [Timeline IR](/ir/timeline-ir) |
+| TimelineOp types | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
+| Traces | ✅ | [Traces](/ir/trace) |
+| Constraints | ✅ | [Constraints](/ir/constraints) |
+| Ordering/Phases | ✅ | [Timeline IR](/ir/timeline-ir#ordering) |
+| Duration expressions | ✅ | [Scene IR](/ir/scene-ir#duration-expressions) |
+| MessageRef | ✅ | [Scene IR](/ir/scene-ir#messageref) |
+
+### Compiler (12 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| compile() | ✅ | [Compiler](/compiler) |
 | Pass pipeline | ✅ | [Passes](/compiler/passes) |
-| normalize pass | ✅ | [Passes - normalize](/compiler/passes#1-normalize) |
-| resolveRefs pass | ✅ | [Passes - resolveRefs](/compiler/passes#2-resolverefs) |
-| virtualDevice pass | ✅ | [Passes - virtualDevice](/compiler/passes#3-virtualdevice) |
-| timeLowering pass | ✅ | [Passes - timeLowering](/compiler/passes#4-timelowering) |
-| validate pass | ✅ | [Passes - validate](/compiler/passes#5-validate) |
-| sort pass | ✅ | [Passes - sort](/compiler/passes#6-sort) |
-| CompileResult | ✅ | [Compiler Overview - Output](/compiler#compileresult) |
-| Validation modes | ✅ | [Passes - validate](/compiler/passes#validation-modes) |
+| normalize | ✅ | [Passes](/compiler/passes#1-normalize) |
+| resolveRefs | ✅ | [Passes](/compiler/passes#2-resolverefs) |
+| virtualDevice | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
+| timeLowering | ✅ | [Passes](/compiler/passes#4-timelowering) |
+| validate | ✅ | [Passes](/compiler/passes#5-validate) |
+| sort | ✅ | [Passes](/compiler/passes#6-sort) |
+| CompileResult | ✅ | [Compiler](/compiler#compileresult) |
+| Validation modes | ✅ | [Passes](/compiler/passes#validation-modes) |
 | Adapters | ✅ | [Adapters](/compiler/adapters) |
+| Custom adapters | ✅ | [Adapters](/compiler/adapters#building-custom-adapters) |
 
----
-
-### DirectorLite
+### DirectorLite (12 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
-| Philosophy | ✅ | [DirectorLite Overview](/director) |
-| Signals | ✅ | [Signals](/director/signals) |
-| Signal types | ✅ | [Signals - Types](/director/signals#signal-types) |
-| Signal extraction | ✅ | [Signals - Extraction](/director/signals#signal-extraction) |
+| Philosophy | ✅ | [DirectorLite](/director) |
+| Signal types | ✅ | [Signals](/director/signals#signal-types) |
+| Signal extraction | ✅ | [Signals](/director/signals#signal-extraction) |
 | Rules | ✅ | [Rules](/director/rules) |
-| ViralDramaV1 | ✅ | [Rules - ViralDramaV1](/director/rules#viraldramav1-rules) |
-| Effects | ✅ | [Effects](/director/effects) |
-| ZoomToRect | ✅ | [Effects - ZoomToRect](/director/effects#zoomtorect) |
-| PushIn | ✅ | [Effects - PushIn](/director/effects#pushin) |
-| MicroShake | ✅ | [Effects - MicroShake](/director/effects#microshake) |
-| Cooldowns | ✅ | [Rules - Cooldown](/director/rules#understanding-the-numbers) |
-| Arbitration | ✅ | [Rules - Arbitration](/director/rules#arbitration) |
+| ViralDramaV1 | ✅ | [Rules](/director/rules#viraldramav1-rules) |
+| ZoomToRect | ✅ | [Effects](/director/effects#zoomtorect) |
+| PushIn | ✅ | [Effects](/director/effects#pushin) |
+| PullBack | ✅ | [Effects](/director/effects#pullback) |
+| MicroShake | ✅ | [Effects](/director/effects#microshake) |
+| Cooldowns | ✅ | [Rules](/director/rules#understanding-the-numbers) |
+| Arbitration | ✅ | [Rules](/director/rules#arbitration) |
+| Debug mode | ✅ | [DirectorLite](/director#debug-mode) |
 
----
-
-### Runtime
+### Runtime (10 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
-| Runtime overview | ✅ | [Runtime Overview](/runtime) |
+| Runtime overview | ✅ | [Runtime](/runtime) |
 | Engine | ✅ | [Engine](/runtime/engine) |
-| Reducer pattern | ✅ | [Engine - Reducer](/runtime/engine#reducer-pattern) |
-| WorldState | ✅ | [Engine - WorldState](/runtime/engine#worldstate) |
-| DeviceState | ✅ | [Engine - DeviceState](/runtime/engine#devicestate) |
-| Event types | ✅ | [Event Types](/runtime/events) |
-| DEVICE events | ✅ | [Events - Device](/runtime/events#device-events) |
-| APP events | ✅ | [Events - App](/runtime/events#app-events-whatsapp) |
-| CAMERA events | ✅ | [Events - Camera](/runtime/events#camera-events-manual) |
+| Reducer pattern | ✅ | [Engine](/runtime/engine#reducer-pattern) |
+| WorldState | ✅ | [WorldState](/runtime/world-state) |
+| DeviceState | ✅ | [WorldState](/runtime/world-state#devicestate) |
+| ConversationState | ✅ | [WorldState](/runtime/world-state#conversationstate) |
+| Event types | ✅ | [Events](/runtime/events) |
+| DEVICE events | ✅ | [Events](/runtime/events#device-events) |
+| APP events | ✅ | [Events](/runtime/events#app-events-whatsapp) |
+| CAMERA events | ✅ | [Events](/runtime/events#camera-events-manual) |
 
----
-
-### Guides
+### Guides (6 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
@@ -210,37 +204,8 @@ This document verifies that **every file, topic, and code module** in Tokovo is 
 | First episode | ✅ | [First Episode](/guides/first-episode) |
 | Multi-device | ✅ | [Multi-Device](/guides/multi-device) |
 | AI generation | ✅ | [AI Generation](/guides/ai-generation) |
+| AI contract | ✅ | [AI Contract](/guides/ai-contract) |
 | Custom apps | ✅ | [Custom Apps](/guides/custom-apps) |
-
----
-
-## ✅ Code Example Coverage
-
-| Example | Location | Documented |
-|---------|----------|------------|
-| Basic episode | `/packages/dsl/examples/` | [First Episode](/guides/first-episode) |
-| Multi-device | — | [Multi-Device](/guides/multi-device) |
-| Semantic annotations | — | [Semantic Annotations](/dsl/semantic#complete-example) |
-| AI generation | — | [AI Generation](/guides/ai-generation) |
-| Custom adapter | — | [Custom Apps](/guides/custom-apps) |
-
----
-
-## ✅ API Reference Coverage
-
-| API | Documented | Page |
-|-----|------------|------|
-| `episode()` | ✅ | [episode()](/dsl/episode) |
-| `EpisodeBuilder` | ✅ | [episode() - Methods](/dsl/episode#episodebuilder-methods) |
-| `DeviceBuilder` | ✅ | [Device Builder](/dsl/device) |
-| `BeatBuilder` | ✅ | [Beat Builder](/dsl/beat) |
-| `compile()` | ✅ | [Compiler Overview](/compiler) |
-| `CompileOptions` | ✅ | [Compiler Overview](/compiler#compileoptions) |
-| `CompileResult` | ✅ | [Compiler Overview](/compiler#compileresult) |
-| `AppAdapter` | ✅ | [Adapters](/compiler/adapters) |
-| `AdapterRegistry` | ✅ | [Adapters - Registry](/compiler/adapters#adapter-registration) |
-| `deriveDirectorEffects()` | ✅ | [DirectorLite](/director) |
-| `validateConstraints()` | ✅ | [AI Generation](/guides/ai-generation#validation-loop) |
 
 ---
 
@@ -249,20 +214,22 @@ This document verifies that **every file, topic, and code module** in Tokovo is 
 | Type | Documented | Page |
 |------|------------|------|
 | `SceneIR` | ✅ | [Scene IR](/ir/scene-ir#sceneir) |
-| `SceneOp` | ✅ | [Scene IR - Operations](/ir/scene-ir#scene-operations) |
+| `SceneOp` | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
 | `TimelineIR` | ✅ | [Timeline IR](/ir/timeline-ir#timelineir) |
-| `TimelineOp` | ✅ | [Timeline IR - Operations](/ir/timeline-ir#timeline-operations) |
+| `TimelineOp` | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
 | `Trace` | ✅ | [Traces](/ir/trace#trace-structure) |
 | `EpisodeConfig` | ✅ | [episode()](/dsl/episode#episodeconfig-reference) |
 | `SemanticMeta` | ✅ | [Semantic](/dsl/semantic#available-fields) |
-| `BeatMeta` | ✅ | [Semantic - Beat](/dsl/semantic#beatmeta-fields) |
-| `Mood` | ✅ | [Semantic - Mood](/dsl/semantic#mood) |
-| `POVLayout` | ✅ | [POV - Layouts](/dsl/pov#layout-options) |
+| `BeatMeta` | ✅ | [Semantic](/dsl/semantic#beatmeta-fields) |
+| `Mood` | ✅ | [Semantic](/dsl/semantic#mood) |
+| `POVLayout` | ✅ | [POV](/dsl/pov#layout-options) |
 | `RuntimeEvent` | ✅ | [Events](/runtime/events#event-structure) |
-| `WorldState` | ✅ | [Engine](/runtime/engine#worldstate) |
+| `WorldState` | ✅ | [WorldState](/runtime/world-state#worldstate-structure) |
+| `DeviceState` | ✅ | [WorldState](/runtime/world-state#devicestate) |
 | `DirectorSignal` | ✅ | [Signals](/director/signals#signal-properties) |
 | `Rule` | ✅ | [Rules](/director/rules#rule-structure) |
 | `DerivedCameraEffect` | ✅ | [Effects](/director/effects#effect-properties) |
+| `TokovoPlugin` | ✅ | [Plugins](/architecture/plugins) |
 
 ---
 
@@ -270,37 +237,63 @@ This document verifies that **every file, topic, and code module** in Tokovo is 
 
 | Category | Items | Documented | Coverage |
 |----------|-------|------------|----------|
+| Root files | 5 | 4 | 80% |
 | IR files | 8 | 8 | 100% |
 | DSL files | 5 | 5 | 100% |
 | Compiler files | 9 | 9 | 100% |
 | Adapter files | 4 | 4 | 100% |
-| Core files | 8 | 8 | 100% |
-| Architecture topics | 5 | 5 | 100% |
+| Core files | 10 | 10 | 100% |
+| Architecture topics | 11 | 11 | 100% |
 | DSL topics | 17 | 17 | 100% |
-| IR topics | 7 | 7 | 100% |
+| IR topics | 10 | 10 | 100% |
 | Compiler topics | 12 | 12 | 100% |
 | DirectorLite topics | 12 | 12 | 100% |
-| Runtime topics | 9 | 9 | 100% |
-| Guides | 5 | 5 | 100% |
-| API references | 11 | 11 | 100% |
-| Type references | 15 | 15 | 100% |
+| Runtime topics | 10 | 10 | 100% |
+| Guides | 6 | 6 | 100% |
+| Type references | 17 | 17 | 100% |
 
-### Total Documentation Pages: 35+
-### Total Coverage: 100%
-
----
-
-## Verification Date
-
-**Last verified:** 2025-12-13
-
-**Verified by:** Documentation system
+### Total Documentation Pages: 38+
+### Overall Coverage: 99%+
 
 ---
 
-## How to Verify
+## Feature Implementation Status
 
-1. Run docs: `cd apps/docs && pnpm dev`
-2. Check each page loads
-3. Verify code examples compile
-4. Check all links work
+### ✅ Complete & Documented
+
+- [x] DSL fluent API
+- [x] Scene IR
+- [x] Timeline IR
+- [x] Compiler passes (6)
+- [x] Adapters (WhatsApp)
+- [x] DirectorLite (ViralDramaV1)
+- [x] Determinism guarantees
+- [x] Plugin system
+- [x] Trace model
+- [x] EpisodeConfig
+- [x] SemanticMeta
+- [x] BeatMeta
+- [x] POV primitives
+- [x] Reserved signals
+- [x] Constraints validation
+- [x] Monorepo architecture
+- [x] AI generation contract
+
+### ⏳ Future (Reserved)
+
+- [ ] DirectorLite v2 (semantic-aware)
+- [ ] Lifecycle hooks
+- [ ] Voice notes adapter
+- [ ] Instagram adapter completion
+- [ ] Platform presets
+
+---
+
+## Verification Steps
+
+1. ✅ Run docs: `cd apps/docs && pnpm dev`
+2. ✅ All pages load without errors
+3. ✅ Navigation complete
+4. ✅ Code examples are accurate
+5. ✅ Cross-references work
+6. ✅ Determinism notes included

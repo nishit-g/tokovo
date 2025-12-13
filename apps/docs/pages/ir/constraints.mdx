@@ -1,0 +1,229 @@
+# Constraints
+
+Constraints are **validation rules** that ensure story correctness by construction.
+
+## Why Constraints?
+
+Instead of catching errors at runtime, constraints catch them at compile time:
+
+```
+DSL → Scene IR → validateConstraints() → Errors/Warnings → Fix before compile
+```
+
+## Using Constraints
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+
+const result = validateConstraints(sceneIR);
+
+if (!result.valid) {
+  console.error("Violations:", result.violations);
+}
+```
+
+## Constraint Result
+
+```typescript
+interface ConstraintResult {
+  valid: boolean;
+  violations: Violation[];
+  warnings: Warning[];
+}
+
+interface Violation {
+  rule: string;
+  message: string;
+  location?: {
+    deviceId?: string;
+    beat?: string;
+    opIndex?: number;
+  };
+}
+```
+
+## Built-in Constraints
+
+### 1. Typing Pairing
+
+Every `TypingStart` must have a matching `TypingEnd`.
+
+```typescript
+// ✅ Valid
+b.typing("Bob").for("1.5s");
+
+// ❌ Invalid (orphaned typing)
+ops.push({ kind: "TypingStart", actor: "Bob", ... });
+// Missing TypingEnd
+```
+
+### 2. Valid Device References
+
+POV switches must reference existing devices.
+
+```typescript
+// ✅ Valid
+ep.device("AlicePhone", d => { ... });
+b.pov("AlicePhone");
+
+// ❌ Invalid
+b.pov("UnknownPhone");  // Device doesn't exist
+```
+
+### 3. Valid Conversation References
+
+Operations must reference existing conversations.
+
+```typescript
+// ✅ Valid
+d.conversation("dm_bob");
+b.receive("Bob", "Hey!", { conversationId: "dm_bob" });
+
+// ❌ Invalid
+b.receive("Bob", "Hey!", { conversationId: "nonexistent" });
+```
+
+### 4. Message Reference Validity
+
+Read/Delete must reference existing messages.
+
+```typescript
+// ✅ Valid
+const msg = b.receive("Bob", "Hey!");
+b.read(msg);
+
+// ❌ Invalid
+b.read({ id: "nonexistent" });
+```
+
+### 5. Beat Non-Empty
+
+Beats must contain at least one operation.
+
+```typescript
+// ✅ Valid
+d.beat("intro", b => {
+  b.wait("1s");
+});
+
+// ❌ Invalid (empty beat)
+d.beat("empty", b => {
+  // Nothing here
+});
+```
+
+### 6. Duration Validity
+
+Durations must be positive and parseable.
+
+```typescript
+// ✅ Valid
+b.wait("1.5s");
+b.wait("500ms");
+b.wait("30frames");
+
+// ❌ Invalid
+b.wait("-1s");      // Negative
+b.wait("forever");  // Unparseable
+```
+
+### 7. Semantic Range Validity
+
+Semantic values must be within valid ranges.
+
+```typescript
+// ✅ Valid
+{ intensity: 0.8 }    // 0-1 range
+{ mood: "tense" }     // Valid mood
+
+// ❌ Invalid
+{ intensity: 1.5 }    // Out of range
+{ mood: "happy" }     // Invalid mood (should be "excited")
+```
+
+### 8. Reserved Signal Completeness
+
+Reserved signals must have required fields.
+
+```typescript
+// ✅ Valid
+b.react(msg, "Bob", "❤️");  // Has ref, actor, emoji
+
+// ❌ Invalid
+{ kind: "ReactionAdded", ref: msg }  // Missing actor, emoji
+```
+
+## Constraint Categories
+
+| Category | Severity | Examples |
+|----------|----------|----------|
+| **Critical** | Error | Invalid refs, missing required fields |
+| **Structural** | Error | Empty beats, orphaned typing |
+| **Semantic** | Warning | Out-of-range intensity |
+| **Style** | Warning | Very long waits |
+
+## Running Constraints
+
+### In Compile Pipeline
+
+```typescript
+const { validation } = compile(sceneIR, { mode: "strict" });
+
+if (!validation.valid) {
+  throw new Error(validation.errors.join("\n"));
+}
+```
+
+### Standalone
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+
+const result = validateConstraints(sceneIR);
+
+for (const v of result.violations) {
+  console.error(`[${v.rule}] ${v.message}`);
+  if (v.location) {
+    console.error(`  at: ${v.location.beat}, op ${v.location.opIndex}`);
+  }
+}
+```
+
+## Adding Custom Constraints
+
+```typescript
+import { ConstraintRule, validateWithRules } from "@tokovo/ir";
+
+const myRule: ConstraintRule = {
+  id: "no-long-waits",
+  check: (sceneIR) => {
+    const violations = [];
+    // Check for waits > 10s
+    for (const device of sceneIR.devices) {
+      for (const beat of device.beats) {
+        for (const op of beat.ops) {
+          if (op.kind === "Wait") {
+            const frames = parseDuration(op.duration, 30);
+            if (frames > 300) {
+              violations.push({
+                rule: "no-long-waits",
+                message: `Wait of ${op.duration} is too long`,
+                location: { beat: beat.name }
+              });
+            }
+          }
+        }
+      }
+    }
+    return violations;
+  }
+};
+
+const result = validateWithRules(sceneIR, [myRule]);
+```
+
+## Determinism Notes
+
+- Is this pure? **Yes** — No side effects
+- Is ordering stable? **Yes** — Same IR → same violations
+- Is randomness seeded? **N/A** — No randomness

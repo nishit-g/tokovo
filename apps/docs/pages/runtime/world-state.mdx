@@ -1,0 +1,234 @@
+# WorldState
+
+WorldState is the **complete snapshot** of everything at a point in time.
+
+## The Golden Rule
+
+> **Frame = f(initialWorld, events, t)**
+
+At any frame t, the world state is computed by:
+1. Start with `initialWorld`
+2. Apply all events where `event.at <= t`
+3. Result is the WorldState at frame t
+
+This is **deterministic** — same inputs always produce same output.
+
+## WorldState Structure
+
+```typescript
+interface WorldState {
+  // All devices
+  devices: Record<DeviceId, DeviceState>;
+  
+  // All conversations (shared across devices)
+  conversations: Record<ConversationId, ConversationState>;
+  
+  // App-specific state
+  appState: Record<AppId, any>;
+  
+  // Camera state
+  camera: CameraState;
+  
+  // Audio state
+  audio: AudioState;
+  
+  // Internal cursor
+  _eventCursor: number;
+}
+```
+
+## DeviceState
+
+```typescript
+interface DeviceState {
+  id: string;                    // "alice_phone"
+  profileId: string;             // "iphone16" | "pixel"
+  ownerName?: string;            // "Alice"
+  isLocked: boolean;             // Show lockscreen?
+  foregroundAppId?: string;      // "app_whatsapp"
+  notifications: Notification[]; // Pending notifications
+  call?: CallState;              // Incoming/active call
+  homeScreen?: HomeScreenConfig; // App grid
+}
+```
+
+## ConversationState
+
+```typescript
+interface ConversationState {
+  id: string;
+  type?: "dm" | "group";
+  name?: string;                  // Contact/group name
+  avatar?: string;
+  members?: GroupMember[];
+  messages: Message[];
+  typing?: Record<string, boolean>;
+}
+```
+
+## Message
+
+```typescript
+interface Message {
+  id: string;
+  from: string;                   // Sender or "me"
+  text?: string;
+  type?: "text" | "image" | "voice" | "system" | "deleted";
+  status?: "sent" | "delivered" | "read";
+  timestamp?: string;             // "10:42 AM"
+  
+  // Semantic metadata (from DSL)
+  semantic?: SemanticMeta;
+}
+```
+
+## CameraState
+
+```typescript
+interface CameraState {
+  // Zoom
+  scale: number;     // 1.0 = no zoom
+  originX: number;   // 0-1, zoom origin
+  originY: number;
+  
+  // Pan
+  panX: number;
+  panY: number;
+  
+  // Effects
+  shake?: {
+    intensity: number;
+    frequency: number;
+    seed: number;
+  };
+  
+  // Multi-device
+  layout?: LayoutMode;
+  primaryDeviceId?: string;
+  secondaryDeviceId?: string;
+}
+```
+
+## AudioState
+
+```typescript
+interface AudioState {
+  playing: PlayingSound[];
+  backgroundMusic?: {
+    soundId: string;
+    volume: number;
+  };
+}
+
+interface PlayingSound {
+  soundId: string;
+  startedAt: number;  // Frame
+  volume: number;
+}
+```
+
+## Building World at Frame
+
+```typescript
+function buildWorldAtFrame(
+  initialWorld: WorldState,
+  events: RuntimeEvent[],
+  frame: number
+): WorldState {
+  let world = { ...initialWorld, _eventCursor: -1 };
+  
+  for (const event of events) {
+    if (event.at <= frame) {
+      world = reduceEvent(world, event);
+    }
+  }
+  
+  return { ...world, _eventCursor: frame };
+}
+```
+
+## Initial World
+
+Created from Scene IR:
+
+```typescript
+function createInitialWorld(sceneIR: SceneIR): WorldState {
+  const devices: Record<string, DeviceState> = {};
+  const conversations: Record<string, ConversationState> = {};
+  
+  for (const device of sceneIR.devices) {
+    // Create device
+    devices[device.deviceId] = {
+      id: device.deviceId,
+      profileId: device.profileId,
+      isLocked: true,  // Start locked
+      notifications: [],
+    };
+    
+    // Create conversations
+    for (const conv of device.conversations) {
+      conversations[conv.id] = {
+        id: conv.id,
+        name: conv.name,
+        type: conv.type,
+        messages: [],
+        typing: {},
+      };
+    }
+  }
+  
+  return {
+    devices,
+    conversations,
+    appState: {},
+    camera: createDefaultCamera(),
+    audio: { playing: [] },
+    _eventCursor: -1,
+  };
+}
+```
+
+## Scrubbing
+
+Because state is computed from events, scrubbing works:
+
+```typescript
+// Jump to frame 100
+const world100 = buildWorldAtFrame(init, events, 100);
+
+// Jump backward to frame 50
+const world50 = buildWorldAtFrame(init, events, 50);
+
+// Jump forward to frame 200
+const world200 = buildWorldAtFrame(init, events, 200);
+```
+
+No accumulated state. Any frame, any time.
+
+## Accessing State
+
+```typescript
+// Get device
+const device = world.devices["AlicePhone"];
+
+// Get foreground app
+const appId = device.foregroundAppId;
+
+// Get conversation
+const conv = world.conversations["dm_bob"];
+
+// Get messages
+const messages = conv.messages;
+
+// Get typing status
+const isTyping = conv.typing?.["Bob"] ?? false;
+
+// Get camera scale
+const zoom = world.camera.scale;
+```
+
+## Determinism Notes
+
+- Is this pure? **Yes** — Computed from events
+- Is ordering stable? **Yes** — Events are sorted
+- Is randomness seeded? **Yes** — Camera shake uses seeds

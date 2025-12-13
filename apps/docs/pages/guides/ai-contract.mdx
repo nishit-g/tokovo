@@ -1,0 +1,302 @@
+# AI Generation Contract
+
+This document defines the **AI-safe subset** of Tokovo DSL — the exact contract AI agents must follow to generate valid episodes.
+
+---
+
+## The Contract
+
+AI agents generate **Scene IR** (or equivalent DSL). Tokovo validates and compiles.
+
+```
+AI Prompt → DSL/JSON → validateConstraints() → compile() → Timeline IR → Render
+```
+
+---
+
+## Output Format Options
+
+### Option 1: TypeScript DSL (Recommended)
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export default episode("ai-generated", ep => {
+  ep.config({
+    fps: 30,
+    pacing: "normal",
+    director: "auto"
+  });
+
+  ep.device("Phone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_friend", { name: "Friend" });
+
+    d.beat("intro", b => {
+      b.wait("1s");
+      b.receive("Friend", "Hey!");
+    });
+  });
+});
+```
+
+### Option 2: Scene IR JSON
+
+```json
+{
+  "episodeId": "ai-generated",
+  "meta": {
+    "fps": 30,
+    "pacing": "normal",
+    "director": "auto"
+  },
+  "devices": [{
+    "deviceId": "Phone",
+    "profileId": "iphone16",
+    "appId": "app_whatsapp",
+    "conversations": [{
+      "id": "dm_friend",
+      "name": "Friend"
+    }],
+    "beats": [{
+      "name": "intro",
+      "ops": [
+        { "kind": "Wait", "duration": "1s" },
+        { "kind": "ReceiveMessage", "actor": "Friend", "text": "Hey!", "conversationId": "dm_friend" }
+      ]
+    }]
+  }]
+}
+```
+
+---
+
+## Required Structure
+
+### Episode
+
+```typescript
+episode(id: string, fn: (ep) => void, config?: EpisodeConfig)
+```
+
+| Field | Type | Required | Default |
+|-------|------|----------|---------|
+| `id` | string | ✅ | — |
+| `fps` | number | ❌ | 30 |
+| `pacing` | string | ❌ | "normal" |
+| `director` | string | ❌ | "auto" |
+
+### Device
+
+```typescript
+ep.device(deviceId: string, profileId?: string, fn: (d) => void)
+```
+
+| Field | Type | Required | Values |
+|-------|------|----------|--------|
+| `deviceId` | string | ✅ | Any unique ID |
+| `profileId` | string | ❌ | "iphone16", "pixel" |
+
+### Conversation
+
+```typescript
+d.conversation(id: string, config?: ConversationConfig)
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | string | ✅ |
+| `name` | string | ❌ |
+| `type` | "dm" \| "group" | ❌ |
+
+### Beat
+
+```typescript
+d.beat(name: string, fn: (b) => void, meta?: BeatMeta)
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string | ✅ |
+| `meta.tempo` | string | ❌ |
+| `meta.function` | string | ❌ |
+
+---
+
+## Allowed Operations
+
+### Core Operations
+
+| Operation | Method | Required Args |
+|-----------|--------|---------------|
+| Wait | `b.wait(duration)` | duration |
+| Typing | `b.typing(actor).for(duration)` | actor, duration |
+| Send | `b.send(text, options?)` | text |
+| Receive | `b.receive(actor, text, options?)` | actor, text |
+| Read | `b.read(ref)` | ref |
+| Delete | `b.delete(ref)` | ref |
+
+### Duration Format
+
+```
+"1s"       → 1 second
+"1.5s"     → 1.5 seconds
+"500ms"    → 500 milliseconds
+"30frames" → 30 frames
+```
+
+### Semantic Options
+
+```typescript
+{
+  mood: "tense" | "calm" | "angry" | "sad" | "anxious" | "excited" | "confused" | "neutral",
+  intensity: 0.0 - 1.0,
+  urgency: 0.0 - 1.0,
+  secrecy: "low" | "medium" | "high",
+  subtext: string  // Hint for AI/human
+}
+```
+
+---
+
+## Validation Checklist
+
+AI-generated content must pass:
+
+1. ✅ `validateConstraints(sceneIR).valid === true`
+2. ✅ `compile(sceneIR, { mode: "strict" }).validation.valid === true`
+3. ✅ All device IDs are unique
+4. ✅ All conversation IDs are unique
+5. ✅ All beat names are non-empty
+6. ✅ All durations are positive
+7. ✅ Semantic values are in valid ranges
+8. ✅ Message refs are valid
+
+---
+
+## Common Mistakes
+
+### ❌ Empty Beats
+
+```typescript
+d.beat("empty", b => {
+  // Nothing — will fail validation
+});
+```
+
+### ❌ Invalid Duration
+
+```typescript
+b.wait("-1s");      // Negative
+b.wait("forever");  // Unparseable
+```
+
+### ❌ Missing Actor
+
+```typescript
+b.receive("", "Hey!");  // Empty actor
+```
+
+### ❌ Invalid Mood
+
+```typescript
+{ mood: "happy" }  // Should be "excited"
+```
+
+### ❌ Out-of-Range Intensity
+
+```typescript
+{ intensity: 1.5 }  // Max is 1.0
+```
+
+### ❌ Read Before Send
+
+```typescript
+const msg = b.send("Hello");
+b.read(msg);  // ✅ OK
+
+b.read(nonexistentRef);  // ❌ Invalid
+```
+
+---
+
+## Prompt Template
+
+```
+Generate a Tokovo episode in TypeScript using @tokovo/dsl.
+
+Requirements:
+- Characters: [list characters]
+- Mood: [tense/calm/dramatic/etc]
+- Duration: approximately [N] seconds
+- Use semantic annotations (mood, intensity)
+- Include realistic typing delays
+
+Constraints:
+- All beats must have at least one operation
+- Durations must be in format "Ns" or "Nms"
+- Mood must be one of: tense, calm, angry, sad, anxious, excited, confused, neutral
+- Intensity must be 0.0-1.0
+
+Output only the TypeScript code, no explanation.
+```
+
+---
+
+## Validation Code
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+import { compile } from "@tokovo/compiler";
+
+function validateAIOutput(sceneIR: SceneIR): ValidationResult {
+  // Step 1: Constraint check
+  const constraints = validateConstraints(sceneIR);
+  if (!constraints.valid) {
+    return {
+      valid: false,
+      stage: "constraints",
+      errors: constraints.violations.map(v => v.message)
+    };
+  }
+  
+  // Step 2: Compile check
+  const { validation } = compile(sceneIR, { mode: "strict" });
+  if (!validation.valid) {
+    return {
+      valid: false,
+      stage: "compile",
+      errors: validation.errors
+    };
+  }
+  
+  return { valid: true };
+}
+```
+
+---
+
+## Feedback Loop
+
+When validation fails, provide structured feedback to AI:
+
+```typescript
+if (!result.valid) {
+  const feedback = {
+    error: result.errors[0],
+    suggestion: getSuggestion(result.errors[0]),
+    example: getCorrectExample(result.stage)
+  };
+  
+  // Re-prompt AI with feedback
+  regenerate(originalPrompt, feedback);
+}
+```
+
+---
+
+## Determinism Notes
+
+- Is this pure? **Yes** — Same input → same output
+- Is ordering stable? **Yes** — Constraints check deterministically
+- Is randomness seeded? **N/A** — No randomness in validation
