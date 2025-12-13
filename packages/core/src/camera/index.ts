@@ -438,3 +438,11 @@ export { seededRandom, getShakeOffset };
 
 // Default controller instance
 export const defaultCameraController = new CameraController(30);
+
+// Timeline system
+export * from "./timeline";
+
+// Presets
+export * from "./presets";
+
+

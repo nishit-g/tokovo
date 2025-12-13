@@ -326,7 +326,7 @@ export interface CameraZoomOp {
     readonly duration?: DurationExpr; // Duration of zoom transition
     readonly originX?: number;       // Zoom origin X (0-1, default 0.5)
     readonly originY?: number;       // Zoom origin Y (0-1, default 0.5)
-    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
 }
 
 /**
