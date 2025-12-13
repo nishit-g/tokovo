@@ -1,14 +1,16 @@
 import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
 import {
-    MessageLayoutConfig,
     DEFAULT_LAYOUT_CONFIG,
     calculateMessageHeight,
-    calculateGapBetween,
+    calculateSmartGap,
     calculateBubbleWidth,
     applyEasing,
-    MessageForHeight,
-    MessageForGap,
-    MessageType,
+    isMessageCentered,
+    type MessageLayoutConfig,  // Type import
+    type MessageForHeight,     // Type import
+    type MessageForGap,        // Type import
+    type MessageType,          // Type import
+    type GapContext,           // Type import
 } from "@tokovo/apps-whatsapp";
 
 // =============================================================================
@@ -17,11 +19,14 @@ import {
 
 /**
  * Compute chat layout using the production-grade configurable layout system.
+ * 
  * Features:
- * - Per-message-type configuration
- * - Smart contextual gap calculation
- * - Authentic iOS WhatsApp spacing
- * - Zero hardcoded values
+ * - Single-pass layout algorithm (efficient)
+ * - Smart contextual gap calculation with multipliers
+ * - Time-based message grouping
+ * - Group chat member awareness
+ * - Per-message-type spacing overrides
+ * - Fully configurable via MessageLayoutConfig
  */
 export function computeChatLayout(
     ctx: LayoutContext,
@@ -45,19 +50,71 @@ export function computeChatLayout(
     // Filter messages visible at time t
     const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
 
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = config.spacing.topPadding;
-    let lastMessageId: string | undefined;
-    let prevMessage: typeof messages[0] | undefined;
+    // Detect if this is a group chat (more than 2 unique senders)
+    const uniqueSenders = new Set(messages.map(m => m.from));
+    const isGroupChat = uniqueSenders.size > 2;
 
-    // 1. Layout messages with per-message-type configuration
-    for (const msg of messages) {
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = config.spacing.global.topPadding;
+    let lastMessageId: string | undefined;
+
+    // Track grouping state
+    let currentGroupSize = 0;
+    let currentGroupSender: string | undefined;
+
+    // ==========================================================
+    // SINGLE-PASS LAYOUT ALGORITHM
+    // ==========================================================
+    for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        const prevMsg = i > 0 ? messages[i - 1] : undefined;
+        const msgType = (msg.type || "text") as MessageType;
+
+        // Update grouping state
+        if (prevMsg && prevMsg.from === msg.from) {
+            currentGroupSize++;
+        } else {
+            currentGroupSize = 1;
+            currentGroupSender = msg.from;
+        }
+
+        // Calculate gap from previous message
+        if (prevMsg) {
+            const prevForGap: MessageForGap = {
+                type: prevMsg.type as MessageType,
+                from: prevMsg.from,
+                at: prevMsg.at,
+            };
+            const nextForGap: MessageForGap = {
+                type: msg.type as MessageType,
+                from: msg.from,
+                at: msg.at,
+            };
+
+            const timeDelta = (msg.at ?? 0) - (prevMsg.at ?? 0);
+
+            const gapContext: GapContext = {
+                prevMessage: prevForGap,
+                nextMessage: nextForGap,
+                prevIndex: i - 1,
+                nextIndex: i,
+                isGroupChat,
+                timeDelta,
+                currentGroupSize,
+            };
+
+            const gap = calculateSmartGap(gapContext, config);
+            currentY += gap;
+        }
+
         // Calculate height using the config-based function
         const msgForHeight: MessageForHeight = {
-            type: msg.type as MessageType,
+            type: msgType,
             text: msg.text,
             caption: (msg as any).caption,
             from: msg.from,
+            prevFrom: prevMsg?.from,  // Pass previous sender for sender name logic
+            isGroupChat,              // Pass group chat status
             reactions: (msg as any).reactions,
             replyTo: (msg as any).replyTo,
             linkPreview: (msg as any).linkPreview,
@@ -83,17 +140,16 @@ export function computeChatLayout(
 
         // Compute rect for director targeting
         const isMe = msg.from === "me";
-        const msgTypeStr = msg.type as string;
-        const isSystemMessage = msgTypeStr === "system" || msgTypeStr === "screenshot_alert" || msgTypeStr === "call_missed";
+        const isCentered = isMessageCentered(msgType, config);
 
         let rectX: number;
-        if (isSystemMessage) {
+        if (isCentered) {
             // Center system messages
             rectX = (viewportWidth - bubbleWidth) / 2;
         } else {
             rectX = isMe
-                ? viewportWidth - config.spacing.bubbleMargin - bubbleWidth
-                : config.spacing.bubbleMargin;
+                ? viewportWidth - config.spacing.global.bubbleMargin - bubbleWidth
+                : config.spacing.global.bubbleMargin;
         }
 
         messageLayouts[msg.id] = {
@@ -111,71 +167,44 @@ export function computeChatLayout(
         };
 
         lastMessageId = msg.id;
-
-        // Calculate gap to next message using smart contextual logic
-        // For last message, use default gap (will be followed by typing or end)
         currentY += height;
-
-        // Add gap after this message (if there's a next message, gap will be recalculated)
-        if (prevMessage) {
-            // Actually, we need to add gap BEFORE current message based on prev
-            // Let's restructure: add gap at start of loop iteration
-        }
-
-        prevMessage = msg;
     }
 
-    // 2. Recalculate Y positions with proper gaps
-    currentY = config.spacing.topPadding;
-    prevMessage = undefined;
-
-    for (const msg of messages) {
-        // Calculate gap from previous message
-        if (prevMessage) {
-            const prevForGap: MessageForGap = {
-                type: prevMessage.type as MessageType,
-                from: prevMessage.from,
-            };
-            const nextForGap: MessageForGap = {
-                type: msg.type as MessageType,
-                from: msg.from,
-            };
-            const gap = calculateGapBetween(prevForGap, nextForGap, config);
-            currentY += gap;
-        }
-
-        // Update layout with correct Y position
-        const layout = messageLayouts[msg.id];
-        if (layout) {
-            layout.y = currentY;
-            if (layout.rect) {
-                layout.rect.y = currentY;
-            }
-            currentY += layout.height;
-        }
-
-        prevMessage = msg;
-    }
-
-    // 3. Typing indicator
+    // ==========================================================
+    // TYPING INDICATOR
+    // ==========================================================
     let typingLayout: TypingLayout | null = null;
     const isTyping = Object.values(conversation.typing || {}).some(v => v);
+
     if (isTyping) {
         const typingConfig = config.messageTypes.typing;
         const typingHeight = typingConfig.height.base;
         const typingWidth = typingConfig.width.fixed || typingConfig.width.min;
 
-        // Add gap before typing indicator
-        if (prevMessage) {
+        // Calculate gap before typing indicator
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg) {
             const prevForGap: MessageForGap = {
-                type: prevMessage.type as MessageType,
-                from: prevMessage.from,
+                type: lastMsg.type as MessageType,
+                from: lastMsg.from,
+                at: lastMsg.at,
             };
             const typingForGap: MessageForGap = {
                 type: "typing",
-                from: "other", // Typing is always from other person
+                from: "other",  // Typing is always from other person
             };
-            const gap = calculateGapBetween(prevForGap, typingForGap, config);
+
+            const gapContext: GapContext = {
+                prevMessage: prevForGap,
+                nextMessage: typingForGap,
+                prevIndex: messages.length - 1,
+                nextIndex: messages.length,
+                isGroupChat,
+                timeDelta: 0,
+                currentGroupSize: 1,
+            };
+
+            const gap = calculateSmartGap(gapContext, config);
             currentY += gap;
         }
 
@@ -184,7 +213,7 @@ export function computeChatLayout(
             height: typingHeight,
             opacity: 1,
             rect: {
-                x: config.spacing.bubbleMargin,
+                x: config.spacing.global.bubbleMargin,
                 y: currentY,
                 width: typingWidth,
                 height: typingHeight,
@@ -193,9 +222,11 @@ export function computeChatLayout(
         currentY += typingHeight;
     }
 
-    const contentHeight = currentY + config.spacing.bottomPadding;
+    const contentHeight = currentY + config.spacing.global.bottomPadding;
 
-    // 4. Scroll Position with smooth scrolling
+    // ==========================================================
+    // SCROLL POSITION
+    // ==========================================================
     let scrollY = 0;
     if (config.scroll.lockToBottom) {
         const maxScroll = Math.max(0, contentHeight - viewportHeight);
@@ -210,7 +241,8 @@ export function computeChatLayout(
         messageLayouts,
         typingLayout,
         meta: {
-            lastMessageId
+            lastMessageId,
+            isGroupChat,  // Expose for components
         }
     };
 }

@@ -3,6 +3,7 @@ import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens
 
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 import { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./components/MediaBubbles";
+import { shouldShowSenderName } from "./config";
 
 // Get platform-specific config
 const getWhatsAppConfig = (platform: Platform) => getAppConfig("whatsapp", platform);
@@ -372,11 +373,38 @@ const MessageList: React.FC<MessageListProps> = ({
                 transform: `translateY(-${scrollY}px)`,
                 transition: "transform 0.15s ease-out"
             }}>
-                {messages.map((msg: any) => {
+                {messages.map((msg: any, index: number) => {
                     const msgLayout = chatLayout?.messageLayouts[msg.id];
                     const y = msgLayout?.y ?? 0;
                     const opacity = msgLayout?.opacity ?? 1;
                     const translateY = msgLayout?.translateY ?? 0;
+
+                    // Determine if sender name should be shown
+                    // Must match logic in layout-config.ts calculateMessageHeight:
+                    // Only for group chats, not for me, not system, and only if different from previous sender
+                    const prevMsg = index > 0 ? messages[index - 1] : undefined;
+                    const isMe = msg.from === ownerName;
+                    const showSenderName = shouldShowSenderName({
+                        from: msg.from,
+                        type: msg.type,
+                        isGroupChat: isGroup,
+                        prevFrom: prevMsg?.from
+                    });
+
+                    // Reusable Sender Name Component
+                    const SenderName = () => (
+                        <div style={{
+                            fontSize: config.senderNameSize,
+                            fontWeight: 600,
+                            color: config.senderNameColor,
+                            marginBottom: 3,
+                            paddingLeft: config.bubblePaddingHorizontal, // Align with content
+                            zIndex: 2,
+                            position: "relative"
+                        }}>
+                            {msg.from}
+                        </div>
+                    );
 
                     // Render system messages (centered pills)
                     if (msg.type === "system") {
@@ -411,7 +439,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render voice messages
                     if (msg.type === "voice") {
-                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -422,6 +449,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
+                                {showSenderName && <SenderName />}
                                 <VoiceMessageBubble
                                     isMe={isMe}
                                     duration={msg.duration || 15}
@@ -436,7 +464,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render Image messages
                     if (msg.type === "image") {
-                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -447,6 +474,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
+                                {showSenderName && <SenderName />}
                                 <ImageMessageBubble
                                     imageUrl={msg.imageUrl || ""}
                                     caption={msg.caption}
@@ -461,7 +489,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render Video messages
                     if (msg.type === "video") {
-                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -472,6 +499,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
+                                {showSenderName && <SenderName />}
                                 <VideoMessageBubble
                                     thumbnailUrl={msg.thumbnailUrl || ""}
                                     duration={msg.duration || 0}
@@ -489,7 +517,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render GIF messages
                     if (msg.type === "gif") {
-                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -500,6 +527,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
+                                {showSenderName && <SenderName />}
                                 <GifMessageBubble
                                     gifUrl={msg.gifUrl || ""}
                                     isMe={isMe}
@@ -513,7 +541,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
 
                     if (msg.type === "deleted") {
-                        const isMe = msg.from === ownerName;
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -524,6 +551,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
+                                {showSenderName && <SenderName />}
                                 <div style={{
                                     backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                     padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -589,7 +617,6 @@ const MessageList: React.FC<MessageListProps> = ({
 
                     // Render Missed Call (Psychotic feature)
                     if (msg.type === "call_missed") {
-                        const isMe = msg.from === ownerName; // Generally you miss calls from others, but logic holds
                         return (
                             <div key={msg.id} style={{
                                 position: "absolute",
@@ -628,7 +655,6 @@ const MessageList: React.FC<MessageListProps> = ({
                     }
 
                     // Render regular text messages
-                    const isMe = msg.from === ownerName;
                     return (
                         <div key={msg.id} style={{
                             position: "absolute",
@@ -651,7 +677,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 gap: config.bubbleGap / 2
                             }}>
                                 {/* Sender name for GROUP chats only */}
-                                {isGroup && !isMe && msg.from !== "system" && (
+                                {showSenderName && (
                                     <div style={{
                                         fontSize: config.senderNameSize,
                                         fontWeight: 600,

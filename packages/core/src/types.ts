@@ -675,6 +675,8 @@ export interface TypingLayout {
 
 export interface ChatLayoutMeta {
     lastMessageId?: string;
+    /** Whether this is a group chat (more than 2 unique senders) */
+    isGroupChat?: boolean;
 }
 
 // FeedLayoutState
