@@ -3,10 +3,14 @@
  * 
  * Intermediate Representations for Tokovo DSL.
  * 
- * Two layers:
+ * Three layers:
  * - Scene IR: Semantic truth (no frames, no platform)
  * - Timeline IR: Execution contract (frames, deterministic)
+ * - Semantic: Story intelligence (mood, intensity, pacing)
  */
+
+// Semantic types (import first - used by scene.ts)
+export * from "./semantic";
 
 // Trace model
 export * from "./trace";
@@ -22,3 +26,6 @@ export * from "./ordering";
 
 // Validation
 export * from "./validate";
+
+// Narrative constraints
+export * from "./constraints";

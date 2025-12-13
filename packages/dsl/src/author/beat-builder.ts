@@ -17,8 +17,56 @@ import {
     ConcurrentOp,
     MessageRef,
     messageRef,
+    // POV operations
+    POVSwitchOp,
+    SplitPOVOp,
+    POVLayout,
+    // Reserved signals
+    ReactionAddedOp,
+    ScreenshotTakenOp,
+    MissedCallOp,
+    // Semantic
+    SemanticMeta,
+    MessageMeta,
 } from "@tokovo/ir";
 import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Message options for semantic annotations.
+ */
+export interface MessageOptions {
+    /** Semantic annotations */
+    mood?: SemanticMeta["mood"];
+    intensity?: number;
+    secrecy?: "low" | "medium" | "high";
+    urgency?: number;
+    intimacy?: number;
+    subtext?: string;
+    tags?: string[];
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+}
+
+/**
+ * Build MessageMeta from options.
+ */
+function buildMeta(options?: MessageOptions): MessageMeta | undefined {
+    if (!options) return undefined;
+
+    const semantic: SemanticMeta = {};
+    if (options.mood) semantic.mood = options.mood;
+    if (options.intensity !== undefined) semantic.intensity = options.intensity;
+    if (options.secrecy) semantic.secrecy = options.secrecy;
+    if (options.urgency !== undefined) semantic.urgency = options.urgency;
+    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
+    if (options.subtext) semantic.subtext = options.subtext;
+    if (options.tags) semantic.tags = options.tags;
+
+    return {
+        type: options.type ?? "text",
+        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+    };
+}
 
 /**
  * Beat builder collects operations within a beat.
@@ -102,14 +150,17 @@ export class BeatBuilder {
 
     /**
      * Send a message (from device owner).
+     * @param text - Message text
+     * @param options - Optional semantic annotations
      */
-    send(text: string): MessageHandle {
+    send(text: string, options?: MessageOptions): MessageHandle {
         const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
         const op: SendMessageOp = {
             kind: "SendMessage",
             actor: "me",
             text,
             conversationId: this.conversationId,
+            meta: buildMeta(options),
         };
         this.ops.push(op);
 
@@ -120,14 +171,18 @@ export class BeatBuilder {
 
     /**
      * Receive a message (from someone else).
+     * @param actor - Who sent the message
+     * @param text - Message text
+     * @param options - Optional semantic annotations
      */
-    receive(actor: string, text: string): MessageHandle {
+    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
         const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
         const op: ReceiveMessageOp = {
             kind: "ReceiveMessage",
             actor,
             text,
             conversationId: this.conversationId,
+            meta: buildMeta(options),
         };
         this.ops.push(op);
 
@@ -173,6 +228,71 @@ export class BeatBuilder {
         }
         return this.delete(this.lastMessageRef);
     }
+
+    // =========================================================================
+    // POV OPERATIONS (STORY GRAMMAR)
+    // =========================================================================
+
+    /**
+     * Switch point of view to a different device.
+     */
+    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Split POV - show multiple devices simultaneously.
+     */
+    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
+        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // RESERVED SIGNALS (DRAMA EVENTS)
+    // =========================================================================
+
+    /**
+     * Add a reaction to a message.
+     */
+    react(ref: MessageHandle, actor: string, emoji: string): this {
+        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Screenshot taken notification (drama!).
+     */
+    screenshot(): this {
+        const op: ScreenshotTakenOp = {
+            kind: "ScreenshotTaken",
+            conversationId: this.conversationId
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Missed call event.
+     */
+    missedCall(actor: string, callType?: "voice" | "video"): this {
+        const op: MissedCallOp = {
+            kind: "MissedCall",
+            actor,
+            conversationId: this.conversationId,
+            callType,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // CONCURRENT
+    // =========================================================================
 
     /**
      * Execute operations concurrently across multiple tracks.

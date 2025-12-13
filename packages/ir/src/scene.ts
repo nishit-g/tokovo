@@ -85,6 +85,8 @@ export function messageRef(
 // MESSAGE METADATA
 // =============================================================================
 
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
 export interface MessageMeta {
     /** Message type */
     type?: "text" | "image" | "voice" | "system";
@@ -95,12 +97,15 @@ export interface MessageMeta {
     /** Timestamp display */
     timestamp?: string;
 
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
     /** Custom metadata */
     [key: string]: unknown;
 }
 
 // =============================================================================
-// SCENE OPERATIONS
+// SCENE OPERATIONS (CORE)
 // =============================================================================
 
 /**
@@ -178,10 +183,102 @@ export interface ConcurrentOp {
     readonly tracks: SceneOp[][];
 }
 
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface ReactionAddedOp {
+    readonly kind: "ReactionAdded";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
 /**
  * Union of all scene operations.
  */
 export type SceneOp =
+    // Core operations
     | WaitOp
     | TypingStartOp
     | TypingEndOp
@@ -189,7 +286,18 @@ export type SceneOp =
     | ReceiveMessageOp
     | ReadMessageOp
     | DeleteMessageOp
-    | ConcurrentOp;
+    | ConcurrentOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Reserved signals
+    | ReactionAddedOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
 
 // =============================================================================
 // SCENE (TOP LEVEL)
@@ -197,11 +305,13 @@ export type SceneOp =
 
 /**
  * A beat is a named group of operations.
- * Used for semantic grouping and debugging.
+ * Used for semantic grouping, story rhythm, and debugging.
  */
 export interface Beat {
     readonly name: string;
     readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
 }
 
 /**
@@ -214,6 +324,7 @@ export interface DeviceScene {
     readonly conversations: ConversationDef[];
     readonly beats: Beat[];
 }
+
 
 /**
  * Conversation definition.
@@ -235,10 +346,13 @@ export interface SceneIR {
 }
 
 /**
- * Episode metadata.
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
  */
-export interface EpisodeMeta {
-    readonly title?: string;
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
     readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
     readonly durationInFrames?: number;
 }
