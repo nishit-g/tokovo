@@ -6,6 +6,7 @@ import {
     calculateBubbleWidth,
     applyEasing,
     isMessageCentered,
+    doesMessageBreakGrouping,
     type MessageLayoutConfig,  // Type import
     type MessageForHeight,     // Type import
     type MessageForGap,        // Type import
@@ -22,9 +23,8 @@ import {
  * 
  * Features:
  * - Single-pass layout algorithm (efficient)
- * - Smart contextual gap calculation with multipliers
- * - Time-based message grouping
- * - Group chat member awareness
+ * - Deterministic "Visual Run" gap calculation (No heuristics)
+ * - Group chat member awareness with interruption handling
  * - Per-message-type spacing overrides
  * - Fully configurable via MessageLayoutConfig
  */
@@ -58,10 +58,6 @@ export function computeChatLayout(
     let currentY = config.spacing.global.topPadding;
     let lastMessageId: string | undefined;
 
-    // Track grouping state
-    let currentGroupSize = 0;
-    let currentGroupSender: string | undefined;
-
     // ==========================================================
     // SINGLE-PASS LAYOUT ALGORITHM
     // ==========================================================
@@ -69,14 +65,6 @@ export function computeChatLayout(
         const msg = messages[i];
         const prevMsg = i > 0 ? messages[i - 1] : undefined;
         const msgType = (msg.type || "text") as MessageType;
-
-        // Update grouping state
-        if (prevMsg && prevMsg.from === msg.from) {
-            currentGroupSize++;
-        } else {
-            currentGroupSize = 1;
-            currentGroupSender = msg.from;
-        }
 
         // Calculate gap from previous message
         if (prevMsg) {
@@ -95,8 +83,6 @@ export function computeChatLayout(
                 hasReactions: (msg as any).reactions?.length > 0,
             };
 
-            const timeDelta = (msg.at ?? 0) - (prevMsg.at ?? 0);
-
             const gapContext: GapContext = {
                 prevMessage: prevForGap,
                 nextMessage: nextForGap,
@@ -112,7 +98,21 @@ export function computeChatLayout(
             text: msg.text,
             caption: (msg as any).caption,
             from: msg.from,
-            prevFrom: prevMsg?.from,  // Pass previous sender for sender name logic
+            // Enhanced Visual Run Logic: Find previous groupable message
+            prevFrom: (() => {
+                // Walk backwards to find last non-system/non-typing message
+                for (let k = i - 1; k >= 0; k--) {
+                    const m = messages[k];
+                    const t = m.type as MessageType;
+                    if (!doesMessageBreakGrouping(t, config)) {
+                        return m.from;
+                    }
+                    // If we hit any message that breaks grouping (System or Typing), return "BREAK"
+                    // forcing a name show if the next message is User.
+                    return "BREAK";
+                }
+                return undefined;
+            })(),
             isGroupChat,              // Pass group chat status
             reactions: (msg as any).reactions,
             replyTo: (msg as any).replyTo,

@@ -114,7 +114,6 @@ export interface HeightAdditions {
     reply: number;
     linkPreview: number;
     senderName: number;
-    timestamp: number;
 }
 
 // =============================================================================
@@ -168,11 +167,12 @@ const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
     video: { category: "media" },
     gif: { category: "media" },
     voice: { category: "audio" },
-    system: { category: "system", gapBefore: 9, gapAfter: 9 },
+    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
     deleted: { category: "text" },
-    typing: { category: "ephemeral" },
-    screenshot_alert: { category: "system", gapBefore: 9, gapAfter: 9 },
-    call_missed: { category: "system", gapBefore: 9, gapAfter: 9 },
+    // Typing behaves like a sender run-break (e.g. interruption)
+    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
+    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
 };
 
 export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
@@ -181,7 +181,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
             height: {
                 base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
                 lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-                charsPerLine: 13,
+                // charsPerLine dynamic via measureTextBlock
             },
             width: {
                 maxPercent: 0.78,
@@ -213,7 +213,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
             width: { maxPercent: 0.6, min: 200 },
         },
         typing: {
-            height: { base: 120 },
+            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
             width: { fixed: 150, maxPercent: 0.3, min: 150 },
         },
         screenshot_alert: {
@@ -230,7 +230,6 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
         reply: 90,
         linkPreview: 180,
         senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
-        timestamp: 40,
     },
     scroll: {
         lockToBottom: true,
@@ -256,28 +255,6 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
         },
     },
 };
-
-// =============================================================================
-// LOGIC HELPERS
-// =============================================================================
-
-export interface SenderNameContext {
-    from?: string;
-    type?: string;
-    isGroupChat?: boolean;
-    prevFrom?: string;
-}
-
-export function shouldShowSenderName(ctx: SenderNameContext): boolean {
-    if (!ctx.isGroupChat) return false;
-    if (!ctx.from) return false;
-    if (ctx.from === "me") return false;
-    if (ctx.from === "system") return false;
-    if (ctx.type === "system") return false;
-
-    // Show if previous sender was different (or no previous sender)
-    return ctx.from !== ctx.prevFrom;
-}
 
 // =============================================================================
 // HEIGHT CALCULATION
@@ -307,8 +284,8 @@ export function calculateMessageHeight(
     // Base height
     if (msgType === "text" || msgType === "deleted") {
         const text = msg.text || "";
-        const charsPerLine = typeConfig.height.charsPerLine || 13;
-        const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+        // Use unified measurement logic
+        const { lines } = measureTextBlock(text, undefined, config); // Allow default viewport
         height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
     } else if ((msgType === "image" || msgType === "video") && msg.caption) {
         height = typeConfig.height.withCaption || typeConfig.height.base;
@@ -366,7 +343,6 @@ export function calculateSmartGap(
     if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
 
     // Visual Run Logic
-    // Visual Run Logic
     const sameSender = prevMessage.from === nextMessage.from;
     const isVisualRun = sameSender &&
         prevType === "text" &&
@@ -386,6 +362,76 @@ export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): n
     return calculateSmartGap({ prevMessage: prev, nextMessage: next });
 }
 
+// =============================================================================
+// MEASUREMENT HELPERS (The Core "Pure Math" Logic)
+// =============================================================================
+
+export interface TextBlockMetrics {
+    lines: number;
+    bubbleWidth: number;
+    charsPerLine: number;
+}
+
+/**
+ * Unified text measurement.
+ * This ensures "Calculated Height === Rendered Height" by using the same logic for both.
+ */
+
+export function measureTextBlock(
+    text: string,
+    viewportWidth: number = 1170, // Default reference width
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): TextBlockMetrics {
+    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
+
+    // 1. Calculate Constraints
+    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
+    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+    const availableTextWidth = maxBubbleWidth - horizontalPadding;
+
+    // 2. Determine Capacity
+    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
+    const charsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
+
+    // 3. Measure Content (Minimal Deterministic Upgrade)
+    const paragraphs = text.split('\n');
+    let totalLines = 0;
+    let maxParagraphWidth = 0;
+
+    for (const paragraph of paragraphs) {
+        const len = paragraph.length;
+        if (len === 0) {
+            // Empty line (double newline)
+            totalLines += 1;
+            continue;
+        }
+
+        // Calculate lines for this paragraph
+        const lines = Math.max(1, Math.ceil(len / charsPerLine));
+        totalLines += lines;
+
+        // Track max width (width is constrained by longest line, up to max)
+        const paragraphWidth = Math.min(len, charsPerLine) * avgCharWidth;
+        maxParagraphWidth = Math.max(maxParagraphWidth, paragraphWidth);
+    }
+
+    // Ensure at least one line if empty text
+    if (totalLines === 0) totalLines = 1;
+
+    // Final bubble width calculation with Clamping
+    const computedWidth = maxParagraphWidth + horizontalPadding;
+    const bubbleWidth = Math.min(
+        maxBubbleWidth,
+        Math.max(computedWidth, typeConfig.width.min)
+    );
+
+    return {
+        lines: totalLines,
+        bubbleWidth,
+        charsPerLine
+    };
+}
+
 export function calculateBubbleWidth(
     msg: MessageForHeight,
     viewportWidth: number,
@@ -396,19 +442,9 @@ export function calculateBubbleWidth(
 
     if (typeConfig.width.fixed) return typeConfig.width.fixed;
 
-    // Simplified width logic
     if (msgType === "text" || msgType === "deleted") {
-        const textLength = msg.text?.length || 0;
-        const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-        const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-
-        // Dynamic wrap wrap limit
-        const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
-        const availableTextWidth = maxBubbleWidth - horizontalPadding;
-        const charsPerLine = Math.floor(availableTextWidth / avgCharWidth);
-
-        const textWidth = Math.min(textLength, charsPerLine) * avgCharWidth + horizontalPadding;
-        return Math.min(maxBubbleWidth, Math.max(textWidth, typeConfig.width.min));
+        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
+        return bubbleWidth;
     }
 
     return viewportWidth * typeConfig.width.maxPercent;
@@ -444,4 +480,22 @@ export function doesMessageBreakGrouping(
 ): boolean {
     const category = config.spacing.typeOverrides[type]?.category;
     return category === "system" || category === "ephemeral"; // System & Typing break grouping
+}
+
+export interface SenderNameContext {
+    from?: string;
+    type?: string;
+    isGroupChat?: boolean;
+    prevFrom?: string;
+}
+
+export function shouldShowSenderName(ctx: SenderNameContext): boolean {
+    if (!ctx.isGroupChat) return false;
+    if (!ctx.from) return false;
+    if (ctx.from === "me") return false;
+    if (ctx.from === "system") return false;
+    if (ctx.type === "system") return false;
+
+    // Show if previous sender was different (or no previous sender, or generic BREAK token)
+    return ctx.from !== ctx.prevFrom;
 }
