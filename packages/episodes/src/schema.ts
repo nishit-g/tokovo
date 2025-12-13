@@ -114,7 +114,43 @@ export const AppEventSchema = z.discriminatedUnion("type", [
         type: z.literal("MESSAGE_RECEIVED"),
         conversationId: z.string(),
         from: z.string(),
+        text: z.string().optional(),
+        messageType: z.enum(["text", "system", "call_missed", "screenshot_alert"]).optional(),
+        metadata: z.record(z.any()).optional()
+    }),
+    // Media Message events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("IMAGE_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        imageUrl: z.string(),
+        caption: z.string().optional(),
         text: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("VIDEO_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        videoUrl: z.string(),
+        thumbnailUrl: z.string().optional(),
+        duration: z.number(),
+        caption: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GIF_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        gifUrl: z.string(),
+        caption: z.string().optional()
     }),
     // Typing
     z.object({
@@ -135,7 +171,7 @@ export const AppEventSchema = z.discriminatedUnion("type", [
         from: z.string(),
         duration: z.number()
     }),
-    // Message read
+    // Message interactions
     z.object({
         at: z.number(),
         kind: z.literal("APP"),
@@ -143,6 +179,27 @@ export const AppEventSchema = z.discriminatedUnion("type", [
         type: z.literal("MESSAGE_READ"),
         conversationId: z.string(),
         messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_DELETED"),
+        conversationId: z.string(),
+        messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("REACTION_ADDED"),
+        conversationId: z.string(),
+        messageId: z.string(),
+        reaction: z.object({
+            emoji: z.string(),
+            count: z.number(),
+            fromMe: z.boolean().optional()
+        })
     }),
     // Group events
     z.object({
@@ -209,17 +266,48 @@ export const MessageSchema = z.object({
     id: z.string(),
     from: z.string(),
     text: z.string().optional(),
-    type: z.enum(["text", "image", "voice", "system"]).optional(),
+    type: z.enum([
+        "text", "image", "video", "gif", "voice", "system",
+        "deleted", "screenshot_alert", "call_missed"
+    ]).optional(),
     at: z.number().optional(),
     status: z.enum(["sending", "sent", "delivered", "read"]).optional(),
+
+    // Media fields
+    imageUrl: z.string().optional(),
+    videoUrl: z.string().optional(),
+    thumbnailUrl: z.string().optional(),
+    gifUrl: z.string().optional(),
+    caption: z.string().optional(),
+
+    // Voice/Video specific
+    duration: z.number().optional(),
+    isPlaying: z.boolean().optional(),
+    playProgress: z.number().optional(),
+
+    // Interactions
+    reactions: z.array(z.object({
+        emoji: z.string(),
+        count: z.number(),
+        fromMe: z.boolean().optional()
+    })).optional(),
+
+    replyTo: z.object({
+        messageId: z.string(),
+        text: z.string(),
+        from: z.string(),
+        type: z.string().optional()
+    }).optional(),
+
+    edited: z.boolean().optional(),
+
     // System message fields
     systemType: z.enum(["member_added", "member_removed", "admin_change", "group_created"]).optional(),
     targetMember: z.string().optional(),
     actorName: z.string().optional(),
-    // Voice message fields
-    duration: z.number().optional(),
-    isPlaying: z.boolean().optional(),
-    playProgress: z.number().optional()
+
+    // Flexible metadata
+    metadata: z.record(z.any()).optional()
 });
 
 // --- Group Member Schema ---

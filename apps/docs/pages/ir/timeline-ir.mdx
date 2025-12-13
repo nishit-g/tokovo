@@ -41,6 +41,7 @@ interface TimelineIR {
 | `MessageSentOp` | at, appId, conversationId, message | APP (20) |
 | `MessageReadOp` | at, appId, conversationId, messageId | APP (20) |
 | `MessageDeletedOp` | at, appId, conversationId, messageId | APP (20) |
+| `ReactionAddedOp` | at, appId, conversationId, messageId, reaction | APP (20) |
 
 ## Full TimelineOp Type
 
@@ -58,7 +59,8 @@ type TimelineOp =
   | MessageReceivedOp
   | MessageSentOp
   | MessageReadOp
-  | MessageDeletedOp;
+  | MessageDeletedOp
+  | ReactionAddedOp;
 ```
 
 ## Every Op Has `at`
@@ -102,8 +104,23 @@ interface TimelineMessage {
   readonly id: string;
   readonly from: string;
   readonly text: string;
-  readonly type?: "text" | "image" | "voice" | "system";
+  readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
   readonly timestamp?: string;
+  
+  // Media
+  readonly imageUrl?: string;
+  readonly videoUrl?: string;
+  readonly thumbnailUrl?: string;
+  readonly gifUrl?: string;
+  readonly caption?: string;
+  readonly duration?: number;
+  readonly height?: number;
+
+  // Interactions
+  readonly reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+  readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
+  readonly edited?: boolean;
+
   readonly semantic?: SemanticMeta;
 }
 ```
@@ -209,6 +226,7 @@ The compiler transforms:
 | `ReceiveMessage` | `MessageReceived` at cursor |
 | `ReadMessage` | `MessageRead` at cursor |
 | `DeleteMessage` | `MessageDeleted` at cursor |
+| `AddReaction` | `ReactionAdded` at cursor |
 
 Plus auto-inserted glue events:
 - `DeviceUnlocked` at frame 0

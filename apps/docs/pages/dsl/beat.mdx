@@ -37,6 +37,15 @@ b.send("Are you okay?", {
   mood: "anxious",
   intensity: 0.6
 });
+
+// Reply to a message
+b.send("I agree!", {
+  replyTo: {
+    messageId: "msg-123",
+    text: "Previous message text",
+    from: "Bob"
+  }
+});
 ```
 
 ### receive(actor, text, options?)

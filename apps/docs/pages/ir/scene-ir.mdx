@@ -77,7 +77,7 @@ interface Beat {
 
 | Operation | Fields | Description |
 |-----------|--------|-------------|
-| `ReactionAddedOp` | ref, actor, emoji | Add reaction |
+| `AddReactionOp` | ref, actor, emoji | Add reaction |
 | `VoiceNoteSentOp` | actor, conversationId, durationMs | Send voice note |
 | `VoiceNoteReceivedOp` | actor, conversationId, durationMs | Receive voice note |
 | `MissedCallOp` | actor, conversationId, callType? | Missed call |
@@ -98,16 +98,23 @@ type SceneOp =
   | ReadMessageOp
   | DeleteMessageOp
   | ConcurrentOp
+  // Media
+  | SendImageOp
+  | ReceiveImageOp
+  | SendVideoOp
+  | ReceiveVideoOp
+  | SendGifOp
+  | ReceiveGifOp
+  | SendVoiceOp
+  | ReceiveVoiceOp
   // POV
   | POVSwitchOp
   | SplitPOVOp
   // Reserved signals
   | ReactionAddedOp
-  | VoiceNoteSentOp
-  | VoiceNoteReceivedOp
+  | ScreenshotTakenOp
   | MissedCallOp
   | OnlineStatusChangedOp
-  | ScreenshotTakenOp
   | BlockedUserOp;
 ```
 
@@ -144,8 +151,22 @@ Metadata attached to messages:
 
 ```typescript
 interface MessageMeta {
-  type?: "text" | "image" | "voice" | "system";
-  voiceDuration?: number;
+  type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
+  
+  // Media
+  imageUrl?: string;
+  videoUrl?: string;
+  thumbnailUrl?: string;
+  gifUrl?: string;
+  caption?: string;
+  duration?: number;
+  height?: number;
+
+  // Interactions
+  reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+  replyTo?: { messageId: string; text: string; from: string; type?: string };
+  edited?: boolean;
+
   timestamp?: string;
   semantic?: SemanticMeta;
   [key: string]: unknown;

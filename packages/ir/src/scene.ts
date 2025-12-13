@@ -89,16 +89,28 @@ import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
 
 export interface MessageMeta {
     /** Message type */
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
 
-    /** For voice messages */
-    voiceDuration?: number;
+    /** For voice/video messages */
+    duration?: number;
+
+    /** Media URLs */
+    imageUrl?: string;
+    videoUrl?: string;
+    thumbnailUrl?: string;
+    gifUrl?: string;
+    caption?: string;
 
     /** For media messages (height in pixels for layout) */
     height?: number;
 
     /** Timestamp display */
     timestamp?: string;
+
+    /** Interactions */
+    reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+    replyTo?: { messageId: string; text: string; from: string; type?: string };
+    edited?: boolean;
 
     /** Semantic annotations */
     semantic?: SemanticMeta;
@@ -359,8 +371,8 @@ export interface SplitPOVOp {
 /**
  * Reaction added to a message (❤️ 😂 😡).
  */
-export interface ReactionAddedOp {
-    readonly kind: "ReactionAdded";
+export interface AddReactionOp {
+    readonly kind: "AddReaction";
     readonly ref: MessageRef;
     readonly actor: string;
     readonly emoji: string;
@@ -488,8 +500,9 @@ export type SceneOp =
     | NavigateScreenOp
     | OpenChatOp
     | GoBackOp
+    | GoBackOp
     // Reserved signals
-    | ReactionAddedOp
+    | AddReactionOp
     | VoiceNoteSentOp
     | VoiceNoteReceivedOp
     | MissedCallOp

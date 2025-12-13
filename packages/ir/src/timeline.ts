@@ -92,7 +92,7 @@ export interface MessageReceivedOp extends TimelineOpBase {
         readonly id: string;
         readonly text?: string;
         readonly from: string;
-        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
         readonly timestamp?: string;
         // Media fields
         readonly imageUrl?: string;
@@ -102,6 +102,10 @@ export interface MessageReceivedOp extends TimelineOpBase {
         readonly caption?: string;
         readonly duration?: number;
         readonly height?: number;
+        // Interactions
+        readonly reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
+        readonly edited?: boolean;
     };
 }
 
@@ -126,6 +130,9 @@ export interface MessageSentOp extends TimelineOpBase {
         readonly caption?: string;
         readonly duration?: number;
         readonly height?: number;
+        // Interactions
+        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
+        readonly edited?: boolean;
     };
 }
 
@@ -164,6 +171,22 @@ export interface ScreenNavigatedOp extends TimelineOpBase {
 }
 
 /**
+ * Reaction added to a message.
+ */
+export interface ReactionAddedOp extends TimelineOpBase {
+    readonly kind: "ReactionAdded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+    readonly reaction: {
+        readonly emoji: string;
+        readonly count: number;
+        readonly fromMe?: boolean;
+    };
+}
+
+/**
  * Union of all timeline operations.
  */
 export type TimelineOp =
@@ -176,6 +199,7 @@ export type TimelineOp =
     | MessageSentOp
     | MessageReadOp
     | MessageDeletedOp
+    | ReactionAddedOp
     | ScreenNavigatedOp;
 
 // =============================================================================

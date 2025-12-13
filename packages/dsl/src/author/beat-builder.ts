@@ -35,7 +35,7 @@ import {
     OpenChatOp,
     GoBackOp,
     // Reserved signals
-    ReactionAddedOp,
+    AddReactionOp,
     ScreenshotTakenOp,
     MissedCallOp,
     // Semantic
@@ -57,7 +57,11 @@ export interface MessageOptions {
     subtext?: string;
     tags?: string[];
     /** Message type */
-    type?: "text" | "image" | "voice" | "system";
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
+
+    /** Interactions */
+    replyTo?: { messageId: string; text: string; from: string; type?: string };
+    imgUrl?: string; // Quick override for image/video url if needed in generic send
 }
 
 /**
@@ -78,6 +82,8 @@ function buildMeta(options?: MessageOptions): MessageMeta | undefined {
     return {
         type: options.type ?? "text",
         semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+        ...(options.replyTo && { replyTo: options.replyTo }),
+        ...(options.imgUrl && { imageUrl: options.imgUrl }),
     };
 }
 
@@ -470,7 +476,7 @@ export class BeatBuilder {
      * Add a reaction to a message.
      */
     react(ref: MessageHandle, actor: string, emoji: string): this {
-        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        const op: AddReactionOp = { kind: "AddReaction", ref, actor, emoji };
         this.ops.push(op);
         return this;
     }
@@ -723,7 +729,7 @@ export class BeatBuilder {
      */
     likeTweet(ref: MessageHandle): this {
         this.ops.push({
-            kind: "ReactionAdded" as const,
+            kind: "AddReaction" as const,
             ref,
             actor: "me",
             emoji: "❤️",
@@ -737,7 +743,7 @@ export class BeatBuilder {
      */
     retweetTweet(ref: MessageHandle): this {
         this.ops.push({
-            kind: "ReactionAdded" as const,
+            kind: "AddReaction" as const,
             ref,
             actor: "me",
             emoji: "🔁",  // Using emoji as placeholder for retweet action
@@ -795,7 +801,7 @@ export class BeatBuilder {
      */
     bookmarkTweet(ref: MessageHandle): this {
         this.ops.push({
-            kind: "ReactionAdded" as const,
+            kind: "AddReaction" as const,
             ref,
             actor: "me",
             emoji: "🔖",  // Bookmark indicator
