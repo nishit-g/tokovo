@@ -5,7 +5,7 @@ import {
     calculateMessageHeight,
     applyEasing,
     MessageForHeight,
-} from "@tokovo/apps-whatsapp/src/config/layout-config";
+} from "@tokovo/apps-whatsapp";
 
 // =============================================================================
 // CONFIGURABLE CHAT LAYOUT STRATEGY

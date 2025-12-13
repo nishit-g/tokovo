@@ -13,10 +13,19 @@ import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
+import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="MultiAppShowcase"
+                component={MultiAppShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="TwitterShowcase"
                 component={TwitterShowcaseVideo}
