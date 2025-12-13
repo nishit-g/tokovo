@@ -181,7 +181,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
             height: {
                 base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
                 lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-                // charsPerLine dynamic via measureTextBlock
+                // capacity dynamic via measureTextBlock (unitsPerLine)
             },
             width: {
                 maxPercent: 0.78,
@@ -369,7 +369,7 @@ export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): n
 export interface TextBlockMetrics {
     lines: number;
     bubbleWidth: number;
-    charsPerLine: number;
+    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
 }
 
 /* DESIGN PHILOSOPHY: "Pure Math"
@@ -386,7 +386,8 @@ export interface TextBlockMetrics {
  * Uses a weighted cost function to approximate visual width deterministically:
  * - Basic chars: 1.0 avg width
  * - Spaces: 0.6 avg width (spaces are thinner)
- * - Wide chars (Emoji/CJK): 1.5 avg width (approximate)
+ * - Wide chars: 1.5 avg width (CJK, etc)
+ * - Emoji (Surrogate Pairs): ~1.8 avg width (handled correctly)
  */
 export function measureTextBlock(
     text: string,
@@ -398,7 +399,8 @@ export function measureTextBlock(
     // 1. Calculate Constraints
     const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
     const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-    const availableTextWidth = maxBubbleWidth - horizontalPadding;
+    // Safety clamp (A)
+    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
 
     // 2. Determine Capacity
     const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
@@ -421,13 +423,33 @@ export function measureTextBlock(
         let paragraphWeight = 0;
         for (let i = 0; i < paragraph.length; i++) {
             const code = paragraph.charCodeAt(i);
-            if (code === 32) { // Space
+
+            // Space
+            if (code === 32) {
                 paragraphWeight += 0.6;
-            } else if (code > 255) { // Wide chars (Emoji, CJK, etc) - Simple heuristic
-                paragraphWeight += 1.5;
-            } else {
-                paragraphWeight += 1.0;
+                continue;
             }
+
+            // Surrogate pair (Emoji etc.) detection
+            const isHighSurrogate = code >= 0xD800 && code <= 0xDBFF;
+            if (isHighSurrogate && i + 1 < paragraph.length) {
+                const next = paragraph.charCodeAt(i + 1);
+                const isLowSurrogate = next >= 0xDC00 && next <= 0xDFFF;
+                if (isLowSurrogate) {
+                    paragraphWeight += 1.8; // Emoji typically wider than CJK
+                    i++; // Skip low surrogate
+                    continue;
+                }
+            }
+
+            // Other wide-ish chars (CJK etc.)
+            if (code > 255) {
+                paragraphWeight += 1.5;
+                continue;
+            }
+
+            // Basic Latin / Standard
+            paragraphWeight += 1.0;
         }
 
         // Calculate lines for this paragraph based on weight
@@ -452,7 +474,7 @@ export function measureTextBlock(
     return {
         lines: totalLines,
         bubbleWidth,
-        charsPerLine: Math.floor(weightsPerLine) // Approximate for debug/metrics
+        unitsPerLine: Math.floor(weightsPerLine) // Renamed property
     };
 }
 
