@@ -700,6 +700,50 @@ const MessageList: React.FC<MessageListProps> = ({
                                 </div>
                             </div>
 
+                            {/* REACTIONS BAR - Shows below the bubble */}
+                            {msg.reactions && msg.reactions.length > 0 && (
+                                <div style={{
+                                    display: "flex",
+                                    justifyContent: isMe ? "flex-end" : "flex-start",
+                                    marginTop: -12,
+                                    position: "relative",
+                                    zIndex: 1,
+                                }}>
+                                    <div style={{
+                                        display: "flex",
+                                        gap: 6,
+                                        backgroundColor: "#FFFFFF",
+                                        padding: "9px 18px",
+                                        borderRadius: 60,
+                                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                                        border: "1px solid rgba(0,0,0,0.05)",
+                                    }}>
+                                        {msg.reactions.map((reaction: any, i: number) => (
+                                            <div key={i} style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                backgroundColor: reaction.fromMe ? "rgba(37, 211, 102, 0.15)" : "transparent",
+                                                padding: "3px 9px",
+                                                borderRadius: 30,
+                                            }}>
+                                                <span style={{ fontSize: 42, lineHeight: 1 }}>{reaction.emoji}</span>
+                                                {reaction.count > 1 && (
+                                                    <span style={{
+                                                        fontSize: 33,
+                                                        color: "#667781",
+                                                        fontWeight: 500,
+                                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                                    }}>
+                                                        {reaction.count}
+                                                    </span>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     );
                 })}

@@ -8,21 +8,11 @@ import { iPhone16Profile } from "@tokovo/devices";
 import "@tokovo/devices";
 
 /**
- * Ultimate Feature Showcase
- * 
- * Demonstrates ALL DSL features:
- * - Text messages (send/receive)
- * - Media messages (image, video, GIF, voice)
- * - Navigation (showScreen, openChat, goBack)
- * - Typing indicators
- * - Concurrent actions (message storms)
- * - Semantic annotations (mood, intensity)
+ * Ultimate Feature Showcase - SIMPLIFIED for debugging reactions
  */
 
 function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const fps = 30;
-
-    // Initial world state - START ON CHATS LIST
+    // Initial world state - START DIRECTLY ON CHAT (skip chats-list for now)
     const initialWorld: WorldState = {
         devices: {
             AlicePhone: {
@@ -42,18 +32,10 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
                 messages: [],
                 typing: {},
             },
-            dm_work: {
-                id: "dm_work",
-                type: "dm" as const,
-                name: "Work Group 💼",
-                avatar: undefined,
-                messages: [{ id: "old_1", from: "Boss", text: "Meeting at 3pm", type: "text" }],
-                typing: {},
-            },
         },
         appState: {
             app_whatsapp: {
-                screen: "chats-list",  // START ON CHATS LIST!
+                screen: "chat",  // Start directly on chat
                 conversationId: "dm_bob",
             }
         },
@@ -80,25 +62,11 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
         audio: { activeSounds: {} },
     };
 
-    // Timeline events - comprehensive showcase
+    // MINIMAL timeline - just 2 messages + 1 reaction
     const events: TimelineEvent[] = [
-        // =====================================================================
-        // Beat 0: NAVIGATION - Show chats list then open Bob's chat
-        // =====================================================================
+        // Message 1: Bob sends
         {
-            at: 60,  // Wait 2 seconds on chats list
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "SCREEN_NAVIGATED",
-            screen: "chat",
-            conversationId: "dm_bob",
-        } as any,
-
-        // =====================================================================
-        // Beat 1: Opening - Text Exchange (AFTER navigation)
-        // =====================================================================
-        {
-            at: 90,
+            at: 30,
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_RECEIVED",
@@ -107,13 +75,14 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             message: {
                 id: "msg_1",
                 type: "text",
-                text: "Hey Alice! Check out this vacation photo 🏖️",
+                text: "Hey Alice! 🏖️",
                 status: "delivered",
             },
         } as any,
 
+        // Message 2: Alice replies
         {
-            at: 135,  // After msg_1
+            at: 90,
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_SENT",
@@ -121,30 +90,26 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             message: {
                 id: "msg_2",
                 type: "text",
-                text: "OMG that looks amazing! ✨",
+                text: "OMG! ✨",
                 status: "sent",
             },
         } as any,
 
-        // =====================================================================
-        // Beat 1b: React to msg_1 with ❤️
-        // =====================================================================
+        // Reaction: Heart on msg_1
         {
-            at: 150,
+            at: 120,
             kind: "APP",
             appId: "app_whatsapp",
             type: "REACTION_ADDED",
             conversationId: "dm_bob",
-            messageId: "msg_1",  // React to the TEXT message so we can verify it works
+            messageId: "msg_1",
             emoji: "❤️",
             fromMe: true,
         } as any,
 
-        // =====================================================================
-        // Beat 2: Image Message
-        // =====================================================================
+        // Message 3: Another message
         {
-            at: 180,  // After the reaction
+            at: 180,
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_RECEIVED",
@@ -152,195 +117,8 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             from: "Bob 💕",
             message: {
                 id: "msg_3",
-                type: "image",
-                imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
-                caption: "Sunset from the beach! 🌅",
-                status: "delivered",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 3: Voice Note Exchange
-        // =====================================================================
-        {
-            at: 180,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_SENT",
-            conversationId: "dm_bob",
-            message: {
-                id: "msg_4",
-                type: "voice",
-                duration: 8,
-                status: "sent",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 4: GIF Reaction
-        // =====================================================================
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_5",
-                type: "gif",
-                gifUrl: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-                status: "delivered",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 5: Typing then Video
-        // =====================================================================
-        {
-            at: 270,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-        } as any,
-
-        {
-            at: 360,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-        } as any,
-
-        {
-            at: 365,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_6",
                 type: "text",
-                text: "Can't wait to show you the video!",
-                status: "delivered",
-            },
-        } as any,
-
-        {
-            at: 400,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_7",
-                type: "video",
-                videoUrl: "https://example.com/dolphins.mp4",
-                thumbnailUrl: "https://images.unsplash.com/photo-1559251606-c623743a6d76?w=600",
-                caption: "Swimming with dolphins! 🐬",
-                duration: 15,
-                status: "delivered",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 6: Emotional Response
-        // =====================================================================
-        {
-            at: 490,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_SENT",
-            conversationId: "dm_bob",
-            message: {
-                id: "msg_8",
-                type: "text",
-                text: "I'm so jealous right now 😭",
-                status: "sent",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 7: Message Storm (Concurrent)
-        // =====================================================================
-        {
-            at: 530,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_9",
-                type: "text",
-                text: "You should come next time!",
-                status: "delivered",
-            },
-        } as any,
-
-        {
-            at: 540,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_10",
-                type: "text",
-                text: "It's only a 2 hour flight",
-                status: "delivered",
-            },
-        } as any,
-
-        {
-            at: 550,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_11",
-                type: "text",
-                text: "I can get you a discount at the resort",
-                status: "delivered",
-            },
-        } as any,
-
-        // =====================================================================
-        // Beat 8: Finale
-        // =====================================================================
-        {
-            at: 620,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_SENT",
-            conversationId: "dm_bob",
-            message: {
-                id: "msg_12",
-                type: "text",
-                text: "Okay okay, I'm booking it! 🎉",
-                status: "sent",
-            },
-        } as any,
-
-        {
-            at: 660,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob 💕",
-            message: {
-                id: "msg_13",
-                type: "text",
-                text: "YES! 🎊🎊🎊",
+                text: "���",
                 status: "delivered",
             },
         } as any,
@@ -364,6 +142,13 @@ export const UltimateShowcaseVideo: React.FC = () => {
 
     // Replay world state at current time
     const world = replay(episode.initialWorld, episode.events, t);
+
+    // DEBUG: Log reactions at frame 120+
+    if (t >= 120 && t < 125) {
+        const conv = world.conversations?.dm_bob;
+        const msg1 = conv?.messages?.find((m: any) => m.id === "msg_1");
+        console.log("Frame", t, "msg_1 reactions:", msg1?.reactions);
+    }
 
     // Calculate scale to fit device in composition
     const compositionWidth = 1080;
