@@ -42,6 +42,13 @@ export const twitterColors = {
         grey: "#829AAB",            // Government/multilateral
     },
 
+    // Border colors (convenience alias)
+    border: {
+        primary: "#2F3336",         // Main dividers
+        secondary: "#38444D",       // Lighter borders
+        separator: "#1D1F23",       // Section separators
+    },
+
     // UI elements
     ui: {
         border: "#2F3336",          // Dividers, borders
@@ -106,6 +113,7 @@ export const twitterSpacing = {
     // Padding
     tweetPadding: 48,               // Tweet horizontal padding
     tweetPaddingVertical: 36,       // Tweet vertical padding
+    horizontalPadding: 48,          // Alias for horizontal padding
     avatarGap: 36,                  // Gap between avatar and content
 
     // Avatar sizes

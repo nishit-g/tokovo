@@ -1,0 +1,195 @@
+---
+title: Twitter/X
+description: Twitter/X iOS dark mode configuration and usage
+---
+
+# Twitter/X
+
+Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagement actions.
+
+## Features
+
+- ✅ Timeline feed with tweets
+- ✅ Tweet text with @mentions and #hashtags
+- ✅ Media grids (1-4 images)
+- ✅ Verified badges (blue, gold, grey)
+- ✅ Like, retweet, reply, quote actions
+- ✅ View counts and engagement metrics
+- ✅ Quote tweets (embedded)
+- ✅ Reply context
+- ✅ Header with For You / Following tabs
+- ✅ Bottom navigation (Home, Search, Grok, Notifications, Messages)
+- ✅ Compose FAB button
+- 🔜 Tweet detail screen
+- 🔜 Profile screen
+- 🔜 Video/GIF playback
+- 🔜 Polls
+- 🔜 Threads
+
+## DSL Usage
+
+### Receiving Tweets
+
+```typescript
+d.beat("timeline", b => {
+    // Basic tweet from verified user
+    const tweet = b.tweetReceived(
+        { 
+            name: "Elon Musk", 
+            handle: "elonmusk", 
+            verified: "blue" 
+        },
+        "The future of AI is here 🚀",
+        {
+            likeCount: 89000,
+            retweetCount: 12800,
+            replyCount: 5432,
+            viewCount: 2400000
+        }
+    );
+    
+    // Tweet with media
+    b.tweetReceived(
+        { name: "ESPN", handle: "espn", verified: "gold" },
+        "BREAKING NEWS",
+        {
+            media: [
+                { url: "https://example.com/img1.jpg", type: "image" },
+                { url: "https://example.com/img2.jpg", type: "image" }
+            ]
+        }
+    );
+});
+```
+
+### Posting Tweets
+
+```typescript
+d.beat("post", b => {
+    const myTweet = b.postTweet(
+        "Just shipped a new feature! 🚀 #buildinpublic",
+        {
+            author: { name: "You", handle: "yourhandle", verified: "blue" }
+        }
+    );
+});
+```
+
+### Engagement Actions
+
+```typescript
+d.beat("engagement", b => {
+    // Like a tweet
+    b.likeTweet(tweetRef);
+    
+    // Retweet
+    b.retweetTweet(tweetRef);
+    
+    // Quote tweet with comment
+    b.quoteTweet(tweetRef, "This is huge! 🔥");
+    
+    // Reply to tweet
+    b.replyTweet(tweetRef, "Completely agree!");
+    
+    // Bookmark
+    b.bookmarkTweet(tweetRef);
+});
+```
+
+## Theme Configuration
+
+Dark mode colors matching iOS X app:
+
+```typescript
+import { twitterColors, twitterTypography, twitterSpacing } from "@tokovo/apps-twitter/config";
+
+// Colors
+twitterColors.background.primary    // #000000 (pure black)
+twitterColors.brand.blue            // #1D9BF0 (X blue)
+twitterColors.engagement.like       // #F91880 (pink heart)
+twitterColors.engagement.retweet    // #00BA7C (green)
+twitterColors.verified.blue         // #1D9BF0
+twitterColors.verified.gold         // #E2B719
+twitterColors.verified.grey         // #829AAB
+
+// Typography (scaled 3x for Remotion)
+twitterTypography.displayName       // 48px, bold
+twitterTypography.tweetText         // 45px
+twitterTypography.metrics           // 39px
+
+// Spacing
+twitterSpacing.avatar.default       // 120px
+twitterSpacing.tweetPadding         // 36px
+```
+
+## Layout Configuration
+
+Tweet height calculation and media grids:
+
+```typescript
+import { calculateTweetHeight, mediaGridLayouts } from "@tokovo/apps-twitter/config";
+
+// Dynamic tweet height
+const height = calculateTweetHeight({
+    text: "Hello world!",
+    hasMedia: true,
+    mediaCount: 2,
+    hasQuoteTweet: false,
+    isReply: false
+});
+
+// Media grid layouts for 1-4 images
+const layout = mediaGridLayouts[2];  // 2 images: side by side
+// layout = { columns: 2, rows: 1, aspectRatio: "16/9" }
+```
+
+## Components
+
+| Component | Description |
+|-----------|-------------|
+| `Header` | X logo, profile avatar, For You/Following tabs |
+| `BottomNav` | 5-tab nav: Home, Search, Grok, Notifications, Messages |
+| `Tweet` | Full tweet with avatar, text, media, actions |
+| `Avatar` | Profile picture with verified badge |
+| `TweetActions` | Reply, RT, Like, Views, Bookmark, Share |
+| `MediaGrid` | 1-4 image layouts with video overlays |
+
+## Runtime Events
+
+| Event | Description |
+|-------|-------------|
+| `TWEET_POSTED` | User posts a new tweet |
+| `TWEET_RECEIVED` | Tweet appears in timeline |
+| `TWEET_LIKED` | User likes a tweet |
+| `TWEET_UNLIKED` | User unlikes a tweet |
+| `TWEET_RETWEETED` | User retweets |
+| `TWEET_QUOTED` | User quotes with comment |
+| `TWEET_REPLIED` | User replies to tweet |
+| `TWEET_BOOKMARKED` | User bookmarks tweet |
+| `SCREEN_NAVIGATED` | Navigate to different screen |
+| `TAB_CHANGED` | Switch between For You/Following |
+
+## File Structure
+
+```
+packages/apps-twitter/
+├── src/
+│   ├── config/
+│   │   ├── twitter-theme.ts     # Colors, typography
+│   │   └── layout-config.ts     # Heights, media grids
+│   ├── components/
+│   │   ├── Avatar.tsx           # Profile pic + badges
+│   │   ├── Tweet.tsx            # Main tweet component
+│   │   ├── TweetActions.tsx     # Engagement bar
+│   │   ├── MediaGrid.tsx        # Image layouts
+│   │   ├── Header.tsx           # Top navigation
+│   │   └── BottomNav.tsx        # Bottom tabs
+│   ├── runtime.ts               # Event reducer
+│   ├── plugin.ts                # Registration
+│   ├── ui.tsx                   # Main renderer
+│   └── index.ts                 # Exports
+```
+
+## Example Episode
+
+See `packages/dsl/examples/twitter-showcase.dsl.ts` for a complete timeline demo.
