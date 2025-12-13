@@ -588,6 +588,169 @@ export class BeatBuilder {
         return this;
     }
 
+    // =========================================================================
+    // TWITTER / X
+    // =========================================================================
+
+    /**
+     * Tweet handle for referencing tweets.
+     */
+    private tweetCounter = 0;
+    private lastTweetRef: MessageRef | undefined;
+
+    /**
+     * Post a tweet from the device owner.
+     * @param text - Tweet text
+     * @param options - Tweet options (media, quote, etc)
+     */
+    postTweet(
+        text: string,
+        options?: {
+            media?: { url: string; type: "image" | "video" | "gif" }[];
+            author?: { name: string; handle: string; verified?: "blue" | "gold" | "grey" };
+        }
+    ): MessageHandle {
+        const id = `tweet_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "tweet" as any,
+                ...(options?.media && { media: options.media }),
+                ...(options?.author && { author: options.author }),
+            },
+        });
+        const ref = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a tweet in timeline from another user.
+     * @param author - Tweet author info
+     * @param text - Tweet text
+     * @param options - Tweet options
+     */
+    tweetReceived(
+        author: { name: string; handle: string; verified?: "blue" | "gold" | "grey"; avatarUrl?: string },
+        text: string,
+        options?: {
+            media?: { url: string; type: "image" | "video" | "gif" }[];
+            replyCount?: number;
+            retweetCount?: number;
+            likeCount?: number;
+            viewCount?: number;
+        }
+    ): MessageHandle {
+        const id = `tweet_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "ReceiveMessage" as const,
+            actor: author.handle,
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "tweet" as any,
+                author,
+                ...(options?.media && { media: options.media }),
+                ...(options?.replyCount !== undefined && { replyCount: options.replyCount }),
+                ...(options?.retweetCount !== undefined && { retweetCount: options.retweetCount }),
+                ...(options?.likeCount !== undefined && { likeCount: options.likeCount }),
+                ...(options?.viewCount !== undefined && { viewCount: options.viewCount }),
+            },
+        });
+        const ref = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = ref;
+        return ref;
+    }
+
+    /**
+     * Like a tweet.
+     * @param ref - Reference to the tweet
+     */
+    likeTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "❤️",
+        });
+        return this;
+    }
+
+    /**
+     * Retweet a tweet.
+     * @param ref - Reference to the tweet
+     */
+    retweetTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "🔁",  // Using emoji as placeholder for retweet action
+        });
+        return this;
+    }
+
+    /**
+     * Quote a tweet with comment.
+     * @param ref - Reference to the original tweet
+     * @param text - Quote comment
+     */
+    quoteTweet(ref: MessageHandle, text: string): MessageHandle {
+        const id = `quote_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "quote_tweet" as any,
+                quoteTweetRef: ref,
+            },
+        });
+        const newRef = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = newRef;
+        return newRef;
+    }
+
+    /**
+     * Reply to a tweet.
+     * @param ref - Reference to the tweet being replied to
+     * @param text - Reply text
+     */
+    replyTweet(ref: MessageHandle, text: string): MessageHandle {
+        const id = `reply_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "reply" as any,
+                replyToRef: ref,
+            },
+        });
+        const newRef = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = newRef;
+        return newRef;
+    }
+
+    /**
+     * Bookmark a tweet.
+     * @param ref - Reference to the tweet
+     */
+    bookmarkTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "🔖",  // Bookmark indicator
+        });
+        return this;
+    }
+
     /**
      * Get collected operations.
      */

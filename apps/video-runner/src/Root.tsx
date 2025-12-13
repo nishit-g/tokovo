@@ -12,10 +12,19 @@ import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
+import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="TwitterShowcase"
+                component={TwitterShowcaseVideo}
+                durationInFrames={450}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="UltimateShowcase"
                 component={UltimateShowcaseVideo}
