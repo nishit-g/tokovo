@@ -7,7 +7,7 @@
 
 import React from "react";
 import { WorldState, APP_IDS } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { WhatsappApp } from "@tokovo/apps-whatsapp";
 import { InstagramApp } from "@tokovo/apps-instagram";
 
 import { LayoutState } from "./layout/types";
@@ -36,7 +36,7 @@ class AppRegistryClass {
 
     constructor() {
         // Register built-in apps
-        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
+        this.register(APP_IDS.WHATSAPP, WhatsappApp as AppViewComponent);
         this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
     }
 
