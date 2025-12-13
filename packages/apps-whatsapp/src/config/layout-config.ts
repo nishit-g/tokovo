@@ -167,8 +167,15 @@ export interface MessageLayoutConfig {
 
 const DEFAULT_GAP: MessageGapConfig = {
     sameSender: 3,      // Tight grouping for consecutive same-sender messages
-    sameSide: 8,        // Slight separation for same side, different sender
-    oppositeSide: 16,   // Clear visual break when switching sides
+    sameSide: 6,        // Slight separation for same side, different sender
+    oppositeSide: 10,   // Reduced from 16px - cleaner side switching
+};
+
+// Media messages need slightly more breathing room
+const MEDIA_GAP: MessageGapConfig = {
+    sameSender: 6,      // More gap when media involved
+    sameSide: 10,       // More separation for media
+    oppositeSide: 14,   // Clear break for media side switch
 };
 
 const SYSTEM_GAP: MessageGapConfig = {
@@ -202,7 +209,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
                 maxPercent: 0.78,
                 min: 300,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 8 },  // More gap for media
+            gap: MEDIA_GAP,  // More gap for media messages
         },
         video: {
             height: {
@@ -213,7 +220,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
                 maxPercent: 0.78,
                 min: 300,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 8 },
+            gap: MEDIA_GAP,
         },
         gif: {
             height: {
@@ -223,7 +230,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
                 maxPercent: 0.78,
                 min: 250,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 8 },
+            gap: MEDIA_GAP,
         },
         voice: {
             height: {

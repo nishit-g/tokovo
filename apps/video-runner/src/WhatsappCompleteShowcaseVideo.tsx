@@ -73,8 +73,8 @@ const episodeData = {
         },
         appState: {
             activeApp: "whatsapp",
-            whatsapp: {
-                screen: "chats"
+            app_whatsapp: {
+                screen: "chats-list"
             }
         },
         camera: {

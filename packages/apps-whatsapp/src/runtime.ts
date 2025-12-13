@@ -132,7 +132,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     const eventType = event.type as string;
 
     // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE") {
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
         // Ensure appState exists for WhatsApp
         if (!draft.appState) {
             draft.appState = {};
