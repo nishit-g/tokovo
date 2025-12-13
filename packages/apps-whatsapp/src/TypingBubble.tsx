@@ -15,6 +15,8 @@ export interface TypingBubbleProps {
     fps?: number;
 }
 
+import { LAYOUT_CONSTANTS } from "./config/layout-config";
+
 export const TypingBubble: React.FC<TypingBubbleProps> = ({
     platform = "ios",
     frame = 0,
@@ -23,7 +25,7 @@ export const TypingBubble: React.FC<TypingBubbleProps> = ({
     return (
         <div style={{
             backgroundColor: "#FFFFFF",
-            padding: "27px 36px",
+            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
             borderRadius: 24,
             borderTopLeftRadius: 6,
             alignSelf: "flex-start",
@@ -32,7 +34,7 @@ export const TypingBubble: React.FC<TypingBubbleProps> = ({
             display: "flex",
             alignItems: "center",
             gap: 15,
-            height: 72
+            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
         }}>
             <TypingDot frame={frame} fps={fps} delayFrames={0} />
             <TypingDot frame={frame} fps={fps} delayFrames={5} />

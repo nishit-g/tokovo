@@ -45,8 +45,21 @@ export const LAYOUT_CONSTANTS = {
     FONT_SIZE: 51,            // Text font size
     TIMESTAMP_HEIGHT: 36,     // Footer area height
     SENDER_NAME_HEIGHT: 45,   // Height of sender name area
-    GAP_MINIMAL: 6,           // 2px visual (Visual Run)
-    GAP_NORMAL: 36,           // 12px visual (Run Break)
+
+    // Spacing Tiers (The 3-Tier Model)
+    GAP_MINIMAL: 6,           // 2px visual (Visual Run / Burst)
+    GAP_RUN_BREAK: 18,        // 6px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 36,           // 12px visual (Sender Switch)
+
+    // System Spacing
+    GAP_SYSTEM: 27,           // 9px visual
+
+    // Typography / Metrics
+    AVG_CHAR_WIDTH: 24,       // Average character width for wrapping calculation
+
+    // Typing Indicator
+    TYPING_BUBBLE_HEIGHT: 72, // Inner height
+    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
 };
 
 /**
@@ -353,6 +366,7 @@ export function calculateSmartGap(
     if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
 
     // Visual Run Logic
+    // Visual Run Logic
     const sameSender = prevMessage.from === nextMessage.from;
     const isVisualRun = sameSender &&
         prevType === "text" &&
@@ -362,7 +376,9 @@ export function calculateSmartGap(
         !prevMessage.hasReactions &&
         !nextMessage.hasReactions;
 
-    return isVisualRun ? LAYOUT_CONSTANTS.GAP_MINIMAL : LAYOUT_CONSTANTS.GAP_NORMAL;
+    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
+    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
+    return LAYOUT_CONSTANTS.GAP_NORMAL;
 }
 
 // Compatibility Shim
@@ -383,11 +399,16 @@ export function calculateBubbleWidth(
     // Simplified width logic
     if (msgType === "text" || msgType === "deleted") {
         const textLength = msg.text?.length || 0;
-        const avgCharWidth = 24; // Hardcoded avg (Retina)
+        const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
         const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
 
-        const textWidth = Math.min(textLength, typeConfig.height.charsPerLine || 13) * avgCharWidth + horizontalPadding;
-        return Math.min(viewportWidth * typeConfig.width.maxPercent, Math.max(textWidth, typeConfig.width.min));
+        // Dynamic wrap wrap limit
+        const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
+        const availableTextWidth = maxBubbleWidth - horizontalPadding;
+        const charsPerLine = Math.floor(availableTextWidth / avgCharWidth);
+
+        const textWidth = Math.min(textLength, charsPerLine) * avgCharWidth + horizontalPadding;
+        return Math.min(maxBubbleWidth, Math.max(textWidth, typeConfig.width.min));
     }
 
     return viewportWidth * typeConfig.width.maxPercent;
