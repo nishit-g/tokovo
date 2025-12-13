@@ -127,7 +127,6 @@ packages/
         virtual-device.ts
       compile.ts
       context.ts
-      generate.ts
       index.ts
     package.json
     tsconfig.json
@@ -201,9 +200,11 @@ packages/
     tsconfig.json
   ir/
     src/
+      constraints.ts
       index.ts
       ordering.ts
       scene.ts
+      semantic.ts
       timeline.ts
       trace.ts
       validate.ts
@@ -2787,138 +2788,6 @@ export class Cursor {
 }
 ````
 
-## File: packages/compiler/src/generate.ts
-````typescript
-/**
- * Episode Generator
- * 
- * Converts DSL Scene IR → Episode JSON (compatible with @tokovo/core)
- */
-
-import {
-    SceneIR,
-    TimelineIR,
-    EpisodeMeta,
-    DeviceScene,
-    ConversationDef,
-} from "@tokovo/ir";
-import { compile } from "@tokovo/compiler";
-import { adapterRegistry, RuntimeEvent } from "@tokovo/adapters";
-
-/**
- * Episode JSON format (compatible with existing runtime)
- */
-export interface EpisodeJSON {
-    meta: {
-        title: string;
-        fps: number;
-        durationInFrames: number;
-    };
-    initialWorld: {
-        devices: Record<string, any>;
-        conversations: Record<string, any>;
-        appState: Record<string, any>;
-        camera: any;
-        audio: { activeSounds: {} };
-    };
-    events: RuntimeEvent[];
-}
-
-/**
- * Generate Episode JSON from Scene IR
- */
-export function generateEpisode(sceneIR: SceneIR): EpisodeJSON {
-    // Compile to Timeline IR
-    const { timeline, durationInFrames } = compile(sceneIR);
-
-    // Lower to runtime events
-    const events = adapterRegistry.lowerAll(timeline);
-
-    // Build initial world
-    const initialWorld = buildInitialWorld(sceneIR);
-
-    return {
-        meta: {
-            title: sceneIR.meta.title ?? sceneIR.episodeId,
-            fps: sceneIR.meta.fps,
-            durationInFrames,
-        },
-        initialWorld,
-        events,
-    };
-}
-
-/**
- * Build initial world state from device definitions
- */
-function buildInitialWorld(sceneIR: SceneIR) {
-    const devices: Record<string, any> = {};
-    const conversations: Record<string, any> = {};
-    const appState: Record<string, any> = {};
-
-    for (const device of sceneIR.devices) {
-        // Device state
-        devices[device.deviceId] = {
-            id: device.deviceId,
-            profileId: device.profileId,
-            isLocked: false, // Will be unlocked by events
-            foregroundAppId: device.appId,
-            notifications: [],
-        };
-
-        // Conversations
-        for (const convo of device.conversations) {
-            conversations[convo.id] = {
-                id: convo.id,
-                type: convo.type ?? "dm",
-                name: convo.name ?? convo.id,
-                avatar: convo.avatar,
-                messages: [],
-                typing: {},
-            };
-        }
-
-        // App state
-        if (device.appId) {
-            appState[device.appId] = {
-                screen: "chat",
-                conversationId: device.conversations[0]?.id,
-            };
-        }
-    }
-
-    // Default camera
-    const camera = {
-        baseView: "APP_VIEW",
-        activeDeviceId: sceneIR.devices[0]?.deviceId ?? "phone",
-        layout: {
-            mode: "SINGLE",
-            primaryDeviceId: sceneIR.devices[0]?.deviceId ?? "phone",
-        },
-        activeEffects: [],
-        transform: {
-            translateX: 0,
-            translateY: 0,
-            scale: 1,
-            rotation: 0,
-            originX: 0.5,
-            originY: 0.5,
-            shakeX: 0,
-            shakeY: 0,
-        },
-        deviceTransforms: {},
-    };
-
-    return {
-        devices,
-        conversations,
-        appState,
-        camera,
-        audio: { activeSounds: {} },
-    };
-}
-````
-
 ## File: packages/compiler/src/index.ts
 ````typescript
 /**
@@ -4822,287 +4691,6 @@ export const breakupDramaSceneIR: SceneIR = createEpisode("breakup-drama-01", ep
 export { breakupDramaSceneIR as default };
 ````
 
-## File: packages/dsl/src/author/beat-builder.ts
-````typescript
-/**
- * Beat Builder
- * 
- * Fluent API for defining actions within a beat.
- * A beat is a named group of sequential/concurrent operations.
- */
-
-import {
-    SceneOp,
-    WaitOp,
-    TypingStartOp,
-    TypingEndOp,
-    SendMessageOp,
-    ReceiveMessageOp,
-    ReadMessageOp,
-    DeleteMessageOp,
-    ConcurrentOp,
-    MessageRef,
-    messageRef,
-} from "@tokovo/ir";
-import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
-
-/**
- * Beat builder collects operations within a beat.
- */
-export class BeatBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private messageCounter = 0;
-    private lastMessageRef: MessageRef | undefined;
-
-    constructor(deviceId: string, appId: string, conversationId: string) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-    }
-
-    /**
-     * Wait for a duration.
-     */
-    wait(duration: string): this {
-        const op: WaitOp = { kind: "Wait", duration };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Start typing indicator.
-     * Returns a builder for fluent chaining: typing("Bob").for("2s")
-     */
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                // Expand to: TypingStart + Wait + TypingEnd
-                const start: TypingStartOp = {
-                    kind: "TypingStart",
-                    actor,
-                    conversationId,
-                };
-                const wait: WaitOp = { kind: "Wait", duration };
-                const end: TypingEndOp = {
-                    kind: "TypingEnd",
-                    actor,
-                    conversationId,
-                };
-                ops.push(start, wait, end);
-            },
-        };
-    }
-
-    /**
-     * Start typing without specifying duration.
-     * Use typingEnd() to stop.
-     */
-    typingStart(actor: string): this {
-        const op: TypingStartOp = {
-            kind: "TypingStart",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Stop typing indicator.
-     */
-    typingEnd(actor: string): this {
-        const op: TypingEndOp = {
-            kind: "TypingEnd",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Send a message (from device owner).
-     */
-    send(text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendMessageOp = {
-            kind: "SendMessage",
-            actor: "me",
-            text,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a message (from someone else).
-     */
-    receive(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveMessageOp = {
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Mark a message as read.
-     */
-    read(ref: MessageHandle): this {
-        const op: ReadMessageOp = { kind: "ReadMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Mark the last message as read.
-     */
-    readLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("readLast() called but no previous message exists");
-        }
-        return this.read(this.lastMessageRef);
-    }
-
-    /**
-     * Delete a message.
-     */
-    delete(ref: MessageHandle): this {
-        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Delete the last message.
-     */
-    deleteLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("deleteLast() called but no previous message exists");
-        }
-        return this.delete(this.lastMessageRef);
-    }
-
-    /**
-     * Execute operations concurrently across multiple tracks.
-     */
-    concurrent(tracks: TrackFn[]): this {
-        const trackOps: SceneOp[][] = tracks.map((fn) => {
-            const trackBuilder = this.createTrackBuilder();
-            fn(trackBuilder);
-            return trackBuilder.getOps();
-        });
-
-        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Create a track builder for concurrent operations.
-     */
-    private createTrackBuilder(): TrackBuilderImpl {
-        return new TrackBuilderImpl(
-            this.deviceId,
-            this.appId,
-            this.conversationId,
-            () => ++this.messageCounter
-        );
-    }
-
-    /**
-     * Get collected operations.
-     */
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-
-/**
- * Track builder implementation for concurrent operations.
- */
-class TrackBuilderImpl implements TrackBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private readonly getNextId: () => number;
-
-    constructor(
-        deviceId: string,
-        appId: string,
-        conversationId: string,
-        getNextId: () => number
-    ) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-        this.getNextId = getNextId;
-    }
-
-    wait(duration: string): this {
-        this.ops.push({ kind: "Wait", duration });
-        return this;
-    }
-
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                ops.push({ kind: "TypingStart", actor, conversationId });
-                ops.push({ kind: "Wait", duration });
-                ops.push({ kind: "TypingEnd", actor, conversationId });
-            },
-        };
-    }
-
-    send(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "SendMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    receive(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-````
-
 ## File: packages/dsl/src/author/device-builder.ts
 ````typescript
 /**
@@ -5537,32 +5125,344 @@ export interface EpisodeConfig {
 }
 ````
 
-## File: packages/ir/src/index.ts
+## File: packages/ir/src/constraints.ts
 ````typescript
 /**
- * @tokovo/ir
+ * Narrative Constraints
  * 
- * Intermediate Representations for Tokovo DSL.
- * 
- * Two layers:
- * - Scene IR: Semantic truth (no frames, no platform)
- * - Timeline IR: Execution contract (frames, deterministic)
+ * Validation rules that ensure story correctness.
+ * These make AI-generated output safe by construction.
  */
 
-// Trace model
-export * from "./trace";
+import { SceneIR, SceneOp, DeviceScene, Beat, MessageRef } from "./scene";
 
-// Scene IR (semantic)
-export * from "./scene";
+/**
+ * Constraint violation.
+ */
+export interface ConstraintViolation {
+    readonly code: string;
+    readonly message: string;
+    readonly severity: "error" | "warning";
+    readonly location?: {
+        deviceId?: string;
+        beat?: string;
+        opIndex?: number;
+    };
+}
 
-// Timeline IR (execution)
-export * from "./timeline";
+/**
+ * Constraint validation result.
+ */
+export interface ConstraintResult {
+    valid: boolean;
+    violations: ConstraintViolation[];
+}
 
-// Ordering contract
-export * from "./ordering";
+/**
+ * Validate narrative constraints for a Scene IR.
+ */
+export function validateConstraints(sceneIR: SceneIR): ConstraintResult {
+    const violations: ConstraintViolation[] = [];
 
-// Validation
-export * from "./validate";
+    for (const device of sceneIR.devices) {
+        violations.push(...validateDeviceConstraints(device, sceneIR));
+    }
+
+    return {
+        valid: violations.filter(v => v.severity === "error").length === 0,
+        violations,
+    };
+}
+
+/**
+ * Validate constraints for a device.
+ */
+function validateDeviceConstraints(
+    device: DeviceScene,
+    sceneIR: SceneIR
+): ConstraintViolation[] {
+    const violations: ConstraintViolation[] = [];
+    const sentMessages = new Set<string>();
+    let typingActors = new Set<string>();
+
+    for (const beat of device.beats) {
+        violations.push(...validateBeatConstraints(
+            beat,
+            device,
+            sceneIR,
+            sentMessages,
+            typingActors
+        ));
+    }
+
+    // Check for unclosed typing
+    if (typingActors.size > 0) {
+        violations.push({
+            code: "UNCLOSED_TYPING",
+            message: `Typing never ended for actors: ${Array.from(typingActors).join(", ")}`,
+            severity: "warning",
+            location: { deviceId: device.deviceId },
+        });
+    }
+
+    return violations;
+}
+
+/**
+ * Validate constraints for a beat.
+ */
+function validateBeatConstraints(
+    beat: Beat,
+    device: DeviceScene,
+    sceneIR: SceneIR,
+    sentMessages: Set<string>,
+    typingActors: Set<string>
+): ConstraintViolation[] {
+    const violations: ConstraintViolation[] = [];
+
+    for (let i = 0; i < beat.ops.length; i++) {
+        const op = beat.ops[i];
+        const location = {
+            deviceId: device.deviceId,
+            beat: beat.name,
+            opIndex: i,
+        };
+
+        violations.push(...validateOp(
+            op,
+            device,
+            sceneIR,
+            sentMessages,
+            typingActors,
+            location
+        ));
+    }
+
+    return violations;
+}
+
+/**
+ * Validate a single operation.
+ */
+function validateOp(
+    op: SceneOp,
+    device: DeviceScene,
+    sceneIR: SceneIR,
+    sentMessages: Set<string>,
+    typingActors: Set<string>,
+    location: { deviceId: string; beat: string; opIndex: number }
+): ConstraintViolation[] {
+    const violations: ConstraintViolation[] = [];
+
+    switch (op.kind) {
+        case "TypingStart": {
+            if (typingActors.has(op.actor)) {
+                violations.push({
+                    code: "DUPLICATE_TYPING_START",
+                    message: `Typing already started for actor "${op.actor}"`,
+                    severity: "warning",
+                    location,
+                });
+            }
+            typingActors.add(op.actor);
+            break;
+        }
+
+        case "TypingEnd": {
+            if (!typingActors.has(op.actor)) {
+                violations.push({
+                    code: "TYPING_END_WITHOUT_START",
+                    message: `Typing ended for actor "${op.actor}" but never started`,
+                    severity: "error",
+                    location,
+                });
+            }
+            typingActors.delete(op.actor);
+            break;
+        }
+
+        case "SendMessage":
+        case "ReceiveMessage": {
+            // Track message for later read/delete validation
+            // Note: actual ID is assigned by compiler
+            sentMessages.add(`${device.deviceId}_${op.conversationId}_${beat_name(location)}_${location.opIndex}`);
+            break;
+        }
+
+        case "ReadMessage": {
+            violations.push(...validateMessageRef(op.ref, device, sceneIR, sentMessages, location, "read"));
+            break;
+        }
+
+        case "DeleteMessage": {
+            violations.push(...validateMessageRef(op.ref, device, sceneIR, sentMessages, location, "delete"));
+            break;
+        }
+
+        case "POVSwitch": {
+            if (!sceneIR.devices.find(d => d.deviceId === op.deviceId)) {
+                violations.push({
+                    code: "INVALID_POV_DEVICE",
+                    message: `POVSwitch to non-existent device "${op.deviceId}"`,
+                    severity: "error",
+                    location,
+                });
+            }
+            break;
+        }
+
+        case "SplitPOV": {
+            for (const devId of op.devices) {
+                if (!sceneIR.devices.find(d => d.deviceId === devId)) {
+                    violations.push({
+                        code: "INVALID_SPLIT_POV_DEVICE",
+                        message: `SplitPOV includes non-existent device "${devId}"`,
+                        severity: "error",
+                        location,
+                    });
+                }
+            }
+            break;
+        }
+
+        case "Concurrent": {
+            // Recursively validate tracks
+            for (const track of op.tracks) {
+                for (let j = 0; j < track.length; j++) {
+                    violations.push(...validateOp(
+                        track[j],
+                        device,
+                        sceneIR,
+                        sentMessages,
+                        new Set(typingActors), // Fork typing state per track
+                        { ...location, opIndex: location.opIndex * 100 + j }
+                    ));
+                }
+            }
+            break;
+        }
+    }
+
+    return violations;
+}
+
+/**
+ * Validate a message reference.
+ */
+function validateMessageRef(
+    ref: MessageRef,
+    device: DeviceScene,
+    sceneIR: SceneIR,
+    sentMessages: Set<string>,
+    location: { deviceId: string; beat: string; opIndex: number },
+    action: "read" | "delete"
+): ConstraintViolation[] {
+    const violations: ConstraintViolation[] = [];
+
+    // Check device exists
+    if (!sceneIR.devices.find(d => d.deviceId === ref.deviceId)) {
+        violations.push({
+            code: "INVALID_MESSAGE_REF_DEVICE",
+            message: `Message ref targets non-existent device "${ref.deviceId}"`,
+            severity: "error",
+            location,
+        });
+    }
+
+    // Check conversation exists on target device
+    const targetDevice = sceneIR.devices.find(d => d.deviceId === ref.deviceId);
+    if (targetDevice && !targetDevice.conversations.find(c => c.id === ref.conversationId)) {
+        violations.push({
+            code: "INVALID_MESSAGE_REF_CONVERSATION",
+            message: `Message ref targets non-existent conversation "${ref.conversationId}"`,
+            severity: "error",
+            location,
+        });
+    }
+
+    return violations;
+}
+
+/**
+ * Helper to get beat name from location.
+ */
+function beat_name(location: { beat: string }): string {
+    return location.beat;
+}
+
+// =============================================================================
+// SPECIFIC CONSTRAINT CHECKS
+// =============================================================================
+
+/**
+ * Check that no message is read before it exists.
+ */
+export function checkReadBeforeSend(sceneIR: SceneIR): ConstraintViolation[] {
+    // This is a simplified check - full implementation would track
+    // message IDs through the compilation process
+    return [];
+}
+
+/**
+ * Check that all POV devices are defined.
+ */
+export function checkPOVDevices(sceneIR: SceneIR): ConstraintViolation[] {
+    const result = validateConstraints(sceneIR);
+    return result.violations.filter(v =>
+        v.code === "INVALID_POV_DEVICE" || v.code === "INVALID_SPLIT_POV_DEVICE"
+    );
+}
+
+/**
+ * Check semantic meta values are valid.
+ */
+export function checkSemanticMeta(sceneIR: SceneIR): ConstraintViolation[] {
+    const violations: ConstraintViolation[] = [];
+
+    for (const device of sceneIR.devices) {
+        for (const beat of device.beats) {
+            // Check beat meta
+            if (beat.meta) {
+                if (beat.meta.tempo && !["slow", "medium", "fast"].includes(beat.meta.tempo)) {
+                    violations.push({
+                        code: "INVALID_BEAT_TEMPO",
+                        message: `Invalid tempo "${beat.meta.tempo}" in beat "${beat.name}"`,
+                        severity: "warning",
+                        location: { deviceId: device.deviceId, beat: beat.name },
+                    });
+                }
+            }
+
+            // Check message semantic meta
+            for (let i = 0; i < beat.ops.length; i++) {
+                const op = beat.ops[i];
+                if (op.kind === "SendMessage" || op.kind === "ReceiveMessage") {
+                    const semantic = op.meta?.semantic;
+                    if (semantic) {
+                        if (semantic.intensity !== undefined && (semantic.intensity < 0 || semantic.intensity > 1)) {
+                            violations.push({
+                                code: "INVALID_INTENSITY",
+                                message: `Intensity must be 0-1, got ${semantic.intensity}`,
+                                severity: "error",
+                                location: { deviceId: device.deviceId, beat: beat.name, opIndex: i },
+                            });
+                        }
+                        if (semantic.urgency !== undefined && (semantic.urgency < 0 || semantic.urgency > 1)) {
+                            violations.push({
+                                code: "INVALID_URGENCY",
+                                message: `Urgency must be 0-1, got ${semantic.urgency}`,
+                                severity: "error",
+                                location: { deviceId: device.deviceId, beat: beat.name, opIndex: i },
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return violations;
+}
 ````
 
 ## File: packages/ir/src/ordering.ts
@@ -5691,251 +5591,201 @@ export function sortOps(ops: TimelineOp[]): TimelineOp[] {
 }
 ````
 
-## File: packages/ir/src/scene.ts
+## File: packages/ir/src/semantic.ts
 ````typescript
 /**
- * Scene IR - Semantic Truth
+ * Semantic Metadata
  * 
- * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
- * 
- * RULES:
- * - No frames
- * - No layout
- * - No camera
- * - No platform assumptions
- * 
- * If FPS changes, layout changes, or Director logic changes,
- * Scene IR stays valid.
+ * Story intelligence layer - captures INTENT beyond raw events.
+ * This enables:
+ * - Camera intelligence (react to emotional weight)
+ * - AI story generation with control
+ * - Analytics and debugging
  */
 
 // =============================================================================
-// DURATION
+// EPISODE CONFIGURATION
 // =============================================================================
 
 /**
- * Human-readable duration expression.
- * Examples: "1.2s", "300ms", "45frames"
+ * Episode-level configuration and intent.
+ * This is the "episode brain" that AI and DirectorLite can reason about.
  */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+export interface EpisodeConfig {
+    /** Frames per second */
+    fps?: number;
+
+    /** Episode title */
+    title?: string;
+
+    /** Aspect ratio for rendering */
+    aspectRatio?: "9:16" | "1:1" | "16:9";
+
+    /** Overall pacing style */
+    pacing?: "slow-burn" | "normal" | "chaotic" | "explosive";
+
+    /** Director control mode */
+    director?: "auto" | "manual" | "hybrid";
+
+    /** Visual theme */
+    theme?: "dark" | "light" | "system";
+
+    /** Content tags for categorization */
+    tags?: string[];
+
+    /** Target duration hint (for AI generation) */
+    targetDuration?: string; // e.g., "30s", "2m"
+}
+
+// =============================================================================
+// SEMANTIC ANNOTATIONS
+// =============================================================================
 
 /**
- * Parse duration to frames
+ * Mood categories for semantic classification.
  */
-export function parseDuration(expr: DurationExpr, fps: number): number {
-    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
-    if (!match) {
-        throw new Error(`Invalid duration: ${expr}`);
+export type Mood =
+    | "calm"
+    | "tense"
+    | "angry"
+    | "sad"
+    | "anxious"
+    | "excited"
+    | "confused"
+    | "neutral";
+
+/**
+ * Semantic metadata for operations.
+ * Attached to messages, actions, and beats.
+ */
+export interface SemanticMeta {
+    /** Emotional mood of the action */
+    mood?: Mood;
+
+    /** Emotional intensity (0-1, where 1 = maximum) */
+    intensity?: number;
+
+    /** How secret/private is this? (affects viewer anticipation) */
+    secrecy?: "low" | "medium" | "high";
+
+    /** How urgent? (affects pacing expectations) */
+    urgency?: number; // 0-1
+
+    /** How intimate/close is the relationship? */
+    intimacy?: number; // 0-1
+
+    /** Subtext hint for AI understanding */
+    subtext?: string;
+
+    /** Custom tags for domain-specific semantics */
+    tags?: string[];
+}
+
+// =============================================================================
+// BEAT METADATA
+// =============================================================================
+
+/**
+ * Beat-level metadata for story rhythm.
+ */
+export interface BeatMeta {
+    /** Pacing tempo for this beat */
+    tempo?: "slow" | "medium" | "fast";
+
+    /** Is this an emotional peak? */
+    emotionalPeak?: boolean;
+
+    /** Is this a tension release? */
+    release?: boolean;
+
+    /** Dramatic function */
+    function?: "setup" | "buildup" | "climax" | "release" | "resolution";
+
+    /** Semantic mood for the entire beat */
+    mood?: Mood;
+}
+
+// =============================================================================
+// POV CONFIGURATION
+// =============================================================================
+
+/**
+ * POV layout modes for multi-device views.
+ */
+export type POVLayout =
+    | "horizontal"  // Side by side
+    | "vertical"    // Stacked
+    | "pip"         // Picture in picture
+    | "split-diagonal";
+
+/**
+ * POV switch intent.
+ */
+export interface POVConfig {
+    /** Primary device perspective */
+    primary: string;
+
+    /** Secondary devices (for split view) */
+    secondary?: string[];
+
+    /** Layout mode */
+    layout?: POVLayout;
+
+    /** Transition style */
+    transition?: "cut" | "crossfade" | "wipe";
+}
+
+// =============================================================================
+// ACTOR METADATA
+// =============================================================================
+
+/**
+ * Actor (participant) metadata for conversations.
+ */
+export interface ActorMeta {
+    /** Display name */
+    name: string;
+
+    /** Avatar URL or identifier */
+    avatar?: string;
+
+    /** Actor's role in the story */
+    role?: "protagonist" | "antagonist" | "love_interest" | "friend" | "stranger";
+
+    /** Actor's emotional state (can change per beat) */
+    mood?: Mood;
+}
+
+// =============================================================================
+// VALIDATION HELPERS
+// =============================================================================
+
+/**
+ * Validate intensity is in range.
+ */
+export function validateIntensity(value: number | undefined): boolean {
+    if (value === undefined) return true;
+    return value >= 0 && value <= 1;
+}
+
+/**
+ * Validate semantic meta.
+ */
+export function validateSemanticMeta(meta: SemanticMeta | undefined): string[] {
+    const errors: string[] = [];
+    if (!meta) return errors;
+
+    if (meta.intensity !== undefined && !validateIntensity(meta.intensity)) {
+        errors.push("intensity must be between 0 and 1");
+    }
+    if (meta.urgency !== undefined && !validateIntensity(meta.urgency)) {
+        errors.push("urgency must be between 0 and 1");
+    }
+    if (meta.intimacy !== undefined && !validateIntensity(meta.intimacy)) {
+        errors.push("intimacy must be between 0 and 1");
     }
 
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-        case "s":
-            return Math.round(value * fps);
-        case "ms":
-            return Math.round((value / 1000) * fps);
-        case "frames":
-            return Math.round(value);
-        default:
-            throw new Error(`Unknown duration unit: ${unit}`);
-    }
-}
-
-// =============================================================================
-// MESSAGE REFERENCE
-// =============================================================================
-
-/**
- * Reference to a message.
- * MUST include full context for cross-device/conversation operations.
- */
-export interface MessageRef {
-    readonly _type: "MessageRef";
-    readonly id: string;
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Create a message reference
- */
-export function messageRef(
-    id: string,
-    deviceId: string,
-    appId: string,
-    conversationId: string
-): MessageRef {
-    return {
-        _type: "MessageRef",
-        id,
-        deviceId,
-        appId,
-        conversationId,
-    };
-}
-
-// =============================================================================
-// MESSAGE METADATA
-// =============================================================================
-
-export interface MessageMeta {
-    /** Message type */
-    type?: "text" | "image" | "voice" | "system";
-
-    /** For voice messages */
-    voiceDuration?: number;
-
-    /** Timestamp display */
-    timestamp?: string;
-
-    /** Custom metadata */
-    [key: string]: unknown;
-}
-
-// =============================================================================
-// SCENE OPERATIONS
-// =============================================================================
-
-/**
- * Wait for a duration.
- * This advances the cursor but emits no runtime event.
- */
-export interface WaitOp {
-    readonly kind: "Wait";
-    readonly duration: DurationExpr;
-}
-
-/**
- * Start typing indicator.
- */
-export interface TypingStartOp {
-    readonly kind: "TypingStart";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * End typing indicator.
- */
-export interface TypingEndOp {
-    readonly kind: "TypingEnd";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * Send a message (from "me" / device owner).
- */
-export interface SendMessageOp {
-    readonly kind: "SendMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Receive a message (from someone else).
- */
-export interface ReceiveMessageOp {
-    readonly kind: "ReceiveMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Mark a message as read.
- */
-export interface ReadMessageOp {
-    readonly kind: "ReadMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Delete a message.
- */
-export interface DeleteMessageOp {
-    readonly kind: "DeleteMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Concurrent operations across multiple tracks.
- * Compiler forks cursor per track, compiles each independently,
- * then joins at max(trackEnds).
- */
-export interface ConcurrentOp {
-    readonly kind: "Concurrent";
-    readonly tracks: SceneOp[][];
-}
-
-/**
- * Union of all scene operations.
- */
-export type SceneOp =
-    | WaitOp
-    | TypingStartOp
-    | TypingEndOp
-    | SendMessageOp
-    | ReceiveMessageOp
-    | ReadMessageOp
-    | DeleteMessageOp
-    | ConcurrentOp;
-
-// =============================================================================
-// SCENE (TOP LEVEL)
-// =============================================================================
-
-/**
- * A beat is a named group of operations.
- * Used for semantic grouping and debugging.
- */
-export interface Beat {
-    readonly name: string;
-    readonly ops: SceneOp[];
-}
-
-/**
- * A device context within a scene.
- */
-export interface DeviceScene {
-    readonly deviceId: string;
-    readonly profileId: string;
-    readonly appId: string;
-    readonly conversations: ConversationDef[];
-    readonly beats: Beat[];
-}
-
-/**
- * Conversation definition.
- */
-export interface ConversationDef {
-    readonly id: string;
-    readonly name?: string;
-    readonly avatar?: string;
-    readonly type?: "dm" | "group";
-}
-
-/**
- * Complete scene IR for an episode.
- */
-export interface SceneIR {
-    readonly episodeId: string;
-    readonly meta: EpisodeMeta;
-    readonly devices: DeviceScene[];
-}
-
-/**
- * Episode metadata.
- */
-export interface EpisodeMeta {
-    readonly title?: string;
-    readonly fps: number;
-    readonly durationInFrames?: number;
+    return errors;
 }
 ````
 
@@ -6356,11 +6206,6 @@ export function validateTimelineIRFull(ir: TimelineIR): ValidationError[] {
         "dist"
     ]
 }
-````
-
-## File: packages/ir/tsconfig.tsbuildinfo
-````
-{"root":["./src/index.ts","./src/ordering.ts","./src/scene.ts","./src/timeline.ts","./src/trace.ts","./src/validate.ts"],"version":"5.9.3"}
 ````
 
 ## File: packages/renderer/src/layout/strategies/feed.ts
@@ -8639,6 +8484,407 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
 }
 ````
 
+## File: packages/dsl/src/author/beat-builder.ts
+````typescript
+/**
+ * Beat Builder
+ * 
+ * Fluent API for defining actions within a beat.
+ * A beat is a named group of sequential/concurrent operations.
+ */
+
+import {
+    SceneOp,
+    WaitOp,
+    TypingStartOp,
+    TypingEndOp,
+    SendMessageOp,
+    ReceiveMessageOp,
+    ReadMessageOp,
+    DeleteMessageOp,
+    ConcurrentOp,
+    MessageRef,
+    messageRef,
+    // POV operations
+    POVSwitchOp,
+    SplitPOVOp,
+    POVLayout,
+    // Reserved signals
+    ReactionAddedOp,
+    ScreenshotTakenOp,
+    MissedCallOp,
+    // Semantic
+    SemanticMeta,
+    MessageMeta,
+} from "@tokovo/ir";
+import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Message options for semantic annotations.
+ */
+export interface MessageOptions {
+    /** Semantic annotations */
+    mood?: SemanticMeta["mood"];
+    intensity?: number;
+    secrecy?: "low" | "medium" | "high";
+    urgency?: number;
+    intimacy?: number;
+    subtext?: string;
+    tags?: string[];
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+}
+
+/**
+ * Build MessageMeta from options.
+ */
+function buildMeta(options?: MessageOptions): MessageMeta | undefined {
+    if (!options) return undefined;
+
+    const semantic: SemanticMeta = {};
+    if (options.mood) semantic.mood = options.mood;
+    if (options.intensity !== undefined) semantic.intensity = options.intensity;
+    if (options.secrecy) semantic.secrecy = options.secrecy;
+    if (options.urgency !== undefined) semantic.urgency = options.urgency;
+    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
+    if (options.subtext) semantic.subtext = options.subtext;
+    if (options.tags) semantic.tags = options.tags;
+
+    return {
+        type: options.type ?? "text",
+        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+    };
+}
+
+/**
+ * Beat builder collects operations within a beat.
+ */
+export class BeatBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private messageCounter = 0;
+    private lastMessageRef: MessageRef | undefined;
+
+    constructor(deviceId: string, appId: string, conversationId: string) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+    }
+
+    /**
+     * Wait for a duration.
+     */
+    wait(duration: string): this {
+        const op: WaitOp = { kind: "Wait", duration };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Start typing indicator.
+     * Returns a builder for fluent chaining: typing("Bob").for("2s")
+     */
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                // Expand to: TypingStart + Wait + TypingEnd
+                const start: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                const wait: WaitOp = { kind: "Wait", duration };
+                const end: TypingEndOp = {
+                    kind: "TypingEnd",
+                    actor,
+                    conversationId,
+                };
+                ops.push(start, wait, end);
+            },
+        };
+    }
+
+    /**
+     * Start typing without specifying duration.
+     * Use typingEnd() to stop.
+     */
+    typingStart(actor: string): this {
+        const op: TypingStartOp = {
+            kind: "TypingStart",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Stop typing indicator.
+     */
+    typingEnd(actor: string): this {
+        const op: TypingEndOp = {
+            kind: "TypingEnd",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Send a message (from device owner).
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    send(text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendMessageOp = {
+            kind: "SendMessage",
+            actor: "me",
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a message (from someone else).
+     * @param actor - Who sent the message
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveMessageOp = {
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    read(ref: MessageHandle): this {
+        const op: ReadMessageOp = { kind: "ReadMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Mark the last message as read.
+     */
+    readLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("readLast() called but no previous message exists");
+        }
+        return this.read(this.lastMessageRef);
+    }
+
+    /**
+     * Delete a message.
+     */
+    delete(ref: MessageHandle): this {
+        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Delete the last message.
+     */
+    deleteLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("deleteLast() called but no previous message exists");
+        }
+        return this.delete(this.lastMessageRef);
+    }
+
+    // =========================================================================
+    // POV OPERATIONS (STORY GRAMMAR)
+    // =========================================================================
+
+    /**
+     * Switch point of view to a different device.
+     */
+    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Split POV - show multiple devices simultaneously.
+     */
+    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
+        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // RESERVED SIGNALS (DRAMA EVENTS)
+    // =========================================================================
+
+    /**
+     * Add a reaction to a message.
+     */
+    react(ref: MessageHandle, actor: string, emoji: string): this {
+        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Screenshot taken notification (drama!).
+     */
+    screenshot(): this {
+        const op: ScreenshotTakenOp = {
+            kind: "ScreenshotTaken",
+            conversationId: this.conversationId
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Missed call event.
+     */
+    missedCall(actor: string, callType?: "voice" | "video"): this {
+        const op: MissedCallOp = {
+            kind: "MissedCall",
+            actor,
+            conversationId: this.conversationId,
+            callType,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // CONCURRENT
+    // =========================================================================
+
+    /**
+     * Execute operations concurrently across multiple tracks.
+     */
+    concurrent(tracks: TrackFn[]): this {
+        const trackOps: SceneOp[][] = tracks.map((fn) => {
+            const trackBuilder = this.createTrackBuilder();
+            fn(trackBuilder);
+            return trackBuilder.getOps();
+        });
+
+        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Create a track builder for concurrent operations.
+     */
+    private createTrackBuilder(): TrackBuilderImpl {
+        return new TrackBuilderImpl(
+            this.deviceId,
+            this.appId,
+            this.conversationId,
+            () => ++this.messageCounter
+        );
+    }
+
+    /**
+     * Get collected operations.
+     */
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+
+/**
+ * Track builder implementation for concurrent operations.
+ */
+class TrackBuilderImpl implements TrackBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private readonly getNextId: () => number;
+
+    constructor(
+        deviceId: string,
+        appId: string,
+        conversationId: string,
+        getNextId: () => number
+    ) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+        this.getNextId = getNextId;
+    }
+
+    wait(duration: string): this {
+        this.ops.push({ kind: "Wait", duration });
+        return this;
+    }
+
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                ops.push({ kind: "TypingStart", actor, conversationId });
+                ops.push({ kind: "Wait", duration });
+                ops.push({ kind: "TypingEnd", actor, conversationId });
+            },
+        };
+    }
+
+    send(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "SendMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+````
+
 ## File: packages/episodes/src/examples/camera-showcase.json
 ````json
 {
@@ -9520,6 +9766,408 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
         }
     ]
 }
+````
+
+## File: packages/ir/src/index.ts
+````typescript
+/**
+ * @tokovo/ir
+ * 
+ * Intermediate Representations for Tokovo DSL.
+ * 
+ * Three layers:
+ * - Scene IR: Semantic truth (no frames, no platform)
+ * - Timeline IR: Execution contract (frames, deterministic)
+ * - Semantic: Story intelligence (mood, intensity, pacing)
+ */
+
+// Semantic types (import first - used by scene.ts)
+export * from "./semantic";
+
+// Trace model
+export * from "./trace";
+
+// Scene IR (semantic)
+export * from "./scene";
+
+// Timeline IR (execution)
+export * from "./timeline";
+
+// Ordering contract
+export * from "./ordering";
+
+// Validation
+export * from "./validate";
+
+// Narrative constraints
+export * from "./constraints";
+````
+
+## File: packages/ir/src/scene.ts
+````typescript
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
+
+// =============================================================================
+// DURATION
+// =============================================================================
+
+/**
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
+ */
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
+    }
+
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
+    }
+}
+
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
+
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
+    return {
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
+    };
+}
+
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+
+    /** For voice messages */
+    voiceDuration?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS (CORE)
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface ReactionAddedOp {
+    readonly kind: "ReactionAdded";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    // Core operations
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Reserved signals
+    | ReactionAddedOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping, story rhythm, and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+}
+
+/**
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
+ */
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
+    readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
+    readonly durationInFrames?: number;
+}
+````
+
+## File: packages/ir/tsconfig.tsbuildinfo
+````
+{"root":["./src/constraints.ts","./src/index.ts","./src/ordering.ts","./src/scene.ts","./src/semantic.ts","./src/timeline.ts","./src/trace.ts","./src/validate.ts"],"version":"5.9.3"}
 ````
 
 ## File: packages/renderer/src/layout/strategies/lockscreen.ts

@@ -959,6 +959,8 @@ This enables:
 | Timeline IR types | `packages/ir/src/timeline.ts` |
 | Trace model | `packages/ir/src/trace.ts` |
 | Ordering contract | `packages/ir/src/ordering.ts` |
+| Semantic types | `packages/ir/src/semantic.ts` |
+| Constraints | `packages/ir/src/constraints.ts` |
 | Author DSL | `packages/dsl/src/author/` |
 | episode() entry | `packages/dsl/src/author/episode-builder.ts` |
 | Compiler passes | `packages/compiler/src/passes/` |
@@ -968,6 +970,138 @@ This enables:
 
 ---
 
+## Narrative OS Extensions
+
+These extensions transform Tokovo from a video generator into a **Programmable Narrative Operating System**.
+
+### Episode Configuration
+
+Episode-level brain for AI and DirectorLite:
+
+```typescript
+ep.config({
+  fps: 30,
+  pacing: "slow-burn",      // slow-burn | normal | chaotic | explosive
+  director: "auto",         // auto | manual | hybrid
+  aspectRatio: "9:16",      // 9:16 | 1:1 | 16:9
+  theme: "dark",
+  tags: ["breakup", "drama"]
+})
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pacing` | string | Overall pacing style |
+| `director` | string | Camera control mode |
+| `aspectRatio` | string | Output aspect ratio |
+| `theme` | string | Visual theme |
+| `tags` | string[] | Content categorization |
+| `targetDuration` | string | Duration hint for AI |
+
+### Semantic Annotations
+
+Attach meaning to messages for camera intelligence and AI:
+
+```typescript
+b.receive("Bob", "We need to talk.", {
+  mood: "tense",
+  intensity: 0.7,
+  secrecy: "high",
+  urgency: 0.8,
+  subtext: "breakup-coming"
+})
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `mood` | Mood | calm, tense, angry, sad, anxious, excited, confused, neutral |
+| `intensity` | 0-1 | Emotional intensity |
+| `secrecy` | string | low, medium, high |
+| `urgency` | 0-1 | How urgent is this? |
+| `intimacy` | 0-1 | How intimate? |
+| `subtext` | string | AI/human hint |
+| `tags` | string[] | Custom tags |
+
+### Beat Metadata
+
+Story rhythm per beat:
+
+```typescript
+d.beat("climax", { tempo: "fast", emotionalPeak: true }, b => {
+  // Operations...
+})
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tempo` | string | slow, medium, fast |
+| `emotionalPeak` | boolean | Is this a peak moment? |
+| `release` | boolean | Is this tension release? |
+| `function` | string | setup, buildup, climax, release, resolution |
+
+### POV Primitives
+
+Camera as story grammar:
+
+```typescript
+// Switch to another device's perspective
+b.pov("BobPhone", "crossfade")  // cut | crossfade | wipe
+
+// Split screen showing multiple devices
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal")  // horizontal | vertical | pip
+```
+
+### Reserved Signal Operations
+
+Future-proof drama events:
+
+```typescript
+// Add reaction to message
+b.react(msg, "me", "❤️")
+
+// Screenshot taken notification (drama!)
+b.screenshot()
+
+// Missed call
+b.missedCall("Bob", "video")  // voice | video
+```
+
+**All reserved signals in Scene IR:**
+
+| Operation | Description |
+|-----------|-------------|
+| `ReactionAddedOp` | Emoji reaction to message |
+| `VoiceNoteSentOp` | Voice note sent |
+| `VoiceNoteReceivedOp` | Voice note received |
+| `MissedCallOp` | Missed voice/video call |
+| `OnlineStatusChangedOp` | online/offline/typing |
+| `ScreenshotTakenOp` | Screenshot taken alert |
+| `BlockedUserOp` | User blocked |
+
+### Narrative Constraints
+
+Validation rules that ensure story correctness:
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+
+const result = validateConstraints(sceneIR);
+if (!result.valid) {
+  console.log("Violations:", result.violations);
+}
+```
+
+**Constraint checks:**
+
+| Check | Severity |
+|-------|----------|
+| Typing end without start | Error |
+| POV switch to non-existent device | Error |
+| SplitPOV with invalid devices | Error |
+| Invalid semantic values (intensity > 1) | Error |
+| Unclosed typing indicators | Warning |
+
+---
 # Device System
 
 ## Device Profiles
