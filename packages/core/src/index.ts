@@ -8,3 +8,5 @@ export * from "./typeGuards";
 export * from "./eventUtils";
 export * from "./plugin";
 export * from "./transitions";
+export * from "./director-lite";
+

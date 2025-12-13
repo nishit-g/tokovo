@@ -605,12 +605,26 @@ export interface ChatMessageLayout {
     height: number;
     opacity: number;
     translateY: number;
+    // Rect for director targeting (x, y relative to content, not viewport)
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
 }
 
 export interface TypingLayout {
     y: number;
     height: number;
     opacity: number;
+    // Rect for director targeting
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
 }
 
 export interface ChatLayoutMeta {

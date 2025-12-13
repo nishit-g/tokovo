@@ -1,7 +1,7 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { whatsappPsychoticDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -16,6 +16,8 @@ import "@tokovo/devices";
  * - Screenshot alerts
  * - Voice notes with waveforms
  * - Edited messages
+ * 
+ * DirectorLite enabled - camera will automatically react to events
  */
 export const WhatsappPsychoticDemoVideo: React.FC = () => {
     const frame = useCurrentFrame();
@@ -23,6 +25,12 @@ export const WhatsappPsychoticDemoVideo: React.FC = () => {
 
     // Episode data
     const episode = whatsappPsychoticDemo as { initialWorld: WorldState; events: TimelineEvent[] };
+
+    // Create event index once for DirectorLite (memoized)
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
 
     // Replay world state at current time
     const world = replay(episode.initialWorld, episode.events, t);
@@ -51,8 +59,12 @@ export const WhatsappPsychoticDemoVideo: React.FC = () => {
                     world={world}
                     t={t}
                     debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={true}  // Enable debug logging for testing
                 />
             </div>
         </AbsoluteFill>
     );
 };
+
