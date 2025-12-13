@@ -38,6 +38,11 @@ The content is organized as follows:
 apps/
   docs/
     pages/
+      apps/
+        _meta.json
+        building-apps.mdx
+        index.mdx
+        whatsapp.mdx
       architecture/
         _meta.json
         boundaries.mdx
@@ -87,6 +92,7 @@ apps/
         index.mdx
         world-state.mdx
       _meta.json
+      changelog.mdx
       glossary.mdx
       index.mdx
       verification.mdx
@@ -116,6 +122,8 @@ apps/
       NotificationCallDemoVideo.tsx
       Root.tsx
       Video.tsx
+      WhatsappMediaShowcaseVideo.tsx
+      WhatsappProductionDemoVideo.tsx
       WhatsappPsychoticDemoVideo.tsx
     package.json
     remotion.config.ts
@@ -162,9 +170,17 @@ packages/
       components/
         icons/
           index.tsx
+        ChatsListScreen.tsx
         Header.tsx
         index.ts
+        iOSStatusBar.tsx
+        MediaBubbles.tsx
         MessageBubble.tsx
+      config/
+        index.ts
+        layout-config.ts
+        polish.ts
+        whatsapp-theme.ts
       index.ts
       plugin.ts
       runtime.ts
@@ -231,6 +247,10 @@ packages/
   dsl/
     examples/
       breakup-01.dsl.ts
+      multi-pov-demo.dsl.ts
+      production-demo.dsl.ts
+      toxic-ex-drama.dsl.ts
+      whatsapp-media-showcase.dsl.ts
     src/
       author/
         beat-builder.ts
@@ -252,6 +272,7 @@ packages/
         multi-pov-demo.json
         notification-call-demo.json
         whatsapp-breakup-01.json
+        whatsapp-production-demo.json
         whatsapp-psychotic-demo.json
       index.ts
       schema.ts
@@ -314,6 +335,554 @@ turbo.json
 ```
 
 # Files
+
+## File: apps/docs/pages/apps/_meta.json
+````json
+{
+    "index": "Overview",
+    "whatsapp": "WhatsApp",
+    "building-apps": "Building Apps"
+}
+````
+
+## File: apps/docs/pages/apps/building-apps.mdx
+````
+---
+title: Building Apps
+description: Architecture guide for building production-ready messaging apps
+---
+
+# Building Apps
+
+This guide explains the architecture for building production-ready messaging apps in Tokovo. Follow this pattern to create apps that are:
+
+- ✅ Pixel-perfect UI
+- ✅ Fully configurable
+- ✅ DSL-compatible
+- ✅ Remotion-compatible
+
+---
+
+## Architecture Overview
+
+```
+packages/apps-{appname}/
+├── src/
+│   ├── config/                 # Configuration layer
+│   │   ├── layout-config.ts    # Heights, scroll, animations
+│   │   ├── theme.ts            # Colors, typography, styling
+│   │   └── index.ts            # Exports
+│   ├── components/             # UI components
+│   │   ├── Header.tsx
+│   │   ├── MessageBubble.tsx
+│   │   ├── MediaBubbles.tsx
+│   │   └── index.ts
+│   ├── runtime.ts              # Event reducer
+│   ├── plugin.ts               # App registration
+│   ├── ui.tsx                  # Main renderer
+│   └── index.ts
+├── package.json
+└── tsconfig.json
+```
+
+---
+
+## Step 1: Layout Configuration
+
+Create configurable height calculations:
+
+```typescript
+// config/layout-config.ts
+export interface MessageLayoutConfig {
+    heights: {
+        text: { base: number; lineHeight: number; charsPerLine: number };
+        image: { default: number; withCaption: number };
+        video: { default: number; withCaption: number };
+        voice: { default: number };
+        // ... app-specific types
+    };
+    additions: {
+        reaction: number;
+        reply: number;
+        senderName: number;
+        timestamp: number;
+    };
+    scroll: {
+        lockToBottom: boolean;
+        smoothScrollDuration: number;
+        easing: "linear" | "easeOut" | "easeInOut";
+    };
+    animation: {
+        messageAppearDuration: number;
+        messageAppearOffset: number;
+    };
+    spacing: {
+        gap: number;
+        topPadding: number;
+        bottomPadding: number;
+        bubbleMargin: number;
+        bubbleMaxWidth: number;
+    };
+}
+
+export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
+    // ... defaults
+};
+
+export function calculateMessageHeight(
+    msg: MessageForHeight,
+    config: MessageLayoutConfig
+): number {
+    // Calculate based on type + add-ons
+}
+```
+
+---
+
+## Step 2: Theme Configuration
+
+Create configurable theming:
+
+```typescript
+// config/theme.ts
+export interface AppTheme {
+    mode: "light" | "dark";
+    colors: {
+        bubble: { myBubble: string; otherBubble: string; /* ... */ };
+        header: { background: string; title: string; /* ... */ };
+        input: { background: string; field: string; /* ... */ };
+        system: { accent: string; /* ... */ };
+    };
+    typography: {
+        message: FontConfig;
+        timestamp: FontConfig;
+        // ...
+    };
+    bubble: {
+        borderRadius: number;
+        maxWidth: number;
+        showTail: boolean;
+    };
+}
+
+export const LIGHT_THEME: AppTheme = { /* ... */ };
+export const DARK_THEME: AppTheme = { /* ... */ };
+```
+
+---
+
+## Step 3: Runtime Reducer
+
+Handle timeline events:
+
+```typescript
+// runtime.ts
+export function reduce(
+    world: WorldState,
+    event: TimelineEvent,
+    t: number
+): WorldState {
+    if (event.kind !== "APP" || event.appId !== APP_ID) {
+        return world;
+    }
+    
+    switch (event.type) {
+        case "MESSAGE_RECEIVED":
+            return handleMessageReceived(world, event, t);
+        case "MESSAGE_SENT":
+            return handleMessageSent(world, event, t);
+        case "TYPING_START":
+            return handleTypingStart(world, event);
+        case "TYPING_END":
+            return handleTypingEnd(world, event);
+        // ... app-specific events
+        default:
+            return world;
+    }
+}
+```
+
+---
+
+## Step 4: UI Components
+
+Create Remotion-compatible components:
+
+```tsx
+// components/MessageBubble.tsx
+export function MessageBubble({ 
+    msg, 
+    layout,
+    theme 
+}: MessageBubbleProps) {
+    // Use frame-based animations (no CSS @keyframes!)
+    const frame = useCurrentFrame();
+    
+    // Apply layout from config
+    const opacity = layout.opacity;
+    const translateY = layout.translateY;
+    
+    // Use theme colors
+    const bgColor = msg.from === "me" 
+        ? theme.colors.bubble.myBubble 
+        : theme.colors.bubble.otherBubble;
+    
+    return (
+        <div style={{
+            backgroundColor: bgColor,
+            borderRadius: theme.bubble.borderRadius,
+            opacity,
+            transform: `translateY(${translateY}px)`
+        }}>
+            {/* Content */}
+        </div>
+    );
+}
+```
+
+### Remotion Rules
+
+> [!IMPORTANT]
+> - **No CSS @keyframes** - Use `useCurrentFrame()` for animations
+> - **No useEffect** - All state from props
+> - **Deterministic** - Same props = same render
+
+---
+
+## Step 5: Main UI Renderer
+
+Compose the complete app:
+
+```tsx
+// ui.tsx
+export function AppUI({ 
+    world,
+    layout,
+    theme,
+    deviceId,
+    conversationId
+}: AppUIProps) {
+    const conversation = world.conversations[conversationId];
+    
+    return (
+        <div style={{ 
+            height: "100%",
+            backgroundColor: theme.colors.system.chatBackground
+        }}>
+            <Header 
+                contactName={conversation.name}
+                theme={theme}
+            />
+            <MessageList
+                messages={conversation.messages}
+                layout={layout}
+                theme={theme}
+            />
+            <InputArea theme={theme} />
+        </div>
+    );
+}
+```
+
+---
+
+## Step 6: Plugin Registration
+
+Register the app:
+
+```typescript
+// plugin.ts
+import { registerAppReducer } from "@tokovo/core";
+import { reduce } from "./runtime";
+
+const APP_ID = "app_myapp";
+
+registerAppReducer(APP_ID, {
+    reduce,
+    initialState: {
+        screen: "chat",
+        conversationId: null,
+    },
+});
+```
+
+---
+
+## Step 7: DSL Integration
+
+Add DSL methods for your app:
+
+```typescript
+// In packages/dsl/src/author/beat-builder.ts
+class BeatBuilder {
+    // App-specific methods
+    sendSticker(packId: string, stickerId: string): MessageHandle {
+        // Push app-specific operation
+    }
+    
+    reactTo(msg: MessageHandle, emoji: string): void {
+        // Add reaction operation
+    }
+}
+```
+
+---
+
+## Checklist for New Apps
+
+- [ ] Create package structure (`packages/apps-{name}`)
+- [ ] Define layout config with all message types
+- [ ] Define theme with light/dark modes
+- [ ] Implement runtime reducer
+- [ ] Create UI components (Remotion-compatible)
+- [ ] Register plugin
+- [ ] Add DSL methods for app-specific features
+- [ ] Document in `apps/docs/pages/apps/{name}.mdx`
+- [ ] Add to `apps/docs/pages/apps/_meta.json`
+
+---
+
+## Reference Implementation
+
+See the WhatsApp app for a complete reference:
+
+- [layout-config.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/config/layout-config.ts)
+- [whatsapp-theme.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/config/whatsapp-theme.ts)
+- [runtime.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/runtime.ts)
+- [ui.tsx](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/ui.tsx)
+````
+
+## File: apps/docs/pages/apps/index.mdx
+````
+---
+title: Apps
+description: Built-in messaging apps for Tokovo
+---
+
+# Apps
+
+Tokovo includes production-ready, pixel-perfect messaging app UIs.
+
+## Available Apps
+
+| App | Description | Platform |
+|-----|-------------|----------|
+| [WhatsApp](/apps/whatsapp) | iOS/Android chat with all message types | iOS, Android |
+| iMessage | iOS Messages with reactions and effects | iOS |
+| Instagram | DMs with seen receipts and stories | iOS |
+
+## App Architecture
+
+Each app consists of:
+
+1. **Runtime Reducer** - Handles timeline events and updates state
+2. **UI Components** - React components for rendering
+3. **Layout Config** - Configurable heights, spacing, animations
+4. **Theme** - Colors, typography, bubble styling
+
+## Using Apps in DSL
+
+```typescript
+ep.device("MyPhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_alice", { name: "Alice", avatar: "alice.png" });
+    
+    d.beat("conversation", b => {
+        b.receive("Alice", "Hey!");
+        b.send("Hi there!");
+    });
+});
+```
+
+## Configuration
+
+Apps are fully configurable via theme and layout configs:
+
+```typescript
+import { 
+    DEFAULT_LAYOUT_CONFIG,
+    iOS_WHATSAPP_LIGHT 
+} from "@tokovo/apps-whatsapp/config";
+
+// Customize heights
+const customLayout = {
+    ...DEFAULT_LAYOUT_CONFIG,
+    heights: {
+        ...DEFAULT_LAYOUT_CONFIG.heights,
+        image: { default: 500, withCaption: 580 }
+    }
+};
+```
+````
+
+## File: apps/docs/pages/apps/whatsapp.mdx
+````
+---
+title: WhatsApp
+description: WhatsApp iOS/Android configuration and usage
+---
+
+# WhatsApp
+
+Production-ready WhatsApp iOS and Android UI with all message types.
+
+## Features
+
+- ✅ Text messages with read receipts
+- ✅ Voice notes with waveform animation
+- ✅ Images with captions
+- ✅ Videos with thumbnails
+- ✅ GIFs (inline playback)
+- ✅ Typing indicators
+- ✅ System messages
+- ✅ Chats list screen
+- 🔜 Reactions
+- 🔜 Reply/quote UI
+- 🔜 Link previews
+
+## DSL Usage
+
+### Basic Chat
+
+```typescript
+d.beat("conversation", b => {
+    b.receive("Alice", "Hey, how are you?");
+    b.send("I'm good! Just got home");
+    b.receiveVoice("Alice", 8);  // 8 second voice note
+});
+```
+
+### Media Messages
+
+```typescript
+d.beat("media-exchange", b => {
+    // Image with caption
+    b.receiveImage("Alice", "https://example.com/photo.jpg", {
+        caption: "Look at this sunset! 🌅",
+        height: 450
+    });
+    
+    // Video with thumbnail
+    b.sendVideo("https://example.com/clip.mp4", 15, {
+        thumbnailUrl: "https://example.com/thumb.jpg"
+    });
+    
+    // GIF
+    b.sendGif("https://media.giphy.com/media/abc/giphy.gif");
+});
+```
+
+## Layout Configuration
+
+Configure message heights, scroll behavior, and animations:
+
+```typescript
+import { MessageLayoutConfig } from "@tokovo/apps-whatsapp/config";
+
+const config: MessageLayoutConfig = {
+    heights: {
+        text: { base: 88, lineHeight: 66, charsPerLine: 26 },
+        image: { default: 400, withCaption: 480 },
+        video: { default: 400, withCaption: 480 },
+        gif: { default: 300 },
+        voice: { default: 180 },
+        system: { default: 80 },
+        deleted: { default: 100 }
+    },
+    additions: {
+        reaction: 36,
+        reply: 90,
+        linkPreview: 180,
+        senderName: 45,
+        timestamp: 40
+    },
+    scroll: {
+        lockToBottom: true,
+        smoothScrollDuration: 15,
+        easing: "easeOut",
+        newMessageScrollDelay: 3,
+        overscanTop: 200,
+        overscanBottom: 200,
+        maxScrollSpeed: 60
+    },
+    animation: {
+        messageAppearDuration: 12,
+        messageAppearOffset: 30,
+        typingPulseDuration: 45,
+        voiceWaveformSpeed: 2
+    },
+    spacing: {
+        gap: 12,
+        topPadding: 48,
+        bottomPadding: 120,
+        bubbleMargin: 36,
+        bubbleMaxWidth: 0.78
+    }
+};
+```
+
+## Theme Configuration
+
+Customize colors and typography:
+
+```typescript
+import { WhatsAppTheme, iOS_WHATSAPP_LIGHT } from "@tokovo/apps-whatsapp/config";
+
+// Use built-in themes
+const lightTheme = iOS_WHATSAPP_LIGHT;
+const darkTheme = iOS_WHATSAPP_DARK;
+
+// Or customize
+const customTheme: WhatsAppTheme = {
+    mode: "light",
+    colors: {
+        bubble: {
+            myBubble: "#DCF8C6",      // Your message background
+            otherBubble: "#FFFFFF",   // Others' message background
+            myText: "#000000",
+            otherText: "#000000",
+            timestamp: "#8E8E93",
+            link: "#007AFF"
+        },
+        header: {
+            background: "#F6F6F6",
+            title: "#000000",
+            subtitle: "#8E8E93",
+            icons: "#007AFF"
+        },
+        system: {
+            accent: "#25D366",         // WhatsApp green
+            readReceipt: "#53BDEB",    // Blue checkmarks
+            chatBackground: "#E5DDD5"  // Chat wallpaper
+        }
+        // ... see full theme interface
+    },
+    typography: {
+        message: { family: "SF Pro", size: 51, weight: 400, lineHeight: 66 }
+        // ...
+    },
+    bubble: {
+        borderRadius: 54,
+        maxWidth: 0.78,
+        showTail: true
+    }
+};
+```
+
+## Components
+
+| Component | Description |
+|-----------|-------------|
+| `Header` | Contact name, avatar, status, call buttons |
+| `MessageBubble` | Text messages with tails |
+| `ImageMessageBubble` | Photos with captions |
+| `VideoMessageBubble` | Videos with thumbnails and play overlay |
+| `GifMessageBubble` | Animated GIFs |
+| `VoiceMessageBubble` | Voice notes with waveform |
+| `TypingBubble` | Animated typing indicator |
+| `SystemMessage` | Group events, time separators |
+| `ChatsListScreen` | Main chat list with search |
+````
 
 ## File: apps/docs/pages/architecture/boundaries.mdx
 ````
@@ -2785,179 +3354,6 @@ for (const signal of signals) {
     "semantic": "Semantic Annotations",
     "pov": "POV Control"
 }
-````
-
-## File: apps/docs/pages/dsl/beat.mdx
-````
-# Beat Builder
-
-The Beat Builder provides fluent methods for defining actions within a beat.
-
-## Core Actions
-
-### wait(duration)
-
-Pause for a duration. Advances the cursor but emits no runtime event.
-
-```typescript
-b.wait("2s");     // 2 seconds
-b.wait("500ms");  // 500 milliseconds
-b.wait("30frames"); // 30 frames
-```
-
-### typing(actor).for(duration)
-
-Show typing indicator for a duration. Expands to:
-- `TypingStart`
-- `Wait`
-- `TypingEnd`
-
-```typescript
-b.typing("Bob").for("1.5s");
-```
-
-### send(text, options?)
-
-Send a message from the device owner.
-
-```typescript
-b.send("Hello!");
-
-// With semantic annotations
-b.send("Are you okay?", {
-  mood: "anxious",
-  intensity: 0.6
-});
-```
-
-### receive(actor, text, options?)
-
-Receive a message from someone else.
-
-```typescript
-const msg = b.receive("Bob", "We need to talk.");
-
-// With semantic annotations
-b.receive("Bob", "I'm sorry.", {
-  mood: "sad",
-  intensity: 0.9,
-  subtext: "breakup"
-});
-```
-
-### read(ref)
-
-Mark a message as read.
-
-```typescript
-const msg = b.receive("Bob", "Hello");
-b.wait("0.5s");
-b.read(msg);
-```
-
-### delete(ref)
-
-Delete a message.
-
-```typescript
-const msg = b.send("Sent by mistake");
-b.wait("1s");
-b.delete(msg);
-```
-
-### readLast() / deleteLast()
-
-Operate on the last message.
-
-```typescript
-b.receive("Bob", "Hello");
-b.wait("0.5s");
-b.readLast();
-```
-
-## Concurrent Operations
-
-Run multiple tracks in parallel:
-
-```typescript
-b.concurrent([
-  t => t.typing("Bob").for("2s"),
-  t => t.wait("0.5s").receive("Bob", "Message during typing!")
-]);
-```
-
-The cursor advances to `max(track ends)`.
-
-## Drama Events
-
-### react(ref, actor, emoji)
-
-Add a reaction to a message.
-
-```typescript
-const msg = b.receive("Bob", "I love you");
-b.react(msg, "me", "❤️");
-```
-
-### screenshot()
-
-Show "screenshot taken" notification.
-
-```typescript
-b.screenshot();  // Drama!
-```
-
-### missedCall(actor, type?)
-
-Show missed call event.
-
-```typescript
-b.missedCall("Bob");           // Voice call
-b.missedCall("Bob", "video");  // Video call
-```
-
-## POV Control
-
-### pov(deviceId, transition?)
-
-Switch point of view.
-
-```typescript
-b.pov("BobPhone");              // Cut (default)
-b.pov("BobPhone", "crossfade"); // Smooth transition
-b.pov("BobPhone", "wipe");      // Wipe transition
-```
-
-### splitPov(devices, layout?)
-
-Show multiple devices.
-
-```typescript
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-b.splitPov(["AlicePhone", "BobPhone"], "vertical");
-b.splitPov(["AlicePhone", "BobPhone"], "pip");
-```
-
-## Complete Reference
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `wait(duration)` | Pause | `this` |
-| `typing(actor).for(duration)` | Typing indicator | `void` |
-| `typingStart(actor)` | Start typing (manual) | `this` |
-| `typingEnd(actor)` | End typing | `this` |
-| `send(text, options?)` | Send message | `MessageHandle` |
-| `receive(actor, text, options?)` | Receive message | `MessageHandle` |
-| `read(ref)` | Mark as read | `this` |
-| `readLast()` | Read last message | `this` |
-| `delete(ref)` | Delete message | `this` |
-| `deleteLast()` | Delete last | `this` |
-| `concurrent(tracks)` | Parallel ops | `this` |
-| `pov(deviceId, transition?)` | Switch POV | `this` |
-| `splitPov(devices, layout?)` | Split screen | `this` |
-| `react(ref, actor, emoji)` | Add reaction | `this` |
-| `screenshot()` | Screenshot alert | `this` |
-| `missedCall(actor, type?)` | Missed call | `this` |
 ````
 
 ## File: apps/docs/pages/dsl/device.mdx
@@ -7100,6 +7496,94 @@ const zoom = world.camera.scale;
 - Is randomness seeded? **Yes** — Camera shake uses seeds
 ````
 
+## File: apps/docs/pages/changelog.mdx
+````
+---
+title: Changelog
+description: What's new in Tokovo
+---
+
+# Changelog
+
+All notable changes to Tokovo are documented here.
+
+---
+
+## [Unreleased] - 2025-12-13
+
+### 🚀 New Features
+
+#### DSL Media Messages
+New fluent API methods for rich media messages:
+
+```typescript
+// Images with captions
+b.sendImage("https://example.com/photo.jpg", { caption: "Check this out!" });
+b.receiveImage("Alice", "https://example.com/sunset.jpg", { height: 450 });
+
+// Videos with thumbnails
+b.sendVideo("https://example.com/video.mp4", 15, { 
+    thumbnailUrl: "https://example.com/thumb.jpg",
+    caption: "Watch this!"
+});
+b.receiveVideo("Bob", "https://example.com/clip.mp4", 30);
+
+// GIFs from Giphy/Tenor
+b.sendGif("https://media.giphy.com/media/abc123/giphy.gif");
+b.receiveGif("Alice", "https://media.giphy.com/media/xyz789/giphy.gif");
+
+// Voice notes with duration
+b.sendVoice(8);  // 8 seconds
+b.receiveVoice("Bob", 15);  // 15 seconds
+```
+
+#### Auto-Timing
+Messages now automatically calculate timing for natural flow:
+- **No explicit `wait()` needed** between messages
+- Configurable via `skipAutoTiming: true` option
+- Smart defaults: 0.5s send delay, 0.8s receive delay
+- Media-specific: 1.5s for images, video duration for videos
+
+#### WhatsApp Media Components
+Production-ready UI components:
+- `ImageMessageBubble` - Images with captions, timestamps
+- `VideoMessageBubble` - Video thumbnails with play overlays
+- `GifMessageBubble` - Inline GIF display
+- `ChatsListScreen` - Main chat list with search, tabs
+
+#### Remotion-Compatible Animations
+- `TypingBubble` now uses frame-based animation (works in renders)
+- No more CSS `@keyframes` issues in video exports
+
+### 📝 API Changes
+
+#### Scene IR
+New operation types:
+- `SendImageOp`, `ReceiveImageOp`
+- `SendVideoOp`, `ReceiveVideoOp`  
+- `SendGifOp`, `ReceiveGifOp`
+- `SendVoiceOp`, `ReceiveVoiceOp`
+
+#### Timeline IR
+Extended message types:
+- Added `video` and `gif` to message type union
+- Added `imageUrl`, `videoUrl`, `gifUrl`, `thumbnailUrl`, `caption`, `duration`, `height` fields
+
+#### Compiler
+- Auto-timing pass in `time-lowering.ts`
+- Configurable `AUTO_TIMING` constants
+
+---
+
+## [0.1.0] - Initial Release
+
+- Core engine with WorldState
+- WhatsApp, Instagram, iMessage apps
+- DSL for episode authoring
+- DirectorLite for camera automation
+- Multi-device POV support
+````
+
 ## File: apps/docs/pages/glossary.mdx
 ````
 # Glossary
@@ -8156,6 +8640,394 @@ export const NotificationCallDemoVideo: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/WhatsappMediaShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * WhatsApp Media Showcase Episode
+ * 
+ * Demonstrates all new DSL media features:
+ * - Image messages with captions
+ * - Video messages with thumbnails
+ * - GIF messages
+ * - Voice notes
+ * - Auto-timing (no explicit waits needed)
+ */
+
+function createMediaShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            MyPhone: {
+                id: "MyPhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            }
+        },
+        conversations: {
+            dm_bestie: {
+                id: "dm_bestie",
+                type: "dm" as const,
+                name: "Best Friend 💕",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            }
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bestie",
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "MyPhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "MyPhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Timeline events
+    const events: TimelineEvent[] = [
+        // Wait 1s
+        // Beat 1: Opening text
+        {
+            at: 30,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_1",
+                type: "text",
+                text: "Hey! Look what I found!",
+                status: "delivered",
+            },
+        } as any,
+
+        // Beat 2: Receive image with caption
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_2",
+                type: "image",
+                imageUrl: "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600",
+                caption: "Sunset from the beach 🏖️",
+                status: "delivered",
+            },
+        } as any,
+
+        // Beat 3: React with text
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bestie",
+            message: {
+                id: "msg_3",
+                type: "text",
+                text: "OMG that's beautiful! 😍",
+                status: "sent",
+            },
+        } as any,
+
+        // Beat 4: Send GIF reaction
+        {
+            at: 150,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bestie",
+            message: {
+                id: "msg_4",
+                type: "gif",
+                gifUrl: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+                status: "sent",
+            },
+        } as any,
+
+        // Beat 5: Receive video
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_5",
+                type: "video",
+                videoUrl: "https://example.com/beach-waves.mp4",
+                thumbnailUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                caption: "Watch this wave! 🌊",
+                duration: 15,
+                status: "delivered",
+            },
+        } as any,
+
+        // Beat 6: Typing before voice note
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+        } as any,
+
+        {
+            at: 300,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+        } as any,
+
+        // Receive voice note
+        {
+            at: 310,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_6",
+                type: "voice",
+                duration: 8,
+                status: "delivered",
+            },
+        } as any,
+
+        // Beat 7: Reply with voice
+        {
+            at: 400,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bestie",
+            message: {
+                id: "msg_7",
+                type: "voice",
+                duration: 5,
+                status: "sent",
+            },
+        } as any,
+
+        // Beat 8: Final exchange
+        {
+            at: 480,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_8",
+                type: "text",
+                text: "That GIF is perfect 😂",
+                status: "delivered",
+            },
+        } as any,
+
+        {
+            at: 520,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bestie",
+            message: {
+                id: "msg_9",
+                type: "text",
+                text: "Haha yeah! Miss you! 💕",
+                status: "sent",
+            },
+        } as any,
+
+        // Beat 9: Final image
+        {
+            at: 580,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bestie",
+            from: "Best Friend 💕",
+            message: {
+                id: "msg_10",
+                type: "image",
+                imageUrl: "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600",
+                status: "delivered",
+            },
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const WhatsappMediaShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createMediaShowcaseEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={true}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
+## File: apps/video-runner/src/WhatsappProductionDemoVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { whatsappProductionDemo } from "@tokovo/episodes";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * WhatsappProductionDemoVideo
+ * Showcases all new WhatsApp features:
+ * - Image messages with captions
+ * - Video messages with thumbnails
+ * - GIF messages from Giphy
+ * - Typing indicators (Remotion frame-based animation)
+ * - Voice notes with waveforms
+ * - Read receipts
+ * 
+ * DirectorLite enabled - camera will automatically react to events
+ */
+export const WhatsappProductionDemoVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Episode data - cast through unknown to handle JSON structure
+    const episode = whatsappProductionDemo as unknown as {
+        meta: { fps: number; durationInFrames: number };
+        initialWorld: WorldState;
+        events: TimelineEvent[]
+    };
+
+    // Create event index once for DirectorLite (memoized)
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
 ## File: apps/video-runner/remotion.config.ts
 ````typescript
 import { Config } from "@remotion/cli/config";
@@ -9028,6 +9900,554 @@ export const PauseIcon = () => (
 );
 ````
 
+## File: packages/apps-whatsapp/src/components/ChatsListScreen.tsx
+````typescript
+import React from "react";
+import { getAppConfig, Platform, getTokens } from "@tokovo/core";
+
+// ============================================================================
+// CHATS LIST SCREEN - Main WhatsApp iOS Screen
+// ============================================================================
+
+export interface ChatPreview {
+    id: string;
+    name: string;
+    avatar?: string;
+    lastMessage: string;
+    time: string;
+    unreadCount?: number;
+    isPinned?: boolean;
+    isMuted?: boolean;
+    isArchived?: boolean;
+    isTyping?: boolean;
+    isGroup?: boolean;
+}
+
+interface ChatsListScreenProps {
+    chats: ChatPreview[];
+    archivedCount?: number;
+    platform?: Platform;
+    onChatSelect?: (chatId: string) => void;
+}
+
+export const ChatsListScreen: React.FC<ChatsListScreenProps> = ({
+    chats,
+    archivedCount = 0,
+    platform = "ios",
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    // Separate pinned and regular chats
+    const pinnedChats = chats.filter(c => c.isPinned && !c.isArchived);
+    const regularChats = chats.filter(c => !c.isPinned && !c.isArchived);
+
+    return (
+        <div style={{
+            backgroundColor: config.headerBg,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: tokens.fontFamily,
+        }}>
+            {/* Status Bar */}
+            <StatusBar />
+
+            {/* Navigation Header */}
+            <ChatsHeader />
+
+            {/* Search Bar */}
+            <SearchBar platform={platform} />
+
+            {/* Chat List */}
+            <div style={{
+                flex: 1,
+                overflow: "hidden",
+                backgroundColor: config.headerBg,
+            }}>
+                {/* Archived Section */}
+                {archivedCount > 0 && (
+                    <ArchivedSection count={archivedCount} platform={platform} />
+                )}
+
+                {/* Pinned Chats */}
+                {pinnedChats.map(chat => (
+                    <ChatRow key={chat.id} chat={chat} platform={platform} />
+                ))}
+
+                {/* Regular Chats */}
+                {regularChats.map(chat => (
+                    <ChatRow key={chat.id} chat={chat} platform={platform} />
+                ))}
+            </div>
+
+            {/* Tab Bar */}
+            <TabBar platform={platform} activeTab="chats" />
+        </div>
+    );
+};
+
+// ============================================================================
+// STATUS BAR
+// ============================================================================
+
+const StatusBar: React.FC = () => (
+    <div style={{
+        height: 144,
+        padding: "36px 45px 12px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "flex-end",
+        backgroundColor: "#F6F6F6",
+    }}>
+        {/* Time */}
+        <span style={{
+            fontSize: 45,
+            fontWeight: 600,
+            color: "#000",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        }}>
+            9:41
+        </span>
+
+        {/* Right icons */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 15,
+        }}>
+            {/* Signal */}
+            <svg width="54" height="30" viewBox="0 0 18 10" fill="#000">
+                <rect x="0" y="6" width="3" height="4" rx="1" />
+                <rect x="5" y="4" width="3" height="6" rx="1" />
+                <rect x="10" y="2" width="3" height="8" rx="1" />
+                <rect x="15" y="0" width="3" height="10" rx="1" />
+            </svg>
+            {/* WiFi */}
+            <svg width="48" height="36" viewBox="0 0 16 12" fill="#000">
+                <path d="M8 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM4.5 7a5 5 0 0 1 7 0M2 4.5a8.5 8.5 0 0 1 12 0" stroke="#000" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            </svg>
+            {/* Battery */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 3,
+            }}>
+                <div style={{
+                    width: 66,
+                    height: 30,
+                    border: "2px solid #000",
+                    borderRadius: 6,
+                    padding: 3,
+                }}>
+                    <div style={{
+                        width: "80%",
+                        height: "100%",
+                        backgroundColor: "#000",
+                        borderRadius: 3,
+                    }} />
+                </div>
+                <div style={{
+                    width: 6,
+                    height: 12,
+                    backgroundColor: "#000",
+                    borderRadius: "0 2px 2px 0",
+                }} />
+            </div>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// NAVIGATION HEADER
+// ============================================================================
+
+const ChatsHeader: React.FC = () => (
+    <div style={{
+        padding: "12px 45px",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        backgroundColor: "#F6F6F6",
+    }}>
+        {/* Edit button */}
+        <span style={{
+            fontSize: 51,
+            color: "#007AFF",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        }}>
+            Edit
+        </span>
+
+        {/* Title */}
+        <span style={{
+            fontSize: 60,
+            fontWeight: 700,
+            color: "#000",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+            letterSpacing: -1,
+        }}>
+            Chats
+        </span>
+
+        {/* Action icons */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 48,
+        }}>
+            {/* Camera icon */}
+            <svg width="72" height="60" viewBox="0 0 24 20" fill="none">
+                <path d="M4 5C2.9 5 2 5.9 2 7V17C2 18.1 2.9 19 4 19H20C21.1 19 22 18.1 22 17V7C22 5.9 21.1 5 20 5H17L15 2H9L7 5H4ZM12 15C9.8 15 8 13.2 8 11C8 8.8 9.8 7 12 7C14.2 7 16 8.8 16 11C16 13.2 14.2 15 12 15Z" fill="#007AFF" />
+            </svg>
+            {/* New chat icon */}
+            <svg width="66" height="60" viewBox="0 0 22 20" fill="none">
+                <path d="M21 1L1 8L9 11M21 1L14 19L9 11M21 1L9 11" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// SEARCH BAR
+// ============================================================================
+
+interface SearchBarProps {
+    platform: Platform;
+}
+
+const SearchBar: React.FC<SearchBarProps> = ({ platform }) => {
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            padding: "12px 30px 18px",
+            backgroundColor: "#F6F6F6",
+        }}>
+            <div style={{
+                backgroundColor: "rgba(118, 118, 128, 0.12)",
+                borderRadius: 30,
+                padding: "24px 36px",
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+            }}>
+                {/* Search icon */}
+                <svg width="48" height="48" viewBox="0 0 20 20" fill="none">
+                    <circle cx="9" cy="9" r="7" stroke="#8E8E93" strokeWidth="2" />
+                    <path d="M14 14L18 18" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <span style={{
+                    fontSize: 48,
+                    color: "#8E8E93",
+                    fontFamily: tokens.fontFamily,
+                }}>
+                    Ask Meta AI or Search
+                </span>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// ARCHIVED SECTION
+// ============================================================================
+
+interface ArchivedSectionProps {
+    count: number;
+    platform: Platform;
+}
+
+const ArchivedSection: React.FC<ArchivedSectionProps> = ({ count, platform }) => {
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "30px 45px",
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+        }}>
+            {/* Archive icon */}
+            <div style={{
+                width: 90,
+                height: 90,
+                backgroundColor: "#8E8E93",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginRight: 36,
+            }}>
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="#FFFFFF">
+                    <path d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5z" />
+                </svg>
+            </div>
+            <div style={{ flex: 1 }}>
+                <span style={{
+                    fontSize: 48,
+                    color: "#000",
+                    fontFamily: tokens.fontFamily,
+                }}>
+                    Archived
+                </span>
+            </div>
+            <span style={{
+                fontSize: 42,
+                color: "#8E8E93",
+                fontFamily: tokens.fontFamily,
+            }}>
+                {count}
+            </span>
+            {/* Chevron */}
+            <svg width="30" height="48" viewBox="0 0 10 16" fill="none" style={{ marginLeft: 12 }}>
+                <path d="M2 2L8 8L2 14" stroke="#C7C7CC" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+        </div>
+    );
+};
+
+// ============================================================================
+// CHAT ROW
+// ============================================================================
+
+interface ChatRowProps {
+    chat: ChatPreview;
+    platform: Platform;
+}
+
+const ChatRow: React.FC<ChatRowProps> = ({ chat, platform }) => {
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "24px 45px",
+            borderBottom: "1px solid rgba(0,0,0,0.08)",
+            backgroundColor: "#FFFFFF",
+        }}>
+            {/* Avatar */}
+            <div style={{
+                width: 144,
+                height: 144,
+                borderRadius: "50%",
+                background: chat.avatar
+                    ? `url(${chat.avatar}) center/cover`
+                    : chat.isGroup
+                        ? "linear-gradient(135deg, #25D366 0%, #128C7E 100%)"
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                marginRight: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: 54,
+                fontWeight: 600,
+                flexShrink: 0,
+            }}>
+                {!chat.avatar && (chat.isGroup ? "👥" : chat.name.charAt(0).toUpperCase())}
+            </div>
+
+            {/* Content */}
+            <div style={{
+                flex: 1,
+                minWidth: 0,
+                display: "flex",
+                flexDirection: "column",
+                gap: 9,
+            }}>
+                {/* Name row */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                }}>
+                    <span style={{
+                        fontSize: 51,
+                        fontWeight: 500,
+                        color: "#000",
+                        fontFamily: tokens.fontFamily,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                    }}>
+                        {chat.name}
+                    </span>
+                    <span style={{
+                        fontSize: 39,
+                        color: chat.unreadCount ? "#007AFF" : "#8E8E93",
+                        fontFamily: tokens.fontFamily,
+                        flexShrink: 0,
+                        marginLeft: 18,
+                    }}>
+                        {chat.time}
+                    </span>
+                </div>
+
+                {/* Message preview row */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                }}>
+                    <span style={{
+                        fontSize: 45,
+                        color: "#8E8E93",
+                        fontFamily: tokens.fontFamily,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        flex: 1,
+                    }}>
+                        {chat.isTyping ? "typing..." : chat.lastMessage}
+                    </span>
+
+                    {/* Right indicators */}
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 18,
+                        marginLeft: 18,
+                        flexShrink: 0,
+                    }}>
+                        {/* Muted icon */}
+                        {chat.isMuted && (
+                            <svg width="42" height="42" viewBox="0 0 24 24" fill="#8E8E93">
+                                <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51A8.796 8.796 0 0021 12c0-4.28-3-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06a8.99 8.99 0 003.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z" />
+                            </svg>
+                        )}
+
+                        {/* Pinned icon */}
+                        {chat.isPinned && (
+                            <svg width="36" height="36" viewBox="0 0 24 24" fill="#8E8E93">
+                                <path d="M16 12V4h1V2H7v2h1v8l-2 2v2h5.2v6h1.6v-6H18v-2l-2-2z" />
+                            </svg>
+                        )}
+
+                        {/* Unread badge */}
+                        {chat.unreadCount && chat.unreadCount > 0 && (
+                            <div style={{
+                                minWidth: 60,
+                                height: 60,
+                                backgroundColor: "#25D366",
+                                borderRadius: 30,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                padding: "0 18px",
+                            }}>
+                                <span style={{
+                                    fontSize: 39,
+                                    fontWeight: 600,
+                                    color: "#FFFFFF",
+                                    fontFamily: tokens.fontFamily,
+                                }}>
+                                    {chat.unreadCount > 99 ? "99+" : chat.unreadCount}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* Chevron */}
+                        <svg width="24" height="42" viewBox="0 0 8 14" fill="none">
+                            <path d="M1 1L7 7L1 13" stroke="#C7C7CC" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// TAB BAR
+// ============================================================================
+
+interface TabBarProps {
+    platform: Platform;
+    activeTab: "status" | "calls" | "communities" | "chats" | "settings";
+}
+
+const TabBar: React.FC<TabBarProps> = ({ platform, activeTab }) => {
+    const tabs = [
+        { id: "status", label: "Status", icon: StatusIcon },
+        { id: "calls", label: "Calls", icon: CallsIcon },
+        { id: "communities", label: "Communities", icon: CommunitiesIcon },
+        { id: "chats", label: "Chats", icon: ChatsIcon },
+        { id: "settings", label: "Settings", icon: SettingsIcon },
+    ] as const;
+
+    return (
+        <div style={{
+            height: 246,
+            backgroundColor: "#F6F6F6",
+            borderTop: "1px solid rgba(0,0,0,0.08)",
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-around",
+            paddingTop: 24,
+        }}>
+            {tabs.map(tab => {
+                const isActive = activeTab === tab.id;
+                const IconComponent = tab.icon;
+
+                return (
+                    <div key={tab.id} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 9,
+                        width: 180,
+                    }}>
+                        <IconComponent active={isActive} />
+                        <span style={{
+                            fontSize: 33,
+                            color: isActive ? "#007AFF" : "#8E8E93",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        }}>
+                            {tab.label}
+                        </span>
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// Tab Icons
+const StatusIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke={active ? "#007AFF" : "#8E8E93"} strokeWidth="2" strokeDasharray="4 2" />
+    </svg>
+);
+
+const CallsIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "#007AFF" : "#8E8E93"}>
+        <path d="M20.01 15.38c-1.23 0-2.42-.2-3.53-.56a.977.977 0 00-1.01.24l-1.57 1.97c-2.83-1.35-5.48-3.9-6.89-6.83l1.95-1.66c.27-.28.35-.67.24-1.02-.37-1.11-.56-2.3-.56-3.53 0-.54-.45-.99-.99-.99H4.19C3.65 3 3 3.24 3 3.99 3 13.28 10.73 21 20.01 21c.71 0 .99-.63.99-1.18v-3.45c0-.54-.45-.99-.99-.99z" />
+    </svg>
+);
+
+const CommunitiesIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "#007AFF" : "#8E8E93"}>
+        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
+    </svg>
+);
+
+const ChatsIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "#007AFF" : "#8E8E93"}>
+        <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z" />
+    </svg>
+);
+
+const SettingsIcon: React.FC<{ active: boolean }> = ({ active }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "#007AFF" : "#8E8E93"}>
+        <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" />
+    </svg>
+);
+
+export default ChatsListScreen;
+````
+
 ## File: packages/apps-whatsapp/src/components/Header.tsx
 ````typescript
 /**
@@ -9136,20 +10556,655 @@ export const Header: React.FC<HeaderProps> = ({
 };
 ````
 
-## File: packages/apps-whatsapp/src/components/index.ts
+## File: packages/apps-whatsapp/src/components/iOSStatusBar.tsx
 ````typescript
 /**
- * WhatsApp Components Index
+ * iOS Status Bar Component
  * 
- * Re-exports all WhatsApp UI components for easy importing.
+ * Pixel-perfect iOS 17+ status bar with:
+ * - Dynamic Island (iPhone 14 Pro+) or notch
+ * - Time, signal, WiFi, battery indicators
+ * - Works without Remotion dependency
  */
 
-// Icons
-export * from "./icons";
+import React from "react";
 
-// Components
-export { Header, type HeaderProps } from "./Header";
-export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
+// =============================================================================
+// STATUS BAR ICONS (Pixel-Perfect iOS 17 Style)
+// =============================================================================
+
+interface StatusBarIconsProps {
+    signalStrength?: number;  // 0-4 bars
+    wifiStrength?: number;    // 0-3 bars
+    batteryPercent?: number;  // 0-100
+    isCharging?: boolean;
+    darkMode?: boolean;
+}
+
+// Cellular signal bars
+const CellularIcon: React.FC<{ strength?: number; color?: string }> = ({
+    strength = 4,
+    color = "#000"
+}) => (
+    <svg width="51" height="36" viewBox="0 0 17 12" fill={color}>
+        <rect x="0" y="8" width="3" height="4" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
+        <rect x="4" y="5" width="3" height="7" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <rect x="8" y="2" width="3" height="10" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
+        <rect x="12" y="0" width="3" height="12" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
+    </svg>
+);
+
+// WiFi icon
+const WifiIcon: React.FC<{ strength?: number; color?: string }> = ({
+    strength = 3,
+    color = "#000"
+}) => (
+    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5">
+        <path d="M8 10.5a1 1 0 100-2 1 1 0 000 2z" fill={color} opacity={strength >= 1 ? 1 : 0.3} />
+        <path d="M5.5 8c1.4-1.4 3.6-1.4 5 0" opacity={strength >= 2 ? 1 : 0.3} />
+        <path d="M3 5.5c2.8-2.8 7.2-2.8 10 0" opacity={strength >= 3 ? 1 : 0.3} />
+    </svg>
+);
+
+// Battery icon with percent
+const BatteryIcon: React.FC<{
+    percent?: number;
+    isCharging?: boolean;
+    color?: string
+}> = ({
+    percent = 100,
+    isCharging = false,
+    color = "#000"
+}) => {
+        const fillWidth = Math.max(0, Math.min(100, percent)) / 100 * 21;
+        const fillColor = percent <= 20 ? "#FF3B30" : (isCharging ? "#30D158" : color);
+
+        return (
+            <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+                {/* Battery body */}
+                <rect x="0" y="0" width="22" height="12" rx="2.5" stroke={color} strokeWidth="1" />
+                {/* Battery fill */}
+                <rect x="1" y="1" width={fillWidth} height="10" rx="1.5" fill={fillColor} />
+                {/* Battery cap */}
+                <rect x="23" y="3.5" width="2" height="5" rx="0.5" fill={color} opacity="0.4" />
+                {/* Charging bolt */}
+                {isCharging && (
+                    <path d="M12 2L9 6h3l-1 4 4-5h-3l1-3z" fill="#fff" />
+                )}
+            </svg>
+        );
+    };
+
+// =============================================================================
+// iOS STATUS BAR COMPONENT
+// =============================================================================
+
+export interface iOSStatusBarProps {
+    time?: string;
+    signalStrength?: number;
+    wifiStrength?: number;
+    batteryPercent?: number;
+    isCharging?: boolean;
+    carrier?: string;
+    darkMode?: boolean;
+    hasDynamicIsland?: boolean;  // iPhone 14 Pro+ style
+}
+
+export const iOSStatusBar: React.FC<iOSStatusBarProps> = ({
+    time,
+    signalStrength = 4,
+    wifiStrength = 3,
+    batteryPercent = 85,
+    isCharging = false,
+    carrier = "",
+    darkMode = false,
+    hasDynamicIsland = true,
+}) => {
+    // Default time
+    const displayTime = time || "9:41";
+    const color = darkMode ? "#FFFFFF" : "#000000";
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 144,  // iOS status bar height at 3x
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 54px",
+            zIndex: 1000,
+            backgroundColor: "transparent",
+        }}>
+            {/* Left section - Time (or Dynamic Island placeholder) */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+            }}>
+                <span style={{
+                    fontSize: 51,
+                    fontWeight: 600,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    color,
+                    letterSpacing: "-0.5px",
+                }}>
+                    {displayTime}
+                </span>
+            </div>
+
+            {/* Center - Dynamic Island (iPhone 14 Pro+) */}
+            {hasDynamicIsland && (
+                <div style={{
+                    width: 360,
+                    height: 111,
+                    backgroundColor: "#000000",
+                    borderRadius: 60,
+                    position: "absolute",
+                    left: "50%",
+                    top: 36,
+                    transform: "translateX(-50%)",
+                }} />
+            )}
+
+            {/* Right section - Icons */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 15,
+            }}>
+                <CellularIcon strength={signalStrength} color={color} />
+                <WifiIcon strength={wifiStrength} color={color} />
+                <BatteryIcon
+                    percent={batteryPercent}
+                    isCharging={isCharging}
+                    color={color}
+                />
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// AUTHENTIC WHATSAPP BUBBLE TAIL (SVG)
+// =============================================================================
+
+interface BubbleTailProps {
+    isMe: boolean;
+    color: string;
+}
+
+/**
+ * Authentic WhatsApp iOS bubble tail
+ * The tail is a curved triangle that appears at the top of the first message
+ */
+export const BubbleTail: React.FC<BubbleTailProps> = ({ isMe, color }) => {
+    if (isMe) {
+        // Right-side tail (my messages)
+        return (
+            <svg
+                width="24"
+                height="30"
+                viewBox="0 0 8 10"
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    right: -8,
+                }}
+            >
+                <path
+                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
+                    fill={color}
+                />
+            </svg>
+        );
+    } else {
+        // Left-side tail (other's messages)
+        return (
+            <svg
+                width="24"
+                height="30"
+                viewBox="0 0 8 10"
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: -8,
+                    transform: "scaleX(-1)",
+                }}
+            >
+                <path
+                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
+                    fill={color}
+                />
+            </svg>
+        );
+    }
+};
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export default iOSStatusBar;
+````
+
+## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
+````typescript
+import React from "react";
+import { getAppConfig, Platform, getTokens } from "@tokovo/core";
+
+// ============================================================================
+// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
+// ============================================================================
+
+interface ImageMessageBubbleProps {
+    imageUrl: string;
+    caption?: string;
+    isMe: boolean;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
+    imageUrl,
+    caption,
+    isMe,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            maxWidth: 600,
+        }}>
+            {/* Image container */}
+            <div style={{
+                position: "relative",
+                borderRadius: caption ? 0 : config.bubbleRadius,
+                overflow: "hidden",
+            }}>
+                <img
+                    src={imageUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Timestamp overlay on image (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    {/* Timestamp + Read receipts */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// VIDEO MESSAGE BUBBLE - With Play Overlay
+// ============================================================================
+
+interface VideoMessageBubbleProps {
+    thumbnailUrl: string;
+    duration: number; // in seconds
+    caption?: string;
+    isMe: boolean;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number;
+    platform?: Platform;
+}
+
+export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
+    thumbnailUrl,
+    duration,
+    caption,
+    isMe,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            maxWidth: 600,
+        }}>
+            {/* Video thumbnail container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+            }}>
+                <img
+                    src={thumbnailUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Play button overlay */}
+                {!isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 120,
+                        height: 120,
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </div>
+                )}
+
+                {/* Duration badge */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
+                    </svg>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {formatDuration(duration)}
+                    </span>
+                </div>
+
+                {/* Timestamp overlay (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+
+                {/* Progress bar during playback */}
+                {isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 6,
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                    }}>
+                        <div style={{
+                            height: "100%",
+                            width: `${(playProgress / duration) * 100}%`,
+                            backgroundColor: "#25D366",
+                        }} />
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
+// ============================================================================
+
+interface GifMessageBubbleProps {
+    gifUrl: string;
+    width?: number;
+    height?: number;
+    isMe: boolean;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
+    gifUrl,
+    isMe,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            maxWidth: 500,
+        }}>
+            {/* GIF container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+            }}>
+                <img
+                    src={gifUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 500,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* GIF badge */}
+                <div style={{
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                }}>
+                    <span style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                        letterSpacing: 1,
+                    }}>
+                        GIF
+                    </span>
+                </div>
+
+                {/* Timestamp overlay */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    right: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {timestamp}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} light />}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// SHARED: Double Check Icon for read receipts
+// ============================================================================
+
+const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
+    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 ````
 
 ## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
@@ -9240,6 +11295,756 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
         </div>
     );
 };
+````
+
+## File: packages/apps-whatsapp/src/config/layout-config.ts
+````typescript
+/**
+ * WhatsApp Layout Configuration
+ * 
+ * Configurable message heights, scroll behavior, and animations.
+ * All values are in device pixels (3x scale for retina).
+ */
+
+// =============================================================================
+// MESSAGE HEIGHT CONFIGURATION
+// =============================================================================
+
+export interface TextHeightConfig {
+    /** Base height (padding + timestamp) */
+    base: number;
+    /** Height per line of text */
+    lineHeight: number;
+    /** Characters per line before wrap */
+    charsPerLine: number;
+}
+
+export interface MediaHeightConfig {
+    /** Default height without caption */
+    default: number;
+    /** Height when caption is present */
+    withCaption: number;
+}
+
+export interface HeightAdditions {
+    /** Additional height for reaction bar */
+    reaction: number;
+    /** Additional height for quoted/reply message */
+    reply: number;
+    /** Additional height for link preview */
+    linkPreview: number;
+    /** Additional height for sender name in groups */
+    senderName: number;
+    /** Height for timestamp row */
+    timestamp: number;
+}
+
+export interface HeightConfig {
+    text: TextHeightConfig;
+    image: MediaHeightConfig;
+    video: MediaHeightConfig;
+    gif: { default: number };
+    voice: { default: number };
+    system: { default: number };
+    deleted: { default: number };
+}
+
+// =============================================================================
+// SCROLL CONFIGURATION
+// =============================================================================
+
+export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
+
+export interface ScrollConfig {
+    /** Keep viewport at bottom (newest messages visible) */
+    lockToBottom: boolean;
+    /** Duration of scroll animation in frames */
+    smoothScrollDuration: number;
+    /** Easing function for scroll animation */
+    easing: EasingFunction;
+    /** Delay before scrolling to new message (frames) */
+    newMessageScrollDelay: number;
+    /** Extra pixels to render above viewport */
+    overscanTop: number;
+    /** Extra pixels to render below viewport */
+    overscanBottom: number;
+    /** Maximum scroll speed (pixels per frame) */
+    maxScrollSpeed: number;
+}
+
+// =============================================================================
+// ANIMATION CONFIGURATION
+// =============================================================================
+
+export interface AnimationConfig {
+    /** Duration for message appear animation (frames) */
+    messageAppearDuration: number;
+    /** Slide offset for message appear (pixels) */
+    messageAppearOffset: number;
+    /** Typing bubble pulse duration (frames per cycle) */
+    typingPulseDuration: number;
+    /** Voice note waveform animation speed */
+    voiceWaveformSpeed: number;
+}
+
+// =============================================================================
+// SPACING CONFIGURATION
+// =============================================================================
+
+export interface SpacingConfig {
+    /** Gap between messages */
+    gap: number;
+    /** Padding at top of chat */
+    topPadding: number;
+    /** Padding at bottom of chat */
+    bottomPadding: number;
+    /** Horizontal margin for bubbles */
+    bubbleMargin: number;
+    /** Maximum bubble width as percentage of viewport */
+    bubbleMaxWidth: number;
+}
+
+// =============================================================================
+// COMPLETE LAYOUT CONFIG
+// =============================================================================
+
+export interface MessageLayoutConfig {
+    heights: HeightConfig;
+    additions: HeightAdditions;
+    scroll: ScrollConfig;
+    animation: AnimationConfig;
+    spacing: SpacingConfig;
+}
+
+// =============================================================================
+// DEFAULT CONFIGURATION (iOS WhatsApp)
+// =============================================================================
+
+export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
+    heights: {
+        text: {
+            base: 88,           // Padding + timestamp
+            lineHeight: 66,     // 22px * 3 for retina
+            charsPerLine: 26,   // Characters before wrap
+        },
+        image: {
+            default: 400,
+            withCaption: 480,
+        },
+        video: {
+            default: 400,
+            withCaption: 480,
+        },
+        gif: {
+            default: 300,
+        },
+        voice: {
+            default: 180,
+        },
+        system: {
+            default: 80,
+        },
+        deleted: {
+            default: 100,
+        },
+    },
+    additions: {
+        reaction: 36,       // One row of reactions
+        reply: 90,          // Quoted message preview
+        linkPreview: 180,   // Link preview card
+        senderName: 45,     // Group sender name
+        timestamp: 40,      // Timestamp row
+    },
+    scroll: {
+        lockToBottom: true,
+        smoothScrollDuration: 15,    // 0.5s at 30fps
+        easing: "easeOut",
+        newMessageScrollDelay: 3,    // 0.1s delay
+        overscanTop: 200,
+        overscanBottom: 200,
+        maxScrollSpeed: 60,          // 2px per frame at 30fps
+    },
+    animation: {
+        messageAppearDuration: 12,   // 0.4s at 30fps
+        messageAppearOffset: 30,     // Slide 30px
+        typingPulseDuration: 45,     // 1.5s per cycle
+        voiceWaveformSpeed: 2,
+    },
+    spacing: {
+        gap: 12,
+        topPadding: 48,
+        bottomPadding: 120,
+        bubbleMargin: 36,
+        bubbleMaxWidth: 0.78,
+    },
+};
+
+// =============================================================================
+// HEIGHT CALCULATION FUNCTION
+// =============================================================================
+
+export interface MessageForHeight {
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
+    text?: string;
+    caption?: string;
+    from?: string;
+    reactions?: unknown[];
+    replyTo?: unknown;
+    linkPreview?: unknown;
+}
+
+/**
+ * Calculate the height of a message based on its type and content.
+ * All message types are handled with configurable values.
+ */
+export function calculateMessageHeight(
+    msg: MessageForHeight,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const { heights, additions } = config;
+
+    let height = 0;
+    const msgType = msg.type || "text";
+
+    // Base height by type
+    switch (msgType) {
+        case "text":
+            const text = msg.text || "";
+            const lines = Math.max(1, Math.ceil(text.length / heights.text.charsPerLine));
+            height = heights.text.base + (lines * heights.text.lineHeight);
+            break;
+
+        case "image":
+            height = msg.caption ? heights.image.withCaption : heights.image.default;
+            break;
+
+        case "video":
+            height = msg.caption ? heights.video.withCaption : heights.video.default;
+            break;
+
+        case "gif":
+            height = heights.gif.default;
+            break;
+
+        case "voice":
+            height = heights.voice.default;
+            break;
+
+        case "system":
+            height = heights.system.default;
+            break;
+
+        case "deleted":
+            height = heights.deleted.default;
+            break;
+
+        default:
+            // Unknown type - use text formula
+            const unknownText = msg.text || "";
+            const unknownLines = Math.max(1, Math.ceil(unknownText.length / heights.text.charsPerLine));
+            height = heights.text.base + (unknownLines * heights.text.lineHeight);
+    }
+
+    // Add-ons for future features
+    if (msg.reactions && msg.reactions.length > 0) {
+        height += additions.reaction;
+    }
+
+    if (msg.replyTo) {
+        height += additions.reply;
+    }
+
+    if (msg.linkPreview) {
+        height += additions.linkPreview;
+    }
+
+    // Sender name for group chats (non-"me" senders)
+    if (msg.from && msg.from !== "me" && msg.from !== "system" && msgType !== "system") {
+        height += additions.senderName;
+    }
+
+    return height;
+}
+
+// =============================================================================
+// EASING FUNCTIONS
+// =============================================================================
+
+export function applyEasing(progress: number, easing: EasingFunction): number {
+    switch (easing) {
+        case "linear":
+            return progress;
+        case "easeOut":
+            return 1 - Math.pow(1 - progress, 3);
+        case "easeInOut":
+            return progress < 0.5
+                ? 4 * progress * progress * progress
+                : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        case "spring":
+            // Slight overshoot
+            const c4 = (2 * Math.PI) / 3;
+            return progress === 0
+                ? 0
+                : progress === 1
+                    ? 1
+                    : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+        default:
+            return progress;
+    }
+}
+````
+
+## File: packages/apps-whatsapp/src/config/polish.ts
+````typescript
+/**
+ * WhatsApp Pixel-Perfect Polish
+ * 
+ * CSS-in-JS values for authentic WhatsApp iOS styling.
+ * All values at 3x retina scale.
+ */
+
+// =============================================================================
+// AUTHENTIC BUBBLE STYLING (iOS WhatsApp)
+// =============================================================================
+
+export const BUBBLE_POLISH = {
+    // My messages (right side, green)
+    my: {
+        backgroundColor: "#E7FFDB",
+        borderRadius: {
+            topLeft: 54,
+            topRight: 18,      // Smaller for tail effect
+            bottomLeft: 54,
+            bottomRight: 54,
+        },
+        padding: {
+            vertical: 27,
+            horizontal: 36,
+        },
+        shadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+    },
+
+    // Other's messages (left side, white)
+    other: {
+        backgroundColor: "#FFFFFF",
+        borderRadius: {
+            topLeft: 18,       // Smaller for tail effect
+            topRight: 54,
+            bottomLeft: 54,
+            bottomRight: 54,
+        },
+        padding: {
+            vertical: 27,
+            horizontal: 36,
+        },
+        shadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+    },
+};
+
+// =============================================================================
+// TYPOGRAPHY (iOS WhatsApp - SF Pro)
+// =============================================================================
+
+export const TYPOGRAPHY_POLISH = {
+    message: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: 51,           // 17px * 3
+        lineHeight: 69,         // 23px * 3
+        fontWeight: 400,
+        color: "#111B21",
+    },
+
+    timestamp: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: 33,           // 11px * 3
+        lineHeight: 39,
+        fontWeight: 400,
+        color: "#667781",
+    },
+
+    senderName: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: 39,           // 13px * 3
+        lineHeight: 48,
+        fontWeight: 600,
+        color: "#1F7AEB",       // Blue for sender names in groups
+    },
+
+    headerTitle: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: 51,
+        lineHeight: 60,
+        fontWeight: 600,
+        color: "#000000",
+    },
+
+    headerSubtitle: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontSize: 36,
+        lineHeight: 42,
+        fontWeight: 400,
+        color: "#8E8E93",
+    },
+};
+
+// =============================================================================
+// SPACING (iOS WhatsApp)
+// =============================================================================
+
+export const SPACING_POLISH = {
+    bubbleMargin: 36,           // From edge
+    bubbleGap: 6,               // Between messages from same sender
+    bubbleGroupGap: 18,         // Between message groups
+    timestampGap: 9,            // Between timestamp and checkmarks
+    headerHeight: 270,          // Header height at 3x
+    inputHeight: 156,           // Input area height at 3x
+    statusBarHeight: 144,       // iOS status bar at 3x
+    safeAreaBottom: 102,        // Home indicator area
+};
+
+// =============================================================================
+// ICONS (iOS WhatsApp)
+// =============================================================================
+
+export const ICONS_POLISH = {
+    checkmarks: {
+        size: 42,               // Double check size
+        colorSent: "#8E8E93",   // Gray for sent
+        colorRead: "#53BDEB",   // Blue for read
+    },
+
+    headerIcons: {
+        size: 66,               // Video/call icons
+        color: "#007AFF",       // iOS blue
+        spacing: 48,            // Between icons
+    },
+};
+
+// =============================================================================
+// ANIMATION PRESETS
+// =============================================================================
+
+export const ANIMATION_POLISH = {
+    messageAppear: {
+        duration: 12,           // Frames (0.4s at 30fps)
+        offset: 30,             // Pixels to slide
+        easing: "cubic-bezier(0.25, 0.1, 0.25, 1)",
+    },
+
+    typingBubble: {
+        dotSize: 24,
+        dotGap: 12,
+        cycleDuration: 42,      // Frames per cycle
+    },
+
+    scrollSmooth: {
+        duration: 15,           // Frames
+        easing: "ease-out",
+    },
+};
+````
+
+## File: packages/apps-whatsapp/src/config/whatsapp-theme.ts
+````typescript
+/**
+ * WhatsApp Theme Configuration
+ * 
+ * Configurable colors, typography, and bubble styling.
+ * Supports light/dark mode and custom themes.
+ */
+
+// =============================================================================
+// COLOR CONFIGURATION
+// =============================================================================
+
+export interface BubbleColors {
+    /** Background color for own messages */
+    myBubble: string;
+    /** Background color for others' messages */
+    otherBubble: string;
+    /** Text color for own messages */
+    myText: string;
+    /** Text color for others' messages */
+    otherText: string;
+    /** Timestamp color */
+    timestamp: string;
+    /** Link color */
+    link: string;
+}
+
+export interface HeaderColors {
+    /** Header background */
+    background: string;
+    /** Header title text */
+    title: string;
+    /** Header subtitle (status) */
+    subtitle: string;
+    /** Icon color */
+    icons: string;
+}
+
+export interface InputColors {
+    /** Input area background */
+    background: string;
+    /** Input field background */
+    field: string;
+    /** Input field border */
+    border: string;
+    /** Placeholder text */
+    placeholder: string;
+    /** Icon color */
+    icons: string;
+    /** Send button color */
+    sendButton: string;
+}
+
+export interface SystemColors {
+    /** WhatsApp accent green */
+    accent: string;
+    /** Read receipt blue */
+    readReceipt: string;
+    /** Unread badge background */
+    unreadBadge: string;
+    /** Online indicator */
+    online: string;
+    /** Chat background / wallpaper */
+    chatBackground: string;
+    /** System message bubble */
+    systemBubble: string;
+    /** System message text */
+    systemText: string;
+}
+
+export interface ThemeColors {
+    bubble: BubbleColors;
+    header: HeaderColors;
+    input: InputColors;
+    system: SystemColors;
+}
+
+// =============================================================================
+// TYPOGRAPHY CONFIGURATION
+// =============================================================================
+
+export interface FontConfig {
+    family: string;
+    size: number;
+    weight: number;
+    lineHeight: number;
+}
+
+export interface ThemeTypography {
+    /** Message text */
+    message: FontConfig;
+    /** Message timestamp */
+    timestamp: FontConfig;
+    /** Header title */
+    headerTitle: FontConfig;
+    /** Header subtitle */
+    headerSubtitle: FontConfig;
+    /** System message */
+    systemMessage: FontConfig;
+    /** Input field */
+    input: FontConfig;
+}
+
+// =============================================================================
+// BUBBLE CONFIGURATION
+// =============================================================================
+
+export interface BubbleConfig {
+    /** Border radius for bubbles */
+    borderRadius: number;
+    /** Maximum width as percentage of container */
+    maxWidth: number;
+    /** Horizontal padding inside bubble */
+    horizontalPadding: number;
+    /** Vertical padding inside bubble */
+    verticalPadding: number;
+    /** Show bubble tail */
+    showTail: boolean;
+    /** Tail size */
+    tailSize: number;
+}
+
+// =============================================================================
+// COMPLETE THEME
+// =============================================================================
+
+export interface WhatsAppTheme {
+    mode: "light" | "dark";
+    colors: ThemeColors;
+    typography: ThemeTypography;
+    bubble: BubbleConfig;
+}
+
+// =============================================================================
+// iOS WHATSAPP LIGHT THEME
+// =============================================================================
+
+export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
+    mode: "light",
+    colors: {
+        bubble: {
+            myBubble: "#DCF8C6",
+            otherBubble: "#FFFFFF",
+            myText: "#000000",
+            otherText: "#000000",
+            timestamp: "#8E8E93",
+            link: "#007AFF",
+        },
+        header: {
+            background: "#F6F6F6",
+            title: "#000000",
+            subtitle: "#8E8E93",
+            icons: "#007AFF",
+        },
+        input: {
+            background: "#F6F6F6",
+            field: "#FFFFFF",
+            border: "#E5E5EA",
+            placeholder: "#8E8E93",
+            icons: "#007AFF",
+            sendButton: "#25D366",
+        },
+        system: {
+            accent: "#25D366",
+            readReceipt: "#53BDEB",
+            unreadBadge: "#25D366",
+            online: "#25D366",
+            chatBackground: "#E5DDD5",
+            systemBubble: "rgba(0,0,0,0.05)",
+            systemText: "#8E8E93",
+        },
+    },
+    typography: {
+        message: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 51,      // 17px * 3 for retina
+            weight: 400,
+            lineHeight: 66,
+        },
+        timestamp: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 33,      // 11px * 3
+            weight: 400,
+            lineHeight: 36,
+        },
+        headerTitle: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 51,
+            weight: 600,
+            lineHeight: 60,
+        },
+        headerSubtitle: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 36,
+            weight: 400,
+            lineHeight: 42,
+        },
+        systemMessage: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 39,
+            weight: 400,
+            lineHeight: 48,
+        },
+        input: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 48,
+            weight: 400,
+            lineHeight: 60,
+        },
+    },
+    bubble: {
+        borderRadius: 54,
+        maxWidth: 0.78,
+        horizontalPadding: 36,
+        verticalPadding: 24,
+        showTail: true,
+        tailSize: 24,
+    },
+};
+
+// =============================================================================
+// iOS WHATSAPP DARK THEME
+// =============================================================================
+
+export const iOS_WHATSAPP_DARK: WhatsAppTheme = {
+    mode: "dark",
+    colors: {
+        bubble: {
+            myBubble: "#005C4B",
+            otherBubble: "#1F2C34",
+            myText: "#FFFFFF",
+            otherText: "#FFFFFF",
+            timestamp: "#8696A0",
+            link: "#53BDEB",
+        },
+        header: {
+            background: "#1F2C34",
+            title: "#FFFFFF",
+            subtitle: "#8696A0",
+            icons: "#53BDEB",
+        },
+        input: {
+            background: "#1F2C34",
+            field: "#2A3942",
+            border: "#2A3942",
+            placeholder: "#8696A0",
+            icons: "#8696A0",
+            sendButton: "#00A884",
+        },
+        system: {
+            accent: "#00A884",
+            readReceipt: "#53BDEB",
+            unreadBadge: "#00A884",
+            online: "#00A884",
+            chatBackground: "#0B141A",
+            systemBubble: "rgba(255,255,255,0.05)",
+            systemText: "#8696A0",
+        },
+    },
+    typography: iOS_WHATSAPP_LIGHT.typography, // Same typography
+    bubble: {
+        borderRadius: 48,
+        maxWidth: 0.78,
+        horizontalPadding: 36,
+        verticalPadding: 24,
+        showTail: true,
+        tailSize: 24,
+    },
+};
+
+// =============================================================================
+// THEME HELPERS
+// =============================================================================
+
+export function getTheme(mode: "light" | "dark" = "light"): WhatsAppTheme {
+    return mode === "dark" ? iOS_WHATSAPP_DARK : iOS_WHATSAPP_LIGHT;
+}
+
+/** Create custom theme by merging with base */
+export function createTheme(
+    base: WhatsAppTheme,
+    overrides: Partial<WhatsAppTheme>
+): WhatsAppTheme {
+    return {
+        ...base,
+        ...overrides,
+        colors: {
+            ...base.colors,
+            ...overrides.colors,
+        },
+        typography: {
+            ...base.typography,
+            ...overrides.typography,
+        },
+        bubble: {
+            ...base.bubble,
+            ...overrides.bubble,
+        },
+    };
+}
 ````
 
 ## File: packages/apps-whatsapp/src/plugin.ts
@@ -9490,233 +12295,6 @@ import { TimelineOp, sortOps } from "@tokovo/ir";
  */
 export function sort(ops: TimelineOp[]): TimelineOp[] {
     return sortOps(ops);
-}
-````
-
-## File: packages/compiler/src/passes/time-lowering.ts
-````typescript
-/**
- * Time Lowering Pass
- * 
- * Converts Scene IR operations to Timeline IR operations.
- * - Resolves DurationExpr to frames
- * - Assigns `at` frame numbers
- * - Handles concurrent track compilation
- */
-
-import {
-    SceneOp,
-    parseDuration,
-    TimelineOp,
-    TypingStartedOp,
-    TypingEndedOp,
-    MessageReceivedOp,
-    MessageSentOp,
-    MessageReadOp,
-    MessageDeletedOp,
-    Trace,
-} from "@tokovo/ir";
-import { CompilerContext, Cursor } from "../context";
-import { ResolvedOp } from "./resolve-refs";
-import { ensureConversationOpened } from "./virtual-device";
-
-/**
- * Lower scene operations to timeline operations.
- */
-export function lowerToTimeline(
-    ops: SceneOp[],
-    ctx: CompilerContext,
-    cursor: Cursor,
-    deviceId: string,
-    appId: string,
-    conversationId: string,
-    beat: string,
-    trackId: string = "main"
-): TimelineOp[] {
-    const timeline: TimelineOp[] = [];
-
-    for (let i = 0; i < ops.length; i++) {
-        const op = ops[i] as ResolvedOp;
-        const trace: Trace = ctx.createTrace({
-            deviceId,
-            beat,
-            trackId,
-            sceneOpIndex: i,
-        });
-
-        const lowered = lowerOp(op, ctx, cursor, deviceId, appId, conversationId, trace);
-        timeline.push(...lowered);
-    }
-
-    return timeline;
-}
-
-function lowerOp(
-    op: ResolvedOp,
-    ctx: CompilerContext,
-    cursor: Cursor,
-    deviceId: string,
-    appId: string,
-    conversationId: string,
-    trace: Trace
-): TimelineOp[] {
-    const events: TimelineOp[] = [];
-    const at = cursor.current;
-
-    switch (op.kind) {
-        case "Wait": {
-            const frames = parseDuration(op.duration, ctx.config.fps);
-            cursor.advance(frames);
-            // Wait produces no events, just advances cursor
-            return [];
-        }
-
-        case "TypingStart": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: TypingStartedOp = {
-                at,
-                kind: "TypingStarted",
-                deviceId,
-                appId,
-                conversationId,
-                actor: op.actor,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "TypingEnd": {
-            const event: TypingEndedOp = {
-                at,
-                kind: "TypingEnded",
-                deviceId,
-                appId,
-                conversationId,
-                actor: op.actor,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "ReceiveMessage": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: op._resolvedMessageId ?? `msg_${at}`,
-                    text: op.text,
-                    from: op.actor,
-                    type: op.meta?.type ?? "text",
-                },
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "SendMessage": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            // Filter out "system" type since you can't send system messages
-            const msgType = op.meta?.type;
-            const sentType = msgType === "system" ? "text" : (msgType ?? "text");
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: op._resolvedMessageId ?? `msg_${at}`,
-                    text: op.text,
-                    type: sentType as "text" | "image" | "voice",
-                },
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "ReadMessage": {
-            const event: MessageReadOp = {
-                at,
-                kind: "MessageRead",
-                deviceId,
-                appId,
-                conversationId: op.ref.conversationId,
-                messageId: op.ref.id,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "DeleteMessage": {
-            const event: MessageDeletedOp = {
-                at,
-                kind: "MessageDeleted",
-                deviceId,
-                appId,
-                conversationId: op.ref.conversationId,
-                messageId: op.ref.id,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "Concurrent": {
-            // Fork cursor for each track
-            const trackCursors: Cursor[] = [];
-            const trackTimelines: TimelineOp[][] = [];
-
-            for (let t = 0; t < op.tracks.length; t++) {
-                const trackOps = op.tracks[t];
-                const trackCursor = cursor.fork();
-                const trackId = `track_${t}`;
-
-                const trackTimeline = lowerToTimeline(
-                    trackOps,
-                    ctx,
-                    trackCursor,
-                    deviceId,
-                    appId,
-                    conversationId,
-                    trace.beat,
-                    trackId
-                );
-
-                trackCursors.push(trackCursor);
-                trackTimelines.push(trackTimeline);
-            }
-
-            // Merge all track timelines
-            for (const tl of trackTimelines) {
-                events.push(...tl);
-            }
-
-            // Join cursors at max position
-            const joined = Cursor.join(trackCursors);
-            cursor.advance(joined.current - cursor.current);
-
-            return events;
-        }
-
-        default:
-            return [];
-    }
 }
 ````
 
@@ -12102,6 +14680,345 @@ export const breakupDramaSceneIR: SceneIR = createEpisode("breakup-drama-01", ep
 export { breakupDramaSceneIR as default };
 ````
 
+## File: packages/dsl/examples/multi-pov-demo.dsl.ts
+````typescript
+/**
+ * Multi-POV Demo Episode
+ * 
+ * NOTE: This is a blueprint/reference for multi-device episodes.
+ * The current DSL doesn't fully support multi-device/camera operations yet,
+ * so this file serves as documentation for the intended API.
+ * 
+ * For now, multi-POV episodes should be created using JSON format
+ * until the DSL is extended.
+ * 
+ * Demonstrates:
+ * - Two characters (Alice & Bob) with separate phones
+ * - Camera cuts between devices
+ * - Split screen layouts (horizontal, vertical, PIP)
+ * - Camera effects (zoom, shake)
+ */
+
+// This is a reference for future DSL API design
+// Multi-device support requires extending EpisodeBuilder
+
+/*
+Example of intended future API:
+
+ep.device("AlicePhone", "iphone16", d => {
+    d.owner("Alice");  // Future: owner method
+    d.app("app_whatsapp");
+    d.conversation("dm_bob", { name: "Bob" });
+});
+
+ep.device("BobPhone", "iphone16", d => {
+    d.owner("Bob");
+    d.app("app_whatsapp");
+    d.conversation("dm_alice", { name: "Alice" });
+});
+
+// Future: Camera builder for cuts and layouts
+ep.camera(c => {
+    c.at("3s").cut("BobPhone");
+    c.at("6s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    c.at("12s").layout("PIP", "BobPhone", "AlicePhone", { position: "top-right" });
+    c.at("24s").shake("AlicePhone", { intensity: 8 });
+});
+
+// Future: Scene builder for cross-device coordination
+ep.scene("split-view", s => {
+    s.device("AlicePhone", d => d.beat("waiting", b => b.send("Where are you?")));
+    s.device("BobPhone", d => d.beat("reply", b => b.send("On my way!")));
+});
+*/
+
+// For now, use the JSON format in multi-pov-demo.json
+// This file exists to document the intended API extension
+
+export const multiPovNotes = {
+    status: "blueprint",
+    referenceFile: "../packages/episodes/src/examples/multi-pov-demo.json",
+    futureFeatures: [
+        "ep.device().owner(name) - Set device owner for POV",
+        "ep.camera(c => c.cut/layout/zoom/shake) - Camera operations",
+        "ep.scene() - Cross-device scene coordination",
+    ]
+};
+````
+
+## File: packages/dsl/examples/production-demo.dsl.ts
+````typescript
+/**
+ * WhatsApp Production Demo Episode
+ * 
+ * Showcases all WhatsApp production features:
+ * - Image messages with captions
+ * - Video messages with thumbnails
+ * - GIF messages
+ * - Voice notes
+ * - Typing indicators
+ * - Read receipts
+ */
+
+import { episode as createEpisode } from "../src/author";
+import { SceneIR } from "@tokovo/ir";
+
+export const productionDemoSceneIR: SceneIR = createEpisode("whatsapp-production", ep => {
+    ep.config({ fps: 30, title: "WhatsApp Production Demo" });
+
+    ep.device("MyPhone", "iphone16", d => {
+        d.app("app_whatsapp");
+        d.conversation("dm_bestie", { name: "Best Friend 💕", avatar: "" });
+
+        // Initial message already in conversation
+        // "Hey! Look at this sunset 🌅"
+
+        // Beat 1: Friend sends beautiful sunset photo
+        d.beat("sunset-photo", b => {
+            b.wait("1s");
+            b.receiveImage("Best Friend 💕",
+                "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600",
+                { caption: "From the beach today! 🏖️" }
+            );
+        });
+
+        // Beat 2: Typing then response
+        d.beat("my-response", b => {
+            b.wait("2s");
+            b.send("Omg that's gorgeous! 😍");
+            b.wait("0.5s");
+            b.send("I'm so jealous rn");
+        });
+
+        // Beat 3: Friend sends video
+        d.beat("video-share", b => {
+            b.wait("1.5s");
+            b.typing("Best Friend 💕").for("1s");
+            b.receiveVideo("Best Friend 💕",
+                "https://example.com/beach-waves.mp4",
+                15,
+                {
+                    thumbnailUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                    caption: "The waves are insane! 🌊"
+                }
+            );
+        });
+
+        // Beat 4: Send GIF reaction
+        d.beat("gif-reaction", b => {
+            b.wait("2s");
+            b.sendGif("https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif");
+            b.wait("0.3s");
+            b.send("Living my best life vicariously through you 😂");
+        });
+
+        // Beat 5: Voice note exchange
+        d.beat("voice-notes", b => {
+            b.wait("1.5s");
+            b.receiveVoice("Best Friend 💕", 8);
+            b.wait("2s");
+            b.sendVoice(5);
+        });
+
+        // Beat 6: More photos
+        d.beat("more-photos", b => {
+            b.wait("1.5s");
+            b.receiveImage("Best Friend 💕",
+                "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600",
+                { caption: "And dinner 🍝" }
+            );
+            b.wait("1s");
+            b.receiveImage("Best Friend 💕",
+                "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600"
+            );
+        });
+
+        // Beat 7: Final exchange
+        d.beat("final-exchange", b => {
+            b.wait("1.5s");
+            b.send("Ok stop making me hungry too 😭");
+            b.wait("0.5s");
+            b.receive("Best Friend 💕", "Haha! Come visit soon! ✈️");
+            b.wait("0.5s");
+            b.send("Definitely planning it! 🙌");
+        });
+    });
+});
+
+export { productionDemoSceneIR as default };
+````
+
+## File: packages/dsl/examples/toxic-ex-drama.dsl.ts
+````typescript
+/**
+ * WhatsApp Toxic Ex Drama Episode
+ * 
+ * Showcases dramatic features:
+ * - Missed calls
+ * - Deleted messages
+ * - Voice notes
+ * - Screenshot alerts
+ * - Rapid-fire emotional messages
+ */
+
+import { episode as createEpisode } from "../src/author";
+import { SceneIR } from "@tokovo/ir";
+
+export const toxicExSceneIR: SceneIR = createEpisode("toxic-ex-drama", ep => {
+    ep.config({ fps: 30, title: "Toxic Ex Drama" });
+
+    ep.device("MyPhone", "iphone16", d => {
+        d.app("app_whatsapp");
+        d.conversation("dm_toxic", { name: "Toxic Ex 🚩", avatar: "" });
+
+        // Initial messages (already in conversation)
+        // These would be part of initialWorld in full implementation
+
+        // Beat 1: Ominous silence then voice note
+        d.beat("voice-note-arrives", b => {
+            b.wait("2s");
+            b.typing("Toxic Ex 🚩").for("1s");
+            b.receiveVoice("Toxic Ex 🚩", 45); // 45 second voice note
+        });
+
+        // Beat 2: Screenshot alert
+        d.beat("screenshot-alert", b => {
+            b.wait("2s");
+            b.receive("Toxic Ex 🚩", "Took a screenshot! 📸");
+        });
+
+        // Beat 3: My response (tries to de-escalate)
+        d.beat("attempted-response", b => {
+            b.wait("1s");
+            b.send("Can we just talk normally?");
+            b.wait("0.5s");
+            b.send("I don't understand why you're upset");
+        });
+
+        // Beat 4: Toxic response storm
+        d.beat("message-storm", b => {
+            b.typing("Toxic Ex 🚩").for("0.5s");
+            b.receive("Toxic Ex 🚩", "YOU DON'T UNDERSTAND?!");
+            b.wait("0.3s");
+            b.receive("Toxic Ex 🚩", "After everything I did for us?");
+            b.wait("0.3s");
+            b.receive("Toxic Ex 🚩", "This is exactly what I'm talking about");
+        });
+
+        // Beat 5: Frustrated escalation
+        d.beat("escalation", b => {
+            b.wait("1s");
+            b.typing("Toxic Ex 🚩").for("2s");
+            // Long message
+            b.receive("Toxic Ex 🚩", "I can't believe you would do this to me. I thought we had something special but clearly I was just fooling myself. You never really cared.");
+        });
+
+        // Beat 6: My final response
+        d.beat("final-response", b => {
+            b.wait("1.5s");
+            b.send("I think we need some space right now");
+            b.wait("0.5s");
+            b.send("Let's talk when things calm down");
+        });
+
+        // Beat 7: Ominous typing that never sends
+        d.beat("ominous-typing", b => {
+            b.wait("1s");
+            b.typing("Toxic Ex 🚩").for("3s");
+            // No message comes... tension
+            b.wait("2s");
+        });
+    });
+});
+
+export { toxicExSceneIR as default };
+````
+
+## File: packages/dsl/examples/whatsapp-media-showcase.dsl.ts
+````typescript
+/**
+ * WhatsApp Media Showcase Episode
+ * 
+ * This episode demonstrates all new DSL media features:
+ * - Image messages with captions
+ * - Video messages with thumbnails
+ * - GIF messages
+ * - Voice notes
+ * - Auto-timing (no explicit waits needed)
+ * - Typing indicators
+ * 
+ * Run: npx ts-node --esm whatsapp-media-showcase.dsl.ts
+ */
+
+import { createEpisode, SceneIR } from "@tokovo/dsl";
+
+export const mediaShowcaseSceneIR: SceneIR = createEpisode("whatsapp-media-showcase", ep => {
+    ep.config({ fps: 30, title: "Media Showcase" });
+
+    ep.device("MyPhone", "iphone16", d => {
+        d.app("app_whatsapp");
+        d.conversation("dm_bestie", { name: "Best Friend 💕", avatar: "bestie.png" });
+
+        // Beat 1: Opening text
+        d.beat("opening", b => {
+            b.wait("1s");
+            b.receive("Best Friend 💕", "Hey! Look what I found!");
+        });
+
+        // Beat 2: Receive an image with caption
+        d.beat("image-shared", b => {
+            b.receiveImage("Best Friend 💕", "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600", {
+                caption: "Sunset from the beach 🏖️",
+                height: 450  // Custom height
+            });
+        });
+
+        // Beat 3: React with text
+        d.beat("react-text", b => {
+            b.send("OMG that's beautiful! 😍");
+        });
+
+        // Beat 4: Send a GIF reaction
+        d.beat("gif-reaction", b => {
+            b.sendGif("https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif");
+        });
+
+        // Beat 5: Receive a video
+        d.beat("video-shared", b => {
+            b.receiveVideo("Best Friend 💕", "https://example.com/beach-waves.mp4", 15, {
+                thumbnailUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                caption: "Watch this wave! 🌊"
+            });
+        });
+
+        // Beat 6: Voice note response
+        d.beat("voice-response", b => {
+            b.typing("Best Friend 💕").for("2s");
+            b.receiveVoice("Best Friend 💕", 8);  // 8 second voice note
+        });
+
+        // Beat 7: Reply with voice
+        d.beat("voice-reply", b => {
+            b.sendVoice(5);  // 5 second voice note
+        });
+
+        // Beat 8: More conversation
+        d.beat("final-exchange", b => {
+            b.receive("Best Friend 💕", "That GIF is perfect 😂");
+            b.send("Haha yeah! Miss you! 💕");
+        });
+
+        // Beat 9: Final image
+        d.beat("closing", b => {
+            b.receiveImage("Best Friend 💕", "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600");
+            b.wait("2s");
+        });
+    });
+});
+
+export { mediaShowcaseSceneIR as default };
+````
+
 ## File: packages/dsl/src/author/device-builder.ts
 ````typescript
 /**
@@ -12495,6 +15412,212 @@ export interface EpisodeConfig {
             "deviceId": "bob_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
+        }
+    ]
+}
+````
+
+## File: packages/episodes/src/examples/whatsapp-production-demo.json
+````json
+{
+    "meta": {
+        "title": "WhatsApp Production Demo",
+        "description": "Showcases all new WhatsApp features: Chats list, image/video/GIF messages, typing indicator, voice notes",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "ownerName": "me",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_bestie": {
+                "id": "conv_bestie",
+                "type": "dm",
+                "name": "Best Friend 💕",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Best Friend 💕",
+                        "text": "Hey! Look at this sunset 🌅",
+                        "type": "text",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "activeApp": "whatsapp",
+            "whatsapp": {
+                "screen": "chat",
+                "conversationId": "conv_bestie"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        },
+        "audio": {
+            "activeSounds": []
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m2",
+                "type": "image",
+                "imageUrl": "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600",
+                "caption": "From the beach today! 🏖️",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_SENT",
+            "conversationId": "conv_bestie",
+            "from": "me",
+            "text": "OMG that's beautiful! 😍",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "OMG that's beautiful! 😍",
+                "status": "sent"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m4",
+                "type": "video",
+                "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                "duration": 15,
+                "caption": "Watch this wave 🌊",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_SENT",
+            "conversationId": "conv_bestie",
+            "from": "me",
+            "message": {
+                "id": "m5",
+                "type": "gif",
+                "gifUrl": "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+                "status": "sent"
+            }
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "VOICE_MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "duration": 8
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_READ",
+            "conversationId": "conv_bestie",
+            "messageId": "m5"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "text": "That GIF is perfect 😂",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "That GIF is perfect 😂",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 750,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m8",
+                "type": "image",
+                "imageUrl": "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600",
+                "status": "delivered"
+            }
         }
     ]
 }
@@ -13197,174 +16320,6 @@ export function validateSemanticMeta(meta: SemanticMeta | undefined): string[] {
     }
 
     return errors;
-}
-````
-
-## File: packages/ir/src/timeline.ts
-````typescript
-/**
- * Timeline IR - Execution Contract
- * 
- * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
- * 
- * RULES:
- * - All waits resolved to frames
- * - Fully deterministic
- * - No adapter-specific fields
- * - Sorted by canonical ordering
- * - Every op carries Trace
- */
-
-import { Trace } from "./trace";
-
-// =============================================================================
-// TIMELINE OPERATIONS
-// =============================================================================
-
-/**
- * Base interface for all timeline operations.
- */
-interface TimelineOpBase {
-    /** Frame number when this operation occurs */
-    readonly at: number;
-
-    /** Operation kind (discriminator) */
-    readonly kind: string;
-
-    /** Debug trace */
-    readonly trace: Trace;
-}
-
-/**
- * Device unlocked.
- */
-export interface DeviceUnlockedOp extends TimelineOpBase {
-    readonly kind: "DeviceUnlocked";
-    readonly deviceId: string;
-}
-
-/**
- * App opened.
- */
-export interface AppOpenedOp extends TimelineOpBase {
-    readonly kind: "AppOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-}
-
-/**
- * Conversation navigated to.
- */
-export interface ConversationOpenedOp extends TimelineOpBase {
-    readonly kind: "ConversationOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Typing indicator started.
- */
-export interface TypingStartedOp extends TimelineOpBase {
-    readonly kind: "TypingStarted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Typing indicator ended.
- */
-export interface TypingEndedOp extends TimelineOpBase {
-    readonly kind: "TypingEnded";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Message received.
- */
-export interface MessageReceivedOp extends TimelineOpBase {
-    readonly kind: "MessageReceived";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text: string;
-        readonly from: string;
-        readonly type?: "text" | "image" | "voice" | "system";
-        readonly timestamp?: string;
-    };
-}
-
-/**
- * Message sent (by device owner).
- */
-export interface MessageSentOp extends TimelineOpBase {
-    readonly kind: "MessageSent";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text: string;
-        readonly type?: "text" | "image" | "voice";
-        readonly timestamp?: string;
-    };
-}
-
-/**
- * Message marked as read.
- */
-export interface MessageReadOp extends TimelineOpBase {
-    readonly kind: "MessageRead";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Message deleted.
- */
-export interface MessageDeletedOp extends TimelineOpBase {
-    readonly kind: "MessageDeleted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Union of all timeline operations.
- */
-export type TimelineOp =
-    | DeviceUnlockedOp
-    | AppOpenedOp
-    | ConversationOpenedOp
-    | TypingStartedOp
-    | TypingEndedOp
-    | MessageReceivedOp
-    | MessageSentOp
-    | MessageReadOp
-    | MessageDeletedOp;
-
-// =============================================================================
-// TIMELINE IR (COMPLETE)
-// =============================================================================
-
-/**
- * Complete Timeline IR for an episode.
- */
-export interface TimelineIR {
-    readonly episodeId: string;
-    readonly fps: number;
-    readonly durationInFrames: number;
-    readonly ops: TimelineOp[];
 }
 ````
 
@@ -15389,6 +18344,272 @@ packages:
 }
 ````
 
+## File: apps/docs/pages/dsl/beat.mdx
+````
+# Beat Builder
+
+The Beat Builder provides fluent methods for defining actions within a beat.
+
+## Core Actions
+
+### wait(duration)
+
+Pause for a duration. Advances the cursor but emits no runtime event.
+
+```typescript
+b.wait("2s");     // 2 seconds
+b.wait("500ms");  // 500 milliseconds
+b.wait("30frames"); // 30 frames
+```
+
+### typing(actor).for(duration)
+
+Show typing indicator for a duration. Expands to:
+- `TypingStart`
+- `Wait`
+- `TypingEnd`
+
+```typescript
+b.typing("Bob").for("1.5s");
+```
+
+### send(text, options?)
+
+Send a message from the device owner.
+
+```typescript
+b.send("Hello!");
+
+// With semantic annotations
+b.send("Are you okay?", {
+  mood: "anxious",
+  intensity: 0.6
+});
+```
+
+### receive(actor, text, options?)
+
+Receive a message from someone else.
+
+```typescript
+const msg = b.receive("Bob", "We need to talk.");
+
+// With semantic annotations
+b.receive("Bob", "I'm sorry.", {
+  mood: "sad",
+  intensity: 0.9,
+  subtext: "breakup"
+});
+```
+
+### read(ref)
+
+Mark a message as read.
+
+```typescript
+const msg = b.receive("Bob", "Hello");
+b.wait("0.5s");
+b.read(msg);
+```
+
+### delete(ref)
+
+Delete a message.
+
+```typescript
+const msg = b.send("Sent by mistake");
+b.wait("1s");
+b.delete(msg);
+```
+
+### readLast() / deleteLast()
+
+Operate on the last message.
+
+```typescript
+b.receive("Bob", "Hello");
+b.wait("0.5s");
+b.readLast();
+```
+
+## Media Messages
+
+Rich media messages with automatic timing.
+
+### sendImage(url, options?) / receiveImage(actor, url, options?)
+
+Send or receive images with optional captions.
+
+```typescript
+// Send an image
+b.sendImage("https://example.com/photo.jpg");
+
+// With caption and custom height
+b.sendImage("https://example.com/photo.jpg", { 
+  caption: "Check this out! 📸",
+  height: 450  // Default: 400
+});
+
+// Receive an image
+b.receiveImage("Alice", "https://example.com/sunset.jpg", {
+  caption: "From the beach today! 🏖️"
+});
+```
+
+### sendVideo(url, duration, options?) / receiveVideo(actor, url, duration, options?)
+
+Send or receive video messages with thumbnails.
+
+```typescript
+// Send a video (15 second duration)
+b.sendVideo("https://example.com/video.mp4", 15);
+
+// With thumbnail and caption
+b.sendVideo("https://example.com/video.mp4", 15, {
+  thumbnailUrl: "https://example.com/thumb.jpg",
+  caption: "Watch this wave! 🌊"
+});
+
+// Receive a video
+b.receiveVideo("Bob", "https://example.com/clip.mp4", 30, {
+  thumbnailUrl: "https://example.com/preview.jpg"
+});
+```
+
+### sendGif(url, options?) / receiveGif(actor, url, options?)
+
+Send or receive GIFs from Giphy, Tenor, etc.
+
+```typescript
+// Send a GIF
+b.sendGif("https://media.giphy.com/media/abc123/giphy.gif");
+
+// Receive with custom height
+b.receiveGif("Alice", "https://media.giphy.com/media/xyz789/giphy.gif", {
+  height: 350  // Default: 300
+});
+```
+
+### sendVoice(duration, options?) / receiveVoice(actor, duration, options?)
+
+Send or receive voice notes.
+
+```typescript
+// Send an 8-second voice note
+b.sendVoice(8);
+
+// Receive a 15-second voice note
+b.receiveVoice("Bob", 15);
+```
+
+### Auto-Timing
+
+Media messages automatically advance the timeline:
+- **Images**: 1.5s view time
+- **Videos**: Uses video duration
+- **GIFs**: 1.0s view time
+- **Voice notes**: Uses voice duration
+
+Override with `skipAutoTiming: true`:
+
+```typescript
+b.receiveImage("Alice", "photo.jpg", { skipAutoTiming: true });
+b.wait("0.5s");  // Manually control timing
+```
+
+## Concurrent Operations
+
+Run multiple tracks in parallel:
+
+```typescript
+b.concurrent([
+  t => t.typing("Bob").for("2s"),
+  t => t.wait("0.5s").receive("Bob", "Message during typing!")
+]);
+```
+
+The cursor advances to `max(track ends)`.
+
+## Drama Events
+
+### react(ref, actor, emoji)
+
+Add a reaction to a message.
+
+```typescript
+const msg = b.receive("Bob", "I love you");
+b.react(msg, "me", "❤️");
+```
+
+### screenshot()
+
+Show "screenshot taken" notification.
+
+```typescript
+b.screenshot();  // Drama!
+```
+
+### missedCall(actor, type?)
+
+Show missed call event.
+
+```typescript
+b.missedCall("Bob");           // Voice call
+b.missedCall("Bob", "video");  // Video call
+```
+
+## POV Control
+
+### pov(deviceId, transition?)
+
+Switch point of view.
+
+```typescript
+b.pov("BobPhone");              // Cut (default)
+b.pov("BobPhone", "crossfade"); // Smooth transition
+b.pov("BobPhone", "wipe");      // Wipe transition
+```
+
+### splitPov(devices, layout?)
+
+Show multiple devices.
+
+```typescript
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+b.splitPov(["AlicePhone", "BobPhone"], "vertical");
+b.splitPov(["AlicePhone", "BobPhone"], "pip");
+```
+
+## Complete Reference
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `wait(duration)` | Pause | `this` |
+| `typing(actor).for(duration)` | Typing indicator | `void` |
+| `typingStart(actor)` | Start typing (manual) | `this` |
+| `typingEnd(actor)` | End typing | `this` |
+| `send(text, options?)` | Send text message | `MessageHandle` |
+| `receive(actor, text, options?)` | Receive text message | `MessageHandle` |
+| `sendImage(url, options?)` | Send image | `MessageHandle` |
+| `receiveImage(actor, url, options?)` | Receive image | `MessageHandle` |
+| `sendVideo(url, duration, options?)` | Send video | `MessageHandle` |
+| `receiveVideo(actor, url, duration, options?)` | Receive video | `MessageHandle` |
+| `sendGif(url, options?)` | Send GIF | `MessageHandle` |
+| `receiveGif(actor, url, options?)` | Receive GIF | `MessageHandle` |
+| `sendVoice(duration, options?)` | Send voice note | `MessageHandle` |
+| `receiveVoice(actor, duration, options?)` | Receive voice note | `MessageHandle` |
+| `read(ref)` | Mark as read | `this` |
+| `readLast()` | Read last message | `this` |
+| `delete(ref)` | Delete message | `this` |
+| `deleteLast()` | Delete last | `this` |
+| `concurrent(tracks)` | Parallel ops | `this` |
+| `pov(deviceId, transition?)` | Switch POV | `this` |
+| `splitPov(devices, layout?)` | Split screen | `this` |
+| `react(ref, actor, emoji)` | Add reaction | `this` |
+| `screenshot()` | Screenshot alert | `this` |
+| `missedCall(actor, type?)` | Missed call | `this` |
+````
+
 ## File: apps/docs/pages/guides/_meta.json
 ````json
 {
@@ -15419,25 +18640,6 @@ packages:
     "engine": "Engine",
     "events": "Event Types",
     "world-state": "WorldState"
-}
-````
-
-## File: apps/docs/pages/_meta.json
-````json
-{
-    "index": "Introduction",
-    "architecture": "Architecture",
-    "dsl": "DSL Reference",
-    "ir": "IR Reference",
-    "compiler": "Compiler",
-    "director": "DirectorLite",
-    "runtime": "Runtime",
-    "guides": "Guides",
-    "glossary": "Glossary",
-    "---": {
-        "type": "separator"
-    },
-    "verification": "✅ Verification"
 }
 ````
 
@@ -16180,6 +19382,41 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
 };
 ````
 
+## File: packages/apps-whatsapp/src/components/index.ts
+````typescript
+/**
+ * WhatsApp Components Index
+ * 
+ * Re-exports all WhatsApp UI components for easy importing.
+ */
+
+// Icons
+export * from "./icons";
+
+// Components
+export { Header, type HeaderProps } from "./Header";
+export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
+
+// Media Bubbles
+export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./MediaBubbles";
+
+// Chats List Screen
+export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
+````
+
+## File: packages/apps-whatsapp/src/config/index.ts
+````typescript
+/**
+ * WhatsApp Configuration Exports
+ * 
+ * Central export for all WhatsApp configuration.
+ */
+
+export * from "./layout-config";
+export * from "./whatsapp-theme";
+export * from "./polish";
+````
+
 ## File: packages/apps-whatsapp/src/index.ts
 ````typescript
 export * from "./types";
@@ -16187,60 +19424,6 @@ export * from "./runtime";
 export * from "./ui";
 export * from "./plugin";
 export * from "./components";
-````
-
-## File: packages/apps-whatsapp/src/TypingBubble.tsx
-````typescript
-import React from "react";
-
-/**
- * WhatsApp iOS Typing Indicator
- * Three bouncing grey dots in a white bubble that matches the incoming message style
- */
-export const TypingBubble: React.FC = () => {
-    return (
-        <div style={{
-            backgroundColor: "#FFFFFF",
-            padding: "27px 36px",
-            borderRadius: 24,
-            borderTopLeftRadius: 6,
-            alignSelf: "flex-start",
-            width: "fit-content",
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-            display: "flex",
-            alignItems: "center",
-            gap: 15,
-            height: 72
-        }}>
-            <Dot delay={0} />
-            <Dot delay={0.15} />
-            <Dot delay={0.3} />
-            <style>{`
-                @keyframes whatsappTyping {
-                    0%, 60%, 100% {
-                        transform: translateY(0);
-                        opacity: 0.4;
-                    }
-                    30% {
-                        transform: translateY(-9px);
-                        opacity: 1;
-                    }
-                }
-            `}</style>
-        </div>
-    );
-};
-
-const Dot: React.FC<{ delay: number }> = ({ delay }) => (
-    <div style={{
-        width: 24,
-        height: 24,
-        backgroundColor: "#8696A0",
-        borderRadius: "50%",
-        animation: `whatsappTyping 1.2s infinite ease-in-out`,
-        animationDelay: `${delay}s`
-    }} />
-);
 ````
 
 ## File: packages/apps-whatsapp/package.json
@@ -16266,6 +19449,503 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
 }
 ````
 
+## File: packages/compiler/src/passes/time-lowering.ts
+````typescript
+/**
+ * Time Lowering Pass
+ * 
+ * Converts Scene IR operations to Timeline IR operations.
+ * - Resolves DurationExpr to frames
+ * - Assigns `at` frame numbers
+ * - Handles concurrent track compilation
+ * - Implements auto-timing for natural message flow
+ */
+
+import {
+    SceneOp,
+    parseDuration,
+    TimelineOp,
+    TypingStartedOp,
+    TypingEndedOp,
+    MessageReceivedOp,
+    MessageSentOp,
+    MessageReadOp,
+    MessageDeletedOp,
+    Trace,
+} from "@tokovo/ir";
+import { CompilerContext, Cursor } from "../context";
+import { ResolvedOp } from "./resolve-refs";
+import { ensureConversationOpened } from "./virtual-device";
+
+// =============================================================================
+// AUTO-TIMING CONFIGURATION
+// =============================================================================
+
+/**
+ * Auto-timing defaults for natural message flow.
+ * These values are configurable per operation via skipAutoTiming.
+ */
+const AUTO_TIMING = {
+    /** Pause after sending a message (seconds) */
+    SEND_DELAY: 0.5,
+    /** Pause after receiving a message (seconds) */
+    RECEIVE_DELAY: 0.8,
+    /** Time to view an image (seconds) */
+    IMAGE_VIEW_TIME: 1.5,
+    /** Time to view a video (uses video duration) */
+    VIDEO_VIEW_TIME_MULTIPLIER: 1.0,
+    /** Time to view a GIF (seconds) */
+    GIF_VIEW_TIME: 1.0,
+    /** Voice note uses its duration */
+    VOICE_VIEW_TIME_MULTIPLIER: 1.0,
+};
+
+/**
+ * Calculate auto-timing frames based on operation type.
+ */
+function getAutoTiming(opKind: string, fps: number, duration?: number): number {
+    switch (opKind) {
+        case "SendMessage":
+        case "SendImage":
+        case "SendVideo":
+        case "SendGif":
+        case "SendVoice":
+            return Math.round(AUTO_TIMING.SEND_DELAY * fps);
+        case "ReceiveMessage":
+            return Math.round(AUTO_TIMING.RECEIVE_DELAY * fps);
+        case "ReceiveImage":
+            return Math.round(AUTO_TIMING.IMAGE_VIEW_TIME * fps);
+        case "ReceiveVideo":
+            return Math.round((duration || 5) * AUTO_TIMING.VIDEO_VIEW_TIME_MULTIPLIER * fps);
+        case "ReceiveGif":
+            return Math.round(AUTO_TIMING.GIF_VIEW_TIME * fps);
+        case "ReceiveVoice":
+            return Math.round((duration || 5) * AUTO_TIMING.VOICE_VIEW_TIME_MULTIPLIER * fps);
+        default:
+            return 0;
+    }
+}
+
+/**
+ * Lower scene operations to timeline operations.
+ */
+export function lowerToTimeline(
+    ops: SceneOp[],
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    beat: string,
+    trackId: string = "main"
+): TimelineOp[] {
+    const timeline: TimelineOp[] = [];
+
+    for (let i = 0; i < ops.length; i++) {
+        const op = ops[i] as ResolvedOp;
+        const trace: Trace = ctx.createTrace({
+            deviceId,
+            beat,
+            trackId,
+            sceneOpIndex: i,
+        });
+
+        const lowered = lowerOp(op, ctx, cursor, deviceId, appId, conversationId, trace);
+        timeline.push(...lowered);
+    }
+
+    return timeline;
+}
+
+function lowerOp(
+    op: ResolvedOp,
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    trace: Trace
+): TimelineOp[] {
+    const events: TimelineOp[] = [];
+    const at = cursor.current;
+
+    switch (op.kind) {
+        case "Wait": {
+            const frames = parseDuration(op.duration, ctx.config.fps);
+            cursor.advance(frames);
+            // Wait produces no events, just advances cursor
+            return [];
+        }
+
+        case "TypingStart": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: TypingStartedOp = {
+                at,
+                kind: "TypingStarted",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "TypingEnd": {
+            const event: TypingEndedOp = {
+                at,
+                kind: "TypingEnded",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "ReceiveMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    from: op.actor,
+                    type: op.meta?.type ?? "text",
+                },
+                trace,
+            };
+            events.push(event);
+
+            // Auto-advance cursor
+            cursor.advance(getAutoTiming("ReceiveMessage", ctx.config.fps));
+            return events;
+        }
+
+        case "SendMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            // Filter out "system" type since you can't send system messages
+            const msgType = op.meta?.type;
+            const sentType = msgType === "system" ? "text" : (msgType ?? "text");
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    type: sentType as "text" | "image" | "voice",
+                },
+                trace,
+            };
+            events.push(event);
+
+            // Auto-advance cursor
+            cursor.advance(getAutoTiming("SendMessage", ctx.config.fps));
+            return events;
+        }
+
+        // =====================================================================
+        // MEDIA MESSAGE OPERATIONS
+        // =====================================================================
+
+        case "SendImage": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `img_${at}`,
+                    type: "image",
+                    imageUrl: op.imageUrl,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendImage", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "ReceiveImage": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `img_${at}`,
+                    from: op.actor,
+                    type: "image",
+                    imageUrl: op.imageUrl,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveImage", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "SendVideo": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `vid_${at}`,
+                    type: "video",
+                    videoUrl: op.videoUrl,
+                    thumbnailUrl: op.thumbnailUrl,
+                    duration: op.duration,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendVideo", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReceiveVideo": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `vid_${at}`,
+                    from: op.actor,
+                    type: "video",
+                    videoUrl: op.videoUrl,
+                    thumbnailUrl: op.thumbnailUrl,
+                    duration: op.duration,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveVideo", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "SendGif": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `gif_${at}`,
+                    type: "gif",
+                    gifUrl: op.gifUrl,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendGif", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "ReceiveGif": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `gif_${at}`,
+                    from: op.actor,
+                    type: "gif",
+                    gifUrl: op.gifUrl,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveGif", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "SendVoice": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `voice_${at}`,
+                    type: "voice",
+                    duration: op.duration,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendVoice", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReceiveVoice": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `voice_${at}`,
+                    from: op.actor,
+                    type: "voice",
+                    duration: op.duration,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveVoice", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReadMessage": {
+            const event: MessageReadOp = {
+                at,
+                kind: "MessageRead",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "DeleteMessage": {
+            const event: MessageDeletedOp = {
+                at,
+                kind: "MessageDeleted",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "Concurrent": {
+            // Fork cursor for each track
+            const trackCursors: Cursor[] = [];
+            const trackTimelines: TimelineOp[][] = [];
+
+            for (let t = 0; t < op.tracks.length; t++) {
+                const trackOps = op.tracks[t];
+                const trackCursor = cursor.fork();
+                const trackId = `track_${t}`;
+
+                const trackTimeline = lowerToTimeline(
+                    trackOps,
+                    ctx,
+                    trackCursor,
+                    deviceId,
+                    appId,
+                    conversationId,
+                    trace.beat,
+                    trackId
+                );
+
+                trackCursors.push(trackCursor);
+                trackTimelines.push(trackTimeline);
+            }
+
+            // Merge all track timelines
+            for (const tl of trackTimelines) {
+                events.push(...tl);
+            }
+
+            // Join cursors at max position
+            const joined = Cursor.join(trackCursors);
+            cursor.advance(joined.current - cursor.current);
+
+            return events;
+        }
+
+        default:
+            return [];
+    }
+}
+````
+
 ## File: packages/devices/package.json
 ````json
 {
@@ -16285,407 +19965,6 @@ const Dot: React.FC<{ delay: number }> = ({ delay }) => (
         "typescript": "^5.0.0",
         "@types/node": "^20.0.0",
         "@types/react": "18.2.0"
-    }
-}
-````
-
-## File: packages/dsl/src/author/beat-builder.ts
-````typescript
-/**
- * Beat Builder
- * 
- * Fluent API for defining actions within a beat.
- * A beat is a named group of sequential/concurrent operations.
- */
-
-import {
-    SceneOp,
-    WaitOp,
-    TypingStartOp,
-    TypingEndOp,
-    SendMessageOp,
-    ReceiveMessageOp,
-    ReadMessageOp,
-    DeleteMessageOp,
-    ConcurrentOp,
-    MessageRef,
-    messageRef,
-    // POV operations
-    POVSwitchOp,
-    SplitPOVOp,
-    POVLayout,
-    // Reserved signals
-    ReactionAddedOp,
-    ScreenshotTakenOp,
-    MissedCallOp,
-    // Semantic
-    SemanticMeta,
-    MessageMeta,
-} from "@tokovo/ir";
-import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
-
-/**
- * Message options for semantic annotations.
- */
-export interface MessageOptions {
-    /** Semantic annotations */
-    mood?: SemanticMeta["mood"];
-    intensity?: number;
-    secrecy?: "low" | "medium" | "high";
-    urgency?: number;
-    intimacy?: number;
-    subtext?: string;
-    tags?: string[];
-    /** Message type */
-    type?: "text" | "image" | "voice" | "system";
-}
-
-/**
- * Build MessageMeta from options.
- */
-function buildMeta(options?: MessageOptions): MessageMeta | undefined {
-    if (!options) return undefined;
-
-    const semantic: SemanticMeta = {};
-    if (options.mood) semantic.mood = options.mood;
-    if (options.intensity !== undefined) semantic.intensity = options.intensity;
-    if (options.secrecy) semantic.secrecy = options.secrecy;
-    if (options.urgency !== undefined) semantic.urgency = options.urgency;
-    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
-    if (options.subtext) semantic.subtext = options.subtext;
-    if (options.tags) semantic.tags = options.tags;
-
-    return {
-        type: options.type ?? "text",
-        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
-    };
-}
-
-/**
- * Beat builder collects operations within a beat.
- */
-export class BeatBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private messageCounter = 0;
-    private lastMessageRef: MessageRef | undefined;
-
-    constructor(deviceId: string, appId: string, conversationId: string) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-    }
-
-    /**
-     * Wait for a duration.
-     */
-    wait(duration: string): this {
-        const op: WaitOp = { kind: "Wait", duration };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Start typing indicator.
-     * Returns a builder for fluent chaining: typing("Bob").for("2s")
-     */
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                // Expand to: TypingStart + Wait + TypingEnd
-                const start: TypingStartOp = {
-                    kind: "TypingStart",
-                    actor,
-                    conversationId,
-                };
-                const wait: WaitOp = { kind: "Wait", duration };
-                const end: TypingEndOp = {
-                    kind: "TypingEnd",
-                    actor,
-                    conversationId,
-                };
-                ops.push(start, wait, end);
-            },
-        };
-    }
-
-    /**
-     * Start typing without specifying duration.
-     * Use typingEnd() to stop.
-     */
-    typingStart(actor: string): this {
-        const op: TypingStartOp = {
-            kind: "TypingStart",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Stop typing indicator.
-     */
-    typingEnd(actor: string): this {
-        const op: TypingEndOp = {
-            kind: "TypingEnd",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Send a message (from device owner).
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    send(text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendMessageOp = {
-            kind: "SendMessage",
-            actor: "me",
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a message (from someone else).
-     * @param actor - Who sent the message
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveMessageOp = {
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Mark a message as read.
-     */
-    read(ref: MessageHandle): this {
-        const op: ReadMessageOp = { kind: "ReadMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Mark the last message as read.
-     */
-    readLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("readLast() called but no previous message exists");
-        }
-        return this.read(this.lastMessageRef);
-    }
-
-    /**
-     * Delete a message.
-     */
-    delete(ref: MessageHandle): this {
-        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Delete the last message.
-     */
-    deleteLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("deleteLast() called but no previous message exists");
-        }
-        return this.delete(this.lastMessageRef);
-    }
-
-    // =========================================================================
-    // POV OPERATIONS (STORY GRAMMAR)
-    // =========================================================================
-
-    /**
-     * Switch point of view to a different device.
-     */
-    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
-        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Split POV - show multiple devices simultaneously.
-     */
-    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
-        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // RESERVED SIGNALS (DRAMA EVENTS)
-    // =========================================================================
-
-    /**
-     * Add a reaction to a message.
-     */
-    react(ref: MessageHandle, actor: string, emoji: string): this {
-        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Screenshot taken notification (drama!).
-     */
-    screenshot(): this {
-        const op: ScreenshotTakenOp = {
-            kind: "ScreenshotTaken",
-            conversationId: this.conversationId
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Missed call event.
-     */
-    missedCall(actor: string, callType?: "voice" | "video"): this {
-        const op: MissedCallOp = {
-            kind: "MissedCall",
-            actor,
-            conversationId: this.conversationId,
-            callType,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // CONCURRENT
-    // =========================================================================
-
-    /**
-     * Execute operations concurrently across multiple tracks.
-     */
-    concurrent(tracks: TrackFn[]): this {
-        const trackOps: SceneOp[][] = tracks.map((fn) => {
-            const trackBuilder = this.createTrackBuilder();
-            fn(trackBuilder);
-            return trackBuilder.getOps();
-        });
-
-        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Create a track builder for concurrent operations.
-     */
-    private createTrackBuilder(): TrackBuilderImpl {
-        return new TrackBuilderImpl(
-            this.deviceId,
-            this.appId,
-            this.conversationId,
-            () => ++this.messageCounter
-        );
-    }
-
-    /**
-     * Get collected operations.
-     */
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-
-/**
- * Track builder implementation for concurrent operations.
- */
-class TrackBuilderImpl implements TrackBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private readonly getNextId: () => number;
-
-    constructor(
-        deviceId: string,
-        appId: string,
-        conversationId: string,
-        getNextId: () => number
-    ) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-        this.getNextId = getNextId;
-    }
-
-    wait(duration: string): this {
-        this.ops.push({ kind: "Wait", duration });
-        return this;
-    }
-
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                ops.push({ kind: "TypingStart", actor, conversationId });
-                ops.push({ kind: "Wait", duration });
-                ops.push({ kind: "TypingEnd", actor, conversationId });
-            },
-        };
-    }
-
-    send(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "SendMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    receive(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    getOps(): SceneOp[] {
-        return this.ops;
     }
 }
 ````
@@ -17608,365 +20887,187 @@ export * from "./validate";
 export * from "./constraints";
 ````
 
-## File: packages/ir/src/scene.ts
+## File: packages/ir/src/timeline.ts
 ````typescript
 /**
- * Scene IR - Semantic Truth
+ * Timeline IR - Execution Contract
  * 
- * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
  * 
  * RULES:
- * - No frames
- * - No layout
- * - No camera
- * - No platform assumptions
- * 
- * If FPS changes, layout changes, or Director logic changes,
- * Scene IR stays valid.
+ * - All waits resolved to frames
+ * - Fully deterministic
+ * - No adapter-specific fields
+ * - Sorted by canonical ordering
+ * - Every op carries Trace
  */
 
+import { Trace } from "./trace";
+
 // =============================================================================
-// DURATION
+// TIMELINE OPERATIONS
 // =============================================================================
 
 /**
- * Human-readable duration expression.
- * Examples: "1.2s", "300ms", "45frames"
+ * Base interface for all timeline operations.
  */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+interface TimelineOpBase {
+    /** Frame number when this operation occurs */
+    readonly at: number;
 
-/**
- * Parse duration to frames
- */
-export function parseDuration(expr: DurationExpr, fps: number): number {
-    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
-    if (!match) {
-        throw new Error(`Invalid duration: ${expr}`);
-    }
+    /** Operation kind (discriminator) */
+    readonly kind: string;
 
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-        case "s":
-            return Math.round(value * fps);
-        case "ms":
-            return Math.round((value / 1000) * fps);
-        case "frames":
-            return Math.round(value);
-        default:
-            throw new Error(`Unknown duration unit: ${unit}`);
-    }
+    /** Debug trace */
+    readonly trace: Trace;
 }
 
-// =============================================================================
-// MESSAGE REFERENCE
-// =============================================================================
+/**
+ * Device unlocked.
+ */
+export interface DeviceUnlockedOp extends TimelineOpBase {
+    readonly kind: "DeviceUnlocked";
+    readonly deviceId: string;
+}
 
 /**
- * Reference to a message.
- * MUST include full context for cross-device/conversation operations.
+ * App opened.
  */
-export interface MessageRef {
-    readonly _type: "MessageRef";
-    readonly id: string;
+export interface AppOpenedOp extends TimelineOpBase {
+    readonly kind: "AppOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+}
+
+/**
+ * Conversation navigated to.
+ */
+export interface ConversationOpenedOp extends TimelineOpBase {
+    readonly kind: "ConversationOpened";
     readonly deviceId: string;
     readonly appId: string;
     readonly conversationId: string;
 }
 
 /**
- * Create a message reference
+ * Typing indicator started.
  */
-export function messageRef(
-    id: string,
-    deviceId: string,
-    appId: string,
-    conversationId: string
-): MessageRef {
-    return {
-        _type: "MessageRef",
-        id,
-        deviceId,
-        appId,
-        conversationId,
+export interface TypingStartedOp extends TimelineOpBase {
+    readonly kind: "TypingStarted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Typing indicator ended.
+ */
+export interface TypingEndedOp extends TimelineOpBase {
+    readonly kind: "TypingEnded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Message received.
+ */
+export interface MessageReceivedOp extends TimelineOpBase {
+    readonly kind: "MessageReceived";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly from: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
     };
 }
 
-// =============================================================================
-// MESSAGE METADATA
-// =============================================================================
-
-import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
-
-export interface MessageMeta {
-    /** Message type */
-    type?: "text" | "image" | "voice" | "system";
-
-    /** For voice messages */
-    voiceDuration?: number;
-
-    /** Timestamp display */
-    timestamp?: string;
-
-    /** Semantic annotations */
-    semantic?: SemanticMeta;
-
-    /** Custom metadata */
-    [key: string]: unknown;
-}
-
-// =============================================================================
-// SCENE OPERATIONS (CORE)
-// =============================================================================
-
 /**
- * Wait for a duration.
- * This advances the cursor but emits no runtime event.
+ * Message sent (by device owner).
  */
-export interface WaitOp {
-    readonly kind: "Wait";
-    readonly duration: DurationExpr;
-}
-
-/**
- * Start typing indicator.
- */
-export interface TypingStartOp {
-    readonly kind: "TypingStart";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * End typing indicator.
- */
-export interface TypingEndOp {
-    readonly kind: "TypingEnd";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * Send a message (from "me" / device owner).
- */
-export interface SendMessageOp {
-    readonly kind: "SendMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Receive a message (from someone else).
- */
-export interface ReceiveMessageOp {
-    readonly kind: "ReceiveMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Mark a message as read.
- */
-export interface ReadMessageOp {
-    readonly kind: "ReadMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Delete a message.
- */
-export interface DeleteMessageOp {
-    readonly kind: "DeleteMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Concurrent operations across multiple tracks.
- * Compiler forks cursor per track, compiles each independently,
- * then joins at max(trackEnds).
- */
-export interface ConcurrentOp {
-    readonly kind: "Concurrent";
-    readonly tracks: SceneOp[][];
-}
-
-// =============================================================================
-// POV OPERATIONS (STORY GRAMMAR)
-// =============================================================================
-
-/**
- * Switch point of view to a device.
- */
-export interface POVSwitchOp {
-    readonly kind: "POVSwitch";
+export interface MessageSentOp extends TimelineOpBase {
+    readonly kind: "MessageSent";
     readonly deviceId: string;
-    readonly transition?: "cut" | "crossfade" | "wipe";
-}
-
-/**
- * Split POV - show multiple devices simultaneously.
- */
-export interface SplitPOVOp {
-    readonly kind: "SplitPOV";
-    readonly devices: string[];
-    readonly layout: POVLayout;
-}
-
-// =============================================================================
-// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
-// =============================================================================
-
-/**
- * Reaction added to a message (❤️ 😂 😡).
- */
-export interface ReactionAddedOp {
-    readonly kind: "ReactionAdded";
-    readonly ref: MessageRef;
-    readonly actor: string;
-    readonly emoji: string;
-}
-
-/**
- * Voice note sent.
- */
-export interface VoiceNoteSentOp {
-    readonly kind: "VoiceNoteSent";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Voice note received.
- */
-export interface VoiceNoteReceivedOp {
-    readonly kind: "VoiceNoteReceived";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Missed call.
- */
-export interface MissedCallOp {
-    readonly kind: "MissedCall";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly callType?: "voice" | "video";
-}
-
-/**
- * Online status changed.
- */
-export interface OnlineStatusChangedOp {
-    readonly kind: "OnlineStatusChanged";
-    readonly actor: string;
-    readonly status: "online" | "offline" | "typing" | "last_seen";
-}
-
-/**
- * Screenshot taken (drama alert!).
- */
-export interface ScreenshotTakenOp {
-    readonly kind: "ScreenshotTaken";
-    readonly conversationId: string;
-}
-
-/**
- * User blocked.
- */
-export interface BlockedUserOp {
-    readonly kind: "BlockedUser";
-    readonly actor: string;
-}
-
-/**
- * Union of all scene operations.
- */
-export type SceneOp =
-    // Core operations
-    | WaitOp
-    | TypingStartOp
-    | TypingEndOp
-    | SendMessageOp
-    | ReceiveMessageOp
-    | ReadMessageOp
-    | DeleteMessageOp
-    | ConcurrentOp
-    // POV operations
-    | POVSwitchOp
-    | SplitPOVOp
-    // Reserved signals
-    | ReactionAddedOp
-    | VoiceNoteSentOp
-    | VoiceNoteReceivedOp
-    | MissedCallOp
-    | OnlineStatusChangedOp
-    | ScreenshotTakenOp
-    | BlockedUserOp;
-
-// =============================================================================
-// SCENE (TOP LEVEL)
-// =============================================================================
-
-/**
- * A beat is a named group of operations.
- * Used for semantic grouping, story rhythm, and debugging.
- */
-export interface Beat {
-    readonly name: string;
-    readonly ops: SceneOp[];
-    /** Optional rhythm/semantic metadata */
-    readonly meta?: BeatMeta;
-}
-
-/**
- * A device context within a scene.
- */
-export interface DeviceScene {
-    readonly deviceId: string;
-    readonly profileId: string;
     readonly appId: string;
-    readonly conversations: ConversationDef[];
-    readonly beats: Beat[];
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
+    };
 }
 
-
 /**
- * Conversation definition.
+ * Message marked as read.
  */
-export interface ConversationDef {
-    readonly id: string;
-    readonly name?: string;
-    readonly avatar?: string;
-    readonly type?: "dm" | "group";
+export interface MessageReadOp extends TimelineOpBase {
+    readonly kind: "MessageRead";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
 }
 
 /**
- * Complete scene IR for an episode.
+ * Message deleted.
  */
-export interface SceneIR {
+export interface MessageDeletedOp extends TimelineOpBase {
+    readonly kind: "MessageDeleted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Union of all timeline operations.
+ */
+export type TimelineOp =
+    | DeviceUnlockedOp
+    | AppOpenedOp
+    | ConversationOpenedOp
+    | TypingStartedOp
+    | TypingEndedOp
+    | MessageReceivedOp
+    | MessageSentOp
+    | MessageReadOp
+    | MessageDeletedOp;
+
+// =============================================================================
+// TIMELINE IR (COMPLETE)
+// =============================================================================
+
+/**
+ * Complete Timeline IR for an episode.
+ */
+export interface TimelineIR {
     readonly episodeId: string;
-    readonly meta: EpisodeMeta;
-    readonly devices: DeviceScene[];
-}
-
-/**
- * Episode metadata with semantic configuration.
- * Extends EpisodeConfig with required fields.
- */
-export interface EpisodeMeta extends EpisodeConfig {
-    /** Frames per second (required) */
     readonly fps: number;
-
-    /** Duration hint (calculated if not specified) */
-    readonly durationInFrames?: number;
+    readonly durationInFrames: number;
+    readonly ops: TimelineOp[];
 }
 ````
 
@@ -19122,6 +22223,27 @@ function formatDate(): string {
 }
 ````
 
+## File: apps/docs/pages/_meta.json
+````json
+{
+    "index": "Introduction",
+    "architecture": "Architecture",
+    "dsl": "DSL Reference",
+    "ir": "IR Reference",
+    "compiler": "Compiler",
+    "director": "DirectorLite",
+    "runtime": "Runtime",
+    "apps": "Apps",
+    "guides": "Guides",
+    "glossary": "Glossary",
+    "---": {
+        "type": "separator"
+    },
+    "changelog": "📝 Changelog",
+    "verification": "✅ Verification"
+}
+````
+
 ## File: apps/video-runner/package.json
 ````json
 {
@@ -19737,6 +22859,120 @@ export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
 };
 ````
 
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
+````typescript
+import React from "react";
+
+/**
+ * WhatsApp iOS Typing Indicator
+ * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
+ * Uses frame-based animation for proper rendering in video output
+ * 
+ * @param frame - Current frame from Remotion (passed in from renderer)
+ * @param fps - Frames per second (default 30)
+ */
+
+export interface TypingBubbleProps {
+    platform?: string;
+    frame?: number;
+    fps?: number;
+}
+
+export const TypingBubble: React.FC<TypingBubbleProps> = ({
+    platform = "ios",
+    frame = 0,
+    fps = 30
+}) => {
+    return (
+        <div style={{
+            backgroundColor: "#FFFFFF",
+            padding: "27px 36px",
+            borderRadius: 24,
+            borderTopLeftRadius: 6,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+            display: "flex",
+            alignItems: "center",
+            gap: 15,
+            height: 72
+        }}>
+            <TypingDot frame={frame} fps={fps} delayFrames={0} />
+            <TypingDot frame={frame} fps={fps} delayFrames={5} />
+            <TypingDot frame={frame} fps={fps} delayFrames={10} />
+        </div>
+    );
+};
+
+interface TypingDotProps {
+    frame: number;
+    fps: number;
+    delayFrames: number;
+}
+
+/**
+ * Simple interpolation function (avoiding remotion dependency)
+ */
+function interpolate(
+    value: number,
+    inputRange: number[],
+    outputRange: number[],
+): number {
+    // Find the segment
+    let i = 0;
+    for (i = 0; i < inputRange.length - 1; i++) {
+        if (value <= inputRange[i + 1]) break;
+    }
+
+    // Clamp to range
+    if (value <= inputRange[0]) return outputRange[0];
+    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
+
+    // Linear interpolation between points
+    const inputStart = inputRange[i];
+    const inputEnd = inputRange[i + 1];
+    const outputStart = outputRange[i];
+    const outputEnd = outputRange[i + 1];
+
+    const t = (value - inputStart) / (inputEnd - inputStart);
+    return outputStart + (outputEnd - outputStart) * t;
+}
+
+const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
+    // Animation cycle: 36 frames at 30fps = 1.2 seconds
+    const cycleLength = Math.round(1.2 * fps);
+    const adjustedFrame = (frame + delayFrames) % cycleLength;
+
+    // Bounce animation: up for first quarter, down for second quarter
+    const quarterCycle = cycleLength / 4;
+    const translateY = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0, -9, 0, 0]
+    );
+
+    // Opacity: brighten when bouncing up
+    const opacity = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0.4, 1, 0.4, 0.4]
+    );
+
+    return (
+        <div style={{
+            width: 24,
+            height: 24,
+            backgroundColor: "#8696A0",
+            borderRadius: "50%",
+            transform: `translateY(${translateY}px)`,
+            opacity
+        }} />
+    );
+};
+
+export default TypingBubble;
+````
+
 ## File: packages/devices/src/iphone16/Frame.tsx
 ````typescript
 import React from "react";
@@ -20021,6 +23257,614 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 );
 ````
 
+## File: packages/dsl/src/author/beat-builder.ts
+````typescript
+/**
+ * Beat Builder
+ * 
+ * Fluent API for defining actions within a beat.
+ * A beat is a named group of sequential/concurrent operations.
+ */
+
+import {
+    SceneOp,
+    WaitOp,
+    TypingStartOp,
+    TypingEndOp,
+    SendMessageOp,
+    ReceiveMessageOp,
+    ReadMessageOp,
+    DeleteMessageOp,
+    ConcurrentOp,
+    MessageRef,
+    messageRef,
+    // Media operations
+    SendImageOp,
+    ReceiveImageOp,
+    SendVideoOp,
+    ReceiveVideoOp,
+    SendGifOp,
+    ReceiveGifOp,
+    SendVoiceOp,
+    ReceiveVoiceOp,
+    // POV operations
+    POVSwitchOp,
+    SplitPOVOp,
+    POVLayout,
+    // Reserved signals
+    ReactionAddedOp,
+    ScreenshotTakenOp,
+    MissedCallOp,
+    // Semantic
+    SemanticMeta,
+    MessageMeta,
+} from "@tokovo/ir";
+import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Message options for semantic annotations.
+ */
+export interface MessageOptions {
+    /** Semantic annotations */
+    mood?: SemanticMeta["mood"];
+    intensity?: number;
+    secrecy?: "low" | "medium" | "high";
+    urgency?: number;
+    intimacy?: number;
+    subtext?: string;
+    tags?: string[];
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+}
+
+/**
+ * Build MessageMeta from options.
+ */
+function buildMeta(options?: MessageOptions): MessageMeta | undefined {
+    if (!options) return undefined;
+
+    const semantic: SemanticMeta = {};
+    if (options.mood) semantic.mood = options.mood;
+    if (options.intensity !== undefined) semantic.intensity = options.intensity;
+    if (options.secrecy) semantic.secrecy = options.secrecy;
+    if (options.urgency !== undefined) semantic.urgency = options.urgency;
+    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
+    if (options.subtext) semantic.subtext = options.subtext;
+    if (options.tags) semantic.tags = options.tags;
+
+    return {
+        type: options.type ?? "text",
+        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+    };
+}
+
+/**
+ * Beat builder collects operations within a beat.
+ */
+export class BeatBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private messageCounter = 0;
+    private lastMessageRef: MessageRef | undefined;
+
+    constructor(deviceId: string, appId: string, conversationId: string) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+    }
+
+    /**
+     * Wait for a duration.
+     */
+    wait(duration: string): this {
+        const op: WaitOp = { kind: "Wait", duration };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Start typing indicator.
+     * Returns a builder for fluent chaining: typing("Bob").for("2s")
+     */
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                // Expand to: TypingStart + Wait + TypingEnd
+                const start: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                const wait: WaitOp = { kind: "Wait", duration };
+                const end: TypingEndOp = {
+                    kind: "TypingEnd",
+                    actor,
+                    conversationId,
+                };
+                ops.push(start, wait, end);
+            },
+        };
+    }
+
+    /**
+     * Start typing without specifying duration.
+     * Use typingEnd() to stop.
+     */
+    typingStart(actor: string): this {
+        const op: TypingStartOp = {
+            kind: "TypingStart",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Stop typing indicator.
+     */
+    typingEnd(actor: string): this {
+        const op: TypingEndOp = {
+            kind: "TypingEnd",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Send a message (from device owner).
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    send(text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendMessageOp = {
+            kind: "SendMessage",
+            actor: "me",
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a message (from someone else).
+     * @param actor - Who sent the message
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveMessageOp = {
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    read(ref: MessageHandle): this {
+        const op: ReadMessageOp = { kind: "ReadMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Mark the last message as read.
+     */
+    readLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("readLast() called but no previous message exists");
+        }
+        return this.read(this.lastMessageRef);
+    }
+
+    /**
+     * Delete a message.
+     */
+    delete(ref: MessageHandle): this {
+        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Delete the last message.
+     */
+    deleteLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("deleteLast() called but no previous message exists");
+        }
+        return this.delete(this.lastMessageRef);
+    }
+
+    // =========================================================================
+    // MEDIA MESSAGE OPERATIONS
+    // =========================================================================
+
+    /**
+     * Media options for image, video, GIF messages.
+     */
+    private static readonly MEDIA_DEFAULTS = {
+        IMAGE_HEIGHT: 400,
+        VIDEO_HEIGHT: 400,
+        GIF_HEIGHT: 300,
+        VOICE_HEIGHT: 150,
+    };
+
+    /**
+     * Send an image message.
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendImageOp = {
+            kind: "SendImage",
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive an image message.
+     * @param actor - Who sent the image
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveImageOp = {
+            kind: "ReceiveImage",
+            actor,
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a video message.
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVideoOp = {
+            kind: "SendVideo",
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a video message.
+     * @param actor - Who sent the video
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVideoOp = {
+            kind: "ReceiveVideo",
+            actor,
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a GIF message.
+     * @param url - GIF URL (from Giphy, Tenor, etc.)
+     * @param options - Optional height
+     */
+    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendGifOp = {
+            kind: "SendGif",
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a GIF message.
+     * @param actor - Who sent the GIF
+     * @param url - GIF URL
+     * @param options - Optional height
+     */
+    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveGifOp = {
+            kind: "ReceiveGif",
+            actor,
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a voice note.
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVoiceOp = {
+            kind: "SendVoice",
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a voice note.
+     * @param actor - Who sent the voice note
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVoiceOp = {
+            kind: "ReceiveVoice",
+            actor,
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    // =========================================================================
+    // POV OPERATIONS (STORY GRAMMAR)
+    // =========================================================================
+
+    /**
+     * Switch point of view to a different device.
+     */
+    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Split POV - show multiple devices simultaneously.
+     */
+    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
+        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // RESERVED SIGNALS (DRAMA EVENTS)
+    // =========================================================================
+
+    /**
+     * Add a reaction to a message.
+     */
+    react(ref: MessageHandle, actor: string, emoji: string): this {
+        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Screenshot taken notification (drama!).
+     */
+    screenshot(): this {
+        const op: ScreenshotTakenOp = {
+            kind: "ScreenshotTaken",
+            conversationId: this.conversationId
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Missed call event.
+     */
+    missedCall(actor: string, callType?: "voice" | "video"): this {
+        const op: MissedCallOp = {
+            kind: "MissedCall",
+            actor,
+            conversationId: this.conversationId,
+            callType,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // CONCURRENT
+    // =========================================================================
+
+    /**
+     * Execute operations concurrently across multiple tracks.
+     */
+    concurrent(tracks: TrackFn[]): this {
+        const trackOps: SceneOp[][] = tracks.map((fn) => {
+            const trackBuilder = this.createTrackBuilder();
+            fn(trackBuilder);
+            return trackBuilder.getOps();
+        });
+
+        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Create a track builder for concurrent operations.
+     */
+    private createTrackBuilder(): TrackBuilderImpl {
+        return new TrackBuilderImpl(
+            this.deviceId,
+            this.appId,
+            this.conversationId,
+            () => ++this.messageCounter
+        );
+    }
+
+    /**
+     * Get collected operations.
+     */
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+
+/**
+ * Track builder implementation for concurrent operations.
+ */
+class TrackBuilderImpl implements TrackBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private readonly getNextId: () => number;
+
+    constructor(
+        deviceId: string,
+        appId: string,
+        conversationId: string,
+        getNextId: () => number
+    ) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+        this.getNextId = getNextId;
+    }
+
+    wait(duration: string): this {
+        this.ops.push({ kind: "Wait", duration });
+        return this;
+    }
+
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                ops.push({ kind: "TypingStart", actor, conversationId });
+                ops.push({ kind: "Wait", duration });
+                ops.push({ kind: "TypingEnd", actor, conversationId });
+            },
+        };
+    }
+
+    send(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "SendMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+````
+
 ## File: packages/episodes/src/examples/multi-pov-demo.json
 ````json
 {
@@ -20277,6 +24121,494 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
             "easing": "ease-out"
         }
     ]
+}
+````
+
+## File: packages/ir/src/scene.ts
+````typescript
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
+
+// =============================================================================
+// DURATION
+// =============================================================================
+
+/**
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
+ */
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
+    }
+
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
+    }
+}
+
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
+
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
+    return {
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
+    };
+}
+
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+
+    /** For voice messages */
+    voiceDuration?: number;
+
+    /** For media messages (height in pixels for layout) */
+    height?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS (CORE)
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+// =============================================================================
+// MEDIA MESSAGE OPERATIONS
+// =============================================================================
+
+/**
+ * Media message configuration with defaults.
+ */
+export interface MediaConfig {
+    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
+    readonly height?: number;
+    /** Caption text */
+    readonly caption?: string;
+    /** Auto-timing: skip automatic timing calculation */
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send an image message.
+ */
+export interface SendImageOp {
+    readonly kind: "SendImage";
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive an image message.
+ */
+export interface ReceiveImageOp {
+    readonly kind: "ReceiveImage";
+    readonly actor: string;
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a video message.
+ */
+export interface SendVideoOp {
+    readonly kind: "SendVideo";
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Video duration in seconds
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a video message.
+ */
+export interface ReceiveVideoOp {
+    readonly kind: "ReceiveVideo";
+    readonly actor: string;
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a GIF message.
+ */
+export interface SendGifOp {
+    readonly kind: "SendGif";
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a GIF message.
+ */
+export interface ReceiveGifOp {
+    readonly kind: "ReceiveGif";
+    readonly actor: string;
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a voice note.
+ */
+export interface SendVoiceOp {
+    readonly kind: "SendVoice";
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a voice note.
+ */
+export interface ReceiveVoiceOp {
+    readonly kind: "ReceiveVoice";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface ReactionAddedOp {
+    readonly kind: "ReactionAdded";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    // Core operations
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp
+    // Media operations
+    | SendImageOp
+    | ReceiveImageOp
+    | SendVideoOp
+    | ReceiveVideoOp
+    | SendGifOp
+    | ReceiveGifOp
+    | SendVoiceOp
+    | ReceiveVoiceOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Reserved signals
+    | ReactionAddedOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping, story rhythm, and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+}
+
+/**
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
+ */
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
+    readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
+    readonly durationInFrames?: number;
 }
 ````
 
@@ -23905,15 +28237,28 @@ export type Message = z.infer<typeof MessageSchema>;
 ## File: packages/renderer/src/layout/strategies/chat.ts
 ````typescript
 import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import {
+    MessageLayoutConfig,
+    DEFAULT_LAYOUT_CONFIG,
+    calculateMessageHeight,
+    applyEasing,
+    MessageForHeight,
+} from "@tokovo/apps-whatsapp/src/config/layout-config";
 
-// Constants for rect calculation (match WhatsApp UI)
-const BUBBLE_MARGIN_HORIZONTAL = 36;
-const BUBBLE_MAX_WIDTH_PERCENT = 0.78;
-const TYPING_BUBBLE_WIDTH = 150;
+// =============================================================================
+// CONFIGURABLE CHAT LAYOUT STRATEGY
+// =============================================================================
 
-export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-    const { world, t, activeConversationId, config, viewportHeight, viewportWidth } = ctx;
-    const chatConfig = config!.chat!;
+/**
+ * Compute chat layout using the configurable layout system.
+ * Supports smooth scrolling, configurable heights, and future features.
+ */
+export function computeChatLayout(
+    ctx: LayoutContext,
+    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): ChatLayoutState {
+    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
+    const config = layoutConfig;
 
     if (!activeConversationId || !world.conversations[activeConversationId]) {
         return {
@@ -23928,72 +28273,67 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
     const conversation = world.conversations[activeConversationId];
     // Filter messages visible at time t
-    // Messages without 'at' field (initial messages) are always visible
-    // Messages with 'at' field are visible when at <= t
     const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
 
     const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = chatConfig.topPadding;
+    let currentY = config.spacing.topPadding;
     let lastMessageId: string | undefined;
 
-    // 1. Layout messages
+    // 1. Layout messages with configurable heights
     for (const msg of messages) {
-        // Calculate height based on message type
-        let height: number;
+        // Calculate height using the config-based function
+        const msgForHeight: MessageForHeight = {
+            type: msg.type as MessageForHeight["type"],
+            text: msg.text,
+            caption: (msg as any).caption,
+            from: msg.from,
+            reactions: (msg as any).reactions,
+            replyTo: (msg as any).replyTo,
+            linkPreview: (msg as any).linkPreview,
+        };
+
+        const height = calculateMessageHeight(msgForHeight, config);
+
+        // Calculate bubble width
         let bubbleWidth: number;
+        const msgType = msg.type || "text";
 
-        if (msg.type === "system") {
-            // System messages are shorter (single line centered pill)
-            height = 80;
+        if (msgType === "system") {
             bubbleWidth = viewportWidth * 0.6; // Centered system message
-        } else if (msg.type === "voice") {
-            // Voice messages have fixed height
-            height = 180;
+        } else if (msgType === "voice") {
             bubbleWidth = 450; // Fixed voice message width
+        } else if (msgType === "image" || msgType === "video" || msgType === "gif") {
+            bubbleWidth = viewportWidth * config.spacing.bubbleMaxWidth;
         } else {
-            // Text messages: calculate based on text length
+            // Text messages: width based on content
             const textLength = msg.text?.length || 0;
-            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-
-            // Height breakdown:
-            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
-            // - Text: lines * lineHeight
-            // - Timestamp row: ~40px (at 3x = 120)
-            // - Sender name (groups): additional 50px
-            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
-            const timestampHeight = 40;     // Timestamp row
-            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
-            const senderNameHeight = hasSenderName ? 45 : 0;
-
-            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
-
-            // Width: Use same line-wrap logic as height
-            // Width based on actual content lines, not raw length
-            const avgCharWidth = 14; // Approximate at 3x scale
-            const maxCharsOnLine = Math.min(textLength, chatConfig.charsPerLine);
-            const textWidth = maxCharsOnLine * avgCharWidth + 72; // + padding
-            bubbleWidth = Math.min(viewportWidth * BUBBLE_MAX_WIDTH_PERCENT, Math.max(textWidth, 150));
+            const avgCharWidth = 14;
+            const maxCharsOnLine = Math.min(textLength, config.heights.text.charsPerLine);
+            const textWidth = maxCharsOnLine * avgCharWidth + 72;
+            bubbleWidth = Math.min(
+                viewportWidth * config.spacing.bubbleMaxWidth,
+                Math.max(textWidth, 150)
+            );
         }
 
-        // Animation: Slide in / Fade in
+        // Animation: Slide in / Fade in with configurable duration
         const messageAt = msg.at ?? 0;
         const timeSinceAppear = t - messageAt;
         let opacity = 1;
         let translateY = 0;
 
-        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
-            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
-            // Simple ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
+        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
+            const progress = timeSinceAppear / config.animation.messageAppearDuration;
+            const ease = applyEasing(progress, "easeOut");
             opacity = ease;
-            translateY = chatConfig.messageAppearOffset * (1 - ease);
+            translateY = config.animation.messageAppearOffset * (1 - ease);
         }
 
         // Compute rect for director targeting
         const isMe = msg.from === "me";
         const rectX = isMe
-            ? viewportWidth - BUBBLE_MARGIN_HORIZONTAL - bubbleWidth
-            : BUBBLE_MARGIN_HORIZONTAL;
+            ? viewportWidth - config.spacing.bubbleMargin - bubbleWidth
+            : config.spacing.bubbleMargin;
 
         messageLayouts[msg.id] = {
             id: msg.id,
@@ -24010,39 +28350,37 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
         };
 
         lastMessageId = msg.id;
-        currentY += height + chatConfig.verticalGap;
+        currentY += height + config.spacing.gap;
     }
 
     // 2. Typing indicator
     let typingLayout: TypingLayout | null = null;
     const isTyping = Object.values(conversation.typing || {}).some(v => v);
     if (isTyping) {
-        const height = chatConfig.baseBubbleHeight;
+        const height = 120; // Typing bubble height
         typingLayout = {
             y: currentY,
             height,
             opacity: 1,
             rect: {
-                x: BUBBLE_MARGIN_HORIZONTAL,
+                x: config.spacing.bubbleMargin,
                 y: currentY,
-                width: TYPING_BUBBLE_WIDTH,
+                width: 150,
                 height,
             },
         };
-        currentY += height + chatConfig.verticalGap;
+        currentY += height + config.spacing.gap;
     }
 
-    const contentHeight = currentY + chatConfig.bottomPadding;
+    const contentHeight = currentY + config.spacing.bottomPadding;
 
-    // 3. Scroll Position
-    // Lock to bottom logic
+    // 3. Scroll Position with smooth scrolling
     let scrollY = 0;
-    if (chatConfig.lockToBottom) {
+    if (config.scroll.lockToBottom) {
         const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
 
-        // TODO: Implement smooth scrolling based on message arrival times if needed
-        // For now, instant snap to bottom is robust
+        // For now, instant scroll (smooth scroll can be added with cursor tracking)
+        scrollY = maxScroll;
     }
 
     return {
@@ -24057,6 +28395,9 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
         }
     };
 }
+
+// For backward compatibility, export the config types
+export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };
 ````
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -24066,6 +28407,17 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
  * 
  * Handles all WhatsApp-specific events.
  * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
  */
 
 import {
@@ -24075,6 +28427,39 @@ import {
     APP_IDS
 } from "@tokovo/core";
 
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+}
+
 /**
  * WhatsApp reducer - handles all WhatsApp events
  */
@@ -24082,29 +28467,42 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     // Only handle APP events for WhatsApp
     if (event.kind !== "APP") return;
 
-    // Type assertion for APP events
+    // Type assertion for APP events with extended payload
     const appEvent = event as TimelineEvent & {
         appId: string;
         conversationId?: string;
         from?: string;
         text?: string;
-        message?: {
-            id?: string;
-            type?: string;
-            text?: string;
-            status?: string;
-            timestamp?: string;
-            imageUrl?: string;
-        };
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
         memberId?: string;
         memberName?: string;
         addedBy?: string;
         removedBy?: string;
+        // Voice-specific fields
         duration?: number;
+        // Read receipt fields
         messageId?: string;
+        // Navigation fields
+        screen?: string;
     };
 
     if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "NAVIGATE") {
+        // Navigation handled by AppState, no message processing needed
+        return;
+    }
 
     // Get conversation ID from event
     const conversationId = appEvent.conversationId;
@@ -24112,22 +28510,44 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
     // Ensure conversation exists
     if (!draft.conversations[conversationId]) {
-        draft.conversations[conversationId] = { id: conversationId, messages: [] };
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
     }
     const conversation = draft.conversations[conversationId];
 
-    switch (event.type) {
-        case "MESSAGE_RECEIVED": {
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
             const msgPayload = appEvent.message || {};
-            conversation.messages.push({
-                ...msgPayload,
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            const newMessage: WhatsAppMessage = {
                 id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
                 text: appEvent.text || msgPayload.text,
-                type: (msgPayload.type as "text" | "image" | "voice" | "system") || "text",
                 at: event.at,
-                status: (msgPayload.status as "sending" | "sent" | "delivered" | "read") || "delivered",
-            });
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
             break;
         }
 
@@ -24148,7 +28568,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
         case "GROUP_MEMBER_ADDED": {
             const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `sys_${event.at}_added_${appEvent.memberId}`,
                 from: "system",
                 type: "system",
@@ -24157,7 +28577,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 targetMember: appEvent.memberName,
                 actorName: addedBy,
                 at: event.at
-            });
+            } as WhatsAppMessage);
             if (!conversation.members) conversation.members = [];
             conversation.members.push({
                 id: appEvent.memberId || "",
@@ -24168,7 +28588,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
         case "GROUP_MEMBER_REMOVED": {
             const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `sys_${event.at}_removed_${appEvent.memberId}`,
                 from: "system",
                 type: "system",
@@ -24177,7 +28597,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 targetMember: appEvent.memberName,
                 actorName: removedBy,
                 at: event.at
-            });
+            } as WhatsAppMessage);
             if (conversation.members) {
                 conversation.members = conversation.members.filter(
                     (m: { id: string }) => m.id !== appEvent.memberId
@@ -24187,14 +28607,14 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         }
 
         case "VOICE_MESSAGE_RECEIVED": {
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `voice_${event.at}_${appEvent.from}`,
                 from: appEvent.from || "unknown",
                 type: "voice",
                 duration: appEvent.duration,
                 at: event.at,
                 status: "delivered"
-            });
+            } as WhatsAppMessage);
             break;
         }
 
@@ -24602,21 +29022,6 @@ export * from "./transitions";
 export * from "./director-lite";
 ````
 
-## File: packages/episodes/src/index.ts
-````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
-import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
-import cameraShowcase from "./examples/camera-showcase.json";
-import multiPovDemo from "./examples/multi-pov-demo.json";
-
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo };
-````
-
 ## File: packages/renderer/src/index.ts
 ````typescript
 export { TokovoRenderer } from "./TokovoRenderer";
@@ -24634,6 +29039,22 @@ export { AudioLayer } from "./AudioLayer";
 export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
 export * from "./layout";
+````
+
+## File: packages/episodes/src/index.ts
+````typescript
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+import androidEpisode from "./examples/android-test.json";
+import instagramEpisode from "./examples/instagram-test.json";
+import notificationCallDemo from "./examples/notification-call-demo.json";
+import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
+import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
+import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
+
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
 ````
 
 ## File: packages/renderer/src/registry.ts
@@ -24730,13 +29151,31 @@ import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
+import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
+import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="WhatsappMediaShowcase"
+                component={WhatsappMediaShowcaseVideo}
+                durationInFrames={700}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappProductionDemo"
+                component={WhatsappProductionDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}
@@ -24820,6 +29259,7 @@ import React from "react";
 import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens, androidTokens } from "@tokovo/core";
 
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+import { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./components/MediaBubbles";
 
 // Get platform-specific config
 const getWhatsAppConfig = (platform: Platform) => getAppConfig("whatsapp", platform);
@@ -25155,9 +29595,84 @@ const MessageList: React.FC<MessageListProps> = ({
                         );
                     }
 
+                    // Render Image messages
+                    if (msg.type === "image") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <ImageMessageBubble
+                                    imageUrl={msg.imageUrl || ""}
+                                    caption={msg.caption}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
+
+                    // Render Video messages
+                    if (msg.type === "video") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <VideoMessageBubble
+                                    thumbnailUrl={msg.thumbnailUrl || ""}
+                                    duration={msg.duration || 0}
+                                    caption={msg.caption}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    isPlaying={msg.isPlaying}
+                                    playProgress={msg.playProgress || 0}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
+
+                    // Render GIF messages
+                    if (msg.type === "gif") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <GifMessageBubble
+                                    gifUrl={msg.gifUrl || ""}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
 
 
-                    // Render Deleted Message
                     if (msg.type === "deleted") {
                         const isMe = msg.from === ownerName;
                         return (
@@ -25920,7 +30435,7 @@ export interface Message {
     id: string;
     from: string;                    // "me" or member ID
     text?: string;
-    type?: "text" | "image" | "voice" | "system";
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
     at?: number;                     // Timestamp frame
 
     // System message
@@ -25933,8 +30448,54 @@ export interface Message {
     isPlaying?: boolean;
     playProgress?: number;
 
+    // Image message
+    imageUrl?: string;
+
+    // Video message
+    videoUrl?: string;
+    thumbnailUrl?: string;
+
+    // GIF message
+    gifUrl?: string;
+
+    // Caption for media messages
+    caption?: string;
+
+    // Layout hints
+    height?: number;
+
+    // Future features
+    reactions?: Reaction[];
+    replyTo?: ReplyTo;
+    linkPreview?: LinkPreview;
+
     // Read status
     status?: "sending" | "sent" | "delivered" | "read";
+}
+
+// =============================================================================
+// FUTURE FEATURES - Message Extensions
+// =============================================================================
+
+export interface Reaction {
+    emoji: string;
+    from: string;
+    at?: number;
+}
+
+export interface ReplyTo {
+    messageId: string;
+    text?: string;
+    from: string;
+    type?: "text" | "image" | "video" | "gif" | "voice";
+}
+
+export interface LinkPreview {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
 }
 
 // =============================================================================

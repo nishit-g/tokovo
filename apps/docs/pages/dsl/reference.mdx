@@ -1,0 +1,188 @@
+---
+title: DSL Reference
+description: Complete reference for the Tokovo DSL
+---
+
+# DSL Reference
+
+The Tokovo DSL (Domain Specific Language) is a fluent TypeScript API for authoring episodes.
+
+---
+
+## Episode Builder
+
+The entry point for creating episodes:
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const sceneIR = episode("my-episode", ep => {
+    ep.config({ fps: 30, title: "My Episode" });
+    
+    ep.device("MyPhone", "iphone16", d => {
+        d.owner("Alice");  // For multi-POV
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob" });
+        
+        d.beat("intro", b => {
+            b.receive("Bob", "Hey there!");
+            b.wait("1s");
+            b.send("Hi!");
+        });
+    });
+});
+```
+
+---
+
+## Device Builder
+
+Defines a device's story:
+
+| Method | Description |
+|--------|-------------|
+| `owner(name)` | Set owner for multi-POV (their messages on right) |
+| `app(appId)` | Set the app (default: `app_whatsapp`) |
+| `conversation(id, config)` | Define a conversation |
+| `beat(name, fn)` | Define a beat (group of actions) |
+
+---
+
+## Beat Builder
+
+Actions within a beat:
+
+### Messages
+
+```typescript
+b.send("Hello");                      // Send text
+b.receive("Bob", "Hi there!");        // Receive text
+b.typing("Bob").for("2s");            // Typing indicator
+```
+
+### Media Messages
+
+```typescript
+b.sendImage("https://...");           // Send image
+b.receiveImage("Bob", "https://...", { caption: "Look!" });
+
+b.sendVideo("https://...", 30);       // 30 second video
+b.receiveVideo("Bob", "https://...", 15);
+
+b.sendGif("https://...");             // GIF
+b.receiveGif("Bob", "https://...");
+
+b.sendVoice(10);                      // 10 second voice note
+b.receiveVoice("Bob", 8);
+```
+
+### Navigation (Phase 12)
+
+```typescript
+b.showScreen("chats-list");           // Navigate to screen
+b.openChat("dm_alice");               // Open specific chat
+b.goBack();                           // Go back
+```
+
+### Control
+
+```typescript
+b.wait("2s");                         // Wait
+b.concurrent([                         // Parallel actions
+    t => t.receive("A", "Hi"),
+    t => t.receive("B", "Hello"),
+]);
+```
+
+---
+
+## Camera Builder (Phase 13)
+
+For multi-POV episodes:
+
+```typescript
+ep.camera(c => {
+    c.at("3s").cut("BobPhone");
+    c.at("6s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    c.at("12s").layout("PIP", "BobPhone", "AlicePhone");
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `at(time)` | Set time for following operations |
+| `cut(deviceId)` | Cut to device |
+| `layout(type, primary, secondary)` | Set multi-device layout |
+
+Layout types: `SINGLE`, `SPLIT_HORIZONTAL`, `SPLIT_VERTICAL`, `PIP`
+
+---
+
+## Scene Builder (Phase 13)
+
+Cross-device coordination:
+
+```typescript
+ep.scene("argument", s => {
+    s.device("AlicePhone", d => {
+        d.conversation("dm_bob");
+        d.beat("alice-message", b => b.send("Where are you?"));
+    });
+    
+    s.device("BobPhone", d => {
+        d.conversation("dm_alice");
+        d.beat("bob-sees", b => b.wait("1s"));
+    });
+});
+```
+
+---
+
+## Full Example
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export const multiPOV = episode("two-sides", ep => {
+    ep.config({ fps: 30, title: "Two Sides of the Story" });
+
+    // Alice's phone
+    ep.device("AlicePhone", "iphone16", d => {
+        d.owner("Alice");
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob 💕" });
+        
+        d.beat("waiting", b => {
+            b.showScreen("chats-list");
+            b.wait("2s");
+            b.openChat("dm_bob");
+        });
+        
+        d.beat("messages", b => {
+            b.send("Where are you?");
+            b.wait("3s");
+            b.receive("Bob 💕", "On my way!");
+        });
+    });
+
+    // Bob's phone
+    ep.device("BobPhone", "iphone16", d => {
+        d.owner("Bob");
+        d.app("app_whatsapp");
+        d.conversation("dm_alice", { name: "Alice ❤️" });
+        
+        d.beat("reply", b => {
+            b.receive("Alice ❤️", "Where are you?");
+            b.typing("Bob").for("1s");
+            b.send("On my way!");
+        });
+    });
+
+    // Camera cuts
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");
+        c.at("5s").cut("BobPhone");
+        c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    });
+});
+```

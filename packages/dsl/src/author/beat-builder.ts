@@ -30,6 +30,10 @@ import {
     POVSwitchOp,
     SplitPOVOp,
     POVLayout,
+    // Navigation operations
+    NavigateScreenOp,
+    OpenChatOp,
+    GoBackOp,
     // Reserved signals
     ReactionAddedOp,
     ScreenshotTakenOp,
@@ -526,6 +530,62 @@ export class BeatBuilder {
             this.conversationId,
             () => ++this.messageCounter
         );
+    }
+
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
+
+    /**
+     * Navigate to a screen within the app.
+     * @param screen - Target screen (chats-list, chat, settings, status, calls)
+     * @param options - Transition options
+     */
+    showScreen(
+        screen: "chats-list" | "chat" | "settings" | "status" | "calls",
+        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: number }
+    ): this {
+        const op: NavigateScreenOp = {
+            kind: "NavigateScreen",
+            screen,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Open a specific chat (navigate to chat screen with conversation).
+     * @param conversationId - ID of the conversation to open
+     * @param options - Transition options
+     */
+    openChat(
+        conversationId: string,
+        options?: { transition?: "push" | "pop"; duration?: number }
+    ): this {
+        const op: OpenChatOp = {
+            kind: "OpenChat",
+            conversationId,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Go back to the previous screen.
+     * @param options - Transition options
+     */
+    goBack(options?: { transition?: "pop" | "dismiss"; duration?: number }): this {
+        const op: GoBackOp = {
+            kind: "GoBack",
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
     }
 
     /**

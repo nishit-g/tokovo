@@ -20,6 +20,7 @@ export class DeviceBuilder {
     private readonly deviceId: string;
     private readonly profileId: string;
     private appId: string = "app_whatsapp"; // Default app
+    private ownerName: string | undefined;  // For multi-POV
     private readonly conversations: ConversationDef[] = [];
     private readonly beats: Beat[] = [];
     private currentConversationId: string | undefined;
@@ -27,6 +28,15 @@ export class DeviceBuilder {
     constructor(deviceId: string, profileId: string = "iphone16") {
         this.deviceId = deviceId;
         this.profileId = profileId;
+    }
+
+    /**
+     * Set the owner name for this device (for multi-POV stories).
+     * The owner's messages appear on the right side.
+     */
+    owner(name: string): this {
+        this.ownerName = name;
+        return this;
     }
 
     /**

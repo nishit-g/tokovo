@@ -1,0 +1,153 @@
+---
+title: Scene Builder
+description: Cross-device scene coordination
+---
+
+# Scene Builder
+
+The Scene Builder coordinates actions across multiple devices within a single scene.
+
+---
+
+## Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("cross-device", ep => {
+    ep.device("AlicePhone", d => { /* setup */ });
+    ep.device("BobPhone", d => { /* setup */ });
+    
+    ep.scene("argument", s => {
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("alice-sends", b => {
+                b.send("Where are you?!");
+            });
+        });
+        
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("bob-receives", b => {
+                b.receive("Alice", "Where are you?!");
+                b.wait("1.5s");
+            });
+        });
+    });
+});
+```
+
+---
+
+## Why Scenes?
+
+Scenes enable:
+
+1. **Coordinated timing** - Actions across devices happen in sync
+2. **Story clarity** - Groups related cross-device moments
+3. **Camera cues** - Easy to align camera cuts with scene boundaries
+
+---
+
+## Scene Builder Methods
+
+### device(deviceId, fn)
+
+Define actions for a device within this scene.
+
+```typescript
+s.device("AlicePhone", d => {
+    d.conversation("dm_bob");
+    d.beat("action", b => {
+        b.send("Hello!");
+    });
+});
+```
+
+---
+
+## SceneDeviceBuilder Methods
+
+### conversation(id)
+
+Set the conversation context.
+
+```typescript
+d.conversation("dm_bob");
+```
+
+### beat(name, fn)
+
+Define a beat with actions.
+
+```typescript
+d.beat("my-beat", b => {
+    b.receive("Bob", "Hey!");
+    b.send("Hi there!");
+});
+```
+
+---
+
+## Full Example
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export default episode("two-sides", ep => {
+    ep.config({ fps: 30, title: "Two Sides" });
+
+    // Setup devices
+    ep.device("AlicePhone", "iphone16", d => {
+        d.owner("Alice");
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob 💕" });
+    });
+
+    ep.device("BobPhone", "iphone16", d => {
+        d.owner("Bob");
+        d.app("app_whatsapp");
+        d.conversation("dm_alice", { name: "Alice ❤️" });
+    });
+
+    // Scene 1: Alice texts Bob
+    ep.scene("alice-texts", s => {
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("send", b => {
+                b.send("Where are you? 👀");
+            });
+        });
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("receive", b => {
+                b.receive("Alice ❤️", "Where are you? 👀");
+            });
+        });
+    });
+
+    // Scene 2: Bob's excuse
+    ep.scene("bob-lies", s => {
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("reply", b => {
+                b.typing("Bob").for("2s");
+                b.send("Traffic is crazy! 🚗");
+            });
+        });
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("sees-reply", b => {
+                b.receive("Bob 💕", "Traffic is crazy! 🚗");
+            });
+        });
+    });
+
+    // Camera matches scenes
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");
+        c.at("4s").cut("BobPhone");
+        c.at("8s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    });
+});
+```

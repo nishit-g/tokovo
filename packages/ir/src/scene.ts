@@ -391,6 +391,41 @@ export interface BlockedUserOp {
     readonly actor: string;
 }
 
+// =============================================================================
+// NAVIGATION OPERATIONS
+// =============================================================================
+
+/**
+ * Navigate to a screen within an app.
+ * Enables transitions from chats list to chat, settings, etc.
+ */
+export interface NavigateScreenOp {
+    readonly kind: "NavigateScreen";
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+    readonly animationDuration?: number;  // frames
+}
+
+/**
+ * Open a specific chat.
+ * Combines navigation with conversation selection.
+ */
+export interface OpenChatOp {
+    readonly kind: "OpenChat";
+    readonly conversationId: string;
+    readonly transition?: "push" | "pop";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Go back to previous screen.
+ */
+export interface GoBackOp {
+    readonly kind: "GoBack";
+    readonly transition?: "pop" | "dismiss";
+    readonly animationDuration?: number;
+}
+
 /**
  * Union of all scene operations.
  */
@@ -416,6 +451,10 @@ export type SceneOp =
     // POV operations
     | POVSwitchOp
     | SplitPOVOp
+    // Navigation operations
+    | NavigateScreenOp
+    | OpenChatOp
+    | GoBackOp
     // Reserved signals
     | ReactionAddedOp
     | VoiceNoteSentOp

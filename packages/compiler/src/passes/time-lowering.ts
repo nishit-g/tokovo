@@ -487,6 +487,64 @@ function lowerOp(
             return events;
         }
 
+        // =====================================================================
+        // NAVIGATION OPERATIONS
+        // =====================================================================
+
+        case "NavigateScreen": {
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: op.screen,
+                transition: op.transition,
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        case "OpenChat": {
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: "chat" as const,
+                conversationId: op.conversationId,
+                transition: op.transition,
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        case "GoBack": {
+            // Go back uses the same ScreenNavigated event but we don't know target screen
+            // The runtime will handle this as a "pop" from navigation stack
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: "chats-list" as const,  // Default assumption for go back
+                transition: op.transition ?? "pop",
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
         default:
             return [];
     }

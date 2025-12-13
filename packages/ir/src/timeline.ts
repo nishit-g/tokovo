@@ -152,6 +152,18 @@ export interface MessageDeletedOp extends TimelineOpBase {
 }
 
 /**
+ * Screen navigated within app.
+ */
+export interface ScreenNavigatedOp extends TimelineOpBase {
+    readonly kind: "ScreenNavigated";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly conversationId?: string;  // For "chat" screen
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+}
+
+/**
  * Union of all timeline operations.
  */
 export type TimelineOp =
@@ -163,7 +175,8 @@ export type TimelineOp =
     | MessageReceivedOp
     | MessageSentOp
     | MessageReadOp
-    | MessageDeletedOp;
+    | MessageDeletedOp
+    | ScreenNavigatedOp;
 
 // =============================================================================
 // TIMELINE IR (COMPLETE)

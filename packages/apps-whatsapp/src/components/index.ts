@@ -16,3 +16,11 @@ export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./Medi
 
 // Chats List Screen
 export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
+
+// iOS Status Bar
+export { iOSStatusBar, BubbleTail } from "./iOSStatusBar";
+
+// Advanced Features (Phase 16)
+export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";
+export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPreview";
+export { ReplyQuote, type ReplyToData } from "./ReplyQuote";

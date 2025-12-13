@@ -7,6 +7,8 @@
 
 import { SceneIR, EpisodeMeta } from "@tokovo/ir";
 import { DeviceBuilder, BeatFn } from "./device-builder";
+import { CameraBuilder, CameraEvent } from "./camera-builder";
+import { SceneBuilder } from "./scene-builder";
 import { EpisodeConfig } from "../types";
 
 /**
@@ -15,12 +17,24 @@ import { EpisodeConfig } from "../types";
 export type DeviceFn = (d: DeviceBuilder) => void;
 
 /**
+ * Camera callback function.
+ */
+export type CameraFn = (c: CameraBuilder) => void;
+
+/**
+ * Scene callback function.
+ */
+export type SceneFn = (s: SceneBuilder) => void;
+
+/**
  * Episode builder collects devices and metadata.
  */
 export class EpisodeBuilder {
     private readonly episodeId: string;
     private readonly meta: EpisodeMeta;
     private readonly deviceBuilders: DeviceBuilder[] = [];
+    private readonly cameraEvents: CameraEvent[] = [];
+    private readonly scenes: SceneBuilder[] = [];
 
     constructor(episodeId: string, config: EpisodeConfig = {}) {
         this.episodeId = episodeId;
@@ -67,6 +81,28 @@ export class EpisodeBuilder {
     }
 
     /**
+     * Define camera operations for multi-POV.
+     * Camera operations control cuts, layouts, and effects.
+     */
+    camera(fn: CameraFn): this {
+        const builder = new CameraBuilder();
+        fn(builder);
+        this.cameraEvents.push(...builder.getEvents());
+        return this;
+    }
+
+    /**
+     * Define a cross-device scene.
+     * Scenes coordinate actions across multiple devices.
+     */
+    scene(name: string, fn: SceneFn): this {
+        const builder = new SceneBuilder(name);
+        fn(builder);
+        this.scenes.push(builder);
+        return this;
+    }
+
+    /**
      * Build the Scene IR.
      */
     build(): SceneIR {
@@ -74,6 +110,7 @@ export class EpisodeBuilder {
             episodeId: this.episodeId,
             meta: this.meta,
             devices: this.deviceBuilders.map((b) => b.build()),
+            // TODO: Include camera events and scenes in SceneIR
         };
     }
 }
