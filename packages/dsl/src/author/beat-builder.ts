@@ -588,6 +588,58 @@ export class BeatBuilder {
         return this;
     }
 
+    /**
+     * Navigate to a different app.
+     * @param appId - Target app ID (e.g., "app_twitter", "app_whatsapp")
+     * @param options - Navigation options
+     */
+    navigate(
+        appId: string,
+        options?: {
+            screen?: string;
+            conversationId?: string;
+            transition?: "push" | "pop" | "present";
+            duration?: number
+        }
+    ): this {
+        const op = {
+            kind: "AppNavigate" as const,
+            appId,
+            screen: options?.screen,
+            conversationId: options?.conversationId,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op as any);
+        return this;
+    }
+
+    /**
+     * Show a device notification.
+     * @param appId - App that's sending the notification
+     * @param options - Notification content and display options
+     */
+    notification(
+        appId: string,
+        options: {
+            title: string;
+            body: string;
+            mode?: "lockscreen" | "headsup" | "both";
+            icon?: string;
+        }
+    ): this {
+        const op = {
+            kind: "ShowNotification" as const,
+            appId,
+            title: options.title,
+            body: options.body,
+            mode: options.mode || "headsup",
+            icon: options.icon,
+        };
+        this.ops.push(op as any);
+        return this;
+    }
+
     // =========================================================================
     // TWITTER / X
     // =========================================================================

@@ -20,11 +20,12 @@ Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagemen
 - ✅ Header with For You / Following tabs
 - ✅ Bottom navigation (Home, Search, Grok, Notifications, Messages)
 - ✅ Compose FAB button
-- 🔜 Tweet detail screen
-- 🔜 Profile screen
-- 🔜 Video/GIF playback
-- 🔜 Polls
-- 🔜 Threads
+- ✅ Tweet detail screen
+- ✅ Profile screen
+- ✅ Notifications screen
+- ✅ Search/Explore screen
+- ✅ Poll component
+- ✅ Compose modal
 
 ## DSL Usage
 
@@ -32,7 +33,7 @@ Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagemen
 
 ```typescript
 d.beat("timeline", b => {
-    // Basic tweet from verified user
+    // Tweet from verified user
     const tweet = b.tweetReceived(
         { 
             name: "Elon Musk", 
@@ -111,37 +112,35 @@ twitterColors.engagement.retweet    // #00BA7C (green)
 twitterColors.verified.blue         // #1D9BF0
 twitterColors.verified.gold         // #E2B719
 twitterColors.verified.grey         // #829AAB
+twitterColors.border.primary        // #2F3336
 
 // Typography (scaled 3x for Remotion)
-twitterTypography.displayName       // 48px, bold
-twitterTypography.tweetText         // 45px
-twitterTypography.metrics           // 39px
+twitterTypography.sizes.displayName  // 45px
+twitterTypography.sizes.tweetText    // 45px
+twitterTypography.sizes.engagement   // 39px
+twitterTypography.weights.bold       // 700
 
 // Spacing
-twitterSpacing.avatar.default       // 120px
-twitterSpacing.tweetPadding         // 36px
+twitterSpacing.avatarSize            // 120px
+twitterSpacing.tweetPadding          // 48px
+twitterSpacing.horizontalPadding     // 48px
 ```
 
-## Layout Configuration
+## DSL ↔ Runtime Sync
 
-Tweet height calculation and media grids:
+The Twitter DSL methods emit standard Tokovo events:
 
-```typescript
-import { calculateTweetHeight, mediaGridLayouts } from "@tokovo/apps-twitter/config";
+| DSL Method | IR Op | Timeline Event | Runtime Action |
+|------------|-------|----------------|----------------|
+| `tweetReceived()` | `ReceiveMessage` | `MESSAGE_RECEIVED` | Creates tweet in timeline |
+| `postTweet()` | `SendMessage` | `MESSAGE_SENT` | Creates user's tweet |
+| `likeTweet()` | `ReactionAdded` (❤️) | `REACTION_ADDED` | Sets `isLiked=true` |
+| `retweetTweet()` | `ReactionAdded` (🔁) | `REACTION_ADDED` | Sets `isRetweeted=true` |
+| `quoteTweet()` | `SendMessage` (meta.type=quote) | `MESSAGE_SENT` | Creates quote tweet |
+| `replyTweet()` | `SendMessage` (meta.type=reply) | `MESSAGE_SENT` | Creates reply |
+| `bookmarkTweet()` | `ReactionAdded` (🔖) | `REACTION_ADDED` | Sets `isBookmarked=true` |
 
-// Dynamic tweet height
-const height = calculateTweetHeight({
-    text: "Hello world!",
-    hasMedia: true,
-    mediaCount: 2,
-    hasQuoteTweet: false,
-    isReply: false
-});
-
-// Media grid layouts for 1-4 images
-const layout = mediaGridLayouts[2];  // 2 images: side by side
-// layout = { columns: 2, rows: 1, aspectRatio: "16/9" }
-```
+**Conversation ID**: `__twitter_timeline__` identifies Twitter events.
 
 ## Components
 
@@ -150,24 +149,26 @@ const layout = mediaGridLayouts[2];  // 2 images: side by side
 | `Header` | X logo, profile avatar, For You/Following tabs |
 | `BottomNav` | 5-tab nav: Home, Search, Grok, Notifications, Messages |
 | `Tweet` | Full tweet with avatar, text, media, actions |
-| `Avatar` | Profile picture with verified badge |
+| `Avatar` | Profile picture with verified badge (small/medium/large) |
 | `TweetActions` | Reply, RT, Like, Views, Bookmark, Share |
 | `MediaGrid` | 1-4 image layouts with video overlays |
+| `TweetDetail` | Full thread view with expanded tweet and replies |
+| `Profile` | User profile with banner, bio, and tweet tabs |
+| `Notifications` | Notification list with like/RT/follow/mention types |
+| `Search` | Explore screen with trending topics |
+| `Poll` | Voting UI with results |
+| `ComposeModal` | Tweet composition with character count |
 
-## Runtime Events
+## Screens
 
-| Event | Description |
-|-------|-------------|
-| `TWEET_POSTED` | User posts a new tweet |
-| `TWEET_RECEIVED` | Tweet appears in timeline |
-| `TWEET_LIKED` | User likes a tweet |
-| `TWEET_UNLIKED` | User unlikes a tweet |
-| `TWEET_RETWEETED` | User retweets |
-| `TWEET_QUOTED` | User quotes with comment |
-| `TWEET_REPLIED` | User replies to tweet |
-| `TWEET_BOOKMARKED` | User bookmarks tweet |
-| `SCREEN_NAVIGATED` | Navigate to different screen |
-| `TAB_CHANGED` | Switch between For You/Following |
+| Screen | Route | Description |
+|--------|-------|-------------|
+| `timeline` | Home | Main feed with tweets |
+| `tweet-detail` | Thread | Single tweet + replies |
+| `profile` | Profile | User's profile page |
+| `notifications` | Notifications | Activity feed |
+| `search` | Explore | Search + trending |
+| `messages` | DMs | Direct messages |
 
 ## File Structure
 
@@ -175,7 +176,7 @@ const layout = mediaGridLayouts[2];  // 2 images: side by side
 packages/apps-twitter/
 ├── src/
 │   ├── config/
-│   │   ├── twitter-theme.ts     # Colors, typography
+│   │   ├── twitter-theme.ts     # Colors, typography, borders
 │   │   └── layout-config.ts     # Heights, media grids
 │   ├── components/
 │   │   ├── Avatar.tsx           # Profile pic + badges
@@ -183,7 +184,13 @@ packages/apps-twitter/
 │   │   ├── TweetActions.tsx     # Engagement bar
 │   │   ├── MediaGrid.tsx        # Image layouts
 │   │   ├── Header.tsx           # Top navigation
-│   │   └── BottomNav.tsx        # Bottom tabs
+│   │   ├── BottomNav.tsx        # Bottom tabs
+│   │   ├── TweetDetail.tsx      # Thread view
+│   │   ├── Profile.tsx          # User profile
+│   │   ├── Notifications.tsx    # Activity feed
+│   │   ├── Search.tsx           # Explore
+│   │   ├── Poll.tsx             # Voting UI
+│   │   └── ComposeModal.tsx     # Composition
 │   ├── runtime.ts               # Event reducer
 │   ├── plugin.ts                # Registration
 │   ├── ui.tsx                   # Main renderer
@@ -193,3 +200,5 @@ packages/apps-twitter/
 ## Example Episode
 
 See `packages/dsl/examples/twitter-showcase.dsl.ts` for a complete timeline demo.
+
+For multi-app examples combining Twitter with WhatsApp and notifications, see `packages/dsl/examples/multi-app-showcase.dsl.ts`.
