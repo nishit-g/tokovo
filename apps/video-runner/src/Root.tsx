@@ -10,6 +10,7 @@ import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
 import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
+import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
@@ -20,6 +21,14 @@ import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="FullCinematicShowcase"
+                component={FullCinematicShowcaseVideo}
+                durationInFrames={720}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="CinematicCameraShowcase"
                 component={CinematicCameraShowcaseVideo}

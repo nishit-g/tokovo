@@ -374,22 +374,97 @@ export interface CameraViewConfig {
 }
 
 // =============================================================================
-// AUDIO SYSTEM TYPES
+// AUDIO SYSTEM TYPES (Production-Grade)
 // =============================================================================
 
-// Active sound instance
+// Audio bus types - routes audio through mixer
+export type AudioBus = "music" | "ui" | "sfx" | "voice" | "master";
+
+// Sound origin - where the sound comes from
+export type SoundOrigin = "device" | "app" | "world";
+
+// Bus configuration
+export interface AudioBusConfig {
+    baseGain: number;          // 0-1, default volume for this bus
+    maxConcurrent: number;     // Max simultaneous sounds on this bus
+}
+
+// Envelope for attack/release (avoid clicks, add cinema feel)
+export interface AudioEnvelope {
+    attack: number;            // Frames to fade in
+    release: number;           // Frames to fade out
+    curve?: "linear" | "easeOut" | "easeIn";
+}
+
+// Ducking rule - temporarily lower another bus
+export interface DuckRule {
+    targetBus: AudioBus;       // Bus to duck (usually "music")
+    amount: number;            // 0-1 multiplier (0.25 = duck to 25%)
+    attack: number;            // Frames to duck down
+    release: number;           // Frames to recover
+}
+
+// Sound cue - enhanced active sound with mixing metadata
+export interface SoundCue {
+    // Core fields (from ActiveSound)
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;
+    duration?: number;
+
+    // Mixing fields
+    bus: AudioBus;
+    priority: number;          // Higher = more important (voice=100, music=10)
+    origin?: SoundOrigin;
+    envelope?: AudioEnvelope;
+    duck?: DuckRule;           // If this sound should duck others
+
+    // Fade tracking (set by engine)
+    fadeTarget?: number;
+    fadeDuration?: number;
+    fadeStartFrame?: number;
+}
+
+// Legacy ActiveSound (backward compatible)
 export interface ActiveSound {
     soundId: string;
     startFrame: number;
     volume: number;
     loop?: boolean;
-    deviceId?: string;  // If set, only plays for this device's context
-    duration?: number;  // Optional duration in frames
+    deviceId?: string;
+    duration?: number;
 }
 
-// Audio state (stored in WorldState)
+// Music bed - persistent background music with mood
+export interface MusicBed {
+    id: string;
+    soundId: string;
+    startFrame: number;
+    loop: boolean;
+    baseGain: number;
+    moodTag?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
+    crossfadeFrames?: number;  // Frames to crossfade when changing
+}
+
+// Full audio state with bus system
 export interface AudioState {
-    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
+    // Active sounds (key = unique instance ID)
+    activeSounds: Record<string, SoundCue | ActiveSound>;
+
+    // Bus configuration
+    buses: {
+        music: AudioBusConfig;
+        ui: AudioBusConfig;
+        sfx: AudioBusConfig;
+        voice: AudioBusConfig;
+    };
+
+    // Music bed (special handling for background music)
+    musicBed?: MusicBed;
+
+    // Legacy background music (backward compatible)
     backgroundMusic?: {
         soundId: string;
         volume: number;
@@ -398,9 +473,18 @@ export interface AudioState {
     };
 }
 
+// Default bus configuration
+export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
+    music: { baseGain: 0.35, maxConcurrent: 1 },
+    ui: { baseGain: 0.9, maxConcurrent: 3 },
+    sfx: { baseGain: 0.8, maxConcurrent: 4 },
+    voice: { baseGain: 1.0, maxConcurrent: 1 },
+};
+
 // Default audio state
 export const DEFAULT_AUDIO_STATE: AudioState = {
     activeSounds: {},
+    buses: DEFAULT_BUS_CONFIG,
 };
 
 // =============================================================================

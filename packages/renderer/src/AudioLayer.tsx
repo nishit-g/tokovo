@@ -1,14 +1,34 @@
 /**
- * AudioLayer - Renders audio for the Tokovo timeline
+ * AudioLayer - Production-grade audio rendering for Tokovo
  * 
  * Uses Remotion's <Audio> component to play sounds synchronized with video frames.
- * Supports both global sounds and per-device sounds.
+ * Features:
+ * - Bus-based volume routing
+ * - Ducking (UI/voice lowers music)
+ * - Attack/release envelopes
+ * - Per-device sound filtering
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
-import { WorldState, ActiveSound } from "@tokovo/core";
+import {
+    WorldState,
+    SoundCue,
+    ActiveSound,
+    MusicBed,
+    DEFAULT_BUS_CONFIG,
+} from "@tokovo/core";
 import { getSoundPath } from "@tokovo/core";
+import {
+    computeSoundVolume,
+    computeBusStates,
+    BusState,
+} from "@tokovo/core";
+import { computeCrossfade } from "@tokovo/core";
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 interface AudioLayerProps {
     world: WorldState;
@@ -16,86 +36,210 @@ interface AudioLayerProps {
     focusDeviceId?: string;  // If provided, only play sounds for this device
 }
 
-/**
- * AudioLayer component - renders all active sounds as Remotion Audio components
- */
-export const AudioLayer: React.FC<AudioLayerProps> = ({ world, t, focusDeviceId }) => {
-    const frame = useCurrentFrame();
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
 
-    // Get audio state with safety check
-    const audio = world.audio;
-    if (!audio) {
+/**
+ * Check if a sound is a SoundCue (has bus property)
+ */
+function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
+    return "bus" in sound;
+}
+
+/**
+ * Ensure audio state has buses (backward compatibility)
+ */
+function ensureBuses(audio: WorldState["audio"]) {
+    if (!audio.buses) {
+        return {
+            ...audio,
+            buses: DEFAULT_BUS_CONFIG,
+        };
+    }
+    return audio;
+}
+
+// =============================================================================
+// SOUND INSTANCE COMPONENT
+// =============================================================================
+
+interface SoundInstanceProps {
+    instanceId: string;
+    sound: SoundCue | ActiveSound;
+    currentFrame: number;
+    busStates: Record<string, BusState>;
+}
+
+/**
+ * Individual sound instance - handles timing, volume, and mixing
+ */
+const SoundInstance: React.FC<SoundInstanceProps> = ({
+    instanceId,
+    sound,
+    currentFrame,
+    busStates,
+}) => {
+    // Calculate if sound has expired
+    if (sound.duration) {
+        const elapsed = currentFrame - sound.startFrame;
+        if (elapsed > sound.duration) {
+            return null;
+        }
+    }
+
+    // Compute final volume through mixer
+    const finalVolume = computeSoundVolume(sound, currentFrame, busStates as any);
+
+    // Skip if volume is effectively zero
+    if (finalVolume < 0.01) {
         return null;
     }
 
-    // Filter sounds based on focusDeviceId
-    const activeSounds = Object.entries(audio.activeSounds).filter(([_, sound]) => {
-        // If no deviceId on sound, it's global - always play
-        if (!sound.deviceId) return true;
-        // If no focusDeviceId specified, play all sounds
-        if (!focusDeviceId) return true;
-        // Only play if device matches
-        return sound.deviceId === focusDeviceId;
-    });
+    return (
+        <Sequence
+            from={sound.startFrame}
+            durationInFrames={sound.duration || undefined}
+        >
+            <Audio
+                src={staticFile(getSoundPath(sound.soundId))}
+                volume={finalVolume}
+                loop={sound.loop}
+            />
+        </Sequence>
+    );
+};
+
+// =============================================================================
+// MUSIC BED COMPONENT
+// =============================================================================
+
+interface MusicBedInstanceProps {
+    musicBed: MusicBed;
+    outgoingBed?: MusicBed;
+    currentFrame: number;
+    busStates: Record<string, BusState>;
+}
+
+/**
+ * Music bed instance with crossfade support
+ */
+const MusicBedInstance: React.FC<MusicBedInstanceProps> = ({
+    musicBed,
+    outgoingBed,
+    currentFrame,
+    busStates,
+}) => {
+    // Compute crossfade volumes
+    const { outVolume, inVolume } = computeCrossfade(
+        outgoingBed,
+        musicBed,
+        currentFrame
+    );
+
+    // Apply bus ducking to music
+    const musicBusState = busStates.music || { baseGain: 0.35, duckMultiplier: 1 };
+    const duckMult = musicBusState.duckMultiplier;
 
     return (
         <>
-            {/* Active sounds */}
+            {/* Outgoing music (if crossfading) */}
+            {outgoingBed && outVolume > 0.01 && (
+                <Sequence from={outgoingBed.startFrame}>
+                    <Audio
+                        src={staticFile(getSoundPath(outgoingBed.soundId))}
+                        volume={outVolume * duckMult}
+                        loop={outgoingBed.loop}
+                    />
+                </Sequence>
+            )}
+
+            {/* Incoming music */}
+            <Sequence from={musicBed.startFrame}>
+                <Audio
+                    src={staticFile(getSoundPath(musicBed.soundId))}
+                    volume={inVolume * duckMult}
+                    loop={musicBed.loop}
+                />
+            </Sequence>
+        </>
+    );
+};
+
+// =============================================================================
+// MAIN AUDIO LAYER COMPONENT
+// =============================================================================
+
+/**
+ * AudioLayer component - renders all active sounds as Remotion Audio components
+ */
+export const AudioLayer: React.FC<AudioLayerProps> = ({
+    world,
+    t,
+    focusDeviceId,
+}) => {
+    const frame = useCurrentFrame();
+
+    // Get audio state with safety check
+    const rawAudio = world.audio;
+    if (!rawAudio) {
+        return null;
+    }
+
+    // Ensure buses exist (backward compatibility)
+    const audio = ensureBuses(rawAudio);
+
+    // Compute bus states (with ducking) for this frame
+    const busStates = useMemo(
+        () => computeBusStates(audio, frame),
+        [audio, frame]
+    );
+
+    // Filter sounds based on focusDeviceId
+    const activeSounds = useMemo(() => {
+        return Object.entries(audio.activeSounds).filter(([_, sound]) => {
+            // If no deviceId on sound, it's global - always play
+            if (!sound.deviceId) return true;
+            // If no focusDeviceId specified, play all sounds
+            if (!focusDeviceId) return true;
+            // Only play if device matches
+            return sound.deviceId === focusDeviceId;
+        });
+    }, [audio.activeSounds, focusDeviceId]);
+
+    return (
+        <>
+            {/* Active sound cues */}
             {activeSounds.map(([instanceId, sound]) => (
                 <SoundInstance
                     key={instanceId}
                     instanceId={instanceId}
                     sound={sound}
                     currentFrame={t}
+                    busStates={busStates}
                 />
             ))}
 
-            {/* Background music */}
-            {audio.backgroundMusic && (
+            {/* Music bed (with crossfade support) */}
+            {audio.musicBed && (
+                <MusicBedInstance
+                    musicBed={audio.musicBed}
+                    currentFrame={t}
+                    busStates={busStates}
+                />
+            )}
+
+            {/* Legacy background music (backward compatible) */}
+            {audio.backgroundMusic && !audio.musicBed && (
                 <Sequence from={audio.backgroundMusic.startFrame}>
                     <Audio
                         src={staticFile(getSoundPath(audio.backgroundMusic.soundId))}
-                        volume={audio.backgroundMusic.volume}
+                        volume={audio.backgroundMusic.volume * (busStates.music?.duckMultiplier ?? 1)}
                         loop={audio.backgroundMusic.loop}
                     />
                 </Sequence>
             )}
         </>
-    );
-};
-
-/**
- * Individual sound instance - handles timing and volume
- */
-const SoundInstance: React.FC<{
-    instanceId: string;
-    sound: ActiveSound;
-    currentFrame: number;
-}> = ({ instanceId, sound, currentFrame }) => {
-    // Calculate if sound should be playing
-    const soundFrame = currentFrame - sound.startFrame;
-
-    // If sound has a duration and we're past it, don't render
-    if (sound.duration && soundFrame > sound.duration) {
-        return null;
-    }
-
-    // Calculate volume (could be fading)
-    let volume = sound.volume;
-    const fadeSound = sound as any;
-    if (fadeSound.fadeTarget !== undefined && fadeSound.fadeStartFrame !== undefined) {
-        const fadeProgress = Math.min(1, (currentFrame - fadeSound.fadeStartFrame) / fadeSound.fadeDuration);
-        volume = sound.volume + (fadeSound.fadeTarget - sound.volume) * fadeProgress;
-    }
-
-    return (
-        <Sequence from={sound.startFrame} durationInFrames={sound.duration || undefined}>
-            <Audio
-                src={staticFile(getSoundPath(sound.soundId))}
-                volume={Math.max(0, Math.min(1, volume))}
-                loop={sound.loop}
-            />
-        </Sequence>
     );
 };
 
