@@ -119,6 +119,7 @@ apps/
       AndroidVideo.tsx
       BreakupDramaDSLVideo.tsx
       CameraShowcaseVideo.tsx
+      CinematicCameraShowcaseVideo.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
       InstagramVideo.tsx
@@ -201,6 +202,9 @@ packages/
     tsconfig.json
   apps-whatsapp/
     src/
+      camera/
+        index.ts
+        whatsapp-director.ts
       components/
         icons/
           index.tsx
@@ -248,6 +252,8 @@ packages/
     src/
       camera/
         index.ts
+        presets.ts
+        timeline.ts
       director-lite/
         derive.ts
         index.ts
@@ -7844,6 +7850,385 @@ export const CameraShowcaseVideo: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/CinematicCameraShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * Cinematic Camera Showcase Video
+ * 
+ * Demonstrates the NEW cinematic camera system with DSL-style episode definition:
+ * - Camera primitives: hold, follow, pushIn, pullOut, snap, shake, reset
+ * - Device-first camera profiles
+ * - Cinematic easing functions
+ * - Orchestrated camera movements synced to story beats
+ * 
+ * DirectorLite ENABLED - camera automatically reacts to message events.
+ */
+
+// =============================================================================
+// EPISODE DEFINITION (DSL-style)
+// =============================================================================
+
+function createCinematicCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // =========================================================================
+    // INITIAL WORLD STATE
+    // =========================================================================
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_ex: {
+                id: "dm_ex",
+                type: "dm" as const,
+                name: "Ex 💔",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_ex",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "phone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // =========================================================================
+    // TIMELINE EVENTS
+    // =========================================================================
+    const events: TimelineEvent[] = [
+        // -----------------------------------------------------------------
+        // BEAT 1: ESTABLISHING (0s - 2s)
+        // Camera holds on empty chat
+        // -----------------------------------------------------------------
+        {
+            at: 0,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.0,
+            duration: 60,
+            easing: "linear",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 2: TENSION BUILDS (2s - 3.5s)
+        // First message arrives, camera follows with high lag
+        // -----------------------------------------------------------------
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "We need to talk.",
+        } as any,
+        {
+            at: 60,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.02,
+            originX: 0.5,
+            originY: 0.85,
+            duration: 45,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 3: ANTICIPATION (3.5s - 6.5s)
+        // Typing indicator, camera subtly pushes in
+        // -----------------------------------------------------------------
+        {
+            at: 105,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+        } as any,
+        {
+            at: 105,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.015,
+            originX: 0.5,
+            originY: 0.95,
+            duration: 60,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 4: THE REVEAL (6.5s - 7.5s)
+        // Long message, camera snaps to it
+        // -----------------------------------------------------------------
+        {
+            at: 195,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+        } as any,
+        {
+            at: 195,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "I've been thinking about us a lot lately... and I don't think this is working anymore.",
+        } as any,
+        {
+            at: 195,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.08,
+            originX: 0.5,
+            originY: 0.8,
+            duration: 10,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 5: REACTION (7.5s - 9.5s)
+        // Pull out for context
+        // -----------------------------------------------------------------
+        {
+            at: 225,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 0.95,
+            originX: 0.5,
+            originY: 0.5,
+            duration: 45,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 6: ESCALATION (9.5s - 12s)
+        // Rapid exchange, camera gets tighter
+        // -----------------------------------------------------------------
+        {
+            at: 285,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "Hello?",
+        } as any,
+        {
+            at: 285,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.05,
+            originX: 0.5,
+            originY: 0.85,
+            duration: 10,
+            easing: "ease-in-out",
+        } as any,
+
+        {
+            at: 309,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "What do you mean?",
+        } as any,
+        {
+            at: 309,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.08,
+            originX: 0.5,
+            originY: 0.85,
+            duration: 8,
+            easing: "ease-in-out",
+        } as any,
+
+        {
+            at: 324,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "You know exactly what I mean.",
+        } as any,
+        {
+            at: 324,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.1,
+            originX: 0.5,
+            originY: 0.85,
+            duration: 8,
+            easing: "ease-in-out",
+        } as any,
+
+        {
+            at: 339,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "I don't understand...",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 7: DRAMATIC MOMENT (12s - 14s)
+        // Shake + tight zoom on final message
+        // -----------------------------------------------------------------
+        {
+            at: 360,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "It's over.",
+        } as any,
+        {
+            at: 360,
+            kind: "CAMERA",
+            type: "SHAKE",
+            intensity: 8,
+            frequency: 15,
+            decay: 0.6,
+            duration: 15,
+        } as any,
+        {
+            at: 360,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.15,
+            originX: 0.5,
+            originY: 0.85,
+            duration: 15,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 8: AFTERMATH (14s - 18s)
+        // Reply and smooth reset
+        // -----------------------------------------------------------------
+        {
+            at: 420,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "...",
+        } as any,
+        {
+            at: 420,
+            kind: "CAMERA",
+            type: "RESET",
+            duration: 60,
+            easing: "ease-out",
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const CinematicCameraShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createCinematicCameraEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
 ## File: apps/video-runner/src/HomeScreenGroupDemoVideo.tsx
 ````typescript
 import React from "react";
@@ -12607,6 +12992,373 @@ export { TWITTER_APP_ID };
 }
 ````
 
+## File: packages/apps-whatsapp/src/camera/index.ts
+````typescript
+/**
+ * WhatsApp Camera Module
+ * 
+ * Exports the WhatsApp-specific camera director.
+ */
+
+export * from "./whatsapp-director";
+````
+
+## File: packages/apps-whatsapp/src/camera/whatsapp-director.ts
+````typescript
+/**
+ * WhatsApp Director - Semantic Camera Decisions
+ * 
+ * The Director layer translates app-level events into camera choices.
+ * It decides WHICH camera primitive to use, never HOW to compute transforms.
+ * 
+ * DESIGN PRINCIPLE:
+ * - Director chooses primitives (follow, push-in, snap)
+ * - Camera controller handles math
+ * - Layout provides geometry
+ * 
+ * These three concerns NEVER mix.
+ */
+
+import {
+    CameraPreset,
+    getPreset,
+    CameraTimeline,
+    composeTimeline,
+    TimelineStep,
+    CameraTarget,
+} from "@tokovo/core";
+import { ChatLayoutState, ChatMessageLayout, Message } from "@tokovo/core";
+
+// =============================================================================
+// DIRECTOR TYPES
+// =============================================================================
+
+/**
+ * Camera primitive recommendation from director
+ */
+export interface CameraPrimitiveRecommendation {
+    type: "FOLLOW" | "PUSH_IN" | "PULL_OUT" | "SNAP" | "HOLD" | "SHAKE";
+
+    /** Target for camera focus */
+    target?: CameraTarget;
+
+    /** Intensity/scale for the effect */
+    intensity?: number;
+
+    /** Duration in frames */
+    duration?: number;
+
+    /** Priority (higher = more important, wins arbitration) */
+    priority: number;
+
+    /** Source signal that triggered this recommendation */
+    trigger: string;
+}
+
+/**
+ * Director context for making decisions
+ */
+export interface DirectorContext {
+    /** Current frame */
+    t: number;
+
+    /** Chat layout state */
+    layout: ChatLayoutState;
+
+    /** Active preset */
+    preset: CameraPreset;
+
+    /** Device viewport dimensions */
+    viewport: { width: number; height: number };
+
+    /** Who owns this device (their messages appear on right) */
+    ownerName: string;
+}
+
+// =============================================================================
+// WHATSAPP DIRECTOR
+// =============================================================================
+
+/**
+ * WhatsApp Director
+ * 
+ * Translates WhatsApp-specific events into camera primitive recommendations.
+ * Uses preset values to scale intensity/timing.
+ */
+export class WhatsAppDirector {
+    private preset: CameraPreset;
+    private lastCameraMoveFrame: number = -Infinity;
+
+    constructor(presetName: string = "calm-chat") {
+        this.preset = getPreset(presetName);
+    }
+
+    /**
+     * Change the active preset
+     */
+    setPreset(presetName: string): void {
+        this.preset = getPreset(presetName);
+    }
+
+    /**
+     * Get current preset
+     */
+    getPreset(): CameraPreset {
+        return this.preset;
+    }
+
+    // =========================================================================
+    // EVENT HANDLERS
+    // =========================================================================
+
+    /**
+     * Called when a new message arrives
+     * 
+     * Decision logic:
+     * - If from me: subtle follow (I know what I wrote)
+     * - If from them: push-in to emphasize received message
+     * - If rapid exchange: fast follow with less zoom
+     */
+    onNewMessage(
+        msg: Message,
+        context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        // Check cooldown
+        if (!this.checkCooldown(context.t)) {
+            return null;
+        }
+
+        const msgLayout = context.layout.messageLayouts[msg.id];
+        if (!msgLayout?.rect) return null;
+
+        const isFromMe = msg.from === context.ownerName;
+        const target = this.rectToTarget(msgLayout.rect, context.viewport);
+
+        if (isFromMe) {
+            // Subtle follow for my messages
+            return {
+                type: "FOLLOW",
+                target,
+                intensity: this.preset.pushInIntensity * 0.5, // Less intense for own messages
+                duration: Math.round(30 / this.preset.panSpeed),
+                priority: 50,
+                trigger: "new-message-sent",
+            };
+        } else {
+            // Push-in for received messages
+            return {
+                type: "PUSH_IN",
+                target,
+                intensity: this.preset.pushInIntensity,
+                duration: Math.round(40 / this.preset.panSpeed),
+                priority: 70,
+                trigger: "new-message-received",
+            };
+        }
+    }
+
+    /**
+     * Called when typing indicator starts
+     * 
+     * Decision logic:
+     * - Subtle push toward input area
+     * - Creates anticipation
+     */
+    onTypingStart(
+        from: string,
+        context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        if (!this.checkCooldown(context.t)) return null;
+        if (!context.layout.typingLayout?.rect) return null;
+
+        const isMe = from === context.ownerName;
+        if (isMe) return null; // Don't react to own typing
+
+        const target = this.rectToTarget(
+            context.layout.typingLayout.rect,
+            context.viewport
+        );
+
+        return {
+            type: "PUSH_IN",
+            target,
+            intensity: this.preset.pushInIntensity * 0.3, // Very subtle
+            duration: 45,
+            priority: 30,
+            trigger: "typing-start",
+        };
+    }
+
+    /**
+     * Called when typing indicator ends
+     * 
+     * Decision logic:
+     * - Slight pullback if no message follows
+     * - Reset anticipation
+     */
+    onTypingEnd(
+        _from: string,
+        context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        // Light pullback
+        return {
+            type: "PULL_OUT",
+            intensity: 0.02,
+            duration: 30,
+            priority: 10,
+            trigger: "typing-end",
+        };
+    }
+
+    /**
+     * Called when a reaction is added
+     * 
+     * Decision logic:
+     * - Quick snap to the reacted message
+     * - Optional shake for emphasis
+     */
+    onReaction(
+        messageId: string,
+        _emoji: string,
+        context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        if (!this.checkCooldown(context.t)) return null;
+
+        const msgLayout = context.layout.messageLayouts[messageId];
+        if (!msgLayout?.rect) return null;
+
+        const target = this.rectToTarget(msgLayout.rect, context.viewport);
+
+        // If shake is enabled in preset, return shake
+        if (this.preset.shakeIntensity > 0) {
+            return {
+                type: "SHAKE",
+                target,
+                intensity: this.preset.shakeIntensity * 0.5,
+                duration: 15,
+                priority: 80,
+                trigger: "reaction-added",
+            };
+        }
+
+        // Otherwise, quick snap
+        return {
+            type: "SNAP",
+            target,
+            intensity: this.preset.pushInIntensity,
+            duration: 10,
+            priority: 80,
+            trigger: "reaction-added",
+        };
+    }
+
+    /**
+     * Called when a message is read
+     * 
+     * Decision logic:
+     * - Light pullback for context
+     * - Only if we're zoomed in
+     */
+    onMessageRead(
+        _messageId: string,
+        _context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        return {
+            type: "PULL_OUT",
+            intensity: 0.01,
+            duration: 20,
+            priority: 5,
+            trigger: "message-read",
+        };
+    }
+
+    /**
+     * Called when message is deleted
+     * 
+     * Decision logic:
+     * - Shake for drama
+     */
+    onMessageDeleted(
+        context: DirectorContext
+    ): CameraPrimitiveRecommendation | null {
+        if (this.preset.shakeIntensity === 0) return null;
+
+        return {
+            type: "SHAKE",
+            intensity: this.preset.shakeIntensity,
+            duration: 20,
+            priority: 60,
+            trigger: "message-deleted",
+        };
+    }
+
+    // =========================================================================
+    // HELPERS
+    // =========================================================================
+
+    /**
+     * Check if enough time has passed since last camera move
+     */
+    private checkCooldown(t: number): boolean {
+        if (t - this.lastCameraMoveFrame < this.preset.cooldownFrames) {
+            return false;
+        }
+        this.lastCameraMoveFrame = t;
+        return true;
+    }
+
+    /**
+     * Convert a layout rect to a normalized camera target
+     */
+    private rectToTarget(
+        rect: { x: number; y: number; width: number; height: number },
+        viewport: { width: number; height: number }
+    ): CameraTarget {
+        return {
+            rect,
+            point: {
+                x: (rect.x + rect.width / 2) / viewport.width,
+                y: (rect.y + rect.height / 2) / viewport.height,
+            },
+        };
+    }
+
+    /**
+     * Build a timeline from a recommendation
+     */
+    recommendationToTimeline(
+        rec: CameraPrimitiveRecommendation
+    ): CameraTimeline {
+        const step: TimelineStep = {
+            primitive: rec.type === "SHAKE" ? "HOLD" : rec.type as any,
+            duration: rec.duration ?? 30,
+            target: rec.target,
+            scale: rec.type === "PUSH_IN"
+                ? 1 + (rec.intensity ?? 0.05)
+                : rec.type === "PULL_OUT"
+                    ? 1 - (rec.intensity ?? 0.02)
+                    : undefined,
+            easing: this.preset.easing as any,
+        };
+
+        return composeTimeline(`director-${rec.trigger}`, [step]);
+    }
+}
+
+// =============================================================================
+// FACTORY
+// =============================================================================
+
+/**
+ * Create a WhatsApp director with a specific preset
+ */
+export function createWhatsAppDirector(
+    presetName: string = "calm-chat"
+): WhatsAppDirector {
+    return new WhatsAppDirector(presetName);
+}
+````
+
 ## File: packages/apps-whatsapp/src/components/icons/index.tsx
 ````typescript
 /**
@@ -14613,6 +15365,579 @@ export * from "./passes";
 {"root":["./src/compile.ts","./src/context.ts","./src/index.ts","./src/passes/index.ts","./src/passes/normalize.ts","./src/passes/resolve-refs.ts","./src/passes/sort.ts","./src/passes/time-lowering.ts","./src/passes/validate.ts","./src/passes/virtual-device.ts"],"version":"5.9.3"}
 ````
 
+## File: packages/core/src/camera/presets.ts
+````typescript
+/**
+ * Cinematic Camera Presets
+ * 
+ * Pre-configured motion profiles for common scenarios.
+ * Presets provide consistent look-and-feel across episodes.
+ * 
+ * USAGE:
+ * ```ts
+ * const preset = CAMERA_PRESETS["tense-chat"];
+ * // Apply preset values to camera behavior
+ * ```
+ */
+
+// =============================================================================
+// PRESET TYPES
+// =============================================================================
+
+/**
+ * Numeric preset configuration
+ */
+export interface CameraPreset {
+    /** Display name */
+    name: string;
+
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLag: number;
+
+    /** Push-in intensity for new messages: 0.01 (subtle) to 0.15 (dramatic) */
+    pushInIntensity: number;
+
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeed: number;
+
+    /** Default easing function */
+    easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+
+    /** Shake intensity for reactions/emphasis: 0 (none) to 10 (strong) */
+    shakeIntensity: number;
+
+    /** Minimum time between camera moves (frames) */
+    cooldownFrames: number;
+
+    /** Whether to auto-follow new messages */
+    autoFollow: boolean;
+
+    /** Description for documentation */
+    description: string;
+}
+
+// =============================================================================
+// PRESET DEFINITIONS
+// =============================================================================
+
+export const CAMERA_PRESETS: Record<string, CameraPreset> = {
+    /**
+     * Calm Chat
+     * - Slow, smooth, minimal movement
+     * - Ideal for: normal conversations, casual chat
+     */
+    "calm-chat": {
+        name: "Calm Chat",
+        followLag: 0.8,
+        pushInIntensity: 0.02,
+        panSpeed: 0.5,
+        easing: "cinematic",
+        shakeIntensity: 0,
+        cooldownFrames: 60, // 2 seconds
+        autoFollow: true,
+        description: "Slow, smooth, minimal movement for relaxed conversations",
+    },
+
+    /**
+     * Tense Chat
+     * - Faster, tighter, more reactive
+     * - Ideal for: arguments, drama, confrontation
+     */
+    "tense-chat": {
+        name: "Tense Chat",
+        followLag: 0.3,
+        pushInIntensity: 0.08,
+        panSpeed: 1.2,
+        easing: "ease-out",
+        shakeIntensity: 3,
+        cooldownFrames: 20,
+        autoFollow: true,
+        description: "Faster, tighter framing for tense conversations",
+    },
+
+    /**
+     * Fast Chat
+     * - Rapid exchanges, minimal lag
+     * - Ideal for: rapid-fire texting, jokes, banter
+     */
+    "fast-chat": {
+        name: "Fast Chat",
+        followLag: 0.1,
+        pushInIntensity: 0.05,
+        panSpeed: 2.0,
+        easing: "ease-in-out",
+        shakeIntensity: 1,
+        cooldownFrames: 10,
+        autoFollow: true,
+        description: "Quick, reactive camera for rapid exchanges",
+    },
+
+    /**
+     * Dramatic
+     * - Maximum intensity for reveals and emotional moments
+     * - Ideal for: breakups, confessions, plot twists
+     */
+    "dramatic": {
+        name: "Dramatic",
+        followLag: 0.5,
+        pushInIntensity: 0.12,
+        panSpeed: 0.8,
+        easing: "cinematic",
+        shakeIntensity: 5,
+        cooldownFrames: 45,
+        autoFollow: true,
+        description: "High intensity framing for emotional moments",
+    },
+
+    /**
+     * Static
+     * - No automatic camera movement
+     * - Ideal for: showcase, manual camera control
+     */
+    "static": {
+        name: "Static",
+        followLag: 1.0,
+        pushInIntensity: 0,
+        panSpeed: 0,
+        easing: "linear",
+        shakeIntensity: 0,
+        cooldownFrames: 9999,
+        autoFollow: false,
+        description: "No automatic camera movement - fully manual",
+    },
+
+    /**
+     * Documentary
+     * - Somewhat detached, observational
+     * - Ideal for: recaps, explanations, tutorials
+     */
+    "documentary": {
+        name: "Documentary",
+        followLag: 0.7,
+        pushInIntensity: 0.03,
+        panSpeed: 0.6,
+        easing: "ease-out",
+        shakeIntensity: 0,
+        cooldownFrames: 90,
+        autoFollow: true,
+        description: "Detached, observational framing for recaps",
+    },
+};
+
+// =============================================================================
+// PRESET HELPERS
+// =============================================================================
+
+/**
+ * Get a preset by name (case-insensitive)
+ * Falls back to "calm-chat" if not found
+ */
+export function getPreset(name: string): CameraPreset {
+    const normalized = name.toLowerCase().replace(/\s+/g, "-");
+    return CAMERA_PRESETS[normalized] || CAMERA_PRESETS["calm-chat"];
+}
+
+/**
+ * List all available preset names
+ */
+export function listPresets(): string[] {
+    return Object.keys(CAMERA_PRESETS);
+}
+
+/**
+ * Blend two presets together
+ * Useful for gradual transitions (e.g., conversation escalating)
+ * 
+ * @param from - Starting preset
+ * @param to - Ending preset  
+ * @param t - Blend factor 0-1 (0 = from, 1 = to)
+ */
+export function blendPresets(
+    from: CameraPreset,
+    to: CameraPreset,
+    t: number
+): CameraPreset {
+    const blend = Math.max(0, Math.min(1, t));
+
+    return {
+        name: `${from.name} → ${to.name}`,
+        followLag: lerp(from.followLag, to.followLag, blend),
+        pushInIntensity: lerp(from.pushInIntensity, to.pushInIntensity, blend),
+        panSpeed: lerp(from.panSpeed, to.panSpeed, blend),
+        easing: blend < 0.5 ? from.easing : to.easing,
+        shakeIntensity: lerp(from.shakeIntensity, to.shakeIntensity, blend),
+        cooldownFrames: Math.round(lerp(from.cooldownFrames, to.cooldownFrames, blend)),
+        autoFollow: blend < 0.5 ? from.autoFollow : to.autoFollow,
+        description: `Blend: ${from.name} to ${to.name}`,
+    };
+}
+
+/**
+ * Linear interpolation helper
+ */
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
+
+export default CAMERA_PRESETS;
+````
+
+## File: packages/core/src/camera/timeline.ts
+````typescript
+/**
+ * Camera Timeline - Compose Sequences of Camera Primitives
+ * 
+ * The timeline enables time-based composite moves like:
+ * - "hold → pan → micro push" (message arrival)
+ * - "hold → subtle push → hold" (typing anticipation)
+ * - "fast follow → tighter zoom" (argument escalation)
+ * 
+ * DESIGN PHILOSOPHY:
+ * - Timelines are PURE DATA describing motion sequences
+ * - No app logic, no layout coupling
+ * - Evaluating a timeline at time t produces a CameraTransform
+ */
+
+import {
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    EasingType,
+} from "../types";
+import { applyEasing } from "./index";
+
+// =============================================================================
+// TIMELINE TYPES
+// =============================================================================
+
+/**
+ * Camera primitive types for timeline steps
+ */
+export type CameraPrimitive =
+    | "PAN"
+    | "PUSH_IN"
+    | "PULL_OUT"
+    | "FOLLOW"
+    | "SNAP"
+    | "HOLD";
+
+/**
+ * Target specification for camera focus
+ */
+export interface CameraTarget {
+    /** Target rectangle in world coordinates */
+    rect?: { x: number; y: number; width: number; height: number };
+    /** Normalized target point (0-1) */
+    point?: { x: number; y: number };
+}
+
+/**
+ * A single step in a camera timeline
+ */
+export interface TimelineStep {
+    /** Which primitive to execute */
+    primitive: CameraPrimitive;
+
+    /** Duration in frames */
+    duration: number;
+
+    /** Easing function for this step */
+    easing?: EasingType;
+
+    // === PAN parameters ===
+    /** X translation in pixels */
+    translateX?: number;
+    /** Y translation in pixels */
+    translateY?: number;
+
+    // === PUSH_IN / PULL_OUT parameters ===
+    /** Target scale (1.0 = no zoom, 1.2 = 20% zoom in, 0.8 = 20% zoom out) */
+    scale?: number;
+    /** Target for zoom origin */
+    target?: CameraTarget;
+
+    // === FOLLOW parameters ===
+    /** Lag factor 0.1 (tight) to 0.9 (loose) */
+    lagFactor?: number;
+
+    // === HOLD parameters ===
+    // (none - just duration)
+}
+
+/**
+ * A complete camera timeline (sequence of steps)
+ */
+export interface CameraTimeline {
+    /** Unique ID for this timeline */
+    id: string;
+
+    /** Sequence of steps */
+    steps: TimelineStep[];
+
+    /** Total duration in frames (computed) */
+    totalDuration: number;
+
+    /** Loop behavior */
+    loop?: boolean;
+}
+
+// =============================================================================
+// TIMELINE COMPOSITION
+// =============================================================================
+
+/**
+ * Compose a timeline from a list of steps
+ * Calculates total duration and validates steps
+ */
+export function composeTimeline(
+    id: string,
+    steps: TimelineStep[],
+    options?: { loop?: boolean }
+): CameraTimeline {
+    const totalDuration = steps.reduce((sum, step) => sum + step.duration, 0);
+
+    return {
+        id,
+        steps,
+        totalDuration,
+        loop: options?.loop,
+    };
+}
+
+// =============================================================================
+// TIMELINE EVALUATION
+// =============================================================================
+
+/**
+ * Evaluate a timeline at time t to produce a CameraTransform
+ * 
+ * @param timeline - The timeline to evaluate
+ * @param t - Frame number relative to timeline start (0 = start)
+ * @returns CameraTransform at time t
+ */
+export function evaluateTimeline(
+    timeline: CameraTimeline,
+    t: number
+): CameraTransform {
+    // Handle loop
+    let localT = t;
+    if (timeline.loop && timeline.totalDuration > 0) {
+        localT = t % timeline.totalDuration;
+    }
+
+    // Clamp to timeline bounds
+    if (localT < 0) localT = 0;
+    if (localT >= timeline.totalDuration) localT = timeline.totalDuration - 1;
+
+    // Find which step we're in and the progress within it
+    let accumulated = 0;
+    let currentStep: TimelineStep | null = null;
+    let stepProgress = 0;
+
+    for (const step of timeline.steps) {
+        const stepEnd = accumulated + step.duration;
+
+        if (localT < stepEnd) {
+            currentStep = step;
+            stepProgress = step.duration > 0
+                ? (localT - accumulated) / step.duration
+                : 1;
+            break;
+        }
+
+        accumulated = stepEnd;
+    }
+
+    // If no step found (edge case), return default
+    if (!currentStep) {
+        return { ...DEFAULT_CAMERA_TRANSFORM };
+    }
+
+    // Apply easing to progress
+    const easedProgress = applyEasing(
+        stepProgress,
+        currentStep.easing || "ease-out"
+    );
+
+    // Evaluate the step
+    return evaluateStep(currentStep, easedProgress);
+}
+
+/**
+ * Evaluate a single step at a given progress (0-1)
+ */
+function evaluateStep(step: TimelineStep, progress: number): CameraTransform {
+    const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+    switch (step.primitive) {
+        case "PAN":
+            transform.translateX = (step.translateX ?? 0) * progress;
+            transform.translateY = (step.translateY ?? 0) * progress;
+            break;
+
+        case "PUSH_IN":
+            // Scale from 1.0 toward target
+            const pushScale = step.scale ?? 1.1;
+            transform.scale = 1 + (pushScale - 1) * progress;
+
+            // Set origin if target specified
+            if (step.target?.point) {
+                transform.originX = step.target.point.x;
+                transform.originY = step.target.point.y;
+            } else if (step.target?.rect) {
+                // Center on rect
+                transform.originX = (step.target.rect.x + step.target.rect.width / 2);
+                transform.originY = (step.target.rect.y + step.target.rect.height / 2);
+            }
+            break;
+
+        case "PULL_OUT":
+            // Scale from current toward target (< 1.0)
+            const pullScale = step.scale ?? 0.9;
+            transform.scale = 1 + (pullScale - 1) * progress;
+            // Origin stays centered for pullback
+            transform.originX = 0.5;
+            transform.originY = 0.5;
+            break;
+
+        case "FOLLOW":
+            // Soft tracking with lag
+            if (step.target?.point) {
+                const lag = step.lagFactor ?? 0.5;
+                const effectiveProgress = progress * (1 - lag);
+                transform.originX = 0.5 + (step.target.point.x - 0.5) * effectiveProgress;
+                transform.originY = 0.5 + (step.target.point.y - 0.5) * effectiveProgress;
+            }
+            // Slight zoom toward target
+            if (step.scale) {
+                transform.scale = 1 + (step.scale - 1) * progress;
+            }
+            break;
+
+        case "SNAP":
+            // Instant or very fast framing
+            if (step.target?.point) {
+                transform.originX = step.target.point.x;
+                transform.originY = step.target.point.y;
+            }
+            if (step.scale) {
+                transform.scale = step.scale;
+            }
+            break;
+
+        case "HOLD":
+            // No movement - return defaults
+            break;
+    }
+
+    return transform;
+}
+
+// =============================================================================
+// PRE-BUILT COMPOSITE MOVES
+// =============================================================================
+
+/**
+ * Message Arrival Shot
+ * hold → pan down → micro push
+ */
+export function createMessageArrivalTimeline(
+    targetY: number,
+    fps: number = 30
+): CameraTimeline {
+    return composeTimeline("message-arrival", [
+        {
+            primitive: "HOLD",
+            duration: Math.round(fps * 0.1), // 100ms hold
+        },
+        {
+            primitive: "PAN",
+            duration: Math.round(fps * 0.4), // 400ms pan
+            translateY: -targetY * 0.1, // Subtle pan toward target
+            easing: "cinematic",
+        },
+        {
+            primitive: "PUSH_IN",
+            duration: Math.round(fps * 0.3), // 300ms push
+            scale: 1.02, // Very subtle 2% zoom
+            target: { point: { x: 0.5, y: 0.8 } }, // Bottom of screen
+            easing: "ease-out",
+        },
+    ]);
+}
+
+/**
+ * Typing Anticipation
+ * hold → subtle push → hold
+ */
+export function createTypingAnticipationTimeline(
+    fps: number = 30
+): CameraTimeline {
+    return composeTimeline("typing-anticipation", [
+        {
+            primitive: "HOLD",
+            duration: Math.round(fps * 0.2), // 200ms initial hold
+        },
+        {
+            primitive: "PUSH_IN",
+            duration: Math.round(fps * 0.5), // 500ms subtle push
+            scale: 1.015, // Very subtle 1.5% zoom
+            target: { point: { x: 0.5, y: 0.95 } }, // Input area
+            easing: "ease-out",
+        },
+        {
+            primitive: "HOLD",
+            duration: Math.round(fps * 1), // 1s hold at zoom
+        },
+    ]);
+}
+
+/**
+ * Argument Escalation
+ * fast follow → reduced lag → tighter zoom
+ */
+export function createEscalationTimeline(
+    fps: number = 30
+): CameraTimeline {
+    return composeTimeline("escalation", [
+        {
+            primitive: "FOLLOW",
+            duration: Math.round(fps * 0.3), // 300ms fast follow
+            lagFactor: 0.2, // Low lag = reactive
+            scale: 1.05,
+            easing: "ease-in-out",
+        },
+        {
+            primitive: "PUSH_IN",
+            duration: Math.round(fps * 0.5), // 500ms tighter zoom
+            scale: 1.1, // 10% zoom
+            target: { point: { x: 0.5, y: 0.7 } },
+            easing: "ease-out",
+        },
+    ]);
+}
+
+/**
+ * Calm Reset
+ * Smooth return to neutral
+ */
+export function createResetTimeline(
+    fps: number = 30
+): CameraTimeline {
+    return composeTimeline("reset", [
+        {
+            primitive: "PULL_OUT",
+            duration: Math.round(fps * 0.6), // 600ms pullout
+            scale: 1.0, // Return to neutral
+            easing: "cinematic",
+        },
+    ]);
+}
+````
+
 ## File: packages/core/src/director-lite/derive.ts
 ````typescript
 /**
@@ -16312,40 +17637,6 @@ Core logic for the Tokovo engine.
     "include": [
         "src/**/*"
     ]
-}
-````
-
-## File: packages/devices/src/iphone16/profile.ts
-````typescript
-import { DeviceProfile } from "../types";
-
-export const iPhone16Profile: DeviceProfile = {
-    id: "iphone16",
-    dimensions: { width: 1290, height: 2796 },
-    statusBarHeight: 110,
-};
-````
-
-## File: packages/devices/src/pixel/profile.ts
-````typescript
-import { DeviceProfile } from "../types";
-
-export const PixelProfile: DeviceProfile = {
-    id: "pixel",
-    dimensions: {
-        width: 1080, // Pixel 7 Pro approx width
-        height: 2400, // Pixel 7 Pro approx height
-    },
-    statusBarHeight: 90, // Approx 30px * 3
-};
-````
-
-## File: packages/devices/src/types.ts
-````typescript
-export interface DeviceProfile {
-    id: string;
-    dimensions: { width: number; height: number };
-    statusBarHeight: number;
 }
 ````
 
@@ -24134,618 +25425,6 @@ const SettingsIcon: React.FC<{ active: boolean }> = ({ active }) => (
 export default ChatsListScreen;
 ````
 
-## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
-````typescript
-import React from "react";
-import { getAppConfig, Platform, getTokens } from "@tokovo/core";
-
-// ============================================================================
-// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
-// ============================================================================
-
-interface ImageMessageBubbleProps {
-    imageUrl: string;
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
-}
-
-export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
-    imageUrl,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            maxWidth: 600,
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Image container */}
-            <div style={{
-                position: "relative",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-                // Square bottom corners if caption is below
-                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
-                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
-                overflow: "hidden",
-            }}>
-                <img
-                    src={imageUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* Timestamp overlay on image (when no caption) */}
-                {!caption && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
-                        borderRadius: 12,
-                    }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    {/* Timestamp + Read receipts */}
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
-// VIDEO MESSAGE BUBBLE - With Play Overlay
-// ============================================================================
-
-interface VideoMessageBubbleProps {
-    thumbnailUrl: string;
-    duration: number; // in seconds
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    isPlaying?: boolean;
-    playProgress?: number;
-    platform?: Platform;
-}
-
-export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
-    thumbnailUrl,
-    duration,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    isPlaying = false,
-    playProgress = 0,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    const formatDuration = (secs: number) => {
-        const mins = Math.floor(secs / 60);
-        const s = secs % 60;
-        return `${mins}:${s.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            maxWidth: 600,
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Video thumbnail container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={thumbnailUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* Play button overlay */}
-                {!isPlaying && (
-                    <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        width: 120,
-                        height: 120,
-                        backgroundColor: "rgba(0,0,0,0.6)",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}>
-                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
-                            <path d="M8 5v14l11-7z" />
-                        </svg>
-                    </div>
-                )}
-
-                {/* Duration badge */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    left: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
-                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
-                    </svg>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {formatDuration(duration)}
-                    </span>
-                </div>
-
-                {/* Timestamp overlay (when no caption) */}
-                {!caption && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
-                        borderRadius: 12,
-                    }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
-                )}
-
-                {/* Progress bar during playback */}
-                {isPlaying && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 6,
-                        backgroundColor: "rgba(255,255,255,0.3)",
-                    }}>
-                        <div style={{
-                            height: "100%",
-                            width: `${(playProgress / duration) * 100}%`,
-                            backgroundColor: "#25D366",
-                        }} />
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
-// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
-// ============================================================================
-
-interface GifMessageBubbleProps {
-    gifUrl: string;
-    width?: number;
-    height?: number;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
-}
-
-export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
-    gifUrl,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            maxWidth: 500,
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* GIF container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={gifUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 500,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* GIF badge */}
-                <div style={{
-                    position: "absolute",
-                    top: 12,
-                    left: 12,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: "4px 12px",
-                    borderRadius: 8,
-                }}>
-                    <span style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                        letterSpacing: 1,
-                    }}>
-                        GIF
-                    </span>
-                </div>
-
-                {/* Timestamp overlay */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    right: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {timestamp}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={read} light />}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// SHARED: Double Check Icon for read receipts
-// ============================================================================
-
-const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
-    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
-        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-````
-
-## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
-````typescript
-/**
- * WhatsApp Message Bubble Component
- * 
- * Authentic iOS WhatsApp message styling with:
- * - Timestamps and read receipts
- * - Reply/Quote UI for quoted messages
- * - Reactions (tapbacks) display
- */
-
-import React from "react";
-import { ChatMessageLayout } from "@tokovo/core";
-import { DoubleCheckIcon } from "./icons";
-import { ReplyQuote, ReplyToData } from "./ReplyQuote";
-import { ReactionsBar, Reaction } from "./Reactions";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface MessageData {
-    id: string;
-    from: string;
-    text?: string;
-    timestamp?: string;
-    read?: boolean;
-    type?: "text" | "image" | "voice" | "system" | "video" | "gif";
-    // Reply/Quote
-    replyTo?: ReplyToData;
-    // Reactions (tapbacks)
-    reactions?: Reaction[];
-}
-
-export interface MessageBubbleProps {
-    msg: MessageData;
-    layout: ChatMessageLayout;
-}
-
-// =============================================================================
-// MESSAGE BUBBLE
-// =============================================================================
-
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
-    const hasReactions = msg.reactions && msg.reactions.length > 0;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 36,
-            right: isMe ? 36 : "auto",
-            maxWidth: "78%",
-            opacity,
-            transform: `translateY(${translateY}px)`,
-        }}>
-            {/* Bubble with tail */}
-            <div style={{
-                position: "relative",
-                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
-                padding: "24px 36px",
-                borderRadius: 24,
-                // Asymmetric corners for tail effect
-                borderTopLeftRadius: isMe ? 24 : 6,
-                borderTopRightRadius: isMe ? 6 : 24,
-                borderBottomLeftRadius: 24,
-                borderBottomRightRadius: 24,
-                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                // Add bottom margin if reactions present
-                marginBottom: hasReactions ? 24 : 0,
-            }}>
-                {/* Reply/Quote - Shows quoted message if replying */}
-                {msg.replyTo && (
-                    <ReplyQuote
-                        replyTo={msg.replyTo}
-                        isMyMessage={isMe}
-                    />
-                )}
-
-                {/* Message text */}
-                <span style={{
-                    fontSize: 48,
-                    lineHeight: "66px",
-                    color: "#111B21",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                    wordWrap: "break-word"
-                }}>
-                    {msg.text}
-                </span>
-
-                {/* Timestamp + Read receipts */}
-                <div style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: 9,
-                    marginTop: 3
-                }}>
-                    <span style={{
-                        fontSize: 33,
-                        color: "#667781",
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                    }}>
-                        {msg.timestamp || "10:42"}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={msg.read !== false} />}
-                </div>
-            </div>
-
-            {/* Reactions Bar - Shows below the bubble */}
-            {hasReactions && (
-                <ReactionsBar
-                    reactions={msg.reactions!}
-                    isMyMessage={isMe}
-                />
-            )}
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/config/index.ts
 ````typescript
 /**
@@ -25089,6 +25768,145 @@ export function createTheme(
 }
 ````
 
+## File: packages/devices/src/iphone16/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * iPhone 16 camera configuration
+ * - Slow pan speed for cinematic feel on mobile
+ * - High follow lag for smooth, less reactive tracking
+ * - Tighter zoom range for portrait scrolling
+ */
+const iPhone16Camera: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "slow",
+    followLag: "high",
+    snapThreshold: 40,
+    safeAreaTop: 110,      // Dynamic Island + status bar
+    safeAreaBottom: 102,   // Home indicator
+    followLagFactor: 0.7,  // Cinematic lag
+    panSpeedMultiplier: 0.6,
+};
+
+export const iPhone16Profile: DeviceProfile = {
+    id: "iphone16",
+    dimensions: { width: 1290, height: 2796 },
+    statusBarHeight: 110,
+    camera: iPhone16Camera,
+};
+````
+
+## File: packages/devices/src/pixel/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * Pixel camera configuration
+ * - Medium pan speed for balanced feel
+ * - Medium follow lag for responsive tracking
+ * - Slightly wider zoom range for Android
+ */
+const PixelCamera: CameraDeviceConfig = {
+    minZoom: 0.85,
+    maxZoom: 1.2,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 45,
+    safeAreaTop: 90,       // Status bar
+    safeAreaBottom: 48,    // Navigation bar/gesture area
+    followLagFactor: 0.5,  // Balanced lag
+    panSpeedMultiplier: 1.0,
+};
+
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    dimensions: {
+        width: 1080, // Pixel 7 Pro approx width
+        height: 2400, // Pixel 7 Pro approx height
+    },
+    statusBarHeight: 90, // Approx 30px * 3
+    camera: PixelCamera,
+};
+````
+
+## File: packages/devices/src/types.ts
+````typescript
+/**
+ * Camera motion speed configuration
+ */
+export type CameraSpeed = "slow" | "medium" | "fast";
+
+/**
+ * Camera follow lag configuration
+ * - high: More cinematic, camera lags significantly behind target
+ * - medium: Balanced tracking
+ * - low: Camera closely follows target (reactive)
+ */
+export type CameraFollowLag = "high" | "medium" | "low";
+
+/**
+ * Camera configuration for a specific device profile.
+ * 
+ * DESIGN PRINCIPLE: Device profiles define camera physics.
+ * Apps do NOT override these values. Ever.
+ */
+export interface CameraDeviceConfig {
+    // === Zoom Constraints ===
+    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
+    minZoom: number;
+    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
+    maxZoom: number;
+
+    // === Motion Characteristics ===
+    /** Pan speed for camera movement */
+    panSpeed: CameraSpeed;
+    /** Lag when following a target (soft tracking delay) */
+    followLag: CameraFollowLag;
+    /** Snap threshold in pixels - below this, snap instantly vs animate */
+    snapThreshold: number;
+
+    // === Safe Areas for Framing ===
+    /** Top safe area in pixels (status bar, notch, etc.) */
+    safeAreaTop: number;
+    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
+    safeAreaBottom: number;
+
+    // === Follow Easing (numeric values for computation) ===
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLagFactor: number;
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeedMultiplier: number;
+}
+
+/**
+ * Default camera configuration for devices
+ */
+export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 50,
+    safeAreaTop: 0,
+    safeAreaBottom: 0,
+    followLagFactor: 0.5,
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Device profile defining physical characteristics and camera behavior
+ */
+export interface DeviceProfile {
+    id: string;
+    dimensions: { width: number; height: number };
+    statusBarHeight: number;
+    /** Camera behavior configuration (uses defaults if not specified) */
+    camera?: CameraDeviceConfig;
+}
+````
+
 ## File: packages/devices/package.json
 ````json
 {
@@ -25256,150 +26074,6 @@ export const ultimateShowcase = episode("ultimate-showcase", ep => {
 });
 
 export default ultimateShowcase;
-````
-
-## File: packages/dsl/src/author/camera-builder.ts
-````typescript
-/**
- * Camera Builder
- * 
- * Fluent API for defining camera operations in multi-POV episodes.
- * Controls cuts, layouts, and camera effects.
- */
-
-import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout } from "@tokovo/ir";
-
-/**
- * Camera effect options.
- */
-export interface ZoomOptions {
-    originX?: number;  // 0-1, default 0.5
-    originY?: number;  // 0-1, default 0.5
-    duration?: string;
-    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
-}
-
-export interface ShakeOptions {
-    intensity?: number;    // Pixels, default 5
-    frequency?: number;    // Oscillations per second, default 10
-    decay?: number;        // 0-1, how quickly to fade, default 0.5
-    duration?: string;
-}
-
-export interface PIPOptions {
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    scale?: number;        // 0-1, default 0.3
-}
-
-/**
- * Camera operation that will be scheduled at a specific time.
- */
-export interface CameraEvent {
-    at: string;            // Duration expression (e.g., "3s")
-    op: SceneOp;
-}
-
-/**
- * Camera builder collects camera operations.
- */
-export class CameraBuilder {
-    private readonly events: CameraEvent[] = [];
-    private currentTime: string = "0s";
-
-    /**
-     * Set the current time for following operations.
-     */
-    at(time: string): this {
-        this.currentTime = time;
-        return this;
-    }
-
-    /**
-     * Cut to a specific device.
-     */
-    cut(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
-        const op: POVSwitchOp = {
-            kind: "POVSwitch",
-            deviceId,
-            transition: transition ?? "cut",
-        };
-        this.events.push({ at: this.currentTime, op });
-        return this;
-    }
-
-    /**
-     * Set layout with multiple devices.
-     */
-    layout(
-        type: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP",
-        primaryDevice: string,
-        secondaryDevice?: string,
-        options?: PIPOptions
-    ): this {
-        if (type === "SINGLE") {
-            const op: POVSwitchOp = {
-                kind: "POVSwitch",
-                deviceId: primaryDevice,
-            };
-            this.events.push({ at: this.currentTime, op });
-        } else {
-            // Map our layout types to IR POVLayout
-            const layoutMap: Record<string, POVLayout> = {
-                "SPLIT_HORIZONTAL": "horizontal",
-                "SPLIT_VERTICAL": "vertical",
-                "PIP": "pip",
-            };
-            const layout: POVLayout = layoutMap[type] ?? "horizontal";
-
-            const op: SplitPOVOp = {
-                kind: "SplitPOV",
-                devices: secondaryDevice ? [primaryDevice, secondaryDevice] : [primaryDevice],
-                layout,
-            };
-            this.events.push({ at: this.currentTime, op });
-        }
-        return this;
-    }
-
-    /**
-     * Zoom in/out.
-     */
-    zoom(scale: number, options?: ZoomOptions): this {
-        const op = {
-            kind: "CameraZoom" as const,
-            scale,
-            duration: options?.duration,
-            originX: options?.originX,
-            originY: options?.originY,
-            easing: options?.easing,
-        };
-        this.events.push({ at: this.currentTime, op: op as any });
-        return this;
-    }
-
-    /**
-     * Shake effect on a device.
-     */
-    shake(deviceId: string, options?: ShakeOptions): this {
-        const op = {
-            kind: "CameraShake" as const,
-            deviceId,
-            intensity: options?.intensity,
-            frequency: options?.frequency,
-            decay: options?.decay,
-            duration: options?.duration,
-        };
-        this.events.push({ at: this.currentTime, op: op as any });
-        return this;
-    }
-
-    /**
-     * Get collected camera events.
-     */
-    getEvents(): CameraEvent[] {
-        return this.events;
-    }
-}
 ````
 
 ## File: packages/dsl/src/author/device-builder.ts
@@ -28620,14 +29294,624 @@ export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPrevie
 export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
+## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
 ````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-export * from "./plugin";
-export * from "./components";
-export * from "./config";
+import React from "react";
+import { getAppConfig, Platform, getTokens } from "@tokovo/core";
+
+// ============================================================================
+// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
+// ============================================================================
+
+interface ImageMessageBubbleProps {
+    imageUrl: string;
+    caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
+    imageUrl,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Image container */}
+            <div style={{
+                position: "relative",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+                // Square bottom corners if caption is below
+                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
+                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
+                overflow: "hidden",
+            }}>
+                <img
+                    src={imageUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Timestamp overlay on image (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    {/* Timestamp + Read receipts */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// VIDEO MESSAGE BUBBLE - With Play Overlay
+// ============================================================================
+
+interface VideoMessageBubbleProps {
+    thumbnailUrl: string;
+    duration: number; // in seconds
+    caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number;
+    platform?: Platform;
+}
+
+export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
+    thumbnailUrl,
+    duration,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Video thumbnail container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={thumbnailUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Play button overlay */}
+                {!isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 120,
+                        height: 120,
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </div>
+                )}
+
+                {/* Duration badge */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
+                    </svg>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {formatDuration(duration)}
+                    </span>
+                </div>
+
+                {/* Timestamp overlay (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+
+                {/* Progress bar during playback */}
+                {isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 6,
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                    }}>
+                        <div style={{
+                            height: "100%",
+                            width: `${(playProgress / duration) * 100}%`,
+                            backgroundColor: "#25D366",
+                        }} />
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
+// ============================================================================
+
+interface GifMessageBubbleProps {
+    gifUrl: string;
+    width?: number;
+    height?: number;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
+    gifUrl,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* GIF container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={gifUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 500,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* GIF badge */}
+                <div style={{
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                }}>
+                    <span style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                        letterSpacing: 1,
+                    }}>
+                        GIF
+                    </span>
+                </div>
+
+                {/* Timestamp overlay */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    right: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {timestamp}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} light />}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// SHARED: Double Check Icon for read receipts
+// ============================================================================
+
+const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
+    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+````
+
+## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
+````typescript
+/**
+ * WhatsApp Message Bubble Component
+ * 
+ * Authentic iOS WhatsApp message styling with:
+ * - Timestamps and read receipts
+ * - Reply/Quote UI for quoted messages
+ * - Reactions (tapbacks) display
+ */
+
+import React from "react";
+import { ChatMessageLayout } from "@tokovo/core";
+import { DoubleCheckIcon } from "./icons";
+import { ReplyQuote, ReplyToData } from "./ReplyQuote";
+import { ReactionsBar, Reaction } from "./Reactions";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface MessageData {
+    id: string;
+    from: string;
+    text?: string;
+    timestamp?: string;
+    read?: boolean;
+    type?: "text" | "image" | "voice" | "system" | "video" | "gif";
+    // Reply/Quote
+    replyTo?: ReplyToData;
+    // Reactions (tapbacks)
+    reactions?: Reaction[];
+}
+
+export interface MessageBubbleProps {
+    msg: MessageData;
+    layout: ChatMessageLayout;
+}
+
+// =============================================================================
+// MESSAGE BUBBLE
+// =============================================================================
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateX, translateY, rect } = layout;
+
+    // Safety check - layout should always have rect if computed correctly
+    if (!rect) return null;
+
+    const hasReactions = msg.reactions && msg.reactions.length > 0;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            // maxWidth: "78%", // Controlled by layout engine now
+            opacity,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1, // Ensure bubbles are above background
+        }}>
+            {/* Bubble with tail */}
+            <div style={{
+                position: "relative",
+                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
+                padding: "24px 36px",
+                borderRadius: 24,
+                // Asymmetric corners for tail effect
+                borderTopLeftRadius: isMe ? 24 : 6,
+                borderTopRightRadius: isMe ? 6 : 24,
+                borderBottomLeftRadius: 24,
+                borderBottomRightRadius: 24,
+                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 6,
+                // Add bottom margin if reactions present
+                marginBottom: hasReactions ? 24 : 0,
+            }}>
+                {/* Reply/Quote - Shows quoted message if replying */}
+                {msg.replyTo && (
+                    <ReplyQuote
+                        replyTo={msg.replyTo}
+                        isMyMessage={isMe}
+                    />
+                )}
+
+                {/* Message text */}
+                <span style={{
+                    fontSize: 48,
+                    lineHeight: "66px",
+                    color: "#111B21",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    wordWrap: "break-word"
+                }}>
+                    {msg.text}
+                </span>
+
+                {/* Timestamp + Read receipts */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 9,
+                    marginTop: 3
+                }}>
+                    <span style={{
+                        fontSize: 33,
+                        color: "#667781",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {msg.timestamp || "10:42"}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={msg.read !== false} />}
+                </div>
+            </div>
+
+            {/* Reactions Bar - Shows below the bubble */}
+            {hasReactions && (
+                <ReactionsBar
+                    reactions={msg.reactions!}
+                    isMyMessage={isMe}
+                />
+            )}
+        </div>
+    );
+};
 ````
 
 ## File: packages/devices/src/iphone16/Frame.tsx
@@ -28912,6 +30196,395 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 }) => (
     <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
 );
+````
+
+## File: packages/dsl/src/author/camera-builder.ts
+````typescript
+/**
+ * Camera Builder
+ * 
+ * Fluent API for defining camera operations in multi-POV episodes.
+ * Controls cuts, layouts, and camera effects.
+ * 
+ * CAMERA PRIMITIVES:
+ * - pan: Move camera position
+ * - pushIn: Zoom toward target
+ * - pullOut: Zoom out for context
+ * - follow: Soft tracking with lag
+ * - snap: Instant framing
+ * - hold: Intentional stillness
+ * - reset: Return to neutral
+ */
+
+import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout, CameraZoomOp, CameraShakeOp } from "@tokovo/ir";
+
+// =============================================================================
+// OPTION TYPES
+// =============================================================================
+
+/**
+ * Camera effect options.
+ */
+export interface ZoomOptions {
+    originX?: number;  // 0-1, default 0.5
+    originY?: number;  // 0-1, default 0.5
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+export interface ShakeOptions {
+    intensity?: number;    // Pixels, default 5
+    frequency?: number;    // Oscillations per second, default 10
+    decay?: number;        // 0-1, how quickly to fade, default 0.5
+    duration?: string;
+}
+
+export interface PIPOptions {
+    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    scale?: number;        // 0-1, default 0.3
+}
+
+export interface PanOptions {
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+export interface PushInOptions {
+    originX?: number;
+    originY?: number;
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+export interface FollowOptions {
+    lag?: "high" | "medium" | "low";
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+export interface HoldOptions {
+    duration?: string;
+}
+
+export interface ResetOptions {
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Camera operation that will be scheduled at a specific time.
+ */
+export interface CameraEvent {
+    at: string;            // Duration expression (e.g., "3s")
+    op: SceneOp;
+}
+
+// =============================================================================
+// CAMERA BUILDER
+// =============================================================================
+
+/**
+ * Camera builder collects camera operations.
+ */
+export class CameraBuilder {
+    private readonly events: CameraEvent[] = [];
+    private currentTime: string = "0s";
+
+    /**
+     * Set the current time for following operations.
+     */
+    at(time: string): this {
+        this.currentTime = time;
+        return this;
+    }
+
+    // =========================================================================
+    // DEVICE / LAYOUT OPERATIONS
+    // =========================================================================
+
+    /**
+     * Cut to a specific device.
+     */
+    cut(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = {
+            kind: "POVSwitch",
+            deviceId,
+            transition: transition ?? "cut",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * Set layout with multiple devices.
+     */
+    layout(
+        type: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP",
+        primaryDevice: string,
+        secondaryDevice?: string,
+        options?: PIPOptions
+    ): this {
+        if (type === "SINGLE") {
+            const op: POVSwitchOp = {
+                kind: "POVSwitch",
+                deviceId: primaryDevice,
+            };
+            this.events.push({ at: this.currentTime, op });
+        } else {
+            // Map our layout types to IR POVLayout
+            const layoutMap: Record<string, POVLayout> = {
+                "SPLIT_HORIZONTAL": "horizontal",
+                "SPLIT_VERTICAL": "vertical",
+                "PIP": "pip",
+            };
+            const layout: POVLayout = layoutMap[type] ?? "horizontal";
+
+            const op: SplitPOVOp = {
+                kind: "SplitPOV",
+                devices: secondaryDevice ? [primaryDevice, secondaryDevice] : [primaryDevice],
+                layout,
+            };
+            this.events.push({ at: this.currentTime, op });
+        }
+        return this;
+    }
+
+    // =========================================================================
+    // CAMERA PRIMITIVES
+    // =========================================================================
+
+    /**
+     * Zoom in/out.
+     */
+    zoom(scale: number, options?: ZoomOptions): this {
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale,
+            duration: options?.duration,
+            originX: options?.originX,
+            originY: options?.originY,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * PAN - Move camera position without changing zoom.
+     * 
+     * @param dx - Horizontal translation in pixels
+     * @param dy - Vertical translation in pixels
+     * @param options - Pan options
+     */
+    pan(dx: number, dy: number, options?: PanOptions): this {
+        // Pan is represented as a CameraZoom with translate
+        const op = {
+            kind: "CameraZoom" as const,
+            scale: 1.0, // No zoom
+            originX: 0.5 + (dx / 1000), // Approximate origin shift
+            originY: 0.5 + (dy / 1000),
+            duration: options?.duration,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op: op as any });
+        return this;
+    }
+
+    /**
+     * PUSH IN - Zoom toward target.
+     * 
+     * @param intensity - Zoom intensity (0.01 = subtle, 0.2 = dramatic)
+     * @param options - Push in options
+     */
+    pushIn(intensity: number = 0.1, options?: PushInOptions): this {
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1 + intensity,
+            originX: options?.originX ?? 0.5,
+            originY: options?.originY ?? 0.8, // Default toward bottom (messages)
+            duration: options?.duration ?? "0.5s",
+            easing: options?.easing ?? "ease-out",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * PULL OUT - Zoom out for context.
+     * 
+     * @param intensity - How much to pull out (0.05 = subtle, 0.2 = dramatic)
+     * @param options - Pull out options
+     */
+    pullOut(intensity: number = 0.1, options?: ZoomOptions): this {
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1 - intensity,
+            originX: options?.originX ?? 0.5,
+            originY: options?.originY ?? 0.5,
+            duration: options?.duration ?? "0.5s",
+            easing: options?.easing ?? "ease-out",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * FOLLOW - Soft tracking with lag.
+     * Camera follows target with delay for cinematic feel.
+     * 
+     * @param originX - Target X position (0-1)
+     * @param originY - Target Y position (0-1)
+     * @param options - Follow options
+     */
+    follow(originX: number, originY: number, options?: FollowOptions): this {
+        // Follow is a slow zoom toward target
+        const lagDuration = options?.lag === "high" ? "0.8s"
+            : options?.lag === "low" ? "0.2s"
+                : "0.5s";
+
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1.02, // Very subtle zoom
+            originX,
+            originY,
+            duration: options?.duration ?? lagDuration,
+            easing: options?.easing ?? "cinematic",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * SNAP - Instant or very fast framing.
+     * 
+     * @param originX - Target X position (0-1)
+     * @param originY - Target Y position (0-1)
+     */
+    snap(originX: number, originY: number): this {
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1.05,
+            originX,
+            originY,
+            duration: "0.1s",
+            easing: "ease-out",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * HOLD - Intentional stillness.
+     * No camera movement for specified duration.
+     * 
+     * @param duration - How long to hold (e.g., "1s")
+     */
+    hold(duration: string = "1s"): this {
+        // Hold is a zoom at scale 1.0 (neutral)
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1.0,
+            duration,
+            easing: "linear",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * RESET - Return to neutral camera position.
+     * 
+     * @param options - Reset options
+     */
+    reset(options?: ResetOptions): this {
+        const op: CameraZoomOp = {
+            kind: "CameraZoom",
+            scale: 1.0,
+            originX: 0.5,
+            originY: 0.5,
+            duration: options?.duration ?? "0.6s",
+            easing: options?.easing ?? "cinematic",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * Shake effect on a device.
+     */
+    shake(deviceId: string, options?: ShakeOptions): this {
+        const op: CameraShakeOp = {
+            kind: "CameraShake",
+            deviceId,
+            intensity: options?.intensity,
+            frequency: options?.frequency,
+            decay: options?.decay,
+            duration: options?.duration,
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    // =========================================================================
+    // COMPOSITE MOVES (Pre-built Sequences)
+    // =========================================================================
+
+    /**
+     * MESSAGE ARRIVAL SHOT
+     * hold → pan down → micro push
+     */
+    messageArrival(): this {
+        // Add hold
+        this.hold("0.1s");
+
+        // TODO: Advance time properly - for now this is a simplified version
+        // The full implementation would track internal time cursor
+
+        // Add subtle push toward bottom
+        this.pushIn(0.02, { originY: 0.85 });
+
+        return this;
+    }
+
+    /**
+     * TYPING ANTICIPATION
+     * hold → subtle push → hold
+     */
+    typingAnticipation(): this {
+        this.hold("0.2s");
+        this.pushIn(0.015, { originY: 0.95, duration: "0.5s" });
+        return this;
+    }
+
+    /**
+     * ARGUMENT ESCALATION
+     * fast follow → tighter zoom
+     */
+    escalation(): this {
+        this.pushIn(0.08, { duration: "0.3s", easing: "ease-in-out" });
+        return this;
+    }
+
+    /**
+     * CALM RESET
+     * Smooth return to neutral
+     */
+    calmReset(): this {
+        this.reset({ duration: "0.8s", easing: "cinematic" });
+        return this;
+    }
+
+    // =========================================================================
+    // OUTPUT
+    // =========================================================================
+
+    /**
+     * Get collected camera events.
+     */
+    getEvents(): CameraEvent[] {
+        return this.events;
+    }
+}
 ````
 
 ## File: packages/dsl/src/author/episode-builder.ts
@@ -30155,6 +31828,17 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
 export { InstagramChatView };
 ````
 
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+export * from "./config";
+export * from "./camera";
+````
+
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
 ````typescript
 import React from "react";
@@ -30822,450 +32506,6 @@ function lowerOp(
             return [];
     }
 }
-````
-
-## File: packages/core/src/camera/index.ts
-````typescript
-/**
- * Camera Module - Cinematic Camera System for Tokovo
- * 
- * This module provides production-grade camera effects including:
- * - ZOOM: Scale with configurable origin and easing
- * - PAN: Translation with smooth easing
- * - SHAKE: Screen shake with frequency, intensity, and decay
- * - FOCUS: Target-based zoom (app, notification, message, point)
- * - CUT: Instant transitions between views
- * - RESET: Smooth return to default camera position
- */
-
-import {
-    CameraState,
-    CameraTransform,
-    CameraEffect,
-    ActiveCameraEffect,
-    EasingType,
-    DEFAULT_CAMERA_TRANSFORM,
-    CameraZoomEffect,
-    CameraPanEffect,
-    CameraShakeEffect,
-    CameraFocusEffect,
-    CameraResetEffect,
-} from "../types";
-
-// =============================================================================
-// EASING FUNCTIONS
-// =============================================================================
-
-/**
- * Easing functions library - cinematic-grade timing curves
- * Input: t (0-1), Output: eased value (0-1)
- */
-export const easingFunctions: Record<EasingType, (t: number) => number> = {
-    "linear": (t) => t,
-
-    "ease-in": (t) => t * t * t,
-
-    "ease-out": (t) => 1 - Math.pow(1 - t, 3),
-
-    "ease-in-out": (t) => t < 0.5
-        ? 4 * t * t * t
-        : 1 - Math.pow(-2 * t + 2, 3) / 2,
-
-    "bounce": (t) => {
-        const n1 = 7.5625;
-        const d1 = 2.75;
-        if (t < 1 / d1) {
-            return n1 * t * t;
-        } else if (t < 2 / d1) {
-            return n1 * (t -= 1.5 / d1) * t + 0.75;
-        } else if (t < 2.5 / d1) {
-            return n1 * (t -= 2.25 / d1) * t + 0.9375;
-        } else {
-            return n1 * (t -= 2.625 / d1) * t + 0.984375;
-        }
-    },
-
-    "elastic": (t) => {
-        const c4 = (2 * Math.PI) / 3;
-        return t === 0 ? 0 : t === 1 ? 1
-            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
-    },
-
-    // Cinematic S-curve - smooth start, linear middle, smooth end
-    // Inspired by film camera movements
-    "cinematic": (t) => {
-        // Custom bezier-like curve for film-quality motion
-        if (t < 0.2) {
-            // Smooth ease-in for first 20%
-            return 0.5 * Math.pow(t / 0.2, 2) * 0.2;
-        } else if (t > 0.8) {
-            // Smooth ease-out for last 20%
-            const localT = (t - 0.8) / 0.2;
-            return 0.8 + 0.2 * (1 - Math.pow(1 - localT, 2));
-        } else {
-            // Linear middle section (60%)
-            return 0.1 + (t - 0.2) * (0.7 / 0.6);
-        }
-    },
-};
-
-/**
- * Apply easing to a progress value
- */
-export function applyEasing(progress: number, easing: EasingType = "ease-out"): number {
-    const clampedProgress = Math.max(0, Math.min(1, progress));
-    return easingFunctions[easing](clampedProgress);
-}
-
-// =============================================================================
-// SEEDED RANDOM FOR DETERMINISTIC SHAKE
-// =============================================================================
-
-/**
- * Seeded random number generator for deterministic shake effects
- * Uses mulberry32 algorithm for speed and quality
- */
-function seededRandom(seed: number): () => number {
-    return function () {
-        let t = seed += 0x6D2B79F5;
-        t = Math.imul(t ^ t >>> 15, t | 1);
-        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
-        return ((t ^ t >>> 14) >>> 0) / 4294967296;
-    };
-}
-
-/**
- * Generate shake offset for a given frame
- * Returns values between -1 and 1
- */
-function getShakeOffset(frame: number, seed: number, frequency: number, fps: number = 30): { x: number; y: number } {
-    // Calculate how many shake cycles per frame
-    const cyclesPerSecond = frequency;
-    const cyclesPerFrame = cyclesPerSecond / fps;
-
-    // Create deterministic random based on frame and seed
-    const rng = seededRandom(seed + Math.floor(frame * cyclesPerFrame));
-
-    // Generate offset (-1 to 1)
-    const x = (rng() - 0.5) * 2;
-    const y = (rng() - 0.5) * 2;
-
-    return { x, y };
-}
-
-// =============================================================================
-// CAMERA CONTROLLER
-// =============================================================================
-
-/**
- * CameraController - Computes camera transforms at any given frame
- * 
- * This is the heart of the cinematic system. It takes:
- * - Current camera state (with active effects)
- * - Current frame number
- * 
- * And produces a final CameraTransform with all effects composited.
- */
-export class CameraController {
-    private fps: number;
-
-    // Memoization cache for performance (LRU with max 500 entries)
-    private transformCache = new Map<string, CameraTransform>();
-    private readonly MAX_CACHE_SIZE = 500;
-
-    constructor(fps: number = 30) {
-        this.fps = fps;
-    }
-
-    /**
-     * Generate cache key from camera state and frame
-     */
-    private getCacheKey(state: CameraState, t: number): string {
-        // Key includes frame number and effect IDs with their start frames
-        const effectsKey = state.activeEffects
-            .map(e => `${e.id}:${e.startFrame}:${e.endFrame}`)
-            .join('|');
-        return `${t}:${effectsKey}`;
-    }
-
-    /**
-     * Compute the final camera transform at frame t
-     * 
-     * Effects are applied in layers:
-     * 1. Completed effects that ended before t - their final state persists
-     * 2. Active effects at time t - animated based on progress
-     * 
-     * For overlapping effects:
-     * - Scale is multiplicative (zoom 1.2 + zoom 1.5 = zoom 1.8)
-     * - Translate is additive
-     * - Origin uses the most recent effect's origin
-     * - Shake is additive
-     * 
-     * Memoized for performance.
-     */
-    computeTransform(state: CameraState, t: number): CameraTransform {
-        // Check cache first
-        const cacheKey = this.getCacheKey(state, t);
-        const cached = this.transformCache.get(cacheKey);
-        if (cached) {
-            return cached;
-        }
-
-        // Start with default transform
-        const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-        // Sort effects by start time for consistent processing
-        const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
-
-        // Apply each effect using the helper methods
-        for (const activeEffect of sortedEffects) {
-            // Skip effects that haven't started yet
-            if (t < activeEffect.startFrame) continue;
-
-            // Apply effect using the unified method
-            this.applyEffect(transform, activeEffect, t);
-        }
-
-        // Cache the result
-        this.transformCache.set(cacheKey, transform);
-
-        // LRU eviction - remove oldest entries if over limit
-        if (this.transformCache.size > this.MAX_CACHE_SIZE) {
-            const firstKey = this.transformCache.keys().next().value;
-            if (firstKey) {
-                this.transformCache.delete(firstKey);
-            }
-        }
-
-        return transform;
-    }
-
-    /**
-     * Clear the transform cache (call when starting a new video)
-     */
-    clearCache(): void {
-        this.transformCache.clear();
-    }
-
-    /**
-     * Apply a single effect to the transform
-     */
-    private applyEffect(transform: CameraTransform, activeEffect: ActiveCameraEffect, t: number): void {
-        const { effect, startFrame, endFrame } = activeEffect;
-        const duration = endFrame - startFrame;
-        const localT = duration > 0 ? (t - startFrame) / duration : 1;
-
-        switch (effect.type) {
-            case "ZOOM":
-                this.applyZoom(transform, effect, localT);
-                break;
-            case "PAN":
-                this.applyPan(transform, effect, localT);
-                break;
-            case "SHAKE":
-                this.applyShake(transform, effect, localT, t, startFrame);
-                break;
-            case "FOCUS":
-                this.applyFocus(transform, effect, localT);
-                break;
-            case "RESET":
-                this.applyReset(transform, effect, localT);
-                break;
-            // CUT is handled by the reducer, not here
-        }
-    }
-
-    /**
-     * ZOOM effect - scale with origin
-     */
-    private applyZoom(transform: CameraTransform, effect: CameraZoomEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Interpolate from current scale to target scale
-        const startScale = transform.scale;
-        const targetScale = effect.scale;
-        transform.scale = startScale + (targetScale - startScale) * easedProgress;
-
-        // Set transform origin if specified
-        if (effect.originX !== undefined) {
-            transform.originX = effect.originX;
-        }
-        if (effect.originY !== undefined) {
-            transform.originY = effect.originY;
-        }
-    }
-
-    /**
-     * PAN effect - translate position
-     */
-    private applyPan(transform: CameraTransform, effect: CameraPanEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Add translation (effects are additive for pan)
-        transform.translateX += effect.translateX * easedProgress;
-        transform.translateY += effect.translateY * easedProgress;
-    }
-
-    /**
-     * SHAKE effect - screen tremor with decay
-     */
-    private applyShake(
-        transform: CameraTransform,
-        effect: CameraShakeEffect,
-        progress: number,
-        absoluteFrame: number,
-        startFrame: number
-    ): void {
-        const frameInEffect = absoluteFrame - startFrame;
-        const seed = effect.seed ?? startFrame; // Use start frame as default seed for determinism
-
-        // Get shake offset for this frame
-        const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
-
-        // Apply decay (1 = instant decay, 0 = no decay)
-        const decay = effect.decay ?? 0.3; // Default 30% decay
-        const decayMultiplier = 1 - (progress * decay);
-
-        // Apply intensity and decay
-        transform.shakeX += offset.x * effect.intensity * decayMultiplier;
-        transform.shakeY += offset.y * effect.intensity * decayMultiplier;
-    }
-
-    /**
-     * FOCUS effect - zoom to a target
-     * Note: Actual target position calculation happens in the renderer
-     * Here we just handle the zoom/pan animation
-     */
-    private applyFocus(transform: CameraTransform, effect: CameraFocusEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-        const holdDuration = effect.holdDuration ?? 0;
-
-        // If we have a hold duration, adjust the animation curve
-        let animProgress = easedProgress;
-        if (holdDuration > 0 && progress > 0.5) {
-            // Hold at peak for specified duration
-            animProgress = 1;
-        }
-
-        // Apply zoom (FOCUS is essentially targeted ZOOM)
-        const targetScale = effect.scale ?? 1.5;
-        transform.scale = 1 + (targetScale - 1) * animProgress;
-
-        // Target-based origin will be set by renderer based on target position
-        // For now, we handle point-based targets
-        if (effect.target.type === "point") {
-            transform.originX = effect.target.x;
-            transform.originY = effect.target.y;
-        }
-    }
-
-    /**
-     * RESET effect - return to default camera position
-     */
-    private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
-        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
-
-        // Interpolate all values toward defaults
-        transform.translateX = transform.translateX * (1 - easedProgress);
-        transform.translateY = transform.translateY * (1 - easedProgress);
-        transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
-        transform.rotation = transform.rotation * (1 - easedProgress);
-        transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
-        transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
-    }
-}
-
-// =============================================================================
-// CAMERA EVENT PROCESSING
-// =============================================================================
-
-/**
- * Convert a timeline camera event to an ActiveCameraEffect
- */
-export function createActiveEffect(
-    event: { at: number; kind: "CAMERA"; type: string;[key: string]: any },
-    id: string
-): ActiveCameraEffect | null {
-    const { at, type, ...params } = event;
-
-    // Skip non-effect events
-    if (type === "SET_VIEW" || type === "CUT") {
-        return null;
-    }
-
-    // Build effect based on type
-    let effect: CameraEffect;
-    const duration = params.duration ?? 30; // Default 1 second at 30fps
-
-    switch (type) {
-        case "ZOOM":
-            effect = {
-                type: "ZOOM",
-                scale: params.scale ?? 1,
-                originX: params.originX,
-                originY: params.originY,
-                duration,
-                easing: params.easing,
-            };
-            break;
-        case "PAN":
-            effect = {
-                type: "PAN",
-                translateX: params.translateX ?? 0,
-                translateY: params.translateY ?? 0,
-                relative: params.relative,
-                duration,
-                easing: params.easing,
-            };
-            break;
-        case "SHAKE":
-            effect = {
-                type: "SHAKE",
-                intensity: params.intensity ?? 10,
-                frequency: params.frequency ?? 15,
-                decay: params.decay,
-                duration,
-                seed: params.seed,
-            };
-            break;
-        case "FOCUS":
-            effect = {
-                type: "FOCUS",
-                target: params.target ?? { type: "device" },
-                scale: params.scale,
-                duration,
-                easing: params.easing,
-                holdDuration: params.holdDuration,
-            };
-            break;
-        case "RESET":
-            effect = {
-                type: "RESET",
-                duration,
-                easing: params.easing,
-            };
-            break;
-        default:
-            return null;
-    }
-
-    return {
-        id,
-        effect,
-        startFrame: at,
-        endFrame: at + duration,
-        deviceId: params.deviceId,  // Per-device targeting
-    };
-}
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export { seededRandom, getShakeOffset };
-
-// Default controller instance
-export const defaultCameraController = new CameraController(30);
 ````
 
 ## File: packages/core/src/tokens.ts
@@ -33564,6 +34804,456 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
 };
 ````
 
+## File: packages/core/src/camera/index.ts
+````typescript
+/**
+ * Camera Module - Cinematic Camera System for Tokovo
+ * 
+ * This module provides production-grade camera effects including:
+ * - ZOOM: Scale with configurable origin and easing
+ * - PAN: Translation with smooth easing
+ * - SHAKE: Screen shake with frequency, intensity, and decay
+ * - FOCUS: Target-based zoom (app, notification, message, point)
+ * - CUT: Instant transitions between views
+ * - RESET: Smooth return to default camera position
+ */
+
+import {
+    CameraState,
+    CameraTransform,
+    CameraEffect,
+    ActiveCameraEffect,
+    EasingType,
+    DEFAULT_CAMERA_TRANSFORM,
+    CameraZoomEffect,
+    CameraPanEffect,
+    CameraShakeEffect,
+    CameraFocusEffect,
+    CameraResetEffect,
+} from "../types";
+
+// =============================================================================
+// EASING FUNCTIONS
+// =============================================================================
+
+/**
+ * Easing functions library - cinematic-grade timing curves
+ * Input: t (0-1), Output: eased value (0-1)
+ */
+export const easingFunctions: Record<EasingType, (t: number) => number> = {
+    "linear": (t) => t,
+
+    "ease-in": (t) => t * t * t,
+
+    "ease-out": (t) => 1 - Math.pow(1 - t, 3),
+
+    "ease-in-out": (t) => t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2,
+
+    "bounce": (t) => {
+        const n1 = 7.5625;
+        const d1 = 2.75;
+        if (t < 1 / d1) {
+            return n1 * t * t;
+        } else if (t < 2 / d1) {
+            return n1 * (t -= 1.5 / d1) * t + 0.75;
+        } else if (t < 2.5 / d1) {
+            return n1 * (t -= 2.25 / d1) * t + 0.9375;
+        } else {
+            return n1 * (t -= 2.625 / d1) * t + 0.984375;
+        }
+    },
+
+    "elastic": (t) => {
+        const c4 = (2 * Math.PI) / 3;
+        return t === 0 ? 0 : t === 1 ? 1
+            : Math.pow(2, -10 * t) * Math.sin((t * 10 - 0.75) * c4) + 1;
+    },
+
+    // Cinematic S-curve - smooth start, linear middle, smooth end
+    // Inspired by film camera movements
+    "cinematic": (t) => {
+        // Custom bezier-like curve for film-quality motion
+        if (t < 0.2) {
+            // Smooth ease-in for first 20%
+            return 0.5 * Math.pow(t / 0.2, 2) * 0.2;
+        } else if (t > 0.8) {
+            // Smooth ease-out for last 20%
+            const localT = (t - 0.8) / 0.2;
+            return 0.8 + 0.2 * (1 - Math.pow(1 - localT, 2));
+        } else {
+            // Linear middle section (60%)
+            return 0.1 + (t - 0.2) * (0.7 / 0.6);
+        }
+    },
+};
+
+/**
+ * Apply easing to a progress value
+ */
+export function applyEasing(progress: number, easing: EasingType = "ease-out"): number {
+    const clampedProgress = Math.max(0, Math.min(1, progress));
+    return easingFunctions[easing](clampedProgress);
+}
+
+// =============================================================================
+// SEEDED RANDOM FOR DETERMINISTIC SHAKE
+// =============================================================================
+
+/**
+ * Seeded random number generator for deterministic shake effects
+ * Uses mulberry32 algorithm for speed and quality
+ */
+function seededRandom(seed: number): () => number {
+    return function () {
+        let t = seed += 0x6D2B79F5;
+        t = Math.imul(t ^ t >>> 15, t | 1);
+        t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+}
+
+/**
+ * Generate shake offset for a given frame
+ * Returns values between -1 and 1
+ */
+function getShakeOffset(frame: number, seed: number, frequency: number, fps: number = 30): { x: number; y: number } {
+    // Calculate how many shake cycles per frame
+    const cyclesPerSecond = frequency;
+    const cyclesPerFrame = cyclesPerSecond / fps;
+
+    // Create deterministic random based on frame and seed
+    const rng = seededRandom(seed + Math.floor(frame * cyclesPerFrame));
+
+    // Generate offset (-1 to 1)
+    const x = (rng() - 0.5) * 2;
+    const y = (rng() - 0.5) * 2;
+
+    return { x, y };
+}
+
+// =============================================================================
+// CAMERA CONTROLLER
+// =============================================================================
+
+/**
+ * CameraController - Computes camera transforms at any given frame
+ * 
+ * This is the heart of the cinematic system. It takes:
+ * - Current camera state (with active effects)
+ * - Current frame number
+ * 
+ * And produces a final CameraTransform with all effects composited.
+ */
+export class CameraController {
+    private fps: number;
+
+    // Memoization cache for performance (LRU with max 500 entries)
+    private transformCache = new Map<string, CameraTransform>();
+    private readonly MAX_CACHE_SIZE = 500;
+
+    constructor(fps: number = 30) {
+        this.fps = fps;
+    }
+
+    /**
+     * Generate cache key from camera state and frame
+     */
+    private getCacheKey(state: CameraState, t: number): string {
+        // Key includes frame number and effect IDs with their start frames
+        const effectsKey = state.activeEffects
+            .map(e => `${e.id}:${e.startFrame}:${e.endFrame}`)
+            .join('|');
+        return `${t}:${effectsKey}`;
+    }
+
+    /**
+     * Compute the final camera transform at frame t
+     * 
+     * Effects are applied in layers:
+     * 1. Completed effects that ended before t - their final state persists
+     * 2. Active effects at time t - animated based on progress
+     * 
+     * For overlapping effects:
+     * - Scale is multiplicative (zoom 1.2 + zoom 1.5 = zoom 1.8)
+     * - Translate is additive
+     * - Origin uses the most recent effect's origin
+     * - Shake is additive
+     * 
+     * Memoized for performance.
+     */
+    computeTransform(state: CameraState, t: number): CameraTransform {
+        // Check cache first
+        const cacheKey = this.getCacheKey(state, t);
+        const cached = this.transformCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        // Start with default transform
+        const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+        // Sort effects by start time for consistent processing
+        const sortedEffects = [...state.activeEffects].sort((a, b) => a.startFrame - b.startFrame);
+
+        // Apply each effect using the helper methods
+        for (const activeEffect of sortedEffects) {
+            // Skip effects that haven't started yet
+            if (t < activeEffect.startFrame) continue;
+
+            // Apply effect using the unified method
+            this.applyEffect(transform, activeEffect, t);
+        }
+
+        // Cache the result
+        this.transformCache.set(cacheKey, transform);
+
+        // LRU eviction - remove oldest entries if over limit
+        if (this.transformCache.size > this.MAX_CACHE_SIZE) {
+            const firstKey = this.transformCache.keys().next().value;
+            if (firstKey) {
+                this.transformCache.delete(firstKey);
+            }
+        }
+
+        return transform;
+    }
+
+    /**
+     * Clear the transform cache (call when starting a new video)
+     */
+    clearCache(): void {
+        this.transformCache.clear();
+    }
+
+    /**
+     * Apply a single effect to the transform
+     */
+    private applyEffect(transform: CameraTransform, activeEffect: ActiveCameraEffect, t: number): void {
+        const { effect, startFrame, endFrame } = activeEffect;
+        const duration = endFrame - startFrame;
+        const localT = duration > 0 ? (t - startFrame) / duration : 1;
+
+        switch (effect.type) {
+            case "ZOOM":
+                this.applyZoom(transform, effect, localT);
+                break;
+            case "PAN":
+                this.applyPan(transform, effect, localT);
+                break;
+            case "SHAKE":
+                this.applyShake(transform, effect, localT, t, startFrame);
+                break;
+            case "FOCUS":
+                this.applyFocus(transform, effect, localT);
+                break;
+            case "RESET":
+                this.applyReset(transform, effect, localT);
+                break;
+            // CUT is handled by the reducer, not here
+        }
+    }
+
+    /**
+     * ZOOM effect - scale with origin
+     */
+    private applyZoom(transform: CameraTransform, effect: CameraZoomEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate from current scale to target scale
+        const startScale = transform.scale;
+        const targetScale = effect.scale;
+        transform.scale = startScale + (targetScale - startScale) * easedProgress;
+
+        // Set transform origin if specified
+        if (effect.originX !== undefined) {
+            transform.originX = effect.originX;
+        }
+        if (effect.originY !== undefined) {
+            transform.originY = effect.originY;
+        }
+    }
+
+    /**
+     * PAN effect - translate position
+     */
+    private applyPan(transform: CameraTransform, effect: CameraPanEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Add translation (effects are additive for pan)
+        transform.translateX += effect.translateX * easedProgress;
+        transform.translateY += effect.translateY * easedProgress;
+    }
+
+    /**
+     * SHAKE effect - screen tremor with decay
+     */
+    private applyShake(
+        transform: CameraTransform,
+        effect: CameraShakeEffect,
+        progress: number,
+        absoluteFrame: number,
+        startFrame: number
+    ): void {
+        const frameInEffect = absoluteFrame - startFrame;
+        const seed = effect.seed ?? startFrame; // Use start frame as default seed for determinism
+
+        // Get shake offset for this frame
+        const offset = getShakeOffset(frameInEffect, seed, effect.frequency, this.fps);
+
+        // Apply decay (1 = instant decay, 0 = no decay)
+        const decay = effect.decay ?? 0.3; // Default 30% decay
+        const decayMultiplier = 1 - (progress * decay);
+
+        // Apply intensity and decay
+        transform.shakeX += offset.x * effect.intensity * decayMultiplier;
+        transform.shakeY += offset.y * effect.intensity * decayMultiplier;
+    }
+
+    /**
+     * FOCUS effect - zoom to a target
+     * Note: Actual target position calculation happens in the renderer
+     * Here we just handle the zoom/pan animation
+     */
+    private applyFocus(transform: CameraTransform, effect: CameraFocusEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+        const holdDuration = effect.holdDuration ?? 0;
+
+        // If we have a hold duration, adjust the animation curve
+        let animProgress = easedProgress;
+        if (holdDuration > 0 && progress > 0.5) {
+            // Hold at peak for specified duration
+            animProgress = 1;
+        }
+
+        // Apply zoom (FOCUS is essentially targeted ZOOM)
+        const targetScale = effect.scale ?? 1.5;
+        transform.scale = 1 + (targetScale - 1) * animProgress;
+
+        // Target-based origin will be set by renderer based on target position
+        // For now, we handle point-based targets
+        if (effect.target.type === "point") {
+            transform.originX = effect.target.x;
+            transform.originY = effect.target.y;
+        }
+    }
+
+    /**
+     * RESET effect - return to default camera position
+     */
+    private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
+        const easedProgress = applyEasing(progress, effect.easing || "ease-out");
+
+        // Interpolate all values toward defaults
+        transform.translateX = transform.translateX * (1 - easedProgress);
+        transform.translateY = transform.translateY * (1 - easedProgress);
+        transform.scale = transform.scale + (1 - transform.scale) * easedProgress;
+        transform.rotation = transform.rotation * (1 - easedProgress);
+        transform.originX = transform.originX + (0.5 - transform.originX) * easedProgress;
+        transform.originY = transform.originY + (0.5 - transform.originY) * easedProgress;
+    }
+}
+
+// =============================================================================
+// CAMERA EVENT PROCESSING
+// =============================================================================
+
+/**
+ * Convert a timeline camera event to an ActiveCameraEffect
+ */
+export function createActiveEffect(
+    event: { at: number; kind: "CAMERA"; type: string;[key: string]: any },
+    id: string
+): ActiveCameraEffect | null {
+    const { at, type, ...params } = event;
+
+    // Skip non-effect events
+    if (type === "SET_VIEW" || type === "CUT") {
+        return null;
+    }
+
+    // Build effect based on type
+    let effect: CameraEffect;
+    const duration = params.duration ?? 30; // Default 1 second at 30fps
+
+    switch (type) {
+        case "ZOOM":
+            effect = {
+                type: "ZOOM",
+                scale: params.scale ?? 1,
+                originX: params.originX,
+                originY: params.originY,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "PAN":
+            effect = {
+                type: "PAN",
+                translateX: params.translateX ?? 0,
+                translateY: params.translateY ?? 0,
+                relative: params.relative,
+                duration,
+                easing: params.easing,
+            };
+            break;
+        case "SHAKE":
+            effect = {
+                type: "SHAKE",
+                intensity: params.intensity ?? 10,
+                frequency: params.frequency ?? 15,
+                decay: params.decay,
+                duration,
+                seed: params.seed,
+            };
+            break;
+        case "FOCUS":
+            effect = {
+                type: "FOCUS",
+                target: params.target ?? { type: "device" },
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                holdDuration: params.holdDuration,
+            };
+            break;
+        case "RESET":
+            effect = {
+                type: "RESET",
+                duration,
+                easing: params.easing,
+            };
+            break;
+        default:
+            return null;
+    }
+
+    return {
+        id,
+        effect,
+        startFrame: at,
+        endFrame: at + duration,
+        deviceId: params.deviceId,  // Per-device targeting
+    };
+}
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export { seededRandom, getShakeOffset };
+
+// Default controller instance
+export const defaultCameraController = new CameraController(30);
+
+// Timeline system
+export * from "./timeline";
+
+// Presets
+export * from "./presets";
+````
+
 ## File: packages/episodes/src/schema.ts
 ````typescript
 import { z } from "zod";
@@ -33963,599 +35653,6 @@ export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
-````
-
-## File: packages/ir/src/scene.ts
-````typescript
-/**
- * Scene IR - Semantic Truth
- * 
- * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
- * 
- * RULES:
- * - No frames
- * - No layout
- * - No camera
- * - No platform assumptions
- * 
- * If FPS changes, layout changes, or Director logic changes,
- * Scene IR stays valid.
- */
-
-// =============================================================================
-// DURATION
-// =============================================================================
-
-/**
- * Human-readable duration expression.
- * Examples: "1.2s", "300ms", "45frames"
- */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
-
-/**
- * Parse duration to frames
- */
-export function parseDuration(expr: DurationExpr, fps: number): number {
-    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
-    if (!match) {
-        throw new Error(`Invalid duration: ${expr}`);
-    }
-
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-        case "s":
-            return Math.round(value * fps);
-        case "ms":
-            return Math.round((value / 1000) * fps);
-        case "frames":
-            return Math.round(value);
-        default:
-            throw new Error(`Unknown duration unit: ${unit}`);
-    }
-}
-
-// =============================================================================
-// MESSAGE REFERENCE
-// =============================================================================
-
-/**
- * Reference to a message.
- * MUST include full context for cross-device/conversation operations.
- */
-export interface MessageRef {
-    readonly _type: "MessageRef";
-    readonly id: string;
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Create a message reference
- */
-export function messageRef(
-    id: string,
-    deviceId: string,
-    appId: string,
-    conversationId: string
-): MessageRef {
-    return {
-        _type: "MessageRef",
-        id,
-        deviceId,
-        appId,
-        conversationId,
-    };
-}
-
-// =============================================================================
-// MESSAGE METADATA
-// =============================================================================
-
-import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
-
-export interface MessageMeta {
-    /** Message type */
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
-
-    /** For voice/video messages */
-    duration?: number;
-
-    /** Media URLs */
-    imageUrl?: string;
-    videoUrl?: string;
-    thumbnailUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-
-    /** For media messages (height in pixels for layout) */
-    height?: number;
-
-    /** Timestamp display */
-    timestamp?: string;
-
-    /** Interactions */
-    reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
-    replyTo?: { messageId: string; text: string; from: string; type?: string };
-    edited?: boolean;
-
-    /** Semantic annotations */
-    semantic?: SemanticMeta;
-
-    /** Custom metadata */
-    [key: string]: unknown;
-}
-
-// =============================================================================
-// SCENE OPERATIONS (CORE)
-// =============================================================================
-
-/**
- * Wait for a duration.
- * This advances the cursor but emits no runtime event.
- */
-export interface WaitOp {
-    readonly kind: "Wait";
-    readonly duration: DurationExpr;
-}
-
-/**
- * Start typing indicator.
- */
-export interface TypingStartOp {
-    readonly kind: "TypingStart";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * End typing indicator.
- */
-export interface TypingEndOp {
-    readonly kind: "TypingEnd";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * Send a message (from "me" / device owner).
- */
-export interface SendMessageOp {
-    readonly kind: "SendMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Receive a message (from someone else).
- */
-export interface ReceiveMessageOp {
-    readonly kind: "ReceiveMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Mark a message as read.
- */
-export interface ReadMessageOp {
-    readonly kind: "ReadMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Delete a message.
- */
-export interface DeleteMessageOp {
-    readonly kind: "DeleteMessage";
-    readonly ref: MessageRef;
-}
-
-// =============================================================================
-// MEDIA MESSAGE OPERATIONS
-// =============================================================================
-
-/**
- * Media message configuration with defaults.
- */
-export interface MediaConfig {
-    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
-    readonly height?: number;
-    /** Caption text */
-    readonly caption?: string;
-    /** Auto-timing: skip automatic timing calculation */
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send an image message.
- */
-export interface SendImageOp {
-    readonly kind: "SendImage";
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive an image message.
- */
-export interface ReceiveImageOp {
-    readonly kind: "ReceiveImage";
-    readonly actor: string;
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a video message.
- */
-export interface SendVideoOp {
-    readonly kind: "SendVideo";
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Video duration in seconds
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a video message.
- */
-export interface ReceiveVideoOp {
-    readonly kind: "ReceiveVideo";
-    readonly actor: string;
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a GIF message.
- */
-export interface SendGifOp {
-    readonly kind: "SendGif";
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a GIF message.
- */
-export interface ReceiveGifOp {
-    readonly kind: "ReceiveGif";
-    readonly actor: string;
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a voice note.
- */
-export interface SendVoiceOp {
-    readonly kind: "SendVoice";
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a voice note.
- */
-export interface ReceiveVoiceOp {
-    readonly kind: "ReceiveVoice";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Concurrent operations across multiple tracks.
- * Compiler forks cursor per track, compiles each independently,
- * then joins at max(trackEnds).
- */
-export interface ConcurrentOp {
-    readonly kind: "Concurrent";
-    readonly tracks: SceneOp[][];
-}
-
-// =============================================================================
-// CAMERA EFFECT OPERATIONS
-// =============================================================================
-
-/**
- * Camera zoom effect.
- * Smoothly zooms in/out on the active device.
- */
-export interface CameraZoomOp {
-    readonly kind: "CameraZoom";
-    readonly scale: number;          // Target scale (1.0 = no zoom, 2.0 = 2x zoom)
-    readonly duration?: DurationExpr; // Duration of zoom transition
-    readonly originX?: number;       // Zoom origin X (0-1, default 0.5)
-    readonly originY?: number;       // Zoom origin Y (0-1, default 0.5)
-    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
-}
-
-/**
- * Camera shake effect.
- * Adds dramatic shake to the viewport.
- */
-export interface CameraShakeOp {
-    readonly kind: "CameraShake";
-    readonly deviceId: string;        // Which device to shake
-    readonly intensity?: number;      // Shake intensity in pixels (default 5)
-    readonly frequency?: number;      // Oscillations per second (default 10)
-    readonly decay?: number;          // Decay rate 0-1 (default 0.5)
-    readonly duration?: DurationExpr; // Duration of shake effect
-}
-
-// =============================================================================
-// POV OPERATIONS (STORY GRAMMAR)
-// =============================================================================
-
-/**
- * Switch point of view to a device.
- */
-export interface POVSwitchOp {
-    readonly kind: "POVSwitch";
-    readonly deviceId: string;
-    readonly transition?: "cut" | "crossfade" | "wipe";
-}
-
-/**
- * Split POV - show multiple devices simultaneously.
- */
-export interface SplitPOVOp {
-    readonly kind: "SplitPOV";
-    readonly devices: string[];
-    readonly layout: POVLayout;
-}
-
-// =============================================================================
-// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
-// =============================================================================
-
-/**
- * Reaction added to a message (❤️ 😂 😡).
- */
-export interface AddReactionOp {
-    readonly kind: "AddReaction";
-    readonly ref: MessageRef;
-    readonly actor: string;
-    readonly emoji: string;
-}
-
-/**
- * Voice note sent.
- */
-export interface VoiceNoteSentOp {
-    readonly kind: "VoiceNoteSent";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Voice note received.
- */
-export interface VoiceNoteReceivedOp {
-    readonly kind: "VoiceNoteReceived";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Missed call.
- */
-export interface MissedCallOp {
-    readonly kind: "MissedCall";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly callType?: "voice" | "video";
-}
-
-/**
- * Online status changed.
- */
-export interface OnlineStatusChangedOp {
-    readonly kind: "OnlineStatusChanged";
-    readonly actor: string;
-    readonly status: "online" | "offline" | "typing" | "last_seen";
-}
-
-/**
- * Screenshot taken (drama alert!).
- */
-export interface ScreenshotTakenOp {
-    readonly kind: "ScreenshotTaken";
-    readonly conversationId: string;
-}
-
-/**
- * User blocked.
- */
-export interface BlockedUserOp {
-    readonly kind: "BlockedUser";
-    readonly actor: string;
-}
-
-// =============================================================================
-// NAVIGATION OPERATIONS
-// =============================================================================
-
-/**
- * Navigate to a screen within an app.
- * Enables transitions from chats list to chat, settings, etc.
- */
-export interface NavigateScreenOp {
-    readonly kind: "NavigateScreen";
-    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
-    readonly transition?: "push" | "pop" | "present" | "dismiss";
-    readonly animationDuration?: number;  // frames
-}
-
-/**
- * Open a specific chat.
- * Combines navigation with conversation selection.
- */
-export interface OpenChatOp {
-    readonly kind: "OpenChat";
-    readonly conversationId: string;
-    readonly transition?: "push" | "pop";
-    readonly animationDuration?: number;
-}
-
-/**
- * Go back to previous screen.
- */
-export interface GoBackOp {
-    readonly kind: "GoBack";
-    readonly transition?: "pop" | "dismiss";
-    readonly animationDuration?: number;
-}
-
-/**
- * Union of all scene operations.
- */
-export type SceneOp =
-    // Core operations
-    | WaitOp
-    | TypingStartOp
-    | TypingEndOp
-    | SendMessageOp
-    | ReceiveMessageOp
-    | ReadMessageOp
-    | DeleteMessageOp
-    | ConcurrentOp
-    // Media operations
-    | SendImageOp
-    | ReceiveImageOp
-    | SendVideoOp
-    | ReceiveVideoOp
-    | SendGifOp
-    | ReceiveGifOp
-    | SendVoiceOp
-    | ReceiveVoiceOp
-    // POV operations
-    | POVSwitchOp
-    | SplitPOVOp
-    // Camera effects
-    | CameraZoomOp
-    | CameraShakeOp
-    // Navigation operations
-    | NavigateScreenOp
-    | OpenChatOp
-    | GoBackOp
-    | GoBackOp
-    // Reserved signals
-    | AddReactionOp
-    | VoiceNoteSentOp
-    | VoiceNoteReceivedOp
-    | MissedCallOp
-    | OnlineStatusChangedOp
-    | ScreenshotTakenOp
-    | BlockedUserOp;
-
-// =============================================================================
-// SCENE (TOP LEVEL)
-// =============================================================================
-
-/**
- * A beat is a named group of operations.
- * Used for semantic grouping, story rhythm, and debugging.
- */
-export interface Beat {
-    readonly name: string;
-    readonly ops: SceneOp[];
-    /** Optional rhythm/semantic metadata */
-    readonly meta?: BeatMeta;
-}
-
-/**
- * A device context within a scene.
- */
-export interface DeviceScene {
-    readonly deviceId: string;
-    readonly profileId: string;
-    readonly appId: string;
-    readonly conversations: ConversationDef[];
-    readonly beats: Beat[];
-}
-
-
-/**
- * Conversation definition.
- */
-export interface ConversationDef {
-    readonly id: string;
-    readonly name?: string;
-    readonly avatar?: string;
-    readonly type?: "dm" | "group";
-}
-
-/**
- * Camera event scheduled at a specific time.
- */
-export interface CameraEvent {
-    readonly at: DurationExpr;
-    readonly op: SceneOp;
-}
-
-/**
- * Cross-device scene definition.
- */
-export interface CrossDeviceScene {
-    readonly name: string;
-    readonly deviceBeats: Record<string, Beat[]>;  // deviceId -> beats
-}
-
-/**
- * Complete scene IR for an episode.
- */
-export interface SceneIR {
-    readonly episodeId: string;
-    readonly meta: EpisodeMeta;
-    readonly devices: DeviceScene[];
-    /** Camera operations track (cuts, zooms, shakes) */
-    readonly cameraTrack?: CameraEvent[];
-    /** Cross-device scenes for coordinated actions */
-    readonly scenes?: CrossDeviceScene[];
-}
-
-/**
- * Episode metadata with semantic configuration.
- * Extends EpisodeConfig with required fields.
- */
-export interface EpisodeMeta extends EpisodeConfig {
-    /** Frames per second (required) */
-    readonly fps: number;
-
-    /** Duration hint (calculated if not specified) */
-    readonly durationInFrames?: number;
-}
 ````
 
 ## File: packages/core/src/engine.ts
@@ -35769,6 +36866,599 @@ class TrackBuilderImpl implements TrackBuilder {
 }
 ````
 
+## File: packages/ir/src/scene.ts
+````typescript
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
+
+// =============================================================================
+// DURATION
+// =============================================================================
+
+/**
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
+ */
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
+    }
+
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
+    }
+}
+
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
+
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
+    return {
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
+    };
+}
+
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
+
+    /** For voice/video messages */
+    duration?: number;
+
+    /** Media URLs */
+    imageUrl?: string;
+    videoUrl?: string;
+    thumbnailUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+
+    /** For media messages (height in pixels for layout) */
+    height?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Interactions */
+    reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+    replyTo?: { messageId: string; text: string; from: string; type?: string };
+    edited?: boolean;
+
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS (CORE)
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+// =============================================================================
+// MEDIA MESSAGE OPERATIONS
+// =============================================================================
+
+/**
+ * Media message configuration with defaults.
+ */
+export interface MediaConfig {
+    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
+    readonly height?: number;
+    /** Caption text */
+    readonly caption?: string;
+    /** Auto-timing: skip automatic timing calculation */
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send an image message.
+ */
+export interface SendImageOp {
+    readonly kind: "SendImage";
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive an image message.
+ */
+export interface ReceiveImageOp {
+    readonly kind: "ReceiveImage";
+    readonly actor: string;
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a video message.
+ */
+export interface SendVideoOp {
+    readonly kind: "SendVideo";
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Video duration in seconds
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a video message.
+ */
+export interface ReceiveVideoOp {
+    readonly kind: "ReceiveVideo";
+    readonly actor: string;
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a GIF message.
+ */
+export interface SendGifOp {
+    readonly kind: "SendGif";
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a GIF message.
+ */
+export interface ReceiveGifOp {
+    readonly kind: "ReceiveGif";
+    readonly actor: string;
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a voice note.
+ */
+export interface SendVoiceOp {
+    readonly kind: "SendVoice";
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a voice note.
+ */
+export interface ReceiveVoiceOp {
+    readonly kind: "ReceiveVoice";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+// =============================================================================
+// CAMERA EFFECT OPERATIONS
+// =============================================================================
+
+/**
+ * Camera zoom effect.
+ * Smoothly zooms in/out on the active device.
+ */
+export interface CameraZoomOp {
+    readonly kind: "CameraZoom";
+    readonly scale: number;          // Target scale (1.0 = no zoom, 2.0 = 2x zoom)
+    readonly duration?: DurationExpr; // Duration of zoom transition
+    readonly originX?: number;       // Zoom origin X (0-1, default 0.5)
+    readonly originY?: number;       // Zoom origin Y (0-1, default 0.5)
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Camera shake effect.
+ * Adds dramatic shake to the viewport.
+ */
+export interface CameraShakeOp {
+    readonly kind: "CameraShake";
+    readonly deviceId: string;        // Which device to shake
+    readonly intensity?: number;      // Shake intensity in pixels (default 5)
+    readonly frequency?: number;      // Oscillations per second (default 10)
+    readonly decay?: number;          // Decay rate 0-1 (default 0.5)
+    readonly duration?: DurationExpr; // Duration of shake effect
+}
+
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface AddReactionOp {
+    readonly kind: "AddReaction";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
+// =============================================================================
+// NAVIGATION OPERATIONS
+// =============================================================================
+
+/**
+ * Navigate to a screen within an app.
+ * Enables transitions from chats list to chat, settings, etc.
+ */
+export interface NavigateScreenOp {
+    readonly kind: "NavigateScreen";
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+    readonly animationDuration?: number;  // frames
+}
+
+/**
+ * Open a specific chat.
+ * Combines navigation with conversation selection.
+ */
+export interface OpenChatOp {
+    readonly kind: "OpenChat";
+    readonly conversationId: string;
+    readonly transition?: "push" | "pop";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Go back to previous screen.
+ */
+export interface GoBackOp {
+    readonly kind: "GoBack";
+    readonly transition?: "pop" | "dismiss";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    // Core operations
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp
+    // Media operations
+    | SendImageOp
+    | ReceiveImageOp
+    | SendVideoOp
+    | ReceiveVideoOp
+    | SendGifOp
+    | ReceiveGifOp
+    | SendVoiceOp
+    | ReceiveVoiceOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Camera effects
+    | CameraZoomOp
+    | CameraShakeOp
+    // Navigation operations
+    | NavigateScreenOp
+    | OpenChatOp
+    | GoBackOp
+    | GoBackOp
+    // Reserved signals
+    | AddReactionOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping, story rhythm, and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Camera event scheduled at a specific time.
+ */
+export interface CameraEvent {
+    readonly at: DurationExpr;
+    readonly op: SceneOp;
+}
+
+/**
+ * Cross-device scene definition.
+ */
+export interface CrossDeviceScene {
+    readonly name: string;
+    readonly deviceBeats: Record<string, Beat[]>;  // deviceId -> beats
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+    /** Camera operations track (cuts, zooms, shakes) */
+    readonly cameraTrack?: CameraEvent[];
+    /** Cross-device scenes for coordinated actions */
+    readonly scenes?: CrossDeviceScene[];
+}
+
+/**
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
+ */
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
+    readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
+    readonly durationInFrames?: number;
+}
+````
+
 ## File: packages/renderer/src/DeviceFrame.tsx
 ````typescript
 import React from "react";
@@ -36278,6 +37968,269 @@ class AppRegistryClass {
 export const AppRegistry = new AppRegistryClass();
 ````
 
+## File: packages/renderer/src/layout/strategies/chat.ts
+````typescript
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import {
+    DEFAULT_LAYOUT_CONFIG,
+    calculateMessageHeight,
+    calculateSmartGap,
+    calculateBubbleWidth,
+    applyEasing,
+    isMessageCentered,
+    doesMessageBreakGrouping,
+    type MessageLayoutConfig,  // Type import
+    type MessageForHeight,     // Type import
+    type MessageForGap,        // Type import
+    type MessageType,          // Type import
+    type GapContext,           // Type import
+} from "@tokovo/apps-whatsapp";
+
+// =============================================================================
+// PRODUCTION-GRADE CHAT LAYOUT STRATEGY
+// =============================================================================
+
+/**
+ * Compute chat layout using the production-grade configurable layout system.
+ * 
+ * Features:
+ * - Single-pass layout algorithm (efficient)
+ * - Deterministic "Visual Run" gap calculation (No heuristics)
+ * - Group chat member awareness with interruption handling
+ * - Per-message-type spacing overrides
+ * - Fully configurable via MessageLayoutConfig
+ */
+export function computeChatLayout(
+    ctx: LayoutContext,
+    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): ChatLayoutState {
+    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
+    const config = layoutConfig;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+
+    // Detect if this is a group chat (more than 2 unique senders)
+    const uniqueSenders = new Set(messages.map(m => m.from));
+    const isGroupChat = uniqueSenders.size > 2;
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = config.spacing.global.topPadding;
+    let lastMessageId: string | undefined;
+
+    // ==========================================================
+    // SINGLE-PASS LAYOUT ALGORITHM
+    // ==========================================================
+    for (let i = 0; i < messages.length; i++) {
+        const msg = messages[i];
+        const prevMsg = i > 0 ? messages[i - 1] : undefined;
+        const msgType = (msg.type || "text") as MessageType;
+
+        // Calculate gap from previous message
+        if (prevMsg) {
+            const prevForGap: MessageForGap = {
+                type: prevMsg.type as MessageType,
+                from: prevMsg.from,
+                at: prevMsg.at,
+                hasReply: (prevMsg as any).replyTo != null,
+                hasReactions: (prevMsg as any).reactions?.length > 0,
+                hasLinkPreview: (prevMsg as any).linkPreview != null,
+            };
+            const nextForGap: MessageForGap = {
+                type: msg.type as MessageType,
+                from: msg.from,
+                at: msg.at,
+                hasReply: (msg as any).replyTo != null,
+                hasReactions: (msg as any).reactions?.length > 0,
+                hasLinkPreview: (msg as any).linkPreview != null,
+            };
+
+            const gapContext: GapContext = {
+                prevMessage: prevForGap,
+                nextMessage: nextForGap,
+            };
+
+            const gap = calculateSmartGap(gapContext, config);
+            currentY += gap;
+        }
+
+        // Calculate height using the config-based function
+        const msgForHeight: MessageForHeight = {
+            type: msgType,
+            text: msg.text,
+            caption: (msg as any).caption,
+            from: msg.from,
+            // Enhanced Visual Run Logic: Find previous groupable message
+            // Enhanced Visual Run Logic: Determine previous groupable context
+            prevFrom: (() => {
+                const prev = i > 0 ? messages[i - 1] : undefined;
+                if (!prev) return undefined;
+
+                const prevType = (prev.type || "text") as MessageType;
+                // Policy A: Strict Grouping Reset
+                if (doesMessageBreakGrouping(prevType, config)) return "BREAK";
+
+                return prev.from;
+            })(),
+            isGroupChat,              // Pass group chat status
+            reactions: (msg as any).reactions,
+            replyTo: (msg as any).replyTo,
+            linkPreview: (msg as any).linkPreview,
+        };
+
+        const height = calculateMessageHeight(msgForHeight, viewportWidth, config);
+
+        // Calculate bubble width using per-type config
+        const bubbleWidth = calculateBubbleWidth(msgForHeight, viewportWidth, config);
+
+        const isMe = msg.from === "me";
+
+        // Animation: Horizontal Slide in (Safety First)
+        // Vertical animation risks overlapping with the next bubble (like typing indicator)
+        // because layout assumes final position. Horizontal slide avoids this collision.
+        const messageAt = msg.at ?? 0;
+        const timeSinceAppear = t - messageAt;
+        let opacity = 1;
+        let translateX = 0;
+        // Ensure translateY is 0 to prevent vertical overlap
+        const translateY = 0;
+
+        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
+            const progress = timeSinceAppear / config.animation.messageAppearDuration;
+            const ease = applyEasing(progress, "easeOut");
+            opacity = ease;
+
+            // Slide in from side
+            // Me (Right): Slide from right (+offset -> 0)
+            // Other (Left): Slide from left (-offset -> 0) 
+            const offset = config.animation.messageAppearOffset * (1 - ease);
+            translateX = isMe ? offset : -offset;
+        }
+
+        // Compute rect for director targeting
+        const isCentered = isMessageCentered(msgType, config);
+
+        let rectX: number;
+        if (isCentered) {
+            // Center system messages
+            rectX = (viewportWidth - bubbleWidth) / 2;
+        } else {
+            rectX = isMe
+                ? viewportWidth - config.spacing.global.bubbleMargin - bubbleWidth
+                : config.spacing.global.bubbleMargin;
+        }
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY,
+            translateX,
+            rect: {
+                x: rectX,
+                y: currentY,
+                width: bubbleWidth,
+                height,
+            },
+        };
+
+        lastMessageId = msg.id;
+        currentY += height;
+    }
+
+    // ==========================================================
+    // TYPING INDICATOR
+    // ==========================================================
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+
+    if (isTyping) {
+        const typingConfig = config.messageTypes.typing;
+        const typingHeight = typingConfig.height.base;
+        const typingWidth = typingConfig.width.fixed || typingConfig.width.min;
+
+        // Calculate gap before typing indicator
+        const lastMsg = messages[messages.length - 1];
+        if (lastMsg) {
+            const prevForGap: MessageForGap = {
+                type: lastMsg.type as MessageType,
+                from: lastMsg.from,
+                at: lastMsg.at,
+                hasReply: (lastMsg as any).replyTo != null,
+                hasReactions: (lastMsg as any).reactions?.length > 0,
+            };
+            const typingForGap: MessageForGap = {
+                type: "typing",
+                from: "other",  // Typing is always from other person
+                hasReply: false,
+                hasReactions: false,
+            };
+
+            const gapContext: GapContext = {
+                prevMessage: prevForGap,
+                nextMessage: typingForGap,
+            };
+
+            const gap = calculateSmartGap(gapContext, config);
+            currentY += gap;
+        }
+
+        typingLayout = {
+            y: currentY,
+            height: typingHeight,
+            opacity: 1,
+            rect: {
+                x: config.spacing.global.bubbleMargin,
+                y: currentY,
+                width: typingWidth,
+                height: typingHeight,
+            },
+        };
+        currentY += typingHeight;
+    }
+
+    const contentHeight = currentY + config.spacing.global.bottomPadding;
+
+    // ==========================================================
+    // SCROLL POSITION
+    // ==========================================================
+    let scrollY = 0;
+    if (config.scroll.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+        scrollY = maxScroll;
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId,
+            isGroupChat,  // Expose for components
+        }
+    };
+}
+
+// For backward compatibility, export the config types
+export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };
+````
+
 ## File: packages/apps-whatsapp/src/config/layout-config.ts
 ````typescript
 /**
@@ -36337,7 +38290,7 @@ export const LAYOUT_CONSTANTS = {
     GAP_SYSTEM: 24,           // 9px visual
 
     // Typography / Metrics
-    AVG_CHAR_WIDTH: 24,       // Average character width for wrapping calculation
+    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
 
     // Typing Indicator
     TYPING_BUBBLE_HEIGHT: 72, // Inner height
@@ -36556,6 +38509,7 @@ export interface MessageForHeight {
 
 export function calculateMessageHeight(
     msg: MessageForHeight,
+    viewportWidth: number,
     config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
 ): number {
     const msgType = (msg.type || "text") as MessageType;
@@ -36567,15 +38521,17 @@ export function calculateMessageHeight(
     if (msgType === "text" || msgType === "deleted") {
         const text = msg.text || "";
         // Use unified measurement logic
-        const { lines } = measureTextBlock(text, undefined, config); // Allow default viewport
+        const { lines } = measureTextBlock(text, viewportWidth, config);
         height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
     } else if ((msgType === "image" || msgType === "video") && msg.caption) {
         // Dynamic Media Height (Option B)
         // Measure caption to determine how much vertical space to add to base image
-        const { lines } = measureTextBlock(msg.caption, undefined, config);
+        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
         const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
         const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
-        height = typeConfig.height.base + captionHeight + captionPadding;
+        // Add timestamp footer height + margin (timestamp sits below caption)
+        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
+        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
     } else {
         height = typeConfig.height.base;
     }
@@ -36726,6 +38682,9 @@ export function measureTextBlock(
             // space
             if (code === 32) {
                 w = 0.6;
+            } else if (code >= 65 && code <= 90) {
+                // Uppercase A-Z
+                w = 1.3;
             } else {
                 // emoji surrogate pair
                 const isHigh = code >= 0xd800 && code <= 0xdbff;
@@ -36795,7 +38754,11 @@ export function calculateBubbleWidth(
         return bubbleWidth;
     }
 
-    return viewportWidth * typeConfig.width.maxPercent;
+    // Media & others: Use standard clamping
+    // Calculates a width based on percentage, but ensures it's at least 'min'
+    // and optionally upper-bounded if we strictly wanted to (not currently in config)
+    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
+    return Math.max(typeConfig.width.min, idealWidth);
 }
 
 // =============================================================================
@@ -36849,269 +38812,6 @@ export function shouldShowSenderName(ctx: SenderNameContext): boolean {
 }
 ````
 
-## File: packages/renderer/src/layout/strategies/chat.ts
-````typescript
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
-import {
-    DEFAULT_LAYOUT_CONFIG,
-    calculateMessageHeight,
-    calculateSmartGap,
-    calculateBubbleWidth,
-    applyEasing,
-    isMessageCentered,
-    doesMessageBreakGrouping,
-    type MessageLayoutConfig,  // Type import
-    type MessageForHeight,     // Type import
-    type MessageForGap,        // Type import
-    type MessageType,          // Type import
-    type GapContext,           // Type import
-} from "@tokovo/apps-whatsapp";
-
-// =============================================================================
-// PRODUCTION-GRADE CHAT LAYOUT STRATEGY
-// =============================================================================
-
-/**
- * Compute chat layout using the production-grade configurable layout system.
- * 
- * Features:
- * - Single-pass layout algorithm (efficient)
- * - Deterministic "Visual Run" gap calculation (No heuristics)
- * - Group chat member awareness with interruption handling
- * - Per-message-type spacing overrides
- * - Fully configurable via MessageLayoutConfig
- */
-export function computeChatLayout(
-    ctx: LayoutContext,
-    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): ChatLayoutState {
-    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
-    const config = layoutConfig;
-
-    if (!activeConversationId || !world.conversations[activeConversationId]) {
-        return {
-            kind: "CHAT",
-            scrollY: 0,
-            contentHeight: 0,
-            isAtBottom: true,
-            messageLayouts: {},
-            meta: {}
-        };
-    }
-
-    const conversation = world.conversations[activeConversationId];
-    // Filter messages visible at time t
-    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
-
-    // Detect if this is a group chat (more than 2 unique senders)
-    const uniqueSenders = new Set(messages.map(m => m.from));
-    const isGroupChat = uniqueSenders.size > 2;
-
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = config.spacing.global.topPadding;
-    let lastMessageId: string | undefined;
-
-    // ==========================================================
-    // SINGLE-PASS LAYOUT ALGORITHM
-    // ==========================================================
-    for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i];
-        const prevMsg = i > 0 ? messages[i - 1] : undefined;
-        const msgType = (msg.type || "text") as MessageType;
-
-        // Calculate gap from previous message
-        if (prevMsg) {
-            const prevForGap: MessageForGap = {
-                type: prevMsg.type as MessageType,
-                from: prevMsg.from,
-                at: prevMsg.at,
-                hasReply: (prevMsg as any).replyTo != null,
-                hasReactions: (prevMsg as any).reactions?.length > 0,
-                hasLinkPreview: (prevMsg as any).linkPreview != null,
-            };
-            const nextForGap: MessageForGap = {
-                type: msg.type as MessageType,
-                from: msg.from,
-                at: msg.at,
-                hasReply: (msg as any).replyTo != null,
-                hasReactions: (msg as any).reactions?.length > 0,
-                hasLinkPreview: (msg as any).linkPreview != null,
-            };
-
-            const gapContext: GapContext = {
-                prevMessage: prevForGap,
-                nextMessage: nextForGap,
-            };
-
-            const gap = calculateSmartGap(gapContext, config);
-            currentY += gap;
-        }
-
-        // Calculate height using the config-based function
-        const msgForHeight: MessageForHeight = {
-            type: msgType,
-            text: msg.text,
-            caption: (msg as any).caption,
-            from: msg.from,
-            // Enhanced Visual Run Logic: Find previous groupable message
-            // Enhanced Visual Run Logic: Determine previous groupable context
-            prevFrom: (() => {
-                const prev = i > 0 ? messages[i - 1] : undefined;
-                if (!prev) return undefined;
-
-                const prevType = (prev.type || "text") as MessageType;
-                // Policy A: Strict Grouping Reset
-                if (doesMessageBreakGrouping(prevType, config)) return "BREAK";
-
-                return prev.from;
-            })(),
-            isGroupChat,              // Pass group chat status
-            reactions: (msg as any).reactions,
-            replyTo: (msg as any).replyTo,
-            linkPreview: (msg as any).linkPreview,
-        };
-
-        const height = calculateMessageHeight(msgForHeight, config);
-
-        // Calculate bubble width using per-type config
-        const bubbleWidth = calculateBubbleWidth(msgForHeight, viewportWidth, config);
-
-        const isMe = msg.from === "me";
-
-        // Animation: Horizontal Slide in (Safety First)
-        // Vertical animation risks overlapping with the next bubble (like typing indicator)
-        // because layout assumes final position. Horizontal slide avoids this collision.
-        const messageAt = msg.at ?? 0;
-        const timeSinceAppear = t - messageAt;
-        let opacity = 1;
-        let translateX = 0;
-        // Ensure translateY is 0 to prevent vertical overlap
-        const translateY = 0;
-
-        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
-            const progress = timeSinceAppear / config.animation.messageAppearDuration;
-            const ease = applyEasing(progress, "easeOut");
-            opacity = ease;
-
-            // Slide in from side
-            // Me (Right): Slide from right (+offset -> 0)
-            // Other (Left): Slide from left (-offset -> 0) 
-            const offset = config.animation.messageAppearOffset * (1 - ease);
-            translateX = isMe ? offset : -offset;
-        }
-
-        // Compute rect for director targeting
-        const isCentered = isMessageCentered(msgType, config);
-
-        let rectX: number;
-        if (isCentered) {
-            // Center system messages
-            rectX = (viewportWidth - bubbleWidth) / 2;
-        } else {
-            rectX = isMe
-                ? viewportWidth - config.spacing.global.bubbleMargin - bubbleWidth
-                : config.spacing.global.bubbleMargin;
-        }
-
-        messageLayouts[msg.id] = {
-            id: msg.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY,
-            translateX,
-            rect: {
-                x: rectX,
-                y: currentY,
-                width: bubbleWidth,
-                height,
-            },
-        };
-
-        lastMessageId = msg.id;
-        currentY += height;
-    }
-
-    // ==========================================================
-    // TYPING INDICATOR
-    // ==========================================================
-    let typingLayout: TypingLayout | null = null;
-    const isTyping = Object.values(conversation.typing || {}).some(v => v);
-
-    if (isTyping) {
-        const typingConfig = config.messageTypes.typing;
-        const typingHeight = typingConfig.height.base;
-        const typingWidth = typingConfig.width.fixed || typingConfig.width.min;
-
-        // Calculate gap before typing indicator
-        const lastMsg = messages[messages.length - 1];
-        if (lastMsg) {
-            const prevForGap: MessageForGap = {
-                type: lastMsg.type as MessageType,
-                from: lastMsg.from,
-                at: lastMsg.at,
-                hasReply: (lastMsg as any).replyTo != null,
-                hasReactions: (lastMsg as any).reactions?.length > 0,
-            };
-            const typingForGap: MessageForGap = {
-                type: "typing",
-                from: "other",  // Typing is always from other person
-                hasReply: false,
-                hasReactions: false,
-            };
-
-            const gapContext: GapContext = {
-                prevMessage: prevForGap,
-                nextMessage: typingForGap,
-            };
-
-            const gap = calculateSmartGap(gapContext, config);
-            currentY += gap;
-        }
-
-        typingLayout = {
-            y: currentY,
-            height: typingHeight,
-            opacity: 1,
-            rect: {
-                x: config.spacing.global.bubbleMargin,
-                y: currentY,
-                width: typingWidth,
-                height: typingHeight,
-            },
-        };
-        currentY += typingHeight;
-    }
-
-    const contentHeight = currentY + config.spacing.global.bottomPadding;
-
-    // ==========================================================
-    // SCROLL POSITION
-    // ==========================================================
-    let scrollY = 0;
-    if (config.scroll.lockToBottom) {
-        const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
-    }
-
-    return {
-        kind: "CHAT",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
-        messageLayouts,
-        typingLayout,
-        meta: {
-            lastMessageId,
-            isGroupChat,  // Expose for components
-        }
-    };
-}
-
-// For backward compatibility, export the config types
-export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };
-````
-
 ## File: apps/video-runner/src/Root.tsx
 ````typescript
 import React from "react";
@@ -37125,6 +38825,7 @@ import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
 import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
+import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
@@ -37135,6 +38836,14 @@ import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="CinematicCameraShowcase"
+                component={CinematicCameraShowcaseVideo}
+                durationInFrames={540}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="WhatsappCompleteShowcase"
                 component={WhatsappCompleteShowcaseVideo}
@@ -38553,18 +40262,23 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
-    const { opacity, translateY, height, y } = layout;
+    const { opacity, translateX, translateY, rect } = layout;
+
+    // Safety check - layout should always have rect if computed correctly
+    if (!rect) return null;
+
     const hasReactions = msg.reactions && msg.reactions.length > 0;
 
     return (
         <div style={{
             position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 36,
-            right: isMe ? 36 : "auto",
-            maxWidth: "78%",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            // height: rect.height, // Optional, let content dictate height unless clipping
             opacity,
-            transform: `translateY(${translateY}px)`,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1, // Ensure bubbles are above background
         }}>
             {/* Bubble with tail */}
             <div style={{
@@ -38714,6 +40428,34 @@ interface MessageListProps {
     ownerName?: string;  // Device owner for POV - their messages appear on right
 }
 
+/**
+ * Standardized container that obeys layout rects exclusively.
+ */
+const SimpleMessageContainer: React.FC<{
+    layout?: ChatMessageLayout;
+    isMe: boolean;
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+}> = ({ layout, isMe, children, style }) => {
+    if (!layout || !layout.rect) return null;
+    const { opacity, translateX, translateY, rect } = layout;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            opacity,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1,
+            ...style
+        }}>
+            {children}
+        </div>
+    );
+};
+
 const MessageList: React.FC<MessageListProps> = ({
     messages,
     layout,
@@ -38802,15 +40544,7 @@ const MessageList: React.FC<MessageListProps> = ({
                     // Render voice messages
                     if (msg.type === "voice") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <VoiceMessageBubble
                                     isMe={isMe}
                                     duration={msg.duration || 15}
@@ -38818,24 +40552,16 @@ const MessageList: React.FC<MessageListProps> = ({
                                     progress={msg.playProgress || 0}
                                     read={msg.status === "read"}
                                     senderName={showSenderName ? msg.from : undefined}
-                                    platform={platform} // Pass platform prop
+                                    platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Image messages
                     if (msg.type === "image") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <ImageMessageBubble
                                     imageUrl={msg.imageUrl || ""}
                                     caption={msg.caption}
@@ -38845,22 +40571,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Video messages
                     if (msg.type === "video") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <VideoMessageBubble
                                     thumbnailUrl={msg.thumbnailUrl || ""}
                                     duration={msg.duration || 0}
@@ -38873,22 +40591,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render GIF messages
                     if (msg.type === "gif") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <GifMessageBubble
                                     gifUrl={msg.gifUrl || ""}
                                     isMe={isMe}
@@ -38897,22 +40607,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
 
                     if (msg.type === "deleted") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <div style={{
                                     backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                     padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -38952,22 +40654,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Screenshot Alert (Psychotic feature)
                     if (msg.type === "screenshot_alert") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe} style={{ display: "flex", justifyContent: "center", width: "100%", left: 0 }}>
                                 <div style={{
                                     backgroundColor: config.screenshotAlertBg,
                                     padding: "15px 45px",
@@ -38990,20 +40684,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                         Took a screenshot!
                                     </span>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Missed Call (Psychotic feature)
                     if (msg.type === "call_missed") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: "50%",
-                                transform: `translateX(-50%) translateY(${translateY}px)`,
-                                opacity
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe} style={{ left: "50%", width: "auto", transform: `translateX(-50%) translateY(${translateY}px)` }}>
                                 <div style={{
                                     backgroundColor: config.missedCallBubbleColor,
                                     padding: "24px 45px",
@@ -39029,21 +40717,13 @@ const MessageList: React.FC<MessageListProps> = ({
                                         10:45
                                     </span>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render regular text messages
                     return (
-                        <div key={msg.id} style={{
-                            position: "absolute",
-                            top: y,
-                            left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                            right: isMe ? config.bubbleMarginHorizontal : "auto",
-                            maxWidth: config.bubbleMaxWidth,
-                            opacity,
-                            transform: `translateY(${translateY}px)`
-                        }}>
+                        <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                             <div style={{
                                 backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                 padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -39151,7 +40831,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 </div>
                             )}
 
-                        </div>
+                        </SimpleMessageContainer>
                     );
                 })}
 
