@@ -7,7 +7,7 @@
 
 import { definePlugin, PluginManager, APP_IDS, TokovoPlugin, AppViewComponent } from "@tokovo/core";
 import { whatsappReducer } from "./runtime";
-import { WhatsappChatView } from "./ui";
+import { WhatsappApp } from "./components";
 
 /**
  * WhatsApp Plugin Configuration
@@ -22,7 +22,7 @@ export const WhatsAppPlugin: TokovoPlugin = definePlugin({
     primaryColor: "#25D366",
 
     // Core functionality - cast to match AppViewComponent signature
-    appView: WhatsappChatView as unknown as AppViewComponent,
+    appView: WhatsappApp as unknown as AppViewComponent,
     reducer: whatsappReducer,
 
     // Event types this plugin handles

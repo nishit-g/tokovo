@@ -102,3 +102,94 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
     );
 };
+
+interface GroupHeaderProps {
+    groupName: string;
+    memberCount: number;
+    avatarUrl?: string;
+    platform?: Platform;
+}
+
+export const GroupHeader: React.FC<GroupHeaderProps> = ({ groupName, memberCount, avatarUrl, platform = "ios" }) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            height: config.headerHeight,
+            backgroundColor: config.headerBg,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 36px",
+            marginTop: config.statusBarHeight,
+            borderBottom: "1px solid rgba(0,0,0,0.1)",
+            zIndex: 10
+        }}>
+            {/* Back button */}
+            <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
+                <ChevronLeftIcon />
+                <span style={{
+                    fontSize: 51,
+                    color: "#007AFF",
+                    fontWeight: "400",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    4
+                </span>
+            </div>
+
+            {/* Group info */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                marginLeft: -60
+            }}>
+                {/* Group avatar */}
+                <div style={{
+                    width: 111,
+                    height: 111,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #25D366 0%, #128C7E 100%)",
+                    marginRight: 24,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 45,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && "👥"}
+                </div>
+
+                {/* Name & member count */}
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                    <span style={{
+                        fontSize: 51,
+                        fontWeight: "600",
+                        color: "#000",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+                    }}>
+                        {groupName}
+                    </span>
+                    <span style={{
+                        fontSize: 33,
+                        color: "#8E8E93",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    }}>
+                        {memberCount} members
+                    </span>
+                </div>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
+                <VideoCallIcon />
+                <PhoneCallIcon />
+            </div>
+        </div>
+    );
+};

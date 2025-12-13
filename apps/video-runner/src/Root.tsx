@@ -9,10 +9,27 @@ import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
+import { WhatsappNewFeaturesVideo, WhatsappListViewVideo } from "./WhatsappNewFeaturesVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="WhatsappNewFeatures"
+                component={WhatsappNewFeaturesVideo}
+                durationInFrames={1}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappListView"
+                component={WhatsappListViewVideo}
+                durationInFrames={1}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}
