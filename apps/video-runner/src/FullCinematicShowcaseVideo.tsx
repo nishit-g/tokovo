@@ -20,10 +20,12 @@ import "@tokovo/devices";
  * - DSL helpers abstract away raw event structure
  * - Camera movements synchronized with story beats
  * - Production audio with buses and ducking
+ * - Spotify background music (Now Playing widget)
+ * - Notification system with grouping
  */
 
 // =============================================================================
-// DSL HELPERS (These would be imported from @tokovo/dsl in production)
+// DSL HELPERS
 // =============================================================================
 
 const dsl = {
@@ -106,16 +108,40 @@ const dsl = {
         easing: "ease-out",
     } as any),
 
-    // Audio
-    backgroundMusic: (at: number, soundId: string, volume = 0.3): TimelineEvent => ({
+    // Spotify - Background Music
+    spotifyPlay: (at: number, track: { name: string; artist: string; albumArt?: string }): TimelineEvent => ({
         at,
-        kind: "AUDIO",
-        type: "BACKGROUND_MUSIC",
-        soundId,
-        volume,
-        loop: true,
+        kind: "APP",
+        appId: "app_spotify",
+        type: "PLAY_TRACK",
+        track,
     } as any),
 
+    spotifyBackground: (at: number, deviceId: string, track: { name: string; artist: string }): TimelineEvent => ({
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "START_BACKGROUND_APP",
+        appId: "app_spotify",
+        indicator: "music",
+        label: `${track.name} - ${track.artist}`,
+    } as any),
+
+    // Notifications
+    notification: (at: number, deviceId: string, opts: { appId: string; title: string; body: string; mode?: string; threadId?: string; icon?: string }): TimelineEvent => ({
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "SHOW_NOTIFICATION",
+        appId: opts.appId,
+        title: opts.title,
+        body: opts.body,
+        mode: opts.mode ?? "headsup",
+        threadId: opts.threadId,
+        icon: opts.icon,
+    } as any),
+
+    // Audio
     playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
         at,
         kind: "AUDIO",
@@ -136,11 +162,21 @@ const dsl = {
 };
 
 // =============================================================================
-// EPISODE DEFINITION (DSL STYLE)
+// DEMO TRACK
+// =============================================================================
+
+const DEMO_TRACK = {
+    name: "Blinding Lights",
+    artist: "The Weeknd",
+    album: "After Hours",
+    albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+};
+
+// =============================================================================
+// EPISODE DEFINITION
 // =============================================================================
 
 function createFullCinematicEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    // Initial world
     const initialWorld: WorldState = {
         devices: {
             phone: {
@@ -149,6 +185,7 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
                 isLocked: false,
                 foregroundAppId: "app_whatsapp",
                 notifications: [],
+                backgroundApps: [],
             },
         },
         conversations: {
@@ -164,6 +201,10 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
             app_whatsapp: {
                 screen: "chat",
                 conversationId: "dm_ex",
+            },
+            app_spotify: {
+                screen: "player",
+                isMinimized: true,
             },
         },
         camera: {
@@ -184,48 +225,74 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
     };
 
     // -------------------------------------------------------------------------
-    // EPISODE TIMELINE (DSL STYLE)
+    // TIMELINE (DSL STYLE)
     // -------------------------------------------------------------------------
     const events: TimelineEvent[] = [
         // =====================================================================
+        // ACT 0: SPOTIFY STARTS (background music)
+        // =====================================================================
+        dsl.spotifyPlay(0, DEMO_TRACK),
+        dsl.spotifyBackground(0, "phone", DEMO_TRACK),
+
+        // =====================================================================
         // ACT 1: ESTABLISHING (0-3s)
         // =====================================================================
-        dsl.backgroundMusic(0, "dramatic", 0.25),
-        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),           // Start zoomed at bottom
-        dsl.pan(1, 0, -150, 75, "ease-in-out"),            // Macro pan upward
-        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),           // Reveal zoom out
+        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),
+        dsl.pan(1, 0, -150, 75, "ease-in-out"),
+        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),
 
         // =====================================================================
         // ACT 2: FIRST MESSAGE (3s)
         // =====================================================================
         dsl.receiveMessage(90, "dm_ex", "Ex 💔", "We need to talk."),
         dsl.playSound(90, "whatsapp_received", 0.9),
-        dsl.pan(90, 0, 50, 45),                            // Track to message
-        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),        // Subtle push
+        dsl.pan(90, 0, 50, 45),
+        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),
 
         // =====================================================================
-        // ACT 3: TYPING ANTICIPATION (5s)
+        // ACT 3: INSTAGRAM NOTIFICATION (4s) - demo grouping
+        // =====================================================================
+        dsl.notification(120, "phone", {
+            appId: "app_instagram",
+            title: "mike_photos",
+            body: "Liked your photo ❤️",
+            threadId: "ig_likes",
+            icon: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
+        }),
+
+        // =====================================================================
+        // ACT 4: TYPING ANTICIPATION (5s)
         // =====================================================================
         dsl.typingStart(150, "dm_ex", "Ex 💔"),
         dsl.playSound(150, "whatsapp_typing", 0.4, { loop: true, duration: 90, instanceId: "typing" }),
-        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),        // Tension push
+        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),
 
         // =====================================================================
-        // ACT 4: THE REVEAL (8s)
+        // ACT 5: THE REVEAL (8s)
         // =====================================================================
         dsl.typingEnd(240, "dm_ex", "Ex 💔"),
         dsl.stopSound(240, "typing"),
         dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
         dsl.playSound(240, "whatsapp_received", 1.0),
-        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),          // Snap to message
+        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),
 
         // =====================================================================
-        // ACT 5: BREATHING ROOM (10s)
+        // ACT 6: ANOTHER IG NOTIFICATION (9s) - grouped with previous
         // =====================================================================
-        dsl.zoom(300, 0.92, 60),                           // Pull out wide
+        dsl.notification(270, "phone", {
+            appId: "app_instagram",
+            title: "sarah_travels",
+            body: "Also liked your photo ❤️",
+            threadId: "ig_likes",
+        }),
 
         // =====================================================================
-        // ACT 6: RAPID FIRE (12-16s)
+        // ACT 7: BREATHING ROOM (10s)
+        // =====================================================================
+        dsl.zoom(300, 0.92, 60),
+
+        // =====================================================================
+        // ACT 8: RAPID FIRE (12-16s)
         // =====================================================================
         dsl.receiveMessage(360, "dm_ex", "Ex 💔", "Hello?"),
         dsl.playSound(360, "whatsapp_received", 0.8),
@@ -244,20 +311,20 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
         dsl.zoom(430, 1.16, 6, { originX: 0.65 }),
 
         // =====================================================================
-        // ACT 7: THE BOMB (16s)
+        // ACT 9: THE BOMB (16s)
         // =====================================================================
         dsl.receiveMessage(480, "dm_ex", "Ex 💔", "It's over."),
         dsl.playSound(480, "notification", 1.0),
-        dsl.shake(480, 12, 20, 0.5),                       // Impact shake
+        dsl.shake(480, 12, 20, 0.5),
         dsl.zoom(480, 1.25, 12, { originX: 0.4, originY: 0.88 }),
 
         // =====================================================================
-        // ACT 8: AFTERMATH (18-24s)
+        // ACT 10: AFTERMATH (18-24s)
         // =====================================================================
         dsl.sendMessage(540, "dm_ex", "..."),
         dsl.playSound(540, "whatsapp_sent", 0.5),
-        dsl.zoom(540, 1.0, 90),                            // Slow pull back
-        dsl.reset(660, 30),                                // Final reset
+        dsl.zoom(540, 1.0, 90),
+        dsl.reset(660, 30),
     ];
 
     return { initialWorld, events };
@@ -275,7 +342,6 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
     const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
     const world = replay(episode.initialWorld, episode.events, t);
 
-    // Scale to fit
     const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
 
     return (

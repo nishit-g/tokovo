@@ -11,6 +11,31 @@ export interface Notification {
     dismissedAt?: number;         // When auto-dismissed or manually dismissed
     mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
     icon?: string;                // App icon URL (optional)
+    threadId?: string;            // For grouping (e.g., chat ID)
+    groupKey?: string;            // Grouping key (default: appId)
+    priority?: "passive" | "active" | "timeSensitive" | "critical";
+    preview?: {
+        kind: "text" | "image";
+        value: string;
+    };
+}
+
+// Notification group for stacking multiple notifications
+export interface NotificationGroup {
+    key: string;                   // groupKey (appId or appId+threadId)
+    appId: string;
+    notifications: Notification[];
+    collapsed: boolean;            // Show stacked or expanded
+    count: number;                 // Total in group
+    latestAt: number;              // Most recent notification time
+}
+
+// Background app state (e.g., Spotify playing in background)
+export interface BackgroundAppState {
+    appId: string;
+    startedAt: number;
+    indicator?: "music" | "call" | "recording" | "location";
+    label?: string;                // e.g., "Now Playing: Song Name"
 }
 
 export interface CallState {
@@ -30,6 +55,7 @@ export interface DeviceState {
     isLocked: boolean;
     foregroundAppId?: string;
     notifications: Notification[];
+    backgroundApps?: BackgroundAppState[];  // Apps running in background
     call?: CallState;
     homeScreen?: HomeScreenConfig;
     sound?: {
@@ -38,6 +64,7 @@ export interface DeviceState {
     // Theming & Configuration
     theme?: DeviceTheme;
 }
+
 
 // Device-level theme configuration
 export interface DeviceTheme {
