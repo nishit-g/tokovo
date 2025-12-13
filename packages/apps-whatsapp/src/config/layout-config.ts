@@ -195,35 +195,35 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
         },
         image: {
             height: {
-                base: 400,
-                withCaption: 480,
+                base: 600,          // Match maxHeight in MediaBubbles.tsx
+                withCaption: 700,   // + caption area (~100px)
             },
             width: {
                 maxPercent: 0.78,
                 min: 300,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 6 },  // Slightly more gap for media
+            gap: { ...DEFAULT_GAP, sameSender: 8 },  // More gap for media
         },
         video: {
             height: {
-                base: 400,
-                withCaption: 480,
+                base: 600,          // Match maxHeight in MediaBubbles.tsx
+                withCaption: 700,   // + caption area
             },
             width: {
                 maxPercent: 0.78,
                 min: 300,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 6 },
+            gap: { ...DEFAULT_GAP, sameSender: 8 },
         },
         gif: {
             height: {
-                base: 300,
+                base: 500,          // Match maxHeight in GifBubble
             },
             width: {
                 maxPercent: 0.78,
                 min: 250,
             },
-            gap: { ...DEFAULT_GAP, sameSender: 6 },
+            gap: { ...DEFAULT_GAP, sameSender: 8 },
         },
         voice: {
             height: {
