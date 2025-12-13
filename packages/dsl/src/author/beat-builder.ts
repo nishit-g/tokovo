@@ -17,6 +17,15 @@ import {
     ConcurrentOp,
     MessageRef,
     messageRef,
+    // Media operations
+    SendImageOp,
+    ReceiveImageOp,
+    SendVideoOp,
+    ReceiveVideoOp,
+    SendGifOp,
+    ReceiveGifOp,
+    SendVoiceOp,
+    ReceiveVoiceOp,
     // POV operations
     POVSwitchOp,
     SplitPOVOp,
@@ -227,6 +236,204 @@ export class BeatBuilder {
             throw new Error("deleteLast() called but no previous message exists");
         }
         return this.delete(this.lastMessageRef);
+    }
+
+    // =========================================================================
+    // MEDIA MESSAGE OPERATIONS
+    // =========================================================================
+
+    /**
+     * Media options for image, video, GIF messages.
+     */
+    private static readonly MEDIA_DEFAULTS = {
+        IMAGE_HEIGHT: 400,
+        VIDEO_HEIGHT: 400,
+        GIF_HEIGHT: 300,
+        VOICE_HEIGHT: 150,
+    };
+
+    /**
+     * Send an image message.
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendImageOp = {
+            kind: "SendImage",
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive an image message.
+     * @param actor - Who sent the image
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveImageOp = {
+            kind: "ReceiveImage",
+            actor,
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a video message.
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVideoOp = {
+            kind: "SendVideo",
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a video message.
+     * @param actor - Who sent the video
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVideoOp = {
+            kind: "ReceiveVideo",
+            actor,
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a GIF message.
+     * @param url - GIF URL (from Giphy, Tenor, etc.)
+     * @param options - Optional height
+     */
+    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendGifOp = {
+            kind: "SendGif",
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a GIF message.
+     * @param actor - Who sent the GIF
+     * @param url - GIF URL
+     * @param options - Optional height
+     */
+    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveGifOp = {
+            kind: "ReceiveGif",
+            actor,
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a voice note.
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVoiceOp = {
+            kind: "SendVoice",
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a voice note.
+     * @param actor - Who sent the voice note
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVoiceOp = {
+            kind: "ReceiveVoice",
+            actor,
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
     }
 
     // =========================================================================

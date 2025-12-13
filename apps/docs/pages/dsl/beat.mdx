@@ -84,6 +84,91 @@ b.wait("0.5s");
 b.readLast();
 ```
 
+## Media Messages
+
+Rich media messages with automatic timing.
+
+### sendImage(url, options?) / receiveImage(actor, url, options?)
+
+Send or receive images with optional captions.
+
+```typescript
+// Send an image
+b.sendImage("https://example.com/photo.jpg");
+
+// With caption and custom height
+b.sendImage("https://example.com/photo.jpg", { 
+  caption: "Check this out! 📸",
+  height: 450  // Default: 400
+});
+
+// Receive an image
+b.receiveImage("Alice", "https://example.com/sunset.jpg", {
+  caption: "From the beach today! 🏖️"
+});
+```
+
+### sendVideo(url, duration, options?) / receiveVideo(actor, url, duration, options?)
+
+Send or receive video messages with thumbnails.
+
+```typescript
+// Send a video (15 second duration)
+b.sendVideo("https://example.com/video.mp4", 15);
+
+// With thumbnail and caption
+b.sendVideo("https://example.com/video.mp4", 15, {
+  thumbnailUrl: "https://example.com/thumb.jpg",
+  caption: "Watch this wave! 🌊"
+});
+
+// Receive a video
+b.receiveVideo("Bob", "https://example.com/clip.mp4", 30, {
+  thumbnailUrl: "https://example.com/preview.jpg"
+});
+```
+
+### sendGif(url, options?) / receiveGif(actor, url, options?)
+
+Send or receive GIFs from Giphy, Tenor, etc.
+
+```typescript
+// Send a GIF
+b.sendGif("https://media.giphy.com/media/abc123/giphy.gif");
+
+// Receive with custom height
+b.receiveGif("Alice", "https://media.giphy.com/media/xyz789/giphy.gif", {
+  height: 350  // Default: 300
+});
+```
+
+### sendVoice(duration, options?) / receiveVoice(actor, duration, options?)
+
+Send or receive voice notes.
+
+```typescript
+// Send an 8-second voice note
+b.sendVoice(8);
+
+// Receive a 15-second voice note
+b.receiveVoice("Bob", 15);
+```
+
+### Auto-Timing
+
+Media messages automatically advance the timeline:
+- **Images**: 1.5s view time
+- **Videos**: Uses video duration
+- **GIFs**: 1.0s view time
+- **Voice notes**: Uses voice duration
+
+Override with `skipAutoTiming: true`:
+
+```typescript
+b.receiveImage("Alice", "photo.jpg", { skipAutoTiming: true });
+b.wait("0.5s");  // Manually control timing
+```
+
 ## Concurrent Operations
 
 Run multiple tracks in parallel:
@@ -155,8 +240,16 @@ b.splitPov(["AlicePhone", "BobPhone"], "pip");
 | `typing(actor).for(duration)` | Typing indicator | `void` |
 | `typingStart(actor)` | Start typing (manual) | `this` |
 | `typingEnd(actor)` | End typing | `this` |
-| `send(text, options?)` | Send message | `MessageHandle` |
-| `receive(actor, text, options?)` | Receive message | `MessageHandle` |
+| `send(text, options?)` | Send text message | `MessageHandle` |
+| `receive(actor, text, options?)` | Receive text message | `MessageHandle` |
+| `sendImage(url, options?)` | Send image | `MessageHandle` |
+| `receiveImage(actor, url, options?)` | Receive image | `MessageHandle` |
+| `sendVideo(url, duration, options?)` | Send video | `MessageHandle` |
+| `receiveVideo(actor, url, duration, options?)` | Receive video | `MessageHandle` |
+| `sendGif(url, options?)` | Send GIF | `MessageHandle` |
+| `receiveGif(actor, url, options?)` | Receive GIF | `MessageHandle` |
+| `sendVoice(duration, options?)` | Send voice note | `MessageHandle` |
+| `receiveVoice(actor, duration, options?)` | Receive voice note | `MessageHandle` |
 | `read(ref)` | Mark as read | `this` |
 | `readLast()` | Read last message | `this` |
 | `delete(ref)` | Delete message | `this` |
@@ -167,3 +260,4 @@ b.splitPov(["AlicePhone", "BobPhone"], "pip");
 | `react(ref, actor, emoji)` | Add reaction | `this` |
 | `screenshot()` | Screenshot alert | `this` |
 | `missedCall(actor, type?)` | Missed call | `this` |
+

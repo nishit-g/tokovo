@@ -6,13 +6,31 @@ import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
+import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
+import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="WhatsappMediaShowcase"
+                component={WhatsappMediaShowcaseVideo}
+                durationInFrames={700}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappProductionDemo"
+                component={WhatsappProductionDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}

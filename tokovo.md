@@ -67,6 +67,7 @@ apps/
         semantic.mdx
       guides/
         _meta.json
+        ai-contract.mdx
         ai-generation.mdx
         custom-apps.mdx
         first-episode.mdx
@@ -74,6 +75,7 @@ apps/
         quickstart.mdx
       ir/
         _meta.json
+        constraints.mdx
         index.mdx
         scene-ir.mdx
         timeline-ir.mdx
@@ -83,6 +85,7 @@ apps/
         engine.mdx
         events.mdx
         index.mdx
+        world-state.mdx
       _meta.json
       glossary.mdx
       index.mdx
@@ -3840,15 +3843,310 @@ DirectorLite v2 will use semantic annotations:
 | Emotional peak | Full attention framing |
 ````
 
-## File: apps/docs/pages/guides/_meta.json
-````json
+## File: apps/docs/pages/guides/ai-contract.mdx
+````
+# AI Generation Contract
+
+This document defines the **AI-safe subset** of Tokovo DSL — the exact contract AI agents must follow to generate valid episodes.
+
+---
+
+## The Contract
+
+AI agents generate **Scene IR** (or equivalent DSL). Tokovo validates and compiles.
+
+```
+AI Prompt → DSL/JSON → validateConstraints() → compile() → Timeline IR → Render
+```
+
+---
+
+## Output Format Options
+
+### Option 1: TypeScript DSL (Recommended)
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export default episode("ai-generated", ep => {
+  ep.config({
+    fps: 30,
+    pacing: "normal",
+    director: "auto"
+  });
+
+  ep.device("Phone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_friend", { name: "Friend" });
+
+    d.beat("intro", b => {
+      b.wait("1s");
+      b.receive("Friend", "Hey!");
+    });
+  });
+});
+```
+
+### Option 2: Scene IR JSON
+
+```json
 {
-    "quickstart": "Quick Start",
-    "first-episode": "Your First Episode",
-    "multi-device": "Multi-Device Stories",
-    "ai-generation": "AI Generation",
-    "custom-apps": "Custom Apps"
+  "episodeId": "ai-generated",
+  "meta": {
+    "fps": 30,
+    "pacing": "normal",
+    "director": "auto"
+  },
+  "devices": [{
+    "deviceId": "Phone",
+    "profileId": "iphone16",
+    "appId": "app_whatsapp",
+    "conversations": [{
+      "id": "dm_friend",
+      "name": "Friend"
+    }],
+    "beats": [{
+      "name": "intro",
+      "ops": [
+        { "kind": "Wait", "duration": "1s" },
+        { "kind": "ReceiveMessage", "actor": "Friend", "text": "Hey!", "conversationId": "dm_friend" }
+      ]
+    }]
+  }]
 }
+```
+
+---
+
+## Required Structure
+
+### Episode
+
+```typescript
+episode(id: string, fn: (ep) => void, config?: EpisodeConfig)
+```
+
+| Field | Type | Required | Default |
+|-------|------|----------|---------|
+| `id` | string | ✅ | — |
+| `fps` | number | ❌ | 30 |
+| `pacing` | string | ❌ | "normal" |
+| `director` | string | ❌ | "auto" |
+
+### Device
+
+```typescript
+ep.device(deviceId: string, profileId?: string, fn: (d) => void)
+```
+
+| Field | Type | Required | Values |
+|-------|------|----------|--------|
+| `deviceId` | string | ✅ | Any unique ID |
+| `profileId` | string | ❌ | "iphone16", "pixel" |
+
+### Conversation
+
+```typescript
+d.conversation(id: string, config?: ConversationConfig)
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| `id` | string | ✅ |
+| `name` | string | ❌ |
+| `type` | "dm" \| "group" | ❌ |
+
+### Beat
+
+```typescript
+d.beat(name: string, fn: (b) => void, meta?: BeatMeta)
+```
+
+| Field | Type | Required |
+|-------|------|----------|
+| `name` | string | ✅ |
+| `meta.tempo` | string | ❌ |
+| `meta.function` | string | ❌ |
+
+---
+
+## Allowed Operations
+
+### Core Operations
+
+| Operation | Method | Required Args |
+|-----------|--------|---------------|
+| Wait | `b.wait(duration)` | duration |
+| Typing | `b.typing(actor).for(duration)` | actor, duration |
+| Send | `b.send(text, options?)` | text |
+| Receive | `b.receive(actor, text, options?)` | actor, text |
+| Read | `b.read(ref)` | ref |
+| Delete | `b.delete(ref)` | ref |
+
+### Duration Format
+
+```
+"1s"       → 1 second
+"1.5s"     → 1.5 seconds
+"500ms"    → 500 milliseconds
+"30frames" → 30 frames
+```
+
+### Semantic Options
+
+```typescript
+{
+  mood: "tense" | "calm" | "angry" | "sad" | "anxious" | "excited" | "confused" | "neutral",
+  intensity: 0.0 - 1.0,
+  urgency: 0.0 - 1.0,
+  secrecy: "low" | "medium" | "high",
+  subtext: string  // Hint for AI/human
+}
+```
+
+---
+
+## Validation Checklist
+
+AI-generated content must pass:
+
+1. ✅ `validateConstraints(sceneIR).valid === true`
+2. ✅ `compile(sceneIR, { mode: "strict" }).validation.valid === true`
+3. ✅ All device IDs are unique
+4. ✅ All conversation IDs are unique
+5. ✅ All beat names are non-empty
+6. ✅ All durations are positive
+7. ✅ Semantic values are in valid ranges
+8. ✅ Message refs are valid
+
+---
+
+## Common Mistakes
+
+### ❌ Empty Beats
+
+```typescript
+d.beat("empty", b => {
+  // Nothing — will fail validation
+});
+```
+
+### ❌ Invalid Duration
+
+```typescript
+b.wait("-1s");      // Negative
+b.wait("forever");  // Unparseable
+```
+
+### ❌ Missing Actor
+
+```typescript
+b.receive("", "Hey!");  // Empty actor
+```
+
+### ❌ Invalid Mood
+
+```typescript
+{ mood: "happy" }  // Should be "excited"
+```
+
+### ❌ Out-of-Range Intensity
+
+```typescript
+{ intensity: 1.5 }  // Max is 1.0
+```
+
+### ❌ Read Before Send
+
+```typescript
+const msg = b.send("Hello");
+b.read(msg);  // ✅ OK
+
+b.read(nonexistentRef);  // ❌ Invalid
+```
+
+---
+
+## Prompt Template
+
+```
+Generate a Tokovo episode in TypeScript using @tokovo/dsl.
+
+Requirements:
+- Characters: [list characters]
+- Mood: [tense/calm/dramatic/etc]
+- Duration: approximately [N] seconds
+- Use semantic annotations (mood, intensity)
+- Include realistic typing delays
+
+Constraints:
+- All beats must have at least one operation
+- Durations must be in format "Ns" or "Nms"
+- Mood must be one of: tense, calm, angry, sad, anxious, excited, confused, neutral
+- Intensity must be 0.0-1.0
+
+Output only the TypeScript code, no explanation.
+```
+
+---
+
+## Validation Code
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+import { compile } from "@tokovo/compiler";
+
+function validateAIOutput(sceneIR: SceneIR): ValidationResult {
+  // Step 1: Constraint check
+  const constraints = validateConstraints(sceneIR);
+  if (!constraints.valid) {
+    return {
+      valid: false,
+      stage: "constraints",
+      errors: constraints.violations.map(v => v.message)
+    };
+  }
+  
+  // Step 2: Compile check
+  const { validation } = compile(sceneIR, { mode: "strict" });
+  if (!validation.valid) {
+    return {
+      valid: false,
+      stage: "compile",
+      errors: validation.errors
+    };
+  }
+  
+  return { valid: true };
+}
+```
+
+---
+
+## Feedback Loop
+
+When validation fails, provide structured feedback to AI:
+
+```typescript
+if (!result.valid) {
+  const feedback = {
+    error: result.errors[0],
+    suggestion: getSuggestion(result.errors[0]),
+    example: getCorrectExample(result.stage)
+  };
+  
+  // Re-prompt AI with feedback
+  regenerate(originalPrompt, feedback);
+}
+```
+
+---
+
+## Determinism Notes
+
+- Is this pure? **Yes** — Same input → same output
+- Is ordering stable? **Yes** — Constraints check deterministically
+- Is randomness seeded? **N/A** — No randomness in validation
 ````
 
 ## File: apps/docs/pages/guides/ai-generation.mdx
@@ -4862,14 +5160,237 @@ tokovo/
 - [Architecture](/architecture) — Understand the system
 ````
 
-## File: apps/docs/pages/ir/_meta.json
-````json
-{
-    "index": "Overview",
-    "scene-ir": "Scene IR",
-    "timeline-ir": "Timeline IR",
-    "trace": "Traces"
+## File: apps/docs/pages/ir/constraints.mdx
+````
+# Constraints
+
+Constraints are **validation rules** that ensure story correctness by construction.
+
+## Why Constraints?
+
+Instead of catching errors at runtime, constraints catch them at compile time:
+
+```
+DSL → Scene IR → validateConstraints() → Errors/Warnings → Fix before compile
+```
+
+## Using Constraints
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+
+const result = validateConstraints(sceneIR);
+
+if (!result.valid) {
+  console.error("Violations:", result.violations);
 }
+```
+
+## Constraint Result
+
+```typescript
+interface ConstraintResult {
+  valid: boolean;
+  violations: Violation[];
+  warnings: Warning[];
+}
+
+interface Violation {
+  rule: string;
+  message: string;
+  location?: {
+    deviceId?: string;
+    beat?: string;
+    opIndex?: number;
+  };
+}
+```
+
+## Built-in Constraints
+
+### 1. Typing Pairing
+
+Every `TypingStart` must have a matching `TypingEnd`.
+
+```typescript
+// ✅ Valid
+b.typing("Bob").for("1.5s");
+
+// ❌ Invalid (orphaned typing)
+ops.push({ kind: "TypingStart", actor: "Bob", ... });
+// Missing TypingEnd
+```
+
+### 2. Valid Device References
+
+POV switches must reference existing devices.
+
+```typescript
+// ✅ Valid
+ep.device("AlicePhone", d => { ... });
+b.pov("AlicePhone");
+
+// ❌ Invalid
+b.pov("UnknownPhone");  // Device doesn't exist
+```
+
+### 3. Valid Conversation References
+
+Operations must reference existing conversations.
+
+```typescript
+// ✅ Valid
+d.conversation("dm_bob");
+b.receive("Bob", "Hey!", { conversationId: "dm_bob" });
+
+// ❌ Invalid
+b.receive("Bob", "Hey!", { conversationId: "nonexistent" });
+```
+
+### 4. Message Reference Validity
+
+Read/Delete must reference existing messages.
+
+```typescript
+// ✅ Valid
+const msg = b.receive("Bob", "Hey!");
+b.read(msg);
+
+// ❌ Invalid
+b.read({ id: "nonexistent" });
+```
+
+### 5. Beat Non-Empty
+
+Beats must contain at least one operation.
+
+```typescript
+// ✅ Valid
+d.beat("intro", b => {
+  b.wait("1s");
+});
+
+// ❌ Invalid (empty beat)
+d.beat("empty", b => {
+  // Nothing here
+});
+```
+
+### 6. Duration Validity
+
+Durations must be positive and parseable.
+
+```typescript
+// ✅ Valid
+b.wait("1.5s");
+b.wait("500ms");
+b.wait("30frames");
+
+// ❌ Invalid
+b.wait("-1s");      // Negative
+b.wait("forever");  // Unparseable
+```
+
+### 7. Semantic Range Validity
+
+Semantic values must be within valid ranges.
+
+```typescript
+// ✅ Valid
+{ intensity: 0.8 }    // 0-1 range
+{ mood: "tense" }     // Valid mood
+
+// ❌ Invalid
+{ intensity: 1.5 }    // Out of range
+{ mood: "happy" }     // Invalid mood (should be "excited")
+```
+
+### 8. Reserved Signal Completeness
+
+Reserved signals must have required fields.
+
+```typescript
+// ✅ Valid
+b.react(msg, "Bob", "❤️");  // Has ref, actor, emoji
+
+// ❌ Invalid
+{ kind: "ReactionAdded", ref: msg }  // Missing actor, emoji
+```
+
+## Constraint Categories
+
+| Category | Severity | Examples |
+|----------|----------|----------|
+| **Critical** | Error | Invalid refs, missing required fields |
+| **Structural** | Error | Empty beats, orphaned typing |
+| **Semantic** | Warning | Out-of-range intensity |
+| **Style** | Warning | Very long waits |
+
+## Running Constraints
+
+### In Compile Pipeline
+
+```typescript
+const { validation } = compile(sceneIR, { mode: "strict" });
+
+if (!validation.valid) {
+  throw new Error(validation.errors.join("\n"));
+}
+```
+
+### Standalone
+
+```typescript
+import { validateConstraints } from "@tokovo/ir";
+
+const result = validateConstraints(sceneIR);
+
+for (const v of result.violations) {
+  console.error(`[${v.rule}] ${v.message}`);
+  if (v.location) {
+    console.error(`  at: ${v.location.beat}, op ${v.location.opIndex}`);
+  }
+}
+```
+
+## Adding Custom Constraints
+
+```typescript
+import { ConstraintRule, validateWithRules } from "@tokovo/ir";
+
+const myRule: ConstraintRule = {
+  id: "no-long-waits",
+  check: (sceneIR) => {
+    const violations = [];
+    // Check for waits > 10s
+    for (const device of sceneIR.devices) {
+      for (const beat of device.beats) {
+        for (const op of beat.ops) {
+          if (op.kind === "Wait") {
+            const frames = parseDuration(op.duration, 30);
+            if (frames > 300) {
+              violations.push({
+                rule: "no-long-waits",
+                message: `Wait of ${op.duration} is too long`,
+                location: { beat: beat.name }
+              });
+            }
+          }
+        }
+      }
+    }
+    return violations;
+  }
+};
+
+const result = validateWithRules(sceneIR, [myRule]);
+```
+
+## Determinism Notes
+
+- Is this pure? **Yes** — No side effects
+- Is ordering stable? **Yes** — Same IR → same violations
+- Is randomness seeded? **N/A** — No randomness
 ````
 
 ## File: apps/docs/pages/ir/index.mdx
@@ -5667,15 +6188,6 @@ for (const op of timeline.ops) {
 ```
 ````
 
-## File: apps/docs/pages/runtime/_meta.json
-````json
-{
-    "index": "Overview",
-    "engine": "Engine",
-    "events": "Event Types"
-}
-````
-
 ## File: apps/docs/pages/runtime/engine.mdx
 ````
 # Engine
@@ -6350,6 +6862,244 @@ export const DemoVideo: React.FC = () => {
 ```
 ````
 
+## File: apps/docs/pages/runtime/world-state.mdx
+````
+# WorldState
+
+WorldState is the **complete snapshot** of everything at a point in time.
+
+## The Golden Rule
+
+> **Frame = f(initialWorld, events, t)**
+
+At any frame t, the world state is computed by:
+1. Start with `initialWorld`
+2. Apply all events where `event.at <= t`
+3. Result is the WorldState at frame t
+
+This is **deterministic** — same inputs always produce same output.
+
+## WorldState Structure
+
+```typescript
+interface WorldState {
+  // All devices
+  devices: Record<DeviceId, DeviceState>;
+  
+  // All conversations (shared across devices)
+  conversations: Record<ConversationId, ConversationState>;
+  
+  // App-specific state
+  appState: Record<AppId, any>;
+  
+  // Camera state
+  camera: CameraState;
+  
+  // Audio state
+  audio: AudioState;
+  
+  // Internal cursor
+  _eventCursor: number;
+}
+```
+
+## DeviceState
+
+```typescript
+interface DeviceState {
+  id: string;                    // "alice_phone"
+  profileId: string;             // "iphone16" | "pixel"
+  ownerName?: string;            // "Alice"
+  isLocked: boolean;             // Show lockscreen?
+  foregroundAppId?: string;      // "app_whatsapp"
+  notifications: Notification[]; // Pending notifications
+  call?: CallState;              // Incoming/active call
+  homeScreen?: HomeScreenConfig; // App grid
+}
+```
+
+## ConversationState
+
+```typescript
+interface ConversationState {
+  id: string;
+  type?: "dm" | "group";
+  name?: string;                  // Contact/group name
+  avatar?: string;
+  members?: GroupMember[];
+  messages: Message[];
+  typing?: Record<string, boolean>;
+}
+```
+
+## Message
+
+```typescript
+interface Message {
+  id: string;
+  from: string;                   // Sender or "me"
+  text?: string;
+  type?: "text" | "image" | "voice" | "system" | "deleted";
+  status?: "sent" | "delivered" | "read";
+  timestamp?: string;             // "10:42 AM"
+  
+  // Semantic metadata (from DSL)
+  semantic?: SemanticMeta;
+}
+```
+
+## CameraState
+
+```typescript
+interface CameraState {
+  // Zoom
+  scale: number;     // 1.0 = no zoom
+  originX: number;   // 0-1, zoom origin
+  originY: number;
+  
+  // Pan
+  panX: number;
+  panY: number;
+  
+  // Effects
+  shake?: {
+    intensity: number;
+    frequency: number;
+    seed: number;
+  };
+  
+  // Multi-device
+  layout?: LayoutMode;
+  primaryDeviceId?: string;
+  secondaryDeviceId?: string;
+}
+```
+
+## AudioState
+
+```typescript
+interface AudioState {
+  playing: PlayingSound[];
+  backgroundMusic?: {
+    soundId: string;
+    volume: number;
+  };
+}
+
+interface PlayingSound {
+  soundId: string;
+  startedAt: number;  // Frame
+  volume: number;
+}
+```
+
+## Building World at Frame
+
+```typescript
+function buildWorldAtFrame(
+  initialWorld: WorldState,
+  events: RuntimeEvent[],
+  frame: number
+): WorldState {
+  let world = { ...initialWorld, _eventCursor: -1 };
+  
+  for (const event of events) {
+    if (event.at <= frame) {
+      world = reduceEvent(world, event);
+    }
+  }
+  
+  return { ...world, _eventCursor: frame };
+}
+```
+
+## Initial World
+
+Created from Scene IR:
+
+```typescript
+function createInitialWorld(sceneIR: SceneIR): WorldState {
+  const devices: Record<string, DeviceState> = {};
+  const conversations: Record<string, ConversationState> = {};
+  
+  for (const device of sceneIR.devices) {
+    // Create device
+    devices[device.deviceId] = {
+      id: device.deviceId,
+      profileId: device.profileId,
+      isLocked: true,  // Start locked
+      notifications: [],
+    };
+    
+    // Create conversations
+    for (const conv of device.conversations) {
+      conversations[conv.id] = {
+        id: conv.id,
+        name: conv.name,
+        type: conv.type,
+        messages: [],
+        typing: {},
+      };
+    }
+  }
+  
+  return {
+    devices,
+    conversations,
+    appState: {},
+    camera: createDefaultCamera(),
+    audio: { playing: [] },
+    _eventCursor: -1,
+  };
+}
+```
+
+## Scrubbing
+
+Because state is computed from events, scrubbing works:
+
+```typescript
+// Jump to frame 100
+const world100 = buildWorldAtFrame(init, events, 100);
+
+// Jump backward to frame 50
+const world50 = buildWorldAtFrame(init, events, 50);
+
+// Jump forward to frame 200
+const world200 = buildWorldAtFrame(init, events, 200);
+```
+
+No accumulated state. Any frame, any time.
+
+## Accessing State
+
+```typescript
+// Get device
+const device = world.devices["AlicePhone"];
+
+// Get foreground app
+const appId = device.foregroundAppId;
+
+// Get conversation
+const conv = world.conversations["dm_bob"];
+
+// Get messages
+const messages = conv.messages;
+
+// Get typing status
+const isTyping = conv.typing?.["Bob"] ?? false;
+
+// Get camera scale
+const zoom = world.camera.scale;
+```
+
+## Determinism Notes
+
+- Is this pure? **Yes** — Computed from events
+- Is ordering stable? **Yes** — Events are sorted
+- Is randomness seeded? **Yes** — Camera shake uses seeds
+````
+
 ## File: apps/docs/pages/glossary.mdx
 ````
 # Glossary
@@ -6812,316 +7562,6 @@ import { Cards, Card } from 'nextra/components'
   <Card title="Compiler" href="/compiler" />
   <Card title="DirectorLite" href="/director" />
 </Cards>
-````
-
-## File: apps/docs/pages/verification.mdx
-````
-# Documentation Verification Checklist
-
-This document verifies that **every file, topic, and code module** in Tokovo is documented.
-
----
-
-## ✅ Package Coverage
-
-### packages/ir
-
-| File | Documented | Page |
-|------|------------|------|
-| `scene.ts` | ✅ | [Scene IR](/ir/scene-ir) |
-| `timeline.ts` | ✅ | [Timeline IR](/ir/timeline-ir) |
-| `trace.ts` | ✅ | [Traces](/ir/trace) |
-| `semantic.ts` | ✅ | [Semantic Annotations](/dsl/semantic) |
-| `ordering.ts` | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
-| `constraints.ts` | ✅ | [Scene IR - Constraints](/ir/scene-ir#reserved-signals) |
-| `validate.ts` | ✅ | [Compiler - Validation](/compiler/passes#5-validate) |
-| `index.ts` | ✅ | [IR Overview - Imports](/ir#type-imports) |
-
----
-
-### packages/dsl
-
-| File | Documented | Page |
-|------|------------|------|
-| `src/author/episode-builder.ts` | ✅ | [episode()](/dsl/episode) |
-| `src/author/device-builder.ts` | ✅ | [Device Builder](/dsl/device) |
-| `src/author/beat-builder.ts` | ✅ | [Beat Builder](/dsl/beat) |
-| `src/types.ts` | ✅ | [episode() - EpisodeConfig](/dsl/episode#episodeconfig-reference) |
-| `src/index.ts` | ✅ | [DSL Overview](/dsl) |
-
----
-
-### packages/compiler
-
-| File | Documented | Page |
-|------|------------|------|
-| `src/compile.ts` | ✅ | [Compiler Overview](/compiler) |
-| `src/context.ts` | ✅ | [Compiler Overview](/compiler#usage) |
-| `src/passes/normalize.ts` | ✅ | [Passes - normalize](/compiler/passes#1-normalize) |
-| `src/passes/resolve-refs.ts` | ✅ | [Passes - resolveRefs](/compiler/passes#2-resolverefs) |
-| `src/passes/virtual-device.ts` | ✅ | [Passes - virtualDevice](/compiler/passes#3-virtualdevice) |
-| `src/passes/time-lowering.ts` | ✅ | [Passes - timeLowering](/compiler/passes#4-timelowering) |
-| `src/passes/validate.ts` | ✅ | [Passes - validate](/compiler/passes#5-validate) |
-| `src/passes/sort.ts` | ✅ | [Passes - sort](/compiler/passes#6-sort) |
-| `src/index.ts` | ✅ | [Compiler Overview](/compiler) |
-
----
-
-### packages/adapters
-
-| File | Documented | Page |
-|------|------------|------|
-| `src/adapter.ts` | ✅ | [Adapters - Interface](/compiler/adapters#adapter-interface) |
-| `src/registry.ts` | ✅ | [Adapters - Registry](/compiler/adapters#using-the-registry) |
-| `src/whatsapp/index.ts` | ✅ | [Adapters - WhatsApp](/compiler/adapters#whatsapp-adapter) |
-| `src/index.ts` | ✅ | [Adapters Overview](/compiler/adapters) |
-
----
-
-### packages/core
-
-| File | Documented | Page |
-|------|------------|------|
-| `src/engine/` | ✅ | [Engine](/runtime/engine) |
-| `src/types.ts` | ✅ | [Runtime Overview](/runtime) |
-| `src/camera/` | ✅ | [DirectorLite - Effects](/director/effects) |
-| `src/director-lite/types.ts` | ✅ | [DirectorLite Overview](/director) |
-| `src/director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
-| `src/director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
-| `src/director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
-
----
-
-### packages/renderer
-
-| File | Documented | Page |
-|------|------------|------|
-| `TokovoRenderer` | ✅ | [Runtime Overview](/runtime#tokovorenderer-props) |
-| Device rendering | ✅ | [Custom Apps](/guides/custom-apps) |
-
----
-
-### packages/apps-whatsapp
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Component structure | ✅ | [Custom Apps - UI Components](/guides/custom-apps#step-5-create-ui-components) |
-| State shape | ✅ | [Engine - AppState](/runtime/engine#appstate-whatsapp) |
-
----
-
-## ✅ Topic Coverage
-
-### Architecture
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Four layers | ✅ | [Architecture Overview](/architecture) |
-| Layer boundaries | ✅ | [Boundaries](/architecture/boundaries) |
-| Determinism | ✅ | [Determinism](/architecture/determinism) |
-| Data flow | ✅ | [Data Flow](/architecture/data-flow) |
-| Package dependencies | ✅ | [Architecture Overview](/architecture#package-dependencies) |
-| Monorepo structure | ✅ | [Monorepo](/architecture/monorepo) |
-| Turborepo config | ✅ | [Monorepo](/architecture/monorepo#turborepo-configuration) |
-| pnpm workspaces | ✅ | [Monorepo](/architecture/monorepo#pnpm-workspaces) |
-| Plugin system | ✅ | [Plugins](/architecture/plugins) |
-| PluginManager API | ✅ | [Plugins](/architecture/plugins#pluginmanager-api) |
-| Creating plugins | ✅ | [Plugins](/architecture/plugins#creating-a-plugin) |
-
----
-
-### DSL (Domain Specific Language)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| episode() entry point | ✅ | [episode()](/dsl/episode) |
-| EpisodeConfig | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
-| Device builder | ✅ | [Device Builder](/dsl/device) |
-| Conversation setup | ✅ | [Device Builder - conversation()](/dsl/device#conversationid-config) |
-| Beat builder | ✅ | [Beat Builder](/dsl/beat) |
-| wait() | ✅ | [Beat Builder - wait](/dsl/beat#waitduration) |
-| typing() | ✅ | [Beat Builder - typing](/dsl/beat#typingactorforduration) |
-| send() | ✅ | [Beat Builder - send](/dsl/beat#sendtext-options) |
-| receive() | ✅ | [Beat Builder - receive](/dsl/beat#receiveactor-text-options) |
-| read() | ✅ | [Beat Builder - read](/dsl/beat#readref) |
-| delete() | ✅ | [Beat Builder - delete](/dsl/beat#deleteref) |
-| concurrent() | ✅ | [Beat Builder - concurrent](/dsl/beat#concurrent-operations) |
-| pov() | ✅ | [POV Control](/dsl/pov) |
-| splitPov() | ✅ | [POV Control - Split](/dsl/pov#split-pov) |
-| Semantic annotations | ✅ | [Semantic Annotations](/dsl/semantic) |
-| BeatMeta | ✅ | [Semantic - Beat Metadata](/dsl/semantic#beat-metadata) |
-
----
-
-### IR (Intermediate Representation)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| IR overview | ✅ | [IR Overview](/ir) |
-| Scene IR types | ✅ | [Scene IR](/ir/scene-ir) |
-| Timeline IR types | ✅ | [Timeline IR](/ir/timeline-ir) |
-| Trace model | ✅ | [Traces](/ir/trace) |
-| Ordering (phases) | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
-| Duration expressions | ✅ | [Scene IR - Duration](/ir/scene-ir#duration-expressions) |
-| MessageRef | ✅ | [Scene IR - MessageRef](/ir/scene-ir#messageref) |
-
----
-
-### Compiler
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| compile() function | ✅ | [Compiler Overview](/compiler) |
-| Pass pipeline | ✅ | [Passes](/compiler/passes) |
-| normalize pass | ✅ | [Passes - normalize](/compiler/passes#1-normalize) |
-| resolveRefs pass | ✅ | [Passes - resolveRefs](/compiler/passes#2-resolverefs) |
-| virtualDevice pass | ✅ | [Passes - virtualDevice](/compiler/passes#3-virtualdevice) |
-| timeLowering pass | ✅ | [Passes - timeLowering](/compiler/passes#4-timelowering) |
-| validate pass | ✅ | [Passes - validate](/compiler/passes#5-validate) |
-| sort pass | ✅ | [Passes - sort](/compiler/passes#6-sort) |
-| CompileResult | ✅ | [Compiler Overview - Output](/compiler#compileresult) |
-| Validation modes | ✅ | [Passes - validate](/compiler/passes#validation-modes) |
-| Adapters | ✅ | [Adapters](/compiler/adapters) |
-
----
-
-### DirectorLite
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Philosophy | ✅ | [DirectorLite Overview](/director) |
-| Signals | ✅ | [Signals](/director/signals) |
-| Signal types | ✅ | [Signals - Types](/director/signals#signal-types) |
-| Signal extraction | ✅ | [Signals - Extraction](/director/signals#signal-extraction) |
-| Rules | ✅ | [Rules](/director/rules) |
-| ViralDramaV1 | ✅ | [Rules - ViralDramaV1](/director/rules#viraldramav1-rules) |
-| Effects | ✅ | [Effects](/director/effects) |
-| ZoomToRect | ✅ | [Effects - ZoomToRect](/director/effects#zoomtorect) |
-| PushIn | ✅ | [Effects - PushIn](/director/effects#pushin) |
-| MicroShake | ✅ | [Effects - MicroShake](/director/effects#microshake) |
-| Cooldowns | ✅ | [Rules - Cooldown](/director/rules#understanding-the-numbers) |
-| Arbitration | ✅ | [Rules - Arbitration](/director/rules#arbitration) |
-
----
-
-### Runtime
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Runtime overview | ✅ | [Runtime Overview](/runtime) |
-| Engine | ✅ | [Engine](/runtime/engine) |
-| Reducer pattern | ✅ | [Engine - Reducer](/runtime/engine#reducer-pattern) |
-| WorldState | ✅ | [Engine - WorldState](/runtime/engine#worldstate) |
-| DeviceState | ✅ | [Engine - DeviceState](/runtime/engine#devicestate) |
-| Event types | ✅ | [Event Types](/runtime/events) |
-| DEVICE events | ✅ | [Events - Device](/runtime/events#device-events) |
-| APP events | ✅ | [Events - App](/runtime/events#app-events-whatsapp) |
-| CAMERA events | ✅ | [Events - Camera](/runtime/events#camera-events-manual) |
-
----
-
-### Guides
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Quick start | ✅ | [Quick Start](/guides/quickstart) |
-| First episode | ✅ | [First Episode](/guides/first-episode) |
-| Multi-device | ✅ | [Multi-Device](/guides/multi-device) |
-| AI generation | ✅ | [AI Generation](/guides/ai-generation) |
-| Custom apps | ✅ | [Custom Apps](/guides/custom-apps) |
-
----
-
-## ✅ Code Example Coverage
-
-| Example | Location | Documented |
-|---------|----------|------------|
-| Basic episode | `/packages/dsl/examples/` | [First Episode](/guides/first-episode) |
-| Multi-device | — | [Multi-Device](/guides/multi-device) |
-| Semantic annotations | — | [Semantic Annotations](/dsl/semantic#complete-example) |
-| AI generation | — | [AI Generation](/guides/ai-generation) |
-| Custom adapter | — | [Custom Apps](/guides/custom-apps) |
-
----
-
-## ✅ API Reference Coverage
-
-| API | Documented | Page |
-|-----|------------|------|
-| `episode()` | ✅ | [episode()](/dsl/episode) |
-| `EpisodeBuilder` | ✅ | [episode() - Methods](/dsl/episode#episodebuilder-methods) |
-| `DeviceBuilder` | ✅ | [Device Builder](/dsl/device) |
-| `BeatBuilder` | ✅ | [Beat Builder](/dsl/beat) |
-| `compile()` | ✅ | [Compiler Overview](/compiler) |
-| `CompileOptions` | ✅ | [Compiler Overview](/compiler#compileoptions) |
-| `CompileResult` | ✅ | [Compiler Overview](/compiler#compileresult) |
-| `AppAdapter` | ✅ | [Adapters](/compiler/adapters) |
-| `AdapterRegistry` | ✅ | [Adapters - Registry](/compiler/adapters#adapter-registration) |
-| `deriveDirectorEffects()` | ✅ | [DirectorLite](/director) |
-| `validateConstraints()` | ✅ | [AI Generation](/guides/ai-generation#validation-loop) |
-
----
-
-## ✅ Type Reference Coverage
-
-| Type | Documented | Page |
-|------|------------|------|
-| `SceneIR` | ✅ | [Scene IR](/ir/scene-ir#sceneir) |
-| `SceneOp` | ✅ | [Scene IR - Operations](/ir/scene-ir#scene-operations) |
-| `TimelineIR` | ✅ | [Timeline IR](/ir/timeline-ir#timelineir) |
-| `TimelineOp` | ✅ | [Timeline IR - Operations](/ir/timeline-ir#timeline-operations) |
-| `Trace` | ✅ | [Traces](/ir/trace#trace-structure) |
-| `EpisodeConfig` | ✅ | [episode()](/dsl/episode#episodeconfig-reference) |
-| `SemanticMeta` | ✅ | [Semantic](/dsl/semantic#available-fields) |
-| `BeatMeta` | ✅ | [Semantic - Beat](/dsl/semantic#beatmeta-fields) |
-| `Mood` | ✅ | [Semantic - Mood](/dsl/semantic#mood) |
-| `POVLayout` | ✅ | [POV - Layouts](/dsl/pov#layout-options) |
-| `RuntimeEvent` | ✅ | [Events](/runtime/events#event-structure) |
-| `WorldState` | ✅ | [Engine](/runtime/engine#worldstate) |
-| `DirectorSignal` | ✅ | [Signals](/director/signals#signal-properties) |
-| `Rule` | ✅ | [Rules](/director/rules#rule-structure) |
-| `DerivedCameraEffect` | ✅ | [Effects](/director/effects#effect-properties) |
-
----
-
-## Summary
-
-| Category | Items | Documented | Coverage |
-|----------|-------|------------|----------|
-| IR files | 8 | 8 | 100% |
-| DSL files | 5 | 5 | 100% |
-| Compiler files | 9 | 9 | 100% |
-| Adapter files | 4 | 4 | 100% |
-| Core files | 8 | 8 | 100% |
-| Architecture topics | 5 | 5 | 100% |
-| DSL topics | 17 | 17 | 100% |
-| IR topics | 7 | 7 | 100% |
-| Compiler topics | 12 | 12 | 100% |
-| DirectorLite topics | 12 | 12 | 100% |
-| Runtime topics | 9 | 9 | 100% |
-| Guides | 5 | 5 | 100% |
-| API references | 11 | 11 | 100% |
-| Type references | 15 | 15 | 100% |
-
-### Total Documentation Pages: 35+
-### Total Coverage: 100%
-
----
-
-## Verification Date
-
-**Last verified:** 2025-12-13
-
-**Verified by:** Documentation system
-
----
-
-## How to Verify
-
-1. Run docs: `cd apps/docs && pnpm dev`
-2. Check each page loads
-3. Verify code examples compile
-4. Check all links work
 ````
 
 ## File: apps/docs/next-env.d.ts
@@ -14949,6 +15389,39 @@ packages:
 }
 ````
 
+## File: apps/docs/pages/guides/_meta.json
+````json
+{
+    "quickstart": "Quick Start",
+    "first-episode": "Your First Episode",
+    "multi-device": "Multi-Device Stories",
+    "ai-generation": "AI Generation",
+    "ai-contract": "AI Contract",
+    "custom-apps": "Custom Apps"
+}
+````
+
+## File: apps/docs/pages/ir/_meta.json
+````json
+{
+    "index": "Overview",
+    "scene-ir": "Scene IR",
+    "timeline-ir": "Timeline IR",
+    "trace": "Traces",
+    "constraints": "Constraints"
+}
+````
+
+## File: apps/docs/pages/runtime/_meta.json
+````json
+{
+    "index": "Overview",
+    "engine": "Engine",
+    "events": "Event Types",
+    "world-state": "WorldState"
+}
+````
+
 ## File: apps/docs/pages/_meta.json
 ````json
 {
@@ -14966,6 +15439,309 @@ packages:
     },
     "verification": "✅ Verification"
 }
+````
+
+## File: apps/docs/pages/verification.mdx
+````
+# Documentation Verification Checklist
+
+This document verifies that **every file, topic, and code module** in Tokovo is documented.
+
+Last verified: **2025-12-13**
+
+---
+
+## ✅ Repository Root Files
+
+| File | Status | Purpose |
+|------|--------|---------|
+| [`DOCS_MASTER_PLAN.md`](file:///Users/nishit.gupta/personal/tokovo/DOCS_MASTER_PLAN.md) | ✅ | Documentation constitution |
+| [`CONTRIBUTING.md`](file:///Users/nishit.gupta/personal/tokovo/CONTRIBUTING.md) | ✅ | Contributor guide |
+| [`DESIGN_PHILOSOPHY.md`](file:///Users/nishit.gupta/personal/tokovo/DESIGN_PHILOSOPHY.md) | ✅ | Design decisions |
+| [`ALL_IN.md`](file:///Users/nishit.gupta/personal/tokovo/ALL_IN.md) | ✅ | Complete reference |
+| `README.md` | ⏳ | Project overview |
+
+---
+
+## ✅ Package Coverage
+
+### packages/ir (8 files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `scene.ts` | ✅ | [Scene IR](/ir/scene-ir) |
+| `timeline.ts` | ✅ | [Timeline IR](/ir/timeline-ir) |
+| `semantic.ts` | ✅ | [Semantic](/dsl/semantic) |
+| `trace.ts` | ✅ | [Traces](/ir/trace) |
+| `ordering.ts` | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
+| `constraints.ts` | ✅ | [Constraints](/ir/constraints) |
+| `validate.ts` | ✅ | [Constraints](/ir/constraints) |
+| `index.ts` | ✅ | [IR Overview](/ir) |
+
+### packages/dsl (5 files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `episode-builder.ts` | ✅ | [episode()](/dsl/episode) |
+| `device-builder.ts` | ✅ | [Device Builder](/dsl/device) |
+| `beat-builder.ts` | ✅ | [Beat Builder](/dsl/beat) |
+| `types.ts` | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
+| `index.ts` | ✅ | [DSL Overview](/dsl) |
+
+### packages/compiler (9 files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `compile.ts` | ✅ | [Compiler](/compiler) |
+| `context.ts` | ✅ | [Compiler](/compiler) |
+| `passes/normalize.ts` | ✅ | [Passes](/compiler/passes#1-normalize) |
+| `passes/resolve-refs.ts` | ✅ | [Passes](/compiler/passes#2-resolverefs) |
+| `passes/virtual-device.ts` | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
+| `passes/time-lowering.ts` | ✅ | [Passes](/compiler/passes#4-timelowering) |
+| `passes/validate.ts` | ✅ | [Passes](/compiler/passes#5-validate) |
+| `passes/sort.ts` | ✅ | [Passes](/compiler/passes#6-sort) |
+| `index.ts` | ✅ | [Compiler](/compiler) |
+
+### packages/adapters (4 files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `adapter.ts` | ✅ | [Adapters](/compiler/adapters) |
+| `registry.ts` | ✅ | [Adapters](/compiler/adapters#adapter-registration) |
+| `whatsapp/index.ts` | ✅ | [Adapters](/compiler/adapters#whatsapp-adapter) |
+| `index.ts` | ✅ | [Adapters](/compiler/adapters) |
+
+### packages/core (10+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `types.ts` | ✅ | [WorldState](/runtime/world-state) |
+| `engine.ts` | ✅ | [Engine](/runtime/engine) |
+| `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `director-lite/types.ts` | ✅ | [DirectorLite](/director) |
+| `director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
+| `director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
+| `director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
+| `camera/` | ✅ | [Effects](/director/effects) |
+| `tokens.ts` | ✅ | [Glossary](/glossary) |
+| `constants.ts` | ✅ | Embedded in relevant docs |
+
+### packages/renderer
+
+| File | Documented | Page |
+|------|------------|------|
+| `TokovoRenderer.tsx` | ✅ | [Runtime](/runtime) |
+| `MultiDeviceRenderer.tsx` | ✅ | [Multi-Device](/guides/multi-device) |
+| `DeviceFrame.tsx` | ✅ | [Custom Apps](/guides/custom-apps) |
+| `registry.ts` | ✅ | [Plugins](/architecture/plugins) |
+
+---
+
+## ✅ Topic Coverage
+
+### Architecture (11 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| Four layers | ✅ | [Architecture](/architecture) |
+| Layer boundaries | ✅ | [Boundaries](/architecture/boundaries) |
+| Determinism | ✅ | [Determinism](/architecture/determinism) |
+| Data flow | ✅ | [Data Flow](/architecture/data-flow) |
+| Package dependencies | ✅ | [Architecture](/architecture) |
+| Monorepo structure | ✅ | [Monorepo](/architecture/monorepo) |
+| Turborepo config | ✅ | [Monorepo](/architecture/monorepo#turborepo-configuration) |
+| pnpm workspaces | ✅ | [Monorepo](/architecture/monorepo#pnpm-workspaces) |
+| Plugin system | ✅ | [Plugins](/architecture/plugins) |
+| PluginManager API | ✅ | [Plugins](/architecture/plugins#pluginmanager-api) |
+| Creating plugins | ✅ | [Plugins](/architecture/plugins#creating-a-plugin) |
+
+### DSL (17 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| episode() | ✅ | [episode()](/dsl/episode) |
+| EpisodeConfig | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
+| Device builder | ✅ | [Device](/dsl/device) |
+| conversation() | ✅ | [Device](/dsl/device#conversationid-config) |
+| Beat builder | ✅ | [Beat](/dsl/beat) |
+| wait() | ✅ | [Beat](/dsl/beat#waitduration) |
+| typing() | ✅ | [Beat](/dsl/beat#typingactorforduration) |
+| send() | ✅ | [Beat](/dsl/beat#sendtext-options) |
+| receive() | ✅ | [Beat](/dsl/beat#receiveactor-text-options) |
+| read() | ✅ | [Beat](/dsl/beat#readref) |
+| delete() | ✅ | [Beat](/dsl/beat#deleteref) |
+| concurrent() | ✅ | [Beat](/dsl/beat#concurrent-operations) |
+| pov() | ✅ | [POV](/dsl/pov) |
+| splitPov() | ✅ | [POV](/dsl/pov#split-pov) |
+| SemanticMeta | ✅ | [Semantic](/dsl/semantic) |
+| BeatMeta | ✅ | [Semantic](/dsl/semantic#beat-metadata) |
+| Mood values | ✅ | [Semantic](/dsl/semantic#mood) |
+
+### IR (10 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| IR overview | ✅ | [IR](/ir) |
+| Scene IR | ✅ | [Scene IR](/ir/scene-ir) |
+| SceneOp types | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
+| Timeline IR | ✅ | [Timeline IR](/ir/timeline-ir) |
+| TimelineOp types | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
+| Traces | ✅ | [Traces](/ir/trace) |
+| Constraints | ✅ | [Constraints](/ir/constraints) |
+| Ordering/Phases | ✅ | [Timeline IR](/ir/timeline-ir#ordering) |
+| Duration expressions | ✅ | [Scene IR](/ir/scene-ir#duration-expressions) |
+| MessageRef | ✅ | [Scene IR](/ir/scene-ir#messageref) |
+
+### Compiler (12 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| compile() | ✅ | [Compiler](/compiler) |
+| Pass pipeline | ✅ | [Passes](/compiler/passes) |
+| normalize | ✅ | [Passes](/compiler/passes#1-normalize) |
+| resolveRefs | ✅ | [Passes](/compiler/passes#2-resolverefs) |
+| virtualDevice | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
+| timeLowering | ✅ | [Passes](/compiler/passes#4-timelowering) |
+| validate | ✅ | [Passes](/compiler/passes#5-validate) |
+| sort | ✅ | [Passes](/compiler/passes#6-sort) |
+| CompileResult | ✅ | [Compiler](/compiler#compileresult) |
+| Validation modes | ✅ | [Passes](/compiler/passes#validation-modes) |
+| Adapters | ✅ | [Adapters](/compiler/adapters) |
+| Custom adapters | ✅ | [Adapters](/compiler/adapters#building-custom-adapters) |
+
+### DirectorLite (12 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| Philosophy | ✅ | [DirectorLite](/director) |
+| Signal types | ✅ | [Signals](/director/signals#signal-types) |
+| Signal extraction | ✅ | [Signals](/director/signals#signal-extraction) |
+| Rules | ✅ | [Rules](/director/rules) |
+| ViralDramaV1 | ✅ | [Rules](/director/rules#viraldramav1-rules) |
+| ZoomToRect | ✅ | [Effects](/director/effects#zoomtorect) |
+| PushIn | ✅ | [Effects](/director/effects#pushin) |
+| PullBack | ✅ | [Effects](/director/effects#pullback) |
+| MicroShake | ✅ | [Effects](/director/effects#microshake) |
+| Cooldowns | ✅ | [Rules](/director/rules#understanding-the-numbers) |
+| Arbitration | ✅ | [Rules](/director/rules#arbitration) |
+| Debug mode | ✅ | [DirectorLite](/director#debug-mode) |
+
+### Runtime (10 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| Runtime overview | ✅ | [Runtime](/runtime) |
+| Engine | ✅ | [Engine](/runtime/engine) |
+| Reducer pattern | ✅ | [Engine](/runtime/engine#reducer-pattern) |
+| WorldState | ✅ | [WorldState](/runtime/world-state) |
+| DeviceState | ✅ | [WorldState](/runtime/world-state#devicestate) |
+| ConversationState | ✅ | [WorldState](/runtime/world-state#conversationstate) |
+| Event types | ✅ | [Events](/runtime/events) |
+| DEVICE events | ✅ | [Events](/runtime/events#device-events) |
+| APP events | ✅ | [Events](/runtime/events#app-events-whatsapp) |
+| CAMERA events | ✅ | [Events](/runtime/events#camera-events-manual) |
+
+### Guides (6 topics)
+
+| Topic | Documented | Page |
+|-------|------------|------|
+| Quick start | ✅ | [Quick Start](/guides/quickstart) |
+| First episode | ✅ | [First Episode](/guides/first-episode) |
+| Multi-device | ✅ | [Multi-Device](/guides/multi-device) |
+| AI generation | ✅ | [AI Generation](/guides/ai-generation) |
+| AI contract | ✅ | [AI Contract](/guides/ai-contract) |
+| Custom apps | ✅ | [Custom Apps](/guides/custom-apps) |
+
+---
+
+## ✅ Type Reference Coverage
+
+| Type | Documented | Page |
+|------|------------|------|
+| `SceneIR` | ✅ | [Scene IR](/ir/scene-ir#sceneir) |
+| `SceneOp` | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
+| `TimelineIR` | ✅ | [Timeline IR](/ir/timeline-ir#timelineir) |
+| `TimelineOp` | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
+| `Trace` | ✅ | [Traces](/ir/trace#trace-structure) |
+| `EpisodeConfig` | ✅ | [episode()](/dsl/episode#episodeconfig-reference) |
+| `SemanticMeta` | ✅ | [Semantic](/dsl/semantic#available-fields) |
+| `BeatMeta` | ✅ | [Semantic](/dsl/semantic#beatmeta-fields) |
+| `Mood` | ✅ | [Semantic](/dsl/semantic#mood) |
+| `POVLayout` | ✅ | [POV](/dsl/pov#layout-options) |
+| `RuntimeEvent` | ✅ | [Events](/runtime/events#event-structure) |
+| `WorldState` | ✅ | [WorldState](/runtime/world-state#worldstate-structure) |
+| `DeviceState` | ✅ | [WorldState](/runtime/world-state#devicestate) |
+| `DirectorSignal` | ✅ | [Signals](/director/signals#signal-properties) |
+| `Rule` | ✅ | [Rules](/director/rules#rule-structure) |
+| `DerivedCameraEffect` | ✅ | [Effects](/director/effects#effect-properties) |
+| `TokovoPlugin` | ✅ | [Plugins](/architecture/plugins) |
+
+---
+
+## Summary
+
+| Category | Items | Documented | Coverage |
+|----------|-------|------------|----------|
+| Root files | 5 | 4 | 80% |
+| IR files | 8 | 8 | 100% |
+| DSL files | 5 | 5 | 100% |
+| Compiler files | 9 | 9 | 100% |
+| Adapter files | 4 | 4 | 100% |
+| Core files | 10 | 10 | 100% |
+| Architecture topics | 11 | 11 | 100% |
+| DSL topics | 17 | 17 | 100% |
+| IR topics | 10 | 10 | 100% |
+| Compiler topics | 12 | 12 | 100% |
+| DirectorLite topics | 12 | 12 | 100% |
+| Runtime topics | 10 | 10 | 100% |
+| Guides | 6 | 6 | 100% |
+| Type references | 17 | 17 | 100% |
+
+### Total Documentation Pages: 38+
+### Overall Coverage: 99%+
+
+---
+
+## Feature Implementation Status
+
+### ✅ Complete & Documented
+
+- [x] DSL fluent API
+- [x] Scene IR
+- [x] Timeline IR
+- [x] Compiler passes (6)
+- [x] Adapters (WhatsApp)
+- [x] DirectorLite (ViralDramaV1)
+- [x] Determinism guarantees
+- [x] Plugin system
+- [x] Trace model
+- [x] EpisodeConfig
+- [x] SemanticMeta
+- [x] BeatMeta
+- [x] POV primitives
+- [x] Reserved signals
+- [x] Constraints validation
+- [x] Monorepo architecture
+- [x] AI generation contract
+
+### ⏳ Future (Reserved)
+
+- [ ] DirectorLite v2 (semantic-aware)
+- [ ] Lifecycle hooks
+- [ ] Voice notes adapter
+- [ ] Instagram adapter completion
+- [ ] Platform presets
+
+---
+
+## Verification Steps
+
+1. ✅ Run docs: `cd apps/docs && pnpm dev`
+2. ✅ All pages load without errors
+3. ✅ Navigation complete
+4. ✅ Code examples are accurate
+5. ✅ Cross-references work
+6. ✅ Determinism notes included
 ````
 
 ## File: apps/docs/package.json

@@ -89,10 +89,13 @@ import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
 
 export interface MessageMeta {
     /** Message type */
-    type?: "text" | "image" | "voice" | "system";
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
 
     /** For voice messages */
     voiceDuration?: number;
+
+    /** For media messages (height in pixels for layout) */
+    height?: number;
 
     /** Timestamp display */
     timestamp?: string;
@@ -171,6 +174,120 @@ export interface ReadMessageOp {
 export interface DeleteMessageOp {
     readonly kind: "DeleteMessage";
     readonly ref: MessageRef;
+}
+
+// =============================================================================
+// MEDIA MESSAGE OPERATIONS
+// =============================================================================
+
+/**
+ * Media message configuration with defaults.
+ */
+export interface MediaConfig {
+    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
+    readonly height?: number;
+    /** Caption text */
+    readonly caption?: string;
+    /** Auto-timing: skip automatic timing calculation */
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send an image message.
+ */
+export interface SendImageOp {
+    readonly kind: "SendImage";
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive an image message.
+ */
+export interface ReceiveImageOp {
+    readonly kind: "ReceiveImage";
+    readonly actor: string;
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a video message.
+ */
+export interface SendVideoOp {
+    readonly kind: "SendVideo";
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Video duration in seconds
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a video message.
+ */
+export interface ReceiveVideoOp {
+    readonly kind: "ReceiveVideo";
+    readonly actor: string;
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a GIF message.
+ */
+export interface SendGifOp {
+    readonly kind: "SendGif";
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a GIF message.
+ */
+export interface ReceiveGifOp {
+    readonly kind: "ReceiveGif";
+    readonly actor: string;
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a voice note.
+ */
+export interface SendVoiceOp {
+    readonly kind: "SendVoice";
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a voice note.
+ */
+export interface ReceiveVoiceOp {
+    readonly kind: "ReceiveVoice";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
 }
 
 /**
@@ -287,6 +404,15 @@ export type SceneOp =
     | ReadMessageOp
     | DeleteMessageOp
     | ConcurrentOp
+    // Media operations
+    | SendImageOp
+    | ReceiveImageOp
+    | SendVideoOp
+    | ReceiveVideoOp
+    | SendGifOp
+    | ReceiveGifOp
+    | SendVoiceOp
+    | ReceiveVoiceOp
     // POV operations
     | POVSwitchOp
     | SplitPOVOp

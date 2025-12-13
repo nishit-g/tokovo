@@ -1,0 +1,59 @@
+---
+title: Apps
+description: Built-in messaging apps for Tokovo
+---
+
+# Apps
+
+Tokovo includes production-ready, pixel-perfect messaging app UIs.
+
+## Available Apps
+
+| App | Description | Platform |
+|-----|-------------|----------|
+| [WhatsApp](/apps/whatsapp) | iOS/Android chat with all message types | iOS, Android |
+| iMessage | iOS Messages with reactions and effects | iOS |
+| Instagram | DMs with seen receipts and stories | iOS |
+
+## App Architecture
+
+Each app consists of:
+
+1. **Runtime Reducer** - Handles timeline events and updates state
+2. **UI Components** - React components for rendering
+3. **Layout Config** - Configurable heights, spacing, animations
+4. **Theme** - Colors, typography, bubble styling
+
+## Using Apps in DSL
+
+```typescript
+ep.device("MyPhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_alice", { name: "Alice", avatar: "alice.png" });
+    
+    d.beat("conversation", b => {
+        b.receive("Alice", "Hey!");
+        b.send("Hi there!");
+    });
+});
+```
+
+## Configuration
+
+Apps are fully configurable via theme and layout configs:
+
+```typescript
+import { 
+    DEFAULT_LAYOUT_CONFIG,
+    iOS_WHATSAPP_LIGHT 
+} from "@tokovo/apps-whatsapp/config";
+
+// Customize heights
+const customLayout = {
+    ...DEFAULT_LAYOUT_CONFIG,
+    heights: {
+        ...DEFAULT_LAYOUT_CONFIG.heights,
+        image: { default: 500, withCaption: 580 }
+    }
+};
+```

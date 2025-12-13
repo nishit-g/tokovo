@@ -98,7 +98,7 @@ export interface Message {
     id: string;
     from: string;                    // "me" or member ID
     text?: string;
-    type?: "text" | "image" | "voice" | "system";
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
     at?: number;                     // Timestamp frame
 
     // System message
@@ -111,8 +111,54 @@ export interface Message {
     isPlaying?: boolean;
     playProgress?: number;
 
+    // Image message
+    imageUrl?: string;
+
+    // Video message
+    videoUrl?: string;
+    thumbnailUrl?: string;
+
+    // GIF message
+    gifUrl?: string;
+
+    // Caption for media messages
+    caption?: string;
+
+    // Layout hints
+    height?: number;
+
+    // Future features
+    reactions?: Reaction[];
+    replyTo?: ReplyTo;
+    linkPreview?: LinkPreview;
+
     // Read status
     status?: "sending" | "sent" | "delivered" | "read";
+}
+
+// =============================================================================
+// FUTURE FEATURES - Message Extensions
+// =============================================================================
+
+export interface Reaction {
+    emoji: string;
+    from: string;
+    at?: number;
+}
+
+export interface ReplyTo {
+    messageId: string;
+    text?: string;
+    from: string;
+    type?: "text" | "image" | "video" | "gif" | "voice";
+}
+
+export interface LinkPreview {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
 }
 
 // =============================================================================

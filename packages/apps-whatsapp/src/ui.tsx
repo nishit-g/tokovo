@@ -2,6 +2,7 @@ import React from "react";
 import { WorldState, Platform, getTokens, getTypography, getAppConfig, iOSTokens, androidTokens } from "@tokovo/core";
 
 import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+import { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./components/MediaBubbles";
 
 // Get platform-specific config
 const getWhatsAppConfig = (platform: Platform) => getAppConfig("whatsapp", platform);
@@ -337,9 +338,84 @@ const MessageList: React.FC<MessageListProps> = ({
                         );
                     }
 
+                    // Render Image messages
+                    if (msg.type === "image") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <ImageMessageBubble
+                                    imageUrl={msg.imageUrl || ""}
+                                    caption={msg.caption}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
+
+                    // Render Video messages
+                    if (msg.type === "video") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <VideoMessageBubble
+                                    thumbnailUrl={msg.thumbnailUrl || ""}
+                                    duration={msg.duration || 0}
+                                    caption={msg.caption}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    isPlaying={msg.isPlaying}
+                                    playProgress={msg.playProgress || 0}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
+
+                    // Render GIF messages
+                    if (msg.type === "gif") {
+                        const isMe = msg.from === ownerName;
+                        return (
+                            <div key={msg.id} style={{
+                                position: "absolute",
+                                top: y,
+                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
+                                right: isMe ? config.bubbleMarginHorizontal : "auto",
+                                maxWidth: config.bubbleMaxWidth,
+                                opacity,
+                                transform: `translateY(${translateY}px)`
+                            }}>
+                                <GifMessageBubble
+                                    gifUrl={msg.gifUrl || ""}
+                                    isMe={isMe}
+                                    timestamp={msg.timestamp}
+                                    read={msg.status === "read"}
+                                    platform={platform}
+                                />
+                            </div>
+                        );
+                    }
 
 
-                    // Render Deleted Message
                     if (msg.type === "deleted") {
                         const isMe = msg.from === ownerName;
                         return (

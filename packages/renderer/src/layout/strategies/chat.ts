@@ -1,13 +1,26 @@
 import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import {
+    MessageLayoutConfig,
+    DEFAULT_LAYOUT_CONFIG,
+    calculateMessageHeight,
+    applyEasing,
+    MessageForHeight,
+} from "@tokovo/apps-whatsapp/src/config/layout-config";
 
-// Constants for rect calculation (match WhatsApp UI)
-const BUBBLE_MARGIN_HORIZONTAL = 36;
-const BUBBLE_MAX_WIDTH_PERCENT = 0.78;
-const TYPING_BUBBLE_WIDTH = 150;
+// =============================================================================
+// CONFIGURABLE CHAT LAYOUT STRATEGY
+// =============================================================================
 
-export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
-    const { world, t, activeConversationId, config, viewportHeight, viewportWidth } = ctx;
-    const chatConfig = config!.chat!;
+/**
+ * Compute chat layout using the configurable layout system.
+ * Supports smooth scrolling, configurable heights, and future features.
+ */
+export function computeChatLayout(
+    ctx: LayoutContext,
+    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): ChatLayoutState {
+    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
+    const config = layoutConfig;
 
     if (!activeConversationId || !world.conversations[activeConversationId]) {
         return {
@@ -22,72 +35,67 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
 
     const conversation = world.conversations[activeConversationId];
     // Filter messages visible at time t
-    // Messages without 'at' field (initial messages) are always visible
-    // Messages with 'at' field are visible when at <= t
     const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
 
     const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = chatConfig.topPadding;
+    let currentY = config.spacing.topPadding;
     let lastMessageId: string | undefined;
 
-    // 1. Layout messages
+    // 1. Layout messages with configurable heights
     for (const msg of messages) {
-        // Calculate height based on message type
-        let height: number;
+        // Calculate height using the config-based function
+        const msgForHeight: MessageForHeight = {
+            type: msg.type as MessageForHeight["type"],
+            text: msg.text,
+            caption: (msg as any).caption,
+            from: msg.from,
+            reactions: (msg as any).reactions,
+            replyTo: (msg as any).replyTo,
+            linkPreview: (msg as any).linkPreview,
+        };
+
+        const height = calculateMessageHeight(msgForHeight, config);
+
+        // Calculate bubble width
         let bubbleWidth: number;
+        const msgType = msg.type || "text";
 
-        if (msg.type === "system") {
-            // System messages are shorter (single line centered pill)
-            height = 80;
+        if (msgType === "system") {
             bubbleWidth = viewportWidth * 0.6; // Centered system message
-        } else if (msg.type === "voice") {
-            // Voice messages have fixed height
-            height = 180;
+        } else if (msgType === "voice") {
             bubbleWidth = 450; // Fixed voice message width
+        } else if (msgType === "image" || msgType === "video" || msgType === "gif") {
+            bubbleWidth = viewportWidth * config.spacing.bubbleMaxWidth;
         } else {
-            // Text messages: calculate based on text length
+            // Text messages: width based on content
             const textLength = msg.text?.length || 0;
-            const lines = Math.ceil(Math.max(1, textLength) / chatConfig.charsPerLine);
-
-            // Height breakdown:
-            // - Top/bottom padding: 24px each = 48px (at 3x = 144)
-            // - Text: lines * lineHeight
-            // - Timestamp row: ~40px (at 3x = 120)
-            // - Sender name (groups): additional 50px
-            const basepadding = 48;         // Top + bottom padding (16px each at 3x)
-            const timestampHeight = 40;     // Timestamp row
-            const hasSenderName = msg.from && msg.from !== "me" && msg.from !== "system";
-            const senderNameHeight = hasSenderName ? 45 : 0;
-
-            height = basepadding + (lines * chatConfig.lineHeight) + timestampHeight + senderNameHeight;
-
-            // Width: Use same line-wrap logic as height
-            // Width based on actual content lines, not raw length
-            const avgCharWidth = 14; // Approximate at 3x scale
-            const maxCharsOnLine = Math.min(textLength, chatConfig.charsPerLine);
-            const textWidth = maxCharsOnLine * avgCharWidth + 72; // + padding
-            bubbleWidth = Math.min(viewportWidth * BUBBLE_MAX_WIDTH_PERCENT, Math.max(textWidth, 150));
+            const avgCharWidth = 14;
+            const maxCharsOnLine = Math.min(textLength, config.heights.text.charsPerLine);
+            const textWidth = maxCharsOnLine * avgCharWidth + 72;
+            bubbleWidth = Math.min(
+                viewportWidth * config.spacing.bubbleMaxWidth,
+                Math.max(textWidth, 150)
+            );
         }
 
-        // Animation: Slide in / Fade in
+        // Animation: Slide in / Fade in with configurable duration
         const messageAt = msg.at ?? 0;
         const timeSinceAppear = t - messageAt;
         let opacity = 1;
         let translateY = 0;
 
-        if (timeSinceAppear >= 0 && timeSinceAppear < chatConfig.messageAppearDuration) {
-            const progress = timeSinceAppear / chatConfig.messageAppearDuration;
-            // Simple ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
+        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
+            const progress = timeSinceAppear / config.animation.messageAppearDuration;
+            const ease = applyEasing(progress, "easeOut");
             opacity = ease;
-            translateY = chatConfig.messageAppearOffset * (1 - ease);
+            translateY = config.animation.messageAppearOffset * (1 - ease);
         }
 
         // Compute rect for director targeting
         const isMe = msg.from === "me";
         const rectX = isMe
-            ? viewportWidth - BUBBLE_MARGIN_HORIZONTAL - bubbleWidth
-            : BUBBLE_MARGIN_HORIZONTAL;
+            ? viewportWidth - config.spacing.bubbleMargin - bubbleWidth
+            : config.spacing.bubbleMargin;
 
         messageLayouts[msg.id] = {
             id: msg.id,
@@ -104,39 +112,37 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
         };
 
         lastMessageId = msg.id;
-        currentY += height + chatConfig.verticalGap;
+        currentY += height + config.spacing.gap;
     }
 
     // 2. Typing indicator
     let typingLayout: TypingLayout | null = null;
     const isTyping = Object.values(conversation.typing || {}).some(v => v);
     if (isTyping) {
-        const height = chatConfig.baseBubbleHeight;
+        const height = 120; // Typing bubble height
         typingLayout = {
             y: currentY,
             height,
             opacity: 1,
             rect: {
-                x: BUBBLE_MARGIN_HORIZONTAL,
+                x: config.spacing.bubbleMargin,
                 y: currentY,
-                width: TYPING_BUBBLE_WIDTH,
+                width: 150,
                 height,
             },
         };
-        currentY += height + chatConfig.verticalGap;
+        currentY += height + config.spacing.gap;
     }
 
-    const contentHeight = currentY + chatConfig.bottomPadding;
+    const contentHeight = currentY + config.spacing.bottomPadding;
 
-    // 3. Scroll Position
-    // Lock to bottom logic
+    // 3. Scroll Position with smooth scrolling
     let scrollY = 0;
-    if (chatConfig.lockToBottom) {
+    if (config.scroll.lockToBottom) {
         const maxScroll = Math.max(0, contentHeight - viewportHeight);
-        scrollY = maxScroll;
 
-        // TODO: Implement smooth scrolling based on message arrival times if needed
-        // For now, instant snap to bottom is robust
+        // For now, instant scroll (smooth scroll can be added with cursor tracking)
+        scrollY = maxScroll;
     }
 
     return {
@@ -152,3 +158,5 @@ export function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
     };
 }
 
+// For backward compatibility, export the config types
+export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };

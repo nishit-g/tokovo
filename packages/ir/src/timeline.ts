@@ -90,10 +90,18 @@ export interface MessageReceivedOp extends TimelineOpBase {
     readonly conversationId: string;
     readonly message: {
         readonly id: string;
-        readonly text: string;
+        readonly text?: string;
         readonly from: string;
-        readonly type?: "text" | "image" | "voice" | "system";
+        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system";
         readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
     };
 }
 
@@ -107,9 +115,17 @@ export interface MessageSentOp extends TimelineOpBase {
     readonly conversationId: string;
     readonly message: {
         readonly id: string;
-        readonly text: string;
-        readonly type?: "text" | "image" | "voice";
+        readonly text?: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice";
         readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
     };
 }
 

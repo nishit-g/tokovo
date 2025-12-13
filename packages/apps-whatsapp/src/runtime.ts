@@ -3,6 +3,17 @@
  * 
  * Handles all WhatsApp-specific events.
  * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
  */
 
 import {
@@ -12,6 +23,39 @@ import {
     APP_IDS
 } from "@tokovo/core";
 
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+}
+
 /**
  * WhatsApp reducer - handles all WhatsApp events
  */
@@ -19,29 +63,42 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     // Only handle APP events for WhatsApp
     if (event.kind !== "APP") return;
 
-    // Type assertion for APP events
+    // Type assertion for APP events with extended payload
     const appEvent = event as TimelineEvent & {
         appId: string;
         conversationId?: string;
         from?: string;
         text?: string;
-        message?: {
-            id?: string;
-            type?: string;
-            text?: string;
-            status?: string;
-            timestamp?: string;
-            imageUrl?: string;
-        };
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
         memberId?: string;
         memberName?: string;
         addedBy?: string;
         removedBy?: string;
+        // Voice-specific fields
         duration?: number;
+        // Read receipt fields
         messageId?: string;
+        // Navigation fields
+        screen?: string;
     };
 
     if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "NAVIGATE") {
+        // Navigation handled by AppState, no message processing needed
+        return;
+    }
 
     // Get conversation ID from event
     const conversationId = appEvent.conversationId;
@@ -49,22 +106,44 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
     // Ensure conversation exists
     if (!draft.conversations[conversationId]) {
-        draft.conversations[conversationId] = { id: conversationId, messages: [] };
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
     }
     const conversation = draft.conversations[conversationId];
 
-    switch (event.type) {
-        case "MESSAGE_RECEIVED": {
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
             const msgPayload = appEvent.message || {};
-            conversation.messages.push({
-                ...msgPayload,
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            const newMessage: WhatsAppMessage = {
                 id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
                 text: appEvent.text || msgPayload.text,
-                type: (msgPayload.type as "text" | "image" | "voice" | "system") || "text",
                 at: event.at,
-                status: (msgPayload.status as "sending" | "sent" | "delivered" | "read") || "delivered",
-            });
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
             break;
         }
 
@@ -85,7 +164,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
         case "GROUP_MEMBER_ADDED": {
             const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `sys_${event.at}_added_${appEvent.memberId}`,
                 from: "system",
                 type: "system",
@@ -94,7 +173,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 targetMember: appEvent.memberName,
                 actorName: addedBy,
                 at: event.at
-            });
+            } as WhatsAppMessage);
             if (!conversation.members) conversation.members = [];
             conversation.members.push({
                 id: appEvent.memberId || "",
@@ -105,7 +184,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
         case "GROUP_MEMBER_REMOVED": {
             const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `sys_${event.at}_removed_${appEvent.memberId}`,
                 from: "system",
                 type: "system",
@@ -114,7 +193,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 targetMember: appEvent.memberName,
                 actorName: removedBy,
                 at: event.at
-            });
+            } as WhatsAppMessage);
             if (conversation.members) {
                 conversation.members = conversation.members.filter(
                     (m: { id: string }) => m.id !== appEvent.memberId
@@ -124,14 +203,14 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         }
 
         case "VOICE_MESSAGE_RECEIVED": {
-            conversation.messages.push({
+            (conversation.messages as any[]).push({
                 id: `voice_${event.at}_${appEvent.from}`,
                 from: appEvent.from || "unknown",
                 type: "voice",
                 duration: appEvent.duration,
                 at: event.at,
                 status: "delivered"
-            });
+            } as WhatsAppMessage);
             break;
         }
 

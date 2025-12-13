@@ -1,0 +1,202 @@
+{
+    "meta": {
+        "title": "WhatsApp Production Demo",
+        "description": "Showcases all new WhatsApp features: Chats list, image/video/GIF messages, typing indicator, voice notes",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_whatsapp",
+                "ownerName": "me",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_bestie": {
+                "id": "conv_bestie",
+                "type": "dm",
+                "name": "Best Friend 💕",
+                "avatar": "",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "Best Friend 💕",
+                        "text": "Hey! Look at this sunset 🌅",
+                        "type": "text",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {
+            "activeApp": "whatsapp",
+            "whatsapp": {
+                "screen": "chat",
+                "conversationId": "conv_bestie"
+            }
+        },
+        "camera": {
+            "baseView": "APP_VIEW",
+            "activeEffects": [],
+            "transform": {
+                "translateX": 0,
+                "translateY": 0,
+                "scale": 1,
+                "rotation": 0,
+                "originX": 0.5,
+                "originY": 0.5,
+                "shakeX": 0,
+                "shakeY": 0
+            }
+        },
+        "audio": {
+            "activeSounds": []
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m2",
+                "type": "image",
+                "imageUrl": "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600",
+                "caption": "From the beach today! 🏖️",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_SENT",
+            "conversationId": "conv_bestie",
+            "from": "me",
+            "text": "OMG that's beautiful! 😍",
+            "message": {
+                "id": "m3",
+                "type": "text",
+                "text": "OMG that's beautiful! 😍",
+                "status": "sent"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m4",
+                "type": "video",
+                "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                "duration": 15,
+                "caption": "Watch this wave 🌊",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_SENT",
+            "conversationId": "conv_bestie",
+            "from": "me",
+            "message": {
+                "id": "m5",
+                "type": "gif",
+                "gifUrl": "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+                "status": "sent"
+            }
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_bestie",
+            "from": "other"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "VOICE_MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "duration": 8
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_READ",
+            "conversationId": "conv_bestie",
+            "messageId": "m5"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "text": "That GIF is perfect 😂",
+            "message": {
+                "id": "m7",
+                "type": "text",
+                "text": "That GIF is perfect 😂",
+                "status": "delivered"
+            }
+        },
+        {
+            "at": 750,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_bestie",
+            "from": "Best Friend 💕",
+            "message": {
+                "id": "m8",
+                "type": "image",
+                "imageUrl": "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600",
+                "status": "delivered"
+            }
+        }
+    ]
+}

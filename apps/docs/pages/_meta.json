@@ -6,10 +6,12 @@
     "compiler": "Compiler",
     "director": "DirectorLite",
     "runtime": "Runtime",
+    "apps": "Apps",
     "guides": "Guides",
     "glossary": "Glossary",
     "---": {
         "type": "separator"
     },
+    "changelog": "📝 Changelog",
     "verification": "✅ Verification"
 }
