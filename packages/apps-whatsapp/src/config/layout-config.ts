@@ -55,7 +55,7 @@ export const LAYOUT_CONSTANTS = {
     GAP_SYSTEM: 24,           // 9px visual
 
     // Typography / Metrics
-    AVG_CHAR_WIDTH: 24,       // Average character width for wrapping calculation
+    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
 
     // Typing Indicator
     TYPING_BUBBLE_HEIGHT: 72, // Inner height
@@ -294,7 +294,9 @@ export function calculateMessageHeight(
         const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
         const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
         const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
-        height = typeConfig.height.base + captionHeight + captionPadding;
+        // Add timestamp footer height + margin (timestamp sits below caption)
+        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
+        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
     } else {
         height = typeConfig.height.base;
     }
@@ -445,6 +447,9 @@ export function measureTextBlock(
             // space
             if (code === 32) {
                 w = 0.6;
+            } else if (code >= 65 && code <= 90) {
+                // Uppercase A-Z
+                w = 1.3;
             } else {
                 // emoji surrogate pair
                 const isHigh = code >= 0xd800 && code <= 0xdbff;
