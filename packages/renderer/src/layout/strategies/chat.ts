@@ -99,17 +99,21 @@ export function computeChatLayout(
             caption: (msg as any).caption,
             from: msg.from,
             // Enhanced Visual Run Logic: Find previous groupable message
+            // Enhanced Visual Run Logic: Determine previous groupable context
             prevFrom: (() => {
-                // Walk backwards to find last non-system/non-typing message
+                // Walk backwards to single previous message or break event
                 for (let k = i - 1; k >= 0; k--) {
                     const m = messages[k];
                     const t = m.type as MessageType;
-                    if (!doesMessageBreakGrouping(t, config)) {
-                        return m.from;
+                    // Policy A: Strict Grouping Reset
+                    // If we encounter ANY message that breaks grouping (System, Typing),
+                    // we immediately return "BREAK". We do NOT skip over it.
+                    // This ensures interruptions always force a name re-draw for the next user message.
+                    if (doesMessageBreakGrouping(t, config)) {
+                        return "BREAK";
                     }
-                    // If we hit any message that breaks grouping (System or Typing), return "BREAK"
-                    // forcing a name show if the next message is User.
-                    return "BREAK";
+                    // Otherwise, return the sender of the valid previous message
+                    return m.from;
                 }
                 return undefined;
             })(),

@@ -363,7 +363,7 @@ export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): n
 }
 
 // =============================================================================
-// MEASUREMENT HELPERS (The Core "Pure Math" Logic)
+// MEASUREMENT HELPERS (Deterministic constants)
 // =============================================================================
 
 export interface TextBlockMetrics {
@@ -372,11 +372,22 @@ export interface TextBlockMetrics {
     charsPerLine: number;
 }
 
+/* DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No runtime DOM measurement. Deterministic constants.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
 /**
  * Unified text measurement.
  * This ensures "Calculated Height === Rendered Height" by using the same logic for both.
+ *
+ * Uses a weighted cost function to approximate visual width deterministically:
+ * - Basic chars: 1.0 avg width
+ * - Spaces: 0.6 avg width (spaces are thinner)
+ * - Wide chars (Emoji/CJK): 1.5 avg width (approximate)
  */
-
 export function measureTextBlock(
     text: string,
     viewportWidth: number = 1170, // Default reference width
@@ -391,27 +402,40 @@ export function measureTextBlock(
 
     // 2. Determine Capacity
     const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-    const charsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
+    // We use a "Weight Capacity" instead of raw char count
+    const weightsPerLine = Math.max(1, availableTextWidth / avgCharWidth);
 
-    // 3. Measure Content (Minimal Deterministic Upgrade)
+    // 3. Measure Content (Weighted Paragraphs)
     const paragraphs = text.split('\n');
     let totalLines = 0;
     let maxParagraphWidth = 0;
 
     for (const paragraph of paragraphs) {
-        const len = paragraph.length;
-        if (len === 0) {
+        if (paragraph.length === 0) {
             // Empty line (double newline)
             totalLines += 1;
             continue;
         }
 
-        // Calculate lines for this paragraph
-        const lines = Math.max(1, Math.ceil(len / charsPerLine));
+        // Calculate weighted length of paragraph
+        let paragraphWeight = 0;
+        for (let i = 0; i < paragraph.length; i++) {
+            const code = paragraph.charCodeAt(i);
+            if (code === 32) { // Space
+                paragraphWeight += 0.6;
+            } else if (code > 255) { // Wide chars (Emoji, CJK, etc) - Simple heuristic
+                paragraphWeight += 1.5;
+            } else {
+                paragraphWeight += 1.0;
+            }
+        }
+
+        // Calculate lines for this paragraph based on weight
+        const lines = Math.max(1, Math.ceil(paragraphWeight / weightsPerLine));
         totalLines += lines;
 
         // Track max width (width is constrained by longest line, up to max)
-        const paragraphWidth = Math.min(len, charsPerLine) * avgCharWidth;
+        const paragraphWidth = Math.min(paragraphWeight, weightsPerLine) * avgCharWidth;
         maxParagraphWidth = Math.max(maxParagraphWidth, paragraphWidth);
     }
 
@@ -428,7 +452,7 @@ export function measureTextBlock(
     return {
         lines: totalLines,
         bubbleWidth,
-        charsPerLine
+        charsPerLine: Math.floor(weightsPerLine) // Approximate for debug/metrics
     };
 }
 
