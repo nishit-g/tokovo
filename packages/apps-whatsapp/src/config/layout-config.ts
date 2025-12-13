@@ -47,12 +47,12 @@ export const LAYOUT_CONSTANTS = {
     SENDER_NAME_HEIGHT: 45,   // Height of sender name area
 
     // Spacing Tiers (The 3-Tier Model)
-    GAP_MINIMAL: 6,           // 2px visual (Visual Run / Burst)
-    GAP_RUN_BREAK: 18,        // 6px visual (Same Sender, New Block/Reply)
-    GAP_NORMAL: 36,           // 12px visual (Sender Switch)
+    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
+    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
 
     // System Spacing
-    GAP_SYSTEM: 27,           // 9px visual
+    GAP_SYSTEM: 24,           // 9px visual
 
     // Typography / Metrics
     AVG_CHAR_WIDTH: 24,       // Average character width for wrapping calculation
