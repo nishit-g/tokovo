@@ -13,15 +13,16 @@
 5. [WorldState Deep Dive](#worldstate-deep-dive)
 6. [Timeline Event System](#timeline-event-system)
 7. [Episode Creation Guide](#episode-creation-guide)
-8. [Device System](#device-system)
-9. [App System](#app-system)
-10. [Camera System](#camera-system)
-11. [DirectorLite (Automatic Camera)](#directorlite-automatic-camera)
-12. [Audio System](#audio-system)
-13. [Multi-Device & POV](#multi-device--pov)
-14. [Renderer Architecture](#renderer-architecture)
-15. [Creating New Apps](#creating-new-apps)
-16. [Quick Reference](#quick-reference)
+8. [DSL System (Narrative Authoring)](#dsl-system-narrative-authoring)
+9. [Device System](#device-system)
+10. [App System](#app-system)
+11. [Camera System](#camera-system)
+12. [DirectorLite (Automatic Camera)](#directorlite-automatic-camera)
+13. [Audio System](#audio-system)
+14. [Multi-Device & POV](#multi-device--pov)
+15. [Renderer Architecture](#renderer-architecture)
+16. [Creating New Apps](#creating-new-apps)
+17. [Quick Reference](#quick-reference)
 
 ---
 
@@ -118,6 +119,9 @@ tokovo/
     │       ├── DeviceFrame.tsx         # Phone bezel
     │       ├── AudioLayer.tsx          # Sound playback
     │       ├── layout/                 # Layout computation
+    │       │   ├── strategies/         # Chat, feed, story layouts
+    │       │   └── director-adapter.ts # DirectorLite layout model
+    │       ├── camera-composer.ts      # Apply director effects
     │       └── registry.ts             # AppRegistry (class-based)
     │
     ├── devices/               # 📱 Device profiles
@@ -128,6 +132,41 @@ tokovo/
     ├── episodes/              # 📝 Story data
     │   └── src/
     │       └── examples/      # JSON episode files
+    │
+    ├── ir/                    # 🔢 Intermediate Representations (DSL)
+    │   └── src/
+    │       ├── scene.ts       # Scene IR (semantic, no frames)
+    │       ├── timeline.ts    # Timeline IR (frame-based)
+    │       ├── trace.ts       # Debug trace model
+    │       ├── ordering.ts    # Deterministic ordering contract
+    │       └── validate.ts    # IR invariants
+    │
+    ├── dsl/                   # ✍️ Author DSL (fluent API)
+    │   └── src/
+    │       ├── author/
+    │       │   ├── episode-builder.ts  # episode() entry point
+    │       │   ├── device-builder.ts   # Device context
+    │       │   └── beat-builder.ts     # Beat actions
+    │       ├── types.ts       # DSL-specific types
+    │       └── examples/      # Example episodes in DSL
+    │
+    ├── compiler/              # ⚙️ Scene IR → Timeline IR
+    │   └── src/
+    │       ├── compile.ts     # Main entry point
+    │       ├── context.ts     # Compiler state (cursor, IDs)
+    │       └── passes/        # Pure transformation passes
+    │           ├── normalize.ts        # Expand sugar
+    │           ├── resolve-refs.ts     # Assign message IDs
+    │           ├── virtual-device.ts   # Auto-unlock/open
+    │           ├── time-lowering.ts    # Duration → frames
+    │           ├── validate.ts         # Semantic checks
+    │           └── sort.ts             # Canonical ordering
+    │
+    ├── adapters/              # 🔌 Timeline IR → Runtime Events
+    │   └── src/
+    │       ├── adapter.ts     # Adapter interface
+    │       ├── registry.ts    # Adapter registry
+    │       └── whatsapp/      # WhatsApp adapter
     │
     ├── apps-whatsapp/         # 💬 WhatsApp clone
     │   └── src/
@@ -421,6 +460,511 @@ At 30 FPS:
 | 10 seconds | 300 |
 | 30 seconds | 900 |
 | 1 minute | 1800 |
+
+---
+
+# DSL System (Narrative Authoring)
+
+The Tokovo DSL is a **Narrative Operating System** — a layered architecture that separates **Storytelling** (what writers see), **Meaning** (semantic intent), **Execution** (frame-based timeline), and **Cinematography** (automatic camera).
+
+## Philosophy
+
+```
+Writers write INTENT → Compiler produces STRUCTURE → Runtime executes EVENTS → DirectorLite adds CINEMA
+```
+
+This separation enables:
+- **Human-friendly authoring** — No frames, no camera commands
+- **AI-friendly generation** — Structured, deterministic output
+- **GUI editor compatibility** — Same IR format
+- **Future-proof episodes** — FPS changes don't break stories
+
+---
+
+## Architecture Overview
+
+```
+┌───────────────────────────┐
+│        AUTHOR DSL         │  ← writers / AI / GUI
+│  (TypeScript fluent API)  │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│        SCENE IR           │  ← semantic intent (no frames)
+│  (beats, actions, waits)  │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│     COMPILER PASSES       │  ← pure, deterministic
+│  (normalize → lower)      │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│       TIMELINE IR         │  ← frame-based execution
+│  (at=frame, payload)      │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│         ADAPTERS          │  ← WhatsApp, IG, X
+│  (domain → engine events) │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│      EPISODE JSON         │  ← runtime input
+│  (initialWorld + events)  │
+└────────────┬──────────────┘
+             │
+┌────────────▼──────────────┐
+│     RUNTIME + DIRECTOR    │
+│  (execution + cinema)     │
+└───────────────────────────┘
+```
+
+---
+
+## Package Dependencies
+
+```
+@tokovo/ir        ← no dependencies (pure types)
+      ↑
+@tokovo/dsl       ← depends on @tokovo/ir
+      ↑
+@tokovo/compiler  ← depends on @tokovo/ir
+      ↑
+@tokovo/adapters  ← depends on @tokovo/ir
+      ↑
+@tokovo/core      ← runtime (no DSL dependency)
+```
+
+**Rule:** DSL packages never import runtime. Runtime never imports DSL.
+
+---
+
+## Scene IR (Semantic Truth)
+
+Scene IR represents **WHAT HAPPENS**, not WHEN or HOW. It has:
+- **No frames**
+- **No layout assumptions**
+- **No camera commands**
+- **No platform specifics**
+
+### SceneOp Types
+
+```typescript
+import { SceneOp, DurationExpr, MessageRef } from "@tokovo/ir";
+
+type SceneOp =
+  | { kind: "Wait"; duration: DurationExpr }
+  | { kind: "TypingStart"; actor: string; conversationId: string }
+  | { kind: "TypingEnd"; actor: string; conversationId: string }
+  | { kind: "SendMessage"; actor: string; text: string; conversationId: string }
+  | { kind: "ReceiveMessage"; actor: string; text: string; conversationId: string }
+  | { kind: "ReadMessage"; ref: MessageRef }
+  | { kind: "DeleteMessage"; ref: MessageRef }
+  | { kind: "Concurrent"; tracks: SceneOp[][] }
+```
+
+### Duration Expressions
+
+Human-readable durations that compile to frames:
+
+```typescript
+type DurationExpr = "1.5s" | "300ms" | "45frames"
+
+// Parsing (at 30 FPS):
+// "1.5s"     → 45 frames
+// "300ms"    → 9 frames
+// "45frames" → 45 frames
+```
+
+### MessageRef
+
+References to messages include full context for cross-device operations:
+
+```typescript
+interface MessageRef {
+  _type: "MessageRef";
+  id: string;
+  deviceId: string;
+  appId: string;
+  conversationId: string;
+}
+```
+
+### Scene Structure
+
+```typescript
+interface SceneIR {
+  episodeId: string;
+  meta: { title?: string; fps: number };
+  devices: DeviceScene[];
+}
+
+interface DeviceScene {
+  deviceId: string;
+  profileId: string;  // "iphone16"
+  appId: string;       // "app_whatsapp"
+  conversations: ConversationDef[];
+  beats: Beat[];
+}
+
+interface Beat {
+  name: string;   // "typing-tension"
+  ops: SceneOp[];
+}
+```
+
+---
+
+## Author DSL (Fluent API)
+
+The DSL is a TypeScript fluent API that produces Scene IR.
+
+### Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const sceneIR = episode("breakup-01", ep => {
+  ep.config({ fps: 30, title: "The Breakup" });
+  
+  ep.device("AlicePhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_bob", { name: "Bob", avatar: "bob.png" });
+    
+    d.beat("silence", b => {
+      b.wait("2s");
+    });
+    
+    d.beat("typing-tension", b => {
+      b.typing("Bob").for("1.5s");
+      const msg = b.receive("Bob", "We need to talk.");
+      b.wait("0.8s");
+      b.read(msg);
+    });
+  });
+});
+```
+
+### BeatBuilder Methods
+
+| Method | Description | Example |
+|--------|-------------|---------|
+| `wait(duration)` | Pause (no event) | `b.wait("2s")` |
+| `typing(actor).for(duration)` | Typing indicator | `b.typing("Bob").for("1.5s")` |
+| `typingStart(actor)` | Start typing (manual end) | `b.typingStart("Bob")` |
+| `typingEnd(actor)` | End typing | `b.typingEnd("Bob")` |
+| `send(text)` | Send message (from "me") | `b.send("Hello!")` |
+| `receive(actor, text)` | Receive message | `b.receive("Bob", "Hi!")` |
+| `read(ref)` | Mark message read | `b.read(msg)` |
+| `readLast()` | Read last message | `b.readLast()` |
+| `delete(ref)` | Delete message | `b.delete(msg)` |
+| `deleteLast()` | Delete last message | `b.deleteLast()` |
+| `concurrent(tracks)` | Parallel operations | See below |
+
+### Concurrent Operations
+
+Run multiple tracks in parallel:
+
+```typescript
+d.beat("overlap", b => {
+  b.concurrent([
+    t => t.typing("Bob").for("2s"),
+    t => t.wait("0.5s").receive("Bob", "Message during typing!")
+  ]);
+  // Cursor advances to max(track ends)
+});
+```
+
+**Compiler behavior:**
+1. Fork cursor for each track
+2. Compile tracks independently  
+3. Join cursor at `max(trackEnds)`
+4. Preserve `trackId` in trace for debugging
+
+---
+
+## Compiler Pipeline
+
+The compiler transforms Scene IR → Timeline IR through pure passes.
+
+### Pipeline Overview
+
+```typescript
+import { compile } from "@tokovo/compiler";
+
+const { timeline, validation, durationInFrames } = compile(sceneIR, {
+  mode: "lenient",  // or "strict"
+  debug: true,
+});
+```
+
+### Pass Order (Fixed)
+
+```
+1. normalize      → Expand sugar (typing.for → start+wait+end)
+2. resolveRefs    → Assign deterministic message IDs
+3. virtualDevice  → Auto-insert unlock/open/navigate
+4. timeLowering   → Convert Duration → frames, assign `at`
+5. validate       → Semantic checks (read before send?)
+6. sort           → Canonical ordering
+```
+
+### Pass Details
+
+#### 1. Normalize
+
+Expands syntactic sugar:
+
+```typescript
+// Input
+b.typing("Bob").for("1.5s")
+
+// Output (3 SceneOps)
+{ kind: "TypingStart", actor: "Bob", ... }
+{ kind: "Wait", duration: "1.5s" }
+{ kind: "TypingEnd", actor: "Bob", ... }
+```
+
+#### 2. Resolve Refs
+
+Assigns stable message IDs:
+
+```typescript
+// Input
+const msg = b.receive("Bob", "Hello");
+b.read(msg);
+
+// After resolve-refs
+msg._resolvedMessageId = "msg_AlicePhone_dm_bob_1"
+```
+
+#### 3. Virtual Device State
+
+Tracks device state and auto-inserts glue events:
+
+```typescript
+// Virtual state per device:
+{
+  isLocked: true,
+  foregroundAppId: undefined,
+  activeConversationId: undefined,
+}
+
+// If first operation needs conversation open:
+→ Insert DeviceUnlocked at frame 0
+→ Insert AppOpened at frame 0  
+→ Insert ConversationOpened at frame 0
+```
+
+#### 4. Time Lowering
+
+Converts Scene IR to Timeline IR:
+
+```typescript
+// Input (Scene IR)
+{ kind: "Wait", duration: "1.5s" }
+{ kind: "ReceiveMessage", actor: "Bob", text: "Hi" }
+
+// Output (Timeline IR)
+// Wait advances cursor but emits no event
+{ at: 45, kind: "MessageReceived", message: {...}, ... }
+```
+
+#### 5. Validate
+
+Checks semantic correctness:
+
+| Check | Strict Mode | Lenient Mode |
+|-------|-------------|--------------|
+| Read before send | Error | Warning |
+| Delete missing message | Error | Warning |
+| Negative frame | Error | Error |
+
+#### 6. Sort
+
+Canonical ordering for determinism:
+
+```typescript
+// Sort key: (at, phase, priority, trackId, sceneOpIndex)
+
+enum Phase {
+  DEVICE = 0,  // unlock, lock
+  NAV = 10,    // open app, goto conversation
+  APP = 20,    // typing, messages, read, delete
+  FX = 30,     // reserved
+}
+```
+
+---
+
+## Timeline IR (Execution Contract)
+
+Timeline IR is **frame-based** and **platform-agnostic**.
+
+### TimelineOp Types
+
+```typescript
+type TimelineOp =
+  | DeviceUnlockedOp    // { at, kind: "DeviceUnlocked", deviceId }
+  | AppOpenedOp         // { at, kind: "AppOpened", deviceId, appId }
+  | ConversationOpenedOp
+  | TypingStartedOp
+  | TypingEndedOp
+  | MessageReceivedOp   // { at, kind: "MessageReceived", message: {...} }
+  | MessageSentOp
+  | MessageReadOp
+  | MessageDeletedOp
+```
+
+### Trace Model (Debug Spine)
+
+Every Timeline IR operation carries trace metadata:
+
+```typescript
+interface Trace {
+  episodeId: string;
+  deviceId: string;
+  beat: string;          // "typing-tension"
+  trackId: string;       // "main" or "track_0"
+  sceneOpIndex: number;  // Index in original scene ops
+  source?: { file?: string; line?: number };
+}
+```
+
+This enables:
+- Perfect debugging (trace any event to its beat)
+- Golden tests (same input → same trace)
+- AI explainability
+
+---
+
+## Adapters (Reality Bridge)
+
+Adapters convert Timeline IR → Runtime Events (what `@tokovo/core` expects).
+
+### Adapter Interface
+
+```typescript
+interface AppAdapter {
+  appId: string;
+  supports(op: TimelineOp): boolean;
+  lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[];
+}
+```
+
+### WhatsApp Adapter
+
+```typescript
+// Timeline IR
+{ at: 45, kind: "MessageReceived", message: { id: "msg_1", text: "Hi" } }
+
+// → Runtime Event
+{
+  at: 45,
+  kind: "APP",
+  type: "MESSAGE_RECEIVED",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  from: "Bob",
+  message: {
+    id: "msg_1",
+    type: "text",
+    text: "Hi",
+    status: "delivered",
+  }
+}
+```
+
+### Adapter Registry
+
+```typescript
+import { adapterRegistry } from "@tokovo/adapters";
+
+const runtimeEvents = adapterRegistry.lowerAll(timelineIR);
+```
+
+---
+
+## Complete Example
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { compile } from "@tokovo/compiler";
+import { adapterRegistry } from "@tokovo/adapters";
+
+// 1. Write episode using DSL
+const sceneIR = episode("drama-01", ep => {
+  ep.device("Phone", d => {
+    d.conversation("dm_ex");
+    d.beat("tension", b => {
+      b.typing("Ex").for("2s");
+      const msg = b.receive("Ex", "We need to talk.");
+      b.wait("1s");
+      b.read(msg);
+    });
+  });
+});
+
+// 2. Compile to Timeline IR
+const { timeline, validation } = compile(sceneIR);
+
+// 3. Convert to runtime events
+const events = adapterRegistry.lowerAll(timeline);
+
+// 4. Use with Tokovo runtime
+const episodeJSON = {
+  meta: { fps: 30, durationInFrames: timeline.durationInFrames },
+  initialWorld: buildInitialWorld(sceneIR),
+  events,
+};
+```
+
+---
+
+## DirectorLite Compatibility
+
+The DSL automatically produces events that DirectorLite observes:
+
+| DSL Action | Runtime Event | DirectorLite Signal | Camera Effect |
+|------------|---------------|---------------------|---------------|
+| `typing().for()` | `TYPING_START` | `TypingStarted` | PushIn |
+| `receive()` | `MESSAGE_RECEIVED` | `NewMessage` | ZoomToRect |
+| `read()` | `MESSAGE_READ` | `MessageRead` | ZoomToRect |
+| `delete()` | `MESSAGE_DELETED` | `MessageDeleted` | MicroShake |
+
+**No DirectorLite changes needed.** DSL events flow through the existing signal extraction.
+
+---
+
+## Determinism Guarantees
+
+1. **Same script → Same Scene IR** (DSL is deterministic)
+2. **Same Scene IR → Same Timeline IR** (Compiler is pure)
+3. **Same Timeline IR → Same Runtime Events** (Adapters are pure)
+4. **Same Runtime Events → Same frames** (Engine is deterministic)
+
+This enables:
+- Golden tests
+- Scrubbing without artifacts
+- AI reproducibility
+
+---
+
+## File Locations
+
+| What | Where |
+|------|-------|
+| Scene IR types | `packages/ir/src/scene.ts` |
+| Timeline IR types | `packages/ir/src/timeline.ts` |
+| Trace model | `packages/ir/src/trace.ts` |
+| Ordering contract | `packages/ir/src/ordering.ts` |
+| Author DSL | `packages/dsl/src/author/` |
+| episode() entry | `packages/dsl/src/author/episode-builder.ts` |
+| Compiler passes | `packages/compiler/src/passes/` |
+| compile() entry | `packages/compiler/src/compile.ts` |
+| WhatsApp adapter | `packages/adapters/src/whatsapp/` |
+| Example episodes | `packages/dsl/examples/` |
 
 ---
 

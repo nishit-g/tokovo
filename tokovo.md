@@ -48,6 +48,7 @@ apps/
         whatsapp-sent.mp3
     src/
       AndroidVideo.tsx
+      BreakupDramaDSLVideo.tsx
       CameraShowcaseVideo.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
@@ -61,6 +62,16 @@ apps/
     remotion.config.ts
     tsconfig.json
 packages/
+  adapters/
+    src/
+      whatsapp/
+        index.ts
+      adapter.ts
+      index.ts
+      registry.ts
+    package.json
+    tsconfig.json
+    tsconfig.tsbuildinfo
   apps-instagram/
     src/
       views/
@@ -104,6 +115,23 @@ packages/
     package.json
     README.md
     tsconfig.json
+  compiler/
+    src/
+      passes/
+        index.ts
+        normalize.ts
+        resolve-refs.ts
+        sort.ts
+        time-lowering.ts
+        validate.ts
+        virtual-device.ts
+      compile.ts
+      context.ts
+      generate.ts
+      index.ts
+    package.json
+    tsconfig.json
+    tsconfig.tsbuildinfo
   core/
     src/
       camera/
@@ -142,6 +170,20 @@ packages/
     package.json
     README.md
     tsconfig.json
+  dsl/
+    examples/
+      breakup-01.dsl.ts
+    src/
+      author/
+        beat-builder.ts
+        device-builder.ts
+        episode-builder.ts
+        index.ts
+      index.ts
+      types.ts
+    package.json
+    tsconfig.json
+    tsconfig.tsbuildinfo
   episodes/
     src/
       examples/
@@ -157,6 +199,17 @@ packages/
       schema.ts
     package.json
     tsconfig.json
+  ir/
+    src/
+      index.ts
+      ordering.ts
+      scene.ts
+      timeline.ts
+      trace.ts
+      validate.ts
+    package.json
+    tsconfig.json
+    tsconfig.tsbuildinfo
   renderer/
     src/
       layout/
@@ -201,6 +254,251 @@ turbo.json
 ```
 
 # Files
+
+## File: apps/video-runner/src/BreakupDramaDSLVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * DSL Breakup Drama Episode
+ * 
+ * This episode is defined using the DSL and compiled inline.
+ * DirectorLite enabled - camera automatically reacts to events.
+ */
+
+// Define the episode inline (later this will come from DSL compilation)
+function createBreakupDramaEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            AlicePhone: {
+                id: "AlicePhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            }
+        },
+        conversations: {
+            dm_bob: {
+                id: "dm_bob",
+                type: "dm" as const,
+                name: "Bob",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            }
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bob",
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "AlicePhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "AlicePhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Timeline events (what DSL compiler would generate)
+    const events: TimelineEvent[] = [
+        // Beat: silence - just wait 2s (60 frames)
+
+        // Beat: typing-tension (starts at frame 60)
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Concurrent: message arrives at frame 81 (0.7s after typing starts)
+        {
+            at: 81,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob",
+            message: {
+                id: "msg_1",
+                type: "text",
+                text: "We need to talk.",
+                status: "delivered",
+            },
+        } as any,
+
+        // Typing ends at frame 105 (1.5s after start)
+        {
+            at: 105,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Beat: aftermath (starts at frame 120)
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob",
+            message: {
+                id: "msg_2",
+                type: "text",
+                text: "I'm sorry. It's over.",
+                status: "delivered",
+            },
+        } as any,
+
+        // Read message at frame 156 (1.2s later)
+        {
+            at: 156,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_READ",
+            conversationId: "dm_bob",
+            messageId: "msg_2",
+        } as any,
+
+        // Beat: panic (starts at frame 171)
+        {
+            at: 171,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "me",
+            message: {
+                id: "msg_3",
+                type: "text",
+                text: "Wait, what?",
+                status: "sent",
+            },
+        } as any,
+
+        // Second panic message at frame 195
+        {
+            at: 195,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "me",
+            message: {
+                id: "msg_4",
+                type: "text",
+                text: "Can we talk about this?",
+                status: "sent",
+            },
+        } as any,
+
+        // Beat: silence-after (starts at frame 225)
+        // Wait 2s then Bob starts typing...
+        {
+            at: 285,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Typing ends but no message...
+        {
+            at: 345,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const BreakupDramaDSLVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createBreakupDramaEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={true}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
 
 ## File: apps/video-runner/src/CameraShowcaseVideo.tsx
 ````typescript
@@ -468,6 +766,382 @@ Config.setOverwriteOutput(true);
         "remotion.config.ts"
     ]
 }
+````
+
+## File: packages/adapters/src/whatsapp/index.ts
+````typescript
+/**
+ * WhatsApp Adapter
+ * 
+ * Transforms Timeline IR operations to WhatsApp runtime events.
+ * These events match the format expected by @tokovo/apps-whatsapp.
+ */
+
+import { TimelineOp } from "@tokovo/ir";
+import { AppAdapter, RuntimeEvent, AdapterContext } from "../adapter";
+
+/**
+ * WhatsApp adapter implementation.
+ */
+export const WhatsAppAdapter: AppAdapter = {
+    appId: "app_whatsapp",
+
+    supports(op: TimelineOp): boolean {
+        // Handle all app-related operations for WhatsApp
+        if ("appId" in op && op.appId === "app_whatsapp") {
+            return true;
+        }
+        // Also handle device operations targeting WhatsApp
+        return false;
+    },
+
+    lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[] {
+        switch (op.kind) {
+            case "DeviceUnlocked":
+                return [{
+                    at: op.at,
+                    kind: "DEVICE",
+                    type: "UNLOCK",
+                    deviceId: op.deviceId,
+                    _trace: op.trace,
+                }];
+
+            case "AppOpened":
+                return [{
+                    at: op.at,
+                    kind: "DEVICE",
+                    type: "OPEN_APP",
+                    deviceId: op.deviceId,
+                    appId: op.appId,
+                    _trace: op.trace,
+                }];
+
+            case "ConversationOpened":
+                // WhatsApp uses app state to navigate to conversation
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "NAVIGATE",
+                    appId: op.appId,
+                    screen: "chat",
+                    conversationId: op.conversationId,
+                    _trace: op.trace,
+                }];
+
+            case "TypingStarted":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "TYPING_START",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    from: op.actor,
+                    _trace: op.trace,
+                }];
+
+            case "TypingEnded":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "TYPING_END",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    from: op.actor,
+                    _trace: op.trace,
+                }];
+
+            case "MessageReceived":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "MESSAGE_RECEIVED",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    from: op.message.from,
+                    message: {
+                        id: op.message.id,
+                        type: op.message.type ?? "text",
+                        text: op.message.text,
+                        status: "delivered",
+                        timestamp: op.message.timestamp,
+                    },
+                    _trace: op.trace,
+                }];
+
+            case "MessageSent":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "MESSAGE_RECEIVED",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    from: "me",
+                    message: {
+                        id: op.message.id,
+                        type: op.message.type ?? "text",
+                        text: op.message.text,
+                        status: "sent",
+                        timestamp: op.message.timestamp,
+                    },
+                    _trace: op.trace,
+                }];
+
+            case "MessageRead":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "MESSAGE_READ",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    messageId: op.messageId,
+                    _trace: op.trace,
+                }];
+
+            case "MessageDeleted":
+                return [{
+                    at: op.at,
+                    kind: "APP",
+                    type: "MESSAGE_DELETED",
+                    appId: op.appId,
+                    conversationId: op.conversationId,
+                    messageId: op.messageId,
+                    _trace: op.trace,
+                }];
+
+            default:
+                return [];
+        }
+    },
+};
+````
+
+## File: packages/adapters/src/adapter.ts
+````typescript
+/**
+ * Adapter Interface
+ * 
+ * Adapters translate Timeline IR → Runtime Events.
+ * Each adapter is responsible for a specific app/platform.
+ */
+
+import { TimelineOp, Trace } from "@tokovo/ir";
+
+/**
+ * Runtime event that the Tokovo engine can execute.
+ * This matches the existing TimelineEvent structure in @tokovo/core.
+ */
+export interface RuntimeEvent {
+    at: number;
+    kind: "DEVICE" | "APP" | "CAMERA" | "AUDIO";
+    type: string;
+    deviceId?: string;
+    appId?: string;
+    [key: string]: unknown;
+
+    /** Preserved trace for debugging */
+    _trace?: Trace;
+}
+
+/**
+ * Adapter context provides environment info.
+ */
+export interface AdapterContext {
+    fps: number;
+    episodeId: string;
+}
+
+/**
+ * App adapter interface.
+ */
+export interface AppAdapter {
+    /** App ID this adapter handles */
+    readonly appId: string;
+
+    /** Check if this adapter can handle the operation */
+    supports(op: TimelineOp): boolean;
+
+    /** Transform Timeline IR op to runtime events */
+    lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[];
+}
+````
+
+## File: packages/adapters/src/index.ts
+````typescript
+/**
+ * @tokovo/adapters
+ * 
+ * Timeline IR → Runtime Events transformation.
+ * 
+ * Usage:
+ * ```ts
+ * import { adapterRegistry } from "@tokovo/adapters";
+ * 
+ * const runtimeEvents = adapterRegistry.lowerAll(timelineIR);
+ * ```
+ */
+
+export * from "./adapter";
+export { WhatsAppAdapter } from "./whatsapp";
+export { adapterRegistry } from "./registry";
+````
+
+## File: packages/adapters/src/registry.ts
+````typescript
+/**
+ * Adapter Registry
+ * 
+ * Central registry for all app adapters.
+ * Allows looking up adapters by app ID.
+ */
+
+import { TimelineOp, TimelineIR } from "@tokovo/ir";
+import { AppAdapter, RuntimeEvent, AdapterContext } from "./adapter";
+import { WhatsAppAdapter } from "./whatsapp";
+
+/**
+ * Registry of all available adapters.
+ */
+class AdapterRegistry {
+    private adapters: Map<string, AppAdapter> = new Map();
+
+    constructor() {
+        // Register default adapters
+        this.register(WhatsAppAdapter);
+    }
+
+    /**
+     * Register an adapter.
+     */
+    register(adapter: AppAdapter): void {
+        this.adapters.set(adapter.appId, adapter);
+    }
+
+    /**
+     * Get adapter for an app ID.
+     */
+    get(appId: string): AppAdapter | undefined {
+        return this.adapters.get(appId);
+    }
+
+    /**
+     * Find an adapter that can handle the operation.
+     */
+    findFor(op: TimelineOp): AppAdapter | undefined {
+        for (const adapter of this.adapters.values()) {
+            if (adapter.supports(op)) {
+                return adapter;
+            }
+        }
+        return undefined;
+    }
+
+    /**
+     * Lower all Timeline IR operations to runtime events.
+     */
+    lowerAll(timeline: TimelineIR): RuntimeEvent[] {
+        const ctx: AdapterContext = {
+            fps: timeline.fps,
+            episodeId: timeline.episodeId,
+        };
+
+        const events: RuntimeEvent[] = [];
+
+        for (const op of timeline.ops) {
+            const adapter = this.findFor(op);
+            if (adapter) {
+                events.push(...adapter.lower(op, ctx));
+            } else {
+                // Fallback: try generic lowering
+                events.push(...this.genericLower(op, ctx));
+            }
+        }
+
+        // Sort by frame
+        return events.sort((a, b) => a.at - b.at);
+    }
+
+    /**
+     * Generic lowering for operations without specific adapter.
+     */
+    private genericLower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[] {
+        switch (op.kind) {
+            case "DeviceUnlocked":
+                return [{
+                    at: op.at,
+                    kind: "DEVICE",
+                    type: "UNLOCK",
+                    deviceId: op.deviceId,
+                }];
+
+            case "AppOpened":
+                return [{
+                    at: op.at,
+                    kind: "DEVICE",
+                    type: "OPEN_APP",
+                    deviceId: op.deviceId,
+                    appId: op.appId,
+                }];
+
+            default:
+                console.warn(`No adapter found for operation: ${op.kind}`);
+                return [];
+        }
+    }
+}
+
+/**
+ * Default adapter registry instance.
+ */
+export const adapterRegistry = new AdapterRegistry();
+````
+
+## File: packages/adapters/package.json
+````json
+{
+    "name": "@tokovo/adapters",
+    "version": "0.0.1",
+    "description": "Tokovo Adapters - Timeline IR to Runtime Events",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/adapters/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "declarationMap": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
+````
+
+## File: packages/adapters/tsconfig.tsbuildinfo
+````
+{"root":["./src/adapter.ts","./src/index.ts","./src/registry.ts","./src/whatsapp/index.ts"],"version":"5.9.3"}
 ````
 
 ## File: packages/apps-instagram/src/views/explore/ExploreView.tsx
@@ -1247,6 +1921,1078 @@ WhatsApp clone app for Tokovo.
         "src/**/*"
     ]
 }
+````
+
+## File: packages/compiler/src/passes/index.ts
+````typescript
+/**
+ * Compiler Passes Index
+ */
+
+export { normalize } from "./normalize";
+export { resolveRefs, ResolvedOp } from "./resolve-refs";
+export { ensureUnlocked, ensureAppOpened, ensureConversationOpened } from "./virtual-device";
+export { lowerToTimeline } from "./time-lowering";
+export { validateTimeline, ValidationResult } from "./validate";
+export { sort } from "./sort";
+````
+
+## File: packages/compiler/src/passes/normalize.ts
+````typescript
+/**
+ * Normalize Pass
+ * 
+ * Expands sugar syntax in Scene IR:
+ * - typing.for("2s") is already expanded by DSL
+ * - Future: other sugar transformations
+ * 
+ * This pass is a pure transformation.
+ */
+
+import { SceneOp, ConcurrentOp } from "@tokovo/ir";
+
+/**
+ * Normalize a list of scene operations.
+ * Currently a pass-through since DSL handles expansion.
+ */
+export function normalize(ops: SceneOp[]): SceneOp[] {
+    return ops.map(normalizeOp);
+}
+
+/**
+ * Normalize a single operation.
+ */
+function normalizeOp(op: SceneOp): SceneOp {
+    if (op.kind === "Concurrent") {
+        // Recursively normalize tracks
+        return {
+            ...op,
+            tracks: op.tracks.map(track => normalize(track)),
+        };
+    }
+
+    // All other ops pass through unchanged
+    return op;
+}
+````
+
+## File: packages/compiler/src/passes/resolve-refs.ts
+````typescript
+/**
+ * Resolve Refs Pass
+ * 
+ * Assigns deterministic message IDs to all message operations.
+ * Ensures referential integrity for read/delete operations.
+ */
+
+import { SceneOp, ConcurrentOp, SendMessageOp, ReceiveMessageOp, ReadMessageOp, DeleteMessageOp } from "@tokovo/ir";
+import { CompilerContext } from "../context";
+
+/**
+ * Internal representation with resolved IDs.
+ * Extends SceneOp with optional resolved message ID.
+ */
+export type ResolvedOp = SceneOp & {
+    _resolvedMessageId?: string;
+};
+
+/**
+ * Resolve message references in scene operations.
+ * Assigns stable IDs and validates refs exist.
+ */
+export function resolveRefs(
+    ops: SceneOp[],
+    ctx: CompilerContext,
+    deviceId: string,
+    conversationId: string
+): ResolvedOp[] {
+    return ops.map((op, index) => resolveOp(op, ctx, deviceId, conversationId, index));
+}
+
+function resolveOp(
+    op: SceneOp,
+    ctx: CompilerContext,
+    deviceId: string,
+    conversationId: string,
+    index: number
+): ResolvedOp {
+    switch (op.kind) {
+        case "SendMessage":
+        case "ReceiveMessage": {
+            // Generate and register message ID
+            const realId = ctx.generateMessageId(deviceId, conversationId);
+            // Use index-based ref ID for mapping
+            const refId = `ref_${deviceId}_${conversationId}_${index}`;
+            ctx.registerMessageId(refId, realId);
+
+            return {
+                ...op,
+                _resolvedMessageId: realId,
+            };
+        }
+
+        case "ReadMessage":
+        case "DeleteMessage": {
+            // Resolve the message reference
+            const refId = op.ref.id;
+            const realId = ctx.resolveMessageId(refId) ?? op.ref.id;
+
+            return {
+                ...op,
+                ref: {
+                    ...op.ref,
+                    id: realId,
+                },
+            };
+        }
+
+        case "Concurrent": {
+            // Recursively resolve tracks
+            return {
+                ...op,
+                tracks: op.tracks.map(track =>
+                    resolveRefs(track, ctx, deviceId, conversationId)
+                ),
+            };
+        }
+
+        default:
+            return op;
+    }
+}
+````
+
+## File: packages/compiler/src/passes/sort.ts
+````typescript
+/**
+ * Sort Pass
+ * 
+ * Sorts Timeline IR operations in canonical order.
+ * Uses the ordering contract defined in @tokovo/ir.
+ */
+
+import { TimelineOp, sortOps } from "@tokovo/ir";
+
+/**
+ * Sort timeline operations in canonical order.
+ */
+export function sort(ops: TimelineOp[]): TimelineOp[] {
+    return sortOps(ops);
+}
+````
+
+## File: packages/compiler/src/passes/time-lowering.ts
+````typescript
+/**
+ * Time Lowering Pass
+ * 
+ * Converts Scene IR operations to Timeline IR operations.
+ * - Resolves DurationExpr to frames
+ * - Assigns `at` frame numbers
+ * - Handles concurrent track compilation
+ */
+
+import {
+    SceneOp,
+    parseDuration,
+    TimelineOp,
+    TypingStartedOp,
+    TypingEndedOp,
+    MessageReceivedOp,
+    MessageSentOp,
+    MessageReadOp,
+    MessageDeletedOp,
+    Trace,
+} from "@tokovo/ir";
+import { CompilerContext, Cursor } from "../context";
+import { ResolvedOp } from "./resolve-refs";
+import { ensureConversationOpened } from "./virtual-device";
+
+/**
+ * Lower scene operations to timeline operations.
+ */
+export function lowerToTimeline(
+    ops: SceneOp[],
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    beat: string,
+    trackId: string = "main"
+): TimelineOp[] {
+    const timeline: TimelineOp[] = [];
+
+    for (let i = 0; i < ops.length; i++) {
+        const op = ops[i] as ResolvedOp;
+        const trace: Trace = ctx.createTrace({
+            deviceId,
+            beat,
+            trackId,
+            sceneOpIndex: i,
+        });
+
+        const lowered = lowerOp(op, ctx, cursor, deviceId, appId, conversationId, trace);
+        timeline.push(...lowered);
+    }
+
+    return timeline;
+}
+
+function lowerOp(
+    op: ResolvedOp,
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    trace: Trace
+): TimelineOp[] {
+    const events: TimelineOp[] = [];
+    const at = cursor.current;
+
+    switch (op.kind) {
+        case "Wait": {
+            const frames = parseDuration(op.duration, ctx.config.fps);
+            cursor.advance(frames);
+            // Wait produces no events, just advances cursor
+            return [];
+        }
+
+        case "TypingStart": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: TypingStartedOp = {
+                at,
+                kind: "TypingStarted",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "TypingEnd": {
+            const event: TypingEndedOp = {
+                at,
+                kind: "TypingEnded",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "ReceiveMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    from: op.actor,
+                    type: op.meta?.type ?? "text",
+                },
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "SendMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            // Filter out "system" type since you can't send system messages
+            const msgType = op.meta?.type;
+            const sentType = msgType === "system" ? "text" : (msgType ?? "text");
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    type: sentType as "text" | "image" | "voice",
+                },
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "ReadMessage": {
+            const event: MessageReadOp = {
+                at,
+                kind: "MessageRead",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "DeleteMessage": {
+            const event: MessageDeletedOp = {
+                at,
+                kind: "MessageDeleted",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "Concurrent": {
+            // Fork cursor for each track
+            const trackCursors: Cursor[] = [];
+            const trackTimelines: TimelineOp[][] = [];
+
+            for (let t = 0; t < op.tracks.length; t++) {
+                const trackOps = op.tracks[t];
+                const trackCursor = cursor.fork();
+                const trackId = `track_${t}`;
+
+                const trackTimeline = lowerToTimeline(
+                    trackOps,
+                    ctx,
+                    trackCursor,
+                    deviceId,
+                    appId,
+                    conversationId,
+                    trace.beat,
+                    trackId
+                );
+
+                trackCursors.push(trackCursor);
+                trackTimelines.push(trackTimeline);
+            }
+
+            // Merge all track timelines
+            for (const tl of trackTimelines) {
+                events.push(...tl);
+            }
+
+            // Join cursors at max position
+            const joined = Cursor.join(trackCursors);
+            cursor.advance(joined.current - cursor.current);
+
+            return events;
+        }
+
+        default:
+            return [];
+    }
+}
+````
+
+## File: packages/compiler/src/passes/validate.ts
+````typescript
+/**
+ * Validate Pass
+ * 
+ * Validates Timeline IR for semantic correctness:
+ * - Read before send detection
+ * - Delete missing message detection
+ * - Frame ordering issues
+ * 
+ * Supports two modes:
+ * - STRICT: Errors halt compilation
+ * - LENIENT: Warnings + auto-fix where possible
+ */
+
+import { TimelineOp, validateTimelineIRFull, TimelineIR, ValidationError } from "@tokovo/ir";
+import { CompilerContext } from "../context";
+
+/**
+ * Validation result.
+ */
+export interface ValidationResult {
+    valid: boolean;
+    errors: ValidationError[];
+    warnings: ValidationError[];
+}
+
+/**
+ * Validate timeline operations.
+ */
+export function validateTimeline(
+    ops: TimelineOp[],
+    ctx: CompilerContext
+): ValidationResult {
+    const errors: ValidationError[] = [];
+    const warnings: ValidationError[] = [];
+
+    // Check read/delete before send
+    const sentMessages = new Set<string>();
+
+    for (const op of ops) {
+        if (op.kind === "MessageReceived" || op.kind === "MessageSent") {
+            sentMessages.add(op.message.id);
+        }
+
+        if (op.kind === "MessageRead") {
+            if (!sentMessages.has(op.messageId)) {
+                const err: ValidationError = {
+                    code: "READ_BEFORE_SEND",
+                    message: `Message "${op.messageId}" is read at frame ${op.at} but not yet sent`,
+                };
+
+                if (ctx.config.mode === "strict") {
+                    errors.push(err);
+                } else {
+                    warnings.push(err);
+                }
+            }
+        }
+
+        if (op.kind === "MessageDeleted") {
+            if (!sentMessages.has(op.messageId)) {
+                const err: ValidationError = {
+                    code: "DELETE_MISSING",
+                    message: `Message "${op.messageId}" is deleted at frame ${op.at} but never existed`,
+                };
+
+                if (ctx.config.mode === "strict") {
+                    errors.push(err);
+                } else {
+                    warnings.push(err);
+                }
+            }
+        }
+    }
+
+    // Check for negative frames
+    for (const op of ops) {
+        if (op.at < 0) {
+            errors.push({
+                code: "NEGATIVE_FRAME",
+                message: `Operation at frame ${op.at} has negative frame number`,
+            });
+        }
+    }
+
+    return {
+        valid: errors.length === 0,
+        errors,
+        warnings,
+    };
+}
+````
+
+## File: packages/compiler/src/passes/virtual-device.ts
+````typescript
+/**
+ * Virtual Device State Pass
+ * 
+ * Tracks virtual device state and auto-inserts:
+ * - DeviceUnlocked before any action
+ * - AppOpened before chat operations
+ * - ConversationOpened before message operations
+ * 
+ * This ensures the episode JSON has all required glue events.
+ */
+
+import { TimelineOp, DeviceUnlockedOp, AppOpenedOp, ConversationOpenedOp, Trace } from "@tokovo/ir";
+import { CompilerContext } from "../context";
+
+/**
+ * Check if device needs unlock and insert event.
+ */
+export function ensureUnlocked(
+    ctx: CompilerContext,
+    deviceId: string,
+    at: number,
+    trace: Trace
+): TimelineOp[] {
+    const state = ctx.getDeviceState(deviceId);
+
+    if (state.isLocked) {
+        ctx.updateDeviceState(deviceId, { isLocked: false });
+
+        const op: DeviceUnlockedOp = {
+            at,
+            kind: "DeviceUnlocked",
+            deviceId,
+            trace,
+        };
+        return [op];
+    }
+
+    return [];
+}
+
+/**
+ * Check if app needs to be opened and insert event.
+ */
+export function ensureAppOpened(
+    ctx: CompilerContext,
+    deviceId: string,
+    appId: string,
+    at: number,
+    trace: Trace
+): TimelineOp[] {
+    const state = ctx.getDeviceState(deviceId);
+    const events: TimelineOp[] = [];
+
+    // First ensure unlocked
+    events.push(...ensureUnlocked(ctx, deviceId, at, trace));
+
+    if (state.foregroundAppId !== appId) {
+        ctx.updateDeviceState(deviceId, { foregroundAppId: appId });
+
+        const op: AppOpenedOp = {
+            at,
+            kind: "AppOpened",
+            deviceId,
+            appId,
+            trace,
+        };
+        events.push(op);
+    }
+
+    return events;
+}
+
+/**
+ * Check if conversation needs to be opened and insert event.
+ */
+export function ensureConversationOpened(
+    ctx: CompilerContext,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    at: number,
+    trace: Trace
+): TimelineOp[] {
+    const state = ctx.getDeviceState(deviceId);
+    const events: TimelineOp[] = [];
+
+    // First ensure app is open
+    events.push(...ensureAppOpened(ctx, deviceId, appId, at, trace));
+
+    if (state.activeConversationId !== conversationId) {
+        ctx.updateDeviceState(deviceId, { activeConversationId: conversationId });
+
+        const op: ConversationOpenedOp = {
+            at,
+            kind: "ConversationOpened",
+            deviceId,
+            appId,
+            conversationId,
+            trace,
+        };
+        events.push(op);
+    }
+
+    return events;
+}
+````
+
+## File: packages/compiler/src/compile.ts
+````typescript
+/**
+ * Compile - Main Entry Point
+ * 
+ * Transforms Scene IR → Timeline IR through the pass pipeline.
+ * 
+ * Pipeline:
+ *   normalize → resolveRefs → virtualDevice → timeLowering → validate → sort
+ */
+
+import { SceneIR, TimelineIR, TimelineOp } from "@tokovo/ir";
+import { CompilerContext, CompilerConfig, Cursor } from "./context";
+import {
+    normalize,
+    resolveRefs,
+    lowerToTimeline,
+    validateTimeline,
+    sort,
+    ValidationResult,
+} from "./passes";
+
+/**
+ * Compilation result.
+ */
+export interface CompileResult {
+    /** Compiled timeline IR */
+    timeline: TimelineIR;
+
+    /** Validation result */
+    validation: ValidationResult;
+
+    /** Computed duration in frames */
+    durationInFrames: number;
+
+    /** Debug info */
+    debug?: {
+        sceneIR: SceneIR;
+        unsortedOps: TimelineOp[];
+    };
+}
+
+/**
+ * Compilation options.
+ */
+export interface CompileOptions {
+    /** Validation mode */
+    mode?: "strict" | "lenient";
+
+    /** Include debug artifacts */
+    debug?: boolean;
+}
+
+/**
+ * Compile Scene IR to Timeline IR.
+ */
+export function compile(sceneIR: SceneIR, options: CompileOptions = {}): CompileResult {
+    const config: CompilerConfig = {
+        fps: sceneIR.meta.fps,
+        episodeId: sceneIR.episodeId,
+        mode: options.mode ?? "lenient",
+    };
+
+    const ctx = new CompilerContext(config);
+    const allOps: TimelineOp[] = [];
+    let maxFrame = 0;
+
+    // Process each device
+    for (const device of sceneIR.devices) {
+        const cursor = new Cursor();
+
+        // Process each beat
+        for (const beat of device.beats) {
+            // 1. Normalize operations
+            let ops = normalize(beat.ops);
+
+            // 2. Resolve message references
+            ops = resolveRefs(
+                ops,
+                ctx,
+                device.deviceId,
+                device.conversations[0]?.id ?? ""
+            );
+
+            // 3. Lower to timeline (includes virtual device state)
+            const timelineOps = lowerToTimeline(
+                ops,
+                ctx,
+                cursor,
+                device.deviceId,
+                device.appId,
+                device.conversations[0]?.id ?? "",
+                beat.name
+            );
+
+            allOps.push(...timelineOps);
+        }
+
+        maxFrame = Math.max(maxFrame, cursor.current);
+    }
+
+    // 4. Validate
+    const validation = validateTimeline(allOps, ctx);
+
+    // 5. Sort
+    const sortedOps = sort(allOps);
+
+    // Build result
+    const timeline: TimelineIR = {
+        episodeId: sceneIR.episodeId,
+        fps: sceneIR.meta.fps,
+        durationInFrames: sceneIR.meta.durationInFrames ?? maxFrame + 30, // Add 1s buffer
+        ops: sortedOps,
+    };
+
+    return {
+        timeline,
+        validation,
+        durationInFrames: timeline.durationInFrames,
+        debug: options.debug
+            ? {
+                sceneIR,
+                unsortedOps: allOps,
+            }
+            : undefined,
+    };
+}
+````
+
+## File: packages/compiler/src/context.ts
+````typescript
+/**
+ * Compiler Context
+ * 
+ * Shared state for compiler passes.
+ * Maintains cursor (current frame), virtual device state, and message ID mapping.
+ */
+
+import { Trace, createTrace } from "@tokovo/ir";
+
+/**
+ * Virtual device state for auto-unlock/open/navigate passes.
+ */
+export interface VirtualDeviceState {
+    isLocked: boolean;
+    foregroundAppId?: string;
+    activeConversationId?: string;
+}
+
+/**
+ * Compiler configuration.
+ */
+export interface CompilerConfig {
+    /** Frames per second */
+    fps: number;
+
+    /** Episode ID */
+    episodeId: string;
+
+    /** Validation mode */
+    mode: "strict" | "lenient";
+}
+
+/**
+ * Compiler context passed through all passes.
+ */
+export class CompilerContext {
+    readonly config: CompilerConfig;
+
+    /** Message ID counter */
+    private messageCounter = 0;
+
+    /** Map from DSL message ref to real message ID */
+    private messageIdMap = new Map<string, string>();
+
+    /** Virtual device states */
+    private deviceStates = new Map<string, VirtualDeviceState>();
+
+    constructor(config: CompilerConfig) {
+        this.config = config;
+    }
+
+    /**
+     * Get or create virtual device state.
+     */
+    getDeviceState(deviceId: string): VirtualDeviceState {
+        if (!this.deviceStates.has(deviceId)) {
+            this.deviceStates.set(deviceId, {
+                isLocked: true,
+                foregroundAppId: undefined,
+                activeConversationId: undefined,
+            });
+        }
+        return this.deviceStates.get(deviceId)!;
+    }
+
+    /**
+     * Update virtual device state.
+     */
+    updateDeviceState(deviceId: string, update: Partial<VirtualDeviceState>): void {
+        const state = this.getDeviceState(deviceId);
+        Object.assign(state, update);
+    }
+
+    /**
+     * Generate a unique message ID.
+     */
+    generateMessageId(deviceId: string, conversationId: string): string {
+        return `msg_${deviceId}_${conversationId}_${++this.messageCounter}`;
+    }
+
+    /**
+     * Register a message ID mapping.
+     */
+    registerMessageId(refId: string, realId: string): void {
+        this.messageIdMap.set(refId, realId);
+    }
+
+    /**
+     * Get real message ID from reference.
+     */
+    resolveMessageId(refId: string): string | undefined {
+        return this.messageIdMap.get(refId);
+    }
+
+    /**
+     * Create a trace for a scene operation.
+     */
+    createTrace(partial: Partial<Trace>): Trace {
+        return createTrace({
+            episodeId: this.config.episodeId,
+            ...partial,
+        });
+    }
+}
+
+/**
+ * Cursor tracks the current frame position during compilation.
+ */
+export class Cursor {
+    private frame: number = 0;
+
+    /**
+     * Get current frame.
+     */
+    get current(): number {
+        return this.frame;
+    }
+
+    /**
+     * Advance cursor by frames.
+     */
+    advance(frames: number): void {
+        this.frame += frames;
+    }
+
+    /**
+     * Fork cursor for concurrent tracks.
+     */
+    fork(): Cursor {
+        const forked = new Cursor();
+        forked.frame = this.frame;
+        return forked;
+    }
+
+    /**
+     * Join cursors, taking the maximum position.
+     */
+    static join(cursors: Cursor[]): Cursor {
+        const joined = new Cursor();
+        joined.frame = Math.max(...cursors.map(c => c.current));
+        return joined;
+    }
+}
+````
+
+## File: packages/compiler/src/generate.ts
+````typescript
+/**
+ * Episode Generator
+ * 
+ * Converts DSL Scene IR → Episode JSON (compatible with @tokovo/core)
+ */
+
+import {
+    SceneIR,
+    TimelineIR,
+    EpisodeMeta,
+    DeviceScene,
+    ConversationDef,
+} from "@tokovo/ir";
+import { compile } from "@tokovo/compiler";
+import { adapterRegistry, RuntimeEvent } from "@tokovo/adapters";
+
+/**
+ * Episode JSON format (compatible with existing runtime)
+ */
+export interface EpisodeJSON {
+    meta: {
+        title: string;
+        fps: number;
+        durationInFrames: number;
+    };
+    initialWorld: {
+        devices: Record<string, any>;
+        conversations: Record<string, any>;
+        appState: Record<string, any>;
+        camera: any;
+        audio: { activeSounds: {} };
+    };
+    events: RuntimeEvent[];
+}
+
+/**
+ * Generate Episode JSON from Scene IR
+ */
+export function generateEpisode(sceneIR: SceneIR): EpisodeJSON {
+    // Compile to Timeline IR
+    const { timeline, durationInFrames } = compile(sceneIR);
+
+    // Lower to runtime events
+    const events = adapterRegistry.lowerAll(timeline);
+
+    // Build initial world
+    const initialWorld = buildInitialWorld(sceneIR);
+
+    return {
+        meta: {
+            title: sceneIR.meta.title ?? sceneIR.episodeId,
+            fps: sceneIR.meta.fps,
+            durationInFrames,
+        },
+        initialWorld,
+        events,
+    };
+}
+
+/**
+ * Build initial world state from device definitions
+ */
+function buildInitialWorld(sceneIR: SceneIR) {
+    const devices: Record<string, any> = {};
+    const conversations: Record<string, any> = {};
+    const appState: Record<string, any> = {};
+
+    for (const device of sceneIR.devices) {
+        // Device state
+        devices[device.deviceId] = {
+            id: device.deviceId,
+            profileId: device.profileId,
+            isLocked: false, // Will be unlocked by events
+            foregroundAppId: device.appId,
+            notifications: [],
+        };
+
+        // Conversations
+        for (const convo of device.conversations) {
+            conversations[convo.id] = {
+                id: convo.id,
+                type: convo.type ?? "dm",
+                name: convo.name ?? convo.id,
+                avatar: convo.avatar,
+                messages: [],
+                typing: {},
+            };
+        }
+
+        // App state
+        if (device.appId) {
+            appState[device.appId] = {
+                screen: "chat",
+                conversationId: device.conversations[0]?.id,
+            };
+        }
+    }
+
+    // Default camera
+    const camera = {
+        baseView: "APP_VIEW",
+        activeDeviceId: sceneIR.devices[0]?.deviceId ?? "phone",
+        layout: {
+            mode: "SINGLE",
+            primaryDeviceId: sceneIR.devices[0]?.deviceId ?? "phone",
+        },
+        activeEffects: [],
+        transform: {
+            translateX: 0,
+            translateY: 0,
+            scale: 1,
+            rotation: 0,
+            originX: 0.5,
+            originY: 0.5,
+            shakeX: 0,
+            shakeY: 0,
+        },
+        deviceTransforms: {},
+    };
+
+    return {
+        devices,
+        conversations,
+        appState,
+        camera,
+        audio: { activeSounds: {} },
+    };
+}
+````
+
+## File: packages/compiler/src/index.ts
+````typescript
+/**
+ * @tokovo/compiler
+ * 
+ * Scene IR → Timeline IR transformation.
+ * 
+ * Usage:
+ * ```ts
+ * import { compile } from "@tokovo/compiler";
+ * import { episode } from "@tokovo/dsl";
+ * 
+ * const sceneIR = episode("my-story", ep => { ... });
+ * const { timeline, validation } = compile(sceneIR);
+ * ```
+ */
+
+// Context
+export { CompilerContext, CompilerConfig, Cursor } from "./context";
+
+// Main entry point
+export { compile, CompileResult, CompileOptions } from "./compile";
+
+// Passes (for advanced usage)
+export * from "./passes";
+````
+
+## File: packages/compiler/package.json
+````json
+{
+    "name": "@tokovo/compiler",
+    "version": "0.0.1",
+    "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/compiler/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "declarationMap": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
+````
+
+## File: packages/compiler/tsconfig.tsbuildinfo
+````
+{"root":["./src/compile.ts","./src/context.ts","./src/index.ts","./src/passes/index.ts","./src/passes/normalize.ts","./src/passes/resolve-refs.ts","./src/passes/sort.ts","./src/passes/time-lowering.ts","./src/passes/validate.ts","./src/passes/virtual-device.ts"],"version":"5.9.3"}
 ````
 
 ## File: packages/core/src/director-lite/derive.ts
@@ -3012,6 +4758,693 @@ Device profiles and reducers.
 }
 ````
 
+## File: packages/dsl/examples/breakup-01.dsl.ts
+````typescript
+/**
+ * Breakup Drama Episode
+ * 
+ * This exports a pre-compiled Episode JSON for use in the video-runner.
+ */
+
+import { episode as createEpisode } from "../src/author";
+import { SceneIR } from "@tokovo/ir";
+
+/**
+ * The DSL definition for breakup drama
+ */
+export const breakupDramaSceneIR: SceneIR = createEpisode("breakup-drama-01", ep => {
+    ep.config({ fps: 30, title: "The Breakup Drama" });
+
+    ep.device("AlicePhone", "iphone16", d => {
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob", avatar: "bob.png" });
+
+        // Beat 1: Silence
+        d.beat("silence", b => {
+            b.wait("2s");
+        });
+
+        // Beat 2: Typing tension
+        d.beat("typing-tension", b => {
+            b.concurrent([
+                t => t.typing("Bob").for("1.5s"),
+                t => t.wait("0.7s").receive("Bob", "We need to talk.")
+            ]);
+            b.wait("0.5s");
+        });
+
+        // Beat 3: The message
+        d.beat("aftermath", b => {
+            const msg = b.receive("Bob", "I'm sorry. It's over.");
+            b.wait("1.2s");
+            b.read(msg);
+            b.wait("0.5s");
+        });
+
+        // Beat 4: Panic
+        d.beat("panic", b => {
+            b.send("Wait, what?");
+            b.wait("0.8s");
+            b.send("Can we talk about this?");
+            b.wait("1s");
+        });
+
+        // Beat 5: No response
+        d.beat("silence-after", b => {
+            b.wait("2s");
+            b.typing("Bob").for("2s");
+            // No message comes...
+            b.wait("1s");
+        });
+    });
+});
+
+export { breakupDramaSceneIR as default };
+````
+
+## File: packages/dsl/src/author/beat-builder.ts
+````typescript
+/**
+ * Beat Builder
+ * 
+ * Fluent API for defining actions within a beat.
+ * A beat is a named group of sequential/concurrent operations.
+ */
+
+import {
+    SceneOp,
+    WaitOp,
+    TypingStartOp,
+    TypingEndOp,
+    SendMessageOp,
+    ReceiveMessageOp,
+    ReadMessageOp,
+    DeleteMessageOp,
+    ConcurrentOp,
+    MessageRef,
+    messageRef,
+} from "@tokovo/ir";
+import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Beat builder collects operations within a beat.
+ */
+export class BeatBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private messageCounter = 0;
+    private lastMessageRef: MessageRef | undefined;
+
+    constructor(deviceId: string, appId: string, conversationId: string) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+    }
+
+    /**
+     * Wait for a duration.
+     */
+    wait(duration: string): this {
+        const op: WaitOp = { kind: "Wait", duration };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Start typing indicator.
+     * Returns a builder for fluent chaining: typing("Bob").for("2s")
+     */
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                // Expand to: TypingStart + Wait + TypingEnd
+                const start: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                const wait: WaitOp = { kind: "Wait", duration };
+                const end: TypingEndOp = {
+                    kind: "TypingEnd",
+                    actor,
+                    conversationId,
+                };
+                ops.push(start, wait, end);
+            },
+        };
+    }
+
+    /**
+     * Start typing without specifying duration.
+     * Use typingEnd() to stop.
+     */
+    typingStart(actor: string): this {
+        const op: TypingStartOp = {
+            kind: "TypingStart",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Stop typing indicator.
+     */
+    typingEnd(actor: string): this {
+        const op: TypingEndOp = {
+            kind: "TypingEnd",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Send a message (from device owner).
+     */
+    send(text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendMessageOp = {
+            kind: "SendMessage",
+            actor: "me",
+            text,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a message (from someone else).
+     */
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveMessageOp = {
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    read(ref: MessageHandle): this {
+        const op: ReadMessageOp = { kind: "ReadMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Mark the last message as read.
+     */
+    readLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("readLast() called but no previous message exists");
+        }
+        return this.read(this.lastMessageRef);
+    }
+
+    /**
+     * Delete a message.
+     */
+    delete(ref: MessageHandle): this {
+        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Delete the last message.
+     */
+    deleteLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("deleteLast() called but no previous message exists");
+        }
+        return this.delete(this.lastMessageRef);
+    }
+
+    /**
+     * Execute operations concurrently across multiple tracks.
+     */
+    concurrent(tracks: TrackFn[]): this {
+        const trackOps: SceneOp[][] = tracks.map((fn) => {
+            const trackBuilder = this.createTrackBuilder();
+            fn(trackBuilder);
+            return trackBuilder.getOps();
+        });
+
+        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Create a track builder for concurrent operations.
+     */
+    private createTrackBuilder(): TrackBuilderImpl {
+        return new TrackBuilderImpl(
+            this.deviceId,
+            this.appId,
+            this.conversationId,
+            () => ++this.messageCounter
+        );
+    }
+
+    /**
+     * Get collected operations.
+     */
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+
+/**
+ * Track builder implementation for concurrent operations.
+ */
+class TrackBuilderImpl implements TrackBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private readonly getNextId: () => number;
+
+    constructor(
+        deviceId: string,
+        appId: string,
+        conversationId: string,
+        getNextId: () => number
+    ) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+        this.getNextId = getNextId;
+    }
+
+    wait(duration: string): this {
+        this.ops.push({ kind: "Wait", duration });
+        return this;
+    }
+
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                ops.push({ kind: "TypingStart", actor, conversationId });
+                ops.push({ kind: "Wait", duration });
+                ops.push({ kind: "TypingEnd", actor, conversationId });
+            },
+        };
+    }
+
+    send(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "SendMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+````
+
+## File: packages/dsl/src/author/device-builder.ts
+````typescript
+/**
+ * Device Builder
+ * 
+ * Fluent API for defining a device's story.
+ * Manages conversation context and beat collection.
+ */
+
+import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+
+/**
+ * Beat callback function.
+ */
+export type BeatFn = (b: BeatBuilder) => void;
+
+/**
+ * Device builder collects conversations and beats for a device.
+ */
+export class DeviceBuilder {
+    private readonly deviceId: string;
+    private readonly profileId: string;
+    private appId: string = "app_whatsapp"; // Default app
+    private readonly conversations: ConversationDef[] = [];
+    private readonly beats: Beat[] = [];
+    private currentConversationId: string | undefined;
+
+    constructor(deviceId: string, profileId: string = "iphone16") {
+        this.deviceId = deviceId;
+        this.profileId = profileId;
+    }
+
+    /**
+     * Set the app for this device.
+     */
+    app(appId: string): this {
+        this.appId = appId;
+        return this;
+    }
+
+    /**
+     * Define a conversation.
+     * Also sets it as the current conversation for subsequent beats.
+     */
+    conversation(id: string, config?: { name?: string; avatar?: string; type?: "dm" | "group" }): this {
+        const def: ConversationDef = {
+            id,
+            name: config?.name,
+            avatar: config?.avatar,
+            type: config?.type ?? "dm",
+        };
+        this.conversations.push(def);
+        this.currentConversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat (named group of actions).
+     */
+    beat(name: string, fn: BeatFn): this {
+        if (!this.currentConversationId) {
+            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
+        }
+
+        const builder = new BeatBuilder(
+            this.deviceId,
+            this.appId,
+            this.currentConversationId
+        );
+        fn(builder);
+
+        this.beats.push({
+            name,
+            ops: builder.getOps(),
+        });
+
+        return this;
+    }
+
+    /**
+     * Build the device scene.
+     */
+    build(): DeviceScene {
+        return {
+            deviceId: this.deviceId,
+            profileId: this.profileId,
+            appId: this.appId,
+            conversations: this.conversations,
+            beats: this.beats,
+        };
+    }
+}
+````
+
+## File: packages/dsl/src/author/episode-builder.ts
+````typescript
+/**
+ * Episode Builder
+ * 
+ * Top-level fluent API for defining an episode.
+ * Entry point: episode("my-episode", ep => { ... })
+ */
+
+import { SceneIR, EpisodeMeta } from "@tokovo/ir";
+import { DeviceBuilder, BeatFn } from "./device-builder";
+import { EpisodeConfig } from "../types";
+
+/**
+ * Device callback function.
+ */
+export type DeviceFn = (d: DeviceBuilder) => void;
+
+/**
+ * Episode builder collects devices and metadata.
+ */
+export class EpisodeBuilder {
+    private readonly episodeId: string;
+    private readonly meta: EpisodeMeta;
+    private readonly deviceBuilders: DeviceBuilder[] = [];
+
+    constructor(episodeId: string, config: EpisodeConfig = {}) {
+        this.episodeId = episodeId;
+        this.meta = {
+            title: config.title ?? episodeId,
+            fps: config.fps ?? 30,
+        };
+    }
+
+    /**
+     * Set episode metadata.
+     */
+    config(cfg: EpisodeConfig): this {
+        if (cfg.fps) {
+            (this.meta as any).fps = cfg.fps;
+        }
+        if (cfg.title) {
+            (this.meta as any).title = cfg.title;
+        }
+        return this;
+    }
+
+    /**
+     * Define a device with a story.
+     */
+    device(deviceId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileIdOrFn: string | DeviceFn, maybeFn?: DeviceFn): this {
+        let profileId: string;
+        let fn: DeviceFn;
+
+        if (typeof profileIdOrFn === "function") {
+            profileId = "iphone16";
+            fn = profileIdOrFn;
+        } else {
+            profileId = profileIdOrFn;
+            fn = maybeFn!;
+        }
+
+        const builder = new DeviceBuilder(deviceId, profileId);
+        fn(builder);
+        this.deviceBuilders.push(builder);
+        return this;
+    }
+
+    /**
+     * Build the Scene IR.
+     */
+    build(): SceneIR {
+        return {
+            episodeId: this.episodeId,
+            meta: this.meta,
+            devices: this.deviceBuilders.map((b) => b.build()),
+        };
+    }
+}
+
+/**
+ * Entry point for creating an episode.
+ * 
+ * @example
+ * const ir = episode("breakup-01", ep => {
+ *   ep.device("AlicePhone", d => {
+ *     d.conversation("dm_bob", { name: "Bob" })
+ *     d.beat("tension", b => {
+ *       b.receive("Bob", "We need to talk.")
+ *     })
+ *   })
+ * })
+ */
+export function episode(
+    episodeId: string,
+    fn: (ep: EpisodeBuilder) => void,
+    config?: EpisodeConfig
+): SceneIR {
+    const builder = new EpisodeBuilder(episodeId, config);
+    fn(builder);
+    return builder.build();
+}
+````
+
+## File: packages/dsl/src/author/index.ts
+````typescript
+/**
+ * Author API exports
+ */
+
+export { BeatBuilder } from "./beat-builder";
+export { DeviceBuilder, BeatFn } from "./device-builder";
+export { EpisodeBuilder, DeviceFn, episode } from "./episode-builder";
+````
+
+## File: packages/dsl/src/index.ts
+````typescript
+/**
+ * @tokovo/dsl
+ * 
+ * Author DSL for writing cinematic chat stories.
+ * 
+ * Usage:
+ * ```ts
+ * import { episode } from "@tokovo/dsl";
+ * 
+ * const sceneIR = episode("my-story", ep => {
+ *   ep.device("Phone", d => {
+ *     d.conversation("dm_alice")
+ *     d.beat("intro", b => {
+ *       b.receive("Alice", "Hey!")
+ *     })
+ *   })
+ * })
+ * ```
+ */
+
+// Types
+export * from "./types";
+
+// Author API
+export * from "./author";
+````
+
+## File: packages/dsl/src/types.ts
+````typescript
+/**
+ * DSL Types
+ * 
+ * Types specific to the author DSL layer.
+ */
+
+import { MessageRef } from "@tokovo/ir";
+
+/**
+ * Typing builder for fluent API.
+ * Allows: typing("Bob").for("2s")
+ */
+export interface TypingBuilder {
+    /**
+     * Set duration for typing indicator.
+     * Compiler expands to: TypingStart + Wait + TypingEnd
+     */
+    for(duration: string): void;
+}
+
+/**
+ * Message handle returned by send/receive.
+ * Can be passed to read() or delete().
+ */
+export type MessageHandle = MessageRef;
+
+/**
+ * Track builder for concurrent operations.
+ */
+export interface TrackBuilder {
+    wait(duration: string): TrackBuilder;
+    typing(actor: string): TypingBuilder;
+    send(actor: string, text: string): MessageHandle;
+    receive(actor: string, text: string): MessageHandle;
+}
+
+/**
+ * Track function for concurrent().
+ */
+export type TrackFn = (t: TrackBuilder) => void;
+
+/**
+ * Episode configuration.
+ */
+export interface EpisodeConfig {
+    fps?: number;
+    title?: string;
+}
+````
+
+## File: packages/dsl/package.json
+````json
+{
+    "name": "@tokovo/dsl",
+    "version": "0.0.1",
+    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/dsl/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "declarationMap": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
+````
+
+## File: packages/dsl/tsconfig.tsbuildinfo
+````
+{"root":["./src/index.ts","./src/types.ts","./src/author/beat-builder.ts","./src/author/device-builder.ts","./src/author/episode-builder.ts","./src/author/index.ts"],"version":"5.9.3"}
+````
+
 ## File: packages/episodes/src/examples/android-test.json
 ````json
 {
@@ -3102,6 +5535,832 @@ Device profiles and reducers.
         "src/**/*"
     ]
 }
+````
+
+## File: packages/ir/src/index.ts
+````typescript
+/**
+ * @tokovo/ir
+ * 
+ * Intermediate Representations for Tokovo DSL.
+ * 
+ * Two layers:
+ * - Scene IR: Semantic truth (no frames, no platform)
+ * - Timeline IR: Execution contract (frames, deterministic)
+ */
+
+// Trace model
+export * from "./trace";
+
+// Scene IR (semantic)
+export * from "./scene";
+
+// Timeline IR (execution)
+export * from "./timeline";
+
+// Ordering contract
+export * from "./ordering";
+
+// Validation
+export * from "./validate";
+````
+
+## File: packages/ir/src/ordering.ts
+````typescript
+/**
+ * Deterministic Ordering Contract
+ * 
+ * Same-frame operations are sorted by:
+ *   (at, phase, priority, trackId, sceneOpIndex)
+ * 
+ * This guarantees:
+ * - No randomness
+ * - Stable refactors
+ * - DirectorLite consistency
+ */
+
+import { TimelineOp } from "./timeline";
+
+// =============================================================================
+// PHASES
+// =============================================================================
+
+/**
+ * Execution phases determine order within the same frame.
+ * Lower phase number = earlier execution.
+ */
+export enum Phase {
+    /** Device operations (unlock, lock) */
+    DEVICE = 0,
+
+    /** Navigation (open app, goto conversation) */
+    NAV = 10,
+
+    /** App operations (typing, messages, read, delete) */
+    APP = 20,
+
+    /** Effects (optional, reserved for future) */
+    FX = 30,
+}
+
+/**
+ * Get phase for a timeline operation.
+ */
+export function getPhase(op: TimelineOp): Phase {
+    switch (op.kind) {
+        case "DeviceUnlocked":
+            return Phase.DEVICE;
+        case "AppOpened":
+        case "ConversationOpened":
+            return Phase.NAV;
+        case "TypingStarted":
+        case "TypingEnded":
+        case "MessageReceived":
+        case "MessageSent":
+        case "MessageRead":
+        case "MessageDeleted":
+            return Phase.APP;
+        default:
+            return Phase.FX;
+    }
+}
+
+// =============================================================================
+// PRIORITY WITHIN PHASE
+// =============================================================================
+
+/**
+ * Get priority within phase.
+ * Lower number = earlier execution.
+ */
+export function getPriority(op: TimelineOp): number {
+    switch (op.kind) {
+        case "TypingStarted":
+            return 0;
+        case "MessageReceived":
+        case "MessageSent":
+            return 10;
+        case "TypingEnded":
+            return 20;
+        case "MessageRead":
+            return 30;
+        case "MessageDeleted":
+            return 40;
+        default:
+            return 50;
+    }
+}
+
+// =============================================================================
+// CANONICAL SORT
+// =============================================================================
+
+/**
+ * Compare function for deterministic ordering.
+ * Sorts by: (at, phase, priority, trackId, sceneOpIndex)
+ */
+export function compareOps(a: TimelineOp, b: TimelineOp): number {
+    // 1. By frame
+    if (a.at !== b.at) return a.at - b.at;
+
+    // 2. By phase
+    const phaseA = getPhase(a);
+    const phaseB = getPhase(b);
+    if (phaseA !== phaseB) return phaseA - phaseB;
+
+    // 3. By priority within phase
+    const prioA = getPriority(a);
+    const prioB = getPriority(b);
+    if (prioA !== prioB) return prioA - prioB;
+
+    // 4. By track ID (string comparison)
+    if (a.trace.trackId !== b.trace.trackId) {
+        return a.trace.trackId.localeCompare(b.trace.trackId);
+    }
+
+    // 5. By scene op index
+    return a.trace.sceneOpIndex - b.trace.sceneOpIndex;
+}
+
+/**
+ * Sort timeline operations in canonical order.
+ * Returns a new sorted array.
+ */
+export function sortOps(ops: TimelineOp[]): TimelineOp[] {
+    return [...ops].sort(compareOps);
+}
+````
+
+## File: packages/ir/src/scene.ts
+````typescript
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
+
+// =============================================================================
+// DURATION
+// =============================================================================
+
+/**
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
+ */
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
+    }
+
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
+    }
+}
+
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
+
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
+    return {
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
+    };
+}
+
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+
+    /** For voice messages */
+    voiceDuration?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+}
+
+/**
+ * Episode metadata.
+ */
+export interface EpisodeMeta {
+    readonly title?: string;
+    readonly fps: number;
+    readonly durationInFrames?: number;
+}
+````
+
+## File: packages/ir/src/timeline.ts
+````typescript
+/**
+ * Timeline IR - Execution Contract
+ * 
+ * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
+ * 
+ * RULES:
+ * - All waits resolved to frames
+ * - Fully deterministic
+ * - No adapter-specific fields
+ * - Sorted by canonical ordering
+ * - Every op carries Trace
+ */
+
+import { Trace } from "./trace";
+
+// =============================================================================
+// TIMELINE OPERATIONS
+// =============================================================================
+
+/**
+ * Base interface for all timeline operations.
+ */
+interface TimelineOpBase {
+    /** Frame number when this operation occurs */
+    readonly at: number;
+
+    /** Operation kind (discriminator) */
+    readonly kind: string;
+
+    /** Debug trace */
+    readonly trace: Trace;
+}
+
+/**
+ * Device unlocked.
+ */
+export interface DeviceUnlockedOp extends TimelineOpBase {
+    readonly kind: "DeviceUnlocked";
+    readonly deviceId: string;
+}
+
+/**
+ * App opened.
+ */
+export interface AppOpenedOp extends TimelineOpBase {
+    readonly kind: "AppOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+}
+
+/**
+ * Conversation navigated to.
+ */
+export interface ConversationOpenedOp extends TimelineOpBase {
+    readonly kind: "ConversationOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Typing indicator started.
+ */
+export interface TypingStartedOp extends TimelineOpBase {
+    readonly kind: "TypingStarted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Typing indicator ended.
+ */
+export interface TypingEndedOp extends TimelineOpBase {
+    readonly kind: "TypingEnded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Message received.
+ */
+export interface MessageReceivedOp extends TimelineOpBase {
+    readonly kind: "MessageReceived";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text: string;
+        readonly from: string;
+        readonly type?: "text" | "image" | "voice" | "system";
+        readonly timestamp?: string;
+    };
+}
+
+/**
+ * Message sent (by device owner).
+ */
+export interface MessageSentOp extends TimelineOpBase {
+    readonly kind: "MessageSent";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text: string;
+        readonly type?: "text" | "image" | "voice";
+        readonly timestamp?: string;
+    };
+}
+
+/**
+ * Message marked as read.
+ */
+export interface MessageReadOp extends TimelineOpBase {
+    readonly kind: "MessageRead";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Message deleted.
+ */
+export interface MessageDeletedOp extends TimelineOpBase {
+    readonly kind: "MessageDeleted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Union of all timeline operations.
+ */
+export type TimelineOp =
+    | DeviceUnlockedOp
+    | AppOpenedOp
+    | ConversationOpenedOp
+    | TypingStartedOp
+    | TypingEndedOp
+    | MessageReceivedOp
+    | MessageSentOp
+    | MessageReadOp
+    | MessageDeletedOp;
+
+// =============================================================================
+// TIMELINE IR (COMPLETE)
+// =============================================================================
+
+/**
+ * Complete Timeline IR for an episode.
+ */
+export interface TimelineIR {
+    readonly episodeId: string;
+    readonly fps: number;
+    readonly durationInFrames: number;
+    readonly ops: TimelineOp[];
+}
+````
+
+## File: packages/ir/src/trace.ts
+````typescript
+/**
+ * Trace Model
+ * 
+ * Every operation carries trace metadata for debugging,
+ * golden tests, and AI explainability.
+ * 
+ * RULE: Every Timeline IR op and every runtime event must preserve Trace.
+ */
+
+/**
+ * Canonical trace for any operation in the system.
+ * This is the DEBUG SPINE of Tokovo.
+ */
+export interface Trace {
+    /** Episode identifier */
+    episodeId: string;
+
+    /** Device this operation targets */
+    deviceId: string;
+
+    /** Beat name (semantic grouping) */
+    beat: string;
+
+    /** Track ID for concurrent operations */
+    trackId: string;
+
+    /** Index within the scene ops array */
+    sceneOpIndex: number;
+
+    /** Optional source location for debugging */
+    source?: {
+        file?: string;
+        line?: number;
+    };
+}
+
+/**
+ * Create a default trace (for internal use)
+ */
+export function createTrace(partial: Partial<Trace>): Trace {
+    return {
+        episodeId: partial.episodeId ?? "",
+        deviceId: partial.deviceId ?? "",
+        beat: partial.beat ?? "",
+        trackId: partial.trackId ?? "main",
+        sceneOpIndex: partial.sceneOpIndex ?? 0,
+        source: partial.source,
+    };
+}
+````
+
+## File: packages/ir/src/validate.ts
+````typescript
+/**
+ * IR Invariants & Validation
+ * 
+ * Ensures IR types maintain their contracts.
+ */
+
+import { SceneIR, SceneOp, MessageRef } from "./scene";
+import { TimelineIR, TimelineOp } from "./timeline";
+
+// =============================================================================
+// SCENE IR VALIDATION
+// =============================================================================
+
+export interface ValidationError {
+    readonly code: string;
+    readonly message: string;
+    readonly path?: string;
+}
+
+/**
+ * Validate Scene IR invariants.
+ */
+export function validateSceneIR(ir: SceneIR): ValidationError[] {
+    const errors: ValidationError[] = [];
+
+    // Must have episode ID
+    if (!ir.episodeId) {
+        errors.push({
+            code: "MISSING_EPISODE_ID",
+            message: "Episode ID is required",
+        });
+    }
+
+    // Must have FPS
+    if (!ir.meta.fps || ir.meta.fps <= 0) {
+        errors.push({
+            code: "INVALID_FPS",
+            message: "FPS must be a positive number",
+        });
+    }
+
+    // Must have at least one device
+    if (ir.devices.length === 0) {
+        errors.push({
+            code: "NO_DEVICES",
+            message: "At least one device is required",
+        });
+    }
+
+    // Validate each device
+    for (const device of ir.devices) {
+        if (!device.deviceId) {
+            errors.push({
+                code: "MISSING_DEVICE_ID",
+                message: "Device ID is required",
+                path: `devices[${ir.devices.indexOf(device)}]`,
+            });
+        }
+    }
+
+    return errors;
+}
+
+// =============================================================================
+// TIMELINE IR VALIDATION
+// =============================================================================
+
+/**
+ * Validate Timeline IR invariants.
+ */
+export function validateTimelineIR(ir: TimelineIR): ValidationError[] {
+    const errors: ValidationError[] = [];
+
+    // Must have episode ID
+    if (!ir.episodeId) {
+        errors.push({
+            code: "MISSING_EPISODE_ID",
+            message: "Episode ID is required",
+        });
+    }
+
+    // Must have FPS
+    if (!ir.fps || ir.fps <= 0) {
+        errors.push({
+            code: "INVALID_FPS",
+            message: "FPS must be a positive number",
+        });
+    }
+
+    // All ops must have valid frame numbers
+    for (let i = 0; i < ir.ops.length; i++) {
+        const op = ir.ops[i];
+        if (op.at < 0) {
+            errors.push({
+                code: "NEGATIVE_FRAME",
+                message: `Operation at index ${i} has negative frame number`,
+                path: `ops[${i}]`,
+            });
+        }
+
+        // All ops must have trace
+        if (!op.trace) {
+            errors.push({
+                code: "MISSING_TRACE",
+                message: `Operation at index ${i} is missing trace`,
+                path: `ops[${i}]`,
+            });
+        }
+    }
+
+    return errors;
+}
+
+// =============================================================================
+// SEMANTIC VALIDATION
+// =============================================================================
+
+/**
+ * Check if a message is read before it's sent.
+ * Returns errors if found.
+ */
+export function validateReadBeforeSend(ops: TimelineOp[]): ValidationError[] {
+    const errors: ValidationError[] = [];
+    const sentMessages = new Set<string>();
+
+    for (const op of ops) {
+        if (op.kind === "MessageReceived" || op.kind === "MessageSent") {
+            sentMessages.add(op.message.id);
+        }
+
+        if (op.kind === "MessageRead" || op.kind === "MessageDeleted") {
+            if (!sentMessages.has(op.messageId)) {
+                errors.push({
+                    code: "READ_BEFORE_SEND",
+                    message: `Message ${op.messageId} is ${op.kind === "MessageRead" ? "read" : "deleted"} before it was sent`,
+                });
+            }
+        }
+    }
+
+    return errors;
+}
+
+/**
+ * Full validation of Timeline IR including semantic checks.
+ */
+export function validateTimelineIRFull(ir: TimelineIR): ValidationError[] {
+    return [
+        ...validateTimelineIR(ir),
+        ...validateReadBeforeSend(ir.ops),
+    ];
+}
+````
+
+## File: packages/ir/package.json
+````json
+{
+    "name": "@tokovo/ir",
+    "version": "0.0.1",
+    "description": "Tokovo IR types - Scene IR (semantic) and Timeline IR (execution)",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {},
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/ir/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "declaration": true,
+        "declarationMap": true
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
+    ]
+}
+````
+
+## File: packages/ir/tsconfig.tsbuildinfo
+````
+{"root":["./src/index.ts","./src/ordering.ts","./src/scene.ts","./src/timeline.ts","./src/trace.ts","./src/validate.ts"],"version":"5.9.3"}
 ````
 
 ## File: packages/renderer/src/layout/strategies/feed.ts
@@ -13020,10 +16279,19 @@ import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
+import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="BreakupDramaDSL"
+                component={BreakupDramaDSLVideo}
+                durationInFrames={420}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="MultiPovDemo"
                 component={MultiPovDemoVideo}
