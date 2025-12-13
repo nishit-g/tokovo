@@ -123,21 +123,31 @@ export function computeChatLayout(
         // Calculate bubble width using per-type config
         const bubbleWidth = calculateBubbleWidth(msgForHeight, viewportWidth, config);
 
-        // Animation: Slide in / Fade in with configurable duration
+        const isMe = msg.from === "me";
+
+        // Animation: Horizontal Slide in (Safety First)
+        // Vertical animation risks overlapping with the next bubble (like typing indicator)
+        // because layout assumes final position. Horizontal slide avoids this collision.
         const messageAt = msg.at ?? 0;
         const timeSinceAppear = t - messageAt;
         let opacity = 1;
-        let translateY = 0;
+        let translateX = 0;
+        // Ensure translateY is 0 to prevent vertical overlap
+        const translateY = 0;
 
         if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
             const progress = timeSinceAppear / config.animation.messageAppearDuration;
             const ease = applyEasing(progress, "easeOut");
             opacity = ease;
-            translateY = config.animation.messageAppearOffset * (1 - ease);
+
+            // Slide in from side
+            // Me (Right): Slide from right (+offset -> 0)
+            // Other (Left): Slide from left (-offset -> 0) 
+            const offset = config.animation.messageAppearOffset * (1 - ease);
+            translateX = isMe ? offset : -offset;
         }
 
         // Compute rect for director targeting
-        const isMe = msg.from === "me";
         const isCentered = isMessageCentered(msgType, config);
 
         let rectX: number;
@@ -156,6 +166,7 @@ export function computeChatLayout(
             height,
             opacity,
             translateY,
+            translateX,
             rect: {
                 x: rectX,
                 y: currentY,

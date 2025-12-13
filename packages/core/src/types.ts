@@ -651,6 +651,7 @@ export interface ChatMessageLayout {
     height: number;
     opacity: number;
     translateY: number;
+    translateX: number;
     // Rect for director targeting (x, y relative to content, not viewport)
     rect?: {
         x: number;

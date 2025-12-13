@@ -288,7 +288,12 @@ export function calculateMessageHeight(
         const { lines } = measureTextBlock(text, undefined, config); // Allow default viewport
         height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
     } else if ((msgType === "image" || msgType === "video") && msg.caption) {
-        height = typeConfig.height.withCaption || typeConfig.height.base;
+        // Dynamic Media Height (Option B)
+        // Measure caption to determine how much vertical space to add to base image
+        const { lines } = measureTextBlock(msg.caption, undefined, config);
+        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
+        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
+        height = typeConfig.height.base + captionHeight + captionPadding;
     } else {
         height = typeConfig.height.base;
     }
