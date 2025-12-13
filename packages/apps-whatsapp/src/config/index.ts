@@ -6,3 +6,4 @@
 
 export * from "./layout-config";
 export * from "./whatsapp-theme";
+export * from "./polish";
