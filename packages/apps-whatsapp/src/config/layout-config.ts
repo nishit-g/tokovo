@@ -1,29 +1,89 @@
 /**
  * WhatsApp Layout Configuration
  * 
- * Configurable message heights, scroll behavior, and animations.
+ * Production-grade configurable message heights, spacing, and animations.
  * All values are in device pixels (3x scale for retina).
  */
 
 // =============================================================================
-// MESSAGE HEIGHT CONFIGURATION
+// MESSAGE TYPE ENUMERATION
 // =============================================================================
 
-export interface TextHeightConfig {
-    /** Base height (padding + timestamp) */
+export type MessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "typing"
+    | "screenshot_alert"
+    | "call_missed";
+
+// =============================================================================
+// PER-MESSAGE-TYPE CONFIGURATION
+// =============================================================================
+
+export interface MessageHeightConfig {
+    /** Base height of this message type */
     base: number;
-    /** Height per line of text */
-    lineHeight: number;
-    /** Characters per line before wrap */
-    charsPerLine: number;
+    /** Line height for text-based content */
+    lineHeight?: number;
+    /** Characters per line for text wrapping calculation */
+    charsPerLine?: number;
+    /** Height when media has caption */
+    withCaption?: number;
 }
 
-export interface MediaHeightConfig {
-    /** Default height without caption */
-    default: number;
-    /** Height when caption is present */
-    withCaption: number;
+export interface MessageWidthConfig {
+    /** Fixed width (for voice, typing, etc.) */
+    fixed?: number;
+    /** Maximum width as percentage of viewport (0-1) */
+    maxPercent: number;
+    /** Minimum width */
+    min: number;
+    /** Average character width for text bubble calculation */
+    avgCharWidth?: number;
+    /** Horizontal padding for text calculation */
+    horizontalPadding?: number;
 }
+
+export interface MessageGapConfig {
+    /** Gap after this message when next is same sender */
+    sameSender: number;
+    /** Gap after this message when next is same side but diff sender */
+    sameSide: number;
+    /** Gap after this message when next is opposite side */
+    oppositeSide: number;
+}
+
+export interface MessageTypeConfig {
+    height: MessageHeightConfig;
+    width: MessageWidthConfig;
+    gap: MessageGapConfig;
+}
+
+// =============================================================================
+// COMPLETE MESSAGE TYPES CONFIG
+// =============================================================================
+
+export interface MessageTypesConfig {
+    text: MessageTypeConfig;
+    image: MessageTypeConfig;
+    video: MessageTypeConfig;
+    gif: MessageTypeConfig;
+    voice: MessageTypeConfig;
+    system: MessageTypeConfig;
+    deleted: MessageTypeConfig;
+    typing: MessageTypeConfig;
+    screenshot_alert: MessageTypeConfig;
+    call_missed: MessageTypeConfig;
+}
+
+// =============================================================================
+// HEIGHT ADDITIONS (for reactions, replies, etc.)
+// =============================================================================
 
 export interface HeightAdditions {
     /** Additional height for reaction bar */
@@ -36,16 +96,6 @@ export interface HeightAdditions {
     senderName: number;
     /** Height for timestamp row */
     timestamp: number;
-}
-
-export interface HeightConfig {
-    text: TextHeightConfig;
-    image: MediaHeightConfig;
-    video: MediaHeightConfig;
-    gif: { default: number };
-    voice: { default: number };
-    system: { default: number };
-    deleted: { default: number };
 }
 
 // =============================================================================
@@ -87,20 +137,16 @@ export interface AnimationConfig {
 }
 
 // =============================================================================
-// SPACING CONFIGURATION
+// GLOBAL SPACING (non-message-specific)
 // =============================================================================
 
-export interface SpacingConfig {
-    /** Gap between messages */
-    gap: number;
+export interface GlobalSpacing {
     /** Padding at top of chat */
     topPadding: number;
     /** Padding at bottom of chat */
     bottomPadding: number;
-    /** Horizontal margin for bubbles */
+    /** Horizontal margin for bubbles from screen edge */
     bubbleMargin: number;
-    /** Maximum bubble width as percentage of viewport */
-    bubbleMaxWidth: number;
 }
 
 // =============================================================================
@@ -108,43 +154,138 @@ export interface SpacingConfig {
 // =============================================================================
 
 export interface MessageLayoutConfig {
-    heights: HeightConfig;
+    messageTypes: MessageTypesConfig;
     additions: HeightAdditions;
     scroll: ScrollConfig;
     animation: AnimationConfig;
-    spacing: SpacingConfig;
+    spacing: GlobalSpacing;
 }
 
 // =============================================================================
-// DEFAULT CONFIGURATION (iOS WhatsApp)
+// DEFAULT CONFIGURATION (iOS WhatsApp Authentic)
 // =============================================================================
 
+const DEFAULT_GAP: MessageGapConfig = {
+    sameSender: 3,      // Tight grouping for consecutive same-sender messages
+    sameSide: 8,        // Slight separation for same side, different sender
+    oppositeSide: 16,   // Clear visual break when switching sides
+};
+
+const SYSTEM_GAP: MessageGapConfig = {
+    sameSender: 12,     // System messages always have consistent gap
+    sameSide: 12,
+    oppositeSide: 12,
+};
+
 export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
-    heights: {
+    messageTypes: {
         text: {
-            base: 88,           // Padding + timestamp
-            lineHeight: 66,     // 22px * 3 for retina
-            charsPerLine: 26,   // Characters before wrap
+            height: {
+                base: 88,           // Padding + timestamp
+                lineHeight: 66,     // 22px * 3 for retina
+                charsPerLine: 26,
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 150,
+                avgCharWidth: 14,
+                horizontalPadding: 72,
+            },
+            gap: DEFAULT_GAP,
         },
         image: {
-            default: 400,
-            withCaption: 480,
+            height: {
+                base: 400,
+                withCaption: 480,
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 300,
+            },
+            gap: { ...DEFAULT_GAP, sameSender: 6 },  // Slightly more gap for media
         },
         video: {
-            default: 400,
-            withCaption: 480,
+            height: {
+                base: 400,
+                withCaption: 480,
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 300,
+            },
+            gap: { ...DEFAULT_GAP, sameSender: 6 },
         },
         gif: {
-            default: 300,
+            height: {
+                base: 300,
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 250,
+            },
+            gap: { ...DEFAULT_GAP, sameSender: 6 },
         },
         voice: {
-            default: 180,
+            height: {
+                base: 180,
+            },
+            width: {
+                fixed: 450,
+                maxPercent: 0.78,
+                min: 450,
+            },
+            gap: DEFAULT_GAP,
         },
         system: {
-            default: 80,
+            height: {
+                base: 80,
+            },
+            width: {
+                maxPercent: 0.6,
+                min: 200,
+            },
+            gap: SYSTEM_GAP,
         },
         deleted: {
-            default: 100,
+            height: {
+                base: 100,
+            },
+            width: {
+                maxPercent: 0.6,
+                min: 200,
+            },
+            gap: DEFAULT_GAP,
+        },
+        typing: {
+            height: {
+                base: 120,
+            },
+            width: {
+                fixed: 150,
+                maxPercent: 0.3,
+                min: 150,
+            },
+            gap: DEFAULT_GAP,
+        },
+        screenshot_alert: {
+            height: {
+                base: 80,
+            },
+            width: {
+                maxPercent: 0.7,
+                min: 250,
+            },
+            gap: SYSTEM_GAP,
+        },
+        call_missed: {
+            height: {
+                base: 120,
+            },
+            width: {
+                maxPercent: 0.6,
+                min: 200,
+            },
+            gap: SYSTEM_GAP,
         },
     },
     additions: {
@@ -170,11 +311,9 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
         voiceWaveformSpeed: 2,
     },
     spacing: {
-        gap: 12,
         topPadding: 48,
         bottomPadding: 120,
         bubbleMargin: 36,
-        bubbleMaxWidth: 0.78,
     },
 };
 
@@ -183,7 +322,7 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
 // =============================================================================
 
 export interface MessageForHeight {
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
+    type?: MessageType;
     text?: string;
     caption?: string;
     from?: string;
@@ -194,57 +333,31 @@ export interface MessageForHeight {
 
 /**
  * Calculate the height of a message based on its type and content.
- * All message types are handled with configurable values.
+ * Uses per-message-type configuration for accurate height calculation.
  */
 export function calculateMessageHeight(
     msg: MessageForHeight,
     config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
 ): number {
-    const { heights, additions } = config;
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+    const { additions } = config;
 
     let height = 0;
-    const msgType = msg.type || "text";
 
     // Base height by type
-    switch (msgType) {
-        case "text":
-            const text = msg.text || "";
-            const lines = Math.max(1, Math.ceil(text.length / heights.text.charsPerLine));
-            height = heights.text.base + (lines * heights.text.lineHeight);
-            break;
-
-        case "image":
-            height = msg.caption ? heights.image.withCaption : heights.image.default;
-            break;
-
-        case "video":
-            height = msg.caption ? heights.video.withCaption : heights.video.default;
-            break;
-
-        case "gif":
-            height = heights.gif.default;
-            break;
-
-        case "voice":
-            height = heights.voice.default;
-            break;
-
-        case "system":
-            height = heights.system.default;
-            break;
-
-        case "deleted":
-            height = heights.deleted.default;
-            break;
-
-        default:
-            // Unknown type - use text formula
-            const unknownText = msg.text || "";
-            const unknownLines = Math.max(1, Math.ceil(unknownText.length / heights.text.charsPerLine));
-            height = heights.text.base + (unknownLines * heights.text.lineHeight);
+    if (msgType === "text" || msgType === "deleted") {
+        const text = msg.text || "";
+        const charsPerLine = typeConfig.height.charsPerLine || 26;
+        const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
+        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || 66));
+    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
+        height = typeConfig.height.withCaption || typeConfig.height.base;
+    } else {
+        height = typeConfig.height.base;
     }
 
-    // Add-ons for future features
+    // Add-ons
     if (msg.reactions && msg.reactions.length > 0) {
         height += additions.reaction;
     }
@@ -263,6 +376,85 @@ export function calculateMessageHeight(
     }
 
     return height;
+}
+
+// =============================================================================
+// SMART GAP CALCULATION
+// =============================================================================
+
+export interface MessageForGap {
+    type?: MessageType;
+    from?: string;
+}
+
+/**
+ * Calculate the gap between two messages using smart contextual logic.
+ * Takes into account sender, side, and message types.
+ */
+export function calculateGapBetween(
+    prev: MessageForGap,
+    next: MessageForGap,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const prevType = (prev.type || "text") as MessageType;
+    const prevConfig = config.messageTypes[prevType] || config.messageTypes.text;
+
+    const prevIsMe = prev.from === "me";
+    const nextIsMe = next.from === "me";
+
+    // Same sender = tightest grouping
+    if (prev.from === next.from) {
+        return prevConfig.gap.sameSender;
+    }
+
+    // Same side but different sender
+    if (prevIsMe === nextIsMe) {
+        return prevConfig.gap.sameSide;
+    }
+
+    // Opposite sides = clear separation
+    return prevConfig.gap.oppositeSide;
+}
+
+// =============================================================================
+// BUBBLE WIDTH CALCULATION
+// =============================================================================
+
+/**
+ * Calculate bubble width based on message type and content.
+ */
+export function calculateBubbleWidth(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+    const widthConfig = typeConfig.width;
+
+    // Fixed width (voice, typing)
+    if (widthConfig.fixed) {
+        return widthConfig.fixed;
+    }
+
+    // Text messages: dynamic width based on content
+    if (msgType === "text" || msgType === "deleted") {
+        const textLength = msg.text?.length || 0;
+        const avgCharWidth = widthConfig.avgCharWidth || 14;
+        const horizontalPadding = widthConfig.horizontalPadding || 72;
+        const charsPerLine = typeConfig.height.charsPerLine || 26;
+
+        const maxCharsOnLine = Math.min(textLength, charsPerLine);
+        const textWidth = maxCharsOnLine * avgCharWidth + horizontalPadding;
+
+        return Math.min(
+            viewportWidth * widthConfig.maxPercent,
+            Math.max(textWidth, widthConfig.min)
+        );
+    }
+
+    // Media and other types: use maxPercent
+    return viewportWidth * widthConfig.maxPercent;
 }
 
 // =============================================================================

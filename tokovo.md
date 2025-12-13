@@ -42,6 +42,7 @@ apps/
         _meta.json
         building-apps.mdx
         index.mdx
+        twitter.mdx
         whatsapp.mdx
       architecture/
         _meta.json
@@ -121,9 +122,11 @@ apps/
       HomeScreenGroupDemoVideo.tsx
       index.ts
       InstagramVideo.tsx
+      MultiAppShowcaseVideo.tsx
       MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
       Root.tsx
+      TwitterShowcaseVideo.tsx
       UltimateShowcaseVideo.tsx
       Video.tsx
       WhatsappMediaShowcaseVideo.tsx
@@ -166,6 +169,32 @@ packages/
       index.ts
       runtime.ts
       types.ts
+      ui.tsx
+    package.json
+    tsconfig.json
+  apps-twitter/
+    src/
+      components/
+        Avatar.tsx
+        BottomNav.tsx
+        ComposeModal.tsx
+        Header.tsx
+        index.ts
+        MediaGrid.tsx
+        Notifications.tsx
+        Poll.tsx
+        Profile.tsx
+        Search.tsx
+        Tweet.tsx
+        TweetActions.tsx
+        TweetDetail.tsx
+      config/
+        index.ts
+        layout-config.ts
+        twitter-theme.ts
+      index.ts
+      plugin.ts
+      runtime.ts
       ui.tsx
     package.json
     tsconfig.json
@@ -254,9 +283,11 @@ packages/
   dsl/
     examples/
       breakup-01.dsl.ts
+      multi-app-showcase.dsl.ts
       multi-pov-demo.dsl.ts
       production-demo.dsl.ts
       toxic-ex-drama.dsl.ts
+      twitter-showcase.dsl.ts
       ultimate-showcase.dsl.ts
       whatsapp-media-showcase.dsl.ts
     src/
@@ -345,15 +376,6 @@ turbo.json
 ```
 
 # Files
-
-## File: apps/docs/pages/apps/_meta.json
-````json
-{
-    "index": "Overview",
-    "whatsapp": "WhatsApp",
-    "building-apps": "Building Apps"
-}
-````
 
 ## File: apps/docs/pages/apps/index.mdx
 ````
@@ -8501,6 +8523,325 @@ import { RemotionRoot } from "./Root";
 registerRoot(RemotionRoot);
 ````
 
+## File: apps/video-runner/src/MultiAppShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import apps to ensure reducers are registered
+import "@tokovo/apps-twitter";
+import "@tokovo/apps-whatsapp";
+
+/**
+ * Multi-App Showcase Video
+ * 
+ * Demonstrates Tokovo's power by combining WhatsApp, Twitter, and notifications.
+ */
+
+function createMultiAppShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            MainPhone: {
+                id: "MainPhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            }
+        },
+        conversations: {
+            dm_sarah: {
+                id: "dm_sarah",
+                messages: [],
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_sarah",
+            },
+            app_twitter: {
+                screen: "timeline",
+                activeTab: "for-you",
+                tweets: [],
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "MainPhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "MainPhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Timeline events - Multi-app flow
+    const events: TimelineEvent[] = [
+        // Scene 1: WhatsApp conversation
+        {
+            at: 30, // 1s
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_sarah",
+            from: "sarah",
+            text: "Hey! Did you see that tweet from Elon? 🚀",
+        },
+        {
+            at: 75, // 2.5s
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_sarah",
+            from: "me",
+        },
+        {
+            at: 120, // 4s
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_sarah",
+            from: "me",
+        },
+        {
+            at: 125,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_sarah",
+            from: "me",
+            text: "No! What happened?",
+        },
+        {
+            at: 165, // 5.5s
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_sarah",
+            from: "sarah",
+            text: "He just announced something massive about AI!",
+        },
+        {
+            at: 200,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_sarah",
+            from: "sarah",
+            text: "Check Twitter NOW 😱",
+        },
+
+        // Scene 2: Switch to Twitter
+        {
+            at: 240, // 8s
+            kind: "DEVICE",
+            deviceId: "MainPhone",
+            type: "OPEN_APP",
+            appId: "app_twitter",
+        },
+
+        // Scene 3: Twitter timeline
+        {
+            at: 270, // 9s
+            kind: "APP",
+            appId: "app_twitter",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "__twitter_timeline__",
+            from: "elonmusk",
+            text: "🚀 Announcing: Tesla will now accept Dogecoin for all vehicles. To the moon! 🌙",
+            meta: {
+                type: "tweet",
+                author: { name: "Elon Musk", handle: "elonmusk", verified: "blue" },
+                replyCount: 45000,
+                retweetCount: 125000,
+                likeCount: 890000,
+                viewCount: 45000000,
+            },
+        } as any,
+        {
+            at: 330, // 11s - Like the tweet
+            kind: "APP",
+            appId: "app_twitter",
+            type: "REACTION_ADDED",
+            conversationId: "__twitter_timeline__",
+            from: "me",
+            emoji: "❤️",
+            ref: { id: "tweet_270_0" },
+        } as any,
+        {
+            at: 360, // 12s - Another tweet
+            kind: "APP",
+            appId: "app_twitter",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "__twitter_timeline__",
+            from: "CNBC",
+            text: "BREAKING: Tesla stock surges 15% after Elon Musk announcement",
+            meta: {
+                type: "tweet",
+                author: { name: "CNBC", handle: "CNBC", verified: "gold" },
+                replyCount: 1200,
+                retweetCount: 8500,
+                likeCount: 23000,
+                viewCount: 1200000,
+            },
+        } as any,
+        {
+            at: 420, // 14s - Retweet
+            kind: "APP",
+            appId: "app_twitter",
+            type: "REACTION_ADDED",
+            conversationId: "__twitter_timeline__",
+            from: "me",
+            emoji: "🔁",
+            ref: { id: "tweet_270_0" },
+        } as any,
+
+        // Scene 4: Post own tweet
+        {
+            at: 480, // 16s
+            kind: "APP",
+            appId: "app_twitter",
+            type: "MESSAGE_SENT",
+            conversationId: "__twitter_timeline__",
+            from: "me",
+            text: "This is insane! 🚀 Dogecoin about to moon! @elonmusk just changed the game #DOGE",
+            meta: {
+                type: "tweet",
+                author: { name: "Alex", handle: "alexdev", verified: "blue" },
+            },
+        } as any,
+
+        // Scene 5: Back to WhatsApp
+        {
+            at: 540, // 18s
+            kind: "DEVICE",
+            deviceId: "MainPhone",
+            type: "OPEN_APP",
+            appId: "app_whatsapp",
+        },
+        {
+            at: 570, // 19s
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_sarah",
+            from: "me",
+        },
+        {
+            at: 630,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_sarah",
+            from: "me",
+        },
+        {
+            at: 635,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_sarah",
+            from: "me",
+            text: "OMG you were right! 🤯",
+        },
+        {
+            at: 680,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_sarah",
+            from: "me",
+            text: "I just retweeted it and posted my own take",
+        },
+        {
+            at: 720,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_sarah",
+            from: "sarah",
+            text: "Haha told you! 😂",
+        },
+
+        // Scene 6: Notification
+        {
+            at: 780, // 26s
+            kind: "DEVICE",
+            deviceId: "MainPhone",
+            type: "SHOW_NOTIFICATION",
+            appId: "app_twitter",
+            title: "Your tweet is getting noticed!",
+            body: "25 people liked your tweet about Dogecoin",
+            mode: "headsup",
+        },
+    ];
+
+    return { initialWorld, events };
+}
+
+export const MultiAppShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+
+    const { initialWorld, events } = useMemo(() => createMultiAppShowcaseEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(events), [events]);
+
+    // Replay state up to current frame
+    const world = useMemo(() => replay(initialWorld, events, frame), [initialWorld, events, frame]);
+
+    // Scale to fit composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#000",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={frame}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default MultiAppShowcaseVideo;
+````
+
 ## File: apps/video-runner/src/MultiPovDemoVideo.tsx
 ````typescript
 import React from "react";
@@ -8611,6 +8952,240 @@ export const NotificationCallDemoVideo: React.FC = () => {
         </AbsoluteFill>
     );
 };
+````
+
+## File: apps/video-runner/src/TwitterShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import Twitter app to ensure reducer is registered
+import "@tokovo/apps-twitter";
+
+/**
+ * Twitter/X Showcase Video
+ * 
+ * Demonstrates the Twitter timeline with tweets, likes, retweets.
+ */
+
+function createTwitterShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            UserPhone: {
+                id: "UserPhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_twitter",
+                notifications: [],
+            }
+        },
+        conversations: {},
+        appState: {
+            app_twitter: {
+                screen: "timeline",
+                activeTab: "for-you",
+                tweets: [],
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "UserPhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "UserPhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Timeline events
+    const events: TimelineEvent[] = [
+        // Tweet 1: Tech influencer
+        {
+            at: 30,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_1",
+            author: {
+                name: "Elon Musk",
+                handle: "elonmusk",
+                verified: "blue",
+            },
+            text: "The future of AI is here. We're entering a new era of human-machine collaboration 🚀",
+            replyCount: 5432,
+            retweetCount: 12800,
+            likeCount: 89000,
+            viewCount: 2400000,
+            media: [{ url: "https://picsum.photos/800/450", type: "image" }],
+        } as any,
+
+        // Tweet 2: Another influencer
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_2",
+            author: {
+                name: "Sam Altman",
+                handle: "sama",
+                verified: "blue",
+            },
+            text: "GPT-5 coming soon. It's going to be wild.",
+            replyCount: 2100,
+            retweetCount: 8900,
+            likeCount: 45000,
+            viewCount: 890000,
+        } as any,
+
+        // Like the first tweet
+        {
+            at: 90,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_LIKED",
+            tweetId: "tweet_1",
+        } as any,
+
+        // Tweet 3: Organization
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_3",
+            author: {
+                name: "ESPN",
+                handle: "espn",
+                verified: "gold",
+            },
+            text: "BREAKING: Historic trade shakes up the league! Full details ⬇️",
+            replyCount: 890,
+            retweetCount: 3200,
+            likeCount: 15000,
+            viewCount: 450000,
+        } as any,
+
+        // Retweet
+        {
+            at: 150,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RETWEETED",
+            tweetId: "tweet_3",
+        } as any,
+
+        // Tweet 4: Meme with multiple images
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_4",
+            author: {
+                name: "Internet Historian",
+                handle: "historyinmemes",
+                verified: "blue",
+            },
+            text: "The four horsemen of procrastination:",
+            replyCount: 12500,
+            retweetCount: 45000,
+            likeCount: 234000,
+            viewCount: 5600000,
+            media: [
+                { url: "https://picsum.photos/400/400?1", type: "image" },
+                { url: "https://picsum.photos/400/400?2", type: "image" },
+                { url: "https://picsum.photos/400/400?3", type: "image" },
+                { url: "https://picsum.photos/400/400?4", type: "image" },
+            ],
+        } as any,
+
+        // User posts their own tweet
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_POSTED",
+            tweetId: "tweet_5",
+            author: {
+                name: "Alex",
+                handle: "alexdev",
+                verified: "blue",
+            },
+            text: "Just built a new app with @tokovo - the future of video generation is here! 🎬✨ #buildinpublic",
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const TwitterShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createTwitterShowcaseEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#000",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default TwitterShowcaseVideo;
 ````
 
 ## File: apps/video-runner/src/WhatsappMediaShowcaseVideo.tsx
@@ -9790,6 +10365,2844 @@ export const initialInstagramState: InstagramState = {
 ````
 
 ## File: packages/apps-instagram/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/apps-twitter/src/components/Avatar.tsx
+````typescript
+/**
+ * Avatar Component
+ * 
+ * Displays user profile picture with optional verified badge.
+ */
+
+import React from "react";
+import { twitterColors, twitterSpacing } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type VerifiedType = "blue" | "gold" | "grey" | "none";
+
+export interface AvatarProps {
+    imageUrl?: string;
+    name: string;
+    size?: "small" | "medium" | "large";
+    verified?: VerifiedType;
+}
+
+// =============================================================================
+// VERIFIED BADGE
+// =============================================================================
+
+const VerifiedBadge: React.FC<{ type: VerifiedType; size: number }> = ({ type, size }) => {
+    if (type === "none") return null;
+
+    const color = twitterColors.verified[type];
+    const badgeSize = size * 0.35;
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            right: 0,
+            width: badgeSize,
+            height: badgeSize,
+            backgroundColor: color,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: `3px solid ${twitterColors.background.primary}`,
+        }}>
+            {/* Checkmark SVG */}
+            <svg
+                width={badgeSize * 0.6}
+                height={badgeSize * 0.6}
+                viewBox="0 0 24 24"
+                fill="white"
+            >
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" />
+            </svg>
+        </div>
+    );
+};
+
+// =============================================================================
+// AVATAR COMPONENT
+// =============================================================================
+
+export const Avatar: React.FC<AvatarProps> = ({
+    imageUrl,
+    name,
+    size = "medium",
+    verified = "none",
+}) => {
+    const sizeMap = {
+        small: twitterSpacing.avatarSizeSmall,
+        medium: twitterSpacing.avatarSize,
+        large: twitterSpacing.avatarSizeLarge,
+    };
+
+    const avatarSize = sizeMap[size];
+
+    // Generate initials for fallback
+    const initials = name
+        .split(" ")
+        .map(n => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase();
+
+    // Generate a consistent color from name
+    const hashCode = name.split("").reduce((acc, char) => {
+        return char.charCodeAt(0) + ((acc << 5) - acc);
+    }, 0);
+    const colors = ["#1D9BF0", "#00BA7C", "#F91880", "#FF7A00", "#7856FF"];
+    const bgColor = colors[Math.abs(hashCode) % colors.length];
+
+    return (
+        <div style={{
+            position: "relative",
+            width: avatarSize,
+            height: avatarSize,
+            borderRadius: "50%",
+            overflow: "visible",
+            flexShrink: 0,
+        }}>
+            {imageUrl ? (
+                <img
+                    src={imageUrl}
+                    alt={name}
+                    style={{
+                        width: avatarSize,
+                        height: avatarSize,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                    }}
+                />
+            ) : (
+                <div style={{
+                    width: avatarSize,
+                    height: avatarSize,
+                    borderRadius: "50%",
+                    backgroundColor: bgColor,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
+                    <span style={{
+                        fontSize: avatarSize * 0.4,
+                        fontWeight: 700,
+                        color: "white",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                    }}>
+                        {initials}
+                    </span>
+                </div>
+            )}
+
+            <VerifiedBadge type={verified} size={avatarSize} />
+        </div>
+    );
+};
+
+export default Avatar;
+````
+
+## File: packages/apps-twitter/src/components/BottomNav.tsx
+````typescript
+/**
+ * Bottom Navigation Component
+ * 
+ * Home, Search, Grok, Notifications, Messages tabs.
+ */
+
+import React from "react";
+import { twitterColors, twitterLayout, twitterSpacing } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type TabId = "home" | "search" | "grok" | "notifications" | "messages";
+
+export interface BottomNavProps {
+    activeTab?: TabId;
+    unreadNotifications?: number;
+    unreadMessages?: number;
+}
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+const HomeIcon: React.FC<{ active: boolean; size: number }> = ({ active, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? twitterColors.text.primary : "none"} stroke={twitterColors.text.primary} strokeWidth={active ? 0 : 2}>
+        {active ? (
+            <path d="M12 1.696L.622 8.807l1.06 1.696L3 9.679V19.5A2.5 2.5 0 0 0 5.5 22h5V14h3v8h5.5a2.5 2.5 0 0 0 2.5-2.5V9.679l1.318.824 1.06-1.696L12 1.696z" />
+        ) : (
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        )}
+    </svg>
+);
+
+const SearchIcon: React.FC<{ active: boolean; size: number }> = ({ active, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={twitterColors.text.primary} strokeWidth={active ? 3 : 2}>
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+);
+
+const GrokIcon: React.FC<{ active: boolean; size: number }> = ({ active, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? twitterColors.text.primary : "none"} stroke={twitterColors.text.primary} strokeWidth={active ? 0 : 2}>
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+    </svg>
+);
+
+const NotificationsIcon: React.FC<{ active: boolean; size: number }> = ({ active, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? twitterColors.text.primary : "none"} stroke={twitterColors.text.primary} strokeWidth={active ? 0 : 2}>
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+);
+
+const MessagesIcon: React.FC<{ active: boolean; size: number }> = ({ active, size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={active ? twitterColors.text.primary : "none"} stroke={twitterColors.text.primary} strokeWidth={active ? 0 : 2}>
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+        <polyline points="22,6 12,13 2,6" />
+    </svg>
+);
+
+// =============================================================================
+// BADGE
+// =============================================================================
+
+const Badge: React.FC<{ count: number }> = ({ count }) => {
+    if (count <= 0) return null;
+
+    const displayCount = count > 99 ? "99+" : count.toString();
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: -6,
+            right: -12,
+            minWidth: 48,
+            height: 48,
+            backgroundColor: twitterColors.brand.blue,
+            borderRadius: 24,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "0 12px",
+        }}>
+            <span style={{
+                fontSize: 30,
+                fontWeight: 700,
+                color: "white",
+                fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+            }}>
+                {displayCount}
+            </span>
+        </div>
+    );
+};
+
+// =============================================================================
+// BOTTOM NAV COMPONENT
+// =============================================================================
+
+export const BottomNav: React.FC<BottomNavProps> = ({
+    activeTab = "home",
+    unreadNotifications = 0,
+    unreadMessages = 0,
+}) => {
+    const iconSize = 72;
+
+    const tabs: { id: TabId; icon: React.FC<{ active: boolean; size: number }>; badge?: number }[] = [
+        { id: "home", icon: HomeIcon },
+        { id: "search", icon: SearchIcon },
+        { id: "grok", icon: GrokIcon },
+        { id: "notifications", icon: NotificationsIcon, badge: unreadNotifications },
+        { id: "messages", icon: MessagesIcon, badge: unreadMessages },
+    ];
+
+    return (
+        <div style={{
+            position: "fixed",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: twitterLayout.bottomNavHeight + twitterLayout.safeAreaBottom,
+            backgroundColor: "rgba(0, 0, 0, 0.95)",
+            backdropFilter: "blur(12px)",
+            borderTop: `1px solid ${twitterColors.ui.border}`,
+            paddingBottom: twitterLayout.safeAreaBottom,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
+            zIndex: 100,
+        }}>
+            {tabs.map(({ id, icon: Icon, badge }) => (
+                <div
+                    key={id}
+                    style={{
+                        position: "relative",
+                        padding: 24,
+                    }}
+                >
+                    <Icon active={activeTab === id} size={iconSize} />
+                    {badge !== undefined && <Badge count={badge} />}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+export default BottomNav;
+````
+
+## File: packages/apps-twitter/src/components/ComposeModal.tsx
+````typescript
+/**
+ * Compose Modal
+ * 
+ * Tweet composition UI with text input, media, and posting.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography, twitterSpacing, twitterLayout } from "../config";
+import { Avatar } from "./Avatar";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface ComposeModalProps {
+    isOpen?: boolean;
+    replyTo?: {
+        name: string;
+        handle: string;
+        text: string;
+    };
+    draftText?: string;
+    userAvatarUrl?: string;
+    userName?: string;
+    onClose?: () => void;
+    onPost?: (text: string) => void;
+}
+
+// =============================================================================
+// TOOLBAR BUTTON
+// =============================================================================
+
+const ToolbarButton: React.FC<{ icon: React.ReactNode; disabled?: boolean }> = ({
+    icon,
+    disabled = false
+}) => (
+    <div style={{
+        width: 96,
+        height: 96,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        opacity: disabled ? 0.4 : 1,
+    }}>
+        {icon}
+    </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const ComposeModal: React.FC<ComposeModalProps> = ({
+    isOpen = true,
+    replyTo,
+    draftText = "",
+    userAvatarUrl,
+    userName = "You",
+    onClose,
+    onPost,
+}) => {
+    if (!isOpen) return null;
+
+    const hasContent = draftText.length > 0;
+    const charLimit = 280;
+    const charsRemaining = charLimit - draftText.length;
+    const isOverLimit = charsRemaining < 0;
+
+    return (
+        <div style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: twitterColors.background.primary,
+            zIndex: 1000,
+        }}>
+            {/* Header */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: `${twitterLayout.safeAreaTop + 24}px ${twitterSpacing.horizontalPadding}px 24px`,
+                borderBottom: `1px solid ${twitterColors.border.primary}`,
+            }}>
+                {/* Cancel */}
+                <div
+                    style={{
+                        fontSize: 48,
+                        color: twitterColors.text.primary,
+                        cursor: "pointer",
+                    }}
+                    onClick={onClose}
+                >
+                    Cancel
+                </div>
+
+                {/* Drafts */}
+                <div style={{
+                    fontSize: 48,
+                    color: twitterColors.brand.blue,
+                }}>
+                    Drafts
+                </div>
+
+                {/* Post Button */}
+                <div style={{
+                    backgroundColor: hasContent && !isOverLimit
+                        ? twitterColors.brand.blue
+                        : twitterColors.brand.blue,
+                    opacity: hasContent && !isOverLimit ? 1 : 0.5,
+                    color: "white",
+                    padding: "24px 48px",
+                    borderRadius: 999,
+                    fontSize: 48,
+                    fontWeight: 700,
+                    cursor: hasContent && !isOverLimit ? "pointer" : "default",
+                }}
+                    onClick={() => hasContent && !isOverLimit && onPost?.(draftText)}
+                >
+                    Post
+                </div>
+            </div>
+
+            {/* Reply To Context */}
+            {replyTo && (
+                <div style={{
+                    padding: twitterSpacing.tweetPadding,
+                    borderBottom: `1px solid ${twitterColors.border.primary}`,
+                }}>
+                    <div style={{
+                        fontSize: 42,
+                        color: twitterColors.text.secondary,
+                    }}>
+                        Replying to <span style={{ color: twitterColors.brand.blue }}>@{replyTo.handle}</span>
+                    </div>
+                </div>
+            )}
+
+            {/* Compose Area */}
+            <div style={{
+                display: "flex",
+                padding: twitterSpacing.tweetPadding,
+                gap: 36,
+            }}>
+                {/* Avatar */}
+                <Avatar
+                    imageUrl={userAvatarUrl}
+                    name={userName}
+                    size="large"
+                />
+
+                {/* Text Input Area */}
+                <div style={{
+                    flex: 1,
+                    minHeight: 300,
+                }}>
+                    <div style={{
+                        fontSize: 60,
+                        color: draftText ? twitterColors.text.primary : twitterColors.text.tertiary,
+                        lineHeight: 1.35,
+                    }}>
+                        {draftText || "What's happening?"}
+                    </div>
+
+                    {/* Audience selector */}
+                    <div style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 12,
+                        marginTop: 36,
+                        padding: "12px 24px",
+                        borderRadius: 999,
+                        border: `3px solid ${twitterColors.brand.blue}`,
+                    }}>
+                        <span style={{
+                            fontSize: 42,
+                            color: twitterColors.brand.blue,
+                            fontWeight: 700,
+                        }}>
+                            🌍 Everyone can reply
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {/* Bottom Toolbar */}
+            <div style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                borderTop: `1px solid ${twitterColors.border.primary}`,
+                backgroundColor: twitterColors.background.primary,
+                paddingBottom: twitterLayout.safeAreaBottom,
+            }}>
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: `24px ${twitterSpacing.horizontalPadding}px`,
+                }}>
+                    {/* Media buttons */}
+                    <div style={{ display: "flex", gap: 12 }}>
+                        <ToolbarButton icon={
+                            <svg width={72} height={72} viewBox="0 0 24 24" fill={twitterColors.brand.blue}>
+                                <path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v13a2.5 2.5 0 0 1-2.5 2.5h-13A2.5 2.5 0 0 1 3 18.5v-13zM5.5 5a.5.5 0 0 0-.5.5v9.086l3-3 3 3 5-5 3 3V5.5a.5.5 0 0 0-.5-.5h-13zM19 15.414l-3-3-5 5-3-3-3 3V18.5a.5.5 0 0 0 .5.5h13a.5.5 0 0 0 .5-.5v-3.086zM9.75 7a1.75 1.75 0 1 0 0 3.5 1.75 1.75 0 0 0 0-3.5z" />
+                            </svg>
+                        } />
+                        <ToolbarButton icon={
+                            <svg width={72} height={72} viewBox="0 0 24 24" fill={twitterColors.brand.blue}>
+                                <path d="M3 5.5A2.5 2.5 0 0 1 5.5 3h13A2.5 2.5 0 0 1 21 5.5v6.636a6 6 0 0 0-1-.318V5.5a.5.5 0 0 0-.5-.5h-13a.5.5 0 0 0-.5.5v13a.5.5 0 0 0 .5.5h6.318c.066.357.171.7.318 1H5.5A2.5 2.5 0 0 1 3 18.5v-13z" />
+                            </svg>
+                        } />
+                        <ToolbarButton icon={
+                            <svg width={72} height={72} viewBox="0 0 24 24" fill={twitterColors.brand.blue}>
+                                <path d="M8 9.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm8 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm-4 6a4 4 0 0 0 4-4H8a4 4 0 0 0 4 4z" />
+                                <path d="M12 23c6.075 0 11-4.925 11-11S18.075 1 12 1 1 5.925 1 12s4.925 11 11 11zm0-2a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+                            </svg>
+                        } />
+                        <ToolbarButton icon={
+                            <svg width={72} height={72} viewBox="0 0 24 24" fill={twitterColors.brand.blue}>
+                                <path d="M12 7c-1.93 0-3.5 1.57-3.5 3.5S10.07 14 12 14s3.5-1.57 3.5-3.5S13.93 7 12 7zm0 5c-.827 0-1.5-.673-1.5-1.5S11.173 9 12 9s1.5.673 1.5 1.5S12.827 12 12 12zm0-10c-4.687 0-8.5 3.813-8.5 8.5 0 5.967 7.621 11.116 7.945 11.332l.555.37.555-.37c.324-.216 7.945-5.365 7.945-11.332C20.5 5.813 16.687 2 12 2z" />
+                            </svg>
+                        } />
+                    </div>
+
+                    {/* Spacer */}
+                    <div style={{ flex: 1 }} />
+
+                    {/* Character count */}
+                    <div style={{
+                        fontSize: 42,
+                        color: isOverLimit
+                            ? twitterColors.engagement.like
+                            : charsRemaining < 20
+                                ? "#FFD700"
+                                : twitterColors.text.secondary,
+                    }}>
+                        {charsRemaining}
+                    </div>
+
+                    {/* Add button */}
+                    <div style={{
+                        marginLeft: 36,
+                        width: 84,
+                        height: 84,
+                        borderRadius: "50%",
+                        border: `3px solid ${twitterColors.brand.blue}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <span style={{
+                            fontSize: 48,
+                            color: twitterColors.brand.blue,
+                            fontWeight: 300,
+                        }}>
+                            +
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default ComposeModal;
+````
+
+## File: packages/apps-twitter/src/components/Header.tsx
+````typescript
+/**
+ * Header Component
+ * 
+ * Top navigation with profile avatar, X logo, and settings.
+ */
+
+import React from "react";
+import { twitterColors, twitterSpacing, twitterLayout, twitterTypography } from "../config";
+import { Avatar } from "./Avatar";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface HeaderProps {
+    userAvatarUrl?: string;
+    userName?: string;
+    activeTab?: "for-you" | "following";
+}
+
+// =============================================================================
+// X LOGO
+// =============================================================================
+
+const XLogo: React.FC<{ size: number }> = ({ size }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={twitterColors.text.primary}>
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+);
+
+// =============================================================================
+// HEADER COMPONENT
+// =============================================================================
+
+export const Header: React.FC<HeaderProps> = ({
+    userAvatarUrl,
+    userName = "User",
+    activeTab = "for-you",
+}) => {
+    return (
+        <div style={{
+            position: "sticky",
+            top: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            backdropFilter: "blur(12px)",
+            borderBottom: `1px solid ${twitterColors.ui.border}`,
+            zIndex: 100,
+        }}>
+            {/* Main header */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: `${twitterLayout.safeAreaTop}px ${twitterSpacing.tweetPadding}px 24px`,
+            }}>
+                {/* Profile avatar */}
+                <Avatar
+                    name={userName}
+                    imageUrl={userAvatarUrl}
+                    size="small"
+                />
+
+                {/* X Logo */}
+                <XLogo size={90} />
+
+                {/* Settings/Premium */}
+                <div style={{
+                    width: twitterSpacing.avatarSizeSmall,
+                    height: twitterSpacing.avatarSizeSmall,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
+                    <svg width={54} height={54} viewBox="0 0 24 24" fill="none" stroke={twitterColors.text.primary} strokeWidth="2">
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Tab bar */}
+            <div style={{
+                display: "flex",
+                height: twitterLayout.tabBarHeight,
+            }}>
+                {/* For You tab */}
+                <div style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                }}>
+                    <span style={{
+                        fontSize: twitterTypography.sizes.tabLabel,
+                        fontWeight: activeTab === "for-you" ? 700 : 500,
+                        color: activeTab === "for-you" ? twitterColors.text.primary : twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        For you
+                    </span>
+                    {activeTab === "for-you" && (
+                        <div style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            width: 150,
+                            height: 12,
+                            backgroundColor: twitterColors.brand.blue,
+                            borderRadius: 6,
+                        }} />
+                    )}
+                </div>
+
+                {/* Following tab */}
+                <div style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    position: "relative",
+                }}>
+                    <span style={{
+                        fontSize: twitterTypography.sizes.tabLabel,
+                        fontWeight: activeTab === "following" ? 700 : 500,
+                        color: activeTab === "following" ? twitterColors.text.primary : twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        Following
+                    </span>
+                    {activeTab === "following" && (
+                        <div style={{
+                            position: "absolute",
+                            bottom: 0,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            width: 180,
+                            height: 12,
+                            backgroundColor: twitterColors.brand.blue,
+                            borderRadius: 6,
+                        }} />
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+export default Header;
+````
+
+## File: packages/apps-twitter/src/components/MediaGrid.tsx
+````typescript
+/**
+ * Media Grid Component
+ * 
+ * Displays 1-4 images in Twitter's grid layout patterns.
+ */
+
+import React from "react";
+import { twitterColors, twitterSpacing, mediaGridLayouts } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface MediaItem {
+    url: string;
+    type: "image" | "video" | "gif";
+    alt?: string;
+}
+
+export interface MediaGridProps {
+    media: MediaItem[];
+    maxHeight?: number;
+}
+
+// =============================================================================
+// PLAY BUTTON OVERLAY
+// =============================================================================
+
+const PlayButton: React.FC = () => (
+    <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 120,
+        height: 120,
+        borderRadius: "50%",
+        backgroundColor: "rgba(29, 155, 240, 0.9)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+    }}>
+        <svg width={48} height={48} viewBox="0 0 24 24" fill="white">
+            <path d="M8 5v14l11-7z" />
+        </svg>
+    </div>
+);
+
+// =============================================================================
+// MEDIA GRID COMPONENT
+// =============================================================================
+
+export const MediaGrid: React.FC<MediaGridProps> = ({
+    media,
+    maxHeight = 600,
+}) => {
+    if (media.length === 0) return null;
+
+    const count = Math.min(media.length, 4) as 1 | 2 | 3 | 4;
+    const layout = mediaGridLayouts[count];
+    const gap = twitterSpacing.mediagap;
+    const radius = twitterSpacing.mediaRadius;
+
+    // Calculate dimensions
+    const totalWidth = 1000;  // Fixed width for grid
+    const cellWidth = (totalWidth - gap * (layout.cols - 1)) / layout.cols;
+    const cellHeight = count === 1 ? maxHeight : (maxHeight - gap * (layout.rows - 1)) / layout.rows;
+
+    return (
+        <div style={{
+            display: "grid",
+            gridTemplateColumns: `repeat(${layout.cols}, 1fr)`,
+            gridTemplateRows: `repeat(${layout.rows}, ${cellHeight}px)`,
+            gap,
+            borderRadius: radius,
+            overflow: "hidden",
+            marginTop: 24,
+        }}>
+            {media.slice(0, 4).map((item, index) => {
+                const span = layout.spans[index];
+
+                return (
+                    <div
+                        key={index}
+                        style={{
+                            position: "relative",
+                            gridRow: `${span.row + 1} / span ${span.rowSpan}`,
+                            gridColumn: `${span.col + 1} / span ${span.colSpan}`,
+                            backgroundColor: twitterColors.background.secondary,
+                            overflow: "hidden",
+                            // Corner radius based on position
+                            borderTopLeftRadius: span.row === 0 && span.col === 0 ? radius : 0,
+                            borderTopRightRadius: span.row === 0 && span.col + span.colSpan === layout.cols ? radius : 0,
+                            borderBottomLeftRadius: span.row + span.rowSpan === layout.rows && span.col === 0 ? radius : 0,
+                            borderBottomRightRadius: span.row + span.rowSpan === layout.rows && span.col + span.colSpan === layout.cols ? radius : 0,
+                        }}
+                    >
+                        <img
+                            src={item.url}
+                            alt={item.alt || "Media"}
+                            style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                            }}
+                        />
+
+                        {/* Video/GIF play overlay */}
+                        {(item.type === "video" || item.type === "gif") && (
+                            <PlayButton />
+                        )}
+
+                        {/* GIF label */}
+                        {item.type === "gif" && (
+                            <div style={{
+                                position: "absolute",
+                                bottom: 12,
+                                left: 12,
+                                backgroundColor: "rgba(0, 0, 0, 0.75)",
+                                padding: "6px 12px",
+                                borderRadius: 6,
+                            }}>
+                                <span style={{
+                                    fontSize: 30,
+                                    fontWeight: 700,
+                                    color: "white",
+                                    fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                                }}>
+                                    GIF
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+export default MediaGrid;
+````
+
+## File: packages/apps-twitter/src/components/Notifications.tsx
+````typescript
+/**
+ * Notifications Screen
+ * 
+ * Shows notifications: likes, retweets, follows, mentions.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography, twitterSpacing, twitterLayout } from "../config";
+import { Avatar, VerifiedType } from "./Avatar";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type NotificationType = "like" | "retweet" | "follow" | "mention" | "reply";
+
+export interface NotificationData {
+    id: string;
+    type: NotificationType;
+    actor: {
+        name: string;
+        handle: string;
+        avatarUrl?: string;
+        verified?: VerifiedType;
+    };
+    timestamp: string;
+    // For like/retweet notifications
+    tweetText?: string;
+    // For mention/reply notifications
+    content?: string;
+    // Multiple actors for "X and Y others liked"
+    additionalActors?: number;
+}
+
+export interface NotificationsProps {
+    notifications: NotificationData[];
+    activeTab?: "all" | "verified" | "mentions";
+    onBack?: () => void;
+}
+
+// =============================================================================
+// HEADER
+// =============================================================================
+
+const NotificationsHeader: React.FC<{
+    activeTab: "all" | "verified" | "mentions";
+    onBack?: () => void;
+}> = ({ activeTab, onBack }) => (
+    <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        backdropFilter: "blur(36px)",
+        paddingTop: twitterLayout.safeAreaTop,
+    }}>
+        {/* Title Row */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: `24px ${twitterSpacing.horizontalPadding}px`,
+        }}>
+            <span style={{
+                fontSize: twitterTypography.sizes.displayName,
+                fontWeight: twitterTypography.weights.bold,
+                color: twitterColors.text.primary,
+                fontFamily: twitterTypography.fontFamily,
+            }}>
+                Notifications
+            </span>
+            <div style={{ marginLeft: "auto", fontSize: 72 }}>⚙️</div>
+        </div>
+
+        {/* Tabs */}
+        <div style={{
+            display: "flex",
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+        }}>
+            {[
+                { id: "all", label: "All" },
+                { id: "verified", label: "Verified" },
+                { id: "mentions", label: "Mentions" },
+            ].map(tab => (
+                <div key={tab.id} style={{
+                    flex: 1,
+                    padding: "36px 0",
+                    textAlign: "center",
+                    fontSize: 45,
+                    fontWeight: activeTab === tab.id ? 700 : 400,
+                    color: activeTab === tab.id ? twitterColors.text.primary : twitterColors.text.secondary,
+                    borderBottom: activeTab === tab.id
+                        ? `6px solid ${twitterColors.brand.blue}`
+                        : "none",
+                }}>
+                    {tab.label}
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// =============================================================================
+// NOTIFICATION ICON
+// =============================================================================
+
+const NotificationIcon: React.FC<{ type: NotificationType }> = ({ type }) => {
+    const icons: Record<NotificationType, { icon: string; color: string }> = {
+        like: { icon: "❤️", color: twitterColors.engagement.like },
+        retweet: { icon: "🔁", color: twitterColors.engagement.retweet },
+        follow: { icon: "👤", color: twitterColors.brand.blue },
+        mention: { icon: "@", color: twitterColors.brand.blue },
+        reply: { icon: "💬", color: twitterColors.brand.blue },
+    };
+
+    const { icon, color } = icons[type];
+
+    return (
+        <div style={{
+            width: 96,
+            height: 96,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 60,
+        }}>
+            {icon}
+        </div>
+    );
+};
+
+// =============================================================================
+// NOTIFICATION ITEM
+// =============================================================================
+
+const NotificationItem: React.FC<{ notification: NotificationData }> = ({ notification }) => {
+    const getActionText = (): string => {
+        const others = notification.additionalActors
+            ? ` and ${notification.additionalActors} others`
+            : "";
+
+        switch (notification.type) {
+            case "like": return `${notification.actor.name}${others} liked your post`;
+            case "retweet": return `${notification.actor.name}${others} reposted your post`;
+            case "follow": return `${notification.actor.name}${others} followed you`;
+            case "mention": return `${notification.actor.name} mentioned you`;
+            case "reply": return `${notification.actor.name} replied to you`;
+            default: return "";
+        }
+    };
+
+    return (
+        <div style={{
+            display: "flex",
+            padding: twitterSpacing.tweetPadding,
+            gap: 36,
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+        }}>
+            {/* Icon */}
+            <NotificationIcon type={notification.type} />
+
+            {/* Content */}
+            <div style={{ flex: 1 }}>
+                {/* Actor avatar(s) */}
+                <div style={{ marginBottom: 24 }}>
+                    <Avatar
+                        imageUrl={notification.actor.avatarUrl}
+                        name={notification.actor.name}
+                        size="small"
+                        verified={notification.actor.verified}
+                    />
+                </div>
+
+                {/* Action text */}
+                <div style={{
+                    fontSize: twitterTypography.sizes.tweetText,
+                    color: twitterColors.text.primary,
+                    marginBottom: 12,
+                }}>
+                    <span style={{ fontWeight: 700 }}>{notification.actor.name}</span>
+                    {notification.additionalActors && (
+                        <span> and {notification.additionalActors} others</span>
+                    )}
+                    <span style={{ color: twitterColors.text.secondary }}>
+                        {notification.type === "like" && " liked your post"}
+                        {notification.type === "retweet" && " reposted your post"}
+                        {notification.type === "follow" && " followed you"}
+                        {notification.type === "mention" && " mentioned you"}
+                        {notification.type === "reply" && " replied to you"}
+                    </span>
+                </div>
+
+                {/* Tweet text for like/retweet */}
+                {notification.tweetText && (
+                    <div style={{
+                        fontSize: 42,
+                        color: twitterColors.text.tertiary,
+                        lineHeight: 1.35,
+                    }}>
+                        {notification.tweetText}
+                    </div>
+                )}
+
+                {/* Content for mention/reply */}
+                {notification.content && (
+                    <div style={{
+                        fontSize: twitterTypography.sizes.tweetText,
+                        color: twitterColors.text.primary,
+                        lineHeight: 1.35,
+                    }}>
+                        {notification.content}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const Notifications: React.FC<NotificationsProps> = ({
+    notifications,
+    activeTab = "all",
+    onBack,
+}) => {
+    return (
+        <div style={{
+            height: "100%",
+            backgroundColor: twitterColors.background.primary,
+            overflowY: "auto",
+        }}>
+            <NotificationsHeader activeTab={activeTab} onBack={onBack} />
+
+            {notifications.length === 0 ? (
+                <div style={{
+                    padding: 96,
+                    textAlign: "center",
+                }}>
+                    <div style={{
+                        fontSize: 60,
+                        fontWeight: 700,
+                        color: twitterColors.text.primary,
+                        marginBottom: 24,
+                    }}>
+                        Nothing to see here — yet
+                    </div>
+                    <div style={{
+                        fontSize: 45,
+                        color: twitterColors.text.secondary,
+                    }}>
+                        Likes, mentions, reposts, and more will show up here.
+                    </div>
+                </div>
+            ) : (
+                notifications.map(notif => (
+                    <NotificationItem key={notif.id} notification={notif} />
+                ))
+            )}
+        </div>
+    );
+};
+
+export default Notifications;
+````
+
+## File: packages/apps-twitter/src/components/Poll.tsx
+````typescript
+/**
+ * Poll Component
+ * 
+ * Twitter-style poll UI with voting and results.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface PollOption {
+    id: string;
+    text: string;
+    votes: number;
+    isSelected?: boolean;
+}
+
+export interface PollProps {
+    options: PollOption[];
+    totalVotes: number;
+    endTime?: string;  // "2h left", "Final results"
+    hasVoted?: boolean;
+}
+
+// =============================================================================
+// POLL OPTION
+// =============================================================================
+
+const PollOptionItem: React.FC<{
+    option: PollOption;
+    totalVotes: number;
+    hasVoted: boolean;
+    isWinning: boolean;
+}> = ({ option, totalVotes, hasVoted, isWinning }) => {
+    const percentage = totalVotes > 0 ? Math.round((option.votes / totalVotes) * 100) : 0;
+
+    return (
+        <div style={{
+            position: "relative",
+            marginBottom: 24,
+            borderRadius: 12,
+            overflow: "hidden",
+            border: option.isSelected
+                ? `3px solid ${twitterColors.brand.blue}`
+                : `3px solid ${twitterColors.border.secondary}`,
+        }}>
+            {/* Background bar (shown after voting) */}
+            {hasVoted && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    height: "100%",
+                    width: `${percentage}%`,
+                    backgroundColor: isWinning
+                        ? twitterColors.brand.blue
+                        : twitterColors.background.secondary,
+                    transition: "width 0.3s ease",
+                }} />
+            )}
+
+            {/* Content */}
+            <div style={{
+                position: "relative",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "30px 36px",
+            }}>
+                <span style={{
+                    fontSize: twitterTypography.sizes.tweetText,
+                    fontWeight: option.isSelected ? 700 : 400,
+                    color: twitterColors.text.primary,
+                }}>
+                    {option.text}
+                </span>
+
+                {hasVoted && (
+                    <span style={{
+                        fontSize: twitterTypography.sizes.tweetText,
+                        fontWeight: isWinning ? 700 : 400,
+                        color: twitterColors.text.primary,
+                    }}>
+                        {percentage}%
+                    </span>
+                )}
+
+                {option.isSelected && (
+                    <span style={{
+                        position: "absolute",
+                        right: 120,
+                        fontSize: 42,
+                    }}>
+                        ✓
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const Poll: React.FC<PollProps> = ({
+    options,
+    totalVotes,
+    endTime = "Final results",
+    hasVoted = false,
+}) => {
+    // Find winning option
+    const maxVotes = Math.max(...options.map(o => o.votes));
+
+    const formatVotes = (count: number): string => {
+        if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+        return count.toString();
+    };
+
+    return (
+        <div style={{
+            marginTop: 24,
+            marginBottom: 24,
+        }}>
+            {/* Options */}
+            {options.map(option => (
+                <PollOptionItem
+                    key={option.id}
+                    option={option}
+                    totalVotes={totalVotes}
+                    hasVoted={hasVoted}
+                    isWinning={option.votes === maxVotes && hasVoted}
+                />
+            ))}
+
+            {/* Footer */}
+            <div style={{
+                display: "flex",
+                gap: 18,
+                fontSize: 39,
+                color: twitterColors.text.secondary,
+                marginTop: 24,
+            }}>
+                <span>{formatVotes(totalVotes)} votes</span>
+                <span>·</span>
+                <span>{endTime}</span>
+            </div>
+        </div>
+    );
+};
+
+export default Poll;
+````
+
+## File: packages/apps-twitter/src/components/Profile.tsx
+````typescript
+/**
+ * Profile Screen
+ * 
+ * User profile with banner, avatar, bio, and tweets.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography, twitterSpacing, twitterLayout } from "../config";
+import { Avatar, VerifiedType } from "./Avatar";
+import { Tweet, TweetData } from "./Tweet";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface ProfileData {
+    handle: string;
+    name: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+    joinDate?: string;
+    followingCount: number;
+    followersCount: number;
+    avatarUrl?: string;
+    bannerUrl?: string;
+    verified?: VerifiedType;
+    isFollowing?: boolean;
+}
+
+export interface ProfileProps {
+    profile: ProfileData;
+    tweets?: TweetData[];
+    onBack?: () => void;
+}
+
+// =============================================================================
+// BACK BUTTON
+// =============================================================================
+
+const BackButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
+    <div
+        style={{
+            width: 96,
+            height: 96,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            borderRadius: "50%",
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+        }}
+        onClick={onClick}
+    >
+        <svg width={60} height={60} viewBox="0 0 24 24" fill="white">
+            <path d="M20 11H7.414l4.293-4.293a1 1 0 0 0-1.414-1.414l-6 6a1 1 0 0 0 0 1.414l6 6a1 1 0 0 0 1.414-1.414L7.414 13H20a1 1 0 0 0 0-2z" />
+        </svg>
+    </div>
+);
+
+// =============================================================================
+// PROFILE HEADER (Banner + Avatar overlay)
+// =============================================================================
+
+const ProfileHeader: React.FC<{ profile: ProfileData; onBack?: () => void }> = ({ profile, onBack }) => {
+    const bannerHeight = 450;
+
+    return (
+        <div style={{ position: "relative" }}>
+            {/* Banner */}
+            <div style={{
+                height: bannerHeight,
+                backgroundColor: profile.bannerUrl ? undefined : twitterColors.brand.blue,
+                backgroundImage: profile.bannerUrl ? `url(${profile.bannerUrl})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+            }} />
+
+            {/* Back button overlay */}
+            <div style={{
+                position: "absolute",
+                top: twitterLayout.safeAreaTop + 24,
+                left: 36,
+            }}>
+                <BackButton onClick={onBack} />
+            </div>
+
+            {/* Avatar overlapping banner */}
+            <div style={{
+                position: "absolute",
+                bottom: -75,
+                left: 36,
+                borderRadius: "50%",
+                border: `12px solid ${twitterColors.background.primary}`,
+            }}>
+                <Avatar
+                    imageUrl={profile.avatarUrl}
+                    name={profile.name}
+                    size="large"
+                    verified={profile.verified}
+                />
+            </div>
+
+            {/* Follow button */}
+            <div style={{
+                position: "absolute",
+                bottom: -60,
+                right: 36,
+            }}>
+                <button style={{
+                    backgroundColor: profile.isFollowing ? "transparent" : twitterColors.text.primary,
+                    color: profile.isFollowing ? twitterColors.text.primary : twitterColors.background.primary,
+                    border: profile.isFollowing ? `3px solid ${twitterColors.border.secondary}` : "none",
+                    padding: "30px 60px",
+                    borderRadius: 999,
+                    fontSize: twitterTypography.sizes.displayName,
+                    fontWeight: twitterTypography.weights.bold,
+                }}>
+                    {profile.isFollowing ? "Following" : "Follow"}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// PROFILE INFO
+// =============================================================================
+
+const ProfileInfo: React.FC<{ profile: ProfileData }> = ({ profile }) => {
+    const formatNumber = (num: number): string => {
+        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+        return num.toString();
+    };
+
+    return (
+        <div style={{
+            padding: twitterSpacing.tweetPadding,
+            paddingTop: 100,  // Space for overlapping avatar
+        }}>
+            {/* Name and handle */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginBottom: 6,
+            }}>
+                <span style={{
+                    fontSize: 60,
+                    fontWeight: 700,
+                    color: twitterColors.text.primary,
+                }}>
+                    {profile.name}
+                </span>
+                {profile.verified && (
+                    <svg width={60} height={60} viewBox="0 0 24 24" fill={
+                        profile.verified === "gold" ? twitterColors.verified.gold :
+                            profile.verified === "grey" ? twitterColors.verified.grey :
+                                twitterColors.verified.blue
+                    }>
+                        <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z" />
+                    </svg>
+                )}
+            </div>
+
+            <div style={{
+                fontSize: twitterTypography.sizes.handle,
+                color: twitterColors.text.secondary,
+                marginBottom: 36,
+            }}>
+                @{profile.handle}
+            </div>
+
+            {/* Bio */}
+            {profile.bio && (
+                <div style={{
+                    fontSize: twitterTypography.sizes.tweetText,
+                    color: twitterColors.text.primary,
+                    lineHeight: 1.4,
+                    marginBottom: 36,
+                }}>
+                    {profile.bio}
+                </div>
+            )}
+
+            {/* Location, Website, Join Date */}
+            <div style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 36,
+                marginBottom: 36,
+                fontSize: 42,
+                color: twitterColors.text.secondary,
+            }}>
+                {profile.location && (
+                    <span>📍 {profile.location}</span>
+                )}
+                {profile.website && (
+                    <span style={{ color: twitterColors.brand.blue }}>🔗 {profile.website}</span>
+                )}
+                {profile.joinDate && (
+                    <span>📅 Joined {profile.joinDate}</span>
+                )}
+            </div>
+
+            {/* Following / Followers */}
+            <div style={{ display: "flex", gap: 48, marginBottom: 36 }}>
+                <span>
+                    <span style={{ fontWeight: 700, color: twitterColors.text.primary }}>
+                        {formatNumber(profile.followingCount)}
+                    </span>
+                    <span style={{ color: twitterColors.text.secondary, marginLeft: 12 }}>
+                        Following
+                    </span>
+                </span>
+                <span>
+                    <span style={{ fontWeight: 700, color: twitterColors.text.primary }}>
+                        {formatNumber(profile.followersCount)}
+                    </span>
+                    <span style={{ color: twitterColors.text.secondary, marginLeft: 12 }}>
+                        Followers
+                    </span>
+                </span>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// PROFILE TABS
+// =============================================================================
+
+const ProfileTabs: React.FC<{ activeTab?: string }> = ({ activeTab = "posts" }) => {
+    const tabs = ["Posts", "Replies", "Highlights", "Media", "Likes"];
+
+    return (
+        <div style={{
+            display: "flex",
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+        }}>
+            {tabs.map(tab => (
+                <div key={tab} style={{
+                    flex: 1,
+                    padding: "36px 0",
+                    textAlign: "center",
+                    fontSize: 45,
+                    fontWeight: activeTab === tab.toLowerCase() ? 700 : 400,
+                    color: activeTab === tab.toLowerCase() ? twitterColors.text.primary : twitterColors.text.secondary,
+                    borderBottom: activeTab === tab.toLowerCase()
+                        ? `6px solid ${twitterColors.brand.blue}`
+                        : "none",
+                }}>
+                    {tab}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const Profile: React.FC<ProfileProps> = ({
+    profile,
+    tweets = [],
+    onBack,
+}) => {
+    return (
+        <div style={{
+            height: "100%",
+            backgroundColor: twitterColors.background.primary,
+            overflowY: "auto",
+        }}>
+            <ProfileHeader profile={profile} onBack={onBack} />
+            <ProfileInfo profile={profile} />
+            <ProfileTabs />
+
+            {/* User's tweets */}
+            {tweets.map(tweet => (
+                <Tweet key={tweet.id} tweet={tweet} />
+            ))}
+
+            {tweets.length === 0 && (
+                <div style={{
+                    padding: 96,
+                    textAlign: "center",
+                    color: twitterColors.text.secondary,
+                    fontSize: 48,
+                }}>
+                    No posts yet
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default Profile;
+````
+
+## File: packages/apps-twitter/src/components/Search.tsx
+````typescript
+/**
+ * Search / Explore Screen
+ * 
+ * Trending topics, hashtags, and search functionality.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography, twitterSpacing, twitterLayout } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TrendingTopic {
+    id: string;
+    category?: string;
+    title: string;
+    postCount?: number;
+    isSponsored?: boolean;
+}
+
+export interface SearchProps {
+    trends?: TrendingTopic[];
+    searchQuery?: string;
+    onBack?: () => void;
+}
+
+// =============================================================================
+// SEARCH BAR
+// =============================================================================
+
+const SearchBar: React.FC<{ query?: string }> = ({ query }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        backgroundColor: twitterColors.background.secondary,
+        borderRadius: 999,
+        padding: "30px 48px",
+        margin: `0 ${twitterSpacing.horizontalPadding}px`,
+        gap: 24,
+    }}>
+        {/* Search Icon */}
+        <svg width={60} height={60} viewBox="0 0 24 24" fill={twitterColors.text.secondary}>
+            <path d="M10.25 3.75a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13zm-8.5 6.5a8.5 8.5 0 1 1 15.176 5.262l4.781 4.781-1.414 1.414-4.781-4.781A8.5 8.5 0 0 1 1.75 10.25z" />
+        </svg>
+        <span style={{
+            fontSize: twitterTypography.sizes.tweetText,
+            color: query ? twitterColors.text.primary : twitterColors.text.secondary,
+            flex: 1,
+        }}>
+            {query || "Search"}
+        </span>
+    </div>
+);
+
+// =============================================================================
+// TABS
+// =============================================================================
+
+const SearchTabs: React.FC<{ activeTab?: string }> = ({ activeTab = "for-you" }) => {
+    const tabs = [
+        { id: "for-you", label: "For you" },
+        { id: "trending", label: "Trending" },
+        { id: "news", label: "News" },
+        { id: "sports", label: "Sports" },
+        { id: "entertainment", label: "Entertainment" },
+    ];
+
+    return (
+        <div style={{
+            display: "flex",
+            overflowX: "auto",
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+            marginTop: 24,
+        }}>
+            {tabs.map(tab => (
+                <div key={tab.id} style={{
+                    padding: "36px 48px",
+                    whiteSpace: "nowrap",
+                    fontSize: 45,
+                    fontWeight: activeTab === tab.id ? 700 : 400,
+                    color: activeTab === tab.id ? twitterColors.text.primary : twitterColors.text.secondary,
+                    borderBottom: activeTab === tab.id
+                        ? `6px solid ${twitterColors.brand.blue}`
+                        : "none",
+                }}>
+                    {tab.label}
+                </div>
+            ))}
+        </div>
+    );
+};
+
+// =============================================================================
+// TRENDING ITEM
+// =============================================================================
+
+const TrendingItem: React.FC<{ trend: TrendingTopic; index: number }> = ({ trend, index }) => {
+    const formatCount = (count: number): string => {
+        if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`;
+        if (count >= 1000) return `${(count / 1000).toFixed(1)}K`;
+        return count.toString();
+    };
+
+    return (
+        <div style={{
+            padding: twitterSpacing.tweetPadding,
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+        }}>
+            {/* Top row: category or rank */}
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 6,
+            }}>
+                <span style={{
+                    fontSize: 39,
+                    color: twitterColors.text.secondary,
+                }}>
+                    {trend.category || `${index + 1} · Trending`}
+                </span>
+                <span style={{ fontSize: 48 }}>⋯</span>
+            </div>
+
+            {/* Title */}
+            <div style={{
+                fontSize: twitterTypography.sizes.tweetText,
+                fontWeight: 700,
+                color: twitterColors.text.primary,
+                marginBottom: 6,
+            }}>
+                {trend.title}
+            </div>
+
+            {/* Post count */}
+            {trend.postCount && (
+                <div style={{
+                    fontSize: 39,
+                    color: twitterColors.text.secondary,
+                }}>
+                    {formatCount(trend.postCount)} posts
+                </div>
+            )}
+
+            {/* Sponsored label */}
+            {trend.isSponsored && (
+                <div style={{
+                    fontSize: 36,
+                    color: twitterColors.text.tertiary,
+                    marginTop: 6,
+                }}>
+                    Promoted
+                </div>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const Search: React.FC<SearchProps> = ({
+    trends = [],
+    searchQuery,
+    onBack,
+}) => {
+    // Default trends if none provided
+    const defaultTrends: TrendingTopic[] = [
+        { id: "1", category: "Technology · Trending", title: "#AI", postCount: 125000 },
+        { id: "2", category: "Business & finance · Trending", title: "Bitcoin", postCount: 89000 },
+        { id: "3", category: "Sports · Trending", title: "World Cup", postCount: 234000 },
+        { id: "4", category: "Entertainment · Trending", title: "#NewMusic", postCount: 45000 },
+        { id: "5", category: "Politics · Trending", title: "Breaking News", postCount: 178000 },
+    ];
+
+    const displayTrends = trends.length > 0 ? trends : defaultTrends;
+
+    return (
+        <div style={{
+            height: "100%",
+            backgroundColor: twitterColors.background.primary,
+            overflowY: "auto",
+        }}>
+            {/* Safe area + search bar */}
+            <div style={{
+                paddingTop: twitterLayout.safeAreaTop + 24,
+                paddingBottom: 24,
+            }}>
+                <SearchBar query={searchQuery} />
+            </div>
+
+            <SearchTabs />
+
+            {/* Section Header */}
+            <div style={{
+                padding: twitterSpacing.tweetPadding,
+                paddingBottom: 24,
+            }}>
+                <span style={{
+                    fontSize: 60,
+                    fontWeight: 700,
+                    color: twitterColors.text.primary,
+                }}>
+                    Trends for you
+                </span>
+            </div>
+
+            {/* Trending items */}
+            {displayTrends.map((trend, index) => (
+                <TrendingItem key={trend.id} trend={trend} index={index} />
+            ))}
+
+            {/* Show more */}
+            <div style={{
+                padding: twitterSpacing.tweetPadding,
+                color: twitterColors.brand.blue,
+                fontSize: 45,
+            }}>
+                Show more
+            </div>
+        </div>
+    );
+};
+
+export default Search;
+````
+
+## File: packages/apps-twitter/src/components/Tweet.tsx
+````typescript
+/**
+ * Tweet Component
+ * 
+ * Main tweet display with avatar, content, media, and actions.
+ */
+
+import React from "react";
+import { twitterColors, twitterSpacing, twitterTypography } from "../config";
+import { Avatar, VerifiedType } from "./Avatar";
+import { TweetActions } from "./TweetActions";
+import { MediaGrid, MediaItem } from "./MediaGrid";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TweetData {
+    id: string;
+    author: {
+        name: string;
+        handle: string;
+        avatarUrl?: string;
+        verified?: VerifiedType;
+    };
+    text: string;
+    timestamp: string;
+    media?: MediaItem[];
+    quoteTweet?: TweetData;
+    replyCount: number;
+    retweetCount: number;
+    likeCount: number;
+    viewCount: number;
+    isLiked?: boolean;
+    isRetweeted?: boolean;
+    isBookmarked?: boolean;
+    isReply?: boolean;
+    replyToHandle?: string;
+}
+
+export interface TweetProps {
+    tweet: TweetData;
+    showThread?: boolean;
+    isDetailView?: boolean;
+}
+
+// =============================================================================
+// TEXT PARSING (Hashtags, Mentions, Links)
+// =============================================================================
+
+const parseText = (text: string): React.ReactNode => {
+    // Split by hashtags, mentions, and links
+    const parts = text.split(/([@#]\w+|https?:\/\/\S+)/g);
+
+    return parts.map((part, index) => {
+        if (part.startsWith("@")) {
+            return (
+                <span key={index} style={{ color: twitterColors.brand.blue }}>
+                    {part}
+                </span>
+            );
+        }
+        if (part.startsWith("#")) {
+            return (
+                <span key={index} style={{ color: twitterColors.brand.blue }}>
+                    {part}
+                </span>
+            );
+        }
+        if (part.startsWith("http")) {
+            return (
+                <span key={index} style={{ color: twitterColors.brand.blue }}>
+                    {part.replace(/^https?:\/\//, "").slice(0, 30)}...
+                </span>
+            );
+        }
+        return part;
+    });
+};
+
+// =============================================================================
+// QUOTE TWEET
+// =============================================================================
+
+const QuoteTweet: React.FC<{ tweet: TweetData }> = ({ tweet }) => (
+    <div style={{
+        marginTop: 24,
+        border: `1px solid ${twitterColors.ui.border}`,
+        borderRadius: twitterSpacing.mediaRadius,
+        padding: 24,
+        backgroundColor: twitterColors.background.primary,
+    }}>
+        {/* Quote header */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            marginBottom: 12,
+        }}>
+            <Avatar
+                name={tweet.author.name}
+                imageUrl={tweet.author.avatarUrl}
+                size="small"
+                verified={tweet.author.verified}
+            />
+            <span style={{
+                fontSize: twitterTypography.sizes.displayName - 6,
+                fontWeight: 700,
+                color: twitterColors.text.primary,
+                fontFamily: twitterTypography.fontFamily,
+            }}>
+                {tweet.author.name}
+            </span>
+            <span style={{
+                fontSize: twitterTypography.sizes.handle - 6,
+                color: twitterColors.text.secondary,
+                fontFamily: twitterTypography.fontFamily,
+            }}>
+                @{tweet.author.handle} · {tweet.timestamp}
+            </span>
+        </div>
+
+        {/* Quote text */}
+        <p style={{
+            fontSize: twitterTypography.sizes.tweetText - 6,
+            lineHeight: `${twitterTypography.lineHeights.tweetText - 6}px`,
+            color: twitterColors.text.primary,
+            fontFamily: twitterTypography.fontFamily,
+            margin: 0,
+        }}>
+            {parseText(tweet.text)}
+        </p>
+
+        {/* Quote media (smaller) */}
+        {tweet.media && tweet.media.length > 0 && (
+            <MediaGrid media={tweet.media} maxHeight={300} />
+        )}
+    </div>
+);
+
+// =============================================================================
+// TWEET COMPONENT
+// =============================================================================
+
+export const Tweet: React.FC<TweetProps> = ({
+    tweet,
+    showThread = false,
+    isDetailView = false,
+}) => {
+    const fontSize = isDetailView
+        ? twitterTypography.sizes.tweetTextLarge
+        : twitterTypography.sizes.tweetText;
+    const lineHeight = isDetailView
+        ? twitterTypography.lineHeights.tweetTextLarge
+        : twitterTypography.lineHeights.tweetText;
+
+    return (
+        <div style={{
+            display: "flex",
+            padding: `${twitterSpacing.tweetPaddingVertical}px ${twitterSpacing.tweetPadding}px`,
+            borderBottom: `1px solid ${twitterColors.ui.border}`,
+            backgroundColor: twitterColors.background.primary,
+        }}>
+            {/* Avatar column */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                marginRight: twitterSpacing.avatarGap,
+            }}>
+                <Avatar
+                    name={tweet.author.name}
+                    imageUrl={tweet.author.avatarUrl}
+                    verified={tweet.author.verified}
+                />
+
+                {/* Thread line */}
+                {showThread && (
+                    <div style={{
+                        width: twitterSpacing.threadLineWidth,
+                        flex: 1,
+                        backgroundColor: twitterColors.ui.border,
+                        marginTop: twitterSpacing.threadLineGap,
+                    }} />
+                )}
+            </div>
+
+            {/* Content column */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Header: Name, handle, timestamp */}
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    marginBottom: 6,
+                    flexWrap: "wrap",
+                }}>
+                    <span style={{
+                        fontSize: twitterTypography.sizes.displayName,
+                        fontWeight: 700,
+                        color: twitterColors.text.primary,
+                        fontFamily: twitterTypography.fontFamilyDisplay,
+                    }}>
+                        {tweet.author.name}
+                    </span>
+
+                    {/* Verified badge inline */}
+                    {tweet.author.verified && tweet.author.verified !== "none" && (
+                        <svg width={24} height={24} viewBox="0 0 24 24" fill={twitterColors.verified[tweet.author.verified]}>
+                            <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.998-3.818-3.998-.47 0-.92.084-1.336.25C14.818 2.415 13.51 1.5 12 1.5s-2.816.917-3.437 2.25c-.415-.165-.866-.25-1.336-.25-2.11 0-3.818 1.79-3.818 4 0 .494.083.964.237 1.4-1.272.65-2.147 2.018-2.147 3.6 0 1.495.782 2.798 1.942 3.486-.02.17-.032.34-.032.514 0 2.21 1.708 4 3.818 4 .47 0 .92-.086 1.335-.25.62 1.334 1.926 2.25 3.437 2.25 1.512 0 2.818-.916 3.437-2.25.415.163.865.248 1.336.248 2.11 0 3.818-1.79 3.818-4 0-.174-.012-.344-.033-.513 1.158-.687 1.943-1.99 1.943-3.484zm-6.616-3.334l-4.334 6.5c-.145.217-.382.334-.625.334-.143 0-.288-.04-.416-.126l-.115-.094-2.415-2.415c-.293-.293-.293-.768 0-1.06s.768-.294 1.06 0l1.77 1.767 3.825-5.74c.23-.345.696-.436 1.04-.207.346.23.44.696.21 1.04z" />
+                        </svg>
+                    )}
+
+                    <span style={{
+                        fontSize: twitterTypography.sizes.handle,
+                        color: twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        @{tweet.author.handle}
+                    </span>
+
+                    <span style={{
+                        fontSize: twitterTypography.sizes.timestamp,
+                        color: twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        · {tweet.timestamp}
+                    </span>
+                </div>
+
+                {/* Replying to */}
+                {tweet.isReply && tweet.replyToHandle && (
+                    <p style={{
+                        fontSize: twitterTypography.sizes.handle,
+                        color: twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                        margin: "0 0 12px 0",
+                    }}>
+                        Replying to <span style={{ color: twitterColors.brand.blue }}>@{tweet.replyToHandle}</span>
+                    </p>
+                )}
+
+                {/* Tweet text */}
+                <p style={{
+                    fontSize,
+                    lineHeight: `${lineHeight}px`,
+                    color: twitterColors.text.primary,
+                    fontFamily: twitterTypography.fontFamily,
+                    margin: 0,
+                    wordWrap: "break-word",
+                }}>
+                    {parseText(tweet.text)}
+                </p>
+
+                {/* Media */}
+                {tweet.media && tweet.media.length > 0 && (
+                    <MediaGrid media={tweet.media} />
+                )}
+
+                {/* Quote Tweet */}
+                {tweet.quoteTweet && (
+                    <QuoteTweet tweet={tweet.quoteTweet} />
+                )}
+
+                {/* Actions */}
+                <TweetActions
+                    replyCount={tweet.replyCount}
+                    retweetCount={tweet.retweetCount}
+                    likeCount={tweet.likeCount}
+                    viewCount={tweet.viewCount}
+                    isLiked={tweet.isLiked}
+                    isRetweeted={tweet.isRetweeted}
+                    isBookmarked={tweet.isBookmarked}
+                />
+            </div>
+        </div>
+    );
+};
+
+export default Tweet;
+````
+
+## File: packages/apps-twitter/src/components/TweetActions.tsx
+````typescript
+/**
+ * Tweet Actions Component
+ * 
+ * Reply, Retweet, Like, Views, Share/Bookmark buttons.
+ */
+
+import React from "react";
+import { twitterColors, twitterSpacing, twitterTypography } from "../config";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TweetActionsProps {
+    replyCount: number;
+    retweetCount: number;
+    likeCount: number;
+    viewCount: number;
+    isLiked?: boolean;
+    isRetweeted?: boolean;
+    isBookmarked?: boolean;
+    compact?: boolean;
+}
+
+// =============================================================================
+// HELPER
+// =============================================================================
+
+function formatCount(count: number): string {
+    if (count >= 1000000) {
+        return `${(count / 1000000).toFixed(1)}M`;
+    }
+    if (count >= 1000) {
+        return `${(count / 1000).toFixed(1)}K`;
+    }
+    return count.toString();
+}
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+const ReplyIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const RetweetIcon: React.FC<{ size: number; color: string; filled?: boolean }> = ({ size, color, filled }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2">
+        <path d="M17 1l4 4-4 4" />
+        <path d="M3 11V9a4 4 0 0 1 4-4h14" />
+        <path d="M7 23l-4-4 4-4" />
+        <path d="M21 13v2a4 4 0 0 1-4 4H3" />
+    </svg>
+);
+
+const HeartIcon: React.FC<{ size: number; color: string; filled?: boolean }> = ({ size, color, filled }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const ViewIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+        <circle cx="12" cy="12" r="3" />
+    </svg>
+);
+
+const BookmarkIcon: React.FC<{ size: number; color: string; filled?: boolean }> = ({ size, color, filled }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={filled ? color : "none"} stroke={color} strokeWidth="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+const ShareIcon: React.FC<{ size: number; color: string }> = ({ size, color }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2">
+        <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+        <polyline points="16,6 12,2 8,6" />
+        <line x1="12" y1="2" x2="12" y2="15" />
+    </svg>
+);
+
+// =============================================================================
+// TWEET ACTIONS COMPONENT
+// =============================================================================
+
+export const TweetActions: React.FC<TweetActionsProps> = ({
+    replyCount,
+    retweetCount,
+    likeCount,
+    viewCount,
+    isLiked = false,
+    isRetweeted = false,
+    isBookmarked = false,
+    compact = false,
+}) => {
+    const iconSize = compact ? 48 : twitterSpacing.engagementIconSize;
+    const fontSize = compact ? twitterTypography.sizes.engagement - 6 : twitterTypography.sizes.engagement;
+    const gap = compact ? 30 : twitterSpacing.engagementGap;
+
+    const ActionButton: React.FC<{
+        icon: React.ReactNode;
+        count?: number;
+        color: string;
+        activeColor?: string;
+        isActive?: boolean;
+    }> = ({ icon, count, color, activeColor, isActive }) => (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 9,
+        }}>
+            {icon}
+            {count !== undefined && count > 0 && (
+                <span style={{
+                    fontSize,
+                    color: isActive && activeColor ? activeColor : color,
+                    fontFamily: twitterTypography.fontFamily,
+                    fontWeight: 400,
+                }}>
+                    {formatCount(count)}
+                </span>
+            )}
+        </div>
+    );
+
+    return (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginTop: 24,
+            paddingRight: 60,
+        }}>
+            {/* Reply */}
+            <ActionButton
+                icon={<ReplyIcon size={iconSize} color={twitterColors.engagement.reply} />}
+                count={replyCount}
+                color={twitterColors.engagement.reply}
+            />
+
+            {/* Retweet */}
+            <ActionButton
+                icon={<RetweetIcon size={iconSize} color={isRetweeted ? twitterColors.engagement.retweet : twitterColors.engagement.reply} filled={isRetweeted} />}
+                count={retweetCount}
+                color={twitterColors.engagement.reply}
+                activeColor={twitterColors.engagement.retweet}
+                isActive={isRetweeted}
+            />
+
+            {/* Like */}
+            <ActionButton
+                icon={<HeartIcon size={iconSize} color={isLiked ? twitterColors.engagement.like : twitterColors.engagement.reply} filled={isLiked} />}
+                count={likeCount}
+                color={twitterColors.engagement.reply}
+                activeColor={twitterColors.engagement.like}
+                isActive={isLiked}
+            />
+
+            {/* Views */}
+            <ActionButton
+                icon={<ViewIcon size={iconSize} color={twitterColors.engagement.view} />}
+                count={viewCount}
+                color={twitterColors.engagement.view}
+            />
+
+            {/* Bookmark/Share */}
+            <div style={{ display: "flex", gap: 18 }}>
+                <BookmarkIcon
+                    size={iconSize}
+                    color={isBookmarked ? twitterColors.brand.blue : twitterColors.engagement.share}
+                    filled={isBookmarked}
+                />
+                <ShareIcon size={iconSize} color={twitterColors.engagement.share} />
+            </div>
+        </div>
+    );
+};
+
+export default TweetActions;
+````
+
+## File: packages/apps-twitter/src/components/TweetDetail.tsx
+````typescript
+/**
+ * Tweet Detail Screen
+ * 
+ * Shows a single tweet with its replies thread.
+ */
+
+import React from "react";
+import { twitterColors, twitterTypography, twitterSpacing, twitterLayout } from "../config";
+import { Tweet, TweetData } from "./Tweet";
+import { Avatar } from "./Avatar";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TweetDetailProps {
+    tweet: TweetData;
+    replies?: TweetData[];
+    onBack?: () => void;
+}
+
+// =============================================================================
+// BACK BUTTON
+// =============================================================================
+
+const BackButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
+    <div
+        style={{
+            width: 96,
+            height: 96,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+        }}
+        onClick={onClick}
+    >
+        <svg width={60} height={60} viewBox="0 0 24 24" fill={twitterColors.text.primary}>
+            <path d="M20 11H7.414l4.293-4.293a1 1 0 0 0-1.414-1.414l-6 6a1 1 0 0 0 0 1.414l6 6a1 1 0 0 0 1.414-1.414L7.414 13H20a1 1 0 0 0 0-2z" />
+        </svg>
+    </div>
+);
+
+// =============================================================================
+// DETAIL HEADER
+// =============================================================================
+
+const DetailHeader: React.FC<{ onBack?: () => void }> = ({ onBack }) => (
+    <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        backgroundColor: "rgba(0, 0, 0, 0.85)",
+        backdropFilter: "blur(36px)",
+        padding: `${twitterLayout.safeAreaTop}px ${twitterSpacing.horizontalPadding}px 0`,
+        height: twitterLayout.headerHeight + twitterLayout.safeAreaTop,
+        display: "flex",
+        alignItems: "center",
+        gap: 48,
+    }}>
+        <BackButton onClick={onBack} />
+        <span style={{
+            fontSize: twitterTypography.sizes.displayName,
+            fontWeight: twitterTypography.weights.bold,
+            color: twitterColors.text.primary,
+            fontFamily: twitterTypography.fontFamily,
+        }}>
+            Post
+        </span>
+    </div>
+);
+
+// =============================================================================
+// EXPANDED TWEET (Main tweet in detail view)
+// =============================================================================
+
+const ExpandedTweet: React.FC<{ tweet: TweetData }> = ({ tweet }) => {
+    const formatNumber = (num: number): string => {
+        if (num >= 1000000) return `${(num / 1000000).toFixed(1)}M`;
+        if (num >= 1000) return `${(num / 1000).toFixed(1)}K`;
+        return num.toString();
+    };
+
+    return (
+        <div style={{
+            padding: twitterSpacing.tweetPadding,
+            borderBottom: `1px solid ${twitterColors.border.primary}`,
+        }}>
+            {/* Author Row */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 36,
+                marginBottom: 36,
+            }}>
+                <Avatar
+                    imageUrl={tweet.author.avatarUrl}
+                    name={tweet.author.name}
+                    size="large"
+                    verified={tweet.author.verified}
+                />
+                <div style={{ flex: 1 }}>
+                    <div style={{
+                        fontSize: twitterTypography.sizes.displayName,
+                        fontWeight: twitterTypography.weights.bold,
+                        color: twitterColors.text.primary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        {tweet.author.name}
+                    </div>
+                    <div style={{
+                        fontSize: twitterTypography.sizes.handle,
+                        color: twitterColors.text.secondary,
+                        fontFamily: twitterTypography.fontFamily,
+                    }}>
+                        @{tweet.author.handle}
+                    </div>
+                </div>
+            </div>
+
+            {/* Tweet Text - Larger in detail view */}
+            <div style={{
+                fontSize: 69,  // Larger for detail
+                color: twitterColors.text.primary,
+                fontFamily: twitterTypography.fontFamily,
+                lineHeight: 1.35,
+                marginBottom: 36,
+            }}>
+                {tweet.text}
+            </div>
+
+            {/* Timestamp and Source */}
+            <div style={{
+                fontSize: twitterTypography.sizes.timestamp,
+                color: twitterColors.text.secondary,
+                marginBottom: 36,
+                paddingBottom: 36,
+                borderBottom: `1px solid ${twitterColors.border.primary}`,
+            }}>
+                {tweet.timestamp} · <span style={{ color: twitterColors.brand.blue }}>Twitter for iPhone</span>
+            </div>
+
+            {/* Engagement Stats */}
+            <div style={{
+                display: "flex",
+                gap: 60,
+                paddingBottom: 36,
+                borderBottom: `1px solid ${twitterColors.border.primary}`,
+            }}>
+                {(tweet.retweetCount || 0) > 0 && (
+                    <div>
+                        <span style={{
+                            fontWeight: 700,
+                            color: twitterColors.text.primary,
+                            fontSize: 45,
+                        }}>{formatNumber(tweet.retweetCount || 0)}</span>
+                        <span style={{
+                            color: twitterColors.text.secondary,
+                            fontSize: 42,
+                            marginLeft: 12,
+                        }}>Reposts</span>
+                    </div>
+                )}
+                {(tweet.likeCount || 0) > 0 && (
+                    <div>
+                        <span style={{
+                            fontWeight: 700,
+                            color: twitterColors.text.primary,
+                            fontSize: 45,
+                        }}>{formatNumber(tweet.likeCount || 0)}</span>
+                        <span style={{
+                            color: twitterColors.text.secondary,
+                            fontSize: 42,
+                            marginLeft: 12,
+                        }}>Likes</span>
+                    </div>
+                )}
+                {(tweet.viewCount || 0) > 0 && (
+                    <div>
+                        <span style={{
+                            fontWeight: 700,
+                            color: twitterColors.text.primary,
+                            fontSize: 45,
+                        }}>{formatNumber(tweet.viewCount || 0)}</span>
+                        <span style={{
+                            color: twitterColors.text.secondary,
+                            fontSize: 42,
+                            marginLeft: 12,
+                        }}>Views</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Action Bar */}
+            <div style={{
+                display: "flex",
+                justifyContent: "space-around",
+                paddingTop: 36,
+            }}>
+                {[
+                    { icon: "💬", label: "Reply" },
+                    { icon: "🔁", label: "Repost" },
+                    { icon: "❤️", label: "Like" },
+                    { icon: "🔖", label: "Bookmark" },
+                    { icon: "📤", label: "Share" },
+                ].map(action => (
+                    <div key={action.label} style={{
+                        fontSize: 72,
+                        opacity: 0.7,
+                    }}>
+                        {action.icon}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// REPLY INPUT
+// =============================================================================
+
+const ReplyInput: React.FC<{ replyToHandle: string }> = ({ replyToHandle }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: twitterSpacing.tweetPadding,
+        gap: 36,
+        borderBottom: `1px solid ${twitterColors.border.primary}`,
+    }}>
+        <Avatar size="medium" name="You" />
+        <div style={{
+            flex: 1,
+            fontSize: twitterTypography.sizes.tweetText,
+            color: twitterColors.text.secondary,
+        }}>
+            Post your reply
+        </div>
+        <div style={{
+            backgroundColor: twitterColors.brand.blue,
+            color: "white",
+            padding: "24px 48px",
+            borderRadius: 999,
+            fontSize: 42,
+            fontWeight: 700,
+            opacity: 0.5,
+        }}>
+            Reply
+        </div>
+    </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const TweetDetail: React.FC<TweetDetailProps> = ({
+    tweet,
+    replies = [],
+    onBack,
+}) => {
+    return (
+        <div style={{
+            height: "100%",
+            backgroundColor: twitterColors.background.primary,
+            overflowY: "auto",
+        }}>
+            <DetailHeader onBack={onBack} />
+            <ExpandedTweet tweet={tweet} />
+            <ReplyInput replyToHandle={tweet.author.handle} />
+
+            {/* Replies */}
+            {replies.map(reply => (
+                <Tweet key={reply.id} tweet={reply} />
+            ))}
+        </div>
+    );
+};
+
+export default TweetDetail;
+````
+
+## File: packages/apps-twitter/src/config/index.ts
+````typescript
+/**
+ * Twitter/X Configuration Exports
+ */
+
+export * from "./twitter-theme";
+export * from "./layout-config";
+````
+
+## File: packages/apps-twitter/src/config/layout-config.ts
+````typescript
+/**
+ * Twitter/X Layout Configuration
+ * 
+ * Height calculations and layout constants for tweets and media.
+ */
+
+import { twitterTypography, twitterSpacing, twitterLayout } from "./twitter-theme";
+
+// =============================================================================
+// MESSAGE HEIGHT CALCULATIONS
+// =============================================================================
+
+export interface TweetForHeight {
+    text?: string;
+    hasMedia?: boolean;
+    mediaCount?: number;
+    hasQuote?: boolean;
+    hasPoll?: boolean;
+    isThread?: boolean;
+}
+
+/**
+ * Calculate tweet height based on content.
+ */
+export function calculateTweetHeight(tweet: TweetForHeight): number {
+    const { spacing, typography } = { spacing: twitterSpacing, typography: twitterTypography };
+
+    let height = 0;
+
+    // Base padding (top + bottom)
+    height += spacing.tweetPaddingVertical * 2;
+
+    // Header (name, handle, timestamp) - single line
+    height += typography.sizes.displayName + 12;
+
+    // Tweet text
+    if (tweet.text) {
+        const charsPerLine = 45;  // Approximate
+        const lines = Math.ceil(tweet.text.length / charsPerLine);
+        height += lines * typography.lineHeights.tweetText;
+    }
+
+    // Media
+    if (tweet.hasMedia) {
+        const mediaHeight = tweet.mediaCount === 1 ? 600 : 450;
+        height += mediaHeight + 24;  // + gap
+    }
+
+    // Quote tweet
+    if (tweet.hasQuote) {
+        height += 300;  // Fixed quote height
+    }
+
+    // Poll
+    if (tweet.hasPoll) {
+        height += 420;  // 4 options
+    }
+
+    // Engagement bar
+    height += 60;  // Icons row
+
+    return height;
+}
+
+// =============================================================================
+// SCROLL CONFIGURATION
+// =============================================================================
+
+export interface ScrollConfig {
+    lockToBottom: boolean;
+    smoothScrollDuration: number;
+    easing: "linear" | "easeOut" | "easeInOut";
+}
+
+export const defaultScrollConfig: ScrollConfig = {
+    lockToBottom: false,  // Twitter scrolls from top
+    smoothScrollDuration: 15,
+    easing: "easeOut",
+};
+
+// =============================================================================
+// ANIMATION CONFIGURATION
+// =============================================================================
+
+export interface AnimationConfig {
+    tweetAppearDuration: number;
+    tweetAppearOffset: number;
+    likeAnimationDuration: number;
+    retweetAnimationDuration: number;
+}
+
+export const defaultAnimationConfig: AnimationConfig = {
+    tweetAppearDuration: 8,         // Frames for tweet to fade in
+    tweetAppearOffset: 30,          // Pixels to slide up
+    likeAnimationDuration: 12,      // Heart pop animation
+    retweetAnimationDuration: 10,   // Retweet spin
+};
+
+// =============================================================================
+// MEDIA GRID LAYOUTS
+// =============================================================================
+
+export interface MediaGridLayout {
+    rows: number;
+    cols: number;
+    spans: { row: number; col: number; rowSpan: number; colSpan: number }[];
+}
+
+export const mediaGridLayouts: Record<1 | 2 | 3 | 4, MediaGridLayout> = {
+    1: {
+        rows: 1,
+        cols: 1,
+        spans: [{ row: 0, col: 0, rowSpan: 1, colSpan: 1 }],
+    },
+    2: {
+        rows: 1,
+        cols: 2,
+        spans: [
+            { row: 0, col: 0, rowSpan: 1, colSpan: 1 },
+            { row: 0, col: 1, rowSpan: 1, colSpan: 1 },
+        ],
+    },
+    3: {
+        rows: 2,
+        cols: 2,
+        spans: [
+            { row: 0, col: 0, rowSpan: 2, colSpan: 1 },  // Large left
+            { row: 0, col: 1, rowSpan: 1, colSpan: 1 },  // Top right
+            { row: 1, col: 1, rowSpan: 1, colSpan: 1 },  // Bottom right
+        ],
+    },
+    4: {
+        rows: 2,
+        cols: 2,
+        spans: [
+            { row: 0, col: 0, rowSpan: 1, colSpan: 1 },
+            { row: 0, col: 1, rowSpan: 1, colSpan: 1 },
+            { row: 1, col: 0, rowSpan: 1, colSpan: 1 },
+            { row: 1, col: 1, rowSpan: 1, colSpan: 1 },
+        ],
+    },
+};
+
+export default {
+    calculateTweetHeight,
+    defaultScrollConfig,
+    defaultAnimationConfig,
+    mediaGridLayouts,
+};
+````
+
+## File: packages/apps-twitter/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-twitter
+ * 
+ * Twitter/X app for Tokovo video generation.
+ */
+
+// Plugin registration (side-effect import)
+import "./plugin";
+
+// Exports
+export * from "./config";
+export * from "./components";
+export * from "./runtime";
+export * from "./ui";
+export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
+````
+
+## File: packages/apps-twitter/src/plugin.ts
+````typescript
+/**
+ * Twitter/X Plugin
+ * 
+ * Registration and initial state setup.
+ */
+
+import { ReducerRegistry } from "@tokovo/core";
+import { twitterReducer, TWITTER_APP_ID } from "./runtime";
+
+// =============================================================================
+// INITIAL STATE
+// =============================================================================
+
+export const initialTwitterState = {
+    screen: "timeline" as const,
+    activeTab: "for-you" as const,
+    tweets: [],
+};
+
+// =============================================================================
+// REGISTRATION
+// =============================================================================
+
+// Ensure reducer is registered (import side-effect)
+export function registerTwitterApp(): void {
+    // Registration happens via import of runtime.ts
+    // This function ensures the import is not tree-shaken
+    console.log(`[Tokovo] Twitter app registered: ${TWITTER_APP_ID}`);
+}
+
+// Auto-register on import
+registerTwitterApp();
+
+export { TWITTER_APP_ID };
+````
+
+## File: packages/apps-twitter/package.json
+````json
+{
+    "name": "@tokovo/apps-twitter",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
+}
+````
+
+## File: packages/apps-twitter/tsconfig.json
 ````json
 {
     "extends": "../../tsconfig.base.json",
@@ -14538,6 +17951,211 @@ export const breakupDramaSceneIR: SceneIR = createEpisode("breakup-drama-01", ep
 export { breakupDramaSceneIR as default };
 ````
 
+## File: packages/dsl/examples/multi-app-showcase.dsl.ts
+````typescript
+/**
+ * Multi-App Showcase Episode
+ * 
+ * Demonstrates Tokovo's power by combining multiple apps in one episode:
+ * - WhatsApp messaging
+ * - Twitter/X timeline
+ * - Device notifications
+ * - Camera cuts between devices
+ * 
+ * This showcases a realistic social media workflow.
+ */
+
+import { episode } from "../src";
+
+export const multiAppShowcase = episode("multi-app-showcase", ep => {
+    ep.config({
+        fps: 30,
+        title: "Multi-App Social Media Showcase",
+    });
+
+    // =========================================================================
+    // DEVICE: Main Phone
+    // =========================================================================
+    ep.device("MainPhone", "iphone16", d => {
+        d.owner("Alex");
+
+        // Setup apps
+        d.app("app_whatsapp");
+        d.app("app_twitter");
+
+        // Setup conversations
+        d.conversation("dm_sarah", { name: "Sarah 💫", avatar: "sarah.png" });
+        d.conversation("__twitter_timeline__", { name: "Timeline", type: "dm" });
+
+        // =====================================================================
+        // SCENE 1: Morning - WhatsApp Messages
+        // =====================================================================
+        d.beat("morning-whatsapp", b => {
+            b.wait("1s");
+
+            // Friend sends message
+            b.receive("Sarah 💫", "Hey! Did you see that tweet from Elon? 🚀");
+            b.wait("1.5s");
+
+            // User typing and responding
+            b.typing("me").for("1.5s");
+            b.send("No! What happened?");
+            b.wait("1s");
+
+            // Friend responds with excitement
+            b.receive("Sarah 💫", "He just announced something massive about AI!");
+            b.wait("800ms");
+            b.receive("Sarah 💫", "Check Twitter NOW 😱");
+        });
+
+        // =====================================================================
+        // SCENE 2: Opens Twitter to Check
+        // =====================================================================
+        d.beat("open-twitter", b => {
+            b.wait("1s");
+            b.navigate("app_twitter", { screen: "timeline" });
+        });
+
+        d.beat("twitter-timeline", b => {
+            // See the Elon tweet
+            const elonTweet = b.tweetReceived(
+                {
+                    name: "Elon Musk",
+                    handle: "elonmusk",
+                    verified: "blue",
+                    avatarUrl: "https://pbs.twimg.com/profile_images/elon.jpg"
+                },
+                "🚀 Announcing: Tesla will now accept Dogecoin for all vehicles. To the moon! 🌙",
+                {
+                    replyCount: 45000,
+                    retweetCount: 125000,
+                    likeCount: 890000,
+                    viewCount: 45000000,
+                    media: [{ url: "https://picsum.photos/800/450?random=1", type: "image" }]
+                }
+            );
+            b.wait("2s");
+
+            // User likes the tweet
+            b.likeTweet(elonTweet);
+            b.wait("500ms");
+
+            // More tweets load
+            b.tweetReceived(
+                {
+                    name: "CNBC",
+                    handle: "CNBC",
+                    verified: "gold"
+                },
+                "BREAKING: Tesla stock surges 15% after Elon Musk announcement",
+                {
+                    replyCount: 1200,
+                    retweetCount: 8500,
+                    likeCount: 23000,
+                    viewCount: 1200000,
+                }
+            );
+            b.wait("1.5s");
+
+            // User retweets
+            b.retweetTweet(elonTweet);
+            b.wait("1s");
+        });
+
+        // =====================================================================
+        // SCENE 3: Post Own Tweet
+        // =====================================================================
+        d.beat("user-tweets", b => {
+            b.postTweet(
+                "This is insane! 🚀 Dogecoin about to moon! @elonmusk just changed the game #DOGE #Tesla #Crypto",
+                {
+                    author: { name: "Alex", handle: "alexdev", verified: "blue" }
+                }
+            );
+            b.wait("2s");
+        });
+
+        // =====================================================================
+        // SCENE 4: Back to WhatsApp to Share
+        // =====================================================================
+        d.beat("back-to-whatsapp", b => {
+            b.navigate("app_whatsapp", { conversationId: "dm_sarah" });
+            b.wait("500ms");
+        });
+
+        d.beat("share-news", b => {
+            // Tell friend about it
+            b.typing("me").for("2s");
+            b.send("OMG you were right! 🤯");
+            b.wait("800ms");
+            b.send("I just retweeted it and posted my own take");
+            b.wait("1s");
+
+            // Friend responds
+            b.receive("Sarah 💫", "Haha told you! 😂");
+            b.wait("500ms");
+            b.receive("Sarah 💫", "I'm buying more DOGE right now 🐕");
+            b.wait("1s");
+
+            // Send an image
+            b.sendImage("https://picsum.photos/600/400?random=2", {
+                caption: "My portfolio right now 📈"
+            });
+            b.wait("1.5s");
+
+            // Friend reacts
+            b.receive("Sarah 💫", "NICE! 🔥🔥🔥");
+        });
+
+        // =====================================================================
+        // SCENE 5: Notification Arrives
+        // =====================================================================
+        d.beat("twitter-notification", b => {
+            b.wait("1s");
+            // Twitter notification about likes
+            b.notification("app_twitter", {
+                title: "Your tweet is getting noticed!",
+                body: "25 people liked your tweet about Dogecoin",
+                mode: "headsup"
+            });
+            b.wait("2s");
+        });
+
+        // =====================================================================
+        // SCENE 6: More WhatsApp Activity
+        // =====================================================================
+        d.beat("final-messages", b => {
+            b.receive("Sarah 💫", "You're going viral! 🎉");
+            b.wait("800ms");
+
+            // Voice note
+            b.receiveVoice("Sarah 💫", 5);
+            b.wait("1s");
+
+            // Final exchange
+            b.send("This is the best day ever 🚀🌙");
+            b.wait("1s");
+        });
+    });
+
+    // =========================================================================
+    // CAMERA: Cinematic Flow
+    // =========================================================================
+    ep.camera(c => {
+        // Opening shot
+        c.at("0s").cut("MainPhone");
+
+        // Zoom in during Twitter reveal
+        c.at("10s").zoom(1.2, { duration: "1s" });
+
+        // Shake on notification
+        c.at("25s").shake("MainPhone", { intensity: 0.5, duration: "300ms" });
+    });
+});
+
+export default multiAppShowcase;
+````
+
 ## File: packages/dsl/examples/multi-pov-demo.dsl.ts
 ````typescript
 /**
@@ -14792,6 +18410,162 @@ export const toxicExSceneIR: SceneIR = createEpisode("toxic-ex-drama", ep => {
 export { toxicExSceneIR as default };
 ````
 
+## File: packages/dsl/examples/twitter-showcase.dsl.ts
+````typescript
+/**
+ * Twitter/X Showcase Episode
+ * 
+ * Demonstrates the Twitter app DSL features:
+ * - Timeline with tweets
+ * - Likes, retweets, quotes
+ * - Media tweets (images, videos)
+ * - Verified badges
+ */
+
+import { episode } from "../src";
+
+export const twitterShowcase = episode("twitter-showcase", ep => {
+    ep.config({
+        fps: 30,
+        title: "Twitter/X Timeline Showcase",
+    });
+
+    // =========================================================================
+    // DEVICE: User's Phone with Twitter
+    // =========================================================================
+    ep.device("UserPhone", "iphone16", d => {
+        d.owner("Alex");
+        d.app("app_twitter");
+        d.conversation("__twitter_timeline__", { name: "Timeline", type: "dm" });
+
+        // =====================================================================
+        // Beat 1: Timeline Loads with Tweets
+        // =====================================================================
+        d.beat("timeline-load", b => {
+            // Tech influencer tweet with image
+            const techTweet = b.tweetReceived(
+                {
+                    name: "Elon Musk",
+                    handle: "elonmusk",
+                    verified: "blue",
+                    avatarUrl: "https://pbs.twimg.com/profile_images/1234.jpg"
+                },
+                "The future of AI is here. We're entering a new era of human-machine collaboration 🚀",
+                {
+                    replyCount: 5432,
+                    retweetCount: 12800,
+                    likeCount: 89000,
+                    viewCount: 2400000,
+                    media: [{ url: "https://picsum.photos/800/450", type: "image" }]
+                }
+            );
+            b.wait("1s");
+
+            // Another tweet
+            b.tweetReceived(
+                {
+                    name: "Sam Altman",
+                    handle: "sama",
+                    verified: "blue"
+                },
+                "GPT-5 coming soon. It's going to be wild.",
+                {
+                    replyCount: 2100,
+                    retweetCount: 8900,
+                    likeCount: 45000,
+                    viewCount: 890000,
+                }
+            );
+            b.wait("1s");
+
+            // User engages
+            b.likeTweet(techTweet);
+            b.wait("500ms");
+        });
+
+        // =====================================================================
+        // Beat 2: User Posts a Tweet
+        // =====================================================================
+        d.beat("user-posts", b => {
+            const myTweet = b.postTweet(
+                "Just built a new app with @tokovo - the future of video generation is here! 🎬✨ #buildinpublic",
+                {
+                    author: { name: "Alex", handle: "alexdev", verified: "blue" }
+                }
+            );
+            b.wait("2s");
+        });
+
+        // =====================================================================
+        // Beat 3: More Engagement
+        // =====================================================================
+        d.beat("engagement", b => {
+            // Sport tweet
+            const sportTweet = b.tweetReceived(
+                {
+                    name: "ESPN",
+                    handle: "espn",
+                    verified: "gold"  // Organization verified
+                },
+                "BREAKING: Historic trade shakes up the league! Full details ⬇️",
+                {
+                    replyCount: 890,
+                    retweetCount: 3200,
+                    likeCount: 15000,
+                    viewCount: 450000,
+                }
+            );
+            b.wait("1s");
+
+            // Retweet it
+            b.retweetTweet(sportTweet);
+            b.wait("500ms");
+
+            // Quote tweet
+            b.quoteTweet(sportTweet, "This is going to change everything! 🏀🔥");
+            b.wait("2s");
+        });
+
+        // =====================================================================
+        // Beat 4: Viral Thread
+        // =====================================================================
+        d.beat("viral-thread", b => {
+            // Meme tweet with multiple images
+            b.tweetReceived(
+                {
+                    name: "Internet Historian",
+                    handle: "historyinmemes",
+                    verified: "blue"
+                },
+                "The four horsemen of procrastination:",
+                {
+                    replyCount: 12500,
+                    retweetCount: 45000,
+                    likeCount: 234000,
+                    viewCount: 5600000,
+                    media: [
+                        { url: "https://picsum.photos/400/400?1", type: "image" },
+                        { url: "https://picsum.photos/400/400?2", type: "image" },
+                        { url: "https://picsum.photos/400/400?3", type: "image" },
+                        { url: "https://picsum.photos/400/400?4", type: "image" },
+                    ]
+                }
+            );
+            b.wait("3s");
+        });
+    });
+
+    // =========================================================================
+    // CAMERA
+    // =========================================================================
+    ep.camera(c => {
+        c.at("0s").cut("UserPhone");
+    });
+});
+
+export default twitterShowcase;
+````
+
 ## File: packages/dsl/examples/whatsapp-media-showcase.dsl.ts
 ````typescript
 /**
@@ -14875,249 +18649,6 @@ export const mediaShowcaseSceneIR: SceneIR = createEpisode("whatsapp-media-showc
 });
 
 export { mediaShowcaseSceneIR as default };
-````
-
-## File: packages/dsl/src/author/camera-builder.ts
-````typescript
-/**
- * Camera Builder
- * 
- * Fluent API for defining camera operations in multi-POV episodes.
- * Controls cuts, layouts, and camera effects.
- */
-
-import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout } from "@tokovo/ir";
-
-/**
- * Camera effect options.
- */
-export interface ZoomOptions {
-    originX?: number;  // 0-1, default 0.5
-    originY?: number;  // 0-1, default 0.5
-    duration?: string;
-    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
-}
-
-export interface ShakeOptions {
-    intensity?: number;    // Pixels, default 5
-    frequency?: number;    // Oscillations per second, default 10
-    decay?: number;        // 0-1, how quickly to fade, default 0.5
-    duration?: string;
-}
-
-export interface PIPOptions {
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    scale?: number;        // 0-1, default 0.3
-}
-
-/**
- * Camera operation that will be scheduled at a specific time.
- */
-export interface CameraEvent {
-    at: string;            // Duration expression (e.g., "3s")
-    op: SceneOp;
-}
-
-/**
- * Camera builder collects camera operations.
- */
-export class CameraBuilder {
-    private readonly events: CameraEvent[] = [];
-    private currentTime: string = "0s";
-
-    /**
-     * Set the current time for following operations.
-     */
-    at(time: string): this {
-        this.currentTime = time;
-        return this;
-    }
-
-    /**
-     * Cut to a specific device.
-     */
-    cut(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
-        const op: POVSwitchOp = {
-            kind: "POVSwitch",
-            deviceId,
-            transition: transition ?? "cut",
-        };
-        this.events.push({ at: this.currentTime, op });
-        return this;
-    }
-
-    /**
-     * Set layout with multiple devices.
-     */
-    layout(
-        type: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP",
-        primaryDevice: string,
-        secondaryDevice?: string,
-        options?: PIPOptions
-    ): this {
-        if (type === "SINGLE") {
-            const op: POVSwitchOp = {
-                kind: "POVSwitch",
-                deviceId: primaryDevice,
-            };
-            this.events.push({ at: this.currentTime, op });
-        } else {
-            // Map our layout types to IR POVLayout
-            const layoutMap: Record<string, POVLayout> = {
-                "SPLIT_HORIZONTAL": "horizontal",
-                "SPLIT_VERTICAL": "vertical",
-                "PIP": "pip",
-            };
-            const layout: POVLayout = layoutMap[type] ?? "horizontal";
-
-            const op: SplitPOVOp = {
-                kind: "SplitPOV",
-                devices: secondaryDevice ? [primaryDevice, secondaryDevice] : [primaryDevice],
-                layout,
-            };
-            this.events.push({ at: this.currentTime, op });
-        }
-        return this;
-    }
-
-    /**
-     * Zoom in/out.
-     * Note: This requires a CameraZoomOp which we'll add to IR.
-     */
-    zoom(scale: number, options?: ZoomOptions): this {
-        // TODO: Add CameraZoomOp to IR
-        // For now, this is a placeholder
-        console.warn("zoom() not yet implemented in IR");
-        return this;
-    }
-
-    /**
-     * Shake effect on a device.
-     * Note: This requires a CameraShakeOp which we'll add to IR.
-     */
-    shake(deviceId: string, options?: ShakeOptions): this {
-        // TODO: Add CameraShakeOp to IR
-        // For now, this is a placeholder
-        console.warn("shake() not yet implemented in IR");
-        return this;
-    }
-
-    /**
-     * Get collected camera events.
-     */
-    getEvents(): CameraEvent[] {
-        return this.events;
-    }
-}
-````
-
-## File: packages/dsl/src/author/scene-builder.ts
-````typescript
-/**
- * Scene Builder
- * 
- * Fluent API for defining cross-device scenes.
- * Used for coordinating actions across multiple devices.
- */
-
-import { Beat } from "@tokovo/ir";
-import { BeatBuilder } from "./beat-builder";
-import { BeatFn } from "./device-builder";
-
-/**
- * Device action within a scene.
- */
-export interface SceneDeviceAction {
-    deviceId: string;
-    beats: Beat[];
-}
-
-/**
- * Scene builder for cross-device coordination.
- */
-export class SceneBuilder {
-    private readonly sceneName: string;
-    private readonly deviceActions: SceneDeviceAction[] = [];
-
-    constructor(sceneName: string) {
-        this.sceneName = sceneName;
-    }
-
-    /**
-     * Define actions for a specific device within this scene.
-     */
-    device(deviceId: string, fn: (d: SceneDeviceBuilder) => void): this {
-        const builder = new SceneDeviceBuilder(deviceId);
-        fn(builder);
-        this.deviceActions.push({
-            deviceId,
-            beats: builder.getBeats(),
-        });
-        return this;
-    }
-
-    /**
-     * Get the scene name.
-     */
-    getName(): string {
-        return this.sceneName;
-    }
-
-    /**
-     * Get device actions for this scene.
-     */
-    getDeviceActions(): SceneDeviceAction[] {
-        return this.deviceActions;
-    }
-}
-
-/**
- * Minimal device builder for use within scenes.
- */
-export class SceneDeviceBuilder {
-    private readonly deviceId: string;
-    private readonly beats: Beat[] = [];
-    private appId: string = "app_whatsapp";
-    private conversationId: string | undefined;
-
-    constructor(deviceId: string) {
-        this.deviceId = deviceId;
-    }
-
-    /**
-     * Set conversation context.
-     */
-    conversation(id: string): this {
-        this.conversationId = id;
-        return this;
-    }
-
-    /**
-     * Define a beat within this scene.
-     */
-    beat(name: string, fn: BeatFn): this {
-        if (!this.conversationId) {
-            throw new Error(`Scene beat "${name}" requires conversation context`);
-        }
-
-        const builder = new BeatBuilder(this.deviceId, this.appId, this.conversationId);
-        fn(builder);
-
-        this.beats.push({
-            name,
-            ops: builder.getOps(),
-        });
-
-        return this;
-    }
-
-    /**
-     * Get collected beats.
-     */
-    getBeats(): Beat[] {
-        return this.beats;
-    }
-}
 ````
 
 ## File: packages/dsl/src/index.ts
@@ -18221,6 +21752,16 @@ packages:
 }
 ````
 
+## File: apps/docs/pages/apps/_meta.json
+````json
+{
+    "index": "Overview",
+    "whatsapp": "WhatsApp",
+    "twitter": "Twitter/X",
+    "building-apps": "Building Apps"
+}
+````
+
 ## File: apps/docs/pages/apps/building-apps.mdx
 ````
 ---
@@ -18530,6 +22071,214 @@ See the WhatsApp app for a complete reference:
 - [whatsapp-theme.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/config/whatsapp-theme.ts)
 - [runtime.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/runtime.ts)
 - [ui.tsx](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/ui.tsx)
+````
+
+## File: apps/docs/pages/apps/twitter.mdx
+````
+---
+title: Twitter/X
+description: Twitter/X iOS dark mode configuration and usage
+---
+
+# Twitter/X
+
+Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagement actions.
+
+## Features
+
+- ✅ Timeline feed with tweets
+- ✅ Tweet text with @mentions and #hashtags
+- ✅ Media grids (1-4 images)
+- ✅ Verified badges (blue, gold, grey)
+- ✅ Like, retweet, reply, quote actions
+- ✅ View counts and engagement metrics
+- ✅ Quote tweets (embedded)
+- ✅ Reply context
+- ✅ Header with For You / Following tabs
+- ✅ Bottom navigation (Home, Search, Grok, Notifications, Messages)
+- ✅ Compose FAB button
+- ✅ Tweet detail screen
+- ✅ Profile screen
+- ✅ Notifications screen
+- ✅ Search/Explore screen
+- ✅ Poll component
+- ✅ Compose modal
+
+## DSL Usage
+
+### Receiving Tweets
+
+```typescript
+d.beat("timeline", b => {
+    // Tweet from verified user
+    const tweet = b.tweetReceived(
+        { 
+            name: "Elon Musk", 
+            handle: "elonmusk", 
+            verified: "blue" 
+        },
+        "The future of AI is here 🚀",
+        {
+            likeCount: 89000,
+            retweetCount: 12800,
+            replyCount: 5432,
+            viewCount: 2400000
+        }
+    );
+    
+    // Tweet with media
+    b.tweetReceived(
+        { name: "ESPN", handle: "espn", verified: "gold" },
+        "BREAKING NEWS",
+        {
+            media: [
+                { url: "https://example.com/img1.jpg", type: "image" },
+                { url: "https://example.com/img2.jpg", type: "image" }
+            ]
+        }
+    );
+});
+```
+
+### Posting Tweets
+
+```typescript
+d.beat("post", b => {
+    const myTweet = b.postTweet(
+        "Just shipped a new feature! 🚀 #buildinpublic",
+        {
+            author: { name: "You", handle: "yourhandle", verified: "blue" }
+        }
+    );
+});
+```
+
+### Engagement Actions
+
+```typescript
+d.beat("engagement", b => {
+    // Like a tweet
+    b.likeTweet(tweetRef);
+    
+    // Retweet
+    b.retweetTweet(tweetRef);
+    
+    // Quote tweet with comment
+    b.quoteTweet(tweetRef, "This is huge! 🔥");
+    
+    // Reply to tweet
+    b.replyTweet(tweetRef, "Completely agree!");
+    
+    // Bookmark
+    b.bookmarkTweet(tweetRef);
+});
+```
+
+## Theme Configuration
+
+Dark mode colors matching iOS X app:
+
+```typescript
+import { twitterColors, twitterTypography, twitterSpacing } from "@tokovo/apps-twitter/config";
+
+// Colors
+twitterColors.background.primary    // #000000 (pure black)
+twitterColors.brand.blue            // #1D9BF0 (X blue)
+twitterColors.engagement.like       // #F91880 (pink heart)
+twitterColors.engagement.retweet    // #00BA7C (green)
+twitterColors.verified.blue         // #1D9BF0
+twitterColors.verified.gold         // #E2B719
+twitterColors.verified.grey         // #829AAB
+twitterColors.border.primary        // #2F3336
+
+// Typography (scaled 3x for Remotion)
+twitterTypography.sizes.displayName  // 45px
+twitterTypography.sizes.tweetText    // 45px
+twitterTypography.sizes.engagement   // 39px
+twitterTypography.weights.bold       // 700
+
+// Spacing
+twitterSpacing.avatarSize            // 120px
+twitterSpacing.tweetPadding          // 48px
+twitterSpacing.horizontalPadding     // 48px
+```
+
+## DSL ↔ Runtime Sync
+
+The Twitter DSL methods emit standard Tokovo events:
+
+| DSL Method | IR Op | Timeline Event | Runtime Action |
+|------------|-------|----------------|----------------|
+| `tweetReceived()` | `ReceiveMessage` | `MESSAGE_RECEIVED` | Creates tweet in timeline |
+| `postTweet()` | `SendMessage` | `MESSAGE_SENT` | Creates user's tweet |
+| `likeTweet()` | `ReactionAdded` (❤️) | `REACTION_ADDED` | Sets `isLiked=true` |
+| `retweetTweet()` | `ReactionAdded` (🔁) | `REACTION_ADDED` | Sets `isRetweeted=true` |
+| `quoteTweet()` | `SendMessage` (meta.type=quote) | `MESSAGE_SENT` | Creates quote tweet |
+| `replyTweet()` | `SendMessage` (meta.type=reply) | `MESSAGE_SENT` | Creates reply |
+| `bookmarkTweet()` | `ReactionAdded` (🔖) | `REACTION_ADDED` | Sets `isBookmarked=true` |
+
+**Conversation ID**: `__twitter_timeline__` identifies Twitter events.
+
+## Components
+
+| Component | Description |
+|-----------|-------------|
+| `Header` | X logo, profile avatar, For You/Following tabs |
+| `BottomNav` | 5-tab nav: Home, Search, Grok, Notifications, Messages |
+| `Tweet` | Full tweet with avatar, text, media, actions |
+| `Avatar` | Profile picture with verified badge (small/medium/large) |
+| `TweetActions` | Reply, RT, Like, Views, Bookmark, Share |
+| `MediaGrid` | 1-4 image layouts with video overlays |
+| `TweetDetail` | Full thread view with expanded tweet and replies |
+| `Profile` | User profile with banner, bio, and tweet tabs |
+| `Notifications` | Notification list with like/RT/follow/mention types |
+| `Search` | Explore screen with trending topics |
+| `Poll` | Voting UI with results |
+| `ComposeModal` | Tweet composition with character count |
+
+## Screens
+
+| Screen | Route | Description |
+|--------|-------|-------------|
+| `timeline` | Home | Main feed with tweets |
+| `tweet-detail` | Thread | Single tweet + replies |
+| `profile` | Profile | User's profile page |
+| `notifications` | Notifications | Activity feed |
+| `search` | Explore | Search + trending |
+| `messages` | DMs | Direct messages |
+
+## File Structure
+
+```
+packages/apps-twitter/
+├── src/
+│   ├── config/
+│   │   ├── twitter-theme.ts     # Colors, typography, borders
+│   │   └── layout-config.ts     # Heights, media grids
+│   ├── components/
+│   │   ├── Avatar.tsx           # Profile pic + badges
+│   │   ├── Tweet.tsx            # Main tweet component
+│   │   ├── TweetActions.tsx     # Engagement bar
+│   │   ├── MediaGrid.tsx        # Image layouts
+│   │   ├── Header.tsx           # Top navigation
+│   │   ├── BottomNav.tsx        # Bottom tabs
+│   │   ├── TweetDetail.tsx      # Thread view
+│   │   ├── Profile.tsx          # User profile
+│   │   ├── Notifications.tsx    # Activity feed
+│   │   ├── Search.tsx           # Explore
+│   │   ├── Poll.tsx             # Voting UI
+│   │   └── ComposeModal.tsx     # Composition
+│   ├── runtime.ts               # Event reducer
+│   ├── plugin.ts                # Registration
+│   ├── ui.tsx                   # Main renderer
+│   └── index.ts                 # Exports
+```
+
+## Example Episode
+
+See `packages/dsl/examples/twitter-showcase.dsl.ts` for a complete timeline demo.
+
+For multi-app examples combining Twitter with WhatsApp and notifications, see `packages/dsl/examples/multi-app-showcase.dsl.ts`.
 ````
 
 ## File: apps/docs/pages/architecture/_meta.json
@@ -19799,6 +23548,779 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
 };
 ````
 
+## File: packages/apps-twitter/src/components/index.ts
+````typescript
+/**
+ * Twitter/X Components
+ */
+
+// Core Components
+export { Avatar, type AvatarProps, type VerifiedType } from "./Avatar";
+export { Tweet, type TweetProps, type TweetData } from "./Tweet";
+export { TweetActions, type TweetActionsProps } from "./TweetActions";
+export { MediaGrid, type MediaGridProps, type MediaItem } from "./MediaGrid";
+export { Header, type HeaderProps } from "./Header";
+export { BottomNav, type BottomNavProps, type TabId } from "./BottomNav";
+
+// Screens
+export { TweetDetail, type TweetDetailProps } from "./TweetDetail";
+export { Profile, type ProfileProps, type ProfileData } from "./Profile";
+export { Notifications, type NotificationsProps, type NotificationData, type NotificationType } from "./Notifications";
+export { Search, type SearchProps, type TrendingTopic } from "./Search";
+
+// Enhanced Features
+export { Poll, type PollProps, type PollOption } from "./Poll";
+export { ComposeModal, type ComposeModalProps } from "./ComposeModal";
+````
+
+## File: packages/apps-twitter/src/config/twitter-theme.ts
+````typescript
+/**
+ * Twitter/X Theme Configuration
+ * 
+ * Based on the latest X iOS app (2024) dark mode design.
+ * Features the signature black background with blue/white accents.
+ */
+
+// =============================================================================
+// COLOR PALETTE
+// =============================================================================
+
+export const twitterColors = {
+    // Primary backgrounds
+    background: {
+        primary: "#000000",         // Pure black (X's signature)
+        secondary: "#16181C",       // Slightly lighter for cards
+        elevated: "#1D1F23",        // Modal/sheet backgrounds
+        hover: "#080808",           // Hover states
+    },
+
+    // Text colors
+    text: {
+        primary: "#E7E9EA",         // Main text (off-white)
+        secondary: "#71767B",       // Muted text (handles, timestamps)
+        tertiary: "#536471",        // Even more muted
+        inverse: "#0F1419",         // Text on light backgrounds
+    },
+
+    // Brand colors
+    brand: {
+        blue: "#1D9BF0",            // Twitter/X blue (interactions)
+        green: "#00BA7C",           // Success, retweets
+        pink: "#F91880",            // Likes (pink heart)
+        orange: "#FF7A00",          // Warnings
+        purple: "#7856FF",          // Spaces
+    },
+
+    // Verified badge colors
+    verified: {
+        blue: "#1D9BF0",            // Twitter Blue/verified
+        gold: "#E2B719",            // Organizations
+        grey: "#829AAB",            // Government/multilateral
+    },
+
+    // Border colors (convenience alias)
+    border: {
+        primary: "#2F3336",         // Main dividers
+        secondary: "#38444D",       // Lighter borders
+        separator: "#1D1F23",       // Section separators
+    },
+
+    // UI elements
+    ui: {
+        border: "#2F3336",          // Dividers, borders
+        borderLight: "#38444D",     // Lighter borders
+        separator: "#1D1F23",       // Section separators
+    },
+
+    // Engagement colors
+    engagement: {
+        reply: "#71767B",           // Reply icon
+        retweet: "#00BA7C",         // Retweet (green)
+        like: "#F91880",            // Like (pink)
+        view: "#71767B",            // View count
+        share: "#71767B",           // Share/bookmark
+    },
+};
+
+// =============================================================================
+// TYPOGRAPHY
+// =============================================================================
+
+export const twitterTypography = {
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif",
+    fontFamilyDisplay: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif",
+
+    // Font sizes (at 3x scale for Remotion)
+    sizes: {
+        displayName: 45,            // Bold name
+        handle: 42,                 // @handle
+        tweetText: 45,              // Main tweet text
+        tweetTextLarge: 54,         // Large tweet (detail view)
+        timestamp: 42,              // Relative time
+        engagement: 39,             // Like/retweet counts
+        engagementLarge: 48,        // Detail view counts
+        tabLabel: 42,               // Navigation tabs
+        buttonText: 42,             // Button labels
+        badge: 33,                  // Notification badges
+    },
+
+    // Line heights
+    lineHeights: {
+        tweetText: 63,              // 1.4x font size
+        tweetTextLarge: 75,
+        displayName: 54,
+    },
+
+    // Font weights
+    weights: {
+        regular: 400,
+        medium: 500,
+        semibold: 600,
+        bold: 700,
+        heavy: 800,
+    },
+};
+
+// =============================================================================
+// SPACING (at 3x scale)
+// =============================================================================
+
+export const twitterSpacing = {
+    // Padding
+    tweetPadding: 48,               // Tweet horizontal padding
+    tweetPaddingVertical: 36,       // Tweet vertical padding
+    horizontalPadding: 48,          // Alias for horizontal padding
+    avatarGap: 36,                  // Gap between avatar and content
+
+    // Avatar sizes
+    avatarSize: 120,                // Standard avatar (40dp × 3)
+    avatarSizeSmall: 90,            // Reply thread avatars
+    avatarSizeLarge: 144,           // Profile view
+
+    // Engagement bar
+    engagementGap: 48,              // Gap between engagement buttons
+    engagementIconSize: 54,         // Icon size
+
+    // Media
+    mediaRadius: 36,                // Image/video border radius
+    mediagap: 6,                    // Gap between media items
+
+    // Thread line
+    threadLineWidth: 6,             // Reply thread connector
+    threadLineGap: 12,              // Gap from avatar
+};
+
+// =============================================================================
+// LAYOUT DIMENSIONS
+// =============================================================================
+
+export const twitterLayout = {
+    // Device dimensions (iPhone 16 Pro at 3x)
+    screenWidth: 1179,
+    screenHeight: 2556,
+
+    // Header
+    headerHeight: 156,              // Top header
+    tabBarHeight: 132,              // For You / Following tabs
+
+    // Bottom navigation
+    bottomNavHeight: 147,           // Bottom tab bar
+
+    // Safe areas (iPhone with notch)
+    safeAreaTop: 141,               // Status bar + notch
+    safeAreaBottom: 102,            // Home indicator
+
+    // Tweet sizing
+    tweetMinHeight: 180,            // Minimum tweet height
+    mediaMaxHeight: 900,            // Max height for single image
+};
+
+// =============================================================================
+// THEME EXPORT
+// =============================================================================
+
+export interface TwitterTheme {
+    mode: "dark" | "dim" | "light";
+    colors: typeof twitterColors;
+    typography: typeof twitterTypography;
+    spacing: typeof twitterSpacing;
+    layout: typeof twitterLayout;
+}
+
+export const darkTheme: TwitterTheme = {
+    mode: "dark",
+    colors: twitterColors,
+    typography: twitterTypography,
+    spacing: twitterSpacing,
+    layout: twitterLayout,
+};
+
+// Dim theme (dark blue)
+export const dimTheme: TwitterTheme = {
+    ...darkTheme,
+    mode: "dim",
+    colors: {
+        ...twitterColors,
+        background: {
+            primary: "#15202B",
+            secondary: "#192734",
+            elevated: "#1E2732",
+            hover: "#1C2732",
+        },
+    },
+};
+
+export default darkTheme;
+````
+
+## File: packages/apps-twitter/src/runtime.ts
+````typescript
+/**
+ * Twitter/X Runtime
+ * 
+ * Event reducer for Twitter timeline events.
+ * 
+ * SYNC: Uses MESSAGE_RECEIVED/MESSAGE_SENT/REACTION_ADDED events from DSL.
+ * The __twitter_timeline__ conversationId is used to identify Twitter events.
+ */
+
+import { produce } from "immer";
+import { WorldState, TimelineEvent, ReducerRegistry, APP_IDS } from "@tokovo/core";
+import { TweetData } from "./components";
+
+// =============================================================================
+// APP ID & CONVERSATION
+// =============================================================================
+
+export const TWITTER_APP_ID = "app_twitter";
+export const TWITTER_TIMELINE_CONVERSATION = "__twitter_timeline__";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TwitterState {
+    screen: "timeline" | "tweet-detail" | "profile" | "notifications" | "messages" | "search";
+    activeTab: "for-you" | "following";
+    activeTweetId?: string;
+    activeProfileId?: string;
+}
+
+export interface TwitterTweet extends TweetData {
+    createdAt?: number;  // Frame when created
+}
+
+// =============================================================================
+// TIMESTAMP HELPER
+// =============================================================================
+
+function generateTimestamp(frame: number, tweetIndex: number): string {
+    // Generate relative timestamps like "2m", "15m", "2h", "Dec 13"
+    const minutesAgo = tweetIndex * 5 + Math.floor(frame / 60);
+
+    if (minutesAgo < 60) {
+        return `${minutesAgo}m`;
+    }
+    if (minutesAgo < 1440) { // 24 hours
+        return `${Math.floor(minutesAgo / 60)}h`;
+    }
+    // Use date format for older tweets
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const date = new Date();
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+}
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export function twitterReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        type: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: any;
+        // Tweet-specific meta fields (from DSL)
+        meta?: {
+            type?: string;
+            author?: { name: string; handle: string; verified?: string; avatarUrl?: string };
+            media?: { url: string; type: string }[];
+            replyCount?: number;
+            retweetCount?: number;
+            likeCount?: number;
+            viewCount?: number;
+            quoteTweetRef?: any;
+            replyToRef?: any;
+        };
+        // Reaction fields
+        ref?: any;
+        emoji?: string;
+    };
+
+    // Twitter events: either direct appId or __twitter_timeline__ conversation
+    const isTwitterApp = appEvent.appId === TWITTER_APP_ID;
+    const isTwitterConversation = appEvent.conversationId === TWITTER_TIMELINE_CONVERSATION;
+
+    if (!isTwitterApp && !isTwitterConversation) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = (event as any).type as string;
+
+    // Ensure app state exists
+    if (!draft.appState[TWITTER_APP_ID]) {
+        draft.appState[TWITTER_APP_ID] = {
+            screen: "timeline",
+            activeTab: "for-you",
+            tweets: [],
+            notifications: [],
+        };
+    }
+
+    const appState = draft.appState[TWITTER_APP_ID] as any;
+
+    // Ensure tweets array exists
+    if (!appState.tweets) {
+        appState.tweets = [];
+    }
+
+    switch (eventType) {
+        // =================================================================
+        // MESSAGE EVENTS → TWEETS (DSL sync)
+        // =================================================================
+
+        case "MESSAGE_RECEIVED": {
+            // Tweet from another user
+            const meta = appEvent.meta || {};
+            const author = meta.author || {
+                name: appEvent.from || "Unknown",
+                handle: appEvent.from || "unknown",
+            };
+
+            const tweet: TwitterTweet = {
+                id: `tweet_${event.at}_${appState.tweets.length}`,
+                author: {
+                    name: author.name,
+                    handle: author.handle,
+                    avatarUrl: author.avatarUrl,
+                    verified: author.verified as "blue" | "gold" | "grey" | undefined,
+                },
+                text: appEvent.text || "",
+                timestamp: generateTimestamp(event.at, appState.tweets.length),
+                media: meta.media?.map((m: any) => ({
+                    url: m.url,
+                    type: m.type,
+                })),
+                replyCount: meta.replyCount ?? Math.floor(Math.random() * 50),
+                retweetCount: meta.retweetCount ?? Math.floor(Math.random() * 200),
+                likeCount: meta.likeCount ?? Math.floor(Math.random() * 500),
+                viewCount: meta.viewCount ?? Math.floor(Math.random() * 10000),
+                createdAt: event.at,
+            };
+
+            appState.tweets.unshift(tweet);
+            break;
+        }
+
+        case "MESSAGE_SENT": {
+            // Tweet from the device owner (user posting)
+            const meta = appEvent.meta || {};
+            const isQuote = meta.type === "quote_tweet";
+            const isReply = meta.type === "reply";
+
+            const rawAuthor = meta.author || { name: "You", handle: "user" };
+            const tweet: TwitterTweet = {
+                id: `tweet_${event.at}_${appState.tweets.length}`,
+                author: {
+                    name: rawAuthor.name,
+                    handle: rawAuthor.handle,
+                    avatarUrl: rawAuthor.avatarUrl,
+                    verified: rawAuthor.verified as "blue" | "gold" | "grey" | undefined,
+                },
+                text: appEvent.text || "",
+                timestamp: "now",
+                media: meta.media?.map((m: any) => ({
+                    url: m.url,
+                    type: m.type,
+                })),
+                replyCount: 0,
+                retweetCount: 0,
+                likeCount: 0,
+                viewCount: Math.floor(Math.random() * 100),
+                isReply,
+                createdAt: event.at,
+            };
+
+            // Handle quote tweet
+            if (isQuote && meta.quoteTweetRef) {
+                const originalTweet = appState.tweets.find(
+                    (t: TwitterTweet) => t.id === meta.quoteTweetRef?.id
+                );
+                if (originalTweet) {
+                    tweet.quoteTweet = originalTweet;
+                }
+            }
+
+            // Handle reply
+            if (isReply && meta.replyToRef) {
+                const originalTweet = appState.tweets.find(
+                    (t: TwitterTweet) => t.id === meta.replyToRef?.id
+                );
+                if (originalTweet) {
+                    tweet.replyToHandle = originalTweet.author.handle;
+                    originalTweet.replyCount = (originalTweet.replyCount || 0) + 1;
+                }
+            }
+
+            appState.tweets.unshift(tweet);
+            break;
+        }
+
+        // =================================================================
+        // REACTION EVENTS → LIKE/RETWEET/BOOKMARK
+        // =================================================================
+
+        case "REACTION_ADDED": {
+            const emoji = appEvent.emoji;
+            const ref = appEvent.ref;
+
+            if (!ref) break;
+
+            // Find the tweet by ref
+            const tweet = appState.tweets.find(
+                (t: TwitterTweet) => t.id === ref.id
+            );
+
+            if (!tweet) break;
+
+            // Map emoji to action
+            switch (emoji) {
+                case "❤️":  // Like
+                    tweet.isLiked = true;
+                    tweet.likeCount = (tweet.likeCount || 0) + 1;
+                    break;
+                case "🔁":  // Retweet
+                    tweet.isRetweeted = true;
+                    tweet.retweetCount = (tweet.retweetCount || 0) + 1;
+                    break;
+                case "🔖":  // Bookmark
+                    tweet.isBookmarked = true;
+                    break;
+            }
+            break;
+        }
+
+        // =================================================================
+        // NAVIGATION EVENTS
+        // =================================================================
+
+        case "SCREEN_NAVIGATED":
+        case "NAVIGATE": {
+            appState.screen = (appEvent as any).screen || "timeline";
+            if ((appEvent as any).tweetId) {
+                appState.activeTweetId = (appEvent as any).tweetId;
+            }
+            if ((appEvent as any).profileId) {
+                appState.activeProfileId = (appEvent as any).profileId;
+            }
+            break;
+        }
+
+        case "TAB_CHANGED": {
+            appState.activeTab = (appEvent as any).tab || "for-you";
+            break;
+        }
+
+        // =================================================================
+        // TYPING EVENTS (optional visual feedback)
+        // =================================================================
+
+        case "TYPING_START": {
+            appState.isTyping = true;
+            appState.typingUser = appEvent.from;
+            break;
+        }
+
+        case "TYPING_END": {
+            appState.isTyping = false;
+            appState.typingUser = undefined;
+            break;
+        }
+
+        default:
+            // Unknown event type - no action
+            break;
+    }
+}
+
+// =============================================================================
+// REGISTRATION
+// =============================================================================
+
+// Register with the core reducer registry
+ReducerRegistry.registerAppReducer(TWITTER_APP_ID, twitterReducer);
+
+export default twitterReducer;
+````
+
+## File: packages/apps-twitter/src/ui.tsx
+````typescript
+/**
+ * Twitter/X Main UI
+ * 
+ * Root component that renders the Twitter app based on state.
+ */
+
+import React from "react";
+import { WorldState, Platform } from "@tokovo/core";
+import { twitterColors, twitterLayout } from "./config";
+import {
+    Header,
+    BottomNav,
+    Tweet,
+    TweetData,
+    TweetDetail,
+    Profile,
+    ProfileData,
+    Notifications,
+    NotificationData,
+    Search,
+    TrendingTopic,
+    ComposeModal,
+} from "./components";
+import { TWITTER_APP_ID, TwitterState } from "./runtime";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface TwitterUIProps {
+    world: WorldState;
+    deviceId?: string;
+    platform?: Platform;
+    t?: number;
+}
+
+// =============================================================================
+// COMPOSE BUTTON (FAB)
+// =============================================================================
+
+const ComposeButton: React.FC<{ onClick?: () => void }> = ({ onClick }) => (
+    <div
+        style={{
+            position: "fixed",
+            bottom: twitterLayout.bottomNavHeight + twitterLayout.safeAreaBottom + 48,
+            right: 48,
+            width: 168,
+            height: 168,
+            borderRadius: "50%",
+            backgroundColor: twitterColors.brand.blue,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 6px 24px rgba(29, 155, 240, 0.5)",
+            zIndex: 50,
+            cursor: "pointer",
+        }}
+        onClick={onClick}
+    >
+        <svg width={72} height={72} viewBox="0 0 24 24" fill="white">
+            <path d="M23 3c-6.62-.1-10.38 2.421-13.05 6.03C7.29 12.61 6 17.331 6 22h2c0-1.007.07-2.012.19-3H12c4.1 0 7.48-3.082 7.94-7.054C22.79 10.147 23.17 6.359 23 3zm-7 8h-1.5v2H16c.63-.016 1.2-.08 1.72-.188C16.95 15.24 14.68 17 12 17H8.55c.57-2.512 1.57-4.851 3-6.78 2.16-2.912 5.29-4.911 9.45-5.187C20.95 8.079 19.9 11 16 11zM4 9V6H1V4h3V1h2v3h3v2H6v3H4z" />
+        </svg>
+    </div>
+);
+
+// =============================================================================
+// TIMELINE SCREEN
+// =============================================================================
+
+const TimelineScreen: React.FC<{
+    tweets: TweetData[];
+    activeTab: "for-you" | "following";
+    userAvatarUrl?: string;
+    userName?: string;
+}> = ({ tweets, activeTab, userAvatarUrl, userName }) => (
+    <div style={{
+        flex: 1,
+        overflowY: "auto",
+        backgroundColor: twitterColors.background.primary,
+    }}>
+        <Header
+            activeTab={activeTab}
+            userAvatarUrl={userAvatarUrl}
+            userName={userName}
+        />
+
+        {/* Tweet list */}
+        <div style={{
+            paddingBottom: twitterLayout.bottomNavHeight + twitterLayout.safeAreaBottom + 48,
+        }}>
+            {tweets.length === 0 ? (
+                <div style={{
+                    padding: 96,
+                    textAlign: "center",
+                }}>
+                    <p style={{
+                        fontSize: 60,
+                        fontWeight: 700,
+                        color: twitterColors.text.primary,
+                        marginBottom: 24,
+                    }}>
+                        Welcome to X
+                    </p>
+                    <p style={{
+                        fontSize: 45,
+                        color: twitterColors.text.secondary,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                    }}>
+                        Tweets will appear here
+                    </p>
+                </div>
+            ) : (
+                tweets.map((tweet) => (
+                    <Tweet key={tweet.id} tweet={tweet} />
+                ))
+            )}
+        </div>
+
+        <ComposeButton />
+        <BottomNav activeTab="home" />
+    </div>
+);
+
+// =============================================================================
+// MAIN UI COMPONENT
+// =============================================================================
+
+export const TwitterUI: React.FC<TwitterUIProps> = ({
+    world,
+    deviceId,
+    platform = "ios",
+    t = 0,
+}) => {
+    // Get app state
+    const appState = world.appState[TWITTER_APP_ID] as TwitterState | undefined;
+    const screen = appState?.screen || "timeline";
+    const activeTab = appState?.activeTab || "for-you";
+    const tweets: TweetData[] = (appState as any)?.tweets || [];
+    const notifications: NotificationData[] = (appState as any)?.notifications || [];
+    const activeTweetId = appState?.activeTweetId;
+    const activeProfileId = appState?.activeProfileId;
+
+    // Find active tweet for detail view
+    const activeTweet = activeTweetId
+        ? tweets.find(t => t.id === activeTweetId)
+        : undefined;
+
+    // Mock profile for demo
+    const activeProfile: ProfileData = {
+        handle: activeProfileId || "elonmusk",
+        name: "Elon Musk",
+        bio: "Mars, Cars, Stars",
+        location: "Austin, Texas",
+        website: "x.com",
+        joinDate: "June 2009",
+        followingCount: 400,
+        followersCount: 170000000,
+        verified: "blue",
+    };
+
+    // Get user info
+    const userName = "User";
+    const userAvatarUrl = undefined;
+
+    return (
+        <div style={{
+            width: "100%",
+            height: "100%",
+            backgroundColor: twitterColors.background.primary,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            color: twitterColors.text.primary,
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            overflow: "hidden",
+        }}>
+            {/* Timeline */}
+            {screen === "timeline" && (
+                <TimelineScreen
+                    tweets={tweets}
+                    activeTab={activeTab}
+                    userAvatarUrl={userAvatarUrl}
+                    userName={userName}
+                />
+            )}
+
+            {/* Tweet Detail */}
+            {screen === "tweet-detail" && activeTweet && (
+                <>
+                    <TweetDetail
+                        tweet={activeTweet}
+                        replies={tweets.filter(t => t.isReply && t.replyToHandle === activeTweet.author.handle)}
+                    />
+                    <BottomNav activeTab="home" />
+                </>
+            )}
+
+            {/* Profile */}
+            {screen === "profile" && (
+                <>
+                    <Profile
+                        profile={activeProfile}
+                        tweets={tweets.filter(t => t.author.handle === activeProfileId)}
+                    />
+                    <BottomNav activeTab="home" />
+                </>
+            )}
+
+            {/* Notifications */}
+            {screen === "notifications" && (
+                <>
+                    <Notifications notifications={notifications} />
+                    <BottomNav activeTab="notifications" />
+                </>
+            )}
+
+            {/* Search / Explore */}
+            {screen === "search" && (
+                <>
+                    <Search />
+                    <BottomNav activeTab="search" />
+                </>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
+// APP RENDERER (For integration with Tokovo renderer)
+// =============================================================================
+
+export function renderTwitterApp(
+    world: WorldState,
+    deviceId: string,
+    platform: Platform = "ios",
+    t: number = 0
+): React.ReactElement {
+    return (
+        <TwitterUI
+            world={world}
+            deviceId={deviceId}
+            platform={platform}
+            t={t}
+        />
+    );
+}
+
+export default TwitterUI;
+````
+
 ## File: packages/apps-whatsapp/src/components/ChatsListScreen.tsx
 ````typescript
 import React from "react";
@@ -20420,15 +24942,6 @@ export * from "./whatsapp-theme";
 export * from "./polish";
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-export * from "./plugin";
-export * from "./components";
-````
-
 ## File: packages/apps-whatsapp/package.json
 ````json
 {
@@ -20621,6 +25134,150 @@ export const ultimateShowcase = episode("ultimate-showcase", ep => {
 export default ultimateShowcase;
 ````
 
+## File: packages/dsl/src/author/camera-builder.ts
+````typescript
+/**
+ * Camera Builder
+ * 
+ * Fluent API for defining camera operations in multi-POV episodes.
+ * Controls cuts, layouts, and camera effects.
+ */
+
+import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout } from "@tokovo/ir";
+
+/**
+ * Camera effect options.
+ */
+export interface ZoomOptions {
+    originX?: number;  // 0-1, default 0.5
+    originY?: number;  // 0-1, default 0.5
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+export interface ShakeOptions {
+    intensity?: number;    // Pixels, default 5
+    frequency?: number;    // Oscillations per second, default 10
+    decay?: number;        // 0-1, how quickly to fade, default 0.5
+    duration?: string;
+}
+
+export interface PIPOptions {
+    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    scale?: number;        // 0-1, default 0.3
+}
+
+/**
+ * Camera operation that will be scheduled at a specific time.
+ */
+export interface CameraEvent {
+    at: string;            // Duration expression (e.g., "3s")
+    op: SceneOp;
+}
+
+/**
+ * Camera builder collects camera operations.
+ */
+export class CameraBuilder {
+    private readonly events: CameraEvent[] = [];
+    private currentTime: string = "0s";
+
+    /**
+     * Set the current time for following operations.
+     */
+    at(time: string): this {
+        this.currentTime = time;
+        return this;
+    }
+
+    /**
+     * Cut to a specific device.
+     */
+    cut(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = {
+            kind: "POVSwitch",
+            deviceId,
+            transition: transition ?? "cut",
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * Set layout with multiple devices.
+     */
+    layout(
+        type: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP",
+        primaryDevice: string,
+        secondaryDevice?: string,
+        options?: PIPOptions
+    ): this {
+        if (type === "SINGLE") {
+            const op: POVSwitchOp = {
+                kind: "POVSwitch",
+                deviceId: primaryDevice,
+            };
+            this.events.push({ at: this.currentTime, op });
+        } else {
+            // Map our layout types to IR POVLayout
+            const layoutMap: Record<string, POVLayout> = {
+                "SPLIT_HORIZONTAL": "horizontal",
+                "SPLIT_VERTICAL": "vertical",
+                "PIP": "pip",
+            };
+            const layout: POVLayout = layoutMap[type] ?? "horizontal";
+
+            const op: SplitPOVOp = {
+                kind: "SplitPOV",
+                devices: secondaryDevice ? [primaryDevice, secondaryDevice] : [primaryDevice],
+                layout,
+            };
+            this.events.push({ at: this.currentTime, op });
+        }
+        return this;
+    }
+
+    /**
+     * Zoom in/out.
+     */
+    zoom(scale: number, options?: ZoomOptions): this {
+        const op = {
+            kind: "CameraZoom" as const,
+            scale,
+            duration: options?.duration,
+            originX: options?.originX,
+            originY: options?.originY,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op: op as any });
+        return this;
+    }
+
+    /**
+     * Shake effect on a device.
+     */
+    shake(deviceId: string, options?: ShakeOptions): this {
+        const op = {
+            kind: "CameraShake" as const,
+            deviceId,
+            intensity: options?.intensity,
+            frequency: options?.frequency,
+            decay: options?.decay,
+            duration: options?.duration,
+        };
+        this.events.push({ at: this.currentTime, op: op as any });
+        return this;
+    }
+
+    /**
+     * Get collected camera events.
+     */
+    getEvents(): CameraEvent[] {
+        return this.events;
+    }
+}
+````
+
 ## File: packages/dsl/src/author/device-builder.ts
 ````typescript
 /**
@@ -20726,149 +25383,6 @@ export class DeviceBuilder {
 }
 ````
 
-## File: packages/dsl/src/author/episode-builder.ts
-````typescript
-/**
- * Episode Builder
- * 
- * Top-level fluent API for defining an episode.
- * Entry point: episode("my-episode", ep => { ... })
- */
-
-import { SceneIR, EpisodeMeta } from "@tokovo/ir";
-import { DeviceBuilder, BeatFn } from "./device-builder";
-import { CameraBuilder, CameraEvent } from "./camera-builder";
-import { SceneBuilder } from "./scene-builder";
-import { EpisodeConfig } from "../types";
-
-/**
- * Device callback function.
- */
-export type DeviceFn = (d: DeviceBuilder) => void;
-
-/**
- * Camera callback function.
- */
-export type CameraFn = (c: CameraBuilder) => void;
-
-/**
- * Scene callback function.
- */
-export type SceneFn = (s: SceneBuilder) => void;
-
-/**
- * Episode builder collects devices and metadata.
- */
-export class EpisodeBuilder {
-    private readonly episodeId: string;
-    private readonly meta: EpisodeMeta;
-    private readonly deviceBuilders: DeviceBuilder[] = [];
-    private readonly cameraEvents: CameraEvent[] = [];
-    private readonly scenes: SceneBuilder[] = [];
-
-    constructor(episodeId: string, config: EpisodeConfig = {}) {
-        this.episodeId = episodeId;
-        this.meta = {
-            title: config.title ?? episodeId,
-            fps: config.fps ?? 30,
-        };
-    }
-
-    /**
-     * Set episode metadata.
-     */
-    config(cfg: EpisodeConfig): this {
-        if (cfg.fps) {
-            (this.meta as any).fps = cfg.fps;
-        }
-        if (cfg.title) {
-            (this.meta as any).title = cfg.title;
-        }
-        return this;
-    }
-
-    /**
-     * Define a device with a story.
-     */
-    device(deviceId: string, fn: DeviceFn): this;
-    device(deviceId: string, profileId: string, fn: DeviceFn): this;
-    device(deviceId: string, profileIdOrFn: string | DeviceFn, maybeFn?: DeviceFn): this {
-        let profileId: string;
-        let fn: DeviceFn;
-
-        if (typeof profileIdOrFn === "function") {
-            profileId = "iphone16";
-            fn = profileIdOrFn;
-        } else {
-            profileId = profileIdOrFn;
-            fn = maybeFn!;
-        }
-
-        const builder = new DeviceBuilder(deviceId, profileId);
-        fn(builder);
-        this.deviceBuilders.push(builder);
-        return this;
-    }
-
-    /**
-     * Define camera operations for multi-POV.
-     * Camera operations control cuts, layouts, and effects.
-     */
-    camera(fn: CameraFn): this {
-        const builder = new CameraBuilder();
-        fn(builder);
-        this.cameraEvents.push(...builder.getEvents());
-        return this;
-    }
-
-    /**
-     * Define a cross-device scene.
-     * Scenes coordinate actions across multiple devices.
-     */
-    scene(name: string, fn: SceneFn): this {
-        const builder = new SceneBuilder(name);
-        fn(builder);
-        this.scenes.push(builder);
-        return this;
-    }
-
-    /**
-     * Build the Scene IR.
-     */
-    build(): SceneIR {
-        return {
-            episodeId: this.episodeId,
-            meta: this.meta,
-            devices: this.deviceBuilders.map((b) => b.build()),
-            // TODO: Include camera events and scenes in SceneIR
-        };
-    }
-}
-
-/**
- * Entry point for creating an episode.
- * 
- * @example
- * const ir = episode("breakup-01", ep => {
- *   ep.device("AlicePhone", d => {
- *     d.conversation("dm_bob", { name: "Bob" })
- *     d.beat("tension", b => {
- *       b.receive("Bob", "We need to talk.")
- *     })
- *   })
- * })
- */
-export function episode(
-    episodeId: string,
-    fn: (ep: EpisodeBuilder) => void,
-    config?: EpisodeConfig
-): SceneIR {
-    const builder = new EpisodeBuilder(episodeId, config);
-    fn(builder);
-    return builder.build();
-}
-````
-
 ## File: packages/dsl/src/author/index.ts
 ````typescript
 /**
@@ -20882,6 +25396,129 @@ export { DeviceBuilder, BeatFn } from "./device-builder";
 export { BeatBuilder, MessageOptions } from "./beat-builder";
 export { CameraBuilder, CameraEvent, ZoomOptions, ShakeOptions, PIPOptions } from "./camera-builder";
 export { SceneBuilder, SceneDeviceBuilder, SceneDeviceAction } from "./scene-builder";
+````
+
+## File: packages/dsl/src/author/scene-builder.ts
+````typescript
+/**
+ * Scene Builder
+ * 
+ * Fluent API for defining cross-device scenes.
+ * Used for coordinating actions across multiple devices.
+ */
+
+import { Beat, CrossDeviceScene } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+import { BeatFn } from "./device-builder";
+
+/**
+ * Device action within a scene.
+ */
+export interface SceneDeviceAction {
+    deviceId: string;
+    beats: Beat[];
+}
+
+/**
+ * Scene builder for cross-device coordination.
+ */
+export class SceneBuilder {
+    private readonly sceneName: string;
+    private readonly deviceActions: SceneDeviceAction[] = [];
+
+    constructor(sceneName: string) {
+        this.sceneName = sceneName;
+    }
+
+    /**
+     * Define actions for a specific device within this scene.
+     */
+    device(deviceId: string, fn: (d: SceneDeviceBuilder) => void): this {
+        const builder = new SceneDeviceBuilder(deviceId);
+        fn(builder);
+        this.deviceActions.push({
+            deviceId,
+            beats: builder.getBeats(),
+        });
+        return this;
+    }
+
+    /**
+     * Get the scene name.
+     */
+    getName(): string {
+        return this.sceneName;
+    }
+
+    /**
+     * Get device actions for this scene.
+     */
+    getDeviceActions(): SceneDeviceAction[] {
+        return this.deviceActions;
+    }
+
+    /**
+     * Build the CrossDeviceScene for IR output.
+     */
+    build(): CrossDeviceScene {
+        const deviceBeats: Record<string, Beat[]> = {};
+        for (const action of this.deviceActions) {
+            deviceBeats[action.deviceId] = action.beats;
+        }
+        return {
+            name: this.sceneName,
+            deviceBeats,
+        };
+    }
+}
+
+/**
+ * Minimal device builder for use within scenes.
+ */
+export class SceneDeviceBuilder {
+    private readonly deviceId: string;
+    private readonly beats: Beat[] = [];
+    private appId: string = "app_whatsapp";
+    private conversationId: string | undefined;
+
+    constructor(deviceId: string) {
+        this.deviceId = deviceId;
+    }
+
+    /**
+     * Set conversation context.
+     */
+    conversation(id: string): this {
+        this.conversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat within this scene.
+     */
+    beat(name: string, fn: BeatFn): this {
+        if (!this.conversationId) {
+            throw new Error(`Scene beat "${name}" requires conversation context`);
+        }
+
+        const builder = new BeatBuilder(this.deviceId, this.appId, this.conversationId);
+        fn(builder);
+
+        this.beats.push({
+            name,
+            ops: builder.getOps(),
+        });
+
+        return this;
+    }
+
+    /**
+     * Get collected beats.
+     */
+    getBeats(): Beat[] {
+        return this.beats;
+    }
+}
 ````
 
 ## File: packages/episodes/src/examples/camera-showcase.json
@@ -22975,42 +27612,6 @@ function formatDate(): string {
 }
 ````
 
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
 ## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
 ````typescript
 import React from "react";
@@ -23620,6 +28221,16 @@ export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPrevie
 export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
 ````
 
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+export * from "./config";
+````
+
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
 ````typescript
 import React from "react";
@@ -24016,6 +28627,160 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 }) => (
     <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
 );
+````
+
+## File: packages/dsl/src/author/episode-builder.ts
+````typescript
+/**
+ * Episode Builder
+ * 
+ * Top-level fluent API for defining an episode.
+ * Entry point: episode("my-episode", ep => { ... })
+ */
+
+import { SceneIR, EpisodeMeta } from "@tokovo/ir";
+import { DeviceBuilder, BeatFn } from "./device-builder";
+import { CameraBuilder, CameraEvent } from "./camera-builder";
+import { SceneBuilder } from "./scene-builder";
+import { EpisodeConfig } from "../types";
+
+/**
+ * Device callback function.
+ */
+export type DeviceFn = (d: DeviceBuilder) => void;
+
+/**
+ * Camera callback function.
+ */
+export type CameraFn = (c: CameraBuilder) => void;
+
+/**
+ * Scene callback function.
+ */
+export type SceneFn = (s: SceneBuilder) => void;
+
+/**
+ * Episode builder collects devices and metadata.
+ */
+export class EpisodeBuilder {
+    private readonly episodeId: string;
+    private readonly meta: EpisodeMeta;
+    private readonly deviceBuilders: DeviceBuilder[] = [];
+    private readonly cameraEvents: CameraEvent[] = [];
+    private readonly scenes: SceneBuilder[] = [];
+
+    constructor(episodeId: string, config: EpisodeConfig = {}) {
+        this.episodeId = episodeId;
+        this.meta = {
+            title: config.title ?? episodeId,
+            fps: config.fps ?? 30,
+        };
+    }
+
+    /**
+     * Set episode metadata.
+     */
+    config(cfg: EpisodeConfig): this {
+        if (cfg.fps) {
+            (this.meta as any).fps = cfg.fps;
+        }
+        if (cfg.title) {
+            (this.meta as any).title = cfg.title;
+        }
+        return this;
+    }
+
+    /**
+     * Define a device with a story.
+     */
+    device(deviceId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileIdOrFn: string | DeviceFn, maybeFn?: DeviceFn): this {
+        let profileId: string;
+        let fn: DeviceFn;
+
+        if (typeof profileIdOrFn === "function") {
+            profileId = "iphone16";
+            fn = profileIdOrFn;
+        } else {
+            profileId = profileIdOrFn;
+            fn = maybeFn!;
+        }
+
+        const builder = new DeviceBuilder(deviceId, profileId);
+        fn(builder);
+        this.deviceBuilders.push(builder);
+        return this;
+    }
+
+    /**
+     * Define camera operations for multi-POV.
+     * Camera operations control cuts, layouts, and effects.
+     */
+    camera(fn: CameraFn): this {
+        const builder = new CameraBuilder();
+        fn(builder);
+        this.cameraEvents.push(...builder.getEvents());
+        return this;
+    }
+
+    /**
+     * Define a cross-device scene.
+     * Scenes coordinate actions across multiple devices.
+     */
+    scene(name: string, fn: SceneFn): this {
+        const builder = new SceneBuilder(name);
+        fn(builder);
+        this.scenes.push(builder);
+        return this;
+    }
+
+    /**
+     * Build the Scene IR.
+     */
+    build(): SceneIR {
+        // Build camera track from collected events
+        const cameraTrack = this.cameraEvents.length > 0
+            ? this.cameraEvents.map(e => ({ at: e.at, op: e.op }))
+            : undefined;
+
+        // Build scenes from collected scene builders
+        const scenes = this.scenes.length > 0
+            ? this.scenes.map(s => s.build())
+            : undefined;
+
+        return {
+            episodeId: this.episodeId,
+            meta: this.meta,
+            devices: this.deviceBuilders.map((b) => b.build()),
+            cameraTrack,
+            scenes,
+        };
+    }
+}
+
+/**
+ * Entry point for creating an episode.
+ * 
+ * @example
+ * const ir = episode("breakup-01", ep => {
+ *   ep.device("AlicePhone", d => {
+ *     d.conversation("dm_bob", { name: "Bob" })
+ *     d.beat("tension", b => {
+ *       b.receive("Bob", "We need to talk.")
+ *     })
+ *   })
+ * })
+ */
+export function episode(
+    episodeId: string,
+    fn: (ep: EpisodeBuilder) => void,
+    config?: EpisodeConfig
+): SceneIR {
+    const builder = new EpisodeBuilder(episodeId, config);
+    fn(builder);
+    return builder.build();
+}
 ````
 
 ## File: packages/episodes/src/examples/multi-pov-demo.json
@@ -24618,30 +29383,39 @@ export const NotificationOverlay: React.FC<{ notifications?: Notification[]; var
 };
 ````
 
-## File: packages/renderer/package.json
+## File: apps/video-runner/package.json
 ````json
 {
-    "name": "@tokovo/renderer",
+    "name": "video-runner",
     "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
+    "private": true,
     "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
     },
     "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
+        "@remotion/cli": "4.0.380",
         "@tokovo/apps-whatsapp": "workspace:*",
         "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
         "react": "18.2.0",
         "react-dom": "18.2.0",
-        "remotion": "4.0.211"
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
     },
     "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
         "@types/react": "18.2.0",
-        "@types/react-dom": "18.2.0"
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
     }
 }
 ````
@@ -26927,674 +31701,6 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
-## File: packages/dsl/src/author/beat-builder.ts
-````typescript
-/**
- * Beat Builder
- * 
- * Fluent API for defining actions within a beat.
- * A beat is a named group of sequential/concurrent operations.
- */
-
-import {
-    SceneOp,
-    WaitOp,
-    TypingStartOp,
-    TypingEndOp,
-    SendMessageOp,
-    ReceiveMessageOp,
-    ReadMessageOp,
-    DeleteMessageOp,
-    ConcurrentOp,
-    MessageRef,
-    messageRef,
-    // Media operations
-    SendImageOp,
-    ReceiveImageOp,
-    SendVideoOp,
-    ReceiveVideoOp,
-    SendGifOp,
-    ReceiveGifOp,
-    SendVoiceOp,
-    ReceiveVoiceOp,
-    // POV operations
-    POVSwitchOp,
-    SplitPOVOp,
-    POVLayout,
-    // Navigation operations
-    NavigateScreenOp,
-    OpenChatOp,
-    GoBackOp,
-    // Reserved signals
-    ReactionAddedOp,
-    ScreenshotTakenOp,
-    MissedCallOp,
-    // Semantic
-    SemanticMeta,
-    MessageMeta,
-} from "@tokovo/ir";
-import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
-
-/**
- * Message options for semantic annotations.
- */
-export interface MessageOptions {
-    /** Semantic annotations */
-    mood?: SemanticMeta["mood"];
-    intensity?: number;
-    secrecy?: "low" | "medium" | "high";
-    urgency?: number;
-    intimacy?: number;
-    subtext?: string;
-    tags?: string[];
-    /** Message type */
-    type?: "text" | "image" | "voice" | "system";
-}
-
-/**
- * Build MessageMeta from options.
- */
-function buildMeta(options?: MessageOptions): MessageMeta | undefined {
-    if (!options) return undefined;
-
-    const semantic: SemanticMeta = {};
-    if (options.mood) semantic.mood = options.mood;
-    if (options.intensity !== undefined) semantic.intensity = options.intensity;
-    if (options.secrecy) semantic.secrecy = options.secrecy;
-    if (options.urgency !== undefined) semantic.urgency = options.urgency;
-    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
-    if (options.subtext) semantic.subtext = options.subtext;
-    if (options.tags) semantic.tags = options.tags;
-
-    return {
-        type: options.type ?? "text",
-        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
-    };
-}
-
-/**
- * Beat builder collects operations within a beat.
- */
-export class BeatBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private messageCounter = 0;
-    private lastMessageRef: MessageRef | undefined;
-
-    constructor(deviceId: string, appId: string, conversationId: string) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-    }
-
-    /**
-     * Wait for a duration.
-     */
-    wait(duration: string): this {
-        const op: WaitOp = { kind: "Wait", duration };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Start typing indicator.
-     * Returns a builder for fluent chaining: typing("Bob").for("2s")
-     */
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                // Expand to: TypingStart + Wait + TypingEnd
-                const start: TypingStartOp = {
-                    kind: "TypingStart",
-                    actor,
-                    conversationId,
-                };
-                const wait: WaitOp = { kind: "Wait", duration };
-                const end: TypingEndOp = {
-                    kind: "TypingEnd",
-                    actor,
-                    conversationId,
-                };
-                ops.push(start, wait, end);
-            },
-        };
-    }
-
-    /**
-     * Start typing without specifying duration.
-     * Use typingEnd() to stop.
-     */
-    typingStart(actor: string): this {
-        const op: TypingStartOp = {
-            kind: "TypingStart",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Stop typing indicator.
-     */
-    typingEnd(actor: string): this {
-        const op: TypingEndOp = {
-            kind: "TypingEnd",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Send a message (from device owner).
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    send(text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendMessageOp = {
-            kind: "SendMessage",
-            actor: "me",
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a message (from someone else).
-     * @param actor - Who sent the message
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveMessageOp = {
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Mark a message as read.
-     */
-    read(ref: MessageHandle): this {
-        const op: ReadMessageOp = { kind: "ReadMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Mark the last message as read.
-     */
-    readLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("readLast() called but no previous message exists");
-        }
-        return this.read(this.lastMessageRef);
-    }
-
-    /**
-     * Delete a message.
-     */
-    delete(ref: MessageHandle): this {
-        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Delete the last message.
-     */
-    deleteLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("deleteLast() called but no previous message exists");
-        }
-        return this.delete(this.lastMessageRef);
-    }
-
-    // =========================================================================
-    // MEDIA MESSAGE OPERATIONS
-    // =========================================================================
-
-    /**
-     * Media options for image, video, GIF messages.
-     */
-    private static readonly MEDIA_DEFAULTS = {
-        IMAGE_HEIGHT: 400,
-        VIDEO_HEIGHT: 400,
-        GIF_HEIGHT: 300,
-        VOICE_HEIGHT: 150,
-    };
-
-    /**
-     * Send an image message.
-     * @param url - Image URL
-     * @param options - Optional caption and height
-     */
-    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendImageOp = {
-            kind: "SendImage",
-            imageUrl: url,
-            conversationId: this.conversationId,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive an image message.
-     * @param actor - Who sent the image
-     * @param url - Image URL
-     * @param options - Optional caption and height
-     */
-    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveImageOp = {
-            kind: "ReceiveImage",
-            actor,
-            imageUrl: url,
-            conversationId: this.conversationId,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a video message.
-     * @param url - Video URL
-     * @param duration - Video duration in seconds
-     * @param options - Optional thumbnail, caption and height
-     */
-    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendVideoOp = {
-            kind: "SendVideo",
-            videoUrl: url,
-            thumbnailUrl: options?.thumbnailUrl,
-            conversationId: this.conversationId,
-            duration,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a video message.
-     * @param actor - Who sent the video
-     * @param url - Video URL
-     * @param duration - Video duration in seconds
-     * @param options - Optional thumbnail, caption and height
-     */
-    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveVideoOp = {
-            kind: "ReceiveVideo",
-            actor,
-            videoUrl: url,
-            thumbnailUrl: options?.thumbnailUrl,
-            conversationId: this.conversationId,
-            duration,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a GIF message.
-     * @param url - GIF URL (from Giphy, Tenor, etc.)
-     * @param options - Optional height
-     */
-    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendGifOp = {
-            kind: "SendGif",
-            gifUrl: url,
-            conversationId: this.conversationId,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a GIF message.
-     * @param actor - Who sent the GIF
-     * @param url - GIF URL
-     * @param options - Optional height
-     */
-    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveGifOp = {
-            kind: "ReceiveGif",
-            actor,
-            gifUrl: url,
-            conversationId: this.conversationId,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a voice note.
-     * @param duration - Voice note duration in seconds
-     * @param options - Optional timing override
-     */
-    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
-        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendVoiceOp = {
-            kind: "SendVoice",
-            conversationId: this.conversationId,
-            duration,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a voice note.
-     * @param actor - Who sent the voice note
-     * @param duration - Voice note duration in seconds
-     * @param options - Optional timing override
-     */
-    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
-        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveVoiceOp = {
-            kind: "ReceiveVoice",
-            actor,
-            conversationId: this.conversationId,
-            duration,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    // =========================================================================
-    // POV OPERATIONS (STORY GRAMMAR)
-    // =========================================================================
-
-    /**
-     * Switch point of view to a different device.
-     */
-    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
-        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Split POV - show multiple devices simultaneously.
-     */
-    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
-        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // RESERVED SIGNALS (DRAMA EVENTS)
-    // =========================================================================
-
-    /**
-     * Add a reaction to a message.
-     */
-    react(ref: MessageHandle, actor: string, emoji: string): this {
-        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Screenshot taken notification (drama!).
-     */
-    screenshot(): this {
-        const op: ScreenshotTakenOp = {
-            kind: "ScreenshotTaken",
-            conversationId: this.conversationId
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Missed call event.
-     */
-    missedCall(actor: string, callType?: "voice" | "video"): this {
-        const op: MissedCallOp = {
-            kind: "MissedCall",
-            actor,
-            conversationId: this.conversationId,
-            callType,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // CONCURRENT
-    // =========================================================================
-
-    /**
-     * Execute operations concurrently across multiple tracks.
-     */
-    concurrent(tracks: TrackFn[]): this {
-        const trackOps: SceneOp[][] = tracks.map((fn) => {
-            const trackBuilder = this.createTrackBuilder();
-            fn(trackBuilder);
-            return trackBuilder.getOps();
-        });
-
-        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Create a track builder for concurrent operations.
-     */
-    private createTrackBuilder(): TrackBuilderImpl {
-        return new TrackBuilderImpl(
-            this.deviceId,
-            this.appId,
-            this.conversationId,
-            () => ++this.messageCounter
-        );
-    }
-
-    // =========================================================================
-    // NAVIGATION
-    // =========================================================================
-
-    /**
-     * Navigate to a screen within the app.
-     * @param screen - Target screen (chats-list, chat, settings, status, calls)
-     * @param options - Transition options
-     */
-    showScreen(
-        screen: "chats-list" | "chat" | "settings" | "status" | "calls",
-        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: number }
-    ): this {
-        const op: NavigateScreenOp = {
-            kind: "NavigateScreen",
-            screen,
-            transition: options?.transition,
-            animationDuration: options?.duration,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Open a specific chat (navigate to chat screen with conversation).
-     * @param conversationId - ID of the conversation to open
-     * @param options - Transition options
-     */
-    openChat(
-        conversationId: string,
-        options?: { transition?: "push" | "pop"; duration?: number }
-    ): this {
-        const op: OpenChatOp = {
-            kind: "OpenChat",
-            conversationId,
-            transition: options?.transition,
-            animationDuration: options?.duration,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Go back to the previous screen.
-     * @param options - Transition options
-     */
-    goBack(options?: { transition?: "pop" | "dismiss"; duration?: number }): this {
-        const op: GoBackOp = {
-            kind: "GoBack",
-            transition: options?.transition,
-            animationDuration: options?.duration,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Get collected operations.
-     */
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-
-/**
- * Track builder implementation for concurrent operations.
- */
-class TrackBuilderImpl implements TrackBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private readonly getNextId: () => number;
-
-    constructor(
-        deviceId: string,
-        appId: string,
-        conversationId: string,
-        getNextId: () => number
-    ) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-        this.getNextId = getNextId;
-    }
-
-    wait(duration: string): this {
-        this.ops.push({ kind: "Wait", duration });
-        return this;
-    }
-
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                ops.push({ kind: "TypingStart", actor, conversationId });
-                ops.push({ kind: "Wait", duration });
-                ops.push({ kind: "TypingEnd", actor, conversationId });
-            },
-        };
-    }
-
-    send(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "SendMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    receive(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-````
-
 ## File: packages/episodes/src/examples/instagram-test.json
 ````json
 {
@@ -28086,533 +32192,6 @@ class TrackBuilderImpl implements TrackBuilder {
             "text": "Goodbye."
         }
     ]
-}
-````
-
-## File: packages/ir/src/scene.ts
-````typescript
-/**
- * Scene IR - Semantic Truth
- * 
- * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
- * 
- * RULES:
- * - No frames
- * - No layout
- * - No camera
- * - No platform assumptions
- * 
- * If FPS changes, layout changes, or Director logic changes,
- * Scene IR stays valid.
- */
-
-// =============================================================================
-// DURATION
-// =============================================================================
-
-/**
- * Human-readable duration expression.
- * Examples: "1.2s", "300ms", "45frames"
- */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
-
-/**
- * Parse duration to frames
- */
-export function parseDuration(expr: DurationExpr, fps: number): number {
-    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
-    if (!match) {
-        throw new Error(`Invalid duration: ${expr}`);
-    }
-
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-        case "s":
-            return Math.round(value * fps);
-        case "ms":
-            return Math.round((value / 1000) * fps);
-        case "frames":
-            return Math.round(value);
-        default:
-            throw new Error(`Unknown duration unit: ${unit}`);
-    }
-}
-
-// =============================================================================
-// MESSAGE REFERENCE
-// =============================================================================
-
-/**
- * Reference to a message.
- * MUST include full context for cross-device/conversation operations.
- */
-export interface MessageRef {
-    readonly _type: "MessageRef";
-    readonly id: string;
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Create a message reference
- */
-export function messageRef(
-    id: string,
-    deviceId: string,
-    appId: string,
-    conversationId: string
-): MessageRef {
-    return {
-        _type: "MessageRef",
-        id,
-        deviceId,
-        appId,
-        conversationId,
-    };
-}
-
-// =============================================================================
-// MESSAGE METADATA
-// =============================================================================
-
-import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
-
-export interface MessageMeta {
-    /** Message type */
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
-
-    /** For voice messages */
-    voiceDuration?: number;
-
-    /** For media messages (height in pixels for layout) */
-    height?: number;
-
-    /** Timestamp display */
-    timestamp?: string;
-
-    /** Semantic annotations */
-    semantic?: SemanticMeta;
-
-    /** Custom metadata */
-    [key: string]: unknown;
-}
-
-// =============================================================================
-// SCENE OPERATIONS (CORE)
-// =============================================================================
-
-/**
- * Wait for a duration.
- * This advances the cursor but emits no runtime event.
- */
-export interface WaitOp {
-    readonly kind: "Wait";
-    readonly duration: DurationExpr;
-}
-
-/**
- * Start typing indicator.
- */
-export interface TypingStartOp {
-    readonly kind: "TypingStart";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * End typing indicator.
- */
-export interface TypingEndOp {
-    readonly kind: "TypingEnd";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * Send a message (from "me" / device owner).
- */
-export interface SendMessageOp {
-    readonly kind: "SendMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Receive a message (from someone else).
- */
-export interface ReceiveMessageOp {
-    readonly kind: "ReceiveMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Mark a message as read.
- */
-export interface ReadMessageOp {
-    readonly kind: "ReadMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Delete a message.
- */
-export interface DeleteMessageOp {
-    readonly kind: "DeleteMessage";
-    readonly ref: MessageRef;
-}
-
-// =============================================================================
-// MEDIA MESSAGE OPERATIONS
-// =============================================================================
-
-/**
- * Media message configuration with defaults.
- */
-export interface MediaConfig {
-    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
-    readonly height?: number;
-    /** Caption text */
-    readonly caption?: string;
-    /** Auto-timing: skip automatic timing calculation */
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send an image message.
- */
-export interface SendImageOp {
-    readonly kind: "SendImage";
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive an image message.
- */
-export interface ReceiveImageOp {
-    readonly kind: "ReceiveImage";
-    readonly actor: string;
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a video message.
- */
-export interface SendVideoOp {
-    readonly kind: "SendVideo";
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Video duration in seconds
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a video message.
- */
-export interface ReceiveVideoOp {
-    readonly kind: "ReceiveVideo";
-    readonly actor: string;
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a GIF message.
- */
-export interface SendGifOp {
-    readonly kind: "SendGif";
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a GIF message.
- */
-export interface ReceiveGifOp {
-    readonly kind: "ReceiveGif";
-    readonly actor: string;
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a voice note.
- */
-export interface SendVoiceOp {
-    readonly kind: "SendVoice";
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a voice note.
- */
-export interface ReceiveVoiceOp {
-    readonly kind: "ReceiveVoice";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Concurrent operations across multiple tracks.
- * Compiler forks cursor per track, compiles each independently,
- * then joins at max(trackEnds).
- */
-export interface ConcurrentOp {
-    readonly kind: "Concurrent";
-    readonly tracks: SceneOp[][];
-}
-
-// =============================================================================
-// POV OPERATIONS (STORY GRAMMAR)
-// =============================================================================
-
-/**
- * Switch point of view to a device.
- */
-export interface POVSwitchOp {
-    readonly kind: "POVSwitch";
-    readonly deviceId: string;
-    readonly transition?: "cut" | "crossfade" | "wipe";
-}
-
-/**
- * Split POV - show multiple devices simultaneously.
- */
-export interface SplitPOVOp {
-    readonly kind: "SplitPOV";
-    readonly devices: string[];
-    readonly layout: POVLayout;
-}
-
-// =============================================================================
-// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
-// =============================================================================
-
-/**
- * Reaction added to a message (❤️ 😂 😡).
- */
-export interface ReactionAddedOp {
-    readonly kind: "ReactionAdded";
-    readonly ref: MessageRef;
-    readonly actor: string;
-    readonly emoji: string;
-}
-
-/**
- * Voice note sent.
- */
-export interface VoiceNoteSentOp {
-    readonly kind: "VoiceNoteSent";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Voice note received.
- */
-export interface VoiceNoteReceivedOp {
-    readonly kind: "VoiceNoteReceived";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Missed call.
- */
-export interface MissedCallOp {
-    readonly kind: "MissedCall";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly callType?: "voice" | "video";
-}
-
-/**
- * Online status changed.
- */
-export interface OnlineStatusChangedOp {
-    readonly kind: "OnlineStatusChanged";
-    readonly actor: string;
-    readonly status: "online" | "offline" | "typing" | "last_seen";
-}
-
-/**
- * Screenshot taken (drama alert!).
- */
-export interface ScreenshotTakenOp {
-    readonly kind: "ScreenshotTaken";
-    readonly conversationId: string;
-}
-
-/**
- * User blocked.
- */
-export interface BlockedUserOp {
-    readonly kind: "BlockedUser";
-    readonly actor: string;
-}
-
-// =============================================================================
-// NAVIGATION OPERATIONS
-// =============================================================================
-
-/**
- * Navigate to a screen within an app.
- * Enables transitions from chats list to chat, settings, etc.
- */
-export interface NavigateScreenOp {
-    readonly kind: "NavigateScreen";
-    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
-    readonly transition?: "push" | "pop" | "present" | "dismiss";
-    readonly animationDuration?: number;  // frames
-}
-
-/**
- * Open a specific chat.
- * Combines navigation with conversation selection.
- */
-export interface OpenChatOp {
-    readonly kind: "OpenChat";
-    readonly conversationId: string;
-    readonly transition?: "push" | "pop";
-    readonly animationDuration?: number;
-}
-
-/**
- * Go back to previous screen.
- */
-export interface GoBackOp {
-    readonly kind: "GoBack";
-    readonly transition?: "pop" | "dismiss";
-    readonly animationDuration?: number;
-}
-
-/**
- * Union of all scene operations.
- */
-export type SceneOp =
-    // Core operations
-    | WaitOp
-    | TypingStartOp
-    | TypingEndOp
-    | SendMessageOp
-    | ReceiveMessageOp
-    | ReadMessageOp
-    | DeleteMessageOp
-    | ConcurrentOp
-    // Media operations
-    | SendImageOp
-    | ReceiveImageOp
-    | SendVideoOp
-    | ReceiveVideoOp
-    | SendGifOp
-    | ReceiveGifOp
-    | SendVoiceOp
-    | ReceiveVoiceOp
-    // POV operations
-    | POVSwitchOp
-    | SplitPOVOp
-    // Navigation operations
-    | NavigateScreenOp
-    | OpenChatOp
-    | GoBackOp
-    // Reserved signals
-    | ReactionAddedOp
-    | VoiceNoteSentOp
-    | VoiceNoteReceivedOp
-    | MissedCallOp
-    | OnlineStatusChangedOp
-    | ScreenshotTakenOp
-    | BlockedUserOp;
-
-// =============================================================================
-// SCENE (TOP LEVEL)
-// =============================================================================
-
-/**
- * A beat is a named group of operations.
- * Used for semantic grouping, story rhythm, and debugging.
- */
-export interface Beat {
-    readonly name: string;
-    readonly ops: SceneOp[];
-    /** Optional rhythm/semantic metadata */
-    readonly meta?: BeatMeta;
-}
-
-/**
- * A device context within a scene.
- */
-export interface DeviceScene {
-    readonly deviceId: string;
-    readonly profileId: string;
-    readonly appId: string;
-    readonly conversations: ConversationDef[];
-    readonly beats: Beat[];
-}
-
-
-/**
- * Conversation definition.
- */
-export interface ConversationDef {
-    readonly id: string;
-    readonly name?: string;
-    readonly avatar?: string;
-    readonly type?: "dm" | "group";
-}
-
-/**
- * Complete scene IR for an episode.
- */
-export interface SceneIR {
-    readonly episodeId: string;
-    readonly meta: EpisodeMeta;
-    readonly devices: DeviceScene[];
-}
-
-/**
- * Episode metadata with semantic configuration.
- * Extends EpisodeConfig with required fields.
- */
-export interface EpisodeMeta extends EpisodeConfig {
-    /** Frames per second (required) */
-    readonly fps: number;
-
-    /** Duration hint (calculated if not specified) */
-    readonly durationInFrames?: number;
 }
 ````
 
@@ -29123,6 +32702,35 @@ const DevicePaneFit: React.FC<{
         </div>
     );
 };
+````
+
+## File: packages/renderer/package.json
+````json
+{
+    "name": "@tokovo/renderer",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.211"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "@types/react-dom": "18.2.0"
+    }
+}
 ````
 
 ## File: apps/video-runner/src/Video.tsx
@@ -29844,170 +33452,1467 @@ export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 ````
 
-## File: packages/renderer/src/layout/strategies/chat.ts
+## File: packages/ir/src/scene.ts
 ````typescript
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
-import {
-    MessageLayoutConfig,
-    DEFAULT_LAYOUT_CONFIG,
-    calculateMessageHeight,
-    applyEasing,
-    MessageForHeight,
-} from "@tokovo/apps-whatsapp/src/config/layout-config";
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
 
 // =============================================================================
-// CONFIGURABLE CHAT LAYOUT STRATEGY
+// DURATION
 // =============================================================================
 
 /**
- * Compute chat layout using the configurable layout system.
- * Supports smooth scrolling, configurable heights, and future features.
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
  */
-export function computeChatLayout(
-    ctx: LayoutContext,
-    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): ChatLayoutState {
-    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
-    const config = layoutConfig;
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
 
-    if (!activeConversationId || !world.conversations[activeConversationId]) {
-        return {
-            kind: "CHAT",
-            scrollY: 0,
-            contentHeight: 0,
-            isAtBottom: true,
-            messageLayouts: {},
-            meta: {}
-        };
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
     }
 
-    const conversation = world.conversations[activeConversationId];
-    // Filter messages visible at time t
-    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+    const value = parseFloat(match[1]);
+    const unit = match[2];
 
-    const messageLayouts: Record<string, ChatMessageLayout> = {};
-    let currentY = config.spacing.topPadding;
-    let lastMessageId: string | undefined;
-
-    // 1. Layout messages with configurable heights
-    for (const msg of messages) {
-        // Calculate height using the config-based function
-        const msgForHeight: MessageForHeight = {
-            type: msg.type as MessageForHeight["type"],
-            text: msg.text,
-            caption: (msg as any).caption,
-            from: msg.from,
-            reactions: (msg as any).reactions,
-            replyTo: (msg as any).replyTo,
-            linkPreview: (msg as any).linkPreview,
-        };
-
-        const height = calculateMessageHeight(msgForHeight, config);
-
-        // Calculate bubble width
-        let bubbleWidth: number;
-        const msgType = msg.type || "text";
-
-        if (msgType === "system") {
-            bubbleWidth = viewportWidth * 0.6; // Centered system message
-        } else if (msgType === "voice") {
-            bubbleWidth = 450; // Fixed voice message width
-        } else if (msgType === "image" || msgType === "video" || msgType === "gif") {
-            bubbleWidth = viewportWidth * config.spacing.bubbleMaxWidth;
-        } else {
-            // Text messages: width based on content
-            const textLength = msg.text?.length || 0;
-            const avgCharWidth = 14;
-            const maxCharsOnLine = Math.min(textLength, config.heights.text.charsPerLine);
-            const textWidth = maxCharsOnLine * avgCharWidth + 72;
-            bubbleWidth = Math.min(
-                viewportWidth * config.spacing.bubbleMaxWidth,
-                Math.max(textWidth, 150)
-            );
-        }
-
-        // Animation: Slide in / Fade in with configurable duration
-        const messageAt = msg.at ?? 0;
-        const timeSinceAppear = t - messageAt;
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
-            const progress = timeSinceAppear / config.animation.messageAppearDuration;
-            const ease = applyEasing(progress, "easeOut");
-            opacity = ease;
-            translateY = config.animation.messageAppearOffset * (1 - ease);
-        }
-
-        // Compute rect for director targeting
-        const isMe = msg.from === "me";
-        const rectX = isMe
-            ? viewportWidth - config.spacing.bubbleMargin - bubbleWidth
-            : config.spacing.bubbleMargin;
-
-        messageLayouts[msg.id] = {
-            id: msg.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY,
-            rect: {
-                x: rectX,
-                y: currentY,
-                width: bubbleWidth,
-                height,
-            },
-        };
-
-        lastMessageId = msg.id;
-        currentY += height + config.spacing.gap;
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
     }
+}
 
-    // 2. Typing indicator
-    let typingLayout: TypingLayout | null = null;
-    const isTyping = Object.values(conversation.typing || {}).some(v => v);
-    if (isTyping) {
-        const height = 120; // Typing bubble height
-        typingLayout = {
-            y: currentY,
-            height,
-            opacity: 1,
-            rect: {
-                x: config.spacing.bubbleMargin,
-                y: currentY,
-                width: 150,
-                height,
-            },
-        };
-        currentY += height + config.spacing.gap;
-    }
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
 
-    const contentHeight = currentY + config.spacing.bottomPadding;
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
 
-    // 3. Scroll Position with smooth scrolling
-    let scrollY = 0;
-    if (config.scroll.lockToBottom) {
-        const maxScroll = Math.max(0, contentHeight - viewportHeight);
-
-        // For now, instant scroll (smooth scroll can be added with cursor tracking)
-        scrollY = maxScroll;
-    }
-
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
     return {
-        kind: "CHAT",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
-        messageLayouts,
-        typingLayout,
-        meta: {
-            lastMessageId
-        }
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
     };
 }
 
-// For backward compatibility, export the config types
-export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+
+    /** For voice messages */
+    voiceDuration?: number;
+
+    /** For media messages (height in pixels for layout) */
+    height?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS (CORE)
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+// =============================================================================
+// MEDIA MESSAGE OPERATIONS
+// =============================================================================
+
+/**
+ * Media message configuration with defaults.
+ */
+export interface MediaConfig {
+    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
+    readonly height?: number;
+    /** Caption text */
+    readonly caption?: string;
+    /** Auto-timing: skip automatic timing calculation */
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send an image message.
+ */
+export interface SendImageOp {
+    readonly kind: "SendImage";
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive an image message.
+ */
+export interface ReceiveImageOp {
+    readonly kind: "ReceiveImage";
+    readonly actor: string;
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a video message.
+ */
+export interface SendVideoOp {
+    readonly kind: "SendVideo";
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Video duration in seconds
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a video message.
+ */
+export interface ReceiveVideoOp {
+    readonly kind: "ReceiveVideo";
+    readonly actor: string;
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a GIF message.
+ */
+export interface SendGifOp {
+    readonly kind: "SendGif";
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a GIF message.
+ */
+export interface ReceiveGifOp {
+    readonly kind: "ReceiveGif";
+    readonly actor: string;
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a voice note.
+ */
+export interface SendVoiceOp {
+    readonly kind: "SendVoice";
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a voice note.
+ */
+export interface ReceiveVoiceOp {
+    readonly kind: "ReceiveVoice";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+// =============================================================================
+// CAMERA EFFECT OPERATIONS
+// =============================================================================
+
+/**
+ * Camera zoom effect.
+ * Smoothly zooms in/out on the active device.
+ */
+export interface CameraZoomOp {
+    readonly kind: "CameraZoom";
+    readonly scale: number;          // Target scale (1.0 = no zoom, 2.0 = 2x zoom)
+    readonly duration?: DurationExpr; // Duration of zoom transition
+    readonly originX?: number;       // Zoom origin X (0-1, default 0.5)
+    readonly originY?: number;       // Zoom origin Y (0-1, default 0.5)
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+/**
+ * Camera shake effect.
+ * Adds dramatic shake to the viewport.
+ */
+export interface CameraShakeOp {
+    readonly kind: "CameraShake";
+    readonly deviceId: string;        // Which device to shake
+    readonly intensity?: number;      // Shake intensity in pixels (default 5)
+    readonly frequency?: number;      // Oscillations per second (default 10)
+    readonly decay?: number;          // Decay rate 0-1 (default 0.5)
+    readonly duration?: DurationExpr; // Duration of shake effect
+}
+
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface ReactionAddedOp {
+    readonly kind: "ReactionAdded";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
+// =============================================================================
+// NAVIGATION OPERATIONS
+// =============================================================================
+
+/**
+ * Navigate to a screen within an app.
+ * Enables transitions from chats list to chat, settings, etc.
+ */
+export interface NavigateScreenOp {
+    readonly kind: "NavigateScreen";
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+    readonly animationDuration?: number;  // frames
+}
+
+/**
+ * Open a specific chat.
+ * Combines navigation with conversation selection.
+ */
+export interface OpenChatOp {
+    readonly kind: "OpenChat";
+    readonly conversationId: string;
+    readonly transition?: "push" | "pop";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Go back to previous screen.
+ */
+export interface GoBackOp {
+    readonly kind: "GoBack";
+    readonly transition?: "pop" | "dismiss";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    // Core operations
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp
+    // Media operations
+    | SendImageOp
+    | ReceiveImageOp
+    | SendVideoOp
+    | ReceiveVideoOp
+    | SendGifOp
+    | ReceiveGifOp
+    | SendVoiceOp
+    | ReceiveVoiceOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Camera effects
+    | CameraZoomOp
+    | CameraShakeOp
+    // Navigation operations
+    | NavigateScreenOp
+    | OpenChatOp
+    | GoBackOp
+    // Reserved signals
+    | ReactionAddedOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping, story rhythm, and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Camera event scheduled at a specific time.
+ */
+export interface CameraEvent {
+    readonly at: DurationExpr;
+    readonly op: SceneOp;
+}
+
+/**
+ * Cross-device scene definition.
+ */
+export interface CrossDeviceScene {
+    readonly name: string;
+    readonly deviceBeats: Record<string, Beat[]>;  // deviceId -> beats
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+    /** Camera operations track (cuts, zooms, shakes) */
+    readonly cameraTrack?: CameraEvent[];
+    /** Cross-device scenes for coordinated actions */
+    readonly scenes?: CrossDeviceScene[];
+}
+
+/**
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
+ */
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
+    readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
+    readonly durationInFrames?: number;
+}
+````
+
+## File: packages/dsl/src/author/beat-builder.ts
+````typescript
+/**
+ * Beat Builder
+ * 
+ * Fluent API for defining actions within a beat.
+ * A beat is a named group of sequential/concurrent operations.
+ */
+
+import {
+    SceneOp,
+    WaitOp,
+    TypingStartOp,
+    TypingEndOp,
+    SendMessageOp,
+    ReceiveMessageOp,
+    ReadMessageOp,
+    DeleteMessageOp,
+    ConcurrentOp,
+    MessageRef,
+    messageRef,
+    // Media operations
+    SendImageOp,
+    ReceiveImageOp,
+    SendVideoOp,
+    ReceiveVideoOp,
+    SendGifOp,
+    ReceiveGifOp,
+    SendVoiceOp,
+    ReceiveVoiceOp,
+    // POV operations
+    POVSwitchOp,
+    SplitPOVOp,
+    POVLayout,
+    // Navigation operations
+    NavigateScreenOp,
+    OpenChatOp,
+    GoBackOp,
+    // Reserved signals
+    ReactionAddedOp,
+    ScreenshotTakenOp,
+    MissedCallOp,
+    // Semantic
+    SemanticMeta,
+    MessageMeta,
+} from "@tokovo/ir";
+import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Message options for semantic annotations.
+ */
+export interface MessageOptions {
+    /** Semantic annotations */
+    mood?: SemanticMeta["mood"];
+    intensity?: number;
+    secrecy?: "low" | "medium" | "high";
+    urgency?: number;
+    intimacy?: number;
+    subtext?: string;
+    tags?: string[];
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+}
+
+/**
+ * Build MessageMeta from options.
+ */
+function buildMeta(options?: MessageOptions): MessageMeta | undefined {
+    if (!options) return undefined;
+
+    const semantic: SemanticMeta = {};
+    if (options.mood) semantic.mood = options.mood;
+    if (options.intensity !== undefined) semantic.intensity = options.intensity;
+    if (options.secrecy) semantic.secrecy = options.secrecy;
+    if (options.urgency !== undefined) semantic.urgency = options.urgency;
+    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
+    if (options.subtext) semantic.subtext = options.subtext;
+    if (options.tags) semantic.tags = options.tags;
+
+    return {
+        type: options.type ?? "text",
+        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+    };
+}
+
+/**
+ * Beat builder collects operations within a beat.
+ */
+export class BeatBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private messageCounter = 0;
+    private lastMessageRef: MessageRef | undefined;
+
+    constructor(deviceId: string, appId: string, conversationId: string) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+    }
+
+    /**
+     * Wait for a duration.
+     */
+    wait(duration: string): this {
+        const op: WaitOp = { kind: "Wait", duration };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Start typing indicator.
+     * Returns a builder for fluent chaining: typing("Bob").for("2s")
+     */
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                // Expand to: TypingStart + Wait + TypingEnd
+                const start: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                const wait: WaitOp = { kind: "Wait", duration };
+                const end: TypingEndOp = {
+                    kind: "TypingEnd",
+                    actor,
+                    conversationId,
+                };
+                ops.push(start, wait, end);
+            },
+        };
+    }
+
+    /**
+     * Start typing without specifying duration.
+     * Use typingEnd() to stop.
+     */
+    typingStart(actor: string): this {
+        const op: TypingStartOp = {
+            kind: "TypingStart",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Stop typing indicator.
+     */
+    typingEnd(actor: string): this {
+        const op: TypingEndOp = {
+            kind: "TypingEnd",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Send a message (from device owner).
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    send(text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendMessageOp = {
+            kind: "SendMessage",
+            actor: "me",
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a message (from someone else).
+     * @param actor - Who sent the message
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveMessageOp = {
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    read(ref: MessageHandle): this {
+        const op: ReadMessageOp = { kind: "ReadMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Mark the last message as read.
+     */
+    readLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("readLast() called but no previous message exists");
+        }
+        return this.read(this.lastMessageRef);
+    }
+
+    /**
+     * Delete a message.
+     */
+    delete(ref: MessageHandle): this {
+        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Delete the last message.
+     */
+    deleteLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("deleteLast() called but no previous message exists");
+        }
+        return this.delete(this.lastMessageRef);
+    }
+
+    // =========================================================================
+    // MEDIA MESSAGE OPERATIONS
+    // =========================================================================
+
+    /**
+     * Media options for image, video, GIF messages.
+     */
+    private static readonly MEDIA_DEFAULTS = {
+        IMAGE_HEIGHT: 400,
+        VIDEO_HEIGHT: 400,
+        GIF_HEIGHT: 300,
+        VOICE_HEIGHT: 150,
+    };
+
+    /**
+     * Send an image message.
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendImageOp = {
+            kind: "SendImage",
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive an image message.
+     * @param actor - Who sent the image
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveImageOp = {
+            kind: "ReceiveImage",
+            actor,
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a video message.
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVideoOp = {
+            kind: "SendVideo",
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a video message.
+     * @param actor - Who sent the video
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVideoOp = {
+            kind: "ReceiveVideo",
+            actor,
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a GIF message.
+     * @param url - GIF URL (from Giphy, Tenor, etc.)
+     * @param options - Optional height
+     */
+    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendGifOp = {
+            kind: "SendGif",
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a GIF message.
+     * @param actor - Who sent the GIF
+     * @param url - GIF URL
+     * @param options - Optional height
+     */
+    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveGifOp = {
+            kind: "ReceiveGif",
+            actor,
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a voice note.
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVoiceOp = {
+            kind: "SendVoice",
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a voice note.
+     * @param actor - Who sent the voice note
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVoiceOp = {
+            kind: "ReceiveVoice",
+            actor,
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    // =========================================================================
+    // POV OPERATIONS (STORY GRAMMAR)
+    // =========================================================================
+
+    /**
+     * Switch point of view to a different device.
+     */
+    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Split POV - show multiple devices simultaneously.
+     */
+    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
+        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // RESERVED SIGNALS (DRAMA EVENTS)
+    // =========================================================================
+
+    /**
+     * Add a reaction to a message.
+     */
+    react(ref: MessageHandle, actor: string, emoji: string): this {
+        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Screenshot taken notification (drama!).
+     */
+    screenshot(): this {
+        const op: ScreenshotTakenOp = {
+            kind: "ScreenshotTaken",
+            conversationId: this.conversationId
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Missed call event.
+     */
+    missedCall(actor: string, callType?: "voice" | "video"): this {
+        const op: MissedCallOp = {
+            kind: "MissedCall",
+            actor,
+            conversationId: this.conversationId,
+            callType,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // CONCURRENT
+    // =========================================================================
+
+    /**
+     * Execute operations concurrently across multiple tracks.
+     */
+    concurrent(tracks: TrackFn[]): this {
+        const trackOps: SceneOp[][] = tracks.map((fn) => {
+            const trackBuilder = this.createTrackBuilder();
+            fn(trackBuilder);
+            return trackBuilder.getOps();
+        });
+
+        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Create a track builder for concurrent operations.
+     */
+    private createTrackBuilder(): TrackBuilderImpl {
+        return new TrackBuilderImpl(
+            this.deviceId,
+            this.appId,
+            this.conversationId,
+            () => ++this.messageCounter
+        );
+    }
+
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
+
+    /**
+     * Navigate to a screen within the app.
+     * @param screen - Target screen (chats-list, chat, settings, status, calls)
+     * @param options - Transition options
+     */
+    showScreen(
+        screen: "chats-list" | "chat" | "settings" | "status" | "calls",
+        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: number }
+    ): this {
+        const op: NavigateScreenOp = {
+            kind: "NavigateScreen",
+            screen,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Open a specific chat (navigate to chat screen with conversation).
+     * @param conversationId - ID of the conversation to open
+     * @param options - Transition options
+     */
+    openChat(
+        conversationId: string,
+        options?: { transition?: "push" | "pop"; duration?: number }
+    ): this {
+        const op: OpenChatOp = {
+            kind: "OpenChat",
+            conversationId,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Go back to the previous screen.
+     * @param options - Transition options
+     */
+    goBack(options?: { transition?: "pop" | "dismiss"; duration?: number }): this {
+        const op: GoBackOp = {
+            kind: "GoBack",
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Navigate to a different app.
+     * @param appId - Target app ID (e.g., "app_twitter", "app_whatsapp")
+     * @param options - Navigation options
+     */
+    navigate(
+        appId: string,
+        options?: {
+            screen?: string;
+            conversationId?: string;
+            transition?: "push" | "pop" | "present";
+            duration?: number
+        }
+    ): this {
+        const op = {
+            kind: "AppNavigate" as const,
+            appId,
+            screen: options?.screen,
+            conversationId: options?.conversationId,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op as any);
+        return this;
+    }
+
+    /**
+     * Show a device notification.
+     * @param appId - App that's sending the notification
+     * @param options - Notification content and display options
+     */
+    notification(
+        appId: string,
+        options: {
+            title: string;
+            body: string;
+            mode?: "lockscreen" | "headsup" | "both";
+            icon?: string;
+        }
+    ): this {
+        const op = {
+            kind: "ShowNotification" as const,
+            appId,
+            title: options.title,
+            body: options.body,
+            mode: options.mode || "headsup",
+            icon: options.icon,
+        };
+        this.ops.push(op as any);
+        return this;
+    }
+
+    // =========================================================================
+    // TWITTER / X
+    // =========================================================================
+
+    /**
+     * Tweet handle for referencing tweets.
+     */
+    private tweetCounter = 0;
+    private lastTweetRef: MessageRef | undefined;
+
+    /**
+     * Post a tweet from the device owner.
+     * @param text - Tweet text
+     * @param options - Tweet options (media, quote, etc)
+     */
+    postTweet(
+        text: string,
+        options?: {
+            media?: { url: string; type: "image" | "video" | "gif" }[];
+            author?: { name: string; handle: string; verified?: "blue" | "gold" | "grey" };
+        }
+    ): MessageHandle {
+        const id = `tweet_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "tweet" as any,
+                ...(options?.media && { media: options.media }),
+                ...(options?.author && { author: options.author }),
+            },
+        });
+        const ref = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a tweet in timeline from another user.
+     * @param author - Tweet author info
+     * @param text - Tweet text
+     * @param options - Tweet options
+     */
+    tweetReceived(
+        author: { name: string; handle: string; verified?: "blue" | "gold" | "grey"; avatarUrl?: string },
+        text: string,
+        options?: {
+            media?: { url: string; type: "image" | "video" | "gif" }[];
+            replyCount?: number;
+            retweetCount?: number;
+            likeCount?: number;
+            viewCount?: number;
+        }
+    ): MessageHandle {
+        const id = `tweet_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "ReceiveMessage" as const,
+            actor: author.handle,
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "tweet" as any,
+                author,
+                ...(options?.media && { media: options.media }),
+                ...(options?.replyCount !== undefined && { replyCount: options.replyCount }),
+                ...(options?.retweetCount !== undefined && { retweetCount: options.retweetCount }),
+                ...(options?.likeCount !== undefined && { likeCount: options.likeCount }),
+                ...(options?.viewCount !== undefined && { viewCount: options.viewCount }),
+            },
+        });
+        const ref = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = ref;
+        return ref;
+    }
+
+    /**
+     * Like a tweet.
+     * @param ref - Reference to the tweet
+     */
+    likeTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "❤️",
+        });
+        return this;
+    }
+
+    /**
+     * Retweet a tweet.
+     * @param ref - Reference to the tweet
+     */
+    retweetTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "🔁",  // Using emoji as placeholder for retweet action
+        });
+        return this;
+    }
+
+    /**
+     * Quote a tweet with comment.
+     * @param ref - Reference to the original tweet
+     * @param text - Quote comment
+     */
+    quoteTweet(ref: MessageHandle, text: string): MessageHandle {
+        const id = `quote_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "quote_tweet" as any,
+                quoteTweetRef: ref,
+            },
+        });
+        const newRef = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = newRef;
+        return newRef;
+    }
+
+    /**
+     * Reply to a tweet.
+     * @param ref - Reference to the tweet being replied to
+     * @param text - Reply text
+     */
+    replyTweet(ref: MessageHandle, text: string): MessageHandle {
+        const id = `reply_${this.deviceId}_${++this.tweetCounter}`;
+        this.ops.push({
+            kind: "SendMessage" as const,
+            actor: "me",
+            text,
+            conversationId: "__twitter_timeline__",
+            meta: {
+                type: "reply" as any,
+                replyToRef: ref,
+            },
+        });
+        const newRef = messageRef(id, this.deviceId, "app_twitter", "__twitter_timeline__");
+        this.lastTweetRef = newRef;
+        return newRef;
+    }
+
+    /**
+     * Bookmark a tweet.
+     * @param ref - Reference to the tweet
+     */
+    bookmarkTweet(ref: MessageHandle): this {
+        this.ops.push({
+            kind: "ReactionAdded" as const,
+            ref,
+            actor: "me",
+            emoji: "🔖",  // Bookmark indicator
+        });
+        return this;
+    }
+
+    /**
+     * Get collected operations.
+     */
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+
+/**
+ * Track builder implementation for concurrent operations.
+ */
+class TrackBuilderImpl implements TrackBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private readonly getNextId: () => number;
+
+    constructor(
+        deviceId: string,
+        appId: string,
+        conversationId: string,
+        getNextId: () => number
+    ) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+        this.getNextId = getNextId;
+    }
+
+    wait(duration: string): this {
+        this.ops.push({ kind: "Wait", duration });
+        return this;
+    }
+
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                ops.push({ kind: "TypingStart", actor, conversationId });
+                ops.push({ kind: "Wait", duration });
+                ops.push({ kind: "TypingEnd", actor, conversationId });
+            },
+        };
+    }
+
+    send(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "SendMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
 ````
 
 ## File: packages/core/src/engine.ts
@@ -30332,6 +35237,172 @@ export function createInitialWorld(partial: Partial<WorldState> = {}): WorldStat
 }
 ````
 
+## File: packages/renderer/src/layout/strategies/chat.ts
+````typescript
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import {
+    MessageLayoutConfig,
+    DEFAULT_LAYOUT_CONFIG,
+    calculateMessageHeight,
+    applyEasing,
+    MessageForHeight,
+} from "@tokovo/apps-whatsapp";
+
+// =============================================================================
+// CONFIGURABLE CHAT LAYOUT STRATEGY
+// =============================================================================
+
+/**
+ * Compute chat layout using the configurable layout system.
+ * Supports smooth scrolling, configurable heights, and future features.
+ */
+export function computeChatLayout(
+    ctx: LayoutContext,
+    layoutConfig: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): ChatLayoutState {
+    const { world, t, activeConversationId, viewportHeight, viewportWidth } = ctx;
+    const config = layoutConfig;
+
+    if (!activeConversationId || !world.conversations[activeConversationId]) {
+        return {
+            kind: "CHAT",
+            scrollY: 0,
+            contentHeight: 0,
+            isAtBottom: true,
+            messageLayouts: {},
+            meta: {}
+        };
+    }
+
+    const conversation = world.conversations[activeConversationId];
+    // Filter messages visible at time t
+    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+
+    const messageLayouts: Record<string, ChatMessageLayout> = {};
+    let currentY = config.spacing.topPadding;
+    let lastMessageId: string | undefined;
+
+    // 1. Layout messages with configurable heights
+    for (const msg of messages) {
+        // Calculate height using the config-based function
+        const msgForHeight: MessageForHeight = {
+            type: msg.type as MessageForHeight["type"],
+            text: msg.text,
+            caption: (msg as any).caption,
+            from: msg.from,
+            reactions: (msg as any).reactions,
+            replyTo: (msg as any).replyTo,
+            linkPreview: (msg as any).linkPreview,
+        };
+
+        const height = calculateMessageHeight(msgForHeight, config);
+
+        // Calculate bubble width
+        let bubbleWidth: number;
+        const msgType = msg.type || "text";
+
+        if (msgType === "system") {
+            bubbleWidth = viewportWidth * 0.6; // Centered system message
+        } else if (msgType === "voice") {
+            bubbleWidth = 450; // Fixed voice message width
+        } else if (msgType === "image" || msgType === "video" || msgType === "gif") {
+            bubbleWidth = viewportWidth * config.spacing.bubbleMaxWidth;
+        } else {
+            // Text messages: width based on content
+            const textLength = msg.text?.length || 0;
+            const avgCharWidth = 14;
+            const maxCharsOnLine = Math.min(textLength, config.heights.text.charsPerLine);
+            const textWidth = maxCharsOnLine * avgCharWidth + 72;
+            bubbleWidth = Math.min(
+                viewportWidth * config.spacing.bubbleMaxWidth,
+                Math.max(textWidth, 150)
+            );
+        }
+
+        // Animation: Slide in / Fade in with configurable duration
+        const messageAt = msg.at ?? 0;
+        const timeSinceAppear = t - messageAt;
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear >= 0 && timeSinceAppear < config.animation.messageAppearDuration) {
+            const progress = timeSinceAppear / config.animation.messageAppearDuration;
+            const ease = applyEasing(progress, "easeOut");
+            opacity = ease;
+            translateY = config.animation.messageAppearOffset * (1 - ease);
+        }
+
+        // Compute rect for director targeting
+        const isMe = msg.from === "me";
+        const rectX = isMe
+            ? viewportWidth - config.spacing.bubbleMargin - bubbleWidth
+            : config.spacing.bubbleMargin;
+
+        messageLayouts[msg.id] = {
+            id: msg.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY,
+            rect: {
+                x: rectX,
+                y: currentY,
+                width: bubbleWidth,
+                height,
+            },
+        };
+
+        lastMessageId = msg.id;
+        currentY += height + config.spacing.gap;
+    }
+
+    // 2. Typing indicator
+    let typingLayout: TypingLayout | null = null;
+    const isTyping = Object.values(conversation.typing || {}).some(v => v);
+    if (isTyping) {
+        const height = 120; // Typing bubble height
+        typingLayout = {
+            y: currentY,
+            height,
+            opacity: 1,
+            rect: {
+                x: config.spacing.bubbleMargin,
+                y: currentY,
+                width: 150,
+                height,
+            },
+        };
+        currentY += height + config.spacing.gap;
+    }
+
+    const contentHeight = currentY + config.spacing.bottomPadding;
+
+    // 3. Scroll Position with smooth scrolling
+    let scrollY = 0;
+    if (config.scroll.lockToBottom) {
+        const maxScroll = Math.max(0, contentHeight - viewportHeight);
+
+        // For now, instant scroll (smooth scroll can be added with cursor tracking)
+        scrollY = maxScroll;
+    }
+
+    return {
+        kind: "CHAT",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - (contentHeight - viewportHeight)) < 10,
+        messageLayouts,
+        typingLayout,
+        meta: {
+            lastMessageId
+        }
+    };
+}
+
+// For backward compatibility, export the config types
+export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };
+````
+
 ## File: packages/renderer/src/DeviceFrame.tsx
 ````typescript
 import React from "react";
@@ -30381,6 +35452,40 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
         </FrameComponent>
     );
 };
+````
+
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+export * from "./engine";
+export * from "./tokens";
+export * from "./camera";
+export * from "./sounds";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./transitions";
+export * from "./director-lite";
+````
+
+## File: packages/renderer/src/index.ts
+````typescript
+export { TokovoRenderer } from "./TokovoRenderer";
+export { DeviceFrame } from "./DeviceFrame";
+export { computeLayout } from "./layout";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export { VisualDebugger } from "./VisualDebugger";
+export { NotificationOverlay } from "./NotificationOverlay";
+export { HeadsUpNotification } from "./HeadsUpNotification";
+export { CallOverlay } from "./CallOverlay";
+export { LockscreenView } from "./LockscreenView";
+export { HomeScreenView } from "./HomeScreenView";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
+export { AudioLayer } from "./AudioLayer";
+export { UnlockTransition } from "./AppTransition";
+export { AppRegistry } from "./registry";
+export * from "./layout";
 ````
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -30458,6 +35563,26 @@ interface WhatsAppMessage {
     // React and reply
     reactions?: WhatsAppReaction[];
     replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -30536,6 +35661,10 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             const msgPayload = appEvent.message || {};
             const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
 
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
             const newMessage: WhatsAppMessage = {
                 id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
                 from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
@@ -30544,6 +35673,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 at: event.at,
                 status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
                 edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
             };
 
             // Handle media-specific fields based on type
@@ -30680,40 +35810,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
 ````
 
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-export * from "./engine";
-export * from "./tokens";
-export * from "./camera";
-export * from "./sounds";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./transitions";
-export * from "./director-lite";
-````
-
-## File: packages/renderer/src/index.ts
-````typescript
-export { TokovoRenderer } from "./TokovoRenderer";
-export { DeviceFrame } from "./DeviceFrame";
-export { computeLayout } from "./layout";
-export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
-export { VisualDebugger } from "./VisualDebugger";
-export { NotificationOverlay } from "./NotificationOverlay";
-export { HeadsUpNotification } from "./HeadsUpNotification";
-export { CallOverlay } from "./CallOverlay";
-export { LockscreenView } from "./LockscreenView";
-export { HomeScreenView } from "./HomeScreenView";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
-export { AudioLayer } from "./AudioLayer";
-export { UnlockTransition } from "./AppTransition";
-export { AppRegistry } from "./registry";
-export * from "./layout";
-````
-
 ## File: packages/episodes/src/index.ts
 ````typescript
 import exampleEpisode from "./examples/whatsapp-breakup-01.json";
@@ -30743,6 +35839,7 @@ import React from "react";
 import { WorldState, APP_IDS } from "@tokovo/core";
 import { WhatsappChatView } from "@tokovo/apps-whatsapp";
 import { InstagramApp } from "@tokovo/apps-instagram";
+import { TwitterUI } from "@tokovo/apps-twitter";
 
 import { LayoutState } from "./layout/types";
 
@@ -30772,6 +35869,7 @@ class AppRegistryClass {
         // Register built-in apps
         this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
         this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
+        this.register("app_twitter", TwitterUI as AppViewComponent);
     }
 
     /**
@@ -30830,10 +35928,28 @@ import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
+import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
+import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="MultiAppShowcase"
+                component={MultiAppShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="TwitterShowcase"
+                component={TwitterShowcaseVideo}
+                durationInFrames={450}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="UltimateShowcase"
                 component={UltimateShowcaseVideo}
@@ -31700,6 +36816,349 @@ export interface TransitionLayoutMeta {
 }
 ````
 
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+import React from "react";
+import {
+    WorldState,
+    Notification,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    LAYOUT,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+} from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { computeLayout } from "./layout";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { HeadsUpNotification } from "./HeadsUpNotification";
+import { CallOverlay } from "./CallOverlay";
+import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
+import { VisualDebugger } from "./VisualDebugger";
+import { Audio, staticFile } from "remotion";
+import { ViewKind, LayoutContext } from "./layout/types";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
+import { createDirectorLayoutModel } from "./layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "./camera-composer";
+
+/**
+ * Configuration for heads-up notification behavior
+ */
+interface NotificationConfig {
+    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
+    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
+}
+
+/**
+ * TokovoRenderer
+ * Main rendering component that orchestrates device frame, app views, and overlays
+ */
+export const TokovoRenderer: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;  // Which device to render (for multi-device POV)
+    // DirectorLite integration
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+}) => {
+        const {
+            headsUpDuration = 150,
+            showHeadsUpWhenAppOpen = true
+        } = notificationConfig;
+
+        // 1. Determine active device & app
+        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
+        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+        const device = world.devices[deviceId];
+
+        if (!device) {
+            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
+            return null;
+        }
+
+        const appId = device.foregroundAppId;
+
+        // 2. Determine ViewKind
+        let viewKind: ViewKind = "TRANSITION";
+        let activeConversationId: string | undefined;
+        let activeStoryId: string | undefined;
+
+        if (device.isLocked) {
+            viewKind = "LOCKSCREEN";
+        } else if (appId) {
+            if (appId === "app_whatsapp") {
+                viewKind = "CHAT";
+                activeConversationId = Object.keys(world.conversations)[0];
+            } else if (appId === "app_instagram") {
+                const appState = world.appState?.["app_instagram"];
+                const currentView = appState?.currentView || "feed";
+
+                switch (currentView) {
+                    case "dm":
+                        viewKind = "CHAT";
+                        activeConversationId = Object.keys(world.conversations)[0];
+                        break;
+                    case "stories":
+                        viewKind = "STORY";
+                        activeStoryId = appState?.stories?.activeStoryId;
+                        break;
+                    case "feed":
+                    case "explore":
+                    case "profile":
+                    case "notifications":
+                    case "reels":
+                    case "post":
+                        viewKind = "FEED";
+                        break;
+                    default:
+                        viewKind = "FEED";
+                }
+            }
+        } else {
+            // No app open, show home screen
+            viewKind = "HOMESCREEN";
+        }
+
+        // 3. Compute Layout
+        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+
+        // For chat views, reduce viewport height to account for header and input area
+        // Use constants instead of magic numbers
+        const effectiveViewportHeight = viewKind === "CHAT"
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
+            : profile.dimensions.height;
+
+        const layoutContext: LayoutContext = {
+            world,
+            t,
+            activeDeviceId: deviceId,
+            activeAppId: appId || "",
+            viewKind,
+            activeConversationId,
+            activeStoryId,
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: effectiveViewportHeight
+        };
+
+        const layout = computeLayout(layoutContext);
+
+        // 4. Select App View
+        let AppView = null;
+        if (appId && AppRegistry.views[appId]) {
+            AppView = AppRegistry.views[appId];
+        }
+
+        // 5. Determine Device Variant
+        const isPixel = device.profileId.includes("pixel");
+        const variant = isPixel ? "android" : "ios";
+
+        // 6. Get Base Camera Transform (from timeline events)
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        // 6b. DirectorLite Integration
+        let finalCameraTransform = baseCameraTransform;
+
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                profile.dimensions.width,  // viewportWidth
+                effectiveViewportHeight
+            );
+
+            // Derive effects (PURE FUNCTION - no state)
+            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            // Log debug info if enabled
+            if (directorDebug && directorDebugOutput) {
+                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!skipped && effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(effects, viewport);
+            }
+        }
+
+        // 7. Build camera transform style
+        // The transform-origin uses the originX/originY from camera to zoom toward specific point
+        // Origin is in 0-1 range where (0.5, 0.5) is center
+        const cameraTransformString = `
+        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+        scale(${finalCameraTransform.scale})
+        rotate(${finalCameraTransform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
+        // Use device profile dimensions
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            // No CSS transition - we handle all animation in JS for frame-perfect sync
+            transition: 'none',
+        };
+
+        // 8. Device-specific transforms (legacy layout system)
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        // 9. Find active notifications for heads-up display
+        const getActiveHeadsUpNotification = (): Notification | null => {
+            if (!device.notifications || device.isLocked) return null;
+            if (!showHeadsUpWhenAppOpen && appId) return null;
+
+            // Find the most recent notification that should show as heads-up
+            const headsUpNotifs = device.notifications.filter(n => {
+                // Check mode
+                const mode = n.mode || "both";
+                if (mode === "lockscreen") return false;
+
+                // Check if not dismissed and within display window
+                if (n.dismissedAt !== undefined) return false;
+
+                const timeSinceAppear = t - n.at;
+                if (timeSinceAppear < 0) return false; // Not yet visible
+                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
+
+                // Don't show notification from current app
+                if (n.appId === appId) return false;
+
+                return true;
+            });
+
+            // Return the most recent one
+            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
+        };
+
+        const activeHeadsUp = getActiveHeadsUpNotification();
+
+        // 10. Check for active call
+        const hasActiveCall = device.call && device.call.status !== "ended";
+
+        return (
+            <div style={{
+                width: profile.dimensions.width,
+                height: profile.dimensions.height,
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                {/* Camera wrapper - applies cinematic transforms */}
+                <div style={cameraStyle}>
+                    {/* Device wrapper - applies layout transforms */}
+                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                        <DeviceFrame profileId={device.profileId} variant={variant}>
+                            {/* Call Overlay (takes precedence over everything) */}
+                            {hasActiveCall && (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            )}
+
+                            {/* App View / Lockscreen / Home Screen */}
+                            {!hasActiveCall && AppView && !device.isLocked ? (
+                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                            ) : !hasActiveCall && device.isLocked ? (
+                                <LockscreenView
+                                    notifications={device.notifications}
+                                    layout={layout}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && device.homeScreen ? (
+                                <HomeScreenView
+                                    config={device.homeScreen}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && (
+                                <div style={{ flex: 1, backgroundColor: "black" }} />
+                            )}
+
+                            {/* Lockscreen Notification Overlay */}
+                            <NotificationOverlay
+                                notifications={device?.notifications}
+                                variant={variant}
+                                layout={layout}
+                            />
+
+                            {/* Heads-Up Notification (when unlocked) */}
+                            {activeHeadsUp && !hasActiveCall && (
+                                <HeadsUpNotification
+                                    notification={activeHeadsUp}
+                                    currentTime={t}
+                                    variant={variant}
+                                    autoDismissAfter={headsUpDuration}
+                                />
+                            )}
+                        </DeviceFrame>
+                    </div>
+                </div>
+
+                {debug && <VisualDebugger world={world} t={t} />}
+            </div>
+        );
+    };
+````
+
 ## File: packages/apps-whatsapp/src/ui.tsx
 ````typescript
 import React from "react";
@@ -32398,7 +37857,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                         color: config.timestampColor,
                                         fontFamily: tokens.fontFamily
                                     }}>
-                                        10:42
+                                        {msg.timestamp || "10:42"}
                                     </span>
                                     {isMe && <DoubleCheckIcon read={msg.status === "read"} />}
                                 </div>
@@ -32949,347 +38408,4 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
         </WhatsApp.Root>
     );
 };
-````
-
-## File: packages/renderer/src/TokovoRenderer.tsx
-````typescript
-import React from "react";
-import {
-    WorldState,
-    Notification,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    LAYOUT,
-    EventIndex,
-    getEventsInRange,
-    deriveDirectorEffects,
-    extractSignals,
-    ChatLayoutState,
-} from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { computeLayout } from "./layout";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
-import { VisualDebugger } from "./VisualDebugger";
-import { Audio, staticFile } from "remotion";
-import { ViewKind, LayoutContext } from "./layout/types";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
-import { createDirectorLayoutModel } from "./layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "./camera-composer";
-
-/**
- * Configuration for heads-up notification behavior
- */
-interface NotificationConfig {
-    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
-    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
-}
-
-/**
- * TokovoRenderer
- * Main rendering component that orchestrates device frame, app views, and overlays
- */
-export const TokovoRenderer: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;  // Which device to render (for multi-device POV)
-    // DirectorLite integration
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-}> = ({
-    world,
-    t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
-    eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-}) => {
-        const {
-            headsUpDuration = 150,
-            showHeadsUpWhenAppOpen = true
-        } = notificationConfig;
-
-        // 1. Determine active device & app
-        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
-        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
-        const device = world.devices[deviceId];
-
-        if (!device) {
-            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
-            return null;
-        }
-
-        const appId = device.foregroundAppId;
-
-        // 2. Determine ViewKind
-        let viewKind: ViewKind = "TRANSITION";
-        let activeConversationId: string | undefined;
-        let activeStoryId: string | undefined;
-
-        if (device.isLocked) {
-            viewKind = "LOCKSCREEN";
-        } else if (appId) {
-            if (appId === "app_whatsapp") {
-                viewKind = "CHAT";
-                activeConversationId = Object.keys(world.conversations)[0];
-            } else if (appId === "app_instagram") {
-                const appState = world.appState?.["app_instagram"];
-                const currentView = appState?.currentView || "feed";
-
-                switch (currentView) {
-                    case "dm":
-                        viewKind = "CHAT";
-                        activeConversationId = Object.keys(world.conversations)[0];
-                        break;
-                    case "stories":
-                        viewKind = "STORY";
-                        activeStoryId = appState?.stories?.activeStoryId;
-                        break;
-                    case "feed":
-                    case "explore":
-                    case "profile":
-                    case "notifications":
-                    case "reels":
-                    case "post":
-                        viewKind = "FEED";
-                        break;
-                    default:
-                        viewKind = "FEED";
-                }
-            }
-        } else {
-            // No app open, show home screen
-            viewKind = "HOMESCREEN";
-        }
-
-        // 3. Compute Layout
-        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-
-        // For chat views, reduce viewport height to account for header and input area
-        // Use constants instead of magic numbers
-        const effectiveViewportHeight = viewKind === "CHAT"
-            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
-            : profile.dimensions.height;
-
-        const layoutContext: LayoutContext = {
-            world,
-            t,
-            activeDeviceId: deviceId,
-            activeAppId: appId || "",
-            viewKind,
-            activeConversationId,
-            activeStoryId,
-            viewportWidth: profile.dimensions.width,
-            viewportHeight: effectiveViewportHeight
-        };
-
-        const layout = computeLayout(layoutContext);
-
-        // 4. Select App View
-        let AppView = null;
-        if (appId && AppRegistry.views[appId]) {
-            AppView = AppRegistry.views[appId];
-        }
-
-        // 5. Determine Device Variant
-        const isPixel = device.profileId.includes("pixel");
-        const variant = isPixel ? "android" : "ios";
-
-        // 6. Get Base Camera Transform (from timeline events)
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        // 6b. DirectorLite Integration
-        let finalCameraTransform = baseCameraTransform;
-
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
-
-            // Signal window: past 90 frames, future 15 frames
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
-
-            // Create layout model from computed layout
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,  // viewportWidth
-                effectiveViewportHeight
-            );
-
-            // Derive effects (PURE FUNCTION - no state)
-            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
-                debug: directorDebug,
-                manualCameraEffects,
-            });
-
-            // Log debug info if enabled
-            if (directorDebug && directorDebugOutput) {
-                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
-            }
-
-            // Apply director effects if not skipped and effects exist
-            if (!skipped && effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(effects, viewport);
-            }
-        }
-
-        // 7. Build camera transform style
-        // The transform-origin uses the originX/originY from camera to zoom toward specific point
-        // Origin is in 0-1 range where (0.5, 0.5) is center
-        const cameraTransformString = `
-        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-        scale(${finalCameraTransform.scale})
-        rotate(${finalCameraTransform.rotation}deg)
-    `.replace(/\s+/g, ' ').trim();
-
-        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
-        // Use device profile dimensions
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            // No CSS transition - we handle all animation in JS for frame-perfect sync
-            transition: 'none',
-        };
-
-        // 8. Device-specific transforms (legacy layout system)
-        let deviceStyle: React.CSSProperties = {};
-
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
-
-        // 9. Find active notifications for heads-up display
-        const getActiveHeadsUpNotification = (): Notification | null => {
-            if (!device.notifications || device.isLocked) return null;
-            if (!showHeadsUpWhenAppOpen && appId) return null;
-
-            // Find the most recent notification that should show as heads-up
-            const headsUpNotifs = device.notifications.filter(n => {
-                // Check mode
-                const mode = n.mode || "both";
-                if (mode === "lockscreen") return false;
-
-                // Check if not dismissed and within display window
-                if (n.dismissedAt !== undefined) return false;
-
-                const timeSinceAppear = t - n.at;
-                if (timeSinceAppear < 0) return false; // Not yet visible
-                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
-
-                // Don't show notification from current app
-                if (n.appId === appId) return false;
-
-                return true;
-            });
-
-            // Return the most recent one
-            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-        };
-
-        const activeHeadsUp = getActiveHeadsUpNotification();
-
-        // 10. Check for active call
-        const hasActiveCall = device.call && device.call.status !== "ended";
-
-        return (
-            <div style={{
-                width: profile.dimensions.width,
-                height: profile.dimensions.height,
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                {/* Camera wrapper - applies cinematic transforms */}
-                <div style={cameraStyle}>
-                    {/* Device wrapper - applies layout transforms */}
-                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                        <DeviceFrame profileId={device.profileId} variant={variant}>
-                            {/* Call Overlay (takes precedence over everything) */}
-                            {hasActiveCall && (
-                                <CallOverlay
-                                    call={device.call!}
-                                    currentTime={t}
-                                    variant={variant}
-                                />
-                            )}
-
-                            {/* App View / Lockscreen / Home Screen */}
-                            {!hasActiveCall && AppView && !device.isLocked ? (
-                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
-                            ) : !hasActiveCall && device.isLocked ? (
-                                <LockscreenView
-                                    notifications={device.notifications}
-                                    layout={layout}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && device.homeScreen ? (
-                                <HomeScreenView
-                                    config={device.homeScreen}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && (
-                                <div style={{ flex: 1, backgroundColor: "black" }} />
-                            )}
-
-                            {/* Lockscreen Notification Overlay */}
-                            <NotificationOverlay
-                                notifications={device?.notifications}
-                                variant={variant}
-                                layout={layout}
-                            />
-
-                            {/* Heads-Up Notification (when unlocked) */}
-                            {activeHeadsUp && !hasActiveCall && (
-                                <HeadsUpNotification
-                                    notification={activeHeadsUp}
-                                    currentTime={t}
-                                    variant={variant}
-                                    autoDismissAfter={headsUpDuration}
-                                />
-                            )}
-                        </DeviceFrame>
-                    </div>
-                </div>
-
-                {debug && <VisualDebugger world={world} t={t} />}
-            </div>
-        );
-    };
 ````

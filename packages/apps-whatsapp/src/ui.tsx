@@ -332,6 +332,7 @@ interface MessageListProps {
     messages: any[];
     layout?: ChatLayoutState;
     isTyping?: boolean;
+    typingFrom?: string;  // Who is currently typing
     conversationType?: "dm" | "group";
     platform?: Platform;
     ownerName?: string;  // Device owner for POV - their messages appear on right
@@ -341,6 +342,7 @@ const MessageList: React.FC<MessageListProps> = ({
     messages,
     layout,
     isTyping,
+    typingFrom,
     conversationType,
     platform = "ios",
     ownerName = "me"  // Default to "me" for backward compatibility
@@ -748,16 +750,18 @@ const MessageList: React.FC<MessageListProps> = ({
                     );
                 })}
 
-                {/* Typing indicator */}
+                {/* Typing indicator - position based on who is typing */}
                 {
                     isTyping && chatLayout?.typingLayout && (
                         <div style={{
                             position: "absolute",
                             top: chatLayout.typingLayout.y,
-                            left: config.bubbleMarginHorizontal,
+                            // If owner is typing, show on right; if others typing, show on left
+                            left: typingFrom === ownerName ? "auto" : config.bubbleMarginHorizontal,
+                            right: typingFrom === ownerName ? config.bubbleMarginHorizontal : "auto",
                             opacity: chatLayout.typingLayout.opacity
                         }}>
-                            <TypingBubble platform={platform} />
+                            <TypingBubble platform={platform} isMe={typingFrom === ownerName} />
                         </div>
                     )
                 }
@@ -840,15 +844,17 @@ const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, p
 // TYPING INDICATOR BUBBLE
 // ============================================================================
 
-const TypingBubble: React.FC<{ platform?: Platform }> = ({ platform = "ios" }) => {
+const TypingBubble: React.FC<{ platform?: Platform; isMe?: boolean }> = ({ platform = "ios", isMe = false }) => {
     const config = getAppConfig("whatsapp", platform) as any;
 
     return (
         <div style={{
-            backgroundColor: config.typingBubbleColor,
+            backgroundColor: isMe ? config.bubbleMyColor : config.typingBubbleColor,
             padding: "36px 45px",
             borderRadius: config.bubbleRadius,
-            borderBottomLeftRadius: config.bubbleTailRadius,
+            // Tail on correct side based on who is typing
+            borderBottomLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderBottomRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
             boxShadow: config.bubbleShadow,
             display: "flex",
             gap: 12,
@@ -1218,6 +1224,8 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
     const conversation = world.conversations[conversationId];
     const messages = conversation ? conversation.messages : [];
     const isTyping = conversation?.typing && Object.keys(conversation.typing).length > 0;
+    // Get who is typing (first key in typing map)
+    const typingFrom = isTyping && conversation?.typing ? Object.keys(conversation.typing)[0] : undefined;
     const draftText = "";
     const ownerName = device?.ownerName || "me";
 
@@ -1237,6 +1245,7 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
                 messages={messages}
                 layout={layout}
                 isTyping={isTyping}
+                typingFrom={typingFrom}
                 conversationType={conversation?.type}
                 ownerName={ownerName}
             />
