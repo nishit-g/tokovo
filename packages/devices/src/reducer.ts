@@ -99,6 +99,25 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
                     device.call.endedAt = event.at;
                 }
                 break;
+
+            // --- Background Apps (e.g., Spotify playing) ---
+            case "START_BACKGROUND_APP":
+                if (!device.backgroundApps) device.backgroundApps = [];
+                // Remove existing entry for this app (if any)
+                device.backgroundApps = device.backgroundApps.filter(a => a.appId !== event.appId);
+                device.backgroundApps.push({
+                    appId: event.appId,
+                    startedAt: event.at,
+                    indicator: event.indicator || "music",
+                    label: event.label,
+                });
+                break;
+
+            case "STOP_BACKGROUND_APP":
+                if (device.backgroundApps) {
+                    device.backgroundApps = device.backgroundApps.filter(a => a.appId !== event.appId);
+                }
+                break;
         }
     });
 }

@@ -12,4 +12,5 @@ export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
 export { AudioLayer } from "./AudioLayer";
 export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
+export { NowPlayingBar } from "./NowPlayingBar";
 export * from "./layout";

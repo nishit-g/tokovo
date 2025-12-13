@@ -20,6 +20,7 @@ import { CallOverlay } from "./CallOverlay";
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
+import { NowPlayingBar } from "./NowPlayingBar";
 import { Audio, staticFile } from "remotion";
 import { ViewKind, LayoutContext } from "./layout/types";
 import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
@@ -327,6 +328,15 @@ export const TokovoRenderer: React.FC<{
                                     currentTime={t}
                                     variant={variant}
                                     autoDismissAfter={headsUpDuration}
+                                />
+                            )}
+
+                            {/* Now Playing Bar (Spotify background music) */}
+                            {!device.isLocked && !hasActiveCall && (
+                                <NowPlayingBar
+                                    backgroundApps={device.backgroundApps}
+                                    currentFrame={t}
+                                    variant={variant}
                                 />
                             )}
                         </DeviceFrame>
