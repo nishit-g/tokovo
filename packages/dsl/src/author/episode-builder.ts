@@ -106,11 +106,22 @@ export class EpisodeBuilder {
      * Build the Scene IR.
      */
     build(): SceneIR {
+        // Build camera track from collected events
+        const cameraTrack = this.cameraEvents.length > 0
+            ? this.cameraEvents.map(e => ({ at: e.at, op: e.op }))
+            : undefined;
+
+        // Build scenes from collected scene builders
+        const scenes = this.scenes.length > 0
+            ? this.scenes.map(s => s.build())
+            : undefined;
+
         return {
             episodeId: this.episodeId,
             meta: this.meta,
             devices: this.deviceBuilders.map((b) => b.build()),
-            // TODO: Include camera events and scenes in SceneIR
+            cameraTrack,
+            scenes,
         };
     }
 }

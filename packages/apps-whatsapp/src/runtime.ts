@@ -71,6 +71,26 @@ interface WhatsAppMessage {
     // React and reply
     reactions?: WhatsAppReaction[];
     replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
 }
 
 /**
@@ -149,6 +169,10 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             const msgPayload = appEvent.message || {};
             const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
 
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
             const newMessage: WhatsAppMessage = {
                 id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
                 from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
@@ -157,6 +181,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 at: event.at,
                 status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
                 edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
             };
 
             // Handle media-specific fields based on type

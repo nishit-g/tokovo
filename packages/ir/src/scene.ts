@@ -301,6 +301,36 @@ export interface ConcurrentOp {
 }
 
 // =============================================================================
+// CAMERA EFFECT OPERATIONS
+// =============================================================================
+
+/**
+ * Camera zoom effect.
+ * Smoothly zooms in/out on the active device.
+ */
+export interface CameraZoomOp {
+    readonly kind: "CameraZoom";
+    readonly scale: number;          // Target scale (1.0 = no zoom, 2.0 = 2x zoom)
+    readonly duration?: DurationExpr; // Duration of zoom transition
+    readonly originX?: number;       // Zoom origin X (0-1, default 0.5)
+    readonly originY?: number;       // Zoom origin Y (0-1, default 0.5)
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+/**
+ * Camera shake effect.
+ * Adds dramatic shake to the viewport.
+ */
+export interface CameraShakeOp {
+    readonly kind: "CameraShake";
+    readonly deviceId: string;        // Which device to shake
+    readonly intensity?: number;      // Shake intensity in pixels (default 5)
+    readonly frequency?: number;      // Oscillations per second (default 10)
+    readonly decay?: number;          // Decay rate 0-1 (default 0.5)
+    readonly duration?: DurationExpr; // Duration of shake effect
+}
+
+// =============================================================================
 // POV OPERATIONS (STORY GRAMMAR)
 // =============================================================================
 
@@ -451,6 +481,9 @@ export type SceneOp =
     // POV operations
     | POVSwitchOp
     | SplitPOVOp
+    // Camera effects
+    | CameraZoomOp
+    | CameraShakeOp
     // Navigation operations
     | NavigateScreenOp
     | OpenChatOp
@@ -502,12 +535,32 @@ export interface ConversationDef {
 }
 
 /**
+ * Camera event scheduled at a specific time.
+ */
+export interface CameraEvent {
+    readonly at: DurationExpr;
+    readonly op: SceneOp;
+}
+
+/**
+ * Cross-device scene definition.
+ */
+export interface CrossDeviceScene {
+    readonly name: string;
+    readonly deviceBeats: Record<string, Beat[]>;  // deviceId -> beats
+}
+
+/**
  * Complete scene IR for an episode.
  */
 export interface SceneIR {
     readonly episodeId: string;
     readonly meta: EpisodeMeta;
     readonly devices: DeviceScene[];
+    /** Camera operations track (cuts, zooms, shakes) */
+    readonly cameraTrack?: CameraEvent[];
+    /** Cross-device scenes for coordinated actions */
+    readonly scenes?: CrossDeviceScene[];
 }
 
 /**

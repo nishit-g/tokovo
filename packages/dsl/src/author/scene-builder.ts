@@ -5,7 +5,7 @@
  * Used for coordinating actions across multiple devices.
  */
 
-import { Beat } from "@tokovo/ir";
+import { Beat, CrossDeviceScene } from "@tokovo/ir";
 import { BeatBuilder } from "./beat-builder";
 import { BeatFn } from "./device-builder";
 
@@ -53,6 +53,20 @@ export class SceneBuilder {
      */
     getDeviceActions(): SceneDeviceAction[] {
         return this.deviceActions;
+    }
+
+    /**
+     * Build the CrossDeviceScene for IR output.
+     */
+    build(): CrossDeviceScene {
+        const deviceBeats: Record<string, Beat[]> = {};
+        for (const action of this.deviceActions) {
+            deviceBeats[action.deviceId] = action.beats;
+        }
+        return {
+            name: this.sceneName,
+            deviceBeats,
+        };
     }
 }
 

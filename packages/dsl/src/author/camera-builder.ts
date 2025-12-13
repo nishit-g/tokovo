@@ -101,23 +101,33 @@ export class CameraBuilder {
 
     /**
      * Zoom in/out.
-     * Note: This requires a CameraZoomOp which we'll add to IR.
      */
     zoom(scale: number, options?: ZoomOptions): this {
-        // TODO: Add CameraZoomOp to IR
-        // For now, this is a placeholder
-        console.warn("zoom() not yet implemented in IR");
+        const op = {
+            kind: "CameraZoom" as const,
+            scale,
+            duration: options?.duration,
+            originX: options?.originX,
+            originY: options?.originY,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op: op as any });
         return this;
     }
 
     /**
      * Shake effect on a device.
-     * Note: This requires a CameraShakeOp which we'll add to IR.
      */
     shake(deviceId: string, options?: ShakeOptions): this {
-        // TODO: Add CameraShakeOp to IR
-        // For now, this is a placeholder
-        console.warn("shake() not yet implemented in IR");
+        const op = {
+            kind: "CameraShake" as const,
+            deviceId,
+            intensity: options?.intensity,
+            frequency: options?.frequency,
+            decay: options?.decay,
+            duration: options?.duration,
+        };
+        this.events.push({ at: this.currentTime, op: op as any });
         return this;
     }
 

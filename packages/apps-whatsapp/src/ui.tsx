@@ -694,7 +694,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                         color: config.timestampColor,
                                         fontFamily: tokens.fontFamily
                                     }}>
-                                        10:42
+                                        {msg.timestamp || "10:42"}
                                     </span>
                                     {isMe && <DoubleCheckIcon read={msg.status === "read"} />}
                                 </div>
