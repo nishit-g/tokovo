@@ -492,16 +492,16 @@ function lowerOp(
         // =====================================================================
 
         case "NavigateScreen": {
+            // Emit as APP event so the WhatsApp reducer can handle it
             const event = {
                 at,
-                kind: "ScreenNavigated" as const,
-                deviceId,
+                kind: "APP" as const,
                 appId,
+                type: "SCREEN_NAVIGATED",
                 screen: op.screen,
                 transition: op.transition,
-                trace,
             };
-            events.push(event);
+            events.push(event as any);
 
             // Small delay for navigation animation
             cursor.advance(op.animationDuration ?? 15);
@@ -509,17 +509,17 @@ function lowerOp(
         }
 
         case "OpenChat": {
+            // Emit as APP event for navigation to specific chat
             const event = {
                 at,
-                kind: "ScreenNavigated" as const,
-                deviceId,
+                kind: "APP" as const,
                 appId,
-                screen: "chat" as const,
+                type: "SCREEN_NAVIGATED",
+                screen: "chat",
                 conversationId: op.conversationId,
                 transition: op.transition,
-                trace,
             };
-            events.push(event);
+            events.push(event as any);
 
             // Small delay for navigation animation
             cursor.advance(op.animationDuration ?? 15);
@@ -527,18 +527,16 @@ function lowerOp(
         }
 
         case "GoBack": {
-            // Go back uses the same ScreenNavigated event but we don't know target screen
-            // The runtime will handle this as a "pop" from navigation stack
+            // Go back navigates to chats-list by default
             const event = {
                 at,
-                kind: "ScreenNavigated" as const,
-                deviceId,
+                kind: "APP" as const,
                 appId,
-                screen: "chats-list" as const,  // Default assumption for go back
+                type: "SCREEN_NAVIGATED",
+                screen: "chats-list",
                 transition: op.transition ?? "pop",
-                trace,
             };
-            events.push(event);
+            events.push(event as any);
 
             // Small delay for navigation animation
             cursor.advance(op.animationDuration ?? 15);

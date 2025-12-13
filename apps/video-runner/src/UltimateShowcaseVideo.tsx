@@ -22,7 +22,7 @@ import "@tokovo/devices";
 function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
     const fps = 30;
 
-    // Initial world state
+    // Initial world state - START ON CHATS LIST
     const initialWorld: WorldState = {
         devices: {
             AlicePhone: {
@@ -41,11 +41,19 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
                 avatar: undefined,
                 messages: [],
                 typing: {},
-            }
+            },
+            dm_work: {
+                id: "dm_work",
+                type: "dm" as const,
+                name: "Work Group 💼",
+                avatar: undefined,
+                messages: [{ id: "old_1", from: "Boss", text: "Meeting at 3pm", type: "text" }],
+                typing: {},
+            },
         },
         appState: {
             app_whatsapp: {
-                screen: "chat",
+                screen: "chats-list",  // START ON CHATS LIST!
                 conversationId: "dm_bob",
             }
         },
@@ -75,10 +83,22 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
     // Timeline events - comprehensive showcase
     const events: TimelineEvent[] = [
         // =====================================================================
-        // Beat 1: Opening - Text Exchange
+        // Beat 0: NAVIGATION - Show chats list then open Bob's chat
         // =====================================================================
         {
-            at: 30,
+            at: 60,  // Wait 2 seconds on chats list
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "SCREEN_NAVIGATED",
+            screen: "chat",
+            conversationId: "dm_bob",
+        } as any,
+
+        // =====================================================================
+        // Beat 1: Opening - Text Exchange (AFTER navigation)
+        // =====================================================================
+        {
+            at: 90,
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_RECEIVED",
@@ -93,7 +113,7 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
         } as any,
 
         {
-            at: 75,
+            at: 135,  // After msg_1
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_SENT",
@@ -107,10 +127,24 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
         } as any,
 
         // =====================================================================
+        // Beat 1b: React to msg_1 with ❤️
+        // =====================================================================
+        {
+            at: 150,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "REACTION_ADDED",
+            conversationId: "dm_bob",
+            messageId: "msg_1",  // React to the TEXT message so we can verify it works
+            emoji: "❤️",
+            fromMe: true,
+        } as any,
+
+        // =====================================================================
         // Beat 2: Image Message
         // =====================================================================
         {
-            at: 120,
+            at: 180,  // After the reaction
             kind: "APP",
             appId: "app_whatsapp",
             type: "MESSAGE_RECEIVED",

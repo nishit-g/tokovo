@@ -65,10 +65,13 @@ apps/
       dsl/
         _meta.json
         beat.mdx
+        camera.mdx
         device.mdx
         episode.mdx
         index.mdx
         pov.mdx
+        reference.mdx
+        scene.mdx
         semantic.mdx
       guides/
         _meta.json
@@ -121,6 +124,7 @@ apps/
       MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
       Root.tsx
+      UltimateShowcaseVideo.tsx
       Video.tsx
       WhatsappMediaShowcaseVideo.tsx
       WhatsappProductionDemoVideo.tsx
@@ -174,8 +178,11 @@ packages/
         Header.tsx
         index.ts
         iOSStatusBar.tsx
+        LinkPreview.tsx
         MediaBubbles.tsx
         MessageBubble.tsx
+        Reactions.tsx
+        ReplyQuote.tsx
       config/
         index.ts
         layout-config.ts
@@ -250,13 +257,16 @@ packages/
       multi-pov-demo.dsl.ts
       production-demo.dsl.ts
       toxic-ex-drama.dsl.ts
+      ultimate-showcase.dsl.ts
       whatsapp-media-showcase.dsl.ts
     src/
       author/
         beat-builder.ts
+        camera-builder.ts
         device-builder.ts
         episode-builder.ts
         index.ts
+        scene-builder.ts
       index.ts
       types.ts
     package.json
@@ -3344,16 +3354,129 @@ for (const signal of signals) {
 ```
 ````
 
-## File: apps/docs/pages/dsl/_meta.json
-````json
-{
-    "index": "Overview",
-    "episode": "episode()",
-    "device": "Device Builder",
-    "beat": "Beat Builder",
-    "semantic": "Semantic Annotations",
-    "pov": "POV Control"
+## File: apps/docs/pages/dsl/camera.mdx
+````
+---
+title: Camera Builder
+description: Multi-POV camera control in DSL
+---
+
+# Camera Builder
+
+The Camera Builder controls cuts, layouts, and camera effects for multi-device episodes.
+
+---
+
+## Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("multi-pov", ep => {
+    ep.device("AlicePhone", d => { /* ... */ });
+    ep.device("BobPhone", d => { /* ... */ });
+    
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");      // Start on Alice
+        c.at("5s").cut("BobPhone");         // Cut to Bob at 5s
+        c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    });
+});
+```
+
+---
+
+## Methods
+
+### at(time)
+
+Set the time for following operations.
+
+```typescript
+c.at("3s");     // 3 seconds
+c.at("1.5s");   // 1.5 seconds
+c.at("0s");     // Start of episode
+```
+
+### cut(deviceId, transition?)
+
+Cut to a specific device.
+
+```typescript
+c.at("5s").cut("BobPhone");
+c.at("8s").cut("AlicePhone", "crossfade");
+```
+
+Transition options: `"cut"` (default), `"crossfade"`, `"wipe"`
+
+### layout(type, primary, secondary?, options?)
+
+Set multi-device layout.
+
+```typescript
+// Side by side
+c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+
+// Stacked
+c.at("15s").layout("SPLIT_VERTICAL", "AlicePhone", "BobPhone");
+
+// Picture-in-picture
+c.at("20s").layout("PIP", "BobPhone", "AlicePhone", {
+    position: "top-right",
+    scale: 0.35
+});
+
+// Back to single
+c.at("25s").layout("SINGLE", "AlicePhone");
+```
+
+---
+
+## Layout Types
+
+| Type | Description |
+|------|-------------|
+| `SINGLE` | Single device view |
+| `SPLIT_HORIZONTAL` | Side by side |
+| `SPLIT_VERTICAL` | Stacked (top/bottom) |
+| `PIP` | Picture-in-picture |
+
+---
+
+## PIP Options
+
+```typescript
+interface PIPOptions {
+    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    scale?: number;  // 0-1, default 0.3
 }
+```
+
+---
+
+## Full Example
+
+```typescript
+ep.camera(c => {
+    // Start on Alice checking her phone
+    c.at("0s").cut("AlicePhone");
+    
+    // Cut to Bob when he starts typing
+    c.at("3s").cut("BobPhone", "crossfade");
+    
+    // Show both in split screen during argument
+    c.at("8s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    
+    // Focus on Alice's reaction
+    c.at("15s").layout("PIP", "AlicePhone", "BobPhone", {
+        position: "bottom-right",
+        scale: 0.25
+    });
+    
+    // End on single shot
+    c.at("25s").layout("SINGLE", "AlicePhone");
+});
+```
 ````
 
 ## File: apps/docs/pages/dsl/device.mdx
@@ -4016,6 +4139,355 @@ The compiler validates:
 - Device exists in episode
 - Split POV has valid device list
 - No circular references
+````
+
+## File: apps/docs/pages/dsl/reference.mdx
+````
+---
+title: DSL Reference
+description: Complete reference for the Tokovo DSL
+---
+
+# DSL Reference
+
+The Tokovo DSL (Domain Specific Language) is a fluent TypeScript API for authoring episodes.
+
+---
+
+## Episode Builder
+
+The entry point for creating episodes:
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const sceneIR = episode("my-episode", ep => {
+    ep.config({ fps: 30, title: "My Episode" });
+    
+    ep.device("MyPhone", "iphone16", d => {
+        d.owner("Alice");  // For multi-POV
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob" });
+        
+        d.beat("intro", b => {
+            b.receive("Bob", "Hey there!");
+            b.wait("1s");
+            b.send("Hi!");
+        });
+    });
+});
+```
+
+---
+
+## Device Builder
+
+Defines a device's story:
+
+| Method | Description |
+|--------|-------------|
+| `owner(name)` | Set owner for multi-POV (their messages on right) |
+| `app(appId)` | Set the app (default: `app_whatsapp`) |
+| `conversation(id, config)` | Define a conversation |
+| `beat(name, fn)` | Define a beat (group of actions) |
+
+---
+
+## Beat Builder
+
+Actions within a beat:
+
+### Messages
+
+```typescript
+b.send("Hello");                      // Send text
+b.receive("Bob", "Hi there!");        // Receive text
+b.typing("Bob").for("2s");            // Typing indicator
+```
+
+### Media Messages
+
+```typescript
+b.sendImage("https://...");           // Send image
+b.receiveImage("Bob", "https://...", { caption: "Look!" });
+
+b.sendVideo("https://...", 30);       // 30 second video
+b.receiveVideo("Bob", "https://...", 15);
+
+b.sendGif("https://...");             // GIF
+b.receiveGif("Bob", "https://...");
+
+b.sendVoice(10);                      // 10 second voice note
+b.receiveVoice("Bob", 8);
+```
+
+### Navigation (Phase 12)
+
+```typescript
+b.showScreen("chats-list");           // Navigate to screen
+b.openChat("dm_alice");               // Open specific chat
+b.goBack();                           // Go back
+```
+
+### Control
+
+```typescript
+b.wait("2s");                         // Wait
+b.concurrent([                         // Parallel actions
+    t => t.receive("A", "Hi"),
+    t => t.receive("B", "Hello"),
+]);
+```
+
+---
+
+## Camera Builder (Phase 13)
+
+For multi-POV episodes:
+
+```typescript
+ep.camera(c => {
+    c.at("3s").cut("BobPhone");
+    c.at("6s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    c.at("12s").layout("PIP", "BobPhone", "AlicePhone");
+});
+```
+
+| Method | Description |
+|--------|-------------|
+| `at(time)` | Set time for following operations |
+| `cut(deviceId)` | Cut to device |
+| `layout(type, primary, secondary)` | Set multi-device layout |
+
+Layout types: `SINGLE`, `SPLIT_HORIZONTAL`, `SPLIT_VERTICAL`, `PIP`
+
+---
+
+## Scene Builder (Phase 13)
+
+Cross-device coordination:
+
+```typescript
+ep.scene("argument", s => {
+    s.device("AlicePhone", d => {
+        d.conversation("dm_bob");
+        d.beat("alice-message", b => b.send("Where are you?"));
+    });
+    
+    s.device("BobPhone", d => {
+        d.conversation("dm_alice");
+        d.beat("bob-sees", b => b.wait("1s"));
+    });
+});
+```
+
+---
+
+## Full Example
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export const multiPOV = episode("two-sides", ep => {
+    ep.config({ fps: 30, title: "Two Sides of the Story" });
+
+    // Alice's phone
+    ep.device("AlicePhone", "iphone16", d => {
+        d.owner("Alice");
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob 💕" });
+        
+        d.beat("waiting", b => {
+            b.showScreen("chats-list");
+            b.wait("2s");
+            b.openChat("dm_bob");
+        });
+        
+        d.beat("messages", b => {
+            b.send("Where are you?");
+            b.wait("3s");
+            b.receive("Bob 💕", "On my way!");
+        });
+    });
+
+    // Bob's phone
+    ep.device("BobPhone", "iphone16", d => {
+        d.owner("Bob");
+        d.app("app_whatsapp");
+        d.conversation("dm_alice", { name: "Alice ❤️" });
+        
+        d.beat("reply", b => {
+            b.receive("Alice ❤️", "Where are you?");
+            b.typing("Bob").for("1s");
+            b.send("On my way!");
+        });
+    });
+
+    // Camera cuts
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");
+        c.at("5s").cut("BobPhone");
+        c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    });
+});
+```
+````
+
+## File: apps/docs/pages/dsl/scene.mdx
+````
+---
+title: Scene Builder
+description: Cross-device scene coordination
+---
+
+# Scene Builder
+
+The Scene Builder coordinates actions across multiple devices within a single scene.
+
+---
+
+## Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("cross-device", ep => {
+    ep.device("AlicePhone", d => { /* setup */ });
+    ep.device("BobPhone", d => { /* setup */ });
+    
+    ep.scene("argument", s => {
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("alice-sends", b => {
+                b.send("Where are you?!");
+            });
+        });
+        
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("bob-receives", b => {
+                b.receive("Alice", "Where are you?!");
+                b.wait("1.5s");
+            });
+        });
+    });
+});
+```
+
+---
+
+## Why Scenes?
+
+Scenes enable:
+
+1. **Coordinated timing** - Actions across devices happen in sync
+2. **Story clarity** - Groups related cross-device moments
+3. **Camera cues** - Easy to align camera cuts with scene boundaries
+
+---
+
+## Scene Builder Methods
+
+### device(deviceId, fn)
+
+Define actions for a device within this scene.
+
+```typescript
+s.device("AlicePhone", d => {
+    d.conversation("dm_bob");
+    d.beat("action", b => {
+        b.send("Hello!");
+    });
+});
+```
+
+---
+
+## SceneDeviceBuilder Methods
+
+### conversation(id)
+
+Set the conversation context.
+
+```typescript
+d.conversation("dm_bob");
+```
+
+### beat(name, fn)
+
+Define a beat with actions.
+
+```typescript
+d.beat("my-beat", b => {
+    b.receive("Bob", "Hey!");
+    b.send("Hi there!");
+});
+```
+
+---
+
+## Full Example
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+export default episode("two-sides", ep => {
+    ep.config({ fps: 30, title: "Two Sides" });
+
+    // Setup devices
+    ep.device("AlicePhone", "iphone16", d => {
+        d.owner("Alice");
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob 💕" });
+    });
+
+    ep.device("BobPhone", "iphone16", d => {
+        d.owner("Bob");
+        d.app("app_whatsapp");
+        d.conversation("dm_alice", { name: "Alice ❤️" });
+    });
+
+    // Scene 1: Alice texts Bob
+    ep.scene("alice-texts", s => {
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("send", b => {
+                b.send("Where are you? 👀");
+            });
+        });
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("receive", b => {
+                b.receive("Alice ❤️", "Where are you? 👀");
+            });
+        });
+    });
+
+    // Scene 2: Bob's excuse
+    ep.scene("bob-lies", s => {
+        s.device("BobPhone", d => {
+            d.conversation("dm_alice");
+            d.beat("reply", b => {
+                b.typing("Bob").for("2s");
+                b.send("Traffic is crazy! 🚗");
+            });
+        });
+        s.device("AlicePhone", d => {
+            d.conversation("dm_bob");
+            d.beat("sees-reply", b => {
+                b.receive("Bob 💕", "Traffic is crazy! 🚗");
+            });
+        });
+    });
+
+    // Camera matches scenes
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");
+        c.at("4s").cut("BobPhone");
+        c.at("8s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
+    });
+});
+```
 ````
 
 ## File: apps/docs/pages/dsl/semantic.mdx
@@ -8640,6 +9112,377 @@ export const NotificationCallDemoVideo: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/UltimateShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * Ultimate Feature Showcase
+ * 
+ * Demonstrates ALL DSL features:
+ * - Text messages (send/receive)
+ * - Media messages (image, video, GIF, voice)
+ * - Navigation (showScreen, openChat, goBack)
+ * - Typing indicators
+ * - Concurrent actions (message storms)
+ * - Semantic annotations (mood, intensity)
+ */
+
+function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            AlicePhone: {
+                id: "AlicePhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            }
+        },
+        conversations: {
+            dm_bob: {
+                id: "dm_bob",
+                type: "dm" as const,
+                name: "Bob 💕",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            }
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bob",
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "AlicePhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "AlicePhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Timeline events - comprehensive showcase
+    const events: TimelineEvent[] = [
+        // =====================================================================
+        // Beat 1: Opening - Text Exchange
+        // =====================================================================
+        {
+            at: 30,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_1",
+                type: "text",
+                text: "Hey Alice! Check out this vacation photo 🏖️",
+                status: "delivered",
+            },
+        } as any,
+
+        {
+            at: 75,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bob",
+            message: {
+                id: "msg_2",
+                type: "text",
+                text: "OMG that looks amazing! ✨",
+                status: "sent",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 2: Image Message
+        // =====================================================================
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_3",
+                type: "image",
+                imageUrl: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
+                caption: "Sunset from the beach! 🌅",
+                status: "delivered",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 3: Voice Note Exchange
+        // =====================================================================
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bob",
+            message: {
+                id: "msg_4",
+                type: "voice",
+                duration: 8,
+                status: "sent",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 4: GIF Reaction
+        // =====================================================================
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_5",
+                type: "gif",
+                gifUrl: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
+                status: "delivered",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 5: Typing then Video
+        // =====================================================================
+        {
+            at: 270,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+        } as any,
+
+        {
+            at: 360,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+        } as any,
+
+        {
+            at: 365,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_6",
+                type: "text",
+                text: "Can't wait to show you the video!",
+                status: "delivered",
+            },
+        } as any,
+
+        {
+            at: 400,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_7",
+                type: "video",
+                videoUrl: "https://example.com/dolphins.mp4",
+                thumbnailUrl: "https://images.unsplash.com/photo-1559251606-c623743a6d76?w=600",
+                caption: "Swimming with dolphins! 🐬",
+                duration: 15,
+                status: "delivered",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 6: Emotional Response
+        // =====================================================================
+        {
+            at: 490,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bob",
+            message: {
+                id: "msg_8",
+                type: "text",
+                text: "I'm so jealous right now 😭",
+                status: "sent",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 7: Message Storm (Concurrent)
+        // =====================================================================
+        {
+            at: 530,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_9",
+                type: "text",
+                text: "You should come next time!",
+                status: "delivered",
+            },
+        } as any,
+
+        {
+            at: 540,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_10",
+                type: "text",
+                text: "It's only a 2 hour flight",
+                status: "delivered",
+            },
+        } as any,
+
+        {
+            at: 550,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_11",
+                type: "text",
+                text: "I can get you a discount at the resort",
+                status: "delivered",
+            },
+        } as any,
+
+        // =====================================================================
+        // Beat 8: Finale
+        // =====================================================================
+        {
+            at: 620,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            conversationId: "dm_bob",
+            message: {
+                id: "msg_12",
+                type: "text",
+                text: "Okay okay, I'm booking it! 🎉",
+                status: "sent",
+            },
+        } as any,
+
+        {
+            at: 660,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob 💕",
+            message: {
+                id: "msg_13",
+                type: "text",
+                text: "YES! 🎊🎊🎊",
+                status: "delivered",
+            },
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const UltimateShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createUltimateShowcaseEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a0f",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default UltimateShowcaseVideo;
+````
+
 ## File: apps/video-runner/src/WhatsappMediaShowcaseVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -10792,6 +11635,192 @@ export const BubbleTail: React.FC<BubbleTailProps> = ({ isMe, color }) => {
 export default iOSStatusBar;
 ````
 
+## File: packages/apps-whatsapp/src/components/LinkPreview.tsx
+````typescript
+/**
+ * Link Preview Component
+ * 
+ * Renders URL previews with image, title, and description.
+ * Matches WhatsApp iOS styling.
+ */
+
+import React from "react";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface LinkPreviewData {
+    url: string;
+    title: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+    favicon?: string;
+}
+
+interface LinkPreviewProps {
+    preview: LinkPreviewData;
+    isMyMessage?: boolean;
+    compact?: boolean;
+}
+
+// =============================================================================
+// LINK PREVIEW
+// =============================================================================
+
+/**
+ * Renders a link preview card inside a message bubble.
+ */
+export const LinkPreview: React.FC<LinkPreviewProps> = ({
+    preview,
+    isMyMessage = false,
+    compact = false,
+}) => {
+    const bgColor = isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)";
+
+    return (
+        <div style={{
+            borderRadius: 24,
+            overflow: "hidden",
+            marginBottom: 12,
+            backgroundColor: bgColor,
+        }}>
+            {/* Preview Image */}
+            {preview.image && (
+                <div style={{
+                    width: "100%",
+                    height: compact ? 240 : 360,
+                    backgroundImage: `url(${preview.image})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                }} />
+            )}
+
+            {/* Text Content */}
+            <div style={{
+                padding: compact ? "18px 24px" : "24px 30px",
+            }}>
+                {/* Site Name */}
+                {preview.siteName && (
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        marginBottom: 9,
+                    }}>
+                        {preview.favicon && (
+                            <img
+                                src={preview.favicon}
+                                alt=""
+                                style={{
+                                    width: 36,
+                                    height: 36,
+                                    borderRadius: 6,
+                                }}
+                            />
+                        )}
+                        <span style={{
+                            fontSize: 30,
+                            color: "#8E8E93",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                            textTransform: "uppercase",
+                            letterSpacing: 0.5,
+                        }}>
+                            {preview.siteName}
+                        </span>
+                    </div>
+                )}
+
+                {/* Title */}
+                <div style={{
+                    fontSize: compact ? 42 : 48,
+                    fontWeight: 600,
+                    color: "#111B21",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    lineHeight: 1.3,
+                    marginBottom: 6,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical" as const,
+                    overflow: "hidden",
+                }}>
+                    {preview.title}
+                </div>
+
+                {/* Description */}
+                {preview.description && (
+                    <div style={{
+                        fontSize: compact ? 36 : 42,
+                        color: "#667781",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        lineHeight: 1.4,
+                        display: "-webkit-box",
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: "vertical" as const,
+                        overflow: "hidden",
+                    }}>
+                        {preview.description}
+                    </div>
+                )}
+
+                {/* URL */}
+                <div style={{
+                    fontSize: 30,
+                    color: "#25D366",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    marginTop: 12,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                }}>
+                    {new URL(preview.url).hostname.replace("www.", "")}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// MINI LINK PREVIEW (for compact display)
+// =============================================================================
+
+export const MiniLinkPreview: React.FC<{ url: string }> = ({ url }) => {
+    let hostname = "";
+    try {
+        hostname = new URL(url).hostname.replace("www.", "");
+    } catch {
+        hostname = url;
+    }
+
+    return (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "12px 18px",
+            backgroundColor: "rgba(0,0,0,0.03)",
+            borderRadius: 18,
+            marginBottom: 9,
+        }}>
+            {/* Link icon */}
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="#25D366">
+                <path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z" />
+            </svg>
+            <span style={{
+                fontSize: 36,
+                color: "#25D366",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            }}>
+                {hostname}
+            </span>
+        </div>
+    );
+};
+
+export default LinkPreview;
+````
+
 ## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
 ````typescript
 import React from "react";
@@ -11295,6 +12324,343 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
         </div>
     );
 };
+````
+
+## File: packages/apps-whatsapp/src/components/Reactions.tsx
+````typescript
+/**
+ * Reactions Component
+ * 
+ * Renders message reactions (emoji responses) like WhatsApp/iMessage.
+ * Supports multiple reactions with counts.
+ */
+
+import React from "react";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface Reaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;  // Highlight if user reacted
+}
+
+interface ReactionsBarProps {
+    reactions: Reaction[];
+    isMyMessage?: boolean;
+    compact?: boolean;  // For smaller bubbles
+}
+
+// =============================================================================
+// REACTIONS BAR
+// =============================================================================
+
+/**
+ * Displays reactions below a message bubble.
+ * Appears as a small pill with emoji and counts.
+ */
+export const ReactionsBar: React.FC<ReactionsBarProps> = ({
+    reactions,
+    isMyMessage = false,
+    compact = false,
+}) => {
+    if (!reactions || reactions.length === 0) return null;
+
+    // Sort by count descending
+    const sorted = [...reactions].sort((a, b) => b.count - a.count);
+
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: isMyMessage ? "flex-end" : "flex-start",
+            marginTop: -12,
+            marginLeft: isMyMessage ? "auto" : 36,
+            marginRight: isMyMessage ? 36 : "auto",
+            position: "relative",
+            zIndex: 1,
+        }}>
+            <div style={{
+                display: "flex",
+                gap: 6,
+                backgroundColor: "#FFFFFF",
+                padding: compact ? "6px 12px" : "9px 18px",
+                borderRadius: 60,
+                boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                border: "1px solid rgba(0,0,0,0.05)",
+            }}>
+                {sorted.map((reaction, i) => (
+                    <ReactionPill
+                        key={`${reaction.emoji}-${i}`}
+                        emoji={reaction.emoji}
+                        count={reaction.count}
+                        highlighted={reaction.fromMe}
+                        compact={compact}
+                    />
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// REACTION PILL
+// =============================================================================
+
+interface ReactionPillProps {
+    emoji: string;
+    count: number;
+    highlighted?: boolean;
+    compact?: boolean;
+}
+
+const ReactionPill: React.FC<ReactionPillProps> = ({
+    emoji,
+    count,
+    highlighted = false,
+    compact = false,
+}) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: compact ? 3 : 6,
+        backgroundColor: highlighted ? "rgba(37, 211, 102, 0.15)" : "transparent",
+        padding: compact ? "3px 6px" : "3px 9px",
+        borderRadius: 30,
+    }}>
+        <span style={{
+            fontSize: compact ? 36 : 42,
+            lineHeight: 1,
+        }}>
+            {emoji}
+        </span>
+        {count > 1 && (
+            <span style={{
+                fontSize: compact ? 27 : 33,
+                color: "#667781",
+                fontWeight: 500,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            }}>
+                {count}
+            </span>
+        )}
+    </div>
+);
+
+// =============================================================================
+// REACTION PICKER (FOR FUTURE USE)
+// =============================================================================
+
+export const COMMON_REACTIONS = ["❤️", "😂", "😮", "😢", "🙏", "👍"];
+
+interface ReactionPickerProps {
+    onSelect: (emoji: string) => void;
+    visible?: boolean;
+}
+
+export const ReactionPicker: React.FC<ReactionPickerProps> = ({
+    onSelect,
+    visible = true,
+}) => {
+    if (!visible) return null;
+
+    return (
+        <div style={{
+            display: "flex",
+            gap: 12,
+            backgroundColor: "#FFFFFF",
+            padding: "18px 24px",
+            borderRadius: 60,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+        }}>
+            {COMMON_REACTIONS.map((emoji) => (
+                <button
+                    key={emoji}
+                    onClick={() => onSelect(emoji)}
+                    style={{
+                        background: "none",
+                        border: "none",
+                        fontSize: 60,
+                        cursor: "pointer",
+                        padding: 12,
+                        borderRadius: "50%",
+                        transition: "transform 0.15s, background-color 0.15s",
+                    }}
+                >
+                    {emoji}
+                </button>
+            ))}
+        </div>
+    );
+};
+
+export default ReactionsBar;
+````
+
+## File: packages/apps-whatsapp/src/components/ReplyQuote.tsx
+````typescript
+/**
+ * Reply Quote Component
+ * 
+ * Renders quoted/replied-to message above the current message.
+ * Matches WhatsApp iOS styling with the colored bar.
+ */
+
+import React from "react";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+interface ReplyQuoteProps {
+    replyTo: ReplyToData;
+    isMyMessage?: boolean;
+    onClick?: () => void;
+}
+
+// =============================================================================
+// REPLY QUOTE
+// =============================================================================
+
+/**
+ * Displays the quoted message within a bubble.
+ * Appears above the actual message content with a colored bar.
+ */
+export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
+    replyTo,
+    isMyMessage = false,
+    onClick,
+}) => {
+    // Color based on who sent the original
+    const barColor = replyTo.from === "me" ? "#25D366" : "#34B7F1";
+
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                display: "flex",
+                gap: 0,
+                backgroundColor: isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)",
+                borderRadius: 18,
+                overflow: "hidden",
+                marginBottom: 12,
+                cursor: onClick ? "pointer" : "default",
+            }}
+        >
+            {/* Colored bar */}
+            <div style={{
+                width: 12,
+                backgroundColor: barColor,
+                flexShrink: 0,
+            }} />
+
+            {/* Content */}
+            <div style={{
+                flex: 1,
+                padding: "15px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+            }}>
+                {/* Text content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Sender name */}
+                    <div style={{
+                        fontSize: 36,
+                        fontWeight: 600,
+                        color: barColor,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        marginBottom: 6,
+                    }}>
+                        {replyTo.from === "me" ? "You" : replyTo.from}
+                    </div>
+
+                    {/* Message preview */}
+                    <div style={{
+                        fontSize: 39,
+                        color: "#667781",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                    }}>
+                        {/* Type icon */}
+                        {replyTo.type === "image" && (
+                            <>
+                                <CameraIcon />
+                                <span>Photo</span>
+                            </>
+                        )}
+                        {replyTo.type === "video" && (
+                            <>
+                                <VideoIcon />
+                                <span>Video</span>
+                            </>
+                        )}
+                        {replyTo.type === "voice" && (
+                            <>
+                                <MicIcon />
+                                <span>Voice message</span>
+                            </>
+                        )}
+                        {(!replyTo.type || replyTo.type === "text") && (
+                            <span>{replyTo.text}</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* Thumbnail for media */}
+                {replyTo.thumbnailUrl && (
+                    <div style={{
+                        width: 120,
+                        height: 120,
+                        borderRadius: 12,
+                        backgroundImage: `url(${replyTo.thumbnailUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        flexShrink: 0,
+                    }} />
+                )}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+const CameraIcon = () => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
+        <path d="M21 6h-3.17L16 4h-6v2h5.12l1.83 2H21v12H5V10H3v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM8 14c0 2.76 2.24 5 5 5s5-2.24 5-5-2.24-5-5-5-5 2.24-5 5zm5-3c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zM5 6h3V4H5V1H3v3H0v2h3v3h2V6z" />
+    </svg>
+);
+
+const VideoIcon = () => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
+        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
+    </svg>
+);
+
+const MicIcon = () => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
+        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" />
+    </svg>
+);
+
+export default ReplyQuote;
 ````
 
 ## File: packages/apps-whatsapp/src/config/layout-config.ts
@@ -14934,6 +16300,147 @@ export const toxicExSceneIR: SceneIR = createEpisode("toxic-ex-drama", ep => {
 export { toxicExSceneIR as default };
 ````
 
+## File: packages/dsl/examples/ultimate-showcase.dsl.ts
+````typescript
+/**
+ * Ultimate Feature Showcase
+ * 
+ * This DSL episode demonstrates ALL features:
+ * - Text messages (send/receive)
+ * - Media messages (image, video, GIF, voice)
+ * - Navigation (showScreen, openChat, goBack)
+ * - Typing indicators
+ * - Concurrent actions
+ * - Multi-POV (camera, owner)
+ * - Semantic annotations
+ */
+
+import { episode } from "../src";
+
+export const ultimateShowcase = episode("ultimate-showcase", ep => {
+    ep.config({
+        fps: 30,
+        title: "Ultimate Feature Showcase",
+    });
+
+    // =========================================================================
+    // DEVICE 1: Alice's Phone
+    // =========================================================================
+    ep.device("AlicePhone", "iphone16", d => {
+        d.owner("Alice");
+        d.app("app_whatsapp");
+        d.conversation("dm_bob", { name: "Bob 💕", type: "dm" });
+
+        // =====================================================================
+        // Beat 1: Opening Navigation
+        // =====================================================================
+        d.beat("navigation-intro", b => {
+            b.showScreen("chats-list");
+            b.wait("2s");
+            b.openChat("dm_bob");
+            b.wait("500ms");
+        });
+
+        // =====================================================================
+        // Beat 2: Text Message Exchange
+        // =====================================================================
+        d.beat("text-exchange", b => {
+            b.receive("Bob", "Hey Alice! Check out this vacation photo 🏖️", {
+                mood: "excited",
+                intensity: 0.7,
+            });
+            b.wait("1.5s");
+            b.send("OMG that looks amazing! ✨");
+            b.wait("1s");
+        });
+
+        // =====================================================================
+        // Beat 3: Media Messages
+        // =====================================================================
+        d.beat("media-showcase", b => {
+            // Receive an image
+            b.receiveImage("Bob", "https://picsum.photos/800/600", {
+                caption: "Sunset from the beach! 🌅",
+                height: 450,
+            });
+            b.wait("2s");
+
+            // Send a voice note
+            b.sendVoice(8);  // 8 second voice message
+            b.wait("1s");
+
+            // Receive a GIF
+            b.receiveGif("Bob", "https://media.giphy.com/media/sample.gif");
+            b.wait("1.5s");
+        });
+
+        // =====================================================================
+        // Beat 4: Typing Indicator
+        // =====================================================================
+        d.beat("typing-demo", b => {
+            b.typing("Bob").for("3s");
+            b.receive("Bob", "Can't wait to show you the video!");
+        });
+
+        // =====================================================================
+        // Beat 5: Video Message
+        // =====================================================================
+        d.beat("video-message", b => {
+            b.receiveVideo("Bob", "https://example.com/vacation.mp4", 15, {
+                caption: "Swimming with dolphins! 🐬",
+                height: 500,
+            });
+            b.wait("3s");
+            b.send("I'm so jealous right now 😭", { mood: "sad", intensity: 0.4 });
+        });
+
+        // =====================================================================
+        // Beat 6: Concurrent Messages (Message Storm)
+        // =====================================================================
+        d.beat("message-storm", b => {
+            b.concurrent([
+                t => {
+                    t.receive("Bob", "You should come next time!");
+                },
+                t => {
+                    t.wait("300ms");
+                    t.receive("Bob", "It's only a 2 hour flight");
+                },
+                t => {
+                    t.wait("600ms");
+                    t.receive("Bob", "I can get you a discount at the resort");
+                },
+            ]);
+            b.wait("2s");
+        });
+
+        // =====================================================================
+        // Beat 7: Final Response
+        // =====================================================================
+        d.beat("finale", b => {
+            b.send("Okay okay, I'm booking it! 🎉", {
+                mood: "excited",
+                intensity: 0.9,
+            });
+            b.wait("1s");
+            b.receive("Bob", "YES! 🎊🎊🎊");
+            b.wait("2s");
+            b.goBack();
+        });
+    });
+
+    // =========================================================================
+    // CAMERA OPERATIONS (Optional Multi-POV)
+    // =========================================================================
+    ep.camera(c => {
+        c.at("0s").cut("AlicePhone");
+        // Future: Could add BobPhone and switch between them
+    });
+});
+
+export default ultimateShowcase;
+````
+
 ## File: packages/dsl/examples/whatsapp-media-showcase.dsl.ts
 ````typescript
 /**
@@ -15019,76 +16526,230 @@ export const mediaShowcaseSceneIR: SceneIR = createEpisode("whatsapp-media-showc
 export { mediaShowcaseSceneIR as default };
 ````
 
-## File: packages/dsl/src/author/device-builder.ts
+## File: packages/dsl/src/author/camera-builder.ts
 ````typescript
 /**
- * Device Builder
+ * Camera Builder
  * 
- * Fluent API for defining a device's story.
- * Manages conversation context and beat collection.
+ * Fluent API for defining camera operations in multi-POV episodes.
+ * Controls cuts, layouts, and camera effects.
  */
 
-import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
-import { BeatBuilder } from "./beat-builder";
+import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout } from "@tokovo/ir";
 
 /**
- * Beat callback function.
+ * Camera effect options.
  */
-export type BeatFn = (b: BeatBuilder) => void;
+export interface ZoomOptions {
+    originX?: number;  // 0-1, default 0.5
+    originY?: number;  // 0-1, default 0.5
+    duration?: string;
+    easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out";
+}
+
+export interface ShakeOptions {
+    intensity?: number;    // Pixels, default 5
+    frequency?: number;    // Oscillations per second, default 10
+    decay?: number;        // 0-1, how quickly to fade, default 0.5
+    duration?: string;
+}
+
+export interface PIPOptions {
+    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+    scale?: number;        // 0-1, default 0.3
+}
 
 /**
- * Device builder collects conversations and beats for a device.
+ * Camera operation that will be scheduled at a specific time.
  */
-export class DeviceBuilder {
-    private readonly deviceId: string;
-    private readonly profileId: string;
-    private appId: string = "app_whatsapp"; // Default app
-    private readonly conversations: ConversationDef[] = [];
-    private readonly beats: Beat[] = [];
-    private currentConversationId: string | undefined;
+export interface CameraEvent {
+    at: string;            // Duration expression (e.g., "3s")
+    op: SceneOp;
+}
 
-    constructor(deviceId: string, profileId: string = "iphone16") {
-        this.deviceId = deviceId;
-        this.profileId = profileId;
-    }
+/**
+ * Camera builder collects camera operations.
+ */
+export class CameraBuilder {
+    private readonly events: CameraEvent[] = [];
+    private currentTime: string = "0s";
 
     /**
-     * Set the app for this device.
+     * Set the current time for following operations.
      */
-    app(appId: string): this {
-        this.appId = appId;
+    at(time: string): this {
+        this.currentTime = time;
         return this;
     }
 
     /**
-     * Define a conversation.
-     * Also sets it as the current conversation for subsequent beats.
+     * Cut to a specific device.
      */
-    conversation(id: string, config?: { name?: string; avatar?: string; type?: "dm" | "group" }): this {
-        const def: ConversationDef = {
-            id,
-            name: config?.name,
-            avatar: config?.avatar,
-            type: config?.type ?? "dm",
+    cut(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = {
+            kind: "POVSwitch",
+            deviceId,
+            transition: transition ?? "cut",
         };
-        this.conversations.push(def);
-        this.currentConversationId = id;
+        this.events.push({ at: this.currentTime, op });
         return this;
     }
 
     /**
-     * Define a beat (named group of actions).
+     * Set layout with multiple devices.
+     */
+    layout(
+        type: "SINGLE" | "SPLIT_HORIZONTAL" | "SPLIT_VERTICAL" | "PIP",
+        primaryDevice: string,
+        secondaryDevice?: string,
+        options?: PIPOptions
+    ): this {
+        if (type === "SINGLE") {
+            const op: POVSwitchOp = {
+                kind: "POVSwitch",
+                deviceId: primaryDevice,
+            };
+            this.events.push({ at: this.currentTime, op });
+        } else {
+            // Map our layout types to IR POVLayout
+            const layoutMap: Record<string, POVLayout> = {
+                "SPLIT_HORIZONTAL": "horizontal",
+                "SPLIT_VERTICAL": "vertical",
+                "PIP": "pip",
+            };
+            const layout: POVLayout = layoutMap[type] ?? "horizontal";
+
+            const op: SplitPOVOp = {
+                kind: "SplitPOV",
+                devices: secondaryDevice ? [primaryDevice, secondaryDevice] : [primaryDevice],
+                layout,
+            };
+            this.events.push({ at: this.currentTime, op });
+        }
+        return this;
+    }
+
+    /**
+     * Zoom in/out.
+     * Note: This requires a CameraZoomOp which we'll add to IR.
+     */
+    zoom(scale: number, options?: ZoomOptions): this {
+        // TODO: Add CameraZoomOp to IR
+        // For now, this is a placeholder
+        console.warn("zoom() not yet implemented in IR");
+        return this;
+    }
+
+    /**
+     * Shake effect on a device.
+     * Note: This requires a CameraShakeOp which we'll add to IR.
+     */
+    shake(deviceId: string, options?: ShakeOptions): this {
+        // TODO: Add CameraShakeOp to IR
+        // For now, this is a placeholder
+        console.warn("shake() not yet implemented in IR");
+        return this;
+    }
+
+    /**
+     * Get collected camera events.
+     */
+    getEvents(): CameraEvent[] {
+        return this.events;
+    }
+}
+````
+
+## File: packages/dsl/src/author/scene-builder.ts
+````typescript
+/**
+ * Scene Builder
+ * 
+ * Fluent API for defining cross-device scenes.
+ * Used for coordinating actions across multiple devices.
+ */
+
+import { Beat } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+import { BeatFn } from "./device-builder";
+
+/**
+ * Device action within a scene.
+ */
+export interface SceneDeviceAction {
+    deviceId: string;
+    beats: Beat[];
+}
+
+/**
+ * Scene builder for cross-device coordination.
+ */
+export class SceneBuilder {
+    private readonly sceneName: string;
+    private readonly deviceActions: SceneDeviceAction[] = [];
+
+    constructor(sceneName: string) {
+        this.sceneName = sceneName;
+    }
+
+    /**
+     * Define actions for a specific device within this scene.
+     */
+    device(deviceId: string, fn: (d: SceneDeviceBuilder) => void): this {
+        const builder = new SceneDeviceBuilder(deviceId);
+        fn(builder);
+        this.deviceActions.push({
+            deviceId,
+            beats: builder.getBeats(),
+        });
+        return this;
+    }
+
+    /**
+     * Get the scene name.
+     */
+    getName(): string {
+        return this.sceneName;
+    }
+
+    /**
+     * Get device actions for this scene.
+     */
+    getDeviceActions(): SceneDeviceAction[] {
+        return this.deviceActions;
+    }
+}
+
+/**
+ * Minimal device builder for use within scenes.
+ */
+export class SceneDeviceBuilder {
+    private readonly deviceId: string;
+    private readonly beats: Beat[] = [];
+    private appId: string = "app_whatsapp";
+    private conversationId: string | undefined;
+
+    constructor(deviceId: string) {
+        this.deviceId = deviceId;
+    }
+
+    /**
+     * Set conversation context.
+     */
+    conversation(id: string): this {
+        this.conversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat within this scene.
      */
     beat(name: string, fn: BeatFn): this {
-        if (!this.currentConversationId) {
-            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
+        if (!this.conversationId) {
+            throw new Error(`Scene beat "${name}" requires conversation context`);
         }
 
-        const builder = new BeatBuilder(
-            this.deviceId,
-            this.appId,
-            this.currentConversationId
-        );
+        const builder = new BeatBuilder(this.deviceId, this.appId, this.conversationId);
         fn(builder);
 
         this.beats.push({
@@ -15100,135 +16761,12 @@ export class DeviceBuilder {
     }
 
     /**
-     * Build the device scene.
+     * Get collected beats.
      */
-    build(): DeviceScene {
-        return {
-            deviceId: this.deviceId,
-            profileId: this.profileId,
-            appId: this.appId,
-            conversations: this.conversations,
-            beats: this.beats,
-        };
+    getBeats(): Beat[] {
+        return this.beats;
     }
 }
-````
-
-## File: packages/dsl/src/author/episode-builder.ts
-````typescript
-/**
- * Episode Builder
- * 
- * Top-level fluent API for defining an episode.
- * Entry point: episode("my-episode", ep => { ... })
- */
-
-import { SceneIR, EpisodeMeta } from "@tokovo/ir";
-import { DeviceBuilder, BeatFn } from "./device-builder";
-import { EpisodeConfig } from "../types";
-
-/**
- * Device callback function.
- */
-export type DeviceFn = (d: DeviceBuilder) => void;
-
-/**
- * Episode builder collects devices and metadata.
- */
-export class EpisodeBuilder {
-    private readonly episodeId: string;
-    private readonly meta: EpisodeMeta;
-    private readonly deviceBuilders: DeviceBuilder[] = [];
-
-    constructor(episodeId: string, config: EpisodeConfig = {}) {
-        this.episodeId = episodeId;
-        this.meta = {
-            title: config.title ?? episodeId,
-            fps: config.fps ?? 30,
-        };
-    }
-
-    /**
-     * Set episode metadata.
-     */
-    config(cfg: EpisodeConfig): this {
-        if (cfg.fps) {
-            (this.meta as any).fps = cfg.fps;
-        }
-        if (cfg.title) {
-            (this.meta as any).title = cfg.title;
-        }
-        return this;
-    }
-
-    /**
-     * Define a device with a story.
-     */
-    device(deviceId: string, fn: DeviceFn): this;
-    device(deviceId: string, profileId: string, fn: DeviceFn): this;
-    device(deviceId: string, profileIdOrFn: string | DeviceFn, maybeFn?: DeviceFn): this {
-        let profileId: string;
-        let fn: DeviceFn;
-
-        if (typeof profileIdOrFn === "function") {
-            profileId = "iphone16";
-            fn = profileIdOrFn;
-        } else {
-            profileId = profileIdOrFn;
-            fn = maybeFn!;
-        }
-
-        const builder = new DeviceBuilder(deviceId, profileId);
-        fn(builder);
-        this.deviceBuilders.push(builder);
-        return this;
-    }
-
-    /**
-     * Build the Scene IR.
-     */
-    build(): SceneIR {
-        return {
-            episodeId: this.episodeId,
-            meta: this.meta,
-            devices: this.deviceBuilders.map((b) => b.build()),
-        };
-    }
-}
-
-/**
- * Entry point for creating an episode.
- * 
- * @example
- * const ir = episode("breakup-01", ep => {
- *   ep.device("AlicePhone", d => {
- *     d.conversation("dm_bob", { name: "Bob" })
- *     d.beat("tension", b => {
- *       b.receive("Bob", "We need to talk.")
- *     })
- *   })
- * })
- */
-export function episode(
-    episodeId: string,
-    fn: (ep: EpisodeBuilder) => void,
-    config?: EpisodeConfig
-): SceneIR {
-    const builder = new EpisodeBuilder(episodeId, config);
-    fn(builder);
-    return builder.build();
-}
-````
-
-## File: packages/dsl/src/author/index.ts
-````typescript
-/**
- * Author API exports
- */
-
-export { BeatBuilder } from "./beat-builder";
-export { DeviceBuilder, BeatFn } from "./device-builder";
-export { EpisodeBuilder, DeviceFn, episode } from "./episode-builder";
 ````
 
 ## File: packages/dsl/src/index.ts
@@ -18344,6 +19882,21 @@ packages:
 }
 ````
 
+## File: apps/docs/pages/dsl/_meta.json
+````json
+{
+    "index": "Overview",
+    "reference": "Complete Reference",
+    "episode": "episode()",
+    "device": "Device Builder",
+    "beat": "Beat Builder",
+    "camera": "Camera Builder",
+    "scene": "Scene Builder",
+    "semantic": "Semantic Annotations",
+    "pov": "POV Control"
+}
+````
+
 ## File: apps/docs/pages/dsl/beat.mdx
 ````
 # Beat Builder
@@ -19382,28 +20935,6 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
 };
 ````
 
-## File: packages/apps-whatsapp/src/components/index.ts
-````typescript
-/**
- * WhatsApp Components Index
- * 
- * Re-exports all WhatsApp UI components for easy importing.
- */
-
-// Icons
-export * from "./icons";
-
-// Components
-export { Header, type HeaderProps } from "./Header";
-export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
-
-// Media Bubbles
-export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./MediaBubbles";
-
-// Chats List Screen
-export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
-````
-
 ## File: packages/apps-whatsapp/src/config/index.ts
 ````typescript
 /**
@@ -19449,503 +20980,6 @@ export * from "./components";
 }
 ````
 
-## File: packages/compiler/src/passes/time-lowering.ts
-````typescript
-/**
- * Time Lowering Pass
- * 
- * Converts Scene IR operations to Timeline IR operations.
- * - Resolves DurationExpr to frames
- * - Assigns `at` frame numbers
- * - Handles concurrent track compilation
- * - Implements auto-timing for natural message flow
- */
-
-import {
-    SceneOp,
-    parseDuration,
-    TimelineOp,
-    TypingStartedOp,
-    TypingEndedOp,
-    MessageReceivedOp,
-    MessageSentOp,
-    MessageReadOp,
-    MessageDeletedOp,
-    Trace,
-} from "@tokovo/ir";
-import { CompilerContext, Cursor } from "../context";
-import { ResolvedOp } from "./resolve-refs";
-import { ensureConversationOpened } from "./virtual-device";
-
-// =============================================================================
-// AUTO-TIMING CONFIGURATION
-// =============================================================================
-
-/**
- * Auto-timing defaults for natural message flow.
- * These values are configurable per operation via skipAutoTiming.
- */
-const AUTO_TIMING = {
-    /** Pause after sending a message (seconds) */
-    SEND_DELAY: 0.5,
-    /** Pause after receiving a message (seconds) */
-    RECEIVE_DELAY: 0.8,
-    /** Time to view an image (seconds) */
-    IMAGE_VIEW_TIME: 1.5,
-    /** Time to view a video (uses video duration) */
-    VIDEO_VIEW_TIME_MULTIPLIER: 1.0,
-    /** Time to view a GIF (seconds) */
-    GIF_VIEW_TIME: 1.0,
-    /** Voice note uses its duration */
-    VOICE_VIEW_TIME_MULTIPLIER: 1.0,
-};
-
-/**
- * Calculate auto-timing frames based on operation type.
- */
-function getAutoTiming(opKind: string, fps: number, duration?: number): number {
-    switch (opKind) {
-        case "SendMessage":
-        case "SendImage":
-        case "SendVideo":
-        case "SendGif":
-        case "SendVoice":
-            return Math.round(AUTO_TIMING.SEND_DELAY * fps);
-        case "ReceiveMessage":
-            return Math.round(AUTO_TIMING.RECEIVE_DELAY * fps);
-        case "ReceiveImage":
-            return Math.round(AUTO_TIMING.IMAGE_VIEW_TIME * fps);
-        case "ReceiveVideo":
-            return Math.round((duration || 5) * AUTO_TIMING.VIDEO_VIEW_TIME_MULTIPLIER * fps);
-        case "ReceiveGif":
-            return Math.round(AUTO_TIMING.GIF_VIEW_TIME * fps);
-        case "ReceiveVoice":
-            return Math.round((duration || 5) * AUTO_TIMING.VOICE_VIEW_TIME_MULTIPLIER * fps);
-        default:
-            return 0;
-    }
-}
-
-/**
- * Lower scene operations to timeline operations.
- */
-export function lowerToTimeline(
-    ops: SceneOp[],
-    ctx: CompilerContext,
-    cursor: Cursor,
-    deviceId: string,
-    appId: string,
-    conversationId: string,
-    beat: string,
-    trackId: string = "main"
-): TimelineOp[] {
-    const timeline: TimelineOp[] = [];
-
-    for (let i = 0; i < ops.length; i++) {
-        const op = ops[i] as ResolvedOp;
-        const trace: Trace = ctx.createTrace({
-            deviceId,
-            beat,
-            trackId,
-            sceneOpIndex: i,
-        });
-
-        const lowered = lowerOp(op, ctx, cursor, deviceId, appId, conversationId, trace);
-        timeline.push(...lowered);
-    }
-
-    return timeline;
-}
-
-function lowerOp(
-    op: ResolvedOp,
-    ctx: CompilerContext,
-    cursor: Cursor,
-    deviceId: string,
-    appId: string,
-    conversationId: string,
-    trace: Trace
-): TimelineOp[] {
-    const events: TimelineOp[] = [];
-    const at = cursor.current;
-
-    switch (op.kind) {
-        case "Wait": {
-            const frames = parseDuration(op.duration, ctx.config.fps);
-            cursor.advance(frames);
-            // Wait produces no events, just advances cursor
-            return [];
-        }
-
-        case "TypingStart": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: TypingStartedOp = {
-                at,
-                kind: "TypingStarted",
-                deviceId,
-                appId,
-                conversationId,
-                actor: op.actor,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "TypingEnd": {
-            const event: TypingEndedOp = {
-                at,
-                kind: "TypingEnded",
-                deviceId,
-                appId,
-                conversationId,
-                actor: op.actor,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "ReceiveMessage": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: op._resolvedMessageId ?? `msg_${at}`,
-                    text: op.text,
-                    from: op.actor,
-                    type: op.meta?.type ?? "text",
-                },
-                trace,
-            };
-            events.push(event);
-
-            // Auto-advance cursor
-            cursor.advance(getAutoTiming("ReceiveMessage", ctx.config.fps));
-            return events;
-        }
-
-        case "SendMessage": {
-            // Ensure conversation is open
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            // Filter out "system" type since you can't send system messages
-            const msgType = op.meta?.type;
-            const sentType = msgType === "system" ? "text" : (msgType ?? "text");
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: op._resolvedMessageId ?? `msg_${at}`,
-                    text: op.text,
-                    type: sentType as "text" | "image" | "voice",
-                },
-                trace,
-            };
-            events.push(event);
-
-            // Auto-advance cursor
-            cursor.advance(getAutoTiming("SendMessage", ctx.config.fps));
-            return events;
-        }
-
-        // =====================================================================
-        // MEDIA MESSAGE OPERATIONS
-        // =====================================================================
-
-        case "SendImage": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `img_${at}`,
-                    type: "image",
-                    imageUrl: op.imageUrl,
-                    caption: op.caption,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("SendImage", ctx.config.fps));
-            }
-            return events;
-        }
-
-        case "ReceiveImage": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `img_${at}`,
-                    from: op.actor,
-                    type: "image",
-                    imageUrl: op.imageUrl,
-                    caption: op.caption,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("ReceiveImage", ctx.config.fps));
-            }
-            return events;
-        }
-
-        case "SendVideo": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `vid_${at}`,
-                    type: "video",
-                    videoUrl: op.videoUrl,
-                    thumbnailUrl: op.thumbnailUrl,
-                    duration: op.duration,
-                    caption: op.caption,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("SendVideo", ctx.config.fps, op.duration));
-            }
-            return events;
-        }
-
-        case "ReceiveVideo": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `vid_${at}`,
-                    from: op.actor,
-                    type: "video",
-                    videoUrl: op.videoUrl,
-                    thumbnailUrl: op.thumbnailUrl,
-                    duration: op.duration,
-                    caption: op.caption,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("ReceiveVideo", ctx.config.fps, op.duration));
-            }
-            return events;
-        }
-
-        case "SendGif": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `gif_${at}`,
-                    type: "gif",
-                    gifUrl: op.gifUrl,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("SendGif", ctx.config.fps));
-            }
-            return events;
-        }
-
-        case "ReceiveGif": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `gif_${at}`,
-                    from: op.actor,
-                    type: "gif",
-                    gifUrl: op.gifUrl,
-                    height: op.height,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("ReceiveGif", ctx.config.fps));
-            }
-            return events;
-        }
-
-        case "SendVoice": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageSentOp = {
-                at,
-                kind: "MessageSent",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `voice_${at}`,
-                    type: "voice",
-                    duration: op.duration,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("SendVoice", ctx.config.fps, op.duration));
-            }
-            return events;
-        }
-
-        case "ReceiveVoice": {
-            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
-
-            const event: MessageReceivedOp = {
-                at,
-                kind: "MessageReceived",
-                deviceId,
-                appId,
-                conversationId,
-                message: {
-                    id: `voice_${at}`,
-                    from: op.actor,
-                    type: "voice",
-                    duration: op.duration,
-                },
-                trace,
-            };
-            events.push(event);
-
-            if (!op.skipAutoTiming) {
-                cursor.advance(getAutoTiming("ReceiveVoice", ctx.config.fps, op.duration));
-            }
-            return events;
-        }
-
-        case "ReadMessage": {
-            const event: MessageReadOp = {
-                at,
-                kind: "MessageRead",
-                deviceId,
-                appId,
-                conversationId: op.ref.conversationId,
-                messageId: op.ref.id,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "DeleteMessage": {
-            const event: MessageDeletedOp = {
-                at,
-                kind: "MessageDeleted",
-                deviceId,
-                appId,
-                conversationId: op.ref.conversationId,
-                messageId: op.ref.id,
-                trace,
-            };
-            events.push(event);
-            return events;
-        }
-
-        case "Concurrent": {
-            // Fork cursor for each track
-            const trackCursors: Cursor[] = [];
-            const trackTimelines: TimelineOp[][] = [];
-
-            for (let t = 0; t < op.tracks.length; t++) {
-                const trackOps = op.tracks[t];
-                const trackCursor = cursor.fork();
-                const trackId = `track_${t}`;
-
-                const trackTimeline = lowerToTimeline(
-                    trackOps,
-                    ctx,
-                    trackCursor,
-                    deviceId,
-                    appId,
-                    conversationId,
-                    trace.beat,
-                    trackId
-                );
-
-                trackCursors.push(trackCursor);
-                trackTimelines.push(trackTimeline);
-            }
-
-            // Merge all track timelines
-            for (const tl of trackTimelines) {
-                events.push(...tl);
-            }
-
-            // Join cursors at max position
-            const joined = Cursor.join(trackCursors);
-            cursor.advance(joined.current - cursor.current);
-
-            return events;
-        }
-
-        default:
-            return [];
-    }
-}
-````
-
 ## File: packages/devices/package.json
 ````json
 {
@@ -19967,6 +21001,269 @@ function lowerOp(
         "@types/react": "18.2.0"
     }
 }
+````
+
+## File: packages/dsl/src/author/device-builder.ts
+````typescript
+/**
+ * Device Builder
+ * 
+ * Fluent API for defining a device's story.
+ * Manages conversation context and beat collection.
+ */
+
+import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+
+/**
+ * Beat callback function.
+ */
+export type BeatFn = (b: BeatBuilder) => void;
+
+/**
+ * Device builder collects conversations and beats for a device.
+ */
+export class DeviceBuilder {
+    private readonly deviceId: string;
+    private readonly profileId: string;
+    private appId: string = "app_whatsapp"; // Default app
+    private ownerName: string | undefined;  // For multi-POV
+    private readonly conversations: ConversationDef[] = [];
+    private readonly beats: Beat[] = [];
+    private currentConversationId: string | undefined;
+
+    constructor(deviceId: string, profileId: string = "iphone16") {
+        this.deviceId = deviceId;
+        this.profileId = profileId;
+    }
+
+    /**
+     * Set the owner name for this device (for multi-POV stories).
+     * The owner's messages appear on the right side.
+     */
+    owner(name: string): this {
+        this.ownerName = name;
+        return this;
+    }
+
+    /**
+     * Set the app for this device.
+     */
+    app(appId: string): this {
+        this.appId = appId;
+        return this;
+    }
+
+    /**
+     * Define a conversation.
+     * Also sets it as the current conversation for subsequent beats.
+     */
+    conversation(id: string, config?: { name?: string; avatar?: string; type?: "dm" | "group" }): this {
+        const def: ConversationDef = {
+            id,
+            name: config?.name,
+            avatar: config?.avatar,
+            type: config?.type ?? "dm",
+        };
+        this.conversations.push(def);
+        this.currentConversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat (named group of actions).
+     */
+    beat(name: string, fn: BeatFn): this {
+        if (!this.currentConversationId) {
+            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
+        }
+
+        const builder = new BeatBuilder(
+            this.deviceId,
+            this.appId,
+            this.currentConversationId
+        );
+        fn(builder);
+
+        this.beats.push({
+            name,
+            ops: builder.getOps(),
+        });
+
+        return this;
+    }
+
+    /**
+     * Build the device scene.
+     */
+    build(): DeviceScene {
+        return {
+            deviceId: this.deviceId,
+            profileId: this.profileId,
+            appId: this.appId,
+            conversations: this.conversations,
+            beats: this.beats,
+        };
+    }
+}
+````
+
+## File: packages/dsl/src/author/episode-builder.ts
+````typescript
+/**
+ * Episode Builder
+ * 
+ * Top-level fluent API for defining an episode.
+ * Entry point: episode("my-episode", ep => { ... })
+ */
+
+import { SceneIR, EpisodeMeta } from "@tokovo/ir";
+import { DeviceBuilder, BeatFn } from "./device-builder";
+import { CameraBuilder, CameraEvent } from "./camera-builder";
+import { SceneBuilder } from "./scene-builder";
+import { EpisodeConfig } from "../types";
+
+/**
+ * Device callback function.
+ */
+export type DeviceFn = (d: DeviceBuilder) => void;
+
+/**
+ * Camera callback function.
+ */
+export type CameraFn = (c: CameraBuilder) => void;
+
+/**
+ * Scene callback function.
+ */
+export type SceneFn = (s: SceneBuilder) => void;
+
+/**
+ * Episode builder collects devices and metadata.
+ */
+export class EpisodeBuilder {
+    private readonly episodeId: string;
+    private readonly meta: EpisodeMeta;
+    private readonly deviceBuilders: DeviceBuilder[] = [];
+    private readonly cameraEvents: CameraEvent[] = [];
+    private readonly scenes: SceneBuilder[] = [];
+
+    constructor(episodeId: string, config: EpisodeConfig = {}) {
+        this.episodeId = episodeId;
+        this.meta = {
+            title: config.title ?? episodeId,
+            fps: config.fps ?? 30,
+        };
+    }
+
+    /**
+     * Set episode metadata.
+     */
+    config(cfg: EpisodeConfig): this {
+        if (cfg.fps) {
+            (this.meta as any).fps = cfg.fps;
+        }
+        if (cfg.title) {
+            (this.meta as any).title = cfg.title;
+        }
+        return this;
+    }
+
+    /**
+     * Define a device with a story.
+     */
+    device(deviceId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileId: string, fn: DeviceFn): this;
+    device(deviceId: string, profileIdOrFn: string | DeviceFn, maybeFn?: DeviceFn): this {
+        let profileId: string;
+        let fn: DeviceFn;
+
+        if (typeof profileIdOrFn === "function") {
+            profileId = "iphone16";
+            fn = profileIdOrFn;
+        } else {
+            profileId = profileIdOrFn;
+            fn = maybeFn!;
+        }
+
+        const builder = new DeviceBuilder(deviceId, profileId);
+        fn(builder);
+        this.deviceBuilders.push(builder);
+        return this;
+    }
+
+    /**
+     * Define camera operations for multi-POV.
+     * Camera operations control cuts, layouts, and effects.
+     */
+    camera(fn: CameraFn): this {
+        const builder = new CameraBuilder();
+        fn(builder);
+        this.cameraEvents.push(...builder.getEvents());
+        return this;
+    }
+
+    /**
+     * Define a cross-device scene.
+     * Scenes coordinate actions across multiple devices.
+     */
+    scene(name: string, fn: SceneFn): this {
+        const builder = new SceneBuilder(name);
+        fn(builder);
+        this.scenes.push(builder);
+        return this;
+    }
+
+    /**
+     * Build the Scene IR.
+     */
+    build(): SceneIR {
+        return {
+            episodeId: this.episodeId,
+            meta: this.meta,
+            devices: this.deviceBuilders.map((b) => b.build()),
+            // TODO: Include camera events and scenes in SceneIR
+        };
+    }
+}
+
+/**
+ * Entry point for creating an episode.
+ * 
+ * @example
+ * const ir = episode("breakup-01", ep => {
+ *   ep.device("AlicePhone", d => {
+ *     d.conversation("dm_bob", { name: "Bob" })
+ *     d.beat("tension", b => {
+ *       b.receive("Bob", "We need to talk.")
+ *     })
+ *   })
+ * })
+ */
+export function episode(
+    episodeId: string,
+    fn: (ep: EpisodeBuilder) => void,
+    config?: EpisodeConfig
+): SceneIR {
+    const builder = new EpisodeBuilder(episodeId, config);
+    fn(builder);
+    return builder.build();
+}
+````
+
+## File: packages/dsl/src/author/index.ts
+````typescript
+/**
+ * DSL Author Module
+ * 
+ * Public API for authoring episodes.
+ */
+
+export { episode, EpisodeBuilder, DeviceFn, CameraFn, SceneFn } from "./episode-builder";
+export { DeviceBuilder, BeatFn } from "./device-builder";
+export { BeatBuilder, MessageOptions } from "./beat-builder";
+export { CameraBuilder, CameraEvent, ZoomOptions, ShakeOptions, PIPOptions } from "./camera-builder";
+export { SceneBuilder, SceneDeviceBuilder, SceneDeviceAction } from "./scene-builder";
 ````
 
 ## File: packages/episodes/src/examples/camera-showcase.json
@@ -20885,190 +22182,6 @@ export * from "./validate";
 
 // Narrative constraints
 export * from "./constraints";
-````
-
-## File: packages/ir/src/timeline.ts
-````typescript
-/**
- * Timeline IR - Execution Contract
- * 
- * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
- * 
- * RULES:
- * - All waits resolved to frames
- * - Fully deterministic
- * - No adapter-specific fields
- * - Sorted by canonical ordering
- * - Every op carries Trace
- */
-
-import { Trace } from "./trace";
-
-// =============================================================================
-// TIMELINE OPERATIONS
-// =============================================================================
-
-/**
- * Base interface for all timeline operations.
- */
-interface TimelineOpBase {
-    /** Frame number when this operation occurs */
-    readonly at: number;
-
-    /** Operation kind (discriminator) */
-    readonly kind: string;
-
-    /** Debug trace */
-    readonly trace: Trace;
-}
-
-/**
- * Device unlocked.
- */
-export interface DeviceUnlockedOp extends TimelineOpBase {
-    readonly kind: "DeviceUnlocked";
-    readonly deviceId: string;
-}
-
-/**
- * App opened.
- */
-export interface AppOpenedOp extends TimelineOpBase {
-    readonly kind: "AppOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-}
-
-/**
- * Conversation navigated to.
- */
-export interface ConversationOpenedOp extends TimelineOpBase {
-    readonly kind: "ConversationOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Typing indicator started.
- */
-export interface TypingStartedOp extends TimelineOpBase {
-    readonly kind: "TypingStarted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Typing indicator ended.
- */
-export interface TypingEndedOp extends TimelineOpBase {
-    readonly kind: "TypingEnded";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Message received.
- */
-export interface MessageReceivedOp extends TimelineOpBase {
-    readonly kind: "MessageReceived";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text?: string;
-        readonly from: string;
-        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system";
-        readonly timestamp?: string;
-        // Media fields
-        readonly imageUrl?: string;
-        readonly videoUrl?: string;
-        readonly thumbnailUrl?: string;
-        readonly gifUrl?: string;
-        readonly caption?: string;
-        readonly duration?: number;
-        readonly height?: number;
-    };
-}
-
-/**
- * Message sent (by device owner).
- */
-export interface MessageSentOp extends TimelineOpBase {
-    readonly kind: "MessageSent";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text?: string;
-        readonly type?: "text" | "image" | "video" | "gif" | "voice";
-        readonly timestamp?: string;
-        // Media fields
-        readonly imageUrl?: string;
-        readonly videoUrl?: string;
-        readonly thumbnailUrl?: string;
-        readonly gifUrl?: string;
-        readonly caption?: string;
-        readonly duration?: number;
-        readonly height?: number;
-    };
-}
-
-/**
- * Message marked as read.
- */
-export interface MessageReadOp extends TimelineOpBase {
-    readonly kind: "MessageRead";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Message deleted.
- */
-export interface MessageDeletedOp extends TimelineOpBase {
-    readonly kind: "MessageDeleted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Union of all timeline operations.
- */
-export type TimelineOp =
-    | DeviceUnlockedOp
-    | AppOpenedOp
-    | ConversationOpenedOp
-    | TypingStartedOp
-    | TypingEndedOp
-    | MessageReceivedOp
-    | MessageSentOp
-    | MessageReadOp
-    | MessageDeletedOp;
-
-// =============================================================================
-// TIMELINE IR (COMPLETE)
-// =============================================================================
-
-/**
- * Complete Timeline IR for an episode.
- */
-export interface TimelineIR {
-    readonly episodeId: string;
-    readonly fps: number;
-    readonly durationInFrames: number;
-    readonly ops: TimelineOp[];
-}
 ````
 
 ## File: packages/ir/tsconfig.tsbuildinfo
@@ -22859,6 +23972,36 @@ export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
 };
 ````
 
+## File: packages/apps-whatsapp/src/components/index.ts
+````typescript
+/**
+ * WhatsApp Components Index
+ * 
+ * Re-exports all WhatsApp UI components for easy importing.
+ */
+
+// Icons
+export * from "./icons";
+
+// Components
+export { Header, type HeaderProps } from "./Header";
+export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
+
+// Media Bubbles
+export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./MediaBubbles";
+
+// Chats List Screen
+export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
+
+// iOS Status Bar
+export { iOSStatusBar, BubbleTail } from "./iOSStatusBar";
+
+// Advanced Features (Phase 16)
+export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";
+export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPreview";
+export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
+````
+
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
 ````typescript
 import React from "react";
@@ -22971,6 +24114,561 @@ const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
 };
 
 export default TypingBubble;
+````
+
+## File: packages/compiler/src/passes/time-lowering.ts
+````typescript
+/**
+ * Time Lowering Pass
+ * 
+ * Converts Scene IR operations to Timeline IR operations.
+ * - Resolves DurationExpr to frames
+ * - Assigns `at` frame numbers
+ * - Handles concurrent track compilation
+ * - Implements auto-timing for natural message flow
+ */
+
+import {
+    SceneOp,
+    parseDuration,
+    TimelineOp,
+    TypingStartedOp,
+    TypingEndedOp,
+    MessageReceivedOp,
+    MessageSentOp,
+    MessageReadOp,
+    MessageDeletedOp,
+    Trace,
+} from "@tokovo/ir";
+import { CompilerContext, Cursor } from "../context";
+import { ResolvedOp } from "./resolve-refs";
+import { ensureConversationOpened } from "./virtual-device";
+
+// =============================================================================
+// AUTO-TIMING CONFIGURATION
+// =============================================================================
+
+/**
+ * Auto-timing defaults for natural message flow.
+ * These values are configurable per operation via skipAutoTiming.
+ */
+const AUTO_TIMING = {
+    /** Pause after sending a message (seconds) */
+    SEND_DELAY: 0.5,
+    /** Pause after receiving a message (seconds) */
+    RECEIVE_DELAY: 0.8,
+    /** Time to view an image (seconds) */
+    IMAGE_VIEW_TIME: 1.5,
+    /** Time to view a video (uses video duration) */
+    VIDEO_VIEW_TIME_MULTIPLIER: 1.0,
+    /** Time to view a GIF (seconds) */
+    GIF_VIEW_TIME: 1.0,
+    /** Voice note uses its duration */
+    VOICE_VIEW_TIME_MULTIPLIER: 1.0,
+};
+
+/**
+ * Calculate auto-timing frames based on operation type.
+ */
+function getAutoTiming(opKind: string, fps: number, duration?: number): number {
+    switch (opKind) {
+        case "SendMessage":
+        case "SendImage":
+        case "SendVideo":
+        case "SendGif":
+        case "SendVoice":
+            return Math.round(AUTO_TIMING.SEND_DELAY * fps);
+        case "ReceiveMessage":
+            return Math.round(AUTO_TIMING.RECEIVE_DELAY * fps);
+        case "ReceiveImage":
+            return Math.round(AUTO_TIMING.IMAGE_VIEW_TIME * fps);
+        case "ReceiveVideo":
+            return Math.round((duration || 5) * AUTO_TIMING.VIDEO_VIEW_TIME_MULTIPLIER * fps);
+        case "ReceiveGif":
+            return Math.round(AUTO_TIMING.GIF_VIEW_TIME * fps);
+        case "ReceiveVoice":
+            return Math.round((duration || 5) * AUTO_TIMING.VOICE_VIEW_TIME_MULTIPLIER * fps);
+        default:
+            return 0;
+    }
+}
+
+/**
+ * Lower scene operations to timeline operations.
+ */
+export function lowerToTimeline(
+    ops: SceneOp[],
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    beat: string,
+    trackId: string = "main"
+): TimelineOp[] {
+    const timeline: TimelineOp[] = [];
+
+    for (let i = 0; i < ops.length; i++) {
+        const op = ops[i] as ResolvedOp;
+        const trace: Trace = ctx.createTrace({
+            deviceId,
+            beat,
+            trackId,
+            sceneOpIndex: i,
+        });
+
+        const lowered = lowerOp(op, ctx, cursor, deviceId, appId, conversationId, trace);
+        timeline.push(...lowered);
+    }
+
+    return timeline;
+}
+
+function lowerOp(
+    op: ResolvedOp,
+    ctx: CompilerContext,
+    cursor: Cursor,
+    deviceId: string,
+    appId: string,
+    conversationId: string,
+    trace: Trace
+): TimelineOp[] {
+    const events: TimelineOp[] = [];
+    const at = cursor.current;
+
+    switch (op.kind) {
+        case "Wait": {
+            const frames = parseDuration(op.duration, ctx.config.fps);
+            cursor.advance(frames);
+            // Wait produces no events, just advances cursor
+            return [];
+        }
+
+        case "TypingStart": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: TypingStartedOp = {
+                at,
+                kind: "TypingStarted",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "TypingEnd": {
+            const event: TypingEndedOp = {
+                at,
+                kind: "TypingEnded",
+                deviceId,
+                appId,
+                conversationId,
+                actor: op.actor,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "ReceiveMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    from: op.actor,
+                    type: op.meta?.type ?? "text",
+                },
+                trace,
+            };
+            events.push(event);
+
+            // Auto-advance cursor
+            cursor.advance(getAutoTiming("ReceiveMessage", ctx.config.fps));
+            return events;
+        }
+
+        case "SendMessage": {
+            // Ensure conversation is open
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            // Filter out "system" type since you can't send system messages
+            const msgType = op.meta?.type;
+            const sentType = msgType === "system" ? "text" : (msgType ?? "text");
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: op._resolvedMessageId ?? `msg_${at}`,
+                    text: op.text,
+                    type: sentType as "text" | "image" | "voice",
+                },
+                trace,
+            };
+            events.push(event);
+
+            // Auto-advance cursor
+            cursor.advance(getAutoTiming("SendMessage", ctx.config.fps));
+            return events;
+        }
+
+        // =====================================================================
+        // MEDIA MESSAGE OPERATIONS
+        // =====================================================================
+
+        case "SendImage": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `img_${at}`,
+                    type: "image",
+                    imageUrl: op.imageUrl,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendImage", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "ReceiveImage": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `img_${at}`,
+                    from: op.actor,
+                    type: "image",
+                    imageUrl: op.imageUrl,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveImage", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "SendVideo": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `vid_${at}`,
+                    type: "video",
+                    videoUrl: op.videoUrl,
+                    thumbnailUrl: op.thumbnailUrl,
+                    duration: op.duration,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendVideo", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReceiveVideo": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `vid_${at}`,
+                    from: op.actor,
+                    type: "video",
+                    videoUrl: op.videoUrl,
+                    thumbnailUrl: op.thumbnailUrl,
+                    duration: op.duration,
+                    caption: op.caption,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveVideo", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "SendGif": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `gif_${at}`,
+                    type: "gif",
+                    gifUrl: op.gifUrl,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendGif", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "ReceiveGif": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `gif_${at}`,
+                    from: op.actor,
+                    type: "gif",
+                    gifUrl: op.gifUrl,
+                    height: op.height,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveGif", ctx.config.fps));
+            }
+            return events;
+        }
+
+        case "SendVoice": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageSentOp = {
+                at,
+                kind: "MessageSent",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `voice_${at}`,
+                    type: "voice",
+                    duration: op.duration,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("SendVoice", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReceiveVoice": {
+            events.push(...ensureConversationOpened(ctx, deviceId, appId, conversationId, at, trace));
+
+            const event: MessageReceivedOp = {
+                at,
+                kind: "MessageReceived",
+                deviceId,
+                appId,
+                conversationId,
+                message: {
+                    id: `voice_${at}`,
+                    from: op.actor,
+                    type: "voice",
+                    duration: op.duration,
+                },
+                trace,
+            };
+            events.push(event);
+
+            if (!op.skipAutoTiming) {
+                cursor.advance(getAutoTiming("ReceiveVoice", ctx.config.fps, op.duration));
+            }
+            return events;
+        }
+
+        case "ReadMessage": {
+            const event: MessageReadOp = {
+                at,
+                kind: "MessageRead",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "DeleteMessage": {
+            const event: MessageDeletedOp = {
+                at,
+                kind: "MessageDeleted",
+                deviceId,
+                appId,
+                conversationId: op.ref.conversationId,
+                messageId: op.ref.id,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "Concurrent": {
+            // Fork cursor for each track
+            const trackCursors: Cursor[] = [];
+            const trackTimelines: TimelineOp[][] = [];
+
+            for (let t = 0; t < op.tracks.length; t++) {
+                const trackOps = op.tracks[t];
+                const trackCursor = cursor.fork();
+                const trackId = `track_${t}`;
+
+                const trackTimeline = lowerToTimeline(
+                    trackOps,
+                    ctx,
+                    trackCursor,
+                    deviceId,
+                    appId,
+                    conversationId,
+                    trace.beat,
+                    trackId
+                );
+
+                trackCursors.push(trackCursor);
+                trackTimelines.push(trackTimeline);
+            }
+
+            // Merge all track timelines
+            for (const tl of trackTimelines) {
+                events.push(...tl);
+            }
+
+            // Join cursors at max position
+            const joined = Cursor.join(trackCursors);
+            cursor.advance(joined.current - cursor.current);
+
+            return events;
+        }
+
+        // =====================================================================
+        // NAVIGATION OPERATIONS
+        // =====================================================================
+
+        case "NavigateScreen": {
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: op.screen,
+                transition: op.transition,
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        case "OpenChat": {
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: "chat" as const,
+                conversationId: op.conversationId,
+                transition: op.transition,
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        case "GoBack": {
+            // Go back uses the same ScreenNavigated event but we don't know target screen
+            // The runtime will handle this as a "pop" from navigation stack
+            const event = {
+                at,
+                kind: "ScreenNavigated" as const,
+                deviceId,
+                appId,
+                screen: "chats-list" as const,  // Default assumption for go back
+                transition: op.transition ?? "pop",
+                trace,
+            };
+            events.push(event);
+
+            // Small delay for navigation animation
+            cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        default:
+            return [];
+    }
+}
 ````
 
 ## File: packages/devices/src/iphone16/Frame.tsx
@@ -23257,614 +24955,6 @@ export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: numbe
 );
 ````
 
-## File: packages/dsl/src/author/beat-builder.ts
-````typescript
-/**
- * Beat Builder
- * 
- * Fluent API for defining actions within a beat.
- * A beat is a named group of sequential/concurrent operations.
- */
-
-import {
-    SceneOp,
-    WaitOp,
-    TypingStartOp,
-    TypingEndOp,
-    SendMessageOp,
-    ReceiveMessageOp,
-    ReadMessageOp,
-    DeleteMessageOp,
-    ConcurrentOp,
-    MessageRef,
-    messageRef,
-    // Media operations
-    SendImageOp,
-    ReceiveImageOp,
-    SendVideoOp,
-    ReceiveVideoOp,
-    SendGifOp,
-    ReceiveGifOp,
-    SendVoiceOp,
-    ReceiveVoiceOp,
-    // POV operations
-    POVSwitchOp,
-    SplitPOVOp,
-    POVLayout,
-    // Reserved signals
-    ReactionAddedOp,
-    ScreenshotTakenOp,
-    MissedCallOp,
-    // Semantic
-    SemanticMeta,
-    MessageMeta,
-} from "@tokovo/ir";
-import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
-
-/**
- * Message options for semantic annotations.
- */
-export interface MessageOptions {
-    /** Semantic annotations */
-    mood?: SemanticMeta["mood"];
-    intensity?: number;
-    secrecy?: "low" | "medium" | "high";
-    urgency?: number;
-    intimacy?: number;
-    subtext?: string;
-    tags?: string[];
-    /** Message type */
-    type?: "text" | "image" | "voice" | "system";
-}
-
-/**
- * Build MessageMeta from options.
- */
-function buildMeta(options?: MessageOptions): MessageMeta | undefined {
-    if (!options) return undefined;
-
-    const semantic: SemanticMeta = {};
-    if (options.mood) semantic.mood = options.mood;
-    if (options.intensity !== undefined) semantic.intensity = options.intensity;
-    if (options.secrecy) semantic.secrecy = options.secrecy;
-    if (options.urgency !== undefined) semantic.urgency = options.urgency;
-    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
-    if (options.subtext) semantic.subtext = options.subtext;
-    if (options.tags) semantic.tags = options.tags;
-
-    return {
-        type: options.type ?? "text",
-        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
-    };
-}
-
-/**
- * Beat builder collects operations within a beat.
- */
-export class BeatBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private messageCounter = 0;
-    private lastMessageRef: MessageRef | undefined;
-
-    constructor(deviceId: string, appId: string, conversationId: string) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-    }
-
-    /**
-     * Wait for a duration.
-     */
-    wait(duration: string): this {
-        const op: WaitOp = { kind: "Wait", duration };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Start typing indicator.
-     * Returns a builder for fluent chaining: typing("Bob").for("2s")
-     */
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                // Expand to: TypingStart + Wait + TypingEnd
-                const start: TypingStartOp = {
-                    kind: "TypingStart",
-                    actor,
-                    conversationId,
-                };
-                const wait: WaitOp = { kind: "Wait", duration };
-                const end: TypingEndOp = {
-                    kind: "TypingEnd",
-                    actor,
-                    conversationId,
-                };
-                ops.push(start, wait, end);
-            },
-        };
-    }
-
-    /**
-     * Start typing without specifying duration.
-     * Use typingEnd() to stop.
-     */
-    typingStart(actor: string): this {
-        const op: TypingStartOp = {
-            kind: "TypingStart",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Stop typing indicator.
-     */
-    typingEnd(actor: string): this {
-        const op: TypingEndOp = {
-            kind: "TypingEnd",
-            actor,
-            conversationId: this.conversationId,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Send a message (from device owner).
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    send(text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendMessageOp = {
-            kind: "SendMessage",
-            actor: "me",
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a message (from someone else).
-     * @param actor - Who sent the message
-     * @param text - Message text
-     * @param options - Optional semantic annotations
-     */
-    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveMessageOp = {
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-            meta: buildMeta(options),
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Mark a message as read.
-     */
-    read(ref: MessageHandle): this {
-        const op: ReadMessageOp = { kind: "ReadMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Mark the last message as read.
-     */
-    readLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("readLast() called but no previous message exists");
-        }
-        return this.read(this.lastMessageRef);
-    }
-
-    /**
-     * Delete a message.
-     */
-    delete(ref: MessageHandle): this {
-        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Delete the last message.
-     */
-    deleteLast(): this {
-        if (!this.lastMessageRef) {
-            throw new Error("deleteLast() called but no previous message exists");
-        }
-        return this.delete(this.lastMessageRef);
-    }
-
-    // =========================================================================
-    // MEDIA MESSAGE OPERATIONS
-    // =========================================================================
-
-    /**
-     * Media options for image, video, GIF messages.
-     */
-    private static readonly MEDIA_DEFAULTS = {
-        IMAGE_HEIGHT: 400,
-        VIDEO_HEIGHT: 400,
-        GIF_HEIGHT: 300,
-        VOICE_HEIGHT: 150,
-    };
-
-    /**
-     * Send an image message.
-     * @param url - Image URL
-     * @param options - Optional caption and height
-     */
-    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendImageOp = {
-            kind: "SendImage",
-            imageUrl: url,
-            conversationId: this.conversationId,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive an image message.
-     * @param actor - Who sent the image
-     * @param url - Image URL
-     * @param options - Optional caption and height
-     */
-    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveImageOp = {
-            kind: "ReceiveImage",
-            actor,
-            imageUrl: url,
-            conversationId: this.conversationId,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a video message.
-     * @param url - Video URL
-     * @param duration - Video duration in seconds
-     * @param options - Optional thumbnail, caption and height
-     */
-    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendVideoOp = {
-            kind: "SendVideo",
-            videoUrl: url,
-            thumbnailUrl: options?.thumbnailUrl,
-            conversationId: this.conversationId,
-            duration,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a video message.
-     * @param actor - Who sent the video
-     * @param url - Video URL
-     * @param duration - Video duration in seconds
-     * @param options - Optional thumbnail, caption and height
-     */
-    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveVideoOp = {
-            kind: "ReceiveVideo",
-            actor,
-            videoUrl: url,
-            thumbnailUrl: options?.thumbnailUrl,
-            conversationId: this.conversationId,
-            duration,
-            caption: options?.caption,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a GIF message.
-     * @param url - GIF URL (from Giphy, Tenor, etc.)
-     * @param options - Optional height
-     */
-    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendGifOp = {
-            kind: "SendGif",
-            gifUrl: url,
-            conversationId: this.conversationId,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a GIF message.
-     * @param actor - Who sent the GIF
-     * @param url - GIF URL
-     * @param options - Optional height
-     */
-    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
-        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveGifOp = {
-            kind: "ReceiveGif",
-            actor,
-            gifUrl: url,
-            conversationId: this.conversationId,
-            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Send a voice note.
-     * @param duration - Voice note duration in seconds
-     * @param options - Optional timing override
-     */
-    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
-        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: SendVoiceOp = {
-            kind: "SendVoice",
-            conversationId: this.conversationId,
-            duration,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    /**
-     * Receive a voice note.
-     * @param actor - Who sent the voice note
-     * @param duration - Voice note duration in seconds
-     * @param options - Optional timing override
-     */
-    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
-        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
-        const op: ReceiveVoiceOp = {
-            kind: "ReceiveVoice",
-            actor,
-            conversationId: this.conversationId,
-            duration,
-            skipAutoTiming: options?.skipAutoTiming,
-        };
-        this.ops.push(op);
-
-        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
-        this.lastMessageRef = ref;
-        return ref;
-    }
-
-    // =========================================================================
-    // POV OPERATIONS (STORY GRAMMAR)
-    // =========================================================================
-
-    /**
-     * Switch point of view to a different device.
-     */
-    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
-        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Split POV - show multiple devices simultaneously.
-     */
-    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
-        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // RESERVED SIGNALS (DRAMA EVENTS)
-    // =========================================================================
-
-    /**
-     * Add a reaction to a message.
-     */
-    react(ref: MessageHandle, actor: string, emoji: string): this {
-        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Screenshot taken notification (drama!).
-     */
-    screenshot(): this {
-        const op: ScreenshotTakenOp = {
-            kind: "ScreenshotTaken",
-            conversationId: this.conversationId
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Missed call event.
-     */
-    missedCall(actor: string, callType?: "voice" | "video"): this {
-        const op: MissedCallOp = {
-            kind: "MissedCall",
-            actor,
-            conversationId: this.conversationId,
-            callType,
-        };
-        this.ops.push(op);
-        return this;
-    }
-
-    // =========================================================================
-    // CONCURRENT
-    // =========================================================================
-
-    /**
-     * Execute operations concurrently across multiple tracks.
-     */
-    concurrent(tracks: TrackFn[]): this {
-        const trackOps: SceneOp[][] = tracks.map((fn) => {
-            const trackBuilder = this.createTrackBuilder();
-            fn(trackBuilder);
-            return trackBuilder.getOps();
-        });
-
-        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
-        this.ops.push(op);
-        return this;
-    }
-
-    /**
-     * Create a track builder for concurrent operations.
-     */
-    private createTrackBuilder(): TrackBuilderImpl {
-        return new TrackBuilderImpl(
-            this.deviceId,
-            this.appId,
-            this.conversationId,
-            () => ++this.messageCounter
-        );
-    }
-
-    /**
-     * Get collected operations.
-     */
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-
-/**
- * Track builder implementation for concurrent operations.
- */
-class TrackBuilderImpl implements TrackBuilder {
-    private readonly ops: SceneOp[] = [];
-    private readonly deviceId: string;
-    private readonly appId: string;
-    private readonly conversationId: string;
-    private readonly getNextId: () => number;
-
-    constructor(
-        deviceId: string,
-        appId: string,
-        conversationId: string,
-        getNextId: () => number
-    ) {
-        this.deviceId = deviceId;
-        this.appId = appId;
-        this.conversationId = conversationId;
-        this.getNextId = getNextId;
-    }
-
-    wait(duration: string): this {
-        this.ops.push({ kind: "Wait", duration });
-        return this;
-    }
-
-    typing(actor: string): TypingBuilder {
-        const conversationId = this.conversationId;
-        const ops = this.ops;
-
-        return {
-            for: (duration: string) => {
-                ops.push({ kind: "TypingStart", actor, conversationId });
-                ops.push({ kind: "Wait", duration });
-                ops.push({ kind: "TypingEnd", actor, conversationId });
-            },
-        };
-    }
-
-    send(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "SendMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    receive(actor: string, text: string): MessageHandle {
-        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
-        this.ops.push({
-            kind: "ReceiveMessage",
-            actor,
-            text,
-            conversationId: this.conversationId,
-        });
-        return messageRef(id, this.deviceId, this.appId, this.conversationId);
-    }
-
-    getOps(): SceneOp[] {
-        return this.ops;
-    }
-}
-````
-
 ## File: packages/episodes/src/examples/multi-pov-demo.json
 ````json
 {
@@ -24124,491 +25214,200 @@ class TrackBuilderImpl implements TrackBuilder {
 }
 ````
 
-## File: packages/ir/src/scene.ts
+## File: packages/ir/src/timeline.ts
 ````typescript
 /**
- * Scene IR - Semantic Truth
+ * Timeline IR - Execution Contract
  * 
- * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
  * 
  * RULES:
- * - No frames
- * - No layout
- * - No camera
- * - No platform assumptions
- * 
- * If FPS changes, layout changes, or Director logic changes,
- * Scene IR stays valid.
+ * - All waits resolved to frames
+ * - Fully deterministic
+ * - No adapter-specific fields
+ * - Sorted by canonical ordering
+ * - Every op carries Trace
  */
 
+import { Trace } from "./trace";
+
 // =============================================================================
-// DURATION
+// TIMELINE OPERATIONS
 // =============================================================================
 
 /**
- * Human-readable duration expression.
- * Examples: "1.2s", "300ms", "45frames"
+ * Base interface for all timeline operations.
  */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+interface TimelineOpBase {
+    /** Frame number when this operation occurs */
+    readonly at: number;
 
-/**
- * Parse duration to frames
- */
-export function parseDuration(expr: DurationExpr, fps: number): number {
-    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
-    if (!match) {
-        throw new Error(`Invalid duration: ${expr}`);
-    }
+    /** Operation kind (discriminator) */
+    readonly kind: string;
 
-    const value = parseFloat(match[1]);
-    const unit = match[2];
-
-    switch (unit) {
-        case "s":
-            return Math.round(value * fps);
-        case "ms":
-            return Math.round((value / 1000) * fps);
-        case "frames":
-            return Math.round(value);
-        default:
-            throw new Error(`Unknown duration unit: ${unit}`);
-    }
+    /** Debug trace */
+    readonly trace: Trace;
 }
 
-// =============================================================================
-// MESSAGE REFERENCE
-// =============================================================================
+/**
+ * Device unlocked.
+ */
+export interface DeviceUnlockedOp extends TimelineOpBase {
+    readonly kind: "DeviceUnlocked";
+    readonly deviceId: string;
+}
 
 /**
- * Reference to a message.
- * MUST include full context for cross-device/conversation operations.
+ * App opened.
  */
-export interface MessageRef {
-    readonly _type: "MessageRef";
-    readonly id: string;
+export interface AppOpenedOp extends TimelineOpBase {
+    readonly kind: "AppOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+}
+
+/**
+ * Conversation navigated to.
+ */
+export interface ConversationOpenedOp extends TimelineOpBase {
+    readonly kind: "ConversationOpened";
     readonly deviceId: string;
     readonly appId: string;
     readonly conversationId: string;
 }
 
 /**
- * Create a message reference
+ * Typing indicator started.
  */
-export function messageRef(
-    id: string,
-    deviceId: string,
-    appId: string,
-    conversationId: string
-): MessageRef {
-    return {
-        _type: "MessageRef",
-        id,
-        deviceId,
-        appId,
-        conversationId,
+export interface TypingStartedOp extends TimelineOpBase {
+    readonly kind: "TypingStarted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Typing indicator ended.
+ */
+export interface TypingEndedOp extends TimelineOpBase {
+    readonly kind: "TypingEnded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Message received.
+ */
+export interface MessageReceivedOp extends TimelineOpBase {
+    readonly kind: "MessageReceived";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly from: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
     };
 }
 
-// =============================================================================
-// MESSAGE METADATA
-// =============================================================================
-
-import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
-
-export interface MessageMeta {
-    /** Message type */
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
-
-    /** For voice messages */
-    voiceDuration?: number;
-
-    /** For media messages (height in pixels for layout) */
-    height?: number;
-
-    /** Timestamp display */
-    timestamp?: string;
-
-    /** Semantic annotations */
-    semantic?: SemanticMeta;
-
-    /** Custom metadata */
-    [key: string]: unknown;
-}
-
-// =============================================================================
-// SCENE OPERATIONS (CORE)
-// =============================================================================
-
 /**
- * Wait for a duration.
- * This advances the cursor but emits no runtime event.
+ * Message sent (by device owner).
  */
-export interface WaitOp {
-    readonly kind: "Wait";
-    readonly duration: DurationExpr;
-}
-
-/**
- * Start typing indicator.
- */
-export interface TypingStartOp {
-    readonly kind: "TypingStart";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * End typing indicator.
- */
-export interface TypingEndOp {
-    readonly kind: "TypingEnd";
-    readonly actor: string;
-    readonly conversationId: string;
-}
-
-/**
- * Send a message (from "me" / device owner).
- */
-export interface SendMessageOp {
-    readonly kind: "SendMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Receive a message (from someone else).
- */
-export interface ReceiveMessageOp {
-    readonly kind: "ReceiveMessage";
-    readonly actor: string;
-    readonly text: string;
-    readonly conversationId: string;
-    readonly meta?: MessageMeta;
-}
-
-/**
- * Mark a message as read.
- */
-export interface ReadMessageOp {
-    readonly kind: "ReadMessage";
-    readonly ref: MessageRef;
-}
-
-/**
- * Delete a message.
- */
-export interface DeleteMessageOp {
-    readonly kind: "DeleteMessage";
-    readonly ref: MessageRef;
-}
-
-// =============================================================================
-// MEDIA MESSAGE OPERATIONS
-// =============================================================================
-
-/**
- * Media message configuration with defaults.
- */
-export interface MediaConfig {
-    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
-    readonly height?: number;
-    /** Caption text */
-    readonly caption?: string;
-    /** Auto-timing: skip automatic timing calculation */
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send an image message.
- */
-export interface SendImageOp {
-    readonly kind: "SendImage";
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive an image message.
- */
-export interface ReceiveImageOp {
-    readonly kind: "ReceiveImage";
-    readonly actor: string;
-    readonly imageUrl: string;
-    readonly conversationId: string;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a video message.
- */
-export interface SendVideoOp {
-    readonly kind: "SendVideo";
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Video duration in seconds
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a video message.
- */
-export interface ReceiveVideoOp {
-    readonly kind: "ReceiveVideo";
-    readonly actor: string;
-    readonly videoUrl: string;
-    readonly thumbnailUrl?: string;
-    readonly conversationId: string;
-    readonly duration: number;
-    readonly caption?: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a GIF message.
- */
-export interface SendGifOp {
-    readonly kind: "SendGif";
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a GIF message.
- */
-export interface ReceiveGifOp {
-    readonly kind: "ReceiveGif";
-    readonly actor: string;
-    readonly gifUrl: string;
-    readonly conversationId: string;
-    readonly height?: number;
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Send a voice note.
- */
-export interface SendVoiceOp {
-    readonly kind: "SendVoice";
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Receive a voice note.
- */
-export interface ReceiveVoiceOp {
-    readonly kind: "ReceiveVoice";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly duration: number;  // Duration in seconds
-    readonly skipAutoTiming?: boolean;
-}
-
-/**
- * Concurrent operations across multiple tracks.
- * Compiler forks cursor per track, compiles each independently,
- * then joins at max(trackEnds).
- */
-export interface ConcurrentOp {
-    readonly kind: "Concurrent";
-    readonly tracks: SceneOp[][];
-}
-
-// =============================================================================
-// POV OPERATIONS (STORY GRAMMAR)
-// =============================================================================
-
-/**
- * Switch point of view to a device.
- */
-export interface POVSwitchOp {
-    readonly kind: "POVSwitch";
+export interface MessageSentOp extends TimelineOpBase {
+    readonly kind: "MessageSent";
     readonly deviceId: string;
-    readonly transition?: "cut" | "crossfade" | "wipe";
-}
-
-/**
- * Split POV - show multiple devices simultaneously.
- */
-export interface SplitPOVOp {
-    readonly kind: "SplitPOV";
-    readonly devices: string[];
-    readonly layout: POVLayout;
-}
-
-// =============================================================================
-// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
-// =============================================================================
-
-/**
- * Reaction added to a message (❤️ 😂 😡).
- */
-export interface ReactionAddedOp {
-    readonly kind: "ReactionAdded";
-    readonly ref: MessageRef;
-    readonly actor: string;
-    readonly emoji: string;
-}
-
-/**
- * Voice note sent.
- */
-export interface VoiceNoteSentOp {
-    readonly kind: "VoiceNoteSent";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Voice note received.
- */
-export interface VoiceNoteReceivedOp {
-    readonly kind: "VoiceNoteReceived";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly durationMs: number;
-}
-
-/**
- * Missed call.
- */
-export interface MissedCallOp {
-    readonly kind: "MissedCall";
-    readonly actor: string;
-    readonly conversationId: string;
-    readonly callType?: "voice" | "video";
-}
-
-/**
- * Online status changed.
- */
-export interface OnlineStatusChangedOp {
-    readonly kind: "OnlineStatusChanged";
-    readonly actor: string;
-    readonly status: "online" | "offline" | "typing" | "last_seen";
-}
-
-/**
- * Screenshot taken (drama alert!).
- */
-export interface ScreenshotTakenOp {
-    readonly kind: "ScreenshotTaken";
-    readonly conversationId: string;
-}
-
-/**
- * User blocked.
- */
-export interface BlockedUserOp {
-    readonly kind: "BlockedUser";
-    readonly actor: string;
-}
-
-/**
- * Union of all scene operations.
- */
-export type SceneOp =
-    // Core operations
-    | WaitOp
-    | TypingStartOp
-    | TypingEndOp
-    | SendMessageOp
-    | ReceiveMessageOp
-    | ReadMessageOp
-    | DeleteMessageOp
-    | ConcurrentOp
-    // Media operations
-    | SendImageOp
-    | ReceiveImageOp
-    | SendVideoOp
-    | ReceiveVideoOp
-    | SendGifOp
-    | ReceiveGifOp
-    | SendVoiceOp
-    | ReceiveVoiceOp
-    // POV operations
-    | POVSwitchOp
-    | SplitPOVOp
-    // Reserved signals
-    | ReactionAddedOp
-    | VoiceNoteSentOp
-    | VoiceNoteReceivedOp
-    | MissedCallOp
-    | OnlineStatusChangedOp
-    | ScreenshotTakenOp
-    | BlockedUserOp;
-
-// =============================================================================
-// SCENE (TOP LEVEL)
-// =============================================================================
-
-/**
- * A beat is a named group of operations.
- * Used for semantic grouping, story rhythm, and debugging.
- */
-export interface Beat {
-    readonly name: string;
-    readonly ops: SceneOp[];
-    /** Optional rhythm/semantic metadata */
-    readonly meta?: BeatMeta;
-}
-
-/**
- * A device context within a scene.
- */
-export interface DeviceScene {
-    readonly deviceId: string;
-    readonly profileId: string;
     readonly appId: string;
-    readonly conversations: ConversationDef[];
-    readonly beats: Beat[];
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
+    };
 }
 
-
 /**
- * Conversation definition.
+ * Message marked as read.
  */
-export interface ConversationDef {
-    readonly id: string;
-    readonly name?: string;
-    readonly avatar?: string;
-    readonly type?: "dm" | "group";
+export interface MessageReadOp extends TimelineOpBase {
+    readonly kind: "MessageRead";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
 }
 
 /**
- * Complete scene IR for an episode.
+ * Message deleted.
  */
-export interface SceneIR {
+export interface MessageDeletedOp extends TimelineOpBase {
+    readonly kind: "MessageDeleted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Screen navigated within app.
+ */
+export interface ScreenNavigatedOp extends TimelineOpBase {
+    readonly kind: "ScreenNavigated";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly conversationId?: string;  // For "chat" screen
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+}
+
+/**
+ * Union of all timeline operations.
+ */
+export type TimelineOp =
+    | DeviceUnlockedOp
+    | AppOpenedOp
+    | ConversationOpenedOp
+    | TypingStartedOp
+    | TypingEndedOp
+    | MessageReceivedOp
+    | MessageSentOp
+    | MessageReadOp
+    | MessageDeletedOp
+    | ScreenNavigatedOp;
+
+// =============================================================================
+// TIMELINE IR (COMPLETE)
+// =============================================================================
+
+/**
+ * Complete Timeline IR for an episode.
+ */
+export interface TimelineIR {
     readonly episodeId: string;
-    readonly meta: EpisodeMeta;
-    readonly devices: DeviceScene[];
-}
-
-/**
- * Episode metadata with semantic configuration.
- * Extends EpisodeConfig with required fields.
- */
-export interface EpisodeMeta extends EpisodeConfig {
-    /** Frames per second (required) */
     readonly fps: number;
-
-    /** Duration hint (calculated if not specified) */
-    readonly durationInFrames?: number;
+    readonly durationInFrames: number;
+    readonly ops: TimelineOp[];
 }
 ````
 
@@ -26512,6 +27311,674 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
+## File: packages/dsl/src/author/beat-builder.ts
+````typescript
+/**
+ * Beat Builder
+ * 
+ * Fluent API for defining actions within a beat.
+ * A beat is a named group of sequential/concurrent operations.
+ */
+
+import {
+    SceneOp,
+    WaitOp,
+    TypingStartOp,
+    TypingEndOp,
+    SendMessageOp,
+    ReceiveMessageOp,
+    ReadMessageOp,
+    DeleteMessageOp,
+    ConcurrentOp,
+    MessageRef,
+    messageRef,
+    // Media operations
+    SendImageOp,
+    ReceiveImageOp,
+    SendVideoOp,
+    ReceiveVideoOp,
+    SendGifOp,
+    ReceiveGifOp,
+    SendVoiceOp,
+    ReceiveVoiceOp,
+    // POV operations
+    POVSwitchOp,
+    SplitPOVOp,
+    POVLayout,
+    // Navigation operations
+    NavigateScreenOp,
+    OpenChatOp,
+    GoBackOp,
+    // Reserved signals
+    ReactionAddedOp,
+    ScreenshotTakenOp,
+    MissedCallOp,
+    // Semantic
+    SemanticMeta,
+    MessageMeta,
+} from "@tokovo/ir";
+import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+
+/**
+ * Message options for semantic annotations.
+ */
+export interface MessageOptions {
+    /** Semantic annotations */
+    mood?: SemanticMeta["mood"];
+    intensity?: number;
+    secrecy?: "low" | "medium" | "high";
+    urgency?: number;
+    intimacy?: number;
+    subtext?: string;
+    tags?: string[];
+    /** Message type */
+    type?: "text" | "image" | "voice" | "system";
+}
+
+/**
+ * Build MessageMeta from options.
+ */
+function buildMeta(options?: MessageOptions): MessageMeta | undefined {
+    if (!options) return undefined;
+
+    const semantic: SemanticMeta = {};
+    if (options.mood) semantic.mood = options.mood;
+    if (options.intensity !== undefined) semantic.intensity = options.intensity;
+    if (options.secrecy) semantic.secrecy = options.secrecy;
+    if (options.urgency !== undefined) semantic.urgency = options.urgency;
+    if (options.intimacy !== undefined) semantic.intimacy = options.intimacy;
+    if (options.subtext) semantic.subtext = options.subtext;
+    if (options.tags) semantic.tags = options.tags;
+
+    return {
+        type: options.type ?? "text",
+        semantic: Object.keys(semantic).length > 0 ? semantic : undefined,
+    };
+}
+
+/**
+ * Beat builder collects operations within a beat.
+ */
+export class BeatBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private messageCounter = 0;
+    private lastMessageRef: MessageRef | undefined;
+
+    constructor(deviceId: string, appId: string, conversationId: string) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+    }
+
+    /**
+     * Wait for a duration.
+     */
+    wait(duration: string): this {
+        const op: WaitOp = { kind: "Wait", duration };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Start typing indicator.
+     * Returns a builder for fluent chaining: typing("Bob").for("2s")
+     */
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                // Expand to: TypingStart + Wait + TypingEnd
+                const start: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                const wait: WaitOp = { kind: "Wait", duration };
+                const end: TypingEndOp = {
+                    kind: "TypingEnd",
+                    actor,
+                    conversationId,
+                };
+                ops.push(start, wait, end);
+            },
+        };
+    }
+
+    /**
+     * Start typing without specifying duration.
+     * Use typingEnd() to stop.
+     */
+    typingStart(actor: string): this {
+        const op: TypingStartOp = {
+            kind: "TypingStart",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Stop typing indicator.
+     */
+    typingEnd(actor: string): this {
+        const op: TypingEndOp = {
+            kind: "TypingEnd",
+            actor,
+            conversationId: this.conversationId,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Send a message (from device owner).
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    send(text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendMessageOp = {
+            kind: "SendMessage",
+            actor: "me",
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a message (from someone else).
+     * @param actor - Who sent the message
+     * @param text - Message text
+     * @param options - Optional semantic annotations
+     */
+    receive(actor: string, text: string, options?: MessageOptions): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveMessageOp = {
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+            meta: buildMeta(options),
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Mark a message as read.
+     */
+    read(ref: MessageHandle): this {
+        const op: ReadMessageOp = { kind: "ReadMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Mark the last message as read.
+     */
+    readLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("readLast() called but no previous message exists");
+        }
+        return this.read(this.lastMessageRef);
+    }
+
+    /**
+     * Delete a message.
+     */
+    delete(ref: MessageHandle): this {
+        const op: DeleteMessageOp = { kind: "DeleteMessage", ref };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Delete the last message.
+     */
+    deleteLast(): this {
+        if (!this.lastMessageRef) {
+            throw new Error("deleteLast() called but no previous message exists");
+        }
+        return this.delete(this.lastMessageRef);
+    }
+
+    // =========================================================================
+    // MEDIA MESSAGE OPERATIONS
+    // =========================================================================
+
+    /**
+     * Media options for image, video, GIF messages.
+     */
+    private static readonly MEDIA_DEFAULTS = {
+        IMAGE_HEIGHT: 400,
+        VIDEO_HEIGHT: 400,
+        GIF_HEIGHT: 300,
+        VOICE_HEIGHT: 150,
+    };
+
+    /**
+     * Send an image message.
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    sendImage(url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendImageOp = {
+            kind: "SendImage",
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive an image message.
+     * @param actor - Who sent the image
+     * @param url - Image URL
+     * @param options - Optional caption and height
+     */
+    receiveImage(actor: string, url: string, options?: { caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `img_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveImageOp = {
+            kind: "ReceiveImage",
+            actor,
+            imageUrl: url,
+            conversationId: this.conversationId,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.IMAGE_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a video message.
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    sendVideo(url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVideoOp = {
+            kind: "SendVideo",
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a video message.
+     * @param actor - Who sent the video
+     * @param url - Video URL
+     * @param duration - Video duration in seconds
+     * @param options - Optional thumbnail, caption and height
+     */
+    receiveVideo(actor: string, url: string, duration: number, options?: { thumbnailUrl?: string; caption?: string; height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `vid_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVideoOp = {
+            kind: "ReceiveVideo",
+            actor,
+            videoUrl: url,
+            thumbnailUrl: options?.thumbnailUrl,
+            conversationId: this.conversationId,
+            duration,
+            caption: options?.caption,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.VIDEO_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a GIF message.
+     * @param url - GIF URL (from Giphy, Tenor, etc.)
+     * @param options - Optional height
+     */
+    sendGif(url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendGifOp = {
+            kind: "SendGif",
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a GIF message.
+     * @param actor - Who sent the GIF
+     * @param url - GIF URL
+     * @param options - Optional height
+     */
+    receiveGif(actor: string, url: string, options?: { height?: number; skipAutoTiming?: boolean }): MessageHandle {
+        const id = `gif_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveGifOp = {
+            kind: "ReceiveGif",
+            actor,
+            gifUrl: url,
+            conversationId: this.conversationId,
+            height: options?.height ?? BeatBuilder.MEDIA_DEFAULTS.GIF_HEIGHT,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Send a voice note.
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    sendVoice(duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: SendVoiceOp = {
+            kind: "SendVoice",
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    /**
+     * Receive a voice note.
+     * @param actor - Who sent the voice note
+     * @param duration - Voice note duration in seconds
+     * @param options - Optional timing override
+     */
+    receiveVoice(actor: string, duration: number, options?: { skipAutoTiming?: boolean }): MessageHandle {
+        const id = `voice_${this.deviceId}_${this.conversationId}_${++this.messageCounter}`;
+        const op: ReceiveVoiceOp = {
+            kind: "ReceiveVoice",
+            actor,
+            conversationId: this.conversationId,
+            duration,
+            skipAutoTiming: options?.skipAutoTiming,
+        };
+        this.ops.push(op);
+
+        const ref = messageRef(id, this.deviceId, this.appId, this.conversationId);
+        this.lastMessageRef = ref;
+        return ref;
+    }
+
+    // =========================================================================
+    // POV OPERATIONS (STORY GRAMMAR)
+    // =========================================================================
+
+    /**
+     * Switch point of view to a different device.
+     */
+    pov(deviceId: string, transition?: "cut" | "crossfade" | "wipe"): this {
+        const op: POVSwitchOp = { kind: "POVSwitch", deviceId, transition };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Split POV - show multiple devices simultaneously.
+     */
+    splitPov(devices: string[], layout: POVLayout = "horizontal"): this {
+        const op: SplitPOVOp = { kind: "SplitPOV", devices, layout };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // RESERVED SIGNALS (DRAMA EVENTS)
+    // =========================================================================
+
+    /**
+     * Add a reaction to a message.
+     */
+    react(ref: MessageHandle, actor: string, emoji: string): this {
+        const op: ReactionAddedOp = { kind: "ReactionAdded", ref, actor, emoji };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Screenshot taken notification (drama!).
+     */
+    screenshot(): this {
+        const op: ScreenshotTakenOp = {
+            kind: "ScreenshotTaken",
+            conversationId: this.conversationId
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Missed call event.
+     */
+    missedCall(actor: string, callType?: "voice" | "video"): this {
+        const op: MissedCallOp = {
+            kind: "MissedCall",
+            actor,
+            conversationId: this.conversationId,
+            callType,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    // =========================================================================
+    // CONCURRENT
+    // =========================================================================
+
+    /**
+     * Execute operations concurrently across multiple tracks.
+     */
+    concurrent(tracks: TrackFn[]): this {
+        const trackOps: SceneOp[][] = tracks.map((fn) => {
+            const trackBuilder = this.createTrackBuilder();
+            fn(trackBuilder);
+            return trackBuilder.getOps();
+        });
+
+        const op: ConcurrentOp = { kind: "Concurrent", tracks: trackOps };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Create a track builder for concurrent operations.
+     */
+    private createTrackBuilder(): TrackBuilderImpl {
+        return new TrackBuilderImpl(
+            this.deviceId,
+            this.appId,
+            this.conversationId,
+            () => ++this.messageCounter
+        );
+    }
+
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
+
+    /**
+     * Navigate to a screen within the app.
+     * @param screen - Target screen (chats-list, chat, settings, status, calls)
+     * @param options - Transition options
+     */
+    showScreen(
+        screen: "chats-list" | "chat" | "settings" | "status" | "calls",
+        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: number }
+    ): this {
+        const op: NavigateScreenOp = {
+            kind: "NavigateScreen",
+            screen,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Open a specific chat (navigate to chat screen with conversation).
+     * @param conversationId - ID of the conversation to open
+     * @param options - Transition options
+     */
+    openChat(
+        conversationId: string,
+        options?: { transition?: "push" | "pop"; duration?: number }
+    ): this {
+        const op: OpenChatOp = {
+            kind: "OpenChat",
+            conversationId,
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Go back to the previous screen.
+     * @param options - Transition options
+     */
+    goBack(options?: { transition?: "pop" | "dismiss"; duration?: number }): this {
+        const op: GoBackOp = {
+            kind: "GoBack",
+            transition: options?.transition,
+            animationDuration: options?.duration,
+        };
+        this.ops.push(op);
+        return this;
+    }
+
+    /**
+     * Get collected operations.
+     */
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+
+/**
+ * Track builder implementation for concurrent operations.
+ */
+class TrackBuilderImpl implements TrackBuilder {
+    private readonly ops: SceneOp[] = [];
+    private readonly deviceId: string;
+    private readonly appId: string;
+    private readonly conversationId: string;
+    private readonly getNextId: () => number;
+
+    constructor(
+        deviceId: string,
+        appId: string,
+        conversationId: string,
+        getNextId: () => number
+    ) {
+        this.deviceId = deviceId;
+        this.appId = appId;
+        this.conversationId = conversationId;
+        this.getNextId = getNextId;
+    }
+
+    wait(duration: string): this {
+        this.ops.push({ kind: "Wait", duration });
+        return this;
+    }
+
+    typing(actor: string): TypingBuilder {
+        const conversationId = this.conversationId;
+        const ops = this.ops;
+
+        return {
+            for: (duration: string) => {
+                ops.push({ kind: "TypingStart", actor, conversationId });
+                ops.push({ kind: "Wait", duration });
+                ops.push({ kind: "TypingEnd", actor, conversationId });
+            },
+        };
+    }
+
+    send(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "SendMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    receive(actor: string, text: string): MessageHandle {
+        const id = `msg_${this.deviceId}_${this.conversationId}_${this.getNextId()}`;
+        this.ops.push({
+            kind: "ReceiveMessage",
+            actor,
+            text,
+            conversationId: this.conversationId,
+        });
+        return messageRef(id, this.deviceId, this.appId, this.conversationId);
+    }
+
+    getOps(): SceneOp[] {
+        return this.ops;
+    }
+}
+````
+
 ## File: packages/episodes/src/examples/instagram-test.json
 ````json
 {
@@ -27003,6 +28470,533 @@ ReducerRegistry.registerDeviceReducer(deviceReducer);
             "text": "Goodbye."
         }
     ]
+}
+````
+
+## File: packages/ir/src/scene.ts
+````typescript
+/**
+ * Scene IR - Semantic Truth
+ * 
+ * Scene IR represents WHAT HAPPENS, not WHEN or HOW.
+ * 
+ * RULES:
+ * - No frames
+ * - No layout
+ * - No camera
+ * - No platform assumptions
+ * 
+ * If FPS changes, layout changes, or Director logic changes,
+ * Scene IR stays valid.
+ */
+
+// =============================================================================
+// DURATION
+// =============================================================================
+
+/**
+ * Human-readable duration expression.
+ * Examples: "1.2s", "300ms", "45frames"
+ */
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+/**
+ * Parse duration to frames
+ */
+export function parseDuration(expr: DurationExpr, fps: number): number {
+    const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
+    if (!match) {
+        throw new Error(`Invalid duration: ${expr}`);
+    }
+
+    const value = parseFloat(match[1]);
+    const unit = match[2];
+
+    switch (unit) {
+        case "s":
+            return Math.round(value * fps);
+        case "ms":
+            return Math.round((value / 1000) * fps);
+        case "frames":
+            return Math.round(value);
+        default:
+            throw new Error(`Unknown duration unit: ${unit}`);
+    }
+}
+
+// =============================================================================
+// MESSAGE REFERENCE
+// =============================================================================
+
+/**
+ * Reference to a message.
+ * MUST include full context for cross-device/conversation operations.
+ */
+export interface MessageRef {
+    readonly _type: "MessageRef";
+    readonly id: string;
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Create a message reference
+ */
+export function messageRef(
+    id: string,
+    deviceId: string,
+    appId: string,
+    conversationId: string
+): MessageRef {
+    return {
+        _type: "MessageRef",
+        id,
+        deviceId,
+        appId,
+        conversationId,
+    };
+}
+
+// =============================================================================
+// MESSAGE METADATA
+// =============================================================================
+
+import { SemanticMeta, BeatMeta, EpisodeConfig, POVLayout } from "./semantic";
+
+export interface MessageMeta {
+    /** Message type */
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system";
+
+    /** For voice messages */
+    voiceDuration?: number;
+
+    /** For media messages (height in pixels for layout) */
+    height?: number;
+
+    /** Timestamp display */
+    timestamp?: string;
+
+    /** Semantic annotations */
+    semantic?: SemanticMeta;
+
+    /** Custom metadata */
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// SCENE OPERATIONS (CORE)
+// =============================================================================
+
+/**
+ * Wait for a duration.
+ * This advances the cursor but emits no runtime event.
+ */
+export interface WaitOp {
+    readonly kind: "Wait";
+    readonly duration: DurationExpr;
+}
+
+/**
+ * Start typing indicator.
+ */
+export interface TypingStartOp {
+    readonly kind: "TypingStart";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * End typing indicator.
+ */
+export interface TypingEndOp {
+    readonly kind: "TypingEnd";
+    readonly actor: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Send a message (from "me" / device owner).
+ */
+export interface SendMessageOp {
+    readonly kind: "SendMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Receive a message (from someone else).
+ */
+export interface ReceiveMessageOp {
+    readonly kind: "ReceiveMessage";
+    readonly actor: string;
+    readonly text: string;
+    readonly conversationId: string;
+    readonly meta?: MessageMeta;
+}
+
+/**
+ * Mark a message as read.
+ */
+export interface ReadMessageOp {
+    readonly kind: "ReadMessage";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Delete a message.
+ */
+export interface DeleteMessageOp {
+    readonly kind: "DeleteMessage";
+    readonly ref: MessageRef;
+}
+
+// =============================================================================
+// MEDIA MESSAGE OPERATIONS
+// =============================================================================
+
+/**
+ * Media message configuration with defaults.
+ */
+export interface MediaConfig {
+    /** Height in pixels (default: 400 for image/video, 300 for GIF) */
+    readonly height?: number;
+    /** Caption text */
+    readonly caption?: string;
+    /** Auto-timing: skip automatic timing calculation */
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send an image message.
+ */
+export interface SendImageOp {
+    readonly kind: "SendImage";
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive an image message.
+ */
+export interface ReceiveImageOp {
+    readonly kind: "ReceiveImage";
+    readonly actor: string;
+    readonly imageUrl: string;
+    readonly conversationId: string;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a video message.
+ */
+export interface SendVideoOp {
+    readonly kind: "SendVideo";
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Video duration in seconds
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a video message.
+ */
+export interface ReceiveVideoOp {
+    readonly kind: "ReceiveVideo";
+    readonly actor: string;
+    readonly videoUrl: string;
+    readonly thumbnailUrl?: string;
+    readonly conversationId: string;
+    readonly duration: number;
+    readonly caption?: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a GIF message.
+ */
+export interface SendGifOp {
+    readonly kind: "SendGif";
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a GIF message.
+ */
+export interface ReceiveGifOp {
+    readonly kind: "ReceiveGif";
+    readonly actor: string;
+    readonly gifUrl: string;
+    readonly conversationId: string;
+    readonly height?: number;
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Send a voice note.
+ */
+export interface SendVoiceOp {
+    readonly kind: "SendVoice";
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Receive a voice note.
+ */
+export interface ReceiveVoiceOp {
+    readonly kind: "ReceiveVoice";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly duration: number;  // Duration in seconds
+    readonly skipAutoTiming?: boolean;
+}
+
+/**
+ * Concurrent operations across multiple tracks.
+ * Compiler forks cursor per track, compiles each independently,
+ * then joins at max(trackEnds).
+ */
+export interface ConcurrentOp {
+    readonly kind: "Concurrent";
+    readonly tracks: SceneOp[][];
+}
+
+// =============================================================================
+// POV OPERATIONS (STORY GRAMMAR)
+// =============================================================================
+
+/**
+ * Switch point of view to a device.
+ */
+export interface POVSwitchOp {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV - show multiple devices simultaneously.
+ */
+export interface SplitPOVOp {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: POVLayout;
+}
+
+// =============================================================================
+// RESERVED SIGNAL OPERATIONS (FUTURE-PROOFING)
+// =============================================================================
+
+/**
+ * Reaction added to a message (❤️ 😂 😡).
+ */
+export interface ReactionAddedOp {
+    readonly kind: "ReactionAdded";
+    readonly ref: MessageRef;
+    readonly actor: string;
+    readonly emoji: string;
+}
+
+/**
+ * Voice note sent.
+ */
+export interface VoiceNoteSentOp {
+    readonly kind: "VoiceNoteSent";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Voice note received.
+ */
+export interface VoiceNoteReceivedOp {
+    readonly kind: "VoiceNoteReceived";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly durationMs: number;
+}
+
+/**
+ * Missed call.
+ */
+export interface MissedCallOp {
+    readonly kind: "MissedCall";
+    readonly actor: string;
+    readonly conversationId: string;
+    readonly callType?: "voice" | "video";
+}
+
+/**
+ * Online status changed.
+ */
+export interface OnlineStatusChangedOp {
+    readonly kind: "OnlineStatusChanged";
+    readonly actor: string;
+    readonly status: "online" | "offline" | "typing" | "last_seen";
+}
+
+/**
+ * Screenshot taken (drama alert!).
+ */
+export interface ScreenshotTakenOp {
+    readonly kind: "ScreenshotTaken";
+    readonly conversationId: string;
+}
+
+/**
+ * User blocked.
+ */
+export interface BlockedUserOp {
+    readonly kind: "BlockedUser";
+    readonly actor: string;
+}
+
+// =============================================================================
+// NAVIGATION OPERATIONS
+// =============================================================================
+
+/**
+ * Navigate to a screen within an app.
+ * Enables transitions from chats list to chat, settings, etc.
+ */
+export interface NavigateScreenOp {
+    readonly kind: "NavigateScreen";
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+    readonly animationDuration?: number;  // frames
+}
+
+/**
+ * Open a specific chat.
+ * Combines navigation with conversation selection.
+ */
+export interface OpenChatOp {
+    readonly kind: "OpenChat";
+    readonly conversationId: string;
+    readonly transition?: "push" | "pop";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Go back to previous screen.
+ */
+export interface GoBackOp {
+    readonly kind: "GoBack";
+    readonly transition?: "pop" | "dismiss";
+    readonly animationDuration?: number;
+}
+
+/**
+ * Union of all scene operations.
+ */
+export type SceneOp =
+    // Core operations
+    | WaitOp
+    | TypingStartOp
+    | TypingEndOp
+    | SendMessageOp
+    | ReceiveMessageOp
+    | ReadMessageOp
+    | DeleteMessageOp
+    | ConcurrentOp
+    // Media operations
+    | SendImageOp
+    | ReceiveImageOp
+    | SendVideoOp
+    | ReceiveVideoOp
+    | SendGifOp
+    | ReceiveGifOp
+    | SendVoiceOp
+    | ReceiveVoiceOp
+    // POV operations
+    | POVSwitchOp
+    | SplitPOVOp
+    // Navigation operations
+    | NavigateScreenOp
+    | OpenChatOp
+    | GoBackOp
+    // Reserved signals
+    | ReactionAddedOp
+    | VoiceNoteSentOp
+    | VoiceNoteReceivedOp
+    | MissedCallOp
+    | OnlineStatusChangedOp
+    | ScreenshotTakenOp
+    | BlockedUserOp;
+
+// =============================================================================
+// SCENE (TOP LEVEL)
+// =============================================================================
+
+/**
+ * A beat is a named group of operations.
+ * Used for semantic grouping, story rhythm, and debugging.
+ */
+export interface Beat {
+    readonly name: string;
+    readonly ops: SceneOp[];
+    /** Optional rhythm/semantic metadata */
+    readonly meta?: BeatMeta;
+}
+
+/**
+ * A device context within a scene.
+ */
+export interface DeviceScene {
+    readonly deviceId: string;
+    readonly profileId: string;
+    readonly appId: string;
+    readonly conversations: ConversationDef[];
+    readonly beats: Beat[];
+}
+
+
+/**
+ * Conversation definition.
+ */
+export interface ConversationDef {
+    readonly id: string;
+    readonly name?: string;
+    readonly avatar?: string;
+    readonly type?: "dm" | "group";
+}
+
+/**
+ * Complete scene IR for an episode.
+ */
+export interface SceneIR {
+    readonly episodeId: string;
+    readonly meta: EpisodeMeta;
+    readonly devices: DeviceScene[];
+}
+
+/**
+ * Episode metadata with semantic configuration.
+ * Extends EpisodeConfig with required fields.
+ */
+export interface EpisodeMeta extends EpisodeConfig {
+    /** Frames per second (required) */
+    readonly fps: number;
+
+    /** Duration hint (calculated if not specified) */
+    readonly durationInFrames?: number;
 }
 ````
 
@@ -29156,10 +31150,19 @@ import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
+import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="UltimateShowcase"
+                component={UltimateShowcaseVideo}
+                durationInFrames={750}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="WhatsappMediaShowcase"
                 component={WhatsappMediaShowcaseVideo}

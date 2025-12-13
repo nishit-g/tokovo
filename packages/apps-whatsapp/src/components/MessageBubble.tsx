@@ -1,12 +1,21 @@
 /**
  * WhatsApp Message Bubble Component
  * 
- * Authentic iOS WhatsApp message styling with timestamps and read receipts.
+ * Authentic iOS WhatsApp message styling with:
+ * - Timestamps and read receipts
+ * - Reply/Quote UI for quoted messages
+ * - Reactions (tapbacks) display
  */
 
 import React from "react";
 import { ChatMessageLayout } from "@tokovo/core";
 import { DoubleCheckIcon } from "./icons";
+import { ReplyQuote, ReplyToData } from "./ReplyQuote";
+import { ReactionsBar, Reaction } from "./Reactions";
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 export interface MessageData {
     id: string;
@@ -14,7 +23,11 @@ export interface MessageData {
     text?: string;
     timestamp?: string;
     read?: boolean;
-    type?: "text" | "image" | "voice" | "system";
+    type?: "text" | "image" | "voice" | "system" | "video" | "gif";
+    // Reply/Quote
+    replyTo?: ReplyToData;
+    // Reactions (tapbacks)
+    reactions?: Reaction[];
 }
 
 export interface MessageBubbleProps {
@@ -22,9 +35,14 @@ export interface MessageBubbleProps {
     layout: ChatMessageLayout;
 }
 
+// =============================================================================
+// MESSAGE BUBBLE
+// =============================================================================
+
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
     const { opacity, translateY, y } = layout;
+    const hasReactions = msg.reactions && msg.reactions.length > 0;
 
     return (
         <div style={{
@@ -50,8 +68,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
                 boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 6
+                gap: 6,
+                // Add bottom margin if reactions present
+                marginBottom: hasReactions ? 24 : 0,
             }}>
+                {/* Reply/Quote - Shows quoted message if replying */}
+                {msg.replyTo && (
+                    <ReplyQuote
+                        replyTo={msg.replyTo}
+                        isMyMessage={isMe}
+                    />
+                )}
+
                 {/* Message text */}
                 <span style={{
                     fontSize: 48,
@@ -81,6 +109,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
                     {isMe && <DoubleCheckIcon read={msg.read !== false} />}
                 </div>
             </div>
+
+            {/* Reactions Bar - Shows below the bubble */}
+            {hasReactions && (
+                <ReactionsBar
+                    reactions={msg.reactions!}
+                    isMyMessage={isMe}
+                />
+            )}
         </div>
     );
 };

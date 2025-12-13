@@ -163,13 +163,22 @@ const Header: React.FC<HeaderProps> = ({
 // ============================================================================
 
 interface MessageBubbleProps {
-    msg: { id: string; from: string; text: string; timestamp?: string; read?: boolean };
+    msg: {
+        id: string;
+        from: string;
+        text: string;
+        timestamp?: string;
+        read?: boolean;
+        reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+        replyTo?: { messageId: string; text: string; from: string; type?: string };
+    };
     layout: ChatMessageLayout;
 }
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
     const { opacity, translateY, height, y } = layout;
+    const hasReactions = msg.reactions && msg.reactions.length > 0;
 
     return (
         <div style={{
@@ -195,8 +204,49 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
                 boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
                 display: "flex",
                 flexDirection: "column",
-                gap: 6
+                gap: 6,
+                marginBottom: hasReactions ? 30 : 0,
             }}>
+                {/* Reply Quote - if replying to a message */}
+                {msg.replyTo && (
+                    <div style={{
+                        display: "flex",
+                        gap: 0,
+                        backgroundColor: isMe ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)",
+                        borderRadius: 18,
+                        overflow: "hidden",
+                        marginBottom: 12,
+                    }}>
+                        {/* Colored bar */}
+                        <div style={{
+                            width: 12,
+                            backgroundColor: msg.replyTo.from === "me" ? "#25D366" : "#34B7F1",
+                            flexShrink: 0,
+                        }} />
+                        <div style={{ flex: 1, padding: "15px 18px" }}>
+                            <div style={{
+                                fontSize: 36,
+                                fontWeight: 600,
+                                color: msg.replyTo.from === "me" ? "#25D366" : "#34B7F1",
+                                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                marginBottom: 6,
+                            }}>
+                                {msg.replyTo.from === "me" ? "You" : msg.replyTo.from}
+                            </div>
+                            <div style={{
+                                fontSize: 39,
+                                color: "#667781",
+                                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                            }}>
+                                {msg.replyTo.text}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* Message text */}
                 <span style={{
                     fontSize: 48,
@@ -226,6 +276,50 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
                     {isMe && <DoubleCheckIcon read={msg.read !== false} />}
                 </div>
             </div>
+
+            {/* Reactions Bar - Shows below the bubble */}
+            {hasReactions && (
+                <div style={{
+                    display: "flex",
+                    justifyContent: isMe ? "flex-end" : "flex-start",
+                    marginTop: -18,
+                    position: "relative",
+                    zIndex: 1,
+                }}>
+                    <div style={{
+                        display: "flex",
+                        gap: 6,
+                        backgroundColor: "#FFFFFF",
+                        padding: "9px 18px",
+                        borderRadius: 60,
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                        border: "1px solid rgba(0,0,0,0.05)",
+                    }}>
+                        {msg.reactions!.map((reaction, i) => (
+                            <div key={i} style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                                backgroundColor: reaction.fromMe ? "rgba(37, 211, 102, 0.15)" : "transparent",
+                                padding: "3px 9px",
+                                borderRadius: 30,
+                            }}>
+                                <span style={{ fontSize: 42, lineHeight: 1 }}>{reaction.emoji}</span>
+                                {reaction.count > 1 && (
+                                    <span style={{
+                                        fontSize: 33,
+                                        color: "#667781",
+                                        fontWeight: 500,
+                                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                    }}>
+                                        {reaction.count}
+                                    </span>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -1039,15 +1133,48 @@ export const WhatsApp = {
 };
 
 export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState; deviceId?: string }> = ({ world, t, layout, deviceId }) => {
-    const conversationId = Object.keys(world.conversations)[0];
-    const conversation = world.conversations[conversationId];
-    const messages = conversation ? conversation.messages : [];
-    const isTyping = conversation?.typing?.["other"] || false;
-    const draftText = "";
-
-    // Get device owner for POV alignment
+    // Get device and app state
     const activeDeviceId = deviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
     const device = world.devices[activeDeviceId];
+    const appState = world.appState?.app_whatsapp;
+
+    // Check which screen to show
+    const currentScreen = appState?.screen || "chat";
+
+    // =========================================================================
+    // CHATS LIST SCREEN
+    // =========================================================================
+    if (currentScreen === "chats-list") {
+        // Convert conversations to ChatPreview format
+        const chats = Object.values(world.conversations).map(conv => ({
+            id: conv.id,
+            name: conv.name || "Unknown",
+            avatar: conv.avatar,
+            lastMessage: conv.messages.length > 0
+                ? conv.messages[conv.messages.length - 1].text || "📷 Photo"
+                : "No messages",
+            time: "Now",
+            unreadCount: 0,
+            isPinned: false,
+            isMuted: false,
+            isArchived: false,
+            isTyping: Object.keys(conv.typing || {}).length > 0,
+            isGroup: conv.type === "group",
+        }));
+
+        // Import ChatsListScreen dynamically to avoid circular deps
+        const { ChatsListScreen } = require("./components/ChatsListScreen");
+        return <ChatsListScreen chats={chats} platform="ios" />;
+    }
+
+    // =========================================================================
+    // CHAT DETAIL SCREEN (default)
+    // =========================================================================
+    const conversationId = appState?.conversationId || Object.keys(world.conversations)[0];
+    const conversation = world.conversations[conversationId];
+    const messages = conversation ? conversation.messages : [];
+    const isTyping = conversation?.typing && Object.keys(conversation.typing).length > 0;
+    const draftText = "";
     const ownerName = device?.ownerName || "me";
 
     // Check if it's a group

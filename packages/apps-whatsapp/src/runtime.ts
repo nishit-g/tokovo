@@ -35,6 +35,20 @@ type WhatsAppMessageType =
     | "call_missed"
     | "screenshot_alert";
 
+interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
 interface WhatsAppMessage {
     id: string;
     from: string;
@@ -54,6 +68,9 @@ interface WhatsAppMessage {
     actorName?: string;
     isPlaying?: boolean;
     playProgress?: number;
+    // React and reply
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
 }
 
 /**
@@ -95,8 +112,24 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     const eventType = event.type as string;
 
     // Handle navigation events (no conversation required)
-    if (eventType === "NAVIGATE") {
-        // Navigation handled by AppState, no message processing needed
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE") {
+        // Ensure appState exists for WhatsApp
+        if (!draft.appState) {
+            draft.appState = {};
+        }
+        if (!draft.appState.app_whatsapp) {
+            draft.appState.app_whatsapp = {};
+        }
+
+        // Update the current screen
+        const screen = appEvent.screen || "chat";
+        draft.appState.app_whatsapp.screen = screen;
+
+        // If navigating to a specific conversation
+        if (appEvent.conversationId) {
+            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+        }
+
         return;
     }
 
@@ -219,6 +252,36 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 const msg = conversation.messages.find(m => m.id === appEvent.messageId);
                 if (msg) {
                     msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
                 }
             }
             break;

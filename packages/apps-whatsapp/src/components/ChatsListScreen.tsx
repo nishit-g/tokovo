@@ -2,7 +2,7 @@ import React from "react";
 import { getAppConfig, Platform, getTokens } from "@tokovo/core";
 
 // ============================================================================
-// CHATS LIST SCREEN - Main WhatsApp iOS Screen
+// CHATS LIST SCREEN - Production-Grade WhatsApp iOS Screen
 // ============================================================================
 
 export interface ChatPreview {
@@ -26,6 +26,13 @@ interface ChatsListScreenProps {
     onChatSelect?: (chatId: string) => void;
 }
 
+/**
+ * ChatsListScreen - WhatsApp Chats List
+ * 
+ * NOTE: This component does NOT include a status bar.
+ * The status bar comes from the device frame (TokovoRenderer -> DeviceFrame).
+ * This follows our architecture: Device provides chrome, App provides content.
+ */
 export const ChatsListScreen: React.FC<ChatsListScreenProps> = ({
     chats,
     archivedCount = 0,
@@ -40,15 +47,12 @@ export const ChatsListScreen: React.FC<ChatsListScreenProps> = ({
 
     return (
         <div style={{
-            backgroundColor: config.headerBg,
+            backgroundColor: "#F6F6F6",
             height: "100%",
             display: "flex",
             flexDirection: "column",
             fontFamily: tokens.fontFamily,
         }}>
-            {/* Status Bar */}
-            <StatusBar />
-
             {/* Navigation Header */}
             <ChatsHeader />
 
@@ -59,7 +63,7 @@ export const ChatsListScreen: React.FC<ChatsListScreenProps> = ({
             <div style={{
                 flex: 1,
                 overflow: "hidden",
-                backgroundColor: config.headerBg,
+                backgroundColor: "#FFFFFF",
             }}>
                 {/* Archived Section */}
                 {archivedCount > 0 && (
@@ -84,82 +88,12 @@ export const ChatsListScreen: React.FC<ChatsListScreenProps> = ({
 };
 
 // ============================================================================
-// STATUS BAR
-// ============================================================================
-
-const StatusBar: React.FC = () => (
-    <div style={{
-        height: 144,
-        padding: "36px 45px 12px",
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "flex-end",
-        backgroundColor: "#F6F6F6",
-    }}>
-        {/* Time */}
-        <span style={{
-            fontSize: 45,
-            fontWeight: 600,
-            color: "#000",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-        }}>
-            9:41
-        </span>
-
-        {/* Right icons */}
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 15,
-        }}>
-            {/* Signal */}
-            <svg width="54" height="30" viewBox="0 0 18 10" fill="#000">
-                <rect x="0" y="6" width="3" height="4" rx="1" />
-                <rect x="5" y="4" width="3" height="6" rx="1" />
-                <rect x="10" y="2" width="3" height="8" rx="1" />
-                <rect x="15" y="0" width="3" height="10" rx="1" />
-            </svg>
-            {/* WiFi */}
-            <svg width="48" height="36" viewBox="0 0 16 12" fill="#000">
-                <path d="M8 10a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zM4.5 7a5 5 0 0 1 7 0M2 4.5a8.5 8.5 0 0 1 12 0" stroke="#000" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            </svg>
-            {/* Battery */}
-            <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 3,
-            }}>
-                <div style={{
-                    width: 66,
-                    height: 30,
-                    border: "2px solid #000",
-                    borderRadius: 6,
-                    padding: 3,
-                }}>
-                    <div style={{
-                        width: "80%",
-                        height: "100%",
-                        backgroundColor: "#000",
-                        borderRadius: 3,
-                    }} />
-                </div>
-                <div style={{
-                    width: 6,
-                    height: 12,
-                    backgroundColor: "#000",
-                    borderRadius: "0 2px 2px 0",
-                }} />
-            </div>
-        </div>
-    </div>
-);
-
-// ============================================================================
-// NAVIGATION HEADER
+// NAVIGATION HEADER - WhatsApp Chats List Header
 // ============================================================================
 
 const ChatsHeader: React.FC = () => (
     <div style={{
+        marginTop: 144,  // Match statusBarHeight from config (same as chat Header)
         padding: "12px 45px",
         display: "flex",
         justifyContent: "space-between",
