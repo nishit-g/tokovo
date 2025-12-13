@@ -1,0 +1,90 @@
+# DSL Overview
+
+The Tokovo DSL is a **TypeScript fluent API** for writing stories.
+
+## Design Goals
+
+1. **Human-readable** — Writers can understand it
+2. **AI-friendly** — Structured, deterministic output
+3. **Zero frames** — Express intent, not timing
+4. **Fully typed** — IDE autocomplete + compile-time safety
+
+## Basic Structure
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const scene = episode("breakup-01", ep => {
+  // Episode configuration
+  ep.config({ 
+    pacing: "slow-burn",
+    director: "auto" 
+  });
+
+  // Device context
+  ep.device("AlicePhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_bob", { name: "Bob" });
+
+    // Beats (semantic groups)
+    d.beat("tension", b => {
+      b.wait("2s");
+      b.typing("Bob").for("1.5s");
+      b.receive("Bob", "We need to talk.");
+    });
+  });
+});
+```
+
+## Hierarchy
+
+```
+episode()
+  └── ep.device()
+        ├── d.app()
+        ├── d.conversation()
+        └── d.beat()
+              ├── b.wait()
+              ├── b.typing().for()
+              ├── b.send()
+              ├── b.receive()
+              ├── b.read()
+              ├── b.delete()
+              ├── b.concurrent()
+              ├── b.pov()
+              └── b.screenshot()
+```
+
+## Output
+
+The DSL produces **Scene IR** — semantic truth with no frames:
+
+```typescript
+// Scene IR output
+{
+  episodeId: "breakup-01",
+  meta: { fps: 30, pacing: "slow-burn" },
+  devices: [{
+    deviceId: "AlicePhone",
+    profileId: "iphone16",
+    beats: [{
+      name: "tension",
+      ops: [
+        { kind: "Wait", duration: "2s" },
+        { kind: "TypingStart", actor: "Bob", conversationId: "dm_bob" },
+        { kind: "Wait", duration: "1.5s" },
+        { kind: "TypingEnd", actor: "Bob", conversationId: "dm_bob" },
+        { kind: "ReceiveMessage", actor: "Bob", text: "We need to talk.", ... }
+      ]
+    }]
+  }]
+}
+```
+
+## Next Steps
+
+- [episode()](/dsl/episode) — Entry point
+- [Device Builder](/dsl/device) — Device context
+- [Beat Builder](/dsl/beat) — Actions reference
+- [Semantic Annotations](/dsl/semantic) — Story intelligence
+- [POV Control](/dsl/pov) — Camera grammar

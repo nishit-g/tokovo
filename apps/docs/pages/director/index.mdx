@@ -1,0 +1,143 @@
+# DirectorLite Overview
+
+DirectorLite is Tokovo's **automatic camera director**. It observes runtime events and applies cinematic camera effects without manual choreography.
+
+## Philosophy
+
+> "Don't tell writers about cameras. Let the drama drive the frame."
+
+Writers focus on **story**. DirectorLite handles **cinematography**.
+
+## How It Works
+
+```
+Runtime Events → Signal Extraction → Rule Matching → Camera Effects → Final Transform
+```
+
+### 1. Events Happen
+
+```typescript
+{ at: 45, kind: "APP", type: "MESSAGE_RECEIVED", ... }
+```
+
+### 2. Signals Extracted
+
+```typescript
+{ at: 45, type: "NewMessage", targetRect: {...}, messageId: "msg_1" }
+```
+
+### 3. Rules Match
+
+```typescript
+// Rule: NewMessage → ZoomToRect
+{
+  signal: "NewMessage",
+  effect: "ZoomToRect",
+  duration: 25 frames,
+  cooldown: 20 frames
+}
+```
+
+### 4. Effects Applied
+
+```typescript
+{
+  effect: "ZoomToRect",
+  targetRect: { x: 20, y: 340, w: 280, h: 60 },
+  progress: 0.5,
+  scale: 1.2
+}
+```
+
+### 5. Camera Transform
+
+```typescript
+{
+  offsetX: -30,
+  offsetY: -120,
+  scale: 1.2
+}
+```
+
+## Enabling DirectorLite
+
+```tsx
+<TokovoRenderer
+  world={world}
+  t={frame}
+  eventIndex={eventIndex}      // Required for signals
+  directorEnabled={true}       // Enable DirectorLite
+/>
+```
+
+## Key Properties
+
+### Pure & Stateless
+
+```typescript
+// Same inputs → Same outputs
+const output1 = deriveDirectorEffects({ t: 45, signals, layout });
+const output2 = deriveDirectorEffects({ t: 45, signals, layout });
+// output1 === output2 (functionally)
+```
+
+### Scrubbing-Safe
+
+No accumulated state. Jump to any frame instantly.
+
+### Cooldown-Aware
+
+Won't spam zooms. Respects cooldowns per signal type.
+
+```typescript
+// Frame 45: NewMessage → ZoomToRect ✅
+// Frame 55: NewMessage → SKIPPED (cooldown)
+// Frame 75: NewMessage → ZoomToRect ✅
+```
+
+## The ViralDramaV1 Style
+
+Current implementation uses a single baked style optimized for **viral drama videos**:
+
+- **Aggressive zooms** on new messages
+- **Anticipatory push** during typing
+- **Quick shakes** on message deletes
+- **Smart cooldowns** to prevent jitter
+
+## Architecture
+
+```
+packages/core/src/director-lite/
+├── types.ts      # Signal, Effect, Output types
+├── signals.ts    # Extract signals from events
+├── rules.ts      # ViralDramaV1 rule definitions
+├── derive.ts     # Main pure function
+└── index.ts      # Exports
+```
+
+## Integration Points
+
+| Component | Responsibility |
+|-----------|----------------|
+| `TokovoRenderer` | Creates layout model, calls derive |
+| `CameraComposer` | Applies effects to camera transform |
+| `signals.ts` | Extracts signals from event index |
+| `derive.ts` | Matches rules, generates effects |
+
+## Debug Mode
+
+Enable logging to understand decisions:
+
+```tsx
+<TokovoRenderer
+  directorEnabled={true}
+  directorDebug={true}  // Log decisions
+/>
+```
+
+Output:
+```
+[DirectorLite] Frame 45: NewMessage → ZoomToRect (msg_1)
+[DirectorLite] Frame 60: TypingStarted → PushIn (cooldown OK)
+[DirectorLite] Frame 65: NewMessage → SKIPPED (cooldown 5 remaining)
+```

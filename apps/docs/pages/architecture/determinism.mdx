@@ -1,0 +1,193 @@
+# Determinism
+
+Tokovo guarantees deterministic output: **same input → same output, always**.
+
+## The Guarantee Chain
+
+```
+Same DSL script
+    ↓ (DSL is pure)
+Same Scene IR
+    ↓ (Compiler is pure)
+Same Timeline IR
+    ↓ (Adapters are pure)
+Same Runtime Events
+    ↓ (Engine is pure)
+Same World State
+    ↓ (Renderer is pure)
+Same Pixels
+```
+
+## Why Determinism Matters
+
+### 1. Scrubbing Works
+
+Jump to any frame instantly. No accumulated state.
+
+```typescript
+// Frame 100 is identical whether you:
+// - Play from frame 0
+// - Jump directly to frame 100
+// - Scrub backwards from frame 200
+```
+
+### 2. Golden Tests
+
+Compare output frame-by-frame:
+
+```typescript
+test("breakup episode matches golden", () => {
+  const events = compileAndLower(breakupEpisode);
+  expect(events).toMatchSnapshot();
+});
+```
+
+### 3. AI Reproducibility
+
+Generated content is testable:
+
+```typescript
+// AI generates this once
+const sceneIR = generateWithAI("breakup drama");
+
+// Same output every time
+const result1 = compile(sceneIR);
+const result2 = compile(sceneIR);
+expect(result1).toEqual(result2);
+```
+
+### 4. Debugging
+
+Reproduce any bug exactly:
+
+```
+Bug report: "Frame 127 has wrong message"
+→ Load same scene IR
+→ Jump to frame 127
+→ Bug reproduced exactly
+```
+
+## How We Achieve It
+
+### No Side Effects
+
+Every function is pure:
+
+```typescript
+// ✅ Pure (deterministic)
+function normalize(ops: SceneOp[]): SceneOp[] {
+  return ops.map(op => expandSugar(op));
+}
+
+// ❌ Impure (non-deterministic)
+function normalize(ops: SceneOp[]): SceneOp[] {
+  console.log("Normalizing...");  // Side effect!
+  return ops;
+}
+```
+
+### No External State
+
+No reading from environment:
+
+```typescript
+// ✅ Deterministic
+function getTimestamp(messageIndex: number): string {
+  return `10:${String(messageIndex).padStart(2, "0")} AM`;
+}
+
+// ❌ Non-deterministic
+function getTimestamp(): string {
+  return new Date().toLocaleTimeString();  // Real time!
+}
+```
+
+### Seeded Randomness
+
+When randomness is needed (like shake), we seed it:
+
+```typescript
+// DirectorLite shake
+{
+  type: "MicroShake",
+  seed: signalFrame + baseSeed,  // Deterministic seed
+  intensity: 6
+}
+```
+
+Same seed → same "random" pattern.
+
+### Canonical Ordering
+
+Operations are sorted deterministically:
+
+```typescript
+// Sort key: (at, phase, priority, trackId, opIndex)
+
+const sortedOps = ops.sort((a, b) => {
+  if (a.at !== b.at) return a.at - b.at;
+  if (a.phase !== b.phase) return a.phase - b.phase;
+  if (a.priority !== b.priority) return a.priority - b.priority;
+  if (a.trackId !== b.trackId) return a.trackId - b.trackId;
+  return a.opIndex - b.opIndex;
+});
+```
+
+## Testing Determinism
+
+```typescript
+describe("determinism", () => {
+  it("same scene produces same timeline", () => {
+    const result1 = compile(sceneIR);
+    const result2 = compile(sceneIR);
+    expect(result1.timeline).toEqual(result2.timeline);
+  });
+
+  it("same events produce same world at frame N", () => {
+    const world1 = buildWorldAtFrame(init, events, 100);
+    const world2 = buildWorldAtFrame(init, events, 100);
+    expect(world1).toEqual(world2);
+  });
+
+  it("scrubbing doesn't affect state", () => {
+    // Build incrementally
+    let world = init;
+    for (let f = 0; f <= 100; f++) {
+      world = advanceToFrame(world, events, f);
+    }
+
+    // Build directly
+    const directWorld = buildWorldAtFrame(init, events, 100);
+
+    expect(world).toEqual(directWorld);
+  });
+});
+```
+
+## What Breaks Determinism
+
+Avoid these patterns:
+
+```typescript
+// ❌ Reading current time
+const timestamp = Date.now();
+
+// ❌ Using Math.random()
+const offset = Math.random() * 10;
+
+// ❌ Depending on execution order
+const results = await Promise.all([a, b, c]);
+
+// ❌ Mutating shared state
+globalCounter++;
+```
+
+## Determinism Checklist
+
+When adding new features:
+
+- [ ] Is every function pure?
+- [ ] Is random seeded?
+- [ ] Is ordering canonical?
+- [ ] Are no external resources read?
+- [ ] Would the same input produce the same output 1000 times?

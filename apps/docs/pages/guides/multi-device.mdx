@@ -1,0 +1,194 @@
+# Multi-Device Stories
+
+Create stories from multiple perspectives using POV control.
+
+## When to Use Multi-Device
+
+- **Reactions:** Show how both people react to the same event
+- **Reveals:** Switch perspective for dramatic effect
+- **Parallel narratives:** Show what's happening on both sides
+
+## Basic POV Switch
+
+```typescript
+episode("pov-drama", ep => {
+  ep.device("AlicePhone", d => {
+    d.conversation("dm_bob", { name: "Bob" });
+    
+    d.beat("alice-view", b => {
+      b.receive("Bob", "I have to tell you something.");
+      b.wait("1s");
+      
+      // Switch to Bob's phone
+      b.pov("BobPhone");
+    });
+  });
+
+  ep.device("BobPhone", d => {
+    d.conversation("dm_alice", { name: "Alice" });
+    
+    d.beat("bob-view", b => {
+      b.wait("2s");
+      b.typing("Alice").for("2s");
+      // Viewer now sees Bob's screen
+    });
+  });
+});
+```
+
+## Split Screen
+
+Show multiple devices at once:
+
+```typescript
+d.beat("confrontation", b => {
+  // Show both phones side by side
+  b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+  
+  // Actions on both phones continue...
+  b.receive("Bob", "Fine. Don't answer.");
+});
+```
+
+## POV Transitions
+
+### Cut (Default)
+Instant switch. Maximum tension.
+
+```typescript
+b.pov("BobPhone"); // or
+b.pov("BobPhone", "cut");
+```
+
+### Crossfade
+Smooth blend. Parallel narratives.
+
+```typescript
+b.pov("BobPhone", "crossfade");
+```
+
+### Wipe
+Side-to-side wipe. Scene changes.
+
+```typescript
+b.pov("BobPhone", "wipe");
+```
+
+## Complete Example: The Other Side
+
+```typescript
+episode("the-other-side", ep => {
+  ep.config({ 
+    pacing: "slow-burn",
+    director: "auto"
+  });
+
+  // Alice's perspective
+  ep.device("AlicePhone", "iphone16", d => {
+    d.conversation("dm_bob", { name: "Bob 💔" });
+
+    d.beat("alice-receives", b => {
+      b.wait("2s");
+      b.typing("Bob").for("2s");
+      b.receive("Bob", "We need to talk.", {
+        mood: "tense",
+        intensity: 0.9
+      });
+      b.wait("1s");
+      b.readLast();
+      
+      // Cut to Bob to see his reaction
+      b.pov("BobPhone", "cut");
+    });
+
+    d.beat("alice-responds", b => {
+      // We're back on Alice after POV switch returns
+      b.pov("AlicePhone");
+      b.send("What do you mean?", { mood: "anxious" });
+    });
+  });
+
+  // Bob's perspective
+  ep.device("BobPhone", "iphone16", d => {
+    d.conversation("dm_alice", { name: "Alice" });
+
+    d.beat("bob-sends", b => {
+      // Bob sends the message
+      b.send("We need to talk.", {
+        mood: "tense",
+        subtext: "breakup"
+      });
+      b.wait("3s");
+      
+      // Waiting for read receipt...
+    });
+
+    d.beat("bob-sees-read", b => {
+      // The message is read (on Bob's side too)
+      b.readLast();
+      
+      // Show split screen for the confrontation
+      b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+    });
+  });
+});
+```
+
+## Layout Options
+
+| Layout | Best For |
+|--------|----------|
+| `horizontal` | Side-by-side comparison |
+| `vertical` | Long-form, scrolling content |
+| `pip` | Main + context (interview style) |
+
+## Tips
+
+### 1. Establish Context First
+Before switching POV, make sure the viewer understands who's who.
+
+### 2. Use Transitions Meaningfully
+- **Cut:** Tension, surprise
+- **Crossfade:** Parallel action
+- **Wipe:** Scene break
+
+### 3. Balance Screen Time
+Don't stay on one device too long before switching.
+
+### 4. Consider Mobile Viewing
+Split screens need to be readable on phones.
+
+## Common Patterns
+
+### Reveal Pattern
+```typescript
+// Build tension on one side
+b.receive("???", "I know your secret.");
+b.wait("2s");
+
+// Cut to reveal who sent it
+b.pov("SenderPhone", "cut");
+```
+
+### Reaction Shot
+```typescript
+// Show the message
+b.send("I'm breaking up with you.");
+b.wait("0.5s");
+
+// Cut to see the reaction
+b.pov("ReceiverPhone", "cut");
+b.wait("3s"); // Let the reaction sink in
+```
+
+### Parallel Conflict
+```typescript
+// Show both sides
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+
+// Both type simultaneously (concurrent)
+b.concurrent([
+  t => t.typing("Alice").for("3s"),
+  t => t.typing("Bob").for("2s")
+]);
+```

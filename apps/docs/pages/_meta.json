@@ -1,0 +1,10 @@
+{
+    "index": "Introduction",
+    "architecture": "Architecture",
+    "dsl": "DSL Reference",
+    "compiler": "Compiler",
+    "director": "DirectorLite",
+    "runtime": "Runtime",
+    "guides": "Guides",
+    "glossary": "Glossary"
+}

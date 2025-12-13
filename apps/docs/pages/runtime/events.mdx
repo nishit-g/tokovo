@@ -1,0 +1,224 @@
+# Runtime Events
+
+Events are the **execution contract** between the compiler and runtime.
+
+## Event Structure
+
+```typescript
+interface RuntimeEvent {
+  at: number;      // Frame when this happens
+  kind: EventKind; // Category
+  type: string;    // Specific type
+  _trace?: Trace;  // Debug info
+  // ... event-specific fields
+}
+```
+
+## Event Kinds
+
+| Kind | Description | Examples |
+|------|-------------|----------|
+| `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP |
+| `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START |
+| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE |
+| `SOUND` | Audio events | PLAY_SOUND |
+
+## Device Events
+
+### UNLOCK
+
+```typescript
+{
+  at: 0,
+  kind: "DEVICE",
+  type: "UNLOCK",
+  deviceId: "AlicePhone"
+}
+```
+
+### OPEN_APP
+
+```typescript
+{
+  at: 0,
+  kind: "DEVICE",
+  type: "OPEN_APP",
+  deviceId: "AlicePhone",
+  appId: "app_whatsapp"
+}
+```
+
+## App Events (WhatsApp)
+
+### NAVIGATE
+
+```typescript
+{
+  at: 0,
+  kind: "APP",
+  type: "NAVIGATE",
+  appId: "app_whatsapp",
+  screen: "chat",
+  conversationId: "dm_bob"
+}
+```
+
+### TYPING_START
+
+```typescript
+{
+  at: 30,
+  kind: "APP",
+  type: "TYPING_START",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  from: "Bob"
+}
+```
+
+### TYPING_END
+
+```typescript
+{
+  at: 60,
+  kind: "APP",
+  type: "TYPING_END",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  from: "Bob"
+}
+```
+
+### MESSAGE_RECEIVED
+
+```typescript
+{
+  at: 60,
+  kind: "APP",
+  type: "MESSAGE_RECEIVED",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  from: "Bob",
+  message: {
+    id: "msg_AlicePhone_dm_bob_1",
+    type: "text",
+    text: "We need to talk.",
+    status: "delivered",
+    timestamp: "10:45 AM"
+  }
+}
+```
+
+### MESSAGE_READ
+
+```typescript
+{
+  at: 90,
+  kind: "APP",
+  type: "MESSAGE_READ",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  messageId: "msg_AlicePhone_dm_bob_1"
+}
+```
+
+### MESSAGE_DELETED
+
+```typescript
+{
+  at: 120,
+  kind: "APP",
+  type: "MESSAGE_DELETED",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  messageId: "msg_AlicePhone_dm_bob_1"
+}
+```
+
+## Camera Events (Manual)
+
+### ZOOM
+
+```typescript
+{
+  at: 45,
+  kind: "CAMERA",
+  type: "ZOOM",
+  target: { x: 20, y: 340, w: 280, h: 60 },
+  scale: 1.3,
+  durationFrames: 20,
+  easing: "ease-out"
+}
+```
+
+### PAN
+
+```typescript
+{
+  at: 100,
+  kind: "CAMERA",
+  type: "PAN",
+  offsetX: 50,
+  offsetY: -30,
+  durationFrames: 15
+}
+```
+
+### SHAKE
+
+```typescript
+{
+  at: 60,
+  kind: "CAMERA",
+  type: "SHAKE",
+  intensity: 8,
+  durationFrames: 12
+}
+```
+
+## Sound Events
+
+### PLAY_SOUND
+
+```typescript
+{
+  at: 60,
+  kind: "SOUND",
+  type: "PLAY_SOUND",
+  soundId: "notification",
+  volume: 1.0
+}
+```
+
+## Event Traces
+
+Every event includes trace info for debugging:
+
+```typescript
+interface Trace {
+  episodeId: string;
+  beat: string;
+  trackId: number;
+  opIndex: number;
+  phase: number;
+  priority: number;
+  sceneOpIndex?: number;
+  deviceId?: string;
+  conversationId?: string;
+}
+```
+
+This enables:
+- **Debugging** — Find which DSL line caused an issue
+- **Analytics** — Track what parts of the story engage
+- **AI feedback** — Learn what works
+
+## Event Ordering
+
+Events are sorted by:
+
+1. `at` (frame)
+2. `phase` (DEVICE < NAV < APP < FX)
+3. `priority` (within phase)
+4. `trackId` (for concurrent operations)
+5. `opIndex` (stable tie-breaker)

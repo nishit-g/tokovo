@@ -1,0 +1,86 @@
+# Architecture Overview
+
+Tokovo is built on a **strict layered architecture** that enforces separation of concerns.
+
+## The Four Layers
+
+```
+┌───────────────────────────┐
+│        AUTHOR DSL         │  ← Writers / AI / GUI
+│  (TypeScript fluent API)  │
+└────────────┬──────────────┘
+             ↓
+┌────────────▼──────────────┐
+│        SCENE IR           │  ← Semantic intent (no frames)
+│  (beats, actions, waits)  │
+└────────────┬──────────────┘
+             ↓
+┌────────────▼──────────────┐
+│       TIMELINE IR         │  ← Frame-based execution
+│   (at=frame, payload)     │
+└────────────┬──────────────┘
+             ↓
+┌────────────▼──────────────┐
+│    RUNTIME + DIRECTOR     │  ← Renders pixels + camera
+└───────────────────────────┘
+```
+
+## Key Invariants
+
+### 1. DSL Never Imports Runtime
+
+```
+@tokovo/dsl      → @tokovo/ir        ✅
+@tokovo/compiler → @tokovo/ir        ✅
+@tokovo/core     → @tokovo/dsl       ❌ NEVER
+```
+
+### 2. Scene IR Has No Frames
+
+Scene IR captures **WHAT HAPPENS**, not **WHEN**.
+
+```typescript
+// Scene IR (no frames)
+{ kind: "Wait", duration: "1.5s" }
+{ kind: "ReceiveMessage", actor: "Bob", text: "Hi" }
+
+// Timeline IR (has frames)
+{ at: 45, kind: "MessageReceived", ... }
+```
+
+### 3. Compiler is Pure
+
+Every compiler pass is a **pure function**:
+
+```typescript
+function normalize(sceneIR: SceneIR): SceneIR { ... }
+function resolveRefs(sceneIR: SceneIR): SceneIR { ... }
+function timeLowering(sceneOps: SceneOp[]): TimelineOp[] { ... }
+```
+
+No side effects. No state. Same input → same output.
+
+## Package Dependencies
+
+```
+@tokovo/ir        ← Pure types (no deps)
+      ↑
+@tokovo/dsl       ← Depends on IR
+      ↑
+@tokovo/compiler  ← Depends on IR
+      ↑
+@tokovo/adapters  ← Depends on IR
+      
+@tokovo/core      ← Runtime (isolated)
+@tokovo/renderer  ← Visual (isolated)
+```
+
+## Why This Matters
+
+| Benefit | How |
+|---------|-----|
+| **AI generation** | Structured IR, not magic prompts |
+| **Debugging** | Trace any frame to its beat |
+| **Testing** | Golden tests on deterministic output |
+| **FPS changes** | Scene IR unchanged |
+| **Platform ports** | Same IR, different adapters |

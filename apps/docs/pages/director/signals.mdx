@@ -1,0 +1,131 @@
+# Director Signals
+
+Signals are **camera-relevant events** extracted from the timeline. They bridge runtime events to director decisions.
+
+## Signal Extraction
+
+```typescript
+// Input: Runtime event
+{
+  at: 45,
+  kind: "APP",
+  type: "MESSAGE_RECEIVED",
+  message: { id: "msg_1", ... },
+  conversationId: "dm_bob"
+}
+
+// Output: Director signal
+{
+  at: 45,
+  type: "NewMessage",
+  deviceId: "AlicePhone",
+  appId: "app_whatsapp",
+  conversationId: "dm_bob",
+  messageId: "msg_1",
+  targetRect: { x: 20, y: 340, w: 280, h: 60 }
+}
+```
+
+## Signal Types
+
+| Type | Triggered By | Camera Effect |
+|------|--------------|---------------|
+| `NewMessage` | MESSAGE_RECEIVED | ZoomToRect |
+| `TypingStarted` | TYPING_START | PushIn |
+| `TypingEnded` | TYPING_END | Release |
+| `MessageRead` | MESSAGE_READ | ZoomToRect (subtle) |
+| `MessageDeleted` | MESSAGE_DELETED | MicroShake |
+| `CallIncoming` | CALL_INCOMING | PullBack |
+
+## Signal Properties
+
+```typescript
+interface DirectorSignal {
+  // Timing
+  at: number;              // Frame when signal occurs
+
+  // Classification
+  type: SignalType;        // What kind of signal
+
+  // Context
+  deviceId: string;        // Which device
+  appId: string;           // Which app
+  conversationId?: string; // Which conversation
+
+  // Target (for framing effects)
+  messageId?: string;      // For message-based signals
+  targetRect?: LayoutRect; // Computed rect for camera
+}
+```
+
+## TargetRect
+
+For framing effects, signals include a target rectangle:
+
+```typescript
+interface LayoutRect {
+  x: number;     // Left edge (screen coords)
+  y: number;     // Top edge (screen coords)
+  width: number;
+  height: number;
+}
+```
+
+This is computed from the layout at signal time.
+
+## Cooldown Keys
+
+Signals are grouped for cooldown by:
+
+```
+{type}:{deviceId}:{appId}:{conversationId}
+```
+
+Example: `NewMessage:AlicePhone:app_whatsapp:dm_bob`
+
+**Why?** Typing in chat A won't cooldown typing in chat B.
+
+## Signal Extraction Code
+
+```typescript
+// From signals.ts
+export function extractSignals(
+  events: RuntimeEvent[],
+  layout: DirectorLayoutModel
+): DirectorSignal[] {
+  const signals: DirectorSignal[] = [];
+
+  for (const event of events) {
+    if (event.kind === "APP") {
+      switch (event.type) {
+        case "MESSAGE_RECEIVED":
+          signals.push({
+            at: event.at,
+            type: "NewMessage",
+            deviceId: event.deviceId,
+            appId: event.appId,
+            conversationId: event.conversationId,
+            messageId: event.message.id,
+            targetRect: layout.messageRects[event.message.id]
+          });
+          break;
+        // ... other cases
+      }
+    }
+  }
+
+  return signals.sort((a, b) => a.at - b.at);
+}
+```
+
+## Using Signals Directly
+
+```typescript
+import { extractSignals } from "@tokovo/core/director-lite";
+
+const signals = extractSignals(events, layoutModel);
+
+for (const signal of signals) {
+  console.log(`Frame ${signal.at}: ${signal.type}`);
+}
+```

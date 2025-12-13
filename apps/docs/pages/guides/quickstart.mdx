@@ -1,0 +1,113 @@
+# Quick Start
+
+Get Tokovo running in 5 minutes.
+
+## Prerequisites
+
+- Node.js 18+
+- pnpm
+
+## Installation
+
+```bash
+# Clone the repo
+git clone https://github.com/your-org/tokovo.git
+cd tokovo
+
+# Install dependencies
+pnpm install
+
+# Build packages
+pnpm build
+```
+
+## Run the Example
+
+```bash
+# Start the video runner (Remotion Studio)
+pnpm --filter video-runner dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Your First Episode
+
+Create a new file in `packages/dsl/examples/my-episode.ts`:
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { compile } from "@tokovo/compiler";
+import { adapterRegistry } from "@tokovo/adapters";
+
+// 1. Define your story
+const sceneIR = episode("my-first-episode", ep => {
+  ep.config({ 
+    pacing: "normal",
+    director: "auto"
+  });
+
+  ep.device("MyPhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_friend", { name: "Friend" });
+
+    d.beat("greeting", b => {
+      b.wait("1s");
+      b.typing("Friend").for("1.5s");
+      b.receive("Friend", "Hey! How are you?");
+      b.wait("2s");
+      b.send("I'm good! What's up?");
+    });
+  });
+});
+
+// 2. Compile to timeline
+const { timeline, durationInFrames } = compile(sceneIR);
+
+// 3. Generate runtime events
+const events = adapterRegistry.lowerAll(timeline);
+
+console.log(`Episode generated: ${durationInFrames} frames`);
+console.log(`Events: ${events.length}`);
+```
+
+Run it:
+
+```bash
+npx ts-node packages/dsl/examples/my-episode.ts
+```
+
+## Project Structure
+
+```
+tokovo/
+├── apps/
+│   ├── video-runner/    # Remotion studio
+│   └── docs/            # This documentation
+├── packages/
+│   ├── ir/              # Intermediate representations
+│   ├── dsl/             # Author DSL
+│   ├── compiler/        # Scene IR → Timeline IR
+│   ├── adapters/        # App-specific adapters
+│   ├── core/            # Engine + DirectorLite
+│   ├── renderer/        # React/Remotion components
+│   ├── apps-whatsapp/   # WhatsApp UI components
+│   └── episodes/        # Episode JSON files
+```
+
+## Key Concepts
+
+| Concept | Description |
+|---------|-------------|
+| **Episode** | A complete story with devices, conversations, and beats |
+| **Device** | A phone with a profile (iPhone, Pixel, etc.) |
+| **Conversation** | A chat thread with a name and type |
+| **Beat** | A named group of actions (semantic chunk) |
+| **Scene IR** | Semantic representation (no frames) |
+| **Timeline IR** | Frame-based execution plan |
+| **Runtime Event** | App-specific event for rendering |
+
+## Next Steps
+
+- [Your First Episode](/guides/first-episode) — Detailed walkthrough
+- [DSL Reference](/dsl) — All DSL methods
+- [Architecture](/architecture) — Understand the system

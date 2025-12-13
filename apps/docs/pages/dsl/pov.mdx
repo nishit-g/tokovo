@@ -1,0 +1,195 @@
+# POV Control
+
+Point-of-View control is a **first-class story primitive** in Tokovo. It allows:
+- Switching between device perspectives
+- Split-screen multi-device views
+- Cinematic transitions
+
+## Single POV Switch
+
+Switch to another device's perspective:
+
+```typescript
+b.pov("BobPhone");
+```
+
+### With Transition
+
+```typescript
+b.pov("BobPhone", "cut");       // Instant cut (default)
+b.pov("BobPhone", "crossfade"); // Smooth fade between devices
+b.pov("BobPhone", "wipe");      // Wipe transition
+```
+
+### Transition Types
+
+| Transition | Description | Best For |
+|------------|-------------|----------|
+| `"cut"` | Instant switch | Drama, tension |
+| `"crossfade"` | Smooth blend | Parallel narratives |
+| `"wipe"` | Side-to-side wipe | Scene changes |
+
+## Split POV
+
+Show multiple devices simultaneously:
+
+```typescript
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+```
+
+### Layout Options
+
+```typescript
+// Side by side
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+
+// Stacked vertically  
+b.splitPov(["AlicePhone", "BobPhone"], "vertical");
+
+// Picture-in-picture (primary + small overlay)
+b.splitPov(["AlicePhone", "BobPhone"], "pip");
+```
+
+### Layout Types
+
+| Layout | Description | Use Case |
+|--------|-------------|----------|
+| `"horizontal"` | Side by side | Reactions, parallel action |
+| `"vertical"` | Stacked | Long-form content |
+| `"pip"` | Picture-in-picture | Focus + context |
+| `"split-diagonal"` | Diagonal split | Stylistic choice |
+
+## Multi-Device Story Example
+
+```typescript
+episode("pov-drama", ep => {
+  ep.config({ director: "auto" });
+
+  // Alice's phone
+  ep.device("AlicePhone", d => {
+    d.conversation("dm_bob", { name: "Bob" });
+    
+    d.beat("alice-receives", b => {
+      b.receive("Bob", "Are you cheating on me?", {
+        mood: "angry",
+        intensity: 0.9
+      });
+      b.wait("1s");
+      
+      // Switch to Bob's perspective
+      b.pov("BobPhone", "cut");
+    });
+  });
+
+  // Bob's phone
+  ep.device("BobPhone", d => {
+    d.conversation("dm_alice", { name: "Alice" });
+    
+    d.beat("bob-waits", b => {
+      b.wait("2s");
+      
+      // Show both phones
+      b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+      
+      b.typing("Alice").for("3s");
+    });
+
+    d.beat("response", b => {
+      // Back to single view
+      b.pov("AlicePhone", "crossfade");
+    });
+  });
+});
+```
+
+## POV Timing
+
+POV operations are **instantaneous** — they don't consume time:
+
+```typescript
+d.beat("switch", b => {
+  b.wait("2s");           // 2 seconds pass
+  b.pov("BobPhone");      // Instant switch (0 time)
+  b.wait("1s");           // 1 more second
+  // Total: 3 seconds
+});
+```
+
+## Scene IR Output
+
+POV operations produce Scene IR operations:
+
+```typescript
+// b.pov("BobPhone", "crossfade")
+{
+  kind: "POVSwitch",
+  deviceId: "BobPhone",
+  transition: "crossfade"
+}
+
+// b.splitPov(["AlicePhone", "BobPhone"], "horizontal")
+{
+  kind: "SplitPOV",
+  devices: ["AlicePhone", "BobPhone"],
+  layout: "horizontal"
+}
+```
+
+## Concurrent POV
+
+POV can be used inside concurrent tracks:
+
+```typescript
+b.concurrent([
+  t => {
+    t.typing("Bob").for("2s");
+  },
+  t => {
+    t.wait("1s");
+    t.pov("BobPhone"); // Switch mid-track
+  }
+]);
+```
+
+## Best Practices
+
+### For Tension
+```typescript
+// Quick cuts build tension
+b.pov("AlicePhone", "cut");
+b.wait("0.5s");
+b.pov("BobPhone", "cut");
+```
+
+### For Parallel Action
+```typescript
+// Show both perspectives
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+// Both conversations continue...
+```
+
+### For Reveals
+```typescript
+// Dramatic reveal
+b.receive("Detective", "The killer is...");
+b.wait("1s");
+b.pov("SuspectPhone", "crossfade"); // Reveal!
+```
+
+## Validation
+
+POV targets must be valid devices:
+
+```typescript
+ep.device("AlicePhone", d => {
+  d.beat("intro", b => {
+    // ❌ Error: "UnknownPhone" not defined
+    b.pov("UnknownPhone");
+  });
+});
+```
+
+The compiler validates:
+- Device exists in episode
+- Split POV has valid device list
+- No circular references

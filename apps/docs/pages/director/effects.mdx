@@ -1,0 +1,205 @@
+# Director Effects
+
+Effects are the **camera changes** that DirectorLite produces. They're applied through the Camera Composer.
+
+## Effect Types
+
+### ZoomToRect
+
+Zoom the camera to frame a specific rectangle (usually a message).
+
+```typescript
+{
+  type: "ZoomToRect",
+  category: "framing",
+  targetRect: { x: 20, y: 340, w: 280, h: 60 },
+  scale: 1.2,
+  progress: 0.5
+}
+```
+
+**Result:** Camera zooms in 1.2× centered on the message.
+
+### PushIn
+
+Slow, anticipatory zoom (used during typing).
+
+```typescript
+{
+  type: "PushIn",
+  category: "framing",
+  targetRect: { x: 0, y: 600, w: 320, h: 50 }, // input area
+  scale: 1.12,
+  progress: 0.3
+}
+```
+
+**Result:** Subtle 12% zoom building tension.
+
+### PullBack
+
+Zoom out to show more context.
+
+```typescript
+{
+  type: "PullBack",
+  category: "framing",
+  scale: 0.88,
+  progress: 0.8
+}
+```
+
+**Result:** Camera zooms out to 88% (showing more of the screen).
+
+### MicroShake
+
+Quick shake for drama/impact.
+
+```typescript
+{
+  type: "MicroShake",
+  category: "shake",
+  intensity: 6,
+  progress: 0.5,
+  seed: 12345
+}
+```
+
+**Result:** Small camera shake using seeded randomness.
+
+## Effect Properties
+
+```typescript
+interface DerivedCameraEffect {
+  type: "ZoomToRect" | "PushIn" | "PullBack" | "MicroShake";
+  category: "framing" | "shake";
+  priority: number;
+  progress: number;        // 0-1, eased
+  target?: LayoutRect;     // For framing effects
+  scale?: number;          // Zoom factor
+  intensity?: number;      // Shake strength
+  seed?: number;           // For deterministic shake
+}
+```
+
+## Progress & Easing
+
+`progress` is automatically eased from rule timing:
+
+```typescript
+const localProgress = (currentFrame - startFrame) / duration;
+const progress = applyEasing(localProgress, "ease-out");
+```
+
+This creates smooth animations without explicit keyframing.
+
+## How Effects Become Transforms
+
+The Camera Composer converts effects to camera transforms:
+
+```typescript
+// Effect
+{
+  type: "ZoomToRect",
+  targetRect: { x: 20, y: 340, w: 280, h: 60 },
+  scale: 1.2,
+  progress: 0.5
+}
+
+// Becomes transform
+{
+  offsetX: -30,    // Pan to center target
+  offsetY: -120,
+  scale: 1.1       // 50% of the way to 1.2 (eased)
+}
+```
+
+## Effect Categories
+
+### Framing (One Winner)
+
+Only one framing effect active at a time. Highest priority wins.
+
+Examples: ZoomToRect, PushIn, PullBack
+
+### Shake (Stacks)
+
+Up to 2 shake effects can stack for compound shake.
+
+Examples: MicroShake
+
+## Deterministic Shake
+
+Shake uses seeded random for determinism:
+
+```typescript
+{
+  type: "MicroShake",
+  seed: signalAt + baseSeed,  // Consistent across renders
+  intensity: 6
+}
+```
+
+Same seed → same shake pattern → scrubbing works.
+
+## Effect Lifecycle
+
+```
+Rule triggers (frame 45)
+    ↓
+Effect active (frames 45-70)
+    ↓
+Progress eases 0 → 1
+    ↓
+  Effect ends (frame 70)
+    ↓
+Camera returns to neutral
+```
+
+## Combining Effects
+
+Multiple effects can be active, but arbitration ensures coherence:
+
+```
+Frame 50:
+  Active Effects:
+    - PushIn (framing, priority 10)
+    - ZoomToRect (framing, priority 30)
+    - MicroShake (shake, priority 25)
+
+  After Arbitration:
+    - ZoomToRect (framing winner)
+    - MicroShake (shake stacks)
+```
+
+## Manual Camera Override
+
+When timeline has explicit CAMERA events:
+
+```typescript
+// Manual camera event in timeline
+{ at: 60, kind: "CAMERA", effect: "ZoomIn", ... }
+```
+
+DirectorLite yields:
+
+```typescript
+if (manualCameraEffects.length > 0) {
+  return { effects: [], skipped: "manual-camera-active" };
+}
+```
+
+## Debug Output
+
+```typescript
+interface DirectorOutput {
+  effects: DerivedCameraEffect[];
+  skipped?: "manual-camera-active";
+  debug?: {
+    signalsInWindow: number;
+    matchedRules: number;
+    winningFraming?: string;
+    skippedCooldown: number;
+  };
+}
+```

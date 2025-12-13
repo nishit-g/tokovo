@@ -1,0 +1,149 @@
+# Compiler Overview
+
+The Tokovo Compiler transforms **Scene IR** into **Timeline IR** through a series of pure passes.
+
+## Usage
+
+```typescript
+import { compile } from "@tokovo/compiler";
+
+const { timeline, validation, durationInFrames } = compile(sceneIR, {
+  mode: "lenient",  // or "strict"
+  debug: true,
+});
+```
+
+## Pipeline
+
+```
+Scene IR
+    ↓
+┌─────────────┐
+│  normalize  │  ← Expand sugar
+└─────────────┘
+    ↓
+┌─────────────┐
+│ resolveRefs │  ← Assign message IDs
+└─────────────┘
+    ↓
+┌─────────────────┐
+│  virtualDevice  │  ← Auto-insert glue events
+└─────────────────┘
+    ↓
+┌─────────────────┐
+│  timeLowering   │  ← Duration → frames
+└─────────────────┘
+    ↓
+┌─────────────┐
+│  validate   │  ← Semantic checks
+└─────────────┘
+    ↓
+┌─────────────┐
+│    sort     │  ← Canonical ordering
+└─────────────┘
+    ↓
+Timeline IR
+```
+
+## Pass Details
+
+### 1. normalize
+
+Expands syntactic sugar:
+
+```typescript
+// Input (DSL sugar)
+b.typing("Bob").for("1.5s")
+
+// Output (3 ops)
+{ kind: "TypingStart", actor: "Bob", ... }
+{ kind: "Wait", duration: "1.5s" }
+{ kind: "TypingEnd", actor: "Bob", ... }
+```
+
+### 2. resolveRefs
+
+Assigns stable, deterministic message IDs:
+
+```typescript
+// Before
+const msg = b.receive("Bob", "Hello");
+b.read(msg);
+
+// After
+msg._resolvedMessageId = "msg_AlicePhone_dm_bob_1"
+```
+
+### 3. virtualDevice
+
+Tracks device state and auto-inserts glue events:
+
+```typescript
+// Virtual state
+{
+  isLocked: true,
+  foregroundAppId: undefined,
+  activeConversationId: undefined,
+}
+
+// Auto-inserted at frame 0:
+{ kind: "DeviceUnlocked", ... }
+{ kind: "AppOpened", appId: "app_whatsapp", ... }
+{ kind: "ConversationOpened", conversationId: "dm_bob", ... }
+```
+
+### 4. timeLowering
+
+Converts durations to frames:
+
+```typescript
+// Input (Scene IR)
+{ kind: "Wait", duration: "1.5s" }
+
+// At 30 FPS: 1.5s = 45 frames
+// Wait advances cursor but emits no event
+// Next op gets: { at: 45, ... }
+```
+
+### 5. validate
+
+Checks semantic correctness:
+
+| Check | Strict | Lenient |
+|-------|--------|---------|
+| Read before send | Error | Warning |
+| Delete missing message | Error | Warning |
+| Negative frame | Error | Error |
+
+### 6. sort
+
+Canonical ordering for determinism:
+
+```typescript
+// Sort key: (at, phase, priority, trackId, sceneOpIndex)
+
+enum Phase {
+  DEVICE = 0,  // unlock, lock
+  NAV = 10,    // open app, navigate
+  APP = 20,    // messages, typing
+  FX = 30,     // reserved
+}
+```
+
+## Options
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `mode` | `"lenient"` | Error handling mode |
+| `debug` | `false` | Include extra trace info |
+| `fps` | From `sceneIR.meta.fps` | Override FPS |
+
+## Output
+
+```typescript
+interface CompileResult {
+  timeline: TimelineIR;
+  validation: ValidationResult;
+  durationInFrames: number;
+}
+```

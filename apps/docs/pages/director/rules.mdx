@@ -1,0 +1,158 @@
+# Director Rules
+
+Rules define how signals map to camera effects. Tokovo ships with **ViralDramaV1** — a single, opinionated style.
+
+## Rule Structure
+
+```typescript
+interface Rule {
+  id: string;              // Unique identifier
+  signal: SignalType;      // Which signal triggers this
+  effect: EffectType;      // What camera effect to apply
+  category: EffectCategory;// "framing" or "shake"
+  priority: number;        // Higher wins arbitration
+  cooldownFrames: number;  // Minimum frames between triggers
+  durationFrames: number;  // How long the effect lasts
+  targetType: TargetType;  // What to target
+  scale?: number;          // Zoom scale (framing effects)
+  intensity?: number;      // Shake intensity
+}
+```
+
+## ViralDramaV1 Rules
+
+| ID | Signal | Effect | Duration | Cooldown | Scale |
+|----|--------|--------|----------|----------|-------|
+| `typing-push` | TypingStarted | PushIn | 45 | 90 | 1.12× |
+| `message-zoom` | NewMessage | ZoomToRect | 25 | 20 | 1.20× |
+| `read-zoom` | MessageRead | ZoomToRect | 18 | 45 | 1.08× |
+| `deleted-shake` | MessageDeleted | MicroShake | 12 | 60 | — |
+| `call-pullback` | CallIncoming | PullBack | 40 | 0 | 0.88× |
+
+## Understanding the Numbers
+
+### Duration (frames)
+
+How long the effect is active:
+
+```
+typing-push: 45 frames = 1.5 seconds @ 30fps
+message-zoom: 25 frames = 0.83 seconds
+```
+
+### Cooldown (frames)
+
+Minimum gap before same rule triggers again:
+
+```
+message-zoom cooldown: 20 frames = 0.67 seconds
+→ Prevents jittery zooms on rapid messages
+```
+
+### Priority
+
+Higher priority wins when multiple effects compete:
+
+```
+MessageRead (40) beats NewMessage (30) beats TypingStarted (10)
+```
+
+### Scale
+
+Zoom factor for framing effects:
+
+```
+1.20× = 20% zoom in
+0.88× = 12% zoom out (pull back)
+```
+
+## Target Types
+
+| Type | Description | Used By |
+|------|-------------|---------|
+| `message` | Specific message rect | ZoomToRect |
+| `inputArea` | Chat input area | PushIn |
+| `lastMessage` | Most recent message | PullBack fallback |
+
+## Arbitration
+
+When multiple effects are active at the same frame:
+
+### Framing Effects
+Only **one** framing effect can win. Highest priority wins.
+
+```
+Frame 45:
+  - TypingStarted → PushIn (priority 10)
+  - NewMessage → ZoomToRect (priority 30)
+
+Winner: ZoomToRect (30 > 10)
+```
+
+### Shake Effects
+Up to **two** shake effects can stack.
+
+```
+Frame 60:
+  - MessageDeleted → MicroShake
+  - MessageDeleted → MicroShake
+
+Both apply (stacked shake)
+```
+
+## Code Reference
+
+```typescript
+// From rules.ts
+export const RULES: Rule[] = [
+  {
+    id: "typing-push",
+    signal: "TypingStarted",
+    effect: "PushIn",
+    category: "framing",
+    priority: 10,
+    cooldownFrames: 90,
+    durationFrames: 45,
+    targetType: "inputArea",
+    scale: 1.12,
+  },
+  {
+    id: "message-zoom",
+    signal: "NewMessage",
+    effect: "ZoomToRect",
+    category: "framing",
+    priority: 30,
+    cooldownFrames: 20,
+    durationFrames: 25,
+    targetType: "message",
+    scale: 1.2,
+  },
+  // ... more rules
+];
+```
+
+## Pre-Indexed Lookup
+
+Rules are indexed by signal type for O(1) lookup:
+
+```typescript
+export const RULES_BY_SIGNAL: Record<SignalType, Rule[]>;
+
+// Usage
+const rules = RULES_BY_SIGNAL["NewMessage"]; // [message-zoom rule]
+```
+
+## Future: Custom Rules
+
+Currently rules are baked. Future versions may support:
+
+```typescript
+// Hypothetical custom rules API
+director.addRule({
+  id: "high-intensity-zoom",
+  signal: "NewMessage",
+  condition: (signal) => signal.semantic?.intensity > 0.8,
+  effect: "ZoomToRect",
+  scale: 1.5  // More aggressive
+});
+```

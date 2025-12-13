@@ -1,0 +1,169 @@
+# Beat Builder
+
+The Beat Builder provides fluent methods for defining actions within a beat.
+
+## Core Actions
+
+### wait(duration)
+
+Pause for a duration. Advances the cursor but emits no runtime event.
+
+```typescript
+b.wait("2s");     // 2 seconds
+b.wait("500ms");  // 500 milliseconds
+b.wait("30frames"); // 30 frames
+```
+
+### typing(actor).for(duration)
+
+Show typing indicator for a duration. Expands to:
+- `TypingStart`
+- `Wait`
+- `TypingEnd`
+
+```typescript
+b.typing("Bob").for("1.5s");
+```
+
+### send(text, options?)
+
+Send a message from the device owner.
+
+```typescript
+b.send("Hello!");
+
+// With semantic annotations
+b.send("Are you okay?", {
+  mood: "anxious",
+  intensity: 0.6
+});
+```
+
+### receive(actor, text, options?)
+
+Receive a message from someone else.
+
+```typescript
+const msg = b.receive("Bob", "We need to talk.");
+
+// With semantic annotations
+b.receive("Bob", "I'm sorry.", {
+  mood: "sad",
+  intensity: 0.9,
+  subtext: "breakup"
+});
+```
+
+### read(ref)
+
+Mark a message as read.
+
+```typescript
+const msg = b.receive("Bob", "Hello");
+b.wait("0.5s");
+b.read(msg);
+```
+
+### delete(ref)
+
+Delete a message.
+
+```typescript
+const msg = b.send("Sent by mistake");
+b.wait("1s");
+b.delete(msg);
+```
+
+### readLast() / deleteLast()
+
+Operate on the last message.
+
+```typescript
+b.receive("Bob", "Hello");
+b.wait("0.5s");
+b.readLast();
+```
+
+## Concurrent Operations
+
+Run multiple tracks in parallel:
+
+```typescript
+b.concurrent([
+  t => t.typing("Bob").for("2s"),
+  t => t.wait("0.5s").receive("Bob", "Message during typing!")
+]);
+```
+
+The cursor advances to `max(track ends)`.
+
+## Drama Events
+
+### react(ref, actor, emoji)
+
+Add a reaction to a message.
+
+```typescript
+const msg = b.receive("Bob", "I love you");
+b.react(msg, "me", "❤️");
+```
+
+### screenshot()
+
+Show "screenshot taken" notification.
+
+```typescript
+b.screenshot();  // Drama!
+```
+
+### missedCall(actor, type?)
+
+Show missed call event.
+
+```typescript
+b.missedCall("Bob");           // Voice call
+b.missedCall("Bob", "video");  // Video call
+```
+
+## POV Control
+
+### pov(deviceId, transition?)
+
+Switch point of view.
+
+```typescript
+b.pov("BobPhone");              // Cut (default)
+b.pov("BobPhone", "crossfade"); // Smooth transition
+b.pov("BobPhone", "wipe");      // Wipe transition
+```
+
+### splitPov(devices, layout?)
+
+Show multiple devices.
+
+```typescript
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+b.splitPov(["AlicePhone", "BobPhone"], "vertical");
+b.splitPov(["AlicePhone", "BobPhone"], "pip");
+```
+
+## Complete Reference
+
+| Method | Description | Returns |
+|--------|-------------|---------|
+| `wait(duration)` | Pause | `this` |
+| `typing(actor).for(duration)` | Typing indicator | `void` |
+| `typingStart(actor)` | Start typing (manual) | `this` |
+| `typingEnd(actor)` | End typing | `this` |
+| `send(text, options?)` | Send message | `MessageHandle` |
+| `receive(actor, text, options?)` | Receive message | `MessageHandle` |
+| `read(ref)` | Mark as read | `this` |
+| `readLast()` | Read last message | `this` |
+| `delete(ref)` | Delete message | `this` |
+| `deleteLast()` | Delete last | `this` |
+| `concurrent(tracks)` | Parallel ops | `this` |
+| `pov(deviceId, transition?)` | Switch POV | `this` |
+| `splitPov(devices, layout?)` | Split screen | `this` |
+| `react(ref, actor, emoji)` | Add reaction | `this` |
+| `screenshot()` | Screenshot alert | `this` |
+| `missedCall(actor, type?)` | Missed call | `this` |

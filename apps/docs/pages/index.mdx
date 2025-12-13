@@ -1,0 +1,62 @@
+# Tokovo
+
+**A Programmable Narrative Operating System**
+
+Tokovo is a deterministic video engine that transforms stories into viral phone videos. 
+It separates **what happens** (your story) from **how it looks** (the runtime).
+
+## What Makes Tokovo Different
+
+```
+Writers write INTENT → Compiler produces STRUCTURE → Runtime executes EVENTS → Director adds CINEMA
+```
+
+### Four Layers, Zero Coupling
+
+| Layer | What It Does | Example |
+|-------|--------------|---------|
+| **DSL** | Human-friendly story writing | `b.receive("Bob", "We need to talk.")` |
+| **Scene IR** | Semantic truth (no frames) | `{ kind: "ReceiveMessage", actor: "Bob", ... }` |
+| **Timeline IR** | Frame-based execution | `{ at: 45, kind: "MessageReceived", ... }` |
+| **Runtime** | Renders pixels | DirectorLite camera + Renderer |
+
+## Quick Start
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const scene = episode("breakup-01", ep => {
+  ep.config({ pacing: "slow-burn", director: "auto" });
+
+  ep.device("AlicePhone", "iphone16", d => {
+    d.app("app_whatsapp");
+    d.conversation("dm_bob", { name: "Bob" });
+
+    d.beat("tension", b => {
+      b.typing("Bob").for("2s");
+      b.receive("Bob", "We need to talk.", {
+        mood: "tense",
+        intensity: 0.7
+      });
+    });
+  });
+});
+```
+
+## Why This Matters
+
+1. **AI-Friendly** — Structured output, not magic prompts
+2. **Deterministic** — Same script → same video, every time
+3. **Scalable** — Batch-generate thousands of episodes
+4. **Debuggable** — Trace every frame to its source
+
+## Explore
+
+import { Cards, Card } from 'nextra/components'
+
+<Cards>
+  <Card title="Architecture" href="/architecture" />
+  <Card title="DSL Reference" href="/dsl" />
+  <Card title="Compiler" href="/compiler" />
+  <Card title="DirectorLite" href="/director" />
+</Cards>

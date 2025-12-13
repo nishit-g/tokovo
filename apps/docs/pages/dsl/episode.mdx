@@ -1,0 +1,180 @@
+# episode()
+
+The entry point for creating Tokovo episodes.
+
+## Import
+
+```typescript
+import { episode } from "@tokovo/dsl";
+```
+
+## Signature
+
+```typescript
+function episode(
+  episodeId: string,
+  fn: (ep: EpisodeBuilder) => void,
+  config?: EpisodeConfig
+): SceneIR
+```
+
+## Parameters
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `episodeId` | `string` | ✅ | Unique identifier for the episode |
+| `fn` | `(ep: EpisodeBuilder) => void` | ✅ | Builder callback |
+| `config` | `EpisodeConfig` | ❌ | Initial configuration |
+
+## Returns
+
+Returns `SceneIR` — the compiled scene intermediate representation.
+
+## Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+const sceneIR = episode("my-first-episode", ep => {
+  ep.device("Phone", d => {
+    d.conversation("dm_friend");
+    d.beat("hello", b => {
+      b.receive("Friend", "Hey!");
+    });
+  });
+});
+```
+
+## With Configuration
+
+```typescript
+const sceneIR = episode("drama-01", ep => {
+  ep.config({
+    fps: 30,
+    title: "The Breakup",
+    pacing: "slow-burn",
+    director: "auto",
+    aspectRatio: "9:16",
+    theme: "dark",
+    tags: ["drama", "breakup"]
+  });
+
+  // ... device definitions
+});
+```
+
+## EpisodeBuilder Methods
+
+### config(cfg)
+
+Set episode-level configuration.
+
+```typescript
+ep.config({
+  fps: 24,           // Frames per second (default: 30)
+  title: "My Video", // Display title
+  pacing: "chaotic", // slow-burn | normal | chaotic | explosive
+  director: "auto",  // auto | manual | hybrid
+  aspectRatio: "9:16",
+  theme: "dark",
+  tags: ["comedy"],
+  targetDuration: "30s" // Hint for AI generation
+});
+```
+
+### device(deviceId, fn)
+
+Define a device with default profile (iPhone 16).
+
+```typescript
+ep.device("AlicePhone", d => {
+  // device configuration...
+});
+```
+
+### device(deviceId, profileId, fn)
+
+Define a device with specific profile.
+
+```typescript
+ep.device("AlicePhone", "iphone16", d => {
+  // device configuration...
+});
+
+ep.device("BobPhone", "pixel", d => {
+  // device configuration...
+});
+```
+
+## EpisodeConfig Reference
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `fps` | `number` | `30` | Frames per second |
+| `title` | `string` | `episodeId` | Display title |
+| `pacing` | `string` | `"normal"` | Story pacing style |
+| `director` | `string` | `"auto"` | Camera control mode |
+| `aspectRatio` | `string` | `"9:16"` | Output aspect ratio |
+| `theme` | `string` | `"system"` | Visual theme |
+| `tags` | `string[]` | `[]` | Content tags |
+| `targetDuration` | `string` | — | Duration hint (e.g., "30s") |
+
+### Pacing Values
+
+| Value | Description | Camera Behavior |
+|-------|-------------|-----------------|
+| `"slow-burn"` | Deliberate, tension-building | Slower zooms, longer holds |
+| `"normal"` | Balanced pacing | Standard timing |
+| `"chaotic"` | Fast, unpredictable | Quick cuts, interrupts |
+| `"explosive"` | High-energy climax | Aggressive zooms, shakes |
+
+### Director Modes
+
+| Value | Description |
+|-------|-------------|
+| `"auto"` | DirectorLite controls camera automatically |
+| `"manual"` | No automatic camera, use `CAMERA` events |
+| `"hybrid"` | Director active, but manual events override |
+
+## Multi-Device Example
+
+```typescript
+episode("pov-switch", ep => {
+  ep.config({ director: "auto" });
+
+  ep.device("AlicePhone", "iphone16", d => {
+    d.conversation("dm_bob", { name: "Bob" });
+    d.beat("alice-pov", b => {
+      b.receive("Bob", "Are you there?");
+      b.wait("1s");
+      b.pov("BobPhone"); // Switch POV
+    });
+  });
+
+  ep.device("BobPhone", "iphone16", d => {
+    d.conversation("dm_alice", { name: "Alice" });
+    d.beat("bob-pov", b => {
+      b.wait("2s");
+      b.typing("Alice").for("1s");
+    });
+  });
+});
+```
+
+## What Happens Next
+
+After calling `episode()`, you have Scene IR. To render:
+
+1. **Compile** — `compile(sceneIR)` → Timeline IR
+2. **Adapt** — `adapterRegistry.lowerAll(timeline)` → Runtime events
+3. **Render** — Pass events to `TokovoRenderer`
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { compile } from "@tokovo/compiler";
+import { adapterRegistry } from "@tokovo/adapters";
+
+const sceneIR = episode("demo", ep => { /* ... */ });
+const { timeline } = compile(sceneIR);
+const events = adapterRegistry.lowerAll(timeline);
+```
