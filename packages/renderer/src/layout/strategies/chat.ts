@@ -84,11 +84,15 @@ export function computeChatLayout(
                 type: prevMsg.type as MessageType,
                 from: prevMsg.from,
                 at: prevMsg.at,
+                hasReply: (prevMsg as any).replyTo != null,
+                hasReactions: (prevMsg as any).reactions?.length > 0,
             };
             const nextForGap: MessageForGap = {
                 type: msg.type as MessageType,
                 from: msg.from,
                 at: msg.at,
+                hasReply: (msg as any).replyTo != null,
+                hasReactions: (msg as any).reactions?.length > 0,
             };
 
             const timeDelta = (msg.at ?? 0) - (prevMsg.at ?? 0);
@@ -96,11 +100,6 @@ export function computeChatLayout(
             const gapContext: GapContext = {
                 prevMessage: prevForGap,
                 nextMessage: nextForGap,
-                prevIndex: i - 1,
-                nextIndex: i,
-                isGroupChat,
-                timeDelta,
-                currentGroupSize,
             };
 
             const gap = calculateSmartGap(gapContext, config);
@@ -188,20 +187,19 @@ export function computeChatLayout(
                 type: lastMsg.type as MessageType,
                 from: lastMsg.from,
                 at: lastMsg.at,
+                hasReply: (lastMsg as any).replyTo != null,
+                hasReactions: (lastMsg as any).reactions?.length > 0,
             };
             const typingForGap: MessageForGap = {
                 type: "typing",
                 from: "other",  // Typing is always from other person
+                hasReply: false,
+                hasReactions: false,
             };
 
             const gapContext: GapContext = {
                 prevMessage: prevForGap,
                 nextMessage: typingForGap,
-                prevIndex: messages.length - 1,
-                nextIndex: messages.length,
-                isGroupChat,
-                timeDelta: 0,
-                currentGroupSize: 1,
             };
 
             const gap = calculateSmartGap(gapContext, config);
