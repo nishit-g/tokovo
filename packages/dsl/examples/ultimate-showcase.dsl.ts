@@ -7,6 +7,7 @@
  * - Navigation (showScreen, openChat, goBack)
  * - Typing indicators
  * - Concurrent actions
+ * - Reactions (tapbacks)
  * - Multi-POV (camera, owner)
  * - Semantic annotations
  */
@@ -55,11 +56,15 @@ export const ultimateShowcase = episode("ultimate-showcase", ep => {
         // =====================================================================
         d.beat("media-showcase", b => {
             // Receive an image
-            b.receiveImage("Bob", "https://picsum.photos/800/600", {
+            const beachPhoto = b.receiveImage("Bob", "https://picsum.photos/800/600", {
                 caption: "Sunset from the beach! 🌅",
                 height: 450,
             });
-            b.wait("2s");
+            b.wait("1s");
+
+            // React to the image
+            b.react(beachPhoto, "me", "❤️");
+            b.wait("1s");
 
             // Send a voice note
             b.sendVoice(8);  // 8 second voice message

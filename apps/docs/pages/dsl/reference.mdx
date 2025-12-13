@@ -94,6 +94,16 @@ b.concurrent([                         // Parallel actions
 ]);
 ```
 
+### Reactions & Drama Events
+
+```typescript
+const msg = b.receive("Bob", "I love you");
+b.react(msg, "me", "❤️");             // Add reaction to message
+
+b.screenshot();                        // Screenshot notification
+b.missedCall("Bob");                   // Missed call indicator
+```
+
 ---
 
 ## Camera Builder (Phase 13)
