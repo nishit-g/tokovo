@@ -1,31 +1,146 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    DEFAULT_BUS_CONFIG
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
-import { AudioLayer } from "@tokovo/renderer";
 
-// Import device reducer to ensure it's registered
+// Import device reducer
 import "@tokovo/devices";
 
 /**
- * Full Cinematic Showcase
+ * Full Cinematic Showcase - DSL Style
  * 
- * Demonstrates BOTH systems:
- * - Cinematic camera movements (PAN, ZOOM, SHAKE)
- * - Production audio (buses, ducking, envelopes)
- * 
- * Story: "The Breakup" - dramatic WhatsApp conversation
+ * Demonstrates production-grade episode authoring:
+ * - DSL helpers abstract away raw event structure
+ * - Camera movements synchronized with story beats
+ * - Production audio with buses and ducking
  */
 
 // =============================================================================
-// EPISODE DEFINITION
+// DSL HELPERS (These would be imported from @tokovo/dsl in production)
+// =============================================================================
+
+const dsl = {
+    // Messages
+    receiveMessage: (at: number, convoId: string, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from,
+        text,
+    } as any),
+
+    sendMessage: (at: number, convoId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    typingEnd: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    // Camera
+    zoom: (at: number, scale: number, duration: number, opts: { originX?: number; originY?: number; easing?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        scale,
+        duration,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    pan: (at: number, x: number, y: number, duration: number, easing = "ease-out"): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "PAN",
+        translateX: x,
+        translateY: y,
+        duration,
+        easing,
+    } as any),
+
+    shake: (at: number, intensity: number, duration: number, decay = 0.5): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        intensity,
+        frequency: 18,
+        decay,
+        duration,
+    } as any),
+
+    reset: (at: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        duration,
+        easing: "ease-out",
+    } as any),
+
+    // Audio
+    backgroundMusic: (at: number, soundId: string, volume = 0.3): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "BACKGROUND_MUSIC",
+        soundId,
+        volume,
+        loop: true,
+    } as any),
+
+    playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "PLAY_SOUND",
+        soundId,
+        volume,
+        loop: opts.loop,
+        duration: opts.duration,
+        instanceId: opts.instanceId,
+    } as any),
+
+    stopSound: (at: number, instanceId: string): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "STOP_SOUND",
+        instanceId,
+    } as any),
+};
+
+// =============================================================================
+// EPISODE DEFINITION (DSL STYLE)
 // =============================================================================
 
 function createFullCinematicEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    // =========================================================================
-    // INITIAL WORLD STATE
-    // =========================================================================
+    // Initial world
     const initialWorld: WorldState = {
         devices: {
             phone: {
@@ -39,9 +154,8 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
         conversations: {
             dm_ex: {
                 id: "dm_ex",
-                type: "dm" as const,
+                type: "dm",
                 name: "Ex 💔",
-                avatar: undefined,
                 messages: [],
                 typing: {},
             },
@@ -53,425 +167,97 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
             },
         },
         camera: {
-            baseView: "APP_VIEW" as const,
+            baseView: "APP_VIEW",
             activeDeviceId: "phone",
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: "phone",
-            },
+            layout: { mode: "SINGLE", primaryDeviceId: "phone" },
             activeEffects: [],
             transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0,
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
             },
             deviceTransforms: {},
         },
         audio: {
             activeSounds: {},
-            buses: {
-                music: { baseGain: 0.3, maxConcurrent: 1 },
-                ui: { baseGain: 0.9, maxConcurrent: 3 },
-                sfx: { baseGain: 0.7, maxConcurrent: 4 },
-                voice: { baseGain: 1.0, maxConcurrent: 1 },
-            },
+            buses: DEFAULT_BUS_CONFIG,
         },
     };
 
-    // =========================================================================
-    // TIMELINE EVENTS
-    // =========================================================================
+    // -------------------------------------------------------------------------
+    // EPISODE TIMELINE (DSL STYLE)
+    // -------------------------------------------------------------------------
     const events: TimelineEvent[] = [
-        // -----------------------------------------------------------------
-        // BEAT 0: BACKGROUND MUSIC
-        // Start with tense ambient music
-        // -----------------------------------------------------------------
-        {
-            at: 0,
-            kind: "AUDIO",
-            type: "BACKGROUND_MUSIC",
-            soundId: "dramatic",
-            volume: 0.25,
-            loop: true,
-        } as any,
+        // =====================================================================
+        // ACT 1: ESTABLISHING (0-3s)
+        // =====================================================================
+        dsl.backgroundMusic(0, "dramatic", 0.25),
+        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),           // Start zoomed at bottom
+        dsl.pan(1, 0, -150, 75, "ease-in-out"),            // Macro pan upward
+        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),           // Reveal zoom out
 
-        // -----------------------------------------------------------------
-        // BEAT 1: ESTABLISHING (0s - 3s)
-        // Macro pan from bottom, music playing softly
-        // -----------------------------------------------------------------
-        {
-            at: 0,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.15,
-            originX: 0.5,
-            originY: 1.0,
-            duration: 1,
-            easing: "linear",
-        } as any,
-        {
-            at: 1,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: -150,
-            duration: 75,
-            easing: "ease-in-out",
-        } as any,
-        {
-            at: 30,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.0,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 60,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 2: FIRST MESSAGE (3s)
+        // =====================================================================
+        dsl.receiveMessage(90, "dm_ex", "Ex 💔", "We need to talk."),
+        dsl.playSound(90, "whatsapp_received", 0.9),
+        dsl.pan(90, 0, 50, 45),                            // Track to message
+        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),        // Subtle push
 
-        // -----------------------------------------------------------------
-        // BEAT 2: FIRST MESSAGE (3s)
-        // Message + notification sound + camera track
-        // -----------------------------------------------------------------
-        {
-            at: 90,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "We need to talk.",
-        } as any,
-        {
-            at: 90,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_received",
-            volume: 0.9,
-        } as any,
-        {
-            at: 90,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: 50,
-            duration: 45,
-            easing: "ease-out",
-        } as any,
-        {
-            at: 100,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.03,
-            originX: 0.5,
-            originY: 0.75,
-            duration: 35,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 3: TYPING ANTICIPATION (5s)
+        // =====================================================================
+        dsl.typingStart(150, "dm_ex", "Ex 💔"),
+        dsl.playSound(150, "whatsapp_typing", 0.4, { loop: true, duration: 90, instanceId: "typing" }),
+        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),        // Tension push
 
-        // -----------------------------------------------------------------
-        // BEAT 3: TYPING (5s)
-        // Typing indicator + typing sound + camera push
-        // -----------------------------------------------------------------
-        {
-            at: 150,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        {
-            at: 150,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_typing",
-            volume: 0.4,
-            instanceId: "typing_1",
-            loop: true,
-            duration: 90,
-        } as any,
-        {
-            at: 150,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.05,
-            originX: 0.5,
-            originY: 0.88,
-            duration: 75,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 4: THE REVEAL (8s)
+        // =====================================================================
+        dsl.typingEnd(240, "dm_ex", "Ex 💔"),
+        dsl.stopSound(240, "typing"),
+        dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
+        dsl.playSound(240, "whatsapp_received", 1.0),
+        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),          // Snap to message
 
-        // -----------------------------------------------------------------
-        // BEAT 4: THE REVEAL (8s)
-        // Stop typing, long message, snap camera
-        // -----------------------------------------------------------------
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        {
-            at: 240,
-            kind: "AUDIO",
-            type: "STOP_SOUND",
-            instanceId: "typing_1",
-        } as any,
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "I've been thinking about us a lot lately... and I don't think this is working anymore.",
-        } as any,
-        {
-            at: 240,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_received",
-            volume: 1.0,
-        } as any,
-        {
-            at: 240,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.12,
-            originX: 0.5,
-            originY: 0.7,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 5: BREATHING ROOM (10s)
+        // =====================================================================
+        dsl.zoom(300, 0.92, 60),                           // Pull out wide
 
-        // -----------------------------------------------------------------
-        // BEAT 5: BREATHING ROOM (10s)
-        // Pull out, music ducks for weight
-        // -----------------------------------------------------------------
-        {
-            at: 300,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 0.92,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 60,
-            easing: "ease-in-out",
-        } as any,
-        {
-            at: 300,
-            kind: "AUDIO",
-            type: "FADE_VOLUME",
-            instanceId: "background",
-            toVolume: 0.15,
-            duration: 30,
-        } as any,
+        // =====================================================================
+        // ACT 6: RAPID FIRE (12-16s)
+        // =====================================================================
+        dsl.receiveMessage(360, "dm_ex", "Ex 💔", "Hello?"),
+        dsl.playSound(360, "whatsapp_received", 0.8),
+        dsl.zoom(360, 1.06, 8, { originX: 0.35, originY: 0.8 }),
 
-        // -----------------------------------------------------------------
-        // BEAT 6: RAPID FIRE (12s - 16s)
-        // Quick messages, alternating sounds + camera snaps
-        // -----------------------------------------------------------------
-        {
-            at: 360,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "Hello?",
-        } as any,
-        {
-            at: 360,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_received",
-            volume: 0.8,
-        } as any,
-        {
-            at: 360,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.06,
-            originX: 0.35,
-            originY: 0.8,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
+        dsl.sendMessage(385, "dm_ex", "What do you mean?"),
+        dsl.playSound(385, "whatsapp_sent", 0.7),
+        dsl.zoom(385, 1.09, 8, { originX: 0.65, originY: 0.82 }),
 
-        {
-            at: 385,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "What do you mean?",
-        } as any,
-        {
-            at: 385,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_sent",
-            volume: 0.7,
-        } as any,
-        {
-            at: 385,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.09,
-            originX: 0.65,
-            originY: 0.82,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
+        dsl.receiveMessage(410, "dm_ex", "Ex 💔", "You know exactly what I mean."),
+        dsl.playSound(410, "whatsapp_received", 0.9),
+        dsl.zoom(410, 1.13, 6, { originX: 0.35 }),
 
-        {
-            at: 410,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "You know exactly what I mean.",
-        } as any,
-        {
-            at: 410,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_received",
-            volume: 0.9,
-        } as any,
-        {
-            at: 410,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.13,
-            originX: 0.35,
-            originY: 0.85,
-            duration: 6,
-            easing: "ease-out",
-        } as any,
+        dsl.sendMessage(430, "dm_ex", "I don't understand..."),
+        dsl.playSound(430, "whatsapp_sent", 0.7),
+        dsl.zoom(430, 1.16, 6, { originX: 0.65 }),
 
-        {
-            at: 430,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "I don't understand...",
-        } as any,
-        {
-            at: 430,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_sent",
-            volume: 0.7,
-        } as any,
-        {
-            at: 430,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.16,
-            originX: 0.65,
-            originY: 0.87,
-            duration: 6,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 7: THE BOMB (16s)
+        // =====================================================================
+        dsl.receiveMessage(480, "dm_ex", "Ex 💔", "It's over."),
+        dsl.playSound(480, "notification", 1.0),
+        dsl.shake(480, 12, 20, 0.5),                       // Impact shake
+        dsl.zoom(480, 1.25, 12, { originX: 0.4, originY: 0.88 }),
 
-        // -----------------------------------------------------------------
-        // BEAT 7: THE BOMB (16s)
-        // "It's over" - heavy shake + dramatic sound
-        // -----------------------------------------------------------------
-        {
-            at: 480,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "It's over.",
-        } as any,
-        {
-            at: 480,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "notification",
-            volume: 1.0,
-        } as any,
-        {
-            at: 480,
-            kind: "CAMERA",
-            type: "SHAKE",
-            intensity: 12,
-            frequency: 18,
-            decay: 0.5,
-            duration: 20,
-        } as any,
-        {
-            at: 480,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.25,
-            originX: 0.4,
-            originY: 0.88,
-            duration: 12,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 8: AFTERMATH (18s - 22s)
-        // Reply, slow pull out, music swells back
-        // -----------------------------------------------------------------
-        {
-            at: 540,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "...",
-        } as any,
-        {
-            at: 540,
-            kind: "AUDIO",
-            type: "PLAY_SOUND",
-            soundId: "whatsapp_sent",
-            volume: 0.5,
-        } as any,
-        {
-            at: 540,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.0,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 90,
-            easing: "ease-in-out",
-        } as any,
-        {
-            at: 570,
-            kind: "AUDIO",
-            type: "FADE_VOLUME",
-            instanceId: "background",
-            toVolume: 0.35,
-            duration: 60,
-        } as any,
-        {
-            at: 630,
-            kind: "CAMERA",
-            type: "RESET",
-            duration: 30,
-            easing: "ease-out",
-        } as any,
+        // =====================================================================
+        // ACT 8: AFTERMATH (18-24s)
+        // =====================================================================
+        dsl.sendMessage(540, "dm_ex", "..."),
+        dsl.playSound(540, "whatsapp_sent", 0.5),
+        dsl.zoom(540, 1.0, 90),                            // Slow pull back
+        dsl.reset(660, 30),                                // Final reset
     ];
 
     return { initialWorld, events };
@@ -485,42 +271,17 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
 
-    // Get episode data
     const episode = useMemo(() => createFullCinematicEpisode(), []);
-
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
     const world = replay(episode.initialWorld, episode.events, t);
 
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
+    // Scale to fit
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
 
     return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            {/* Audio Layer - Global sounds */}
+        <AbsoluteFill style={{ backgroundColor: "#0a0a1a", justifyContent: "center", alignItems: "center" }}>
             <AudioLayer world={world} t={t} />
-
-            {/* Device + Camera */}
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
                 <TokovoRenderer
                     world={world}
                     t={t}
