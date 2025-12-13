@@ -391,20 +391,7 @@ const MessageList: React.FC<MessageListProps> = ({
                         prevFrom: prevMsg?.from
                     });
 
-                    // Reusable Sender Name Component
-                    const SenderName = () => (
-                        <div style={{
-                            fontSize: config.senderNameSize,
-                            fontWeight: 600,
-                            color: config.senderNameColor,
-                            marginBottom: 3,
-                            paddingLeft: config.bubblePaddingHorizontal, // Align with content
-                            zIndex: 2,
-                            position: "relative"
-                        }}>
-                            {msg.from}
-                        </div>
-                    );
+
 
                     // Render system messages (centered pills)
                     if (msg.type === "system") {
@@ -551,7 +538,6 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
-                                {showSenderName && <SenderName />}
                                 <div style={{
                                     backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                     padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -560,18 +546,36 @@ const MessageList: React.FC<MessageListProps> = ({
                                     borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
                                     boxShadow: config.bubbleShadow,
                                     display: "flex",
-                                    alignItems: "center",
-                                    gap: 12,
-                                    fontStyle: "italic",
-                                    color: config.timestampColor
+                                    flexDirection: "column",
+                                    gap: 6
                                 }}>
-                                    <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <circle cx="12" cy="12" r="10"></circle>
-                                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
-                                    </svg>
-                                    <span style={{ fontSize: config.messageTextSize * 0.9 }}>
-                                        This message was deleted
-                                    </span>
+                                    {/* Sender Name (Group Chat) */}
+                                    {showSenderName && (
+                                        <div style={{
+                                            fontSize: config.senderNameSize,
+                                            fontWeight: 600,
+                                            color: config.senderNameColor,
+                                            marginBottom: 3
+                                        }}>
+                                            {msg.from}
+                                        </div>
+                                    )}
+
+                                    <div style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 12,
+                                        fontStyle: "italic",
+                                        color: config.timestampColor
+                                    }}>
+                                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <circle cx="12" cy="12" r="10"></circle>
+                                            <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                                        </svg>
+                                        <span style={{ fontSize: config.messageTextSize * 0.9 }}>
+                                            This message was deleted
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
                         );

@@ -134,6 +134,10 @@ export interface WhatsAppTheme {
 // iOS WHATSAPP LIGHT THEME
 // =============================================================================
 
+import { LAYOUT_CONSTANTS } from "./layout-config";
+
+// ... (existing code)
+
 export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
     mode: "light",
     colors: {
@@ -172,9 +176,9 @@ export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
     typography: {
         message: {
             family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 51,      // 17px * 3 for retina
+            size: LAYOUT_CONSTANTS.FONT_SIZE,      // 17px * 3 for retina
             weight: 400,
-            lineHeight: 66,
+            lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
         },
         timestamp: {
             family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
@@ -210,8 +214,8 @@ export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
     bubble: {
         borderRadius: 54,
         maxWidth: 0.78,
-        horizontalPadding: 36,
-        verticalPadding: 24,
+        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
+        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
         showTail: true,
         tailSize: 24,
     },
@@ -260,8 +264,8 @@ export const iOS_WHATSAPP_DARK: WhatsAppTheme = {
     bubble: {
         borderRadius: 48,
         maxWidth: 0.78,
-        horizontalPadding: 36,
-        verticalPadding: 24,
+        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
+        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
         showTail: true,
         tailSize: 24,
     },

@@ -40,6 +40,22 @@ export type MessageCategory =
 // =============================================================================
 
 /**
+ * Authoritative Layout Constants.
+ * These are the Source of Truth for both Calculation and Rendering.
+ * All units in device pixels (3x retina).
+ */
+export const LAYOUT_CONSTANTS = {
+    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble
+    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
+    LINE_HEIGHT: 66,          // Text line height
+    FONT_SIZE: 51,            // Text font size
+    TIMESTAMP_HEIGHT: 36,     // Footer area height (roughly)
+    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
+    GAP_MINIMAL: 6,           // 2px visual
+    GAP_NORMAL: 36,           // 12px visual
+};
+
+/**
  * Base gap levels - the 5 tiers of spacing.
  * These are the raw pixel values at 3x retina scale.
  */
@@ -260,11 +276,11 @@ export interface MessageLayoutConfig {
 // =============================================================================
 
 const DEFAULT_BASE_GAPS: BaseGaps = {
-    minimal: 6,       // 2px visual @ 3x - same sender burst
-    compact: 6,       // 2px visual @ 3x - alias
-    normal: 36,       // 12px visual @ 3x - different sender / time break
-    relaxed: 36,      // 12px visual @ 3x - alias
-    spacious: 54,     // 18px visual @ 3x - system messages
+    minimal: LAYOUT_CONSTANTS.GAP_MINIMAL,   // 2px visual
+    compact: LAYOUT_CONSTANTS.GAP_MINIMAL,   // Alias
+    normal: LAYOUT_CONSTANTS.GAP_NORMAL,     // 12px visual
+    relaxed: LAYOUT_CONSTANTS.GAP_NORMAL,    // Alias
+    spacious: 54,                            // 18px visual (System)
 };
 
 const DEFAULT_MULTIPLIERS: GapMultipliers = {
@@ -359,15 +375,15 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
     messageTypes: {
         text: {
             height: {
-                base: 88,
-                lineHeight: 66,
-                charsPerLine: 13, // 51px font is wide ~25px/char. 300px width / 25 = 12 chars.
+                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT, // Base = Padding + Footer
+                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
+                charsPerLine: 13,
             },
             width: {
                 maxPercent: 0.78,
                 min: 150,
                 avgCharWidth: 24,
-                horizontalPadding: 72,
+                horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2,
             },
         },
         image: {
@@ -555,9 +571,11 @@ export function calculateMessageHeight(
     // Base height by type
     if (msgType === "text" || msgType === "deleted") {
         const text = msg.text || "";
-        const charsPerLine = typeConfig.height.charsPerLine || 26;
+        const charsPerLine = typeConfig.height.charsPerLine || 13;
         const lines = Math.max(1, Math.ceil(text.length / charsPerLine));
-        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || 66));
+        // Pure Math: PaddingTop + PaddingBottom + (Lines * LineHeight) + Footer
+        // "base" in config is defined as (Padding * 2 + Footer)
+        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
     } else if ((msgType === "image" || msgType === "video") && msg.caption) {
         height = typeConfig.height.withCaption || typeConfig.height.base;
     } else {
@@ -714,13 +732,13 @@ export function calculateSmartGap(
     context: GapContext,
     config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
 ): number {
-    const { prevMessage, nextMessage, timeDelta } = context;
+    const { prevMessage, nextMessage } = context;
     const prevType = (prevMessage.type || "text") as MessageType;
     const nextType = (nextMessage.type || "text") as MessageType;
     const prevOverride = config.spacing.typeOverrides[prevType];
     const nextOverride = config.spacing.typeOverrides[nextType];
 
-    // Priority 1: System Message Overrides (Explicit Spacing)
+    // Priority 1: System constraints usually require specific spacing (e.g. Date headers)
     if (prevOverride.category === "system" && prevOverride.gapAfter != null) {
         return prevOverride.gapAfter;
     }
@@ -728,17 +746,12 @@ export function calculateSmartGap(
         return nextOverride.gapBefore;
     }
 
-    // Priority 2: Time Break (Force Visual Split)
-    // If significant time passed, use normal gap even if same sender
-    if (config.spacing.grouping.enabled && timeDelta > config.spacing.grouping.timeThresholdFrames) {
-        return config.spacing.base.normal;
+    // Pure Logic: Same Sender = Burst, Diff Sender = Separate
+    if (prevMessage.from === nextMessage.from) {
+        return config.spacing.base.minimal; // 2px
     }
 
-    // Priority 3: Base Tier (Sender / Group Logic)
-    // Same sender -> minimal (2px)
-    // Different sender -> normal (12px)
-    const gapTier = getBaseGapTier(prevMessage, nextMessage, context.isGroupChat, config);
-    return config.spacing.base[gapTier];
+    return config.spacing.base.normal; // 12px
 }
 
 /**
