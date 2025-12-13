@@ -361,12 +361,12 @@ export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
             height: {
                 base: 88,
                 lineHeight: 66,
-                charsPerLine: 26,
+                charsPerLine: 13, // 51px font is wide ~25px/char. 300px width / 25 = 12 chars.
             },
             width: {
                 maxPercent: 0.78,
                 min: 150,
-                avgCharWidth: 14,
+                avgCharWidth: 24,
                 horizontalPadding: 72,
             },
         },

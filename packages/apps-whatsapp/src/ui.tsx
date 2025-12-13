@@ -449,13 +449,13 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
-                                {showSenderName && <SenderName />}
                                 <VoiceMessageBubble
                                     isMe={isMe}
                                     duration={msg.duration || 15}
                                     isPlaying={msg.isPlaying}
                                     progress={msg.playProgress || 0}
                                     read={msg.status === "read"}
+                                    senderName={showSenderName ? msg.from : undefined}
                                     platform={platform} // Pass platform prop
                                 />
                             </div>
@@ -474,13 +474,13 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
-                                {showSenderName && <SenderName />}
                                 <ImageMessageBubble
                                     imageUrl={msg.imageUrl || ""}
                                     caption={msg.caption}
                                     isMe={isMe}
                                     timestamp={msg.timestamp}
                                     read={msg.status === "read"}
+                                    senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
                             </div>
@@ -499,7 +499,6 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
-                                {showSenderName && <SenderName />}
                                 <VideoMessageBubble
                                     thumbnailUrl={msg.thumbnailUrl || ""}
                                     duration={msg.duration || 0}
@@ -509,6 +508,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                     read={msg.status === "read"}
                                     isPlaying={msg.isPlaying}
                                     playProgress={msg.playProgress || 0}
+                                    senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
                             </div>
@@ -527,12 +527,12 @@ const MessageList: React.FC<MessageListProps> = ({
                                 opacity,
                                 transform: `translateY(${translateY}px)`
                             }}>
-                                {showSenderName && <SenderName />}
                                 <GifMessageBubble
                                     gifUrl={msg.gifUrl || ""}
                                     isMe={isMe}
                                     timestamp={msg.timestamp}
                                     read={msg.status === "read"}
+                                    senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
                             </div>
@@ -978,16 +978,18 @@ const PauseIcon = () => (
     </svg>
 );
 
-const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platform }> = ({
+const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platform; senderName?: string }> = ({
     isMe,
     duration,
     isPlaying = false,
     progress = 0,
     timestamp,
     read,
+    senderName,
     platform = "ios"
 }) => {
     const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
 
     // Waveform simulation
     const bars = 45;
@@ -1003,26 +1005,42 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platfo
 
     return (
         <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
             display: "flex",
-            justifyContent: isMe ? "flex-end" : "flex-start",
-            padding: `6px ${config.bubbleMarginHorizontal}px`
+            flexDirection: "column",
+            minWidth: 450,
+            maxWidth: config.bubbleMaxWidth,
         }}>
-            <div style={{
-                backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-                padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                borderRadius: config.bubbleRadius,
-                borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-                borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-                boxShadow: config.bubbleShadow,
-                display: "flex",
-                alignItems: "center",
-                gap: 18,
-                minWidth: 450
-            }}>
-                {/* Play/Pause Button */}
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
                 <div style={{
-                    width: 54, // slightly larger
+                    marginBottom: 6,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+                {/* Play/Pause Button - Circular */}
+                <div style={{
+                    width: 54,
                     height: 54,
+                    borderRadius: "50%",
+                    backgroundColor: isMe ? "#25D366" : "#E5E5EA", // Accent color or grey
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center"
@@ -1033,7 +1051,7 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platfo
                 {/* Waveform */}
                 <div style={{
                     flex: 1,
-                    height: 54, // expanded height
+                    height: 54,
                     display: "flex",
                     alignItems: "center",
                     gap: 3,
@@ -1045,39 +1063,40 @@ const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps & { platform?: Platfo
                             <div key={i} style={{
                                 width: 4,
                                 height: `${h * 100}%`,
-                                backgroundColor: isPlayed ? config.waveformActiveColor : config.waveformInactiveColor,
+                                backgroundColor: isPlayed ? (isMe ? "#54656F" : "#25D366") : "#B4B4B4",
                                 borderRadius: 2,
                                 transition: "background-color 0.2s"
                             }} />
                         );
                     })}
                 </div>
+            </div>
 
-                {/* Duration & Profile (Avatar for Other) - mimicking new WA style */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    left: 90,
+            {/* Footer: Duration & Time */}
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                <span style={{
                     fontSize: config.timestampSize,
                     color: config.timestampColor,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                    fontFamily: tokens.fontFamily,
+                    marginLeft: 72 // Align with waveform start
                 }}>
                     {formatDuration(duration)}
-                </div>
+                </span>
 
-                {/* Timestamp + Read receipts */}
                 <div style={{
                     display: "flex",
-                    justifyContent: "flex-end",
                     alignItems: "center",
-                    gap: config.bubbleGap * 0.75,
-                    marginTop: 36, // Push down
-                    marginLeft: 12
+                    gap: config.bubbleGap * 0.75
                 }}>
                     <span style={{
                         fontSize: config.timestampSize,
                         color: config.timestampColor,
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                        fontFamily: tokens.fontFamily
                     }}>
                         {timestamp || "10:42"}
                     </span>

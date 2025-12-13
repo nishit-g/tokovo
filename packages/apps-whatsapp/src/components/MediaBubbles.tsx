@@ -9,6 +9,7 @@ interface ImageMessageBubbleProps {
     imageUrl: string;
     caption?: string;
     isMe: boolean;
+    senderName?: string;
     timestamp?: string;
     read?: boolean;
     platform?: Platform;
@@ -18,6 +19,7 @@ export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
     imageUrl,
     caption,
     isMe,
+    senderName,
     timestamp = "10:42",
     read = false,
     platform = "ios"
@@ -35,10 +37,33 @@ export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
             overflow: "hidden",
             maxWidth: 600,
         }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
             {/* Image container */}
             <div style={{
                 position: "relative",
-                borderRadius: caption ? 0 : config.bubbleRadius,
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+                // Square bottom corners if caption is below
+                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
+                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
                 overflow: "hidden",
             }}>
                 <img
@@ -124,6 +149,7 @@ interface VideoMessageBubbleProps {
     duration: number; // in seconds
     caption?: string;
     isMe: boolean;
+    senderName?: string;
     timestamp?: string;
     read?: boolean;
     isPlaying?: boolean;
@@ -136,6 +162,7 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
     duration,
     caption,
     isMe,
+    senderName,
     timestamp = "10:42",
     read = false,
     isPlaying = false,
@@ -161,10 +188,31 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
             overflow: "hidden",
             maxWidth: 600,
         }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
             {/* Video thumbnail container */}
             <div style={{
                 position: "relative",
                 overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
             }}>
                 <img
                     src={thumbnailUrl}
@@ -311,6 +359,7 @@ interface GifMessageBubbleProps {
     width?: number;
     height?: number;
     isMe: boolean;
+    senderName?: string;
     timestamp?: string;
     read?: boolean;
     platform?: Platform;
@@ -319,6 +368,7 @@ interface GifMessageBubbleProps {
 export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
     gifUrl,
     isMe,
+    senderName,
     timestamp = "10:42",
     read = false,
     platform = "ios"
@@ -336,10 +386,31 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
             overflow: "hidden",
             maxWidth: 500,
         }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
             {/* GIF container */}
             <div style={{
                 position: "relative",
                 overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
             }}>
                 <img
                     src={gifUrl}
