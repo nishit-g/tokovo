@@ -74,6 +74,7 @@ export function computeChatLayout(
                 at: prevMsg.at,
                 hasReply: (prevMsg as any).replyTo != null,
                 hasReactions: (prevMsg as any).reactions?.length > 0,
+                hasLinkPreview: (prevMsg as any).linkPreview != null,
             };
             const nextForGap: MessageForGap = {
                 type: msg.type as MessageType,
@@ -81,6 +82,7 @@ export function computeChatLayout(
                 at: msg.at,
                 hasReply: (msg as any).replyTo != null,
                 hasReactions: (msg as any).reactions?.length > 0,
+                hasLinkPreview: (msg as any).linkPreview != null,
             };
 
             const gapContext: GapContext = {

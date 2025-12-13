@@ -320,6 +320,7 @@ export interface MessageForGap {
     at?: number;
     hasReply?: boolean;
     hasReactions?: boolean;
+    hasLinkPreview?: boolean;
 }
 
 export interface GapContext {
@@ -350,7 +351,9 @@ export function calculateSmartGap(
         !prevMessage.hasReply &&
         !nextMessage.hasReply &&
         !prevMessage.hasReactions &&
-        !nextMessage.hasReactions;
+        !nextMessage.hasReactions &&
+        !prevMessage.hasLinkPreview &&
+        !nextMessage.hasLinkPreview;
 
     if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
     if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
@@ -380,14 +383,15 @@ export interface TextBlockMetrics {
  */
 
 /**
- * Unified text measurement.
- * This ensures "Calculated Height === Rendered Height" by using the same logic for both.
+ * Deterministic, no-DOM text measurement.
+ * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
+ * not the paragraph total weight or always-full-capacity width.
  *
- * Uses a weighted cost function to approximate visual width deterministically:
- * - Basic chars: 1.0 avg width
- * - Spaces: 0.6 avg width (spaces are thinner)
- * - Wide chars: 1.5 avg width (CJK, etc)
- * - Emoji (Surrogate Pairs): ~1.8 avg width (handled correctly)
+ * Weighted units:
+ * - space: 0.6
+ * - ascii/basic: 1.0
+ * - wide (CJK etc): 1.5
+ * - emoji surrogate pair: 1.8
  */
 export function measureTextBlock(
     text: string,
@@ -396,86 +400,97 @@ export function measureTextBlock(
 ): TextBlockMetrics {
     const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
 
-    // 1. Calculate Constraints
+    // 1) Constraints
     const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
     const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-    // Safety clamp (A)
+
+    // Safety clamp so we never divide by 0 / go negative on tiny screens
     const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
 
-    // 2. Determine Capacity
+    // 2) Capacity (INTEGER, consistent everywhere)
     const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-    // We use a "Weight Capacity" instead of raw char count
-    const weightsPerLine = Math.max(1, availableTextWidth / avgCharWidth);
+    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
 
-    // 3. Measure Content (Weighted Paragraphs)
-    const paragraphs = text.split('\n');
+    // 3) Measure
+    // Split paragraphs by explicit newline. Newline always forces a line break.
+    const paragraphs = text.split("\n");
+
     let totalLines = 0;
-    let maxParagraphWidth = 0;
+    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
 
     for (const paragraph of paragraphs) {
+        // Explicit blank line => counts as 1 line
         if (paragraph.length === 0) {
-            // Empty line (double newline)
             totalLines += 1;
+            maxLineUnits = Math.max(maxLineUnits, 0);
             continue;
         }
 
-        // Calculate weighted length of paragraph
-        let paragraphWeight = 0;
+        // Wrap simulation in weighted units
+        let lineUnits = 0;
+        let linesInParagraph = 1;
+
         for (let i = 0; i < paragraph.length; i++) {
             const code = paragraph.charCodeAt(i);
 
-            // Space
-            if (code === 32) {
-                paragraphWeight += 0.6;
-                continue;
-            }
+            // Weight function (deterministic)
+            let w = 1.0;
 
-            // Surrogate pair (Emoji etc.) detection
-            const isHighSurrogate = code >= 0xD800 && code <= 0xDBFF;
-            if (isHighSurrogate && i + 1 < paragraph.length) {
-                const next = paragraph.charCodeAt(i + 1);
-                const isLowSurrogate = next >= 0xDC00 && next <= 0xDFFF;
-                if (isLowSurrogate) {
-                    paragraphWeight += 1.8; // Emoji typically wider than CJK
-                    i++; // Skip low surrogate
-                    continue;
+            // space
+            if (code === 32) {
+                w = 0.6;
+            } else {
+                // emoji surrogate pair
+                const isHigh = code >= 0xd800 && code <= 0xdbff;
+                if (isHigh && i + 1 < paragraph.length) {
+                    const next = paragraph.charCodeAt(i + 1);
+                    const isLow = next >= 0xdc00 && next <= 0xdfff;
+                    if (isLow) {
+                        w = 1.8;
+                        i++; // consume low surrogate
+                    } else if (code > 255) {
+                        w = 1.5;
+                    }
+                } else if (code > 255) {
+                    // wide-ish (CJK etc.)
+                    w = 1.5;
                 }
             }
 
-            // Other wide-ish chars (CJK etc.)
-            if (code > 255) {
-                paragraphWeight += 1.5;
-                continue;
+            // If adding this char overflows the line => wrap
+            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
+            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
+            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
+                maxLineUnits = Math.max(maxLineUnits, lineUnits);
+                linesInParagraph += 1;
+                lineUnits = w;
+            } else {
+                lineUnits += w;
             }
 
-            // Basic Latin / Standard
-            paragraphWeight += 1.0;
+            // Track widest line as we go
+            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
+            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
         }
 
-        // Calculate lines for this paragraph based on weight
-        const lines = Math.max(1, Math.ceil(paragraphWeight / weightsPerLine));
-        totalLines += lines;
-
-        // Track max width (width is constrained by longest line, up to max)
-        const paragraphWidth = Math.min(paragraphWeight, weightsPerLine) * avgCharWidth;
-        maxParagraphWidth = Math.max(maxParagraphWidth, paragraphWidth);
+        // finalize paragraph
+        totalLines += linesInParagraph;
+        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
     }
 
-    // Ensure at least one line if empty text
+    // Ensure at least one line for empty string
     if (totalLines === 0) totalLines = 1;
 
-    // Final bubble width calculation with Clamping
-    const computedWidth = maxParagraphWidth + horizontalPadding;
+    // 4) Convert widest line units -> pixels
+    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
+
+    // Clamp bubble width to: [minWidth, maxBubbleWidth]
     const bubbleWidth = Math.min(
         maxBubbleWidth,
         Math.max(computedWidth, typeConfig.width.min)
     );
 
-    return {
-        lines: totalLines,
-        bubbleWidth,
-        unitsPerLine: Math.floor(weightsPerLine) // Renamed property
-    };
+    return { lines: totalLines, bubbleWidth, unitsPerLine };
 }
 
 export function calculateBubbleWidth(
