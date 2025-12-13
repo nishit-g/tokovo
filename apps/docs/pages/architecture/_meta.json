@@ -2,5 +2,7 @@
     "index": "Overview",
     "boundaries": "Layer Boundaries",
     "determinism": "Determinism",
-    "data-flow": "Data Flow"
+    "data-flow": "Data Flow",
+    "monorepo": "Monorepo (Turbo)",
+    "plugins": "Plugin System"
 }

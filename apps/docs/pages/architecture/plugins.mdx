@@ -1,0 +1,302 @@
+# Plugin System
+
+Tokovo uses a **plugin architecture** for apps. Each app (WhatsApp, Instagram, etc.) is a self-contained plugin.
+
+## Why Plugins?
+
+| Benefit | How |
+|---------|-----|
+| **Self-contained** | Each app owns its UI, state, sounds |
+| **Auto-registration** | Plugins register themselves |
+| **Extensible** | Add new apps without modifying core |
+| **Typed** | Full TypeScript support |
+
+## Plugin Interface
+
+```typescript
+interface TokovoPlugin {
+  // Identity
+  id: string;           // "app_whatsapp"
+  name: string;         // "WhatsApp"
+  version: string;      // "1.0.0"
+
+  // Branding
+  icon?: string;        // Icon path or emoji
+  primaryColor?: string; // "#25D366"
+
+  // Components
+  appView?: AppViewComponent;  // React component
+  reducer?: AppReducer;        // State reducer
+
+  // Integration
+  eventTypes?: string[];       // Events this handles
+  sounds?: Record<string, string>; // Sound mappings
+  notificationSound?: string;  // Default notification sound
+  defaultState?: any;          // Initial app state
+}
+```
+
+## Creating a Plugin
+
+### 1. Define the Plugin
+
+```typescript
+// packages/apps-whatsapp/src/plugin.ts
+import { definePlugin } from "@tokovo/core";
+import { WhatsAppView } from "./ui";
+import { whatsappReducer } from "./runtime";
+
+export const WhatsAppPlugin = definePlugin({
+  id: "app_whatsapp",
+  name: "WhatsApp",
+  version: "1.0.0",
+  
+  icon: "💬",
+  primaryColor: "#25D366",
+  
+  appView: WhatsAppView,
+  reducer: whatsappReducer,
+  
+  eventTypes: [
+    "MESSAGE_RECEIVED",
+    "TYPING_START",
+    "TYPING_END",
+    "MESSAGE_READ",
+    "MESSAGE_DELETED",
+  ],
+  
+  sounds: {
+    "message_received": "whatsapp_received.mp3",
+    "message_sent": "whatsapp_sent.mp3",
+  },
+  
+  notificationSound: "whatsapp_notification.mp3",
+});
+```
+
+### 2. Create the Reducer
+
+```typescript
+// packages/apps-whatsapp/src/runtime.ts
+import { AppReducer, WorldState, TimelineEvent } from "@tokovo/core";
+
+export const whatsappReducer: AppReducer = (
+  world: WorldState,
+  event: TimelineEvent
+): WorldState => {
+  if (event.kind !== "APP") return world;
+  
+  switch (event.type) {
+    case "MESSAGE_RECEIVED":
+      return addMessage(world, event);
+    case "TYPING_START":
+      return setTyping(world, event, true);
+    case "TYPING_END":
+      return setTyping(world, event, false);
+    case "MESSAGE_READ":
+      return markRead(world, event);
+    default:
+      return world;
+  }
+};
+```
+
+### 3. Create the View
+
+```tsx
+// packages/apps-whatsapp/src/ui.tsx
+import React from "react";
+import { AppViewProps } from "@tokovo/core";
+
+export const WhatsAppView: React.FC<AppViewProps> = ({ 
+  world, 
+  deviceId 
+}) => {
+  const device = world.devices[deviceId];
+  const conversation = getCurrentConversation(world, deviceId);
+  
+  return (
+    <div className="whatsapp">
+      <Header contact={conversation?.name} />
+      <MessageList messages={conversation?.messages} />
+      <InputArea />
+    </div>
+  );
+};
+```
+
+### 4. Register the Plugin
+
+```typescript
+// packages/apps-whatsapp/src/index.ts
+import { PluginManager } from "@tokovo/core";
+import { WhatsAppPlugin } from "./plugin";
+
+// Auto-register on import
+PluginManager.register(WhatsAppPlugin);
+
+export { WhatsAppPlugin };
+```
+
+## PluginManager API
+
+```typescript
+import { PluginManager } from "@tokovo/core";
+
+// Register a plugin
+PluginManager.register(MyPlugin);
+
+// Get a plugin
+const plugin = PluginManager.get("app_whatsapp");
+
+// Get view component
+const View = PluginManager.getView("app_whatsapp");
+
+// Check if registered
+if (PluginManager.has("app_instagram")) {
+  // ...
+}
+
+// Get all plugins
+const allPlugins = PluginManager.getAll();
+
+// Get app IDs
+const appIds = PluginManager.getAppIds();
+
+// Get metadata
+const meta = PluginManager.getMetadata("app_whatsapp");
+// → { name: "WhatsApp", icon: "💬", color: "#25D366" }
+
+// Get sound
+const sound = PluginManager.getSound("app_whatsapp", "message_received");
+// → "whatsapp_received.mp3"
+```
+
+## Plugin Helper Functions
+
+### definePlugin()
+
+Create a plugin with defaults:
+
+```typescript
+import { definePlugin } from "@tokovo/core";
+
+const MyPlugin = definePlugin({
+  id: "app_myapp",
+  name: "My App",
+  // version defaults to "1.0.0"
+  // eventTypes defaults to []
+  // sounds defaults to {}
+});
+```
+
+### registerPlugins()
+
+Register multiple at once:
+
+```typescript
+import { registerPlugins } from "@tokovo/core";
+
+registerPlugins([
+  WhatsAppPlugin,
+  InstagramPlugin,
+  MessagesPlugin,
+]);
+```
+
+## Event Reducer Registry
+
+Plugins auto-register with the engine:
+
+```typescript
+// Happens automatically in PluginManager.register()
+if (plugin.reducer) {
+  ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+}
+```
+
+The engine then routes events:
+
+```typescript
+// In engine.ts
+function replay(world, events) {
+  for (const event of events) {
+    if (event.kind === "APP") {
+      const reducer = ReducerRegistry.get(event.appId);
+      world = reducer(world, event);
+    }
+  }
+  return world;
+}
+```
+
+## App View Registry
+
+Views are also auto-registered:
+
+```typescript
+// In renderer
+function renderApp(appId, props) {
+  const View = PluginManager.getView(appId);
+  if (!View) return <UnknownApp />;
+  return <View {...props} />;
+}
+```
+
+## Sound Integration
+
+Plugins define sound mappings:
+
+```typescript
+sounds: {
+  "message_received": "whatsapp_received.mp3",
+  "typing": "whatsapp_typing.mp3",
+}
+```
+
+The audio layer uses these:
+
+```typescript
+// In AudioLayer
+const soundFile = PluginManager.getSound(appId, soundKey);
+playSound(soundFile);
+```
+
+## Adding a New App
+
+Complete checklist:
+
+1. **Create package** — `packages/apps-newapp/`
+2. **Define plugin** — `plugin.ts` with TokovoPlugin
+3. **Create reducer** — Handle your event types
+4. **Create view** — React component
+5. **Add sounds** — Optional sound mappings
+6. **Export** — Re-export from index.ts
+7. **Import** — Import in video-runner to register
+
+```typescript
+// apps/video-runner/src/plugins.ts
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-instagram";
+import "@tokovo/apps-newapp";  // Auto-registers!
+```
+
+## TypeScript Support
+
+Full type inference:
+
+```typescript
+// Event is typed
+interface MyAppEvent extends TimelineEvent {
+  kind: "APP";
+  type: "MY_CUSTOM_EVENT";
+  payload: MyPayload;
+}
+
+// Reducer is typed
+const reducer: AppReducer = (world, event) => {
+  // event.type is string union
+  // world is WorldState
+  return world;
+};
+```

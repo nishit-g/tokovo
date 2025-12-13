@@ -1,0 +1,220 @@
+# Scene IR
+
+Scene IR is the **semantic truth** — what happens in your story without frame timing.
+
+## SceneIR
+
+The top-level structure:
+
+```typescript
+interface SceneIR {
+  readonly episodeId: string;
+  readonly meta: EpisodeMeta;
+  readonly devices: DeviceScene[];
+}
+```
+
+## EpisodeMeta
+
+Episode-level metadata (extends EpisodeConfig):
+
+```typescript
+interface EpisodeMeta extends EpisodeConfig {
+  readonly fps: number;
+  readonly durationInFrames?: number;
+}
+```
+
+## DeviceScene
+
+A device's story:
+
+```typescript
+interface DeviceScene {
+  readonly deviceId: string;
+  readonly profileId: string;
+  readonly appId: string;
+  readonly conversations: ConversationDef[];
+  readonly beats: Beat[];
+}
+```
+
+## Beat
+
+Named group of operations:
+
+```typescript
+interface Beat {
+  readonly name: string;
+  readonly ops: SceneOp[];
+  readonly meta?: BeatMeta;
+}
+```
+
+## Scene Operations
+
+### Core Operations
+
+| Operation | Fields | Description |
+|-----------|--------|-------------|
+| `WaitOp` | duration | Advance cursor, no event |
+| `TypingStartOp` | actor, conversationId | Start typing indicator |
+| `TypingEndOp` | actor, conversationId | End typing indicator |
+| `SendMessageOp` | actor, text, conversationId, meta? | Send message |
+| `ReceiveMessageOp` | actor, text, conversationId, meta? | Receive message |
+| `ReadMessageOp` | ref | Mark message as read |
+| `DeleteMessageOp` | ref | Delete message |
+| `ConcurrentOp` | tracks (SceneOp[][]) | Parallel execution |
+
+### POV Operations
+
+| Operation | Fields | Description |
+|-----------|--------|-------------|
+| `POVSwitchOp` | deviceId, transition? | Switch perspective |
+| `SplitPOVOp` | devices, layout | Split-screen view |
+
+### Reserved Signals
+
+| Operation | Fields | Description |
+|-----------|--------|-------------|
+| `ReactionAddedOp` | ref, actor, emoji | Add reaction |
+| `VoiceNoteSentOp` | actor, conversationId, durationMs | Send voice note |
+| `VoiceNoteReceivedOp` | actor, conversationId, durationMs | Receive voice note |
+| `MissedCallOp` | actor, conversationId, callType? | Missed call |
+| `OnlineStatusChangedOp` | actor, status | Status change |
+| `ScreenshotTakenOp` | conversationId | Screenshot alert |
+| `BlockedUserOp` | actor | User blocked |
+
+## Full SceneOp Type
+
+```typescript
+type SceneOp =
+  // Core
+  | WaitOp
+  | TypingStartOp
+  | TypingEndOp
+  | SendMessageOp
+  | ReceiveMessageOp
+  | ReadMessageOp
+  | DeleteMessageOp
+  | ConcurrentOp
+  // POV
+  | POVSwitchOp
+  | SplitPOVOp
+  // Reserved signals
+  | ReactionAddedOp
+  | VoiceNoteSentOp
+  | VoiceNoteReceivedOp
+  | MissedCallOp
+  | OnlineStatusChangedOp
+  | ScreenshotTakenOp
+  | BlockedUserOp;
+```
+
+## MessageRef
+
+Full context for message references:
+
+```typescript
+interface MessageRef {
+  readonly _type: "MessageRef";
+  readonly id: string;
+  readonly deviceId: string;
+  readonly appId: string;
+  readonly conversationId: string;
+}
+```
+
+Create with factory function:
+
+```typescript
+import { messageRef } from "@tokovo/ir";
+
+const ref = messageRef(
+  "msg_1",
+  "AlicePhone",
+  "app_whatsapp",
+  "dm_bob"
+);
+```
+
+## MessageMeta
+
+Metadata attached to messages:
+
+```typescript
+interface MessageMeta {
+  type?: "text" | "image" | "voice" | "system";
+  voiceDuration?: number;
+  timestamp?: string;
+  semantic?: SemanticMeta;
+  [key: string]: unknown;
+}
+```
+
+## Duration Expressions
+
+Human-readable durations:
+
+```typescript
+type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+
+// Examples
+"1.5s"      // 1.5 seconds
+"500ms"     // 500 milliseconds
+"45frames"  // 45 frames
+```
+
+Parse with:
+
+```typescript
+import { parseDuration } from "@tokovo/ir";
+
+parseDuration("1.5s", 30);  // → 45 frames
+parseDuration("500ms", 30); // → 15 frames
+```
+
+## Example Scene IR
+
+```typescript
+const sceneIR: SceneIR = {
+  episodeId: "drama-01",
+  meta: {
+    fps: 30,
+    pacing: "slow-burn",
+    director: "auto",
+  },
+  devices: [{
+    deviceId: "AlicePhone",
+    profileId: "iphone16",
+    appId: "app_whatsapp",
+    conversations: [{
+      id: "dm_bob",
+      name: "Bob",
+      type: "dm",
+    }],
+    beats: [{
+      name: "tension",
+      meta: { tempo: "slow", function: "buildup" },
+      ops: [
+        { kind: "Wait", duration: "2s" },
+        { kind: "TypingStart", actor: "Bob", conversationId: "dm_bob" },
+        { kind: "Wait", duration: "1.5s" },
+        { kind: "TypingEnd", actor: "Bob", conversationId: "dm_bob" },
+        {
+          kind: "ReceiveMessage",
+          actor: "Bob",
+          text: "We need to talk.",
+          conversationId: "dm_bob",
+          meta: {
+            semantic: {
+              mood: "tense",
+              intensity: 0.8,
+            }
+          }
+        },
+      ],
+    }],
+  }],
+};
+```

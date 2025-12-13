@@ -2,9 +2,14 @@
     "index": "Introduction",
     "architecture": "Architecture",
     "dsl": "DSL Reference",
+    "ir": "IR Reference",
     "compiler": "Compiler",
     "director": "DirectorLite",
     "runtime": "Runtime",
     "guides": "Guides",
-    "glossary": "Glossary"
+    "glossary": "Glossary",
+    "---": {
+        "type": "separator"
+    },
+    "verification": "✅ Verification"
 }

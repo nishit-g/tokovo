@@ -1,0 +1,237 @@
+# Monorepo Architecture
+
+Tokovo uses a **pnpm + Turborepo monorepo** for maximum development velocity and code sharing.
+
+## Why Monorepo?
+
+| Benefit | How |
+|---------|-----|
+| **Shared code** | All packages access common types |
+| **Atomic changes** | Update IR + DSL + Compiler together |
+| **Fast builds** | Turborepo caches everything |
+| **Type safety** | End-to-end TypeScript |
+| **Single source** | One repo, one truth |
+
+## Directory Structure
+
+```
+tokovo/
+├── apps/                    # Runnable applications
+│   ├── video-runner/        # Remotion studio (port 3001)
+│   └── docs/                # Nextra documentation (port 3002)
+│
+├── packages/                # Shared libraries
+│   ├── ir/                  # 🔢 Intermediate Representations
+│   ├── dsl/                 # ✍️ Author DSL
+│   ├── compiler/            # ⚙️ Scene → Timeline
+│   ├── adapters/            # 🔌 Timeline → Runtime events
+│   ├── core/                # 🧠 Engine, Camera, Plugins
+│   ├── renderer/            # 🎨 React components
+│   ├── devices/             # 📱 Device profiles
+│   ├── apps-whatsapp/       # 💬 WhatsApp clone
+│   ├── apps-instagram/      # 📸 Instagram clone
+│   └── episodes/            # 📝 Episode JSON files
+│
+├── package.json             # Root workspace config
+├── pnpm-workspace.yaml      # pnpm workspace definition
+├── turbo.json               # Turborepo config
+└── tsconfig.base.json       # Shared TypeScript config
+```
+
+## Root package.json
+
+```json
+{
+  "name": "tokovo-monorepo",
+  "private": true,
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint"
+  },
+  "devDependencies": {
+    "turbo": "latest",
+    "prettier": "latest"
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  }
+}
+```
+
+## pnpm Workspaces
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - "apps/*"
+  - "packages/*"
+```
+
+## Turborepo Configuration
+
+```json
+// turbo.json
+{
+  "$schema": "https://turbo.build/schema.json",
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],     // Build deps first
+      "outputs": [
+        ".next/**",                // Next.js output
+        "!.next/cache/**",
+        "dist/**"                  // TypeScript output
+      ]
+    },
+    "dev": {
+      "cache": false,              // Never cache dev
+      "persistent": true           // Keep running
+    },
+    "lint": {}
+  }
+}
+```
+
+## Common Commands
+
+```bash
+# Install all dependencies
+pnpm install
+
+# Build all packages
+pnpm build
+
+# Run all dev servers
+pnpm dev
+
+# Run specific apps
+npx turbo dev --filter=video-runner
+npx turbo dev --filter=video-runner --filter=docs
+
+# Build specific package
+npx turbo build --filter=@tokovo/ir
+
+# Add dependency to package
+cd packages/dsl
+pnpm add @tokovo/ir
+```
+
+## Package Dependencies
+
+```
+@tokovo/ir        ← No deps (pure types)
+      ↓
+@tokovo/dsl       ← Depends on IR
+      ↓
+@tokovo/compiler  ← Depends on IR
+      ↓
+@tokovo/adapters  ← Depends on IR
+      
+@tokovo/core      ← Isolated (engine, camera, plugins)
+      
+@tokovo/renderer  ← Depends on core, devices
+      ↓
+video-runner      ← Depends on everything
+```
+
+## Adding a New Package
+
+```bash
+# 1. Create directory
+mkdir -p packages/my-package/src
+
+# 2. Initialize
+cd packages/my-package
+pnpm init
+
+# 3. Add to package.json
+{
+  "name": "@tokovo/my-package",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  }
+}
+
+# 4. Create tsconfig.json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "include": ["src"]
+}
+
+# 5. Install in workspace
+pnpm install
+```
+
+## Development Workflow
+
+```bash
+# Terminal 1: Watch IR changes
+cd packages/ir && pnpm dev
+
+# Terminal 2: Watch DSL changes  
+cd packages/dsl && pnpm dev
+
+# Terminal 3: Run video runner
+npx turbo dev --filter=video-runner
+
+# Or all at once
+npx turbo dev --filter=video-runner --filter=docs
+```
+
+## Build Order
+
+Turborepo automatically determines build order:
+
+```
+1. @tokovo/ir          (no deps)
+2. @tokovo/devices     (no deps)  
+3. @tokovo/dsl         (needs ir)
+4. @tokovo/compiler    (needs ir)
+5. @tokovo/adapters    (needs ir)
+6. @tokovo/core        (standalone)
+7. @tokovo/apps-*      (needs core)
+8. @tokovo/renderer    (needs core, devices, apps)
+9. video-runner        (needs all)
+10. docs               (standalone)
+```
+
+## Caching
+
+Turborepo caches build outputs:
+
+```bash
+# First build (slow)
+pnpm build  # → 45s
+
+# Second build (fast, cached)
+pnpm build  # → 0.5s (from cache)
+
+# Force rebuild
+npx turbo build --force
+```
+
+## TypeScript Project References
+
+Each package references its dependencies:
+
+```json
+// packages/dsl/tsconfig.json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "references": [
+    { "path": "../ir" }
+  ]
+}
+```

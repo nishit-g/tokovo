@@ -1,0 +1,146 @@
+# IR Overview
+
+The Intermediate Representation (IR) is the **source of truth** between layers.
+
+## Two IRs
+
+| IR | Purpose | Has Frames? |
+|----|---------|-------------|
+| **Scene IR** | Semantic truth | No |
+| **Timeline IR** | Execution contract | Yes |
+
+## Why Two IRs?
+
+### Scene IR is Stable
+
+Scene IR doesn't change when:
+- FPS changes (30 → 60)
+- App adapters change
+- Camera rules update
+- Rendering engine changes
+
+### Timeline IR is Executable
+
+Timeline IR is the frame-by-frame plan:
+- Every event has an `at` frame number
+- Sorted deterministically
+- Ready for the engine
+
+## The Transformation
+
+```
+Scene IR (semantic)
+    ↓
+  compile()
+    ↓
+Timeline IR (execution)
+```
+
+## Package Structure
+
+```
+packages/ir/src/
+├── semantic.ts    # EpisodeConfig, SemanticMeta, BeatMeta, POVLayout
+├── trace.ts       # Trace model for debugging
+├── scene.ts       # SceneIR, SceneOp types
+├── timeline.ts    # TimelineIR, TimelineOp types
+├── ordering.ts    # Phase, Priority for sorting
+├── validate.ts    # IR validation utilities
+├── constraints.ts # Narrative constraint checking
+└── index.ts       # Exports
+```
+
+## Type Imports
+
+```typescript
+// Scene IR types
+import {
+  SceneIR,
+  SceneOp,
+  WaitOp,
+  TypingStartOp,
+  SendMessageOp,
+  ReceiveMessageOp,
+  POVSwitchOp,
+  Beat,
+  DeviceScene,
+  EpisodeMeta,
+} from "@tokovo/ir";
+
+// Timeline IR types
+import {
+  TimelineIR,
+  TimelineOp,
+  DeviceUnlockedOp,
+  MessageReceivedOp,
+  Phase,
+} from "@tokovo/ir";
+
+// Semantic types
+import {
+  EpisodeConfig,
+  SemanticMeta,
+  BeatMeta,
+  Mood,
+  POVLayout,
+} from "@tokovo/ir";
+
+// Utilities
+import {
+  parseDuration,
+  messageRef,
+  validateConstraints,
+} from "@tokovo/ir";
+```
+
+## Design Principles
+
+### 1. Readonly Everywhere
+
+All IR types use `readonly`:
+
+```typescript
+interface SceneOp {
+  readonly kind: string;
+  // ...
+}
+```
+
+This enforces immutability.
+
+### 2. Discriminated Unions
+
+Operations use `kind` for discrimination:
+
+```typescript
+type SceneOp =
+  | WaitOp          // kind: "Wait"
+  | TypingStartOp   // kind: "TypingStart"
+  | SendMessageOp   // kind: "SendMessage"
+  // ...
+
+// Type-safe switching
+switch (op.kind) {
+  case "Wait":
+    // TypeScript knows op is WaitOp
+    break;
+}
+```
+
+### 3. No Optional Hell
+
+Required fields are required. Optional only when truly optional.
+
+```typescript
+// Good
+interface WaitOp {
+  readonly kind: "Wait";
+  readonly duration: DurationExpr;  // Required
+}
+
+// Bad
+interface WaitOp {
+  readonly kind?: "Wait";  // Why optional?
+  readonly duration?: string;
+}
+```

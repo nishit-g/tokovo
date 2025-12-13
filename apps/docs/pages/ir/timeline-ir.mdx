@@ -1,0 +1,216 @@
+# Timeline IR
+
+Timeline IR is the **frame-based execution contract** — exactly when each event fires.
+
+## TimelineIR
+
+Top-level structure:
+
+```typescript
+interface TimelineIR {
+  readonly episodeId: string;
+  readonly fps: number;
+  readonly durationInFrames: number;
+  readonly ops: TimelineOp[];
+}
+```
+
+## Timeline Operations
+
+### Device Operations
+
+| Operation | Fields | Phase |
+|-----------|--------|-------|
+| `DeviceUnlockedOp` | at, deviceId | DEVICE (0) |
+| `DeviceLockedOp` | at, deviceId | DEVICE (0) |
+
+### Navigation Operations
+
+| Operation | Fields | Phase |
+|-----------|--------|-------|
+| `AppOpenedOp` | at, deviceId, appId | NAV (10) |
+| `ConversationOpenedOp` | at, deviceId, appId, conversationId | NAV (10) |
+
+### App Operations
+
+| Operation | Fields | Phase |
+|-----------|--------|-------|
+| `TypingStartedOp` | at, appId, conversationId, actor | APP (20) |
+| `TypingEndedOp` | at, appId, conversationId, actor | APP (20) |
+| `MessageReceivedOp` | at, appId, conversationId, message | APP (20) |
+| `MessageSentOp` | at, appId, conversationId, message | APP (20) |
+| `MessageReadOp` | at, appId, conversationId, messageId | APP (20) |
+| `MessageDeletedOp` | at, appId, conversationId, messageId | APP (20) |
+
+## Full TimelineOp Type
+
+```typescript
+type TimelineOp =
+  // Device
+  | DeviceUnlockedOp
+  | DeviceLockedOp
+  // Navigation
+  | AppOpenedOp
+  | ConversationOpenedOp
+  // App
+  | TypingStartedOp
+  | TypingEndedOp
+  | MessageReceivedOp
+  | MessageSentOp
+  | MessageReadOp
+  | MessageDeletedOp;
+```
+
+## Every Op Has `at`
+
+The defining feature of Timeline IR:
+
+```typescript
+interface DeviceUnlockedOp {
+  readonly kind: "DeviceUnlocked";
+  readonly at: number;  // Frame number
+  readonly deviceId: string;
+  readonly trace?: Trace;
+}
+```
+
+## Ordering
+
+Operations are sorted by:
+
+1. `at` — Frame number (primary)
+2. `phase` — Category (DEVICE < NAV < APP < FX)
+3. `priority` — Within phase
+4. `trackId` — For concurrent operations
+5. `opIndex` — Stable tie-breaker
+
+### Phases
+
+```typescript
+enum Phase {
+  DEVICE = 0,   // Unlock, lock
+  NAV = 10,     // Open app, navigate
+  APP = 20,     // Messages, typing
+  FX = 30,      // Effects (reserved)
+}
+```
+
+## Message in Timeline
+
+```typescript
+interface TimelineMessage {
+  readonly id: string;
+  readonly from: string;
+  readonly text: string;
+  readonly type?: "text" | "image" | "voice" | "system";
+  readonly timestamp?: string;
+  readonly semantic?: SemanticMeta;
+}
+```
+
+## Trace
+
+Every operation includes debugging info:
+
+```typescript
+interface Trace {
+  readonly episodeId: string;
+  readonly beat: string;
+  readonly trackId: number;
+  readonly opIndex: number;
+  readonly phase: number;
+  readonly priority: number;
+  readonly sceneOpIndex?: number;
+  readonly deviceId?: string;
+  readonly conversationId?: string;
+}
+```
+
+## Example Timeline IR
+
+```typescript
+const timeline: TimelineIR = {
+  episodeId: "drama-01",
+  fps: 30,
+  durationInFrames: 300,
+  ops: [
+    // Frame 0: Device setup
+    {
+      kind: "DeviceUnlocked",
+      at: 0,
+      deviceId: "AlicePhone",
+      trace: { episodeId: "drama-01", beat: "tension", trackId: 0, opIndex: 0, phase: 0, priority: 0 }
+    },
+    {
+      kind: "AppOpened",
+      at: 0,
+      deviceId: "AlicePhone",
+      appId: "app_whatsapp",
+      trace: { /* ... */ }
+    },
+    {
+      kind: "ConversationOpened",
+      at: 0,
+      deviceId: "AlicePhone",
+      appId: "app_whatsapp",
+      conversationId: "dm_bob",
+      trace: { /* ... */ }
+    },
+    
+    // Frame 60: Typing starts (after 2s wait)
+    {
+      kind: "TypingStarted",
+      at: 60,
+      appId: "app_whatsapp",
+      conversationId: "dm_bob",
+      actor: "Bob",
+      trace: { /* ... */ }
+    },
+    
+    // Frame 105: Typing ends (after 1.5s)
+    {
+      kind: "TypingEnded",
+      at: 105,
+      appId: "app_whatsapp",
+      conversationId: "dm_bob",
+      actor: "Bob",
+      trace: { /* ... */ }
+    },
+    
+    // Frame 105: Message arrives
+    {
+      kind: "MessageReceived",
+      at: 105,
+      appId: "app_whatsapp",
+      conversationId: "dm_bob",
+      message: {
+        id: "msg_AlicePhone_dm_bob_1",
+        from: "Bob",
+        text: "We need to talk.",
+        type: "text",
+        semantic: { mood: "tense", intensity: 0.8 }
+      },
+      trace: { /* ... */ }
+    },
+  ]
+};
+```
+
+## Scene IR → Timeline IR
+
+The compiler transforms:
+
+| Scene IR | Timeline IR |
+|----------|-------------|
+| `Wait` | Cursor advances, no op |
+| `TypingStart` | `TypingStarted` at cursor |
+| `TypingEnd` | `TypingEnded` at cursor |
+| `SendMessage` | `MessageSent` at cursor |
+| `ReceiveMessage` | `MessageReceived` at cursor |
+| `ReadMessage` | `MessageRead` at cursor |
+| `DeleteMessage` | `MessageDeleted` at cursor |
+
+Plus auto-inserted glue events:
+- `DeviceUnlocked` at frame 0
+- `AppOpened` at frame 0
+- `ConversationOpened` at frame 0
