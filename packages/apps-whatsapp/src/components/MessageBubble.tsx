@@ -41,18 +41,23 @@ export interface MessageBubbleProps {
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
+    const { opacity, translateX, translateY, rect } = layout;
+
+    // Safety check - layout should always have rect if computed correctly
+    if (!rect) return null;
+
     const hasReactions = msg.reactions && msg.reactions.length > 0;
 
     return (
         <div style={{
             position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 36,
-            right: isMe ? 36 : "auto",
-            maxWidth: "78%",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            // maxWidth: "78%", // Controlled by layout engine now
             opacity,
-            transform: `translateY(${translateY}px)`,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1, // Ensure bubbles are above background
         }}>
             {/* Bubble with tail */}
             <div style={{

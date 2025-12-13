@@ -118,7 +118,7 @@ export function computeChatLayout(
             linkPreview: (msg as any).linkPreview,
         };
 
-        const height = calculateMessageHeight(msgForHeight, config);
+        const height = calculateMessageHeight(msgForHeight, viewportWidth, config);
 
         // Calculate bubble width using per-type config
         const bubbleWidth = calculateBubbleWidth(msgForHeight, viewportWidth, config);

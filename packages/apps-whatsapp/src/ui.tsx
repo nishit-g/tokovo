@@ -178,18 +178,23 @@ interface MessageBubbleProps {
 
 const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
     const isMe = msg.from === "me";
-    const { opacity, translateY, height, y } = layout;
+    const { opacity, translateX, translateY, rect } = layout;
+
+    // Safety check - layout should always have rect if computed correctly
+    if (!rect) return null;
+
     const hasReactions = msg.reactions && msg.reactions.length > 0;
 
     return (
         <div style={{
             position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 36,
-            right: isMe ? 36 : "auto",
-            maxWidth: "78%",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            // height: rect.height, // Optional, let content dictate height unless clipping
             opacity,
-            transform: `translateY(${translateY}px)`,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1, // Ensure bubbles are above background
         }}>
             {/* Bubble with tail */}
             <div style={{
@@ -339,6 +344,34 @@ interface MessageListProps {
     ownerName?: string;  // Device owner for POV - their messages appear on right
 }
 
+/**
+ * Standardized container that obeys layout rects exclusively.
+ */
+const SimpleMessageContainer: React.FC<{
+    layout?: ChatMessageLayout;
+    isMe: boolean;
+    children: React.ReactNode;
+    style?: React.CSSProperties;
+}> = ({ layout, isMe, children, style }) => {
+    if (!layout || !layout.rect) return null;
+    const { opacity, translateX, translateY, rect } = layout;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: rect.y,
+            left: rect.x,
+            width: rect.width,
+            opacity,
+            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+            zIndex: 1,
+            ...style
+        }}>
+            {children}
+        </div>
+    );
+};
+
 const MessageList: React.FC<MessageListProps> = ({
     messages,
     layout,
@@ -427,15 +460,7 @@ const MessageList: React.FC<MessageListProps> = ({
                     // Render voice messages
                     if (msg.type === "voice") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <VoiceMessageBubble
                                     isMe={isMe}
                                     duration={msg.duration || 15}
@@ -443,24 +468,16 @@ const MessageList: React.FC<MessageListProps> = ({
                                     progress={msg.playProgress || 0}
                                     read={msg.status === "read"}
                                     senderName={showSenderName ? msg.from : undefined}
-                                    platform={platform} // Pass platform prop
+                                    platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Image messages
                     if (msg.type === "image") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <ImageMessageBubble
                                     imageUrl={msg.imageUrl || ""}
                                     caption={msg.caption}
@@ -470,22 +487,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Video messages
                     if (msg.type === "video") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <VideoMessageBubble
                                     thumbnailUrl={msg.thumbnailUrl || ""}
                                     duration={msg.duration || 0}
@@ -498,22 +507,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render GIF messages
                     if (msg.type === "gif") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <GifMessageBubble
                                     gifUrl={msg.gifUrl || ""}
                                     isMe={isMe}
@@ -522,22 +523,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                     senderName={showSenderName ? msg.from : undefined}
                                     platform={platform}
                                 />
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
 
                     if (msg.type === "deleted") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                                right: isMe ? config.bubbleMarginHorizontal : "auto",
-                                maxWidth: config.bubbleMaxWidth,
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                                 <div style={{
                                     backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                     padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -577,22 +570,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                         </span>
                                     </div>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Screenshot Alert (Psychotic feature)
                     if (msg.type === "screenshot_alert") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                width: "100%",
-                                display: "flex",
-                                justifyContent: "center",
-                                opacity,
-                                transform: `translateY(${translateY}px)`
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe} style={{ display: "flex", justifyContent: "center", width: "100%", left: 0 }}>
                                 <div style={{
                                     backgroundColor: config.screenshotAlertBg,
                                     padding: "15px 45px",
@@ -615,20 +600,14 @@ const MessageList: React.FC<MessageListProps> = ({
                                         Took a screenshot!
                                     </span>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render Missed Call (Psychotic feature)
                     if (msg.type === "call_missed") {
                         return (
-                            <div key={msg.id} style={{
-                                position: "absolute",
-                                top: y,
-                                left: "50%",
-                                transform: `translateX(-50%) translateY(${translateY}px)`,
-                                opacity
-                            }}>
+                            <SimpleMessageContainer layout={msgLayout} isMe={isMe} style={{ left: "50%", width: "auto", transform: `translateX(-50%) translateY(${translateY}px)` }}>
                                 <div style={{
                                     backgroundColor: config.missedCallBubbleColor,
                                     padding: "24px 45px",
@@ -654,21 +633,13 @@ const MessageList: React.FC<MessageListProps> = ({
                                         10:45
                                     </span>
                                 </div>
-                            </div>
+                            </SimpleMessageContainer>
                         );
                     }
 
                     // Render regular text messages
                     return (
-                        <div key={msg.id} style={{
-                            position: "absolute",
-                            top: y,
-                            left: isMe ? "auto" : config.bubbleMarginHorizontal,
-                            right: isMe ? config.bubbleMarginHorizontal : "auto",
-                            maxWidth: config.bubbleMaxWidth,
-                            opacity,
-                            transform: `translateY(${translateY}px)`
-                        }}>
+                        <SimpleMessageContainer layout={msgLayout} isMe={isMe}>
                             <div style={{
                                 backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
                                 padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
@@ -776,7 +747,7 @@ const MessageList: React.FC<MessageListProps> = ({
                                 </div>
                             )}
 
-                        </div>
+                        </SimpleMessageContainer>
                     );
                 })}
 

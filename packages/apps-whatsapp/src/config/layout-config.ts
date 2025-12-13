@@ -274,6 +274,7 @@ export interface MessageForHeight {
 
 export function calculateMessageHeight(
     msg: MessageForHeight,
+    viewportWidth: number,
     config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
 ): number {
     const msgType = (msg.type || "text") as MessageType;
@@ -285,12 +286,12 @@ export function calculateMessageHeight(
     if (msgType === "text" || msgType === "deleted") {
         const text = msg.text || "";
         // Use unified measurement logic
-        const { lines } = measureTextBlock(text, undefined, config); // Allow default viewport
+        const { lines } = measureTextBlock(text, viewportWidth, config);
         height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
     } else if ((msgType === "image" || msgType === "video") && msg.caption) {
         // Dynamic Media Height (Option B)
         // Measure caption to determine how much vertical space to add to base image
-        const { lines } = measureTextBlock(msg.caption, undefined, config);
+        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
         const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
         const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
         height = typeConfig.height.base + captionHeight + captionPadding;
@@ -513,7 +514,11 @@ export function calculateBubbleWidth(
         return bubbleWidth;
     }
 
-    return viewportWidth * typeConfig.width.maxPercent;
+    // Media & others: Use standard clamping
+    // Calculates a width based on percentage, but ensures it's at least 'min'
+    // and optionally upper-bounded if we strictly wanted to (not currently in config)
+    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
+    return Math.max(typeConfig.width.min, idealWidth);
 }
 
 // =============================================================================

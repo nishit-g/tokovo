@@ -35,7 +35,8 @@ export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
             borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
             boxShadow: config.bubbleShadow,
             overflow: "hidden",
-            maxWidth: 600,
+            // Width is controlled by layout container
+            width: "100%",
         }}>
             {/* Sender Name (Group Chat) */}
             {senderName && !isMe && (
@@ -186,7 +187,8 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
             borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
             boxShadow: config.bubbleShadow,
             overflow: "hidden",
-            maxWidth: 600,
+            // Width is controlled by layout container
+            width: "100%",
         }}>
             {/* Sender Name (Group Chat) */}
             {senderName && !isMe && (
@@ -384,7 +386,8 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
             borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
             boxShadow: config.bubbleShadow,
             overflow: "hidden",
-            maxWidth: 500,
+            // Width is controlled by layout container
+            width: "100%",
         }}>
             {/* Sender Name (Group Chat) */}
             {senderName && !isMe && (
