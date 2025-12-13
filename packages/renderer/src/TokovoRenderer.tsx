@@ -177,6 +177,7 @@ export const TokovoRenderer: React.FC<{
                 deviceId,
                 appId || "",
                 activeConversationId || "",
+                profile.dimensions.width,  // viewportWidth
                 effectiveViewportHeight
             );
 
