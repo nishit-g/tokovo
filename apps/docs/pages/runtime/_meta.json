@@ -3,5 +3,8 @@
     "engine": "Engine",
     "events": "Event Types",
     "world-state": "WorldState",
+    "device-os": "Device OS",
+    "keyboard": "Keyboard",
+    "camera": "Camera",
     "audio": "Audio System"
 }

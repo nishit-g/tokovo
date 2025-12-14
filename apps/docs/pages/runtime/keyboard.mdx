@@ -1,0 +1,98 @@
+---
+title: Keyboard System
+description: Virtual keyboard state, typing humanization, and IOSKeyboard rendering
+---
+
+# Keyboard System
+
+The keyboard pipeline simulates a real mobile keyboard: visibility, layout, key highlighting, and humanized typing cadence.
+
+## Capabilities
+
+- Pixel-perfect **IOSKeyboard** with pop-up highlights
+- **Layouts** for QWERTY, emoji, and numeric boards
+- **Typing humanizer** via `generateTyping` (variable speed + typos)
+- Low-level key events for deterministic playback
+
+## KeyboardState shape
+
+```typescript
+interface KeyboardState {
+  visible: boolean;
+  layout: "qwerty" | "emoji" | "numeric";
+  currentKey: string | null;
+  keyPressedAt: number | null;
+  inputText: string;
+  cursorPosition: number;
+  cursorVisible: boolean;
+}
+```
+
+## Showing and hiding
+
+```typescript
+// Show keyboard (defaults to qwerty)
+dsl.keyboard.show(0, "phone");
+
+// Emoji layout
+
+dsl.keyboard.show(0, "phone", "emoji");
+
+// Hide keyboard
+
+dsl.keyboard.hide(300, "phone");
+```
+
+## Typing characters
+
+```typescript
+// Low-level control with per-character highlights
+dsl.keyboard.typeChar(50, "phone", "H");
+dsl.keyboard.typeChar(58, "phone", "e");
+dsl.keyboard.typeChar(66, "phone", "l");
+dsl.keyboard.typeChar(74, "phone", "l");
+dsl.keyboard.typeChar(82, "phone", "o");
+
+dsl.keyboard.backspace(100, "phone"); // delete last char
+dsl.keyboard.clear(200, "phone");     // clear input
+```
+
+## Typing humanizer (`generateTyping`)
+
+`generateTyping` expands text into deterministic KEY_DOWN/TYPE_CHAR/KEY_UP events with natural pacing.
+
+```typescript
+import { generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
+
+const events = generateTyping(0, "phone", "Hello world!", {
+  speed: "casual",        // "slow" | "normal" | "casual" | "fast" | "burst"
+  typoPositions: [5, 12], // Optional typo slots
+});
+```
+
+| Speed | Frames/letter | Real time | Use case |
+|-------|---------------|-----------|----------|
+| `slow` | 12 | 400ms | Thoughtful reply |
+| `normal` | 8 | 267ms | Standard typing |
+| `casual` | 6 | 200ms | Comfortable pacing |
+| `fast` | 4 | 133ms | Quick response |
+| `burst` | 2 | 67ms | Excited/urgent |
+
+## Rendering the keyboard
+
+```tsx
+import { IOSKeyboard } from "@tokovo/devices";
+
+<IOSKeyboard
+  layout={keyboard.layout}
+  currentKey={keyboard.currentKey}
+  inputText={keyboard.inputText}
+  cursorVisible={keyboard.cursorVisible}
+/>
+```
+
+The component renders at 3x scale for crisp 1080x1920 output and includes authentic staggered rows, shift/backspace/return controls, and emoji/123 toggles.
+
+## Engine wiring
+
+Runtime reducers handle keyboard events in `processKeyboardEvent`, updating `device.keyboard` so renders remain deterministic across scrubbing and exports.

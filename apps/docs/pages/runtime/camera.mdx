@@ -1,0 +1,77 @@
+---
+title: Camera System
+description: Zoom, pan, shake, and focus controls for cinematic framing
+---
+
+# Camera System
+
+The camera subsystem powers cinematic framing: zooms, pans, shakes, focus pulls, and resets. It keeps visuals deterministic while letting DirectorLite or manual DSL events drive motion.
+
+## CameraState shape
+
+```typescript
+interface CameraState {
+  baseView: "APP_VIEW" | "LOCKSCREEN_VIEW" | "HOMESCREEN_VIEW";
+  activeDeviceId: string;
+  layout: CameraLayoutConfig;
+  activeEffects: ActiveEffect[];
+  transform: CameraTransform;
+  deviceTransforms: Record<string, CameraTransform>;
+}
+
+interface CameraTransform {
+  translateX: number;
+  translateY: number;
+  scale: number;
+  rotation: number;
+  originX: number; // 0-1
+  originY: number; // 0-1
+  shakeX: number;
+  shakeY: number;
+}
+```
+
+## DSL controls (`dsl.camera`)
+
+```typescript
+// Zoom to 130% over 30 frames
+dsl.camera.zoom(100, 1.3, 30);
+
+// Zoom toward bottom of the screen
+dsl.camera.zoom(120, 1.3, 30, { originY: 0.7 });
+
+// Pan right/up in 20 frames
+dsl.camera.pan(200, 100, -50, 20);
+
+// Impact shake with custom frequency
+dsl.camera.shake(300, 5, 15, { frequency: 20, decay: 0.8 });
+
+// Focus on a rect via normalized coordinates
+dsl.camera.focus(400, 0.5, 0.3, 1.2, 25);
+
+// Return to defaults
+dsl.camera.reset(500, 25);
+```
+
+## Example sequence
+
+```typescript
+const events = [
+  dsl.messages.receive(100, "dm", "Alex", "OMG!! You won't believe this!"),
+  dsl.camera.zoom(110, 1.25, 20, { originY: 0.7 }),
+  dsl.camera.shake(130, 3, 12, { decay: 0.9 }),
+  dsl.camera.reset(200, 25),
+];
+```
+
+## Rendering & control
+
+- `CameraState` lives in `WorldState.camera` and is reduced deterministically from timeline events.
+- DirectorLite layers additional effects on top of manual `dsl.camera` calls.
+- The renderer consumes the final transform to position `<DeviceFrame>` without side effects.
+
+## Realism tips
+
+- **Use origin points** to focus on bubbles or reels instead of center zooms.
+- **Shake lightly** (magnitude 2–3) for notifications; larger values for crashes or impacts.
+- **Reset often** to avoid drift when chaining multiple effects.

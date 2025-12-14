@@ -1,0 +1,135 @@
+---
+title: Device OS Layer
+description: Status bar realism for clock, battery, network, and DND state
+---
+
+# Device OS Layer
+
+The Device OS layer simulates operating system behaviors so renders look like real screen recordings. It drives status bar state for clock, battery, network, and focus modes.
+
+## Responsibilities
+
+- **Clock** — Timestamp displayed in the status bar
+- **Battery** — Percentage, charging bolt, and low-power indicator
+- **Network** — WiFi strength, cellular type (5G/LTE), and no-service states
+- **Modes** — Do Not Disturb, Airplane Mode, Low Power Mode
+
+## DeviceOSState shape
+
+```typescript
+interface DeviceOSState {
+  clock: number; // Unix timestamp (ms)
+  battery: number; // 0-100
+  charging: boolean;
+  lowPowerMode: boolean;
+  network: "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service";
+  wifiStrength: number; // 0-3
+  cellStrength: number; // 0-4
+  airplaneMode: boolean;
+  dnd: boolean;
+}
+```
+
+## Seeding initial world state
+
+Add OS details to each device in `initialWorld`:
+
+```typescript
+const initialWorld: WorldState = {
+  devices: {
+    phone: {
+      id: "phone",
+      profileId: "iphone16",
+      foregroundAppId: "app_whatsapp",
+      notifications: [],
+      os: {
+        clock: new Date().setHours(14, 45, 0, 0),
+        battery: 87,
+        charging: false,
+        network: "wifi",
+        wifiStrength: 3,
+        cellStrength: 4,
+        dnd: false,
+        lowPowerMode: false,
+        airplaneMode: false,
+      },
+    },
+  },
+  camera: {/* ... */},
+  audio: { activeSounds: {} },
+};
+```
+
+## DSL controls (`dsl.os`)
+
+| Event | Purpose |
+|-------|---------|
+| `setTime(at, timestamp)` | Update status bar time |
+| `setBattery(at, level, charging?)` | Adjust percentage + charging bolt |
+| `setNetwork(at, network, wifiStrength?, cellStrength?)` | Swap radios and signal |
+| `setDND(at, enabled)` | Toggle Do Not Disturb |
+| `setAirplane(at, enabled)` | Force no-service state |
+
+```typescript
+const START = new Date();
+START.setHours(14, 45, 0, 0);
+
+const events = [
+  dsl.os.setTime(0, START.getTime()),
+  dsl.os.setBattery(0, 87),
+  dsl.os.setNetwork(0, "wifi", 3),
+
+  // Story beats
+  dsl.os.setNetwork(200, "5G", 4),
+  dsl.os.setDND(300, true),
+  dsl.os.setBattery(400, 85),
+];
+```
+
+## How the engine applies OS events
+
+`processOSEvent` inside the runtime reducer updates device state deterministically:
+
+```typescript
+function processOSEvent(draft: WorldState, event: OSEvent): void {
+  const device = draft.devices[event.deviceId];
+
+  switch (event.type) {
+    case "SET_TIME":
+      device.os.clock = event.time;
+      break;
+    case "SET_BATTERY":
+      device.os.battery = event.level;
+      device.os.charging = event.charging ?? false;
+      break;
+    case "SET_NETWORK":
+      device.os.network = event.network;
+      break;
+    case "SET_DND":
+      device.os.dnd = event.enabled;
+      break;
+    case "SET_AIRPLANE":
+      device.os.airplaneMode = event.enabled;
+      if (event.enabled) device.os.network = "no-service";
+      break;
+  }
+}
+```
+
+## Rendering
+
+`<StatusBar os={device.os} />` consumes `device.os` to show time, network badges, WiFi/cell strength, moon (DND), and charging bolt. The component lives in `@tokovo/devices` and is wired through `<DeviceFrame>` in the renderer.
+
+## Realism patterns
+
+- **Time progression** — Advance `clock` every 10–15 seconds of story time.
+- **Battery drain** — Drop 1% every ~30 seconds of heavy use; add `charging: true` for plug-in moments.
+- **Network shifts** — Gradually decrease WiFi strength before switching to cellular; use `no-service` for tunnels.
+
+## File map
+
+- **Types** — `packages/core/src/types.ts` (`DeviceOSState`, `NetworkType`)
+- **Engine** — `packages/core/src/engine.ts` (`processOSEvent`)
+- **DSL** — `packages/dsl/src/events/os.ts`
+- **UI** — `packages/devices/src/StatusBar.tsx`
+- **Renderer wiring** — `packages/renderer/src/DeviceFrame.tsx`
