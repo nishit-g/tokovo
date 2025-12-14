@@ -283,6 +283,18 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                     scrollY: chatLayout.scrollY,
                 };
                 finalCameraTransform = applyDirectorEffects(result.effects, viewport);
+
+                // Track DirectorLite effects for smooth decay
+                // This is crucial: when DirectorLite effects end, we need to decay smoothly
+                const hasDirectorFramingEffect = result.effects.some(e => e.category === "framing");
+                if (hasDirectorFramingEffect) {
+                    trackingStateRef.current = {
+                        prevOriginX: finalCameraTransform.originX,
+                        prevOriginY: finalCameraTransform.originY,
+                        prevScale: finalCameraTransform.scale,
+                        hasActiveEffect: true,
+                    };
+                }
             }
         }
 
@@ -450,11 +462,20 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         // =====================================================================
         // 3.7. SMOOTH DECAY FALLBACK (Prevents Jerk)
         // =====================================================================
-        // When no anchor effects are active, smoothly decay towards neutral
-        // instead of snapping. This prevents the jerk when effects end.
-        const hasAnchorEffects = anchorFocusEffects.length > 0 || anchorTrackEffects.length > 0;
+        // When no anchor effects are active (manual or DirectorLite), smoothly 
+        // decay towards neutral instead of snapping. This prevents the jerk when effects end.
 
-        if (!hasAnchorEffects && trackingStateRef.current.hasActiveEffect) {
+        // Check if DirectorLite has active framing effects
+        const hasDirectorFraming = directorEnabled && directorOutput &&
+            !directorOutput.skipped &&
+            directorOutput.effects.some(e => e.category === "framing");
+
+        // Has ANY active camera effects (manual OR DirectorLite)
+        const hasAnyActiveEffects = anchorFocusEffects.length > 0 ||
+            anchorTrackEffects.length > 0 ||
+            hasDirectorFraming;
+
+        if (!hasAnyActiveEffects && trackingStateRef.current.hasActiveEffect) {
             // Effect just ended - smoothly decay towards neutral
             const DECAY_SMOOTHING = 0.12;  // Smooth decay rate
             const prev = trackingStateRef.current;
