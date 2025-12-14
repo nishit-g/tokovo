@@ -125,7 +125,10 @@ export function eventSortKey(event: CanonicalRuntimeEvent): string {
     }
 
     // Operation index from trace (for ordering within same app)
-    const opIndex = String(event.trace.opIndex).padStart(6, "0");
+    // Handle legacy events that don't have trace
+    const opIndex = event.trace?.opIndex != null
+        ? String(event.trace.opIndex).padStart(6, "0")
+        : "000000";
 
     return `${at}_${kindPriority}_${typePriorityStr}_${deviceId}_${appId}_${opIndex}`;
 }

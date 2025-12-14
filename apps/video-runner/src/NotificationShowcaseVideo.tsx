@@ -6,7 +6,8 @@
 
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, createEventIndex } from "@tokovo/core";
+import { createEventIndex } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import { notificationShowcaseEpisode } from "@tokovo/episodes";
@@ -25,7 +26,7 @@ export const NotificationShowcaseVideo: React.FC = () => {
 
     // Compute world state at current frame
     const world = useMemo(() =>
-        replay(notificationShowcaseEpisode.initialWorld, notificationShowcaseEpisode.events, t),
+        buildWorld(notificationShowcaseEpisode.initialWorld, notificationShowcaseEpisode.events, t),
         [t]
     );
 

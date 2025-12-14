@@ -5,6 +5,7 @@ import {
     WorldState,
     TimelineEvent,
 } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -129,7 +130,7 @@ export const PhoneCallShowcase: React.FC = () => {
 
     // Compute world state at current frame
     const worldState = useMemo(() => {
-        return replay(episode.initialWorld, episode.events, frame);
+        return buildWorld(episode.initialWorld, episode.events, frame);
     }, [episode, frame]);
 
     return (

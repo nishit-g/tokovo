@@ -7,6 +7,7 @@ import {
     createEventIndex,
     DEFAULT_BUS_CONFIG
 } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -343,7 +344,7 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
 
     const episode = useMemo(() => createFullCinematicEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, t);
+    const world = buildWorld(episode.initialWorld, episode.events, t);
 
     const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
 

@@ -14,7 +14,7 @@
 // CANONICAL PLUGIN REGISTRATION
 // =============================================================================
 
-import { canonical, createPluginRegistry } from "@tokovo/core";
+import { canonical, createPluginRegistry, replay } from "@tokovo/core";
 import type { PluginRegistry } from "@tokovo/core";
 
 // Import canonical plugins from each app package
@@ -60,6 +60,41 @@ export const tokovoPlugins = createTokovoPluginRegistry();
 
 export { canonical, createPluginRegistry };
 export const { createEngine } = canonical;
+
+// =============================================================================
+// TOKOVO ENGINE SINGLETON (for showcases)
+// =============================================================================
+
+import type { WorldState, TimelineEvent, TokovoEngine } from "@tokovo/core";
+
+/**
+ * Pre-configured Tokovo engine with all apps registered.
+ * Use this for video compositions.
+ */
+export const tokovoEngine: TokovoEngine = createEngine({
+    plugins: tokovoPlugins,
+    fps: 30,
+    validation: "compat",
+});
+
+/**
+ * Build world state from initial state and events.
+ * 
+ * NOTE: Currently uses legacy replay() under the hood because
+ * the app reducers haven't been migrated to canonical signatures yet.
+ * The canonical engine expects 3-arg reducers (world, event, ctx),
+ * but legacy reducers use 2-arg (draft, event).
+ * 
+ * This provides a stable API while we complete the migration.
+ */
+export function buildWorld(
+    initialWorld: WorldState,
+    events: TimelineEvent[],
+    frame: number
+): WorldState {
+    // Use legacy replay for now - reducers aren't canonical yet
+    return replay(initialWorld, events, frame);
+}
 
 // =============================================================================
 // LEGACY SUPPORT (Deprecated)

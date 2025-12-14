@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
+import { WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -277,7 +278,7 @@ export const MultiAppShowcaseVideo: React.FC = () => {
     const eventIndex = useMemo(() => createEventIndex(events), [events]);
 
     // Replay state up to current frame
-    const world = useMemo(() => replay(initialWorld, events, frame), [initialWorld, events, frame]);
+    const world = useMemo(() => buildWorld(initialWorld, events, frame), [initialWorld, events, frame]);
 
     // Scale to fit composition
     const compositionWidth = 1080;

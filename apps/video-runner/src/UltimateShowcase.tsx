@@ -7,6 +7,7 @@ import {
     createEventIndex,
     DEFAULT_BUS_CONFIG,
 } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -295,7 +296,7 @@ export const UltimateShowcase: React.FC = () => {
 
     const episode = useMemo(() => createUltimateEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, frame);
+    const world = buildWorld(episode.initialWorld, episode.events, frame);
 
     // Calculate scale to fit device in view
     const scale = Math.min(

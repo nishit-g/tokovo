@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -210,7 +211,7 @@ export const WhatsappCompleteShowcaseVideo: React.FC = () => {
     );
 
     // Replay world state at current time
-    const world = replay(episodeData.initialWorld, episodeData.events, t);
+    const world = buildWorld(episodeData.initialWorld, episodeData.events, t);
 
     // Calculate scale to fit device in composition
     const compositionWidth = 1080;

@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
+import { WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
+import { buildWorld } from "./engine";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -192,7 +193,7 @@ export const TwitterShowcaseVideo: React.FC = () => {
     );
 
     // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
+    const world = buildWorld(episode.initialWorld, episode.events, t);
 
     // Calculate scale to fit device in composition
     const compositionWidth = 1080;
