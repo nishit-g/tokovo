@@ -23,11 +23,29 @@ import { FullRealityShowcase } from "./FullRealityShowcase";
 import { PhoneCallShowcase } from "./PhoneCallShowcase";
 import { UltimateShowcase } from "./UltimateShowcase";
 import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
+import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
+import { ManualCameraShowcase } from "./ManualCameraShowcase";
 
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="AutoDirectorShowcase"
+                component={AutoDirectorShowcase}
+                durationInFrames={1380}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="ManualCameraShowcase"
+                component={ManualCameraShowcase}
+                durationInFrames={1400}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="SemanticCameraShowcase"
                 component={SemanticCameraShowcase}
