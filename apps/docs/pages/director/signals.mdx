@@ -18,11 +18,11 @@ Signals are **camera-relevant events** extracted from the timeline. They bridge 
 {
   at: 45,
   type: "NewMessage",
-  deviceId: "AlicePhone",
+  deviceId: "phone",
   appId: "app_whatsapp",
   conversationId: "dm_bob",
   messageId: "msg_1",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 }
+  from: "Bob"
 }
 ```
 
@@ -34,8 +34,17 @@ Signals are **camera-relevant events** extracted from the timeline. They bridge 
 | `TypingStarted` | TYPING_START | PushIn |
 | `TypingEnded` | TYPING_END | Release |
 | `MessageRead` | MESSAGE_READ | ZoomToRect (subtle) |
-| `MessageDeleted` | MESSAGE_DELETED | MicroShake |
-| `CallIncoming` | CALL_INCOMING | PullBack |
+| `CallIncoming` | INCOMING_CALL | PullBack |
+
+```typescript
+type SignalType =
+  | "TypingStarted"
+  | "TypingEnded"
+  | "NewMessage"
+  | "MessageRead"
+  | "MessageDeleted"
+  | "CallIncoming";
+```
 
 ## Signal Properties
 
@@ -54,24 +63,25 @@ interface DirectorSignal {
 
   // Target (for framing effects)
   messageId?: string;      // For message-based signals
-  targetRect?: LayoutRect; // Computed rect for camera
+  from?: string;           // Who triggered the signal
 }
 ```
 
-## TargetRect
+## Layout Model
 
-For framing effects, signals include a target rectangle:
+Signals work with a layout model for camera targeting:
 
 ```typescript
-interface LayoutRect {
-  x: number;     // Left edge (screen coords)
-  y: number;     // Top edge (screen coords)
-  width: number;
-  height: number;
+interface DirectorLayoutModel {
+  deviceId: string;
+  appId: string;
+  conversationId?: string;
+  messageRects: Record<string, LayoutRect>;
+  inputAreaRect: LayoutRect;       // Always available
+  typingIndicatorRect?: LayoutRect; // Only when typing
+  lastMessageRect?: LayoutRect;
 }
 ```
-
-This is computed from the layout at signal time.
 
 ## Cooldown Keys
 
@@ -81,51 +91,46 @@ Signals are grouped for cooldown by:
 {type}:{deviceId}:{appId}:{conversationId}
 ```
 
-Example: `NewMessage:AlicePhone:app_whatsapp:dm_bob`
+Example: `NewMessage:phone:app_whatsapp:dm_bob`
 
 **Why?** Typing in chat A won't cooldown typing in chat B.
 
 ## Signal Extraction Code
 
 ```typescript
-// From signals.ts
-export function extractSignals(
-  events: RuntimeEvent[],
-  layout: DirectorLayoutModel
-): DirectorSignal[] {
-  const signals: DirectorSignal[] = [];
-
-  for (const event of events) {
-    if (event.kind === "APP") {
-      switch (event.type) {
-        case "MESSAGE_RECEIVED":
-          signals.push({
-            at: event.at,
-            type: "NewMessage",
-            deviceId: event.deviceId,
-            appId: event.appId,
-            conversationId: event.conversationId,
-            messageId: event.message.id,
-            targetRect: layout.messageRects[event.message.id]
-          });
-          break;
-        // ... other cases
-      }
-    }
-  }
-
-  return signals.sort((a, b) => a.at - b.at);
-}
-```
-
-## Using Signals Directly
-
-```typescript
 import { extractSignals } from "@tokovo/core/director-lite";
 
-const signals = extractSignals(events, layoutModel);
+// Extract signals scoped to a device and app
+const signals = extractSignals(events, deviceId, appId);
 
 for (const signal of signals) {
   console.log(`Frame ${signal.at}: ${signal.type}`);
 }
 ```
+
+Function signature:
+
+```typescript
+function extractSignals(
+  events: TimelineEvent[],
+  deviceId: string,
+  appId: string
+): DirectorSignal[] {
+  // Filters events by kind and appId
+  // Converts to DirectorSignal format
+  // Returns sorted by `at` (ascending)
+}
+```
+
+## Event Type Mapping
+
+| APP Event | Signal Created |
+|-----------|----------------|
+| `TYPING_START` | `TypingStarted` |
+| `TYPING_END` | `TypingEnded` |
+| `MESSAGE_RECEIVED` | `NewMessage` |
+| `MESSAGE_READ` | `MessageRead` |
+
+| DEVICE Event | Signal Created |
+|--------------|----------------|
+| `INCOMING_CALL` | `CallIncoming` |
