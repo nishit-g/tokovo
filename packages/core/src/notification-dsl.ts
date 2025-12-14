@@ -50,7 +50,7 @@ export function updateNotification(
     at: number,
     deviceId: string,
     notificationId: string,
-    patch: { title?: string; body?: string; preview?: NotificationOptions["preview"] }
+    patch: { title?: string; body?: string; preview?: NotificationOptions["preview"]; metadata?: Record<string, any> }
 ): TimelineEvent {
     return {
         at,

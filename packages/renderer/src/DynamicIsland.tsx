@@ -141,13 +141,29 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
     const config = deviceProfile.dynamicIsland;
     const platform = deviceProfile.platform;
 
-    // Check for headsUp notification first (highest priority)
-    const headsUpId = device.notificationCenter?.headsUp;
-    if (headsUpId) {
-        const notification = device.notificationCenter?.items.find(n => n.id === headsUpId);
-        if (notification && notification.state === "headsUp") {
-            return <NotificationDynamicIsland config={config} notification={notification} />;
-        }
+    // Find the notification that should be displayed as headsUp at current frame
+    // A notification is visible in headsUp if: t >= at AND t < (at + duration)
+    const items = device.notificationCenter?.items || [];
+    const activeHeadsUp = items
+        .filter(n => {
+            // Must not be dismissed
+            if (n.state === "dismissed" || n.dismissedAt !== undefined) return false;
+
+            // Must be in headsUp-capable mode
+            const mode = n.mode || "both";
+            if (mode === "lockscreen" || mode === "silent") return false;
+
+            // Check time window
+            const shownAt = n.headsUp?.shownAt ?? n.at;
+            const duration = n.headsUp?.duration ?? 90; // Default 3s at 30fps
+            const hideAt = shownAt + duration;
+
+            return t >= shownAt && t < hideAt;
+        })
+        .sort((a, b) => b.at - a.at)[0]; // Most recent first
+
+    if (activeHeadsUp) {
+        return <NotificationDynamicIsland config={config} notification={activeHeadsUp} />;
     }
 
     // Get active background app IDs

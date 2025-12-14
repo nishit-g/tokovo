@@ -8,6 +8,8 @@ import cameraShowcase from "./examples/camera-showcase.json";
 import multiPovDemo from "./examples/multi-pov-demo.json";
 import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
 
+// DSL-based episodes
+export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+
 export * from "./schema";
 export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
-

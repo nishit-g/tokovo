@@ -17,10 +17,19 @@ import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
+import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="NotificationShowcase"
+                component={NotificationShowcaseVideo}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="FullCinematicShowcase"
                 component={FullCinematicShowcaseVideo}
