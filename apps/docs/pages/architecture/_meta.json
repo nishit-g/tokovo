@@ -1,5 +1,8 @@
 {
     "index": "Overview",
+    "mental-model": "Mental Model",
+    "canonical-events": "Canonical Events",
+    "identity-model": "Identity Model",
     "renderer-engines": "Renderer Engines",
     "boundaries": "Layer Boundaries",
     "determinism": "Determinism",

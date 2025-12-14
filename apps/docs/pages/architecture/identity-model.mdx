@@ -1,0 +1,178 @@
+---
+title: Identity Model
+description: How actors are identified and resolved in Tokovo
+---
+
+# Identity Model
+
+Tokovo uses a lightweight identity system where **events carry IDs, not full objects**. This keeps events small and enables lazy actor resolution.
+
+## Core Concepts
+
+### ActorId
+
+A string identifier for any actor (person, bot, system).
+
+```typescript
+type ActorId = string;  // "actor_alice", "actor_bob", "__me__", "__system__"
+```
+
+**Special IDs:**
+- `__me__` - The device owner
+- `__system__` - System messages (encryption notices, etc.)
+
+### ActorRef
+
+The full actor object with display information.
+
+```typescript
+interface ActorRef {
+  readonly id: ActorId;
+  readonly displayName: string;
+  readonly handle?: string;       // @handle
+  readonly avatarUrl?: string;
+  readonly verified?: "blue" | "gold" | "grey";
+  readonly isBot?: boolean;
+  readonly metadata?: Record<string, unknown>;
+}
+```
+
+### ActorRegistry
+
+A registry that maps IDs to full objects.
+
+```typescript
+interface ActorRegistry {
+  get(id: ActorId): ActorRef | undefined;
+  has(id: ActorId): boolean;
+  register(actor: ActorRef): void;
+  all(): ActorRef[];
+}
+```
+
+## Usage Pattern
+
+### 1. Events carry IDs
+
+Events only contain the `ActorId`, not the full object:
+
+```typescript
+const event: MessageEvent = {
+  type: "MESSAGE",
+  fromId: "actor_alice",  // Just the ID
+  content: { kind: "text", text: "Hello!" },
+  // ...
+};
+```
+
+### 2. Registry holds full objects
+
+The registry is created once and passed through the engine:
+
+```typescript
+const actors = createActorRegistry();
+
+actors.register({
+  id: "actor_alice",
+  displayName: "Alice",
+  avatarUrl: "/avatars/alice.jpg",
+});
+
+actors.register({
+  id: "actor_bob",
+  displayName: "Bob",
+  handle: "@bob123",
+  verified: "blue",
+});
+```
+
+### 3. Views resolve at render time
+
+Components look up actors when they need display info:
+
+```tsx
+function MessageBubble({ event, actors }: { event: MessageEvent; actors: ActorRegistry }) {
+  const sender = actors.get(event.fromId);
+  
+  return (
+    <div className="message">
+      <Avatar src={sender?.avatarUrl} />
+      <span className="name">{sender?.displayName ?? "Unknown"}</span>
+      <p>{event.content.text}</p>
+    </div>
+  );
+}
+```
+
+## Factory Function
+
+Use the factory to create registries:
+
+```typescript
+import { createActorRegistry } from "@tokovo/core";
+
+const actors = createActorRegistry();
+
+// Register actors
+actors.register({ id: "actor_1", displayName: "Alice" });
+
+// Check if registered
+actors.has("actor_1");  // true
+
+// Get actor
+const alice = actors.get("actor_1");
+
+// Get all
+const all = actors.all();
+```
+
+## DSL Integration
+
+In DSL episodes, actors are registered via the `actor()` method:
+
+```typescript
+export const myEpisode = episode("my-episode")
+  .actor("alice", { displayName: "Alice", avatarUrl: "/alice.jpg" })
+  .actor("bob", { displayName: "Bob", handle: "@bob" })
+  .beat("conversation", (b) => {
+    b.receive("alice", "Hey!");  // Uses actor ID
+    b.send("Hi Alice!");         // "me" is implicit
+  })
+  .build();
+```
+
+## Helper Functions
+
+### isMe
+
+Check if an actor ID represents the device owner:
+
+```typescript
+import { isMe } from "@tokovo/core";
+
+isMe("__me__");        // true
+isMe("actor_alice");   // false
+```
+
+### isSystem
+
+Check if an actor ID represents a system message:
+
+```typescript
+import { isSystem } from "@tokovo/core";
+
+isSystem("__system__");    // true
+isSystem("actor_alice");   // false
+```
+
+## Benefits
+
+1. **Small events** - Events don't duplicate actor info
+2. **Late binding** - Actor info can be updated without re-compiling
+3. **Memory efficient** - One copy of each actor
+4. **Testable** - Easy to mock actors in tests
+
+## See Also
+
+- [Canonical Events](/architecture/canonical-events) - Event types
+- [Mental Model](/architecture/mental-model) - The pipeline

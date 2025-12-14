@@ -1,0 +1,118 @@
+---
+title: Diagnostics
+description: Structured error codes and messages
+---
+
+# Diagnostics
+
+All Tokovo errors are structured with codes, hints, and documentation links.
+
+## Diagnostic Structure
+
+```typescript
+interface Diagnostic {
+  code: DiagnosticCode;      // e.g., "SCENE_001"
+  message: string;           // Human-readable description
+  severity: "error" | "warning" | "info";
+  trace?: CanonicalTrace;    // Where it happened
+  hint?: string;             // How to fix
+  docsLink?: string;         // Full documentation
+}
+```
+
+## Error Codes
+
+### Scene Errors (SCENE_xxx)
+
+| Code | Message | Fix |
+|------|---------|-----|
+| `SCENE_001` | Missing conversation | Add `.conversation(id)` before use |
+| `SCENE_002` | Unknown app ID | Register app with `.app(id, config)` |
+| `SCENE_003` | Missing capability | App doesn't support this feature |
+| `SCENE_004` | Invalid duration | Use format like `"1.5s"` or `"300ms"` |
+| `SCENE_005` | Unknown actor | Add `.actor(id, ref)` before use |
+
+### Timeline Errors (TIMELINE_xxx)
+
+| Code | Message | Fix |
+|------|---------|-----|
+| `TIMELINE_001` | Missing actor | Register actor before referencing |
+| `TIMELINE_002` | Negative frame | Ensure `at >= 0` |
+| `TIMELINE_003` | Frame overflow | Event exceeds episode duration |
+| `TIMELINE_004` | Out of order | Events must be ordered by frame |
+
+### Content Errors (CONTENT_xxx)
+
+| Code | Message | Fix |
+|------|---------|-----|
+| `CONTENT_001` | Missing required field | Provide required field for content type |
+| `CONTENT_002` | Unsupported content kind | App doesn't support this content type |
+| `CONTENT_003` | Text too long | Reduce text length to app limit |
+| `CONTENT_004` | Invalid URL | Provide valid URL for media |
+
+### Custom Errors (CUSTOM_xxx)
+
+| Code | Message | Fix |
+|------|---------|-----|
+| `CUSTOM_001` | Missing namespace | Use `app_{id}.event_name` format |
+| `CUSTOM_002` | Not allowlisted | Add to `allowedCustomEvents` in schema |
+| `CUSTOM_003` | Threshold exceeded | CUSTOM events > 10% of total |
+
+## Severity Levels
+
+| Level | Meaning | Build Effect |
+|-------|---------|--------------|
+| `error` | Must fix | Build fails |
+| `warning` | Should fix | Build succeeds |
+| `info` | Suggestion | Build succeeds |
+
+## Using formatDiagnostic
+
+Format for CLI output:
+
+```typescript
+import { formatDiagnostic, formatDiagnosticList } from "@tokovo/core";
+
+// Single diagnostic
+console.log(formatDiagnostic(diagnostic));
+// ERROR [SCENE_001] Missing conversation "chat_main"
+//   at Episode "my-episode", Beat "opening", Op #3
+//   hint: Define conversation before use
+
+// Multiple diagnostics
+console.log(formatDiagnosticList(diagnostics));
+```
+
+## Programmatic Access
+
+```typescript
+import { DiagnosticCode, isDiagnosticError } from "@tokovo/core";
+
+// Check if any errors
+const hasErrors = diagnostics.some(isDiagnosticError);
+
+// Filter by code
+const sceneErrors = diagnostics.filter(d => d.code.startsWith("SCENE_"));
+```
+
+## Creating Diagnostics
+
+For plugin authors:
+
+```typescript
+import { createDiagnostic } from "@tokovo/core";
+
+const diagnostic = createDiagnostic({
+  code: "CUSTOM_001",
+  message: `Event "${name}" missing namespace`,
+  severity: "error",
+  trace: event.trace,
+  hint: `Prefix with app_${appId}.`,
+  docsLink: "https://docs.tokovo.dev/errors/CUSTOM_001",
+});
+```
+
+## See Also
+
+- [Validation](/compiler/validation) - Where diagnostics come from
+- [Plugin Schema](/plugins/schema) - Defining custom events

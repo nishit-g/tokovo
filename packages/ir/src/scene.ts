@@ -509,6 +509,126 @@ export interface GoBackOp {
     readonly animationDuration?: number;
 }
 
+// =============================================================================
+// FEED OPERATIONS (Twitter, Instagram Explore)
+// =============================================================================
+
+/**
+ * Post a feed item (tweet, post).
+ */
+export interface PostFeedItemOp {
+    readonly kind: "PostFeedItem";
+    readonly feedId: string;
+    readonly text: string;
+    readonly media?: Array<{ url: string; type: "image" | "video" | "gif" }>;
+    readonly author?: { name: string; handle: string; verified?: "blue" | "gold" | "grey"; avatarUrl?: string };
+}
+
+/**
+ * Receive a feed item from another user.
+ */
+export interface ReceiveFeedItemOp {
+    readonly kind: "ReceiveFeedItem";
+    readonly feedId: string;
+    readonly author: { name: string; handle: string; verified?: "blue" | "gold" | "grey"; avatarUrl?: string };
+    readonly text: string;
+    readonly media?: Array<{ url: string; type: "image" | "video" | "gif" }>;
+    readonly stats?: { replyCount?: number; retweetCount?: number; likeCount?: number; viewCount?: number };
+}
+
+/**
+ * Like a feed item.
+ */
+export interface LikeFeedItemOp {
+    readonly kind: "LikeFeedItem";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Unlike a feed item.
+ */
+export interface UnlikeFeedItemOp {
+    readonly kind: "UnlikeFeedItem";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Repost/retweet a feed item.
+ */
+export interface RepostFeedItemOp {
+    readonly kind: "RepostFeedItem";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Bookmark a feed item.
+ */
+export interface BookmarkFeedItemOp {
+    readonly kind: "BookmarkFeedItem";
+    readonly ref: MessageRef;
+}
+
+/**
+ * Scroll the feed to a position.
+ */
+export interface ScrollFeedOp {
+    readonly kind: "ScrollFeed";
+    readonly feedId: string;
+    readonly position: number;
+}
+
+/**
+ * Add a comment/reply to a feed item.
+ */
+export interface CommentOp {
+    readonly kind: "Comment";
+    readonly ref: MessageRef;
+    readonly text: string;
+    readonly author?: string;
+}
+
+// =============================================================================
+// STORY OPERATIONS (Instagram, Snapchat, WhatsApp Status)
+// =============================================================================
+
+/**
+ * Add a story item.
+ */
+export interface AddStoryOp {
+    readonly kind: "AddStory";
+    readonly userId: string;
+    readonly media: { url: string; type: "image" | "video" };
+    readonly caption?: string;
+    readonly duration?: number;  // seconds
+}
+
+/**
+ * View a story.
+ */
+export interface ViewStoryOp {
+    readonly kind: "ViewStory";
+    readonly userId: string;
+    readonly itemIndex?: number;
+}
+
+/**
+ * React to a story with emoji.
+ */
+export interface ReactToStoryOp {
+    readonly kind: "ReactToStory";
+    readonly userId: string;
+    readonly emoji: string;
+}
+
+/**
+ * Reply to a story with message.
+ */
+export interface ReplyToStoryOp {
+    readonly kind: "ReplyToStory";
+    readonly userId: string;
+    readonly text: string;
+}
+
 /**
  * Union of all scene operations.
  */
@@ -541,7 +661,6 @@ export type SceneOp =
     | NavigateScreenOp
     | OpenChatOp
     | GoBackOp
-    | GoBackOp
     // Reserved signals
     | AddReactionOp
     | VoiceNoteSentOp
@@ -554,7 +673,21 @@ export type SceneOp =
     | ShowKeyboardOp
     | HideKeyboardOp
     | SimulateTypingOp
-    | ClearKeyboardTextOp;
+    | ClearKeyboardTextOp
+    // Feed operations (Twitter, Instagram Explore)
+    | PostFeedItemOp
+    | ReceiveFeedItemOp
+    | LikeFeedItemOp
+    | UnlikeFeedItemOp
+    | RepostFeedItemOp
+    | BookmarkFeedItemOp
+    | ScrollFeedOp
+    | CommentOp
+    // Story operations (Instagram, Snapchat, WhatsApp Status)
+    | AddStoryOp
+    | ViewStoryOp
+    | ReactToStoryOp
+    | ReplyToStoryOp;
 
 // =============================================================================
 // SCENE (TOP LEVEL)

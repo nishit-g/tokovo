@@ -1,0 +1,234 @@
+---
+title: Plugin Authoring
+description: How to create a Tokovo app plugin
+---
+
+# Plugin Authoring
+
+This guide explains how to create a new app plugin for Tokovo.
+
+## What is a Plugin?
+
+A plugin represents an app (WhatsApp, Instagram, Twitter, etc.) and provides:
+
+1. **Schema** - What features the app supports
+2. **Reducer** - How events change state
+3. **View** - How to render the app
+4. **Assets** - Icons, sounds, etc.
+
+## Quick Start
+
+### 1. Define the Schema
+
+```typescript
+// packages/apps-myapp/src/schema.ts
+
+export const MYAPP_SCHEMA = {
+  id: "app_myapp",
+  name: "MyApp",
+  
+  // Content types this app supports
+  contentKinds: ["text", "image", "video", "voice"],
+  
+  // Canonical event types
+  eventTypes: ["MESSAGE", "TYPING", "READ", "NAVIGATE"],
+  
+  // Plugin capabilities
+  capabilities: ["messaging", "typing", "read_receipts"],
+  
+  // Content limits
+  limits: {
+    maxTextLength: 5000,
+  },
+} as const;
+```
+
+### 2. Create the Reducer
+
+```typescript
+// packages/apps-myapp/src/runtime.ts
+
+import { WorldState, TimelineEvent } from "@tokovo/core";
+
+export function myappReducer(draft: WorldState, event: TimelineEvent): void {
+  if (event.kind !== "APP") return;
+  if (event.appId !== "app_myapp") return;
+
+  const conversationId = event.conversationId;
+  if (!conversationId) return;
+
+  // Ensure conversation exists
+  if (!draft.conversations[conversationId]) {
+    draft.conversations[conversationId] = { id: conversationId, messages: [] };
+  }
+  const conversation = draft.conversations[conversationId];
+
+  switch (event.type) {
+    case "MESSAGE_RECEIVED":
+    case "MESSAGE_SENT": {
+      conversation.messages.push({
+        id: `msg_${event.at}`,
+        from: event.type === "MESSAGE_SENT" ? "me" : event.from,
+        text: event.text,
+        at: event.at,
+      });
+      break;
+    }
+
+    case "TYPING_START": {
+      if (!conversation.typing) conversation.typing = {};
+      conversation.typing[event.from] = true;
+      break;
+    }
+
+    case "TYPING_END": {
+      if (conversation.typing) {
+        delete conversation.typing[event.from];
+      }
+      break;
+    }
+  }
+}
+```
+
+### 3. Create the View
+
+```tsx
+// packages/apps-myapp/src/ui.tsx
+
+import React from "react";
+import { WorldState } from "@tokovo/core";
+
+interface Props {
+  world: WorldState;
+  conversationId: string;
+}
+
+export function MyAppChatView({ world, conversationId }: Props) {
+  const conversation = world.conversations[conversationId];
+  if (!conversation) return <div>No conversation</div>;
+
+  return (
+    <div className="myapp-chat">
+      {conversation.messages.map(msg => (
+        <div key={msg.id} className={msg.from === "me" ? "sent" : "received"}>
+          {msg.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### 4. Register the Plugin
+
+```typescript
+// packages/apps-myapp/src/plugin.ts
+
+import { definePlugin, PluginManager, APP_IDS } from "@tokovo/core";
+import { myappReducer } from "./runtime";
+import { MyAppChatView } from "./ui";
+
+export const MyAppPlugin = definePlugin({
+  id: "app_myapp",
+  name: "MyApp",
+  version: "1.0.0",
+
+  icon: "myapp-icon.png",
+  primaryColor: "#FF6B6B",
+
+  appView: MyAppChatView,
+  reducer: myappReducer,
+
+  eventTypes: ["MESSAGE_RECEIVED", "MESSAGE_SENT", "TYPING_START", "TYPING_END"],
+
+  sounds: {
+    message_in: "myapp-received.mp3",
+    message_out: "myapp-sent.mp3",
+  },
+});
+
+// Register when module loads
+PluginManager.register(MyAppPlugin);
+```
+
+## Best Practices
+
+### 1. Use Discriminated Unions
+
+Handle content by kind, not optional checks:
+
+```typescript
+// ✅ Good
+switch (content.kind) {
+  case "text": return <TextMessage text={content.text} />;
+  case "image": return <ImageMessage url={content.url} />;
+}
+
+// ❌ Bad
+if (content.text) { ... }
+if (content.imageUrl) { ... }
+```
+
+### 2. No Side Effects on Import
+
+Remotion imports modules multiple times. Keep imports pure:
+
+```typescript
+// ✅ Good
+export function createReducer() { ... }
+
+// ❌ Bad
+console.log("Plugin loaded!");
+const startTime = Date.now();
+```
+
+### 3. No Non-Deterministic Code
+
+Never use in reducers:
+
+```typescript
+// ❌ Never in reducer
+Math.random()
+Date.now()
+new Date()
+uuid()
+```
+
+Use deterministic alternatives:
+
+```typescript
+// ✅ Use trace for IDs
+const id = `msg_${event.trace.opIndex}`;
+```
+
+### 4. Handle Missing Data Gracefully
+
+```typescript
+// ✅ Good
+const name = actor?.displayName ?? "Unknown";
+
+// ❌ Bad - will crash
+const name = actor.displayName;
+```
+
+## File Structure
+
+```
+packages/apps-myapp/
+├── src/
+│   ├── index.ts         # Barrel export
+│   ├── plugin.ts        # Plugin definition
+│   ├── runtime.ts       # Reducer
+│   ├── ui.tsx           # React components
+│   ├── schema.ts        # Schema definition
+│   └── types.ts         # TypeScript types
+├── package.json
+└── tsconfig.json
+```
+
+## See Also
+
+- [Plugin Schema](/plugins/schema) - Schema reference
+- [Remotion Compatibility](/plugins/remotion-compat) - Bootstrap contract
+- [Canonical Events](/architecture/canonical-events) - Event types

@@ -1,0 +1,240 @@
+---
+title: Plugin Schema
+description: Define what features your plugin supports
+---
+
+# Plugin Schema
+
+A plugin schema defines **what your app supports**. The compiler uses this to validate content and gracefully downgrade unsupported features.
+
+## Schema Structure
+
+```typescript
+interface PluginSchema {
+  // Content types the app can render
+  contentKinds: ContentKind[];
+  
+  // Canonical event types the app handles
+  eventTypes: AppEventType[];
+  
+  // System message types (for messaging apps)
+  systemTypes?: SystemMessageType[];
+  
+  // Feed IDs (for feed-based apps)
+  feedIds?: string[];
+  
+  // Content limits
+  limits?: ContentLimits;
+  
+  // Allowed CUSTOM events (namespaced)
+  allowedCustomEvents?: string[];
+}
+```
+
+## Content Kinds
+
+Apps declare which content types they support:
+
+| Kind | Description | Required Fields |
+|------|-------------|-----------------|
+| `text` | Plain text | `text` |
+| `image` | Static image | `url` |
+| `video` | Video | `url`, `thumbnailUrl`, `duration` |
+| `gif` | Animated GIF | `url` |
+| `voice` | Voice note | `duration` |
+| `sticker` | Sticker | `url` |
+| `location` | Map location | `lat`, `lng` |
+| `contact` | Contact card | `name` |
+| `file` | File attachment | `url`, `name` |
+| `link` | URL preview | `url` |
+| `system` | System message | `systemType` |
+| `deleted` | Deleted message | (none) |
+
+### Example
+
+```typescript
+export const WHATSAPP_SCHEMA = {
+  contentKinds: [
+    "text",
+    "image", 
+    "video",
+    "gif",
+    "voice",
+    "sticker",
+    "location",
+    "contact",
+    "file",
+    "system",
+    "deleted",
+  ],
+  // ...
+};
+```
+
+## Event Types
+
+Canonical event types the reducer handles:
+
+| Type | Description |
+|------|-------------|
+| `MESSAGE` | Message sent/received |
+| `TYPING` | Typing indicator |
+| `READ` | Read receipt |
+| `REACTION` | Emoji reaction |
+| `NAVIGATE` | Screen navigation |
+| `FEED_ITEM` | Feed item (tweet, post) |
+| `FEED_ACTION` | Feed action (like, repost) |
+| `FEED_SCROLL` | Feed scroll position |
+| `STORY_ITEM` | Story posted |
+| `STORY_VIEW` | Story viewed |
+| `COMMENT` | Comment on post |
+| `SOCIAL` | Social action (follow, block) |
+| `CUSTOM` | Custom event (namespaced) |
+
+### Example
+
+```typescript
+export const TWITTER_SCHEMA = {
+  eventTypes: [
+    "MESSAGE",      // DMs
+    "FEED_ITEM",    // Tweets
+    "FEED_ACTION",  // Like/Retweet
+    "FEED_SCROLL",  // Scroll position
+    "COMMENT",      // Replies
+    "NAVIGATE",     // Screen changes
+  ],
+  // ...
+};
+```
+
+## System Message Types
+
+For messaging apps, system message types:
+
+```typescript
+type SystemMessageType =
+  | "encryption_notice"
+  | "member_added"
+  | "member_removed"
+  | "group_created"
+  | "group_name_changed"
+  | "call_missed"
+  | "call_ended"
+  | "screenshot_notification";
+```
+
+## Feed IDs
+
+For feed-based apps, declare feed identifiers:
+
+```typescript
+export const TWITTER_SCHEMA = {
+  feedIds: [
+    "__main_feed__",    // "For You" tab
+    "__following__",    // "Following" tab
+  ],
+  // ...
+};
+```
+
+## Content Limits
+
+Enforce limits on content:
+
+```typescript
+interface ContentLimits {
+  maxTextLength?: number;      // Max chars for text
+  maxCaptionLength?: number;   // Max chars for captions
+  maxReactions?: number;       // Max reactions per message
+  maxVideoDuration?: number;   // Max video seconds
+}
+```
+
+### Example
+
+```typescript
+export const INSTAGRAM_SCHEMA = {
+  limits: {
+    maxTextLength: 2200,
+    maxCaptionLength: 2200,
+    maxReactions: 1,  // Instagram only allows heart
+  },
+};
+```
+
+## Allowed Custom Events
+
+CUSTOM events must be namespaced and allowlisted:
+
+```typescript
+export const WHATSAPP_SCHEMA = {
+  allowedCustomEvents: [
+    "app_whatsapp.voice_play",
+    "app_whatsapp.voice_pause",
+    "app_whatsapp.voice_seek",
+    "app_whatsapp.status_viewed",
+  ],
+};
+```
+
+Rules:
+- Must start with `app_{id}.`
+- Must be in allowedCustomEvents
+- CI fails if CUSTOM usage > 10% of total events
+
+## Complete Examples
+
+### WhatsApp
+
+```typescript
+export const WHATSAPP_SCHEMA = {
+  id: "app_whatsapp",
+  contentKinds: ["text", "image", "video", "gif", "voice", "sticker", "location", "contact", "file", "system", "deleted"],
+  eventTypes: ["MESSAGE", "TYPING", "READ", "REACTION", "NAVIGATE"],
+  systemTypes: ["encryption_notice", "member_added", "member_removed", "group_created", "call_missed", "call_ended"],
+  limits: { maxTextLength: 65536, maxCaptionLength: 1024, maxReactions: 100 },
+  allowedCustomEvents: ["app_whatsapp.voice_play", "app_whatsapp.voice_pause"],
+};
+```
+
+### Twitter
+
+```typescript
+export const TWITTER_SCHEMA = {
+  id: "app_twitter",
+  contentKinds: ["text", "image", "video", "gif", "link"],
+  eventTypes: ["MESSAGE", "NAVIGATE", "FEED_ITEM", "FEED_SCROLL", "FEED_ACTION", "COMMENT"],
+  feedIds: ["__main_feed__", "__following__"],
+  limits: { maxTextLength: 280 },
+  allowedCustomEvents: ["app_twitter.tab_change", "app_twitter.scroll_to_top"],
+};
+```
+
+### Instagram
+
+```typescript
+export const INSTAGRAM_SCHEMA = {
+  id: "app_instagram",
+  contentKinds: ["text", "image", "video", "gif", "voice", "sticker", "link", "system"],
+  eventTypes: ["MESSAGE", "TYPING", "NAVIGATE", "STORY_ITEM", "STORY_VIEW", "FEED_ITEM", "FEED_ACTION"],
+  feedIds: ["__explore__", "__home__", "__reels__"],
+  limits: { maxTextLength: 2200, maxCaptionLength: 2200, maxReactions: 1 },
+  allowedCustomEvents: ["app_instagram.story_reply", "app_instagram.story_reaction"],
+};
+```
+
+## Compat Mode Downgrades
+
+When content is unsupported, the compiler downgrades:
+
+| Unsupported | Downgrade |
+|-------------|-----------|
+| `voice` | `"🎤 Voice message (0:15)"` |
+| `video` | `"📹 Video (0:30)"` |
+| `reaction` | System message |
+| `read_receipts` | Ignored |
+
+## See Also
+
+- [Plugin Authoring](/plugins/authoring) - How to create plugins
+- [Canonical Events](/architecture/canonical-events) - Event reference

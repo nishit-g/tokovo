@@ -312,7 +312,7 @@ function processOSEvent(
     // Initialize OS state if needed
     if (!device.os) {
         device.os = {
-            clock: Date.now(),
+            clock: 1704067200000, // Jan 1, 2024 12:00:00 UTC - deterministic default
             battery: 85,
             charging: false,
             network: "wifi",
@@ -456,7 +456,8 @@ function processTouchEvent(
     // Remove expired touches (older than 15 frames)
     draft.touches = draft.touches.filter(touch => t - touch.startedAt < 15);
 
-    const touchId = `touch_${event.at}_${Math.random().toString(36).slice(2, 6)}`;
+    // Use event.at and index for deterministic touch ID (no Math.random)
+    const touchId = `touch_${event.at}_${draft.touches.length}`;
 
     switch (event.type) {
         case "TAP":

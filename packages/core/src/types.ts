@@ -300,7 +300,7 @@ export interface DeviceOSState {
 
 /** Default OS state (normal day, full battery, good network) */
 export const DEFAULT_OS_STATE: DeviceOSState = {
-    clock: Date.now(),
+    clock: 1704067200000, // Jan 1, 2024 12:00:00 UTC - deterministic default
     battery: 85,
     charging: false,
     network: "wifi",

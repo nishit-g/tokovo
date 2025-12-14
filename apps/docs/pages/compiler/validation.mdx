@@ -1,0 +1,159 @@
+---
+title: Validation
+description: Multi-layer compile-time validation
+---
+
+# Validation
+
+Tokovo validates at **three layers** to catch errors early with actionable feedback.
+
+## Validation Layers
+
+```
+DSL → [Scene Validation] → SceneIR → [Timeline Validation] → TimelineIR → [Adapter Validation] → Events
+```
+
+| Layer | When | What |
+|-------|------|------|
+| **Scene** | Before compilation | Structure, actors, conversations |
+| **Timeline** | After compilation | Frames, ordering, actors |
+| **Adapter** | At runtime | Content types, limits |
+
+## Scene Validation
+
+Validates SceneIR before compilation:
+
+```typescript
+import { validateScene } from "@tokovo/compiler";
+
+const result = validateScene(sceneIR, plugins, actors);
+
+if (result.errors.length > 0) {
+  console.error("Scene validation failed:", result.errors);
+}
+```
+
+### Checks Performed
+
+| Check | Error Code | Description |
+|-------|------------|-------------|
+| Missing conversation | `SCENE_001` | Referenced conversation doesn't exist |
+| Unknown app | `SCENE_002` | App ID not registered |
+| Missing capability | `SCENE_003` | App doesn't support feature |
+| Invalid duration | `SCENE_004` | Cannot parse duration expression |
+| Unknown actor | `SCENE_005` | Actor not in registry |
+
+## Timeline Validation
+
+Validates TimelineIR after compilation:
+
+```typescript
+import { validateTimeline } from "@tokovo/compiler";
+
+const result = validateTimeline(timelineIR, actors);
+
+if (result.errors.length > 0) {
+  console.error("Timeline validation failed:", result.errors);
+}
+```
+
+### Checks Performed
+
+| Check | Error Code | Description |
+|-------|------------|-------------|
+| Missing actor | `TIMELINE_001` | Event references unknown actor |
+| Negative frame | `TIMELINE_002` | `at < 0` |
+| Frame overflow | `TIMELINE_003` | `at > maxFrames` |
+| Out of order | `TIMELINE_004` | Events not in frame order |
+
+## Content Validation
+
+Maps content with configurable strictness:
+
+```typescript
+import { mapToCanonicalContent, ContentValidationMode } from "@tokovo/compiler";
+
+// Strict mode throws on missing required fields
+const content = mapToCanonicalContent(input, "strict");
+
+// Compat mode substitutes placeholders
+const content = mapToCanonicalContent(input, "compat");
+
+// Lenient mode passes through
+const content = mapToCanonicalContent(input, "lenient");
+```
+
+### Modes
+
+| Mode | Missing Required | Unsupported Type |
+|------|------------------|------------------|
+| **strict** | Error | Error |
+| **compat** | Placeholder | Downgrade |
+| **lenient** | Pass-through | Pass-through |
+
+## CUSTOM Event Validation
+
+CUSTOM events are validated for namespace and allowlist:
+
+```typescript
+import { validateCustomEvent } from "@tokovo/compiler";
+
+const result = validateCustomEvent(event, plugin.schema);
+
+// Checks:
+// 1. Name is namespaced: "app_whatsapp.voice_play"
+// 2. Name is in allowedCustomEvents
+// 3. CI threshold not exceeded
+```
+
+### Rules
+
+1. Must start with `app_{id}.`
+2. Must be in `allowedCustomEvents` array
+3. CUSTOM usage must be < 10% of total events (CI warning)
+
+## Validation Result
+
+All validators return a structured result:
+
+```typescript
+interface ValidationResult {
+  readonly valid: boolean;
+  readonly errors: readonly Diagnostic[];
+  readonly warnings: readonly Diagnostic[];
+  readonly stats?: {
+    totalEvents: number;
+    customEventCount: number;
+    customPercentage: number;
+  };
+}
+```
+
+## Diagnostic Format
+
+Errors are structured for debugging:
+
+```typescript
+interface Diagnostic {
+  code: DiagnosticCode;
+  message: string;
+  severity: "error" | "warning" | "info";
+  trace?: CanonicalTrace;
+  hint?: string;
+  docsLink?: string;
+}
+```
+
+### Example Output
+
+```
+ERROR [SCENE_001] Missing conversation "chat_main"
+  at Episode "my-episode", Beat "opening", Op #3
+  hint: Define conversation in .conversation() before use
+  docs: https://docs.tokovo.dev/errors/SCENE_001
+```
+
+## See Also
+
+- [Diagnostics](/compiler/diagnostics) - Error code reference
+- [Plugin Schema](/plugins/schema) - Content kind support

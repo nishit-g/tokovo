@@ -1,5 +1,7 @@
 {
     "index": "Overview",
     "passes": "Compiler Passes",
+    "validation": "Validation",
+    "diagnostics": "Diagnostics",
     "adapters": "Adapters"
 }

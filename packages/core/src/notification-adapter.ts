@@ -83,7 +83,7 @@ class NotificationAdapterRegistryClass {
         }
         // Default: just open the app
         return [{
-            at: Date.now(),
+            at: 0, // Events generated at runtime should use relative frame, not Date.now()
             kind: "DEVICE",
             deviceId: notification.deviceId || "phone",
             type: "OPEN_APP",

@@ -65,6 +65,50 @@ const worldAtFrame = replay(episode.initialWorld, episode.events, frameN);
 3. **Data-driven** - Episodes define everything; no hidden state
 4. **Cinematic** - Optimized for rendering, not interaction
 
+### Canonical Architecture (v2)
+
+Tokovo uses a **canonical event system** for unified app behavior:
+
+```typescript
+// Every event has trace metadata for debugging
+interface CanonicalTrace {
+  episodeId: string;
+  deviceId: string;
+  beatName: string;
+  opIndex: number;
+}
+
+// Content is discriminated unions (no optional soup)
+type CanonicalContent =
+  | { kind: "text"; text: string }
+  | { kind: "image"; url: string; caption?: string }
+  | { kind: "video"; url: string; thumbnailUrl: string; duration: number }
+  | { kind: "voice"; duration: number; url?: string }
+  // ... 12 types total
+
+// Events carry ActorId, not full objects
+interface MessageEvent {
+  kind: "APP";
+  type: "MESSAGE";
+  at: number;
+  trace: CanonicalTrace;
+  conversationId: string;
+  fromId: ActorId;      // Just the ID
+  content: CanonicalContent;
+}
+
+// Actor lookup from registry
+const actor = actors.get(event.fromId);
+```
+
+**Event Types:**
+- Messaging: `MESSAGE`, `TYPING`, `READ`, `REACTION`
+- Feed: `FEED_ITEM`, `FEED_ACTION`, `FEED_SCROLL`
+- Stories: `STORY_ITEM`, `STORY_VIEW`
+- Navigation: `NAVIGATE`
+- Social: `SOCIAL`, `COMMENT`
+- Custom: `CUSTOM` (namespaced, allowlisted)
+
 ---
 
 ## PACKAGES

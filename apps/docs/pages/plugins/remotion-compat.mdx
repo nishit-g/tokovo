@@ -1,0 +1,217 @@
+---
+title: Remotion Compatibility
+description: Bootstrap contract for Remotion video rendering
+---
+
+# Remotion Compatibility
+
+Tokovo uses [Remotion](https://remotion.dev) for video rendering. This page explains the **bootstrap contract** that plugins must follow.
+
+## Why This Matters
+
+Remotion has specific requirements:
+
+1. **Multiple imports** - Remotion imports modules many times during render
+2. **Server-side rendering** - Videos are rendered in Node.js
+3. **Deterministic output** - Same code must produce same video
+
+Breaking these rules causes crashes, inconsistent renders, or video encoding failures.
+
+## The Three Rules
+
+### 1. No Side Effects on Import
+
+Remotion imports your code multiple times. Side effects will run multiple times.
+
+```typescript
+// ❌ BAD - Side effect on import
+console.log("Plugin loaded!");
+const startTime = Date.now();
+let counter = 0;
+
+// ✅ GOOD - Pure exports
+export const MyPlugin = defineAppPlugin({ ... });
+export function createPlugin() { ... }
+```
+
+### 2. Deterministic Creation
+
+All state must be derived from inputs. No randomness.
+
+```typescript
+// ❌ BAD - Non-deterministic
+const id = Math.random().toString(36);
+const timestamp = Date.now();
+const uniqueId = crypto.randomUUID();
+
+// ✅ GOOD - Deterministic from inputs
+const id = idGenerator.messageId(deviceId, convId, opIndex);
+const timestamp = event.trace.opIndex;
+```
+
+### 3. SSR-Safe Views
+
+No browser APIs at module level. They don't exist in Node.js.
+
+```typescript
+// ❌ BAD - Browser API at module level
+const width = window.innerWidth;
+const theme = localStorage.getItem("theme");
+
+// ✅ GOOD - Browser API in useEffect
+function MyView() {
+  const [width, setWidth] = useState(0);
+  
+  useEffect(() => {
+    setWidth(window.innerWidth);
+  }, []);
+  
+  return <div style={{ width }} />;
+}
+```
+
+## Validation
+
+Use the bootstrap validator to check your plugin:
+
+```typescript
+import { validatePluginBootstrap } from "@tokovo/core";
+
+const result = validatePluginBootstrap(MyPlugin);
+
+if (!result.valid) {
+  console.error("Plugin validation failed:", result.errors);
+}
+
+if (result.warnings.length > 0) {
+  console.warn("Plugin warnings:", result.warnings);
+}
+```
+
+## Checks Performed
+
+| Check | Error if... |
+|-------|-------------|
+| Missing ID | Plugin has no `id` field |
+| Missing name | Plugin has no `name` field |
+| Missing reducer | Plugin has no `reducer` field |
+| Missing view | Plugin has no `view` field |
+| Bad ID format | ID doesn't start with `app_` |
+| Bad version | Version isn't semver format |
+| Math.random in reducer | Reducer source contains `Math.random` |
+| Date.now in reducer | Reducer source contains `Date.now` |
+| window/document in reducer | Reducer references browser globals |
+
+## SSR Helpers
+
+Use these helpers for browser-safe code:
+
+```typescript
+import { isBrowser, safeWindow } from "@tokovo/core";
+
+// Check if in browser
+if (isBrowser()) {
+  // Safe to use window/document
+}
+
+// Safe window access with fallback
+const width = safeWindow(() => window.innerWidth, 390);
+```
+
+## Safe ID Generation
+
+Use deterministic ID generators:
+
+```typescript
+import { safeId, getTimeFromContext } from "@tokovo/core";
+
+// Generate deterministic ID
+const messageId = safeId("msg", deviceId, conversationId, opIndex);
+// Result: "msg_phone_a_chat_1_42"
+
+// Get time from trace (not Date.now)
+const time = getTimeFromContext(event.trace, fps);
+```
+
+## Common Mistakes
+
+### 1. Caching at Module Level
+
+```typescript
+// ❌ BAD - Cache persists across renders
+const cache = new Map();
+
+export function getItem(id) {
+  if (!cache.has(id)) {
+    cache.set(id, computeItem(id));
+  }
+  return cache.get(id);
+}
+
+// ✅ GOOD - Cache in context
+export function createCache() {
+  const cache = new Map();
+  return {
+    get(id) { ... }
+  };
+}
+```
+
+### 2. Using Current Time
+
+```typescript
+// ❌ BAD - Different each render
+const createdAt = new Date().toISOString();
+
+// ✅ GOOD - Derive from frame
+const createdAt = `${Math.floor(frame / fps)}s`;
+```
+
+### 3. Random Colors
+
+```typescript
+// ❌ BAD - Random color
+const color = `hsl(${Math.random() * 360}, 50%, 50%)`;
+
+// ✅ GOOD - Deterministic from input
+const color = `hsl(${stringToHue(userId)}, 50%, 50%)`;
+
+function stringToHue(str) {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % 360;
+}
+```
+
+## Bootstrap Rules Constant
+
+The rules are exported as a constant:
+
+```typescript
+import { BOOTSTRAP_RULES } from "@tokovo/core";
+
+console.log(BOOTSTRAP_RULES);
+// {
+//   noSideEffects: true,
+//   deterministicCreation: true,
+//   ssrSafe: true,
+// }
+```
+
+## Documentation String
+
+For plugin authors, the full documentation is available:
+
+```typescript
+import { BOOTSTRAP_DOCS } from "@tokovo/core";
+
+console.log(BOOTSTRAP_DOCS);
+// Full markdown documentation of the contract
+```
+
+## See Also
+
+- [Plugin Authoring](/plugins/authoring) - Creating plugins
+- [Determinism](/architecture/determinism) - Hash verification

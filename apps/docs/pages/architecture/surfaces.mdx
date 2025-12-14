@@ -1,0 +1,208 @@
+---
+title: Surfaces
+description: State primitives for feeds, stories, and conversations
+---
+
+# Surfaces
+
+Surfaces are the **canonical state primitives** that apps use to represent their content. They provide a consistent structure across all apps.
+
+## Overview
+
+| Surface | Used By | Purpose |
+|---------|---------|---------|
+| **Conversation** | WhatsApp, Instagram DMs | Messages, typing, read receipts |
+| **Feed** | Twitter, Instagram Explore | Posts/tweets with actions |
+| **Story** | Instagram, Snapchat, WhatsApp Status | Ephemeral media content |
+
+## Conversation State
+
+For messaging apps:
+
+```typescript
+interface CanonicalConversationBase {
+  readonly id: string;
+  readonly name: string;
+  readonly avatarUrl?: string;
+  readonly messages: readonly CanonicalMessage[];
+  readonly isGroup?: boolean;
+  readonly unreadCount?: number;
+}
+
+interface CanonicalMessage {
+  readonly id: string;
+  readonly fromId: ActorId;
+  readonly content: CanonicalContent;
+  readonly direction: "in" | "out";
+  readonly status?: "sending" | "sent" | "delivered" | "read" | "failed";
+  readonly at: number;  // Frame when message appeared
+  readonly replyTo?: CanonicalMessage;
+  readonly reactions?: readonly Reaction[];
+}
+```
+
+### Usage
+
+```typescript
+// Get conversation from world state
+const conversation = world.conversations[conversationId] as CanonicalConversationBase;
+
+// Render messages
+conversation.messages.map(msg => {
+  const isMe = msg.direction === "out";
+  return <MessageBubble key={msg.id} message={msg} isMe={isMe} />;
+});
+```
+
+## Feed State
+
+For timeline-based apps:
+
+```typescript
+interface CanonicalFeedState {
+  readonly id: string;  // "__main_feed__", "__explore__", etc.
+  readonly items: readonly CanonicalFeedItem[];
+  readonly scrollPosition: number;
+  readonly hasMore: boolean;
+}
+
+interface CanonicalFeedItem {
+  readonly id: string;
+  readonly authorId: ActorId;
+  readonly content: CanonicalContent;
+  readonly at: number;
+  readonly likes: number;
+  readonly reposts: number;
+  readonly replies: number;
+  readonly isLiked: boolean;
+  readonly isReposted: boolean;
+  readonly isBookmarked: boolean;
+}
+```
+
+### Feed IDs
+
+Apps define their feed IDs in the schema:
+
+```typescript
+// Twitter
+feedIds: ["__main_feed__", "__following__"]
+
+// Instagram
+feedIds: ["__home__", "__explore__", "__reels__"]
+```
+
+### Usage
+
+```typescript
+// Get feed from app state
+const feed = world.appState.app_twitter.feeds[TWITTER_MAIN_FEED];
+
+// Render items
+feed.items.map(item => {
+  const author = actors.get(item.authorId);
+  return <Tweet key={item.id} tweet={item} author={author} />;
+});
+```
+
+## Story State
+
+For ephemeral content:
+
+```typescript
+interface CanonicalStoryRing {
+  readonly userId: ActorId;
+  readonly hasUnseenItems: boolean;
+  readonly items: readonly CanonicalStoryItem[];
+}
+
+interface CanonicalStoryItem {
+  readonly id: string;
+  readonly media: { url: string; type: "image" | "video" };
+  readonly caption?: string;
+  readonly duration: number;  // seconds
+  readonly postedAt: number;
+  readonly viewedByMe: boolean;
+}
+```
+
+### Usage
+
+```typescript
+// Get story rings
+const storyRings = world.appState.app_instagram.storyRings;
+
+// Render story ring avatars
+storyRings.map(ring => {
+  const user = actors.get(ring.userId);
+  return (
+    <StoryAvatar
+      key={ring.userId}
+      user={user}
+      hasUnseenItems={ring.hasUnseenItems}
+      onClick={() => viewStory(ring.userId)}
+    />
+  );
+});
+```
+
+## Navigation State
+
+For screen navigation:
+
+```typescript
+interface NavigationState {
+  readonly currentScreen: string;
+  readonly params?: Record<string, unknown>;
+  readonly history: readonly string[];
+}
+```
+
+### Screen Names by App
+
+| App | Screens |
+|-----|---------|
+| WhatsApp | `chats-list`, `chat`, `status`, `calls`, `settings` |
+| Instagram | `home`, `explore`, `reels`, `dms`, `profile` |
+| Twitter | `home`, `search`, `notifications`, `messages`, `profile` |
+
+## Factory Functions
+
+Create default state with factory functions:
+
+```typescript
+import { canonical } from "@tokovo/core";
+
+// Create empty conversation
+const conversation = canonical.createConversation({
+  id: "chat_1",
+  name: "Alice",
+});
+
+// Create empty feed
+const feed = canonical.createFeed({
+  id: "__main_feed__",
+});
+```
+
+## Type Guards
+
+Check surface types:
+
+```typescript
+import { canonical } from "@tokovo/core";
+
+if (canonical.isConversation(state)) {
+  // TypeScript knows state is CanonicalConversationBase
+}
+
+if (canonical.isFeedItem(item)) {
+  // TypeScript knows item is CanonicalFeedItem
+}
+```
+
+## See Also
+
+- [Canonical Events](/architecture/canonical-events) - Events that modify surfaces
+- [Identity Model](/architecture/identity-model) - ActorId resolution
+- [Plugin Schema](/plugins/schema) - Surface support declaration
