@@ -34,7 +34,8 @@
     "useDefaultPatterns": true,
     "customPatterns": [
       "*.md",
-      "*.mp3"
+      "*.mp3",
+      "apps/docs"
     ]
   },
   "security": {

@@ -28,7 +28,7 @@ The content is organized as follows:
 ## Notes
 - Some files may have been excluded based on .gitignore rules and Repomix's configuration
 - Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
-- Files matching these patterns are excluded: *.md, *.mp3
+- Files matching these patterns are excluded: *.md, *.mp3, apps/docs
 - Files matching patterns in .gitignore are excluded
 - Files matching default ignore patterns are excluded
 - Files are sorted by Git change count (files with more changes are at the bottom)
@@ -36,75 +36,6 @@ The content is organized as follows:
 # Directory Structure
 ```
 apps/
-  docs/
-    pages/
-      apps/
-        _meta.json
-        building-apps.mdx
-        index.mdx
-        twitter.mdx
-        whatsapp.mdx
-      architecture/
-        _meta.json
-        boundaries.mdx
-        data-flow.mdx
-        determinism.mdx
-        index.mdx
-        monorepo.mdx
-        plugins.mdx
-      compiler/
-        _meta.json
-        adapters.mdx
-        index.mdx
-        passes.mdx
-      director/
-        _meta.json
-        effects.mdx
-        index.mdx
-        rules.mdx
-        signals.mdx
-      dsl/
-        _meta.json
-        beat.mdx
-        camera.mdx
-        device.mdx
-        episode.mdx
-        index.mdx
-        pov.mdx
-        reference.mdx
-        scene.mdx
-        semantic.mdx
-      guides/
-        _meta.json
-        ai-contract.mdx
-        ai-generation.mdx
-        custom-apps.mdx
-        first-episode.mdx
-        multi-device.mdx
-        quickstart.mdx
-      ir/
-        _meta.json
-        constraints.mdx
-        index.mdx
-        scene-ir.mdx
-        timeline-ir.mdx
-        trace.mdx
-      runtime/
-        _meta.json
-        engine.mdx
-        events.mdx
-        index.mdx
-        world-state.mdx
-      _meta.json
-      changelog.mdx
-      glossary.mdx
-      index.mdx
-      verification.mdx
-    next-env.d.ts
-    next.config.js
-    package.json
-    theme.config.tsx
-    tsconfig.json
   video-runner/
     public/
       assets/
@@ -112,7 +43,9 @@ apps/
           frame.png
           mask.png
       sounds/
+        dramatic.mp3
         notification.mp3
+        typing.mp3
         whatsapp-received.mp3
         whatsapp-sent.mp3
     src/
@@ -120,12 +53,14 @@ apps/
       BreakupDramaDSLVideo.tsx
       CameraShowcaseVideo.tsx
       CinematicCameraShowcaseVideo.tsx
+      FullCinematicShowcaseVideo.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
       InstagramVideo.tsx
       MultiAppShowcaseVideo.tsx
       MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
+      NotificationShowcaseVideo.tsx
       Root.tsx
       TwitterShowcaseVideo.tsx
       UltimateShowcaseVideo.tsx
@@ -169,6 +104,20 @@ packages/
           StoriesView.tsx
         BottomNav.tsx
       index.ts
+      notification-adapter.ts
+      runtime.ts
+      types.ts
+      ui.tsx
+    package.json
+    tsconfig.json
+  apps-spotify/
+    src/
+      widgets/
+        DynamicIslandWidget.tsx
+        index.ts
+        StatusBarWidget.tsx
+      index.ts
+      notification-adapter.ts
       runtime.ts
       types.ts
       ui.tsx
@@ -223,6 +172,7 @@ packages/
         polish.ts
         whatsapp-theme.ts
       index.ts
+      notification-adapter.ts
       plugin.ts
       runtime.ts
       types.ts
@@ -250,6 +200,12 @@ packages/
     tsconfig.tsbuildinfo
   core/
     src/
+      audio/
+        auto-sound.ts
+        index.ts
+        mixer.ts
+        music-bed.ts
+        policies.ts
       camera/
         index.ts
         presets.ts
@@ -264,12 +220,15 @@ packages/
       engine.ts
       eventUtils.ts
       index.ts
+      notification-adapter.ts
+      notification-dsl.ts
       plugin.ts
       sounds.ts
       tokens.ts
       transitions.ts
       typeGuards.ts
       types.ts
+      widget-registry.ts
     package.json
     README.md
     tsconfig.json
@@ -291,6 +250,7 @@ packages/
   dsl/
     examples/
       breakup-01.dsl.ts
+      full-cinematic-showcase.dsl.ts
       multi-app-showcase.dsl.ts
       multi-pov-demo.dsl.ts
       production-demo.dsl.ts
@@ -301,12 +261,14 @@ packages/
       whatsapp-media-showcase.dsl.ts
     src/
       author/
+        audio-builder.ts
         beat-builder.ts
         camera-builder.ts
         device-builder.ts
         episode-builder.ts
         index.ts
         scene-builder.ts
+        spotify-builder.ts
       index.ts
       types.ts
     package.json
@@ -325,6 +287,7 @@ packages/
         whatsapp-production-demo.json
         whatsapp-psychotic-demo.json
       index.ts
+      notification-showcase.dsl.ts
       schema.ts
     package.json
     tsconfig.json
@@ -362,12 +325,15 @@ packages/
       CallOverlay.tsx
       camera-composer.ts
       DeviceFrame.tsx
+      DynamicIsland.tsx
       HeadsUpNotification.tsx
       HomeScreenView.tsx
       index.ts
       LockscreenView.tsx
       MultiDeviceRenderer.tsx
       NotificationOverlay.tsx
+      NotificationShade.tsx
+      NowPlayingBar.tsx
       registry.ts
       TokovoRenderer.tsx
       types.ts
@@ -386,7159 +352,107 @@ turbo.json
 
 # Files
 
-## File: apps/docs/pages/apps/index.mdx
+## File: .gitignore
 ````
----
-title: Apps
-description: Built-in messaging apps for Tokovo
----
+# Dependencies
+node_modules
+.pnpm-store
 
-# Apps
+# Next.js
+.next
+out
+build
+dist
 
-Tokovo includes production-ready, pixel-perfect messaging app UIs.
+# Remotion
+.remotion
+render
 
-## Available Apps
+# Turbo
+.turbo
 
-| App | Description | Platform |
-|-----|-------------|----------|
-| [WhatsApp](/apps/whatsapp) | iOS/Android chat with all message types | iOS, Android |
-| iMessage | iOS Messages with reactions and effects | iOS |
-| Instagram | DMs with seen receipts and stories | iOS |
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.env
+*.env.*
 
-## App Architecture
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 
-Each app consists of:
+# OS
+.DS_Store
+Thumbs.db
 
-1. **Runtime Reducer** - Handles timeline events and updates state
-2. **UI Components** - React components for rendering
-3. **Layout Config** - Configurable heights, spacing, animations
-4. **Theme** - Colors, typography, bubble styling
+# IDEs
+.vscode
+.idea
+*.swp
+*.swo
+````
 
-## Using Apps in DSL
+## File: .tool-versions
+````
+nodejs 25.2.0
+````
 
-```typescript
-ep.device("MyPhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_alice", { name: "Alice", avatar: "alice.png" });
-    
-    d.beat("conversation", b => {
-        b.receive("Alice", "Hey!");
-        b.send("Hi there!");
-    });
-});
-```
-
-## Configuration
-
-Apps are fully configurable via theme and layout configs:
-
-```typescript
-import { 
-    DEFAULT_LAYOUT_CONFIG,
-    iOS_WHATSAPP_LIGHT 
-} from "@tokovo/apps-whatsapp/config";
-
-// Customize heights
-const customLayout = {
-    ...DEFAULT_LAYOUT_CONFIG,
-    heights: {
-        ...DEFAULT_LAYOUT_CONFIG.heights,
-        image: { default: 500, withCaption: 580 }
+## File: package.json
+````json
+{
+    "name": "tokovo-monorepo",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "build": "turbo run build",
+        "dev": "turbo run dev",
+        "lint": "turbo run lint",
+        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+    },
+    "devDependencies": {
+        "turbo": "latest",
+        "prettier": "latest"
+    },
+    "packageManager": "pnpm@9.0.0",
+    "engines": {
+        "node": ">=18"
     }
-};
-```
+}
 ````
 
-## File: apps/docs/pages/architecture/boundaries.mdx
-````
-# Layer Boundaries
-
-Tokovo enforces strict layer separation. Understanding this is key to working with the system.
-
-## The Four Layers
-
-```
-┌─────────────────────────────────────────────┐
-│                 AUTHOR LAYER                 │
-│    DSL, episode(), beat builder, semantics   │
-├─────────────────────────────────────────────┤
-│                SEMANTIC LAYER               │
-│    Scene IR, beats, operations, constraints  │
-├─────────────────────────────────────────────┤
-│               EXECUTION LAYER               │
-│    Timeline IR, frames, traces, ordering     │
-├─────────────────────────────────────────────┤
-│              RENDERING LAYER                │
-│    Runtime, DirectorLite, Renderer, pixels   │
-└─────────────────────────────────────────────┘
-```
-
-## Dependency Rules
-
-### ✅ Allowed
-
-```
-dsl      → ir           (DSL imports IR types)
-compiler → ir           (Compiler transforms IR)
-adapters → ir           (Adapters read IR)
-```
-
-### ❌ Never
-
-```
-ir       → dsl          (IR is pure types, no deps)
-core     → dsl          (Runtime never imports DSL)
-renderer → compiler     (Renderer only sees events)
-```
-
-## Why This Matters
-
-### Scenario 1: FPS Changes
-
-If you change FPS from 30 to 60:
-
-| Layer | Impact |
-|-------|--------|
-| DSL | None (no frames in DSL) |
-| Scene IR | None (duration is "1.5s", not frames) |
-| Compiler | Re-run (converts durations to frames) |
-| Timeline IR | Different (frame numbers doubled) |
-| Runtime | Works (just more frames) |
-
-**Key insight:** Scene IR is stable across FPS changes.
-
-### Scenario 2: New App Added
-
-Adding Instagram DMs:
-
-| Layer | Impact |
-|-------|--------|
-| Scene IR | None (operations are app-agnostic) |
-| Timeline IR | None (operations are app-agnostic) |
-| Adapters | Add `InstagramAdapter` |
-| Runtime | Add Instagram UI components |
-
-**Key insight:** Story logic unchanged.
-
-### Scenario 3: DirectorLite v2
-
-Upgrading camera intelligence:
-
-| Layer | Impact |
-|-------|--------|
-| DSL | None |
-| Scene IR | None |
-| Timeline IR | None |
-| DirectorLite | Updated rules |
-| Renderer | Works (same interface) |
-
-**Key insight:** AI improvements don't touch story.
-
-## Package → Layer Mapping
-
-| Package | Layer |
-|---------|-------|
-| `@tokovo/dsl` | Author |
-| `@tokovo/ir` | Semantic + Execution |
-| `@tokovo/compiler` | Semantic → Execution |
-| `@tokovo/adapters` | Execution → Rendering |
-| `@tokovo/core` | Rendering |
-| `@tokovo/renderer` | Rendering |
-
-## Testing Strategy
-
-Each layer has its own test strategy:
-
-| Layer | Test Type |
-|-------|-----------|
-| DSL | Unit tests on builder output |
-| Scene IR | Snapshot tests on structure |
-| Compiler | Golden tests (input IR → output IR) |
-| Timeline IR | Determinism tests |
-| Runtime | Integration tests |
-| Renderer | Visual regression |
-
-## Debugging Across Layers
-
-When something breaks:
-
-1. **Check Scene IR** — Is the intent correct?
-2. **Check Timeline IR** — Did compilation work?
-3. **Check Events** — Did adapters produce correct events?
-4. **Check World State** — Did engine reduce correctly?
-5. **Check Render** — Is the visual correct?
-
-Use traces to jump between layers:
-
-```typescript
-// Every event has trace info
-{
-  at: 45,
-  kind: "APP",
-  type: "MESSAGE_RECEIVED",
-  _trace: {
-    episodeId: "demo",
-    beat: "incoming",
-    trackId: 0,
-    opIndex: 3
-  }
-}
-```
-
-## Layered Design Benefits
-
-| Benefit | How |
-|---------|-----|
-| **AI-friendly** | Scene IR is structured, not prose |
-| **Testable** | Each layer can be tested in isolation |
-| **Extensible** | Add apps/cameras without touching story |
-| **Debuggable** | Traces connect pixels to beats |
-| **Portable** | Same IR, different platforms |
-````
-
-## File: apps/docs/pages/architecture/data-flow.mdx
-````
-# Data Flow
-
-How data flows through Tokovo from story to pixels.
-
-## The Complete Flow
-
-```
-episode("drama", ...)     ← You write this
-        ↓
-    Scene IR              ← Semantic truth
-        ↓
-    compile()             ← Pure transformation
-        ↓
-   Timeline IR            ← Frame-based plan
-        ↓
- adapterRegistry.lowerAll()
-        ↓
-  Runtime Events          ← App-specific events
-        ↓
-   reduceEvent()          ← Pure reducer
-        ↓
-   World State            ← Complete snapshot
-        ↓
-  TokovoRenderer          ← React component
-        ↓
-     Pixels               ← Output!
-```
-
-## Step 1: Story → Scene IR
-
-```typescript
-const sceneIR = episode("drama", ep => {
-  ep.device("Phone", d => {
-    d.beat("intro", b => {
-      b.receive("Bob", "Hey!");
-    });
-  });
-});
-```
-
-**Output: Scene IR**
-```json
-{
-  "episodeId": "drama",
-  "devices": [{
-    "beats": [{
-      "name": "intro",
-      "ops": [{
-        "kind": "ReceiveMessage",
-        "actor": "Bob",
-        "text": "Hey!"
-      }]
-    }]
-  }]
-}
-```
-
-## Step 2: Scene IR → Timeline IR
-
-```typescript
-const { timeline } = compile(sceneIR);
-```
-
-**Output: Timeline IR**
-```json
-{
-  "episodeId": "drama",
-  "fps": 30,
-  "ops": [
-    { "at": 0, "kind": "DeviceUnlocked", ... },
-    { "at": 0, "kind": "AppOpened", ... },
-    { "at": 0, "kind": "ConversationOpened", ... },
-    { "at": 0, "kind": "MessageReceived", "message": { "text": "Hey!" }, ... }
-  ]
-}
-```
-
-**Key transformation:** Durations become frame numbers.
-
-## Step 3: Timeline IR → Runtime Events
-
-```typescript
-const events = adapterRegistry.lowerAll(timeline);
-```
-
-**Output: Runtime Events**
-```json
-[
-  { "at": 0, "kind": "DEVICE", "type": "UNLOCK", ... },
-  { "at": 0, "kind": "DEVICE", "type": "OPEN_APP", "appId": "app_whatsapp", ... },
-  { "at": 0, "kind": "APP", "type": "NAVIGATE", "screen": "chat", ... },
-  { "at": 0, "kind": "APP", "type": "MESSAGE_RECEIVED", "message": { "text": "Hey!" }, ... }
-]
-```
-
-**Key transformation:** Generic ops become app-specific events.
-
-## Step 4: Events → World State
-
-```typescript
-function buildWorldAtFrame(init, events, frame) {
-  let world = init;
-  for (const event of events) {
-    if (event.at <= frame) {
-      world = reduceEvent(world, event);
-    }
-  }
-  return world;
-}
-```
-
-**Output: World State**
-```json
-{
-  "devices": {
-    "Phone": {
-      "isLocked": false,
-      "foregroundAppId": "app_whatsapp",
-      "apps": {
-        "app_whatsapp": {
-          "screen": "chat",
-          "activeConversationId": "dm_bob",
-          "conversations": {
-            "dm_bob": {
-              "messages": [
-                { "id": "msg_1", "text": "Hey!", "from": "Bob" }
-              ]
-            }
-          }
-        }
-      }
-    }
-  }
-}
-```
-
-## Step 5: World State → Pixels
-
-```tsx
-<TokovoRenderer
-  world={world}
-  t={frame}
-  eventIndex={eventIndex}
-  directorEnabled={true}
-/>
-```
-
-The renderer:
-1. Reads world state
-2. Renders device UI (lock screen, app, messages)
-3. Applies DirectorLite camera effects
-4. Outputs final pixels
-
-## Data at Each Stage
-
-| Stage | Data Type | Frames? | App-Specific? |
-|-------|-----------|---------|---------------|
-| Scene IR | `SceneIR` | No | No |
-| Timeline IR | `TimelineIR` | Yes | No |
-| Runtime Events | `RuntimeEvent[]` | Yes | Yes |
-| World State | `WorldState` | N/A (snapshot) | Yes |
-
-## Debugging the Flow
-
-### Problem: Wrong message text
-
-1. **Check Scene IR** — Is the text correct in the beat?
-2. **Check Timeline IR** — Did the message compile correctly?
-3. **Check Events** — Did the adapter preserve the text?
-4. **Check World** — Is the message in state?
-5. **Check Render** — Is it displayed correctly?
-
-### Using Traces
-
-Every piece of data has trace info:
-
-```typescript
-// In Timeline IR
-{
-  at: 45,
-  kind: "MessageReceived",
-  trace: {
-    episodeId: "drama",
-    beat: "intro",
-    opIndex: 0
-  }
-}
-```
-
-Follow the trace backwards to find the source.
-
-## Flow Diagram
-
-```
-┌──────────────────────────────────────────────────────────────┐
-│                         AUTHORING                            │
-│  episode("drama", ep => { ... })                             │
-└────────────────────────────┬─────────────────────────────────┘
-                             ↓
-┌────────────────────────────▼─────────────────────────────────┐
-│                       SCENE IR                               │
-│  { episodeId, devices: [{ beats: [{ ops: [...] }] }] }       │
-└────────────────────────────┬─────────────────────────────────┘
-                             ↓ compile()
-┌────────────────────────────▼─────────────────────────────────┐
-│                      TIMELINE IR                             │
-│  { episodeId, fps: 30, ops: [{ at: 0, kind: "..." }] }       │
-└────────────────────────────┬─────────────────────────────────┘
-                             ↓ adapterRegistry.lowerAll()
-┌────────────────────────────▼─────────────────────────────────┐
-│                    RUNTIME EVENTS                            │
-│  [{ at: 0, kind: "APP", type: "MESSAGE_RECEIVED", ... }]     │
-└────────────────────────────┬─────────────────────────────────┘
-                             ↓ reduceEvent()
-┌────────────────────────────▼─────────────────────────────────┐
-│                      WORLD STATE                             │
-│  { devices: { Phone: { apps: { whatsapp: {...} } } } }       │
-└────────────────────────────┬─────────────────────────────────┘
-                             ↓ TokovoRenderer
-┌────────────────────────────▼─────────────────────────────────┐
-│                         PIXELS                               │
-│  🖼️ Final rendered frame                                    │
-└──────────────────────────────────────────────────────────────┘
-```
-````
-
-## File: apps/docs/pages/architecture/determinism.mdx
-````
-# Determinism
-
-Tokovo guarantees deterministic output: **same input → same output, always**.
-
-## The Guarantee Chain
-
-```
-Same DSL script
-    ↓ (DSL is pure)
-Same Scene IR
-    ↓ (Compiler is pure)
-Same Timeline IR
-    ↓ (Adapters are pure)
-Same Runtime Events
-    ↓ (Engine is pure)
-Same World State
-    ↓ (Renderer is pure)
-Same Pixels
-```
-
-## Why Determinism Matters
-
-### 1. Scrubbing Works
-
-Jump to any frame instantly. No accumulated state.
-
-```typescript
-// Frame 100 is identical whether you:
-// - Play from frame 0
-// - Jump directly to frame 100
-// - Scrub backwards from frame 200
-```
-
-### 2. Golden Tests
-
-Compare output frame-by-frame:
-
-```typescript
-test("breakup episode matches golden", () => {
-  const events = compileAndLower(breakupEpisode);
-  expect(events).toMatchSnapshot();
-});
-```
-
-### 3. AI Reproducibility
-
-Generated content is testable:
-
-```typescript
-// AI generates this once
-const sceneIR = generateWithAI("breakup drama");
-
-// Same output every time
-const result1 = compile(sceneIR);
-const result2 = compile(sceneIR);
-expect(result1).toEqual(result2);
-```
-
-### 4. Debugging
-
-Reproduce any bug exactly:
-
-```
-Bug report: "Frame 127 has wrong message"
-→ Load same scene IR
-→ Jump to frame 127
-→ Bug reproduced exactly
-```
-
-## How We Achieve It
-
-### No Side Effects
-
-Every function is pure:
-
-```typescript
-// ✅ Pure (deterministic)
-function normalize(ops: SceneOp[]): SceneOp[] {
-  return ops.map(op => expandSugar(op));
-}
-
-// ❌ Impure (non-deterministic)
-function normalize(ops: SceneOp[]): SceneOp[] {
-  console.log("Normalizing...");  // Side effect!
-  return ops;
-}
-```
-
-### No External State
-
-No reading from environment:
-
-```typescript
-// ✅ Deterministic
-function getTimestamp(messageIndex: number): string {
-  return `10:${String(messageIndex).padStart(2, "0")} AM`;
-}
-
-// ❌ Non-deterministic
-function getTimestamp(): string {
-  return new Date().toLocaleTimeString();  // Real time!
-}
-```
-
-### Seeded Randomness
-
-When randomness is needed (like shake), we seed it:
-
-```typescript
-// DirectorLite shake
-{
-  type: "MicroShake",
-  seed: signalFrame + baseSeed,  // Deterministic seed
-  intensity: 6
-}
-```
-
-Same seed → same "random" pattern.
-
-### Canonical Ordering
-
-Operations are sorted deterministically:
-
-```typescript
-// Sort key: (at, phase, priority, trackId, opIndex)
-
-const sortedOps = ops.sort((a, b) => {
-  if (a.at !== b.at) return a.at - b.at;
-  if (a.phase !== b.phase) return a.phase - b.phase;
-  if (a.priority !== b.priority) return a.priority - b.priority;
-  if (a.trackId !== b.trackId) return a.trackId - b.trackId;
-  return a.opIndex - b.opIndex;
-});
-```
-
-## Testing Determinism
-
-```typescript
-describe("determinism", () => {
-  it("same scene produces same timeline", () => {
-    const result1 = compile(sceneIR);
-    const result2 = compile(sceneIR);
-    expect(result1.timeline).toEqual(result2.timeline);
-  });
-
-  it("same events produce same world at frame N", () => {
-    const world1 = buildWorldAtFrame(init, events, 100);
-    const world2 = buildWorldAtFrame(init, events, 100);
-    expect(world1).toEqual(world2);
-  });
-
-  it("scrubbing doesn't affect state", () => {
-    // Build incrementally
-    let world = init;
-    for (let f = 0; f <= 100; f++) {
-      world = advanceToFrame(world, events, f);
-    }
-
-    // Build directly
-    const directWorld = buildWorldAtFrame(init, events, 100);
-
-    expect(world).toEqual(directWorld);
-  });
-});
-```
-
-## What Breaks Determinism
-
-Avoid these patterns:
-
-```typescript
-// ❌ Reading current time
-const timestamp = Date.now();
-
-// ❌ Using Math.random()
-const offset = Math.random() * 10;
-
-// ❌ Depending on execution order
-const results = await Promise.all([a, b, c]);
-
-// ❌ Mutating shared state
-globalCounter++;
-```
-
-## Determinism Checklist
-
-When adding new features:
-
-- [ ] Is every function pure?
-- [ ] Is random seeded?
-- [ ] Is ordering canonical?
-- [ ] Are no external resources read?
-- [ ] Would the same input produce the same output 1000 times?
-````
-
-## File: apps/docs/pages/architecture/index.mdx
-````
-# Architecture Overview
-
-Tokovo is built on a **strict layered architecture** that enforces separation of concerns.
-
-## The Four Layers
-
-```
-┌───────────────────────────┐
-│        AUTHOR DSL         │  ← Writers / AI / GUI
-│  (TypeScript fluent API)  │
-└────────────┬──────────────┘
-             ↓
-┌────────────▼──────────────┐
-│        SCENE IR           │  ← Semantic intent (no frames)
-│  (beats, actions, waits)  │
-└────────────┬──────────────┘
-             ↓
-┌────────────▼──────────────┐
-│       TIMELINE IR         │  ← Frame-based execution
-│   (at=frame, payload)     │
-└────────────┬──────────────┘
-             ↓
-┌────────────▼──────────────┐
-│    RUNTIME + DIRECTOR     │  ← Renders pixels + camera
-└───────────────────────────┘
-```
-
-## Key Invariants
-
-### 1. DSL Never Imports Runtime
-
-```
-@tokovo/dsl      → @tokovo/ir        ✅
-@tokovo/compiler → @tokovo/ir        ✅
-@tokovo/core     → @tokovo/dsl       ❌ NEVER
-```
-
-### 2. Scene IR Has No Frames
-
-Scene IR captures **WHAT HAPPENS**, not **WHEN**.
-
-```typescript
-// Scene IR (no frames)
-{ kind: "Wait", duration: "1.5s" }
-{ kind: "ReceiveMessage", actor: "Bob", text: "Hi" }
-
-// Timeline IR (has frames)
-{ at: 45, kind: "MessageReceived", ... }
-```
-
-### 3. Compiler is Pure
-
-Every compiler pass is a **pure function**:
-
-```typescript
-function normalize(sceneIR: SceneIR): SceneIR { ... }
-function resolveRefs(sceneIR: SceneIR): SceneIR { ... }
-function timeLowering(sceneOps: SceneOp[]): TimelineOp[] { ... }
-```
-
-No side effects. No state. Same input → same output.
-
-## Package Dependencies
-
-```
-@tokovo/ir        ← Pure types (no deps)
-      ↑
-@tokovo/dsl       ← Depends on IR
-      ↑
-@tokovo/compiler  ← Depends on IR
-      ↑
-@tokovo/adapters  ← Depends on IR
-      
-@tokovo/core      ← Runtime (isolated)
-@tokovo/renderer  ← Visual (isolated)
-```
-
-## Why This Matters
-
-| Benefit | How |
-|---------|-----|
-| **AI generation** | Structured IR, not magic prompts |
-| **Debugging** | Trace any frame to its beat |
-| **Testing** | Golden tests on deterministic output |
-| **FPS changes** | Scene IR unchanged |
-| **Platform ports** | Same IR, different adapters |
-````
-
-## File: apps/docs/pages/architecture/monorepo.mdx
-````
-# Monorepo Architecture
-
-Tokovo uses a **pnpm + Turborepo monorepo** for maximum development velocity and code sharing.
-
-## Why Monorepo?
-
-| Benefit | How |
-|---------|-----|
-| **Shared code** | All packages access common types |
-| **Atomic changes** | Update IR + DSL + Compiler together |
-| **Fast builds** | Turborepo caches everything |
-| **Type safety** | End-to-end TypeScript |
-| **Single source** | One repo, one truth |
-
-## Directory Structure
-
-```
-tokovo/
-├── apps/                    # Runnable applications
-│   ├── video-runner/        # Remotion studio (port 3001)
-│   └── docs/                # Nextra documentation (port 3002)
-│
-├── packages/                # Shared libraries
-│   ├── ir/                  # 🔢 Intermediate Representations
-│   ├── dsl/                 # ✍️ Author DSL
-│   ├── compiler/            # ⚙️ Scene → Timeline
-│   ├── adapters/            # 🔌 Timeline → Runtime events
-│   ├── core/                # 🧠 Engine, Camera, Plugins
-│   ├── renderer/            # 🎨 React components
-│   ├── devices/             # 📱 Device profiles
-│   ├── apps-whatsapp/       # 💬 WhatsApp clone
-│   ├── apps-instagram/      # 📸 Instagram clone
-│   └── episodes/            # 📝 Episode JSON files
-│
-├── package.json             # Root workspace config
-├── pnpm-workspace.yaml      # pnpm workspace definition
-├── turbo.json               # Turborepo config
-└── tsconfig.base.json       # Shared TypeScript config
-```
-
-## Root package.json
-
-```json
-{
-  "name": "tokovo-monorepo",
-  "private": true,
-  "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint"
-  },
-  "devDependencies": {
-    "turbo": "latest",
-    "prettier": "latest"
-  },
-  "packageManager": "pnpm@9.0.0",
-  "engines": {
-    "node": ">=18"
-  }
-}
-```
-
-## pnpm Workspaces
-
-```yaml
-# pnpm-workspace.yaml
+## File: pnpm-workspace.yaml
+````yaml
 packages:
   - "apps/*"
   - "packages/*"
-```
-
-## Turborepo Configuration
-
-```json
-// turbo.json
-{
-  "$schema": "https://turbo.build/schema.json",
-  "tasks": {
-    "build": {
-      "dependsOn": ["^build"],     // Build deps first
-      "outputs": [
-        ".next/**",                // Next.js output
-        "!.next/cache/**",
-        "dist/**"                  // TypeScript output
-      ]
-    },
-    "dev": {
-      "cache": false,              // Never cache dev
-      "persistent": true           // Keep running
-    },
-    "lint": {}
-  }
-}
-```
-
-## Common Commands
-
-```bash
-# Install all dependencies
-pnpm install
-
-# Build all packages
-pnpm build
-
-# Run all dev servers
-pnpm dev
-
-# Run specific apps
-npx turbo dev --filter=video-runner
-npx turbo dev --filter=video-runner --filter=docs
-
-# Build specific package
-npx turbo build --filter=@tokovo/ir
-
-# Add dependency to package
-cd packages/dsl
-pnpm add @tokovo/ir
-```
-
-## Package Dependencies
-
-```
-@tokovo/ir        ← No deps (pure types)
-      ↓
-@tokovo/dsl       ← Depends on IR
-      ↓
-@tokovo/compiler  ← Depends on IR
-      ↓
-@tokovo/adapters  ← Depends on IR
-      
-@tokovo/core      ← Isolated (engine, camera, plugins)
-      
-@tokovo/renderer  ← Depends on core, devices
-      ↓
-video-runner      ← Depends on everything
-```
-
-## Adding a New Package
-
-```bash
-# 1. Create directory
-mkdir -p packages/my-package/src
-
-# 2. Initialize
-cd packages/my-package
-pnpm init
-
-# 3. Add to package.json
-{
-  "name": "@tokovo/my-package",
-  "version": "0.0.0",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
-  "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch"
-  }
-}
-
-# 4. Create tsconfig.json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
-  },
-  "include": ["src"]
-}
-
-# 5. Install in workspace
-pnpm install
-```
-
-## Development Workflow
-
-```bash
-# Terminal 1: Watch IR changes
-cd packages/ir && pnpm dev
-
-# Terminal 2: Watch DSL changes  
-cd packages/dsl && pnpm dev
-
-# Terminal 3: Run video runner
-npx turbo dev --filter=video-runner
-
-# Or all at once
-npx turbo dev --filter=video-runner --filter=docs
-```
-
-## Build Order
-
-Turborepo automatically determines build order:
-
-```
-1. @tokovo/ir          (no deps)
-2. @tokovo/devices     (no deps)  
-3. @tokovo/dsl         (needs ir)
-4. @tokovo/compiler    (needs ir)
-5. @tokovo/adapters    (needs ir)
-6. @tokovo/core        (standalone)
-7. @tokovo/apps-*      (needs core)
-8. @tokovo/renderer    (needs core, devices, apps)
-9. video-runner        (needs all)
-10. docs               (standalone)
-```
-
-## Caching
-
-Turborepo caches build outputs:
-
-```bash
-# First build (slow)
-pnpm build  # → 45s
-
-# Second build (fast, cached)
-pnpm build  # → 0.5s (from cache)
-
-# Force rebuild
-npx turbo build --force
-```
-
-## TypeScript Project References
-
-Each package references its dependencies:
-
-```json
-// packages/dsl/tsconfig.json
-{
-  "extends": "../../tsconfig.base.json",
-  "compilerOptions": {
-    "outDir": "dist"
-  },
-  "references": [
-    { "path": "../ir" }
-  ]
-}
-```
 ````
 
-## File: apps/docs/pages/architecture/plugins.mdx
-````
-# Plugin System
-
-Tokovo uses a **plugin architecture** for apps. Each app (WhatsApp, Instagram, etc.) is a self-contained plugin.
-
-## Why Plugins?
-
-| Benefit | How |
-|---------|-----|
-| **Self-contained** | Each app owns its UI, state, sounds |
-| **Auto-registration** | Plugins register themselves |
-| **Extensible** | Add new apps without modifying core |
-| **Typed** | Full TypeScript support |
-
-## Plugin Interface
-
-```typescript
-interface TokovoPlugin {
-  // Identity
-  id: string;           // "app_whatsapp"
-  name: string;         // "WhatsApp"
-  version: string;      // "1.0.0"
-
-  // Branding
-  icon?: string;        // Icon path or emoji
-  primaryColor?: string; // "#25D366"
-
-  // Components
-  appView?: AppViewComponent;  // React component
-  reducer?: AppReducer;        // State reducer
-
-  // Integration
-  eventTypes?: string[];       // Events this handles
-  sounds?: Record<string, string>; // Sound mappings
-  notificationSound?: string;  // Default notification sound
-  defaultState?: any;          // Initial app state
-}
-```
-
-## Creating a Plugin
-
-### 1. Define the Plugin
-
-```typescript
-// packages/apps-whatsapp/src/plugin.ts
-import { definePlugin } from "@tokovo/core";
-import { WhatsAppView } from "./ui";
-import { whatsappReducer } from "./runtime";
-
-export const WhatsAppPlugin = definePlugin({
-  id: "app_whatsapp",
-  name: "WhatsApp",
-  version: "1.0.0",
-  
-  icon: "💬",
-  primaryColor: "#25D366",
-  
-  appView: WhatsAppView,
-  reducer: whatsappReducer,
-  
-  eventTypes: [
-    "MESSAGE_RECEIVED",
-    "TYPING_START",
-    "TYPING_END",
-    "MESSAGE_READ",
-    "MESSAGE_DELETED",
-  ],
-  
-  sounds: {
-    "message_received": "whatsapp_received.mp3",
-    "message_sent": "whatsapp_sent.mp3",
-  },
-  
-  notificationSound: "whatsapp_notification.mp3",
-});
-```
-
-### 2. Create the Reducer
-
-```typescript
-// packages/apps-whatsapp/src/runtime.ts
-import { AppReducer, WorldState, TimelineEvent } from "@tokovo/core";
-
-export const whatsappReducer: AppReducer = (
-  world: WorldState,
-  event: TimelineEvent
-): WorldState => {
-  if (event.kind !== "APP") return world;
-  
-  switch (event.type) {
-    case "MESSAGE_RECEIVED":
-      return addMessage(world, event);
-    case "TYPING_START":
-      return setTyping(world, event, true);
-    case "TYPING_END":
-      return setTyping(world, event, false);
-    case "MESSAGE_READ":
-      return markRead(world, event);
-    default:
-      return world;
-  }
-};
-```
-
-### 3. Create the View
-
-```tsx
-// packages/apps-whatsapp/src/ui.tsx
-import React from "react";
-import { AppViewProps } from "@tokovo/core";
-
-export const WhatsAppView: React.FC<AppViewProps> = ({ 
-  world, 
-  deviceId 
-}) => {
-  const device = world.devices[deviceId];
-  const conversation = getCurrentConversation(world, deviceId);
-  
-  return (
-    <div className="whatsapp">
-      <Header contact={conversation?.name} />
-      <MessageList messages={conversation?.messages} />
-      <InputArea />
-    </div>
-  );
-};
-```
-
-### 4. Register the Plugin
-
-```typescript
-// packages/apps-whatsapp/src/index.ts
-import { PluginManager } from "@tokovo/core";
-import { WhatsAppPlugin } from "./plugin";
-
-// Auto-register on import
-PluginManager.register(WhatsAppPlugin);
-
-export { WhatsAppPlugin };
-```
-
-## PluginManager API
-
-```typescript
-import { PluginManager } from "@tokovo/core";
-
-// Register a plugin
-PluginManager.register(MyPlugin);
-
-// Get a plugin
-const plugin = PluginManager.get("app_whatsapp");
-
-// Get view component
-const View = PluginManager.getView("app_whatsapp");
-
-// Check if registered
-if (PluginManager.has("app_instagram")) {
-  // ...
-}
-
-// Get all plugins
-const allPlugins = PluginManager.getAll();
-
-// Get app IDs
-const appIds = PluginManager.getAppIds();
-
-// Get metadata
-const meta = PluginManager.getMetadata("app_whatsapp");
-// → { name: "WhatsApp", icon: "💬", color: "#25D366" }
-
-// Get sound
-const sound = PluginManager.getSound("app_whatsapp", "message_received");
-// → "whatsapp_received.mp3"
-```
-
-## Plugin Helper Functions
-
-### definePlugin()
-
-Create a plugin with defaults:
-
-```typescript
-import { definePlugin } from "@tokovo/core";
-
-const MyPlugin = definePlugin({
-  id: "app_myapp",
-  name: "My App",
-  // version defaults to "1.0.0"
-  // eventTypes defaults to []
-  // sounds defaults to {}
-});
-```
-
-### registerPlugins()
-
-Register multiple at once:
-
-```typescript
-import { registerPlugins } from "@tokovo/core";
-
-registerPlugins([
-  WhatsAppPlugin,
-  InstagramPlugin,
-  MessagesPlugin,
-]);
-```
-
-## Event Reducer Registry
-
-Plugins auto-register with the engine:
-
-```typescript
-// Happens automatically in PluginManager.register()
-if (plugin.reducer) {
-  ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-}
-```
-
-The engine then routes events:
-
-```typescript
-// In engine.ts
-function replay(world, events) {
-  for (const event of events) {
-    if (event.kind === "APP") {
-      const reducer = ReducerRegistry.get(event.appId);
-      world = reducer(world, event);
-    }
-  }
-  return world;
-}
-```
-
-## App View Registry
-
-Views are also auto-registered:
-
-```typescript
-// In renderer
-function renderApp(appId, props) {
-  const View = PluginManager.getView(appId);
-  if (!View) return <UnknownApp />;
-  return <View {...props} />;
-}
-```
-
-## Sound Integration
-
-Plugins define sound mappings:
-
-```typescript
-sounds: {
-  "message_received": "whatsapp_received.mp3",
-  "typing": "whatsapp_typing.mp3",
-}
-```
-
-The audio layer uses these:
-
-```typescript
-// In AudioLayer
-const soundFile = PluginManager.getSound(appId, soundKey);
-playSound(soundFile);
-```
-
-## Adding a New App
-
-Complete checklist:
-
-1. **Create package** — `packages/apps-newapp/`
-2. **Define plugin** — `plugin.ts` with TokovoPlugin
-3. **Create reducer** — Handle your event types
-4. **Create view** — React component
-5. **Add sounds** — Optional sound mappings
-6. **Export** — Re-export from index.ts
-7. **Import** — Import in video-runner to register
-
-```typescript
-// apps/video-runner/src/plugins.ts
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-instagram";
-import "@tokovo/apps-newapp";  // Auto-registers!
-```
-
-## TypeScript Support
-
-Full type inference:
-
-```typescript
-// Event is typed
-interface MyAppEvent extends TimelineEvent {
-  kind: "APP";
-  type: "MY_CUSTOM_EVENT";
-  payload: MyPayload;
-}
-
-// Reducer is typed
-const reducer: AppReducer = (world, event) => {
-  // event.type is string union
-  // world is WorldState
-  return world;
-};
-```
-````
-
-## File: apps/docs/pages/compiler/_meta.json
+## File: turbo.json
 ````json
 {
-    "index": "Overview",
-    "passes": "Compiler Passes",
-    "adapters": "Adapters"
-}
-````
-
-## File: apps/docs/pages/compiler/adapters.mdx
-````
-# Adapters
-
-Adapters transform Timeline IR operations into runtime events for specific apps.
-
-## Why Adapters?
-
-Timeline IR is **app-agnostic**. Adapters bridge to specific app implementations:
-
-```
-Timeline IR (generic) → Adapter → Runtime Events (app-specific)
-```
-
-### Example
-
-```typescript
-// Timeline IR
-{
-  at: 45,
-  kind: "MessageReceived",
-  message: { id: "msg_1", text: "Hey!", ... }
-}
-
-// WhatsApp Adapter output
-{
-  at: 45,
-  kind: "APP",
-  type: "MESSAGE_RECEIVED",
-  appId: "app_whatsapp",
-  message: {
-    id: "msg_1",
-    type: "text",
-    text: "Hey!",
-    status: "delivered"
-  }
-}
-```
-
-## Adapter Interface
-
-```typescript
-interface AppAdapter {
-  appId: string;
-  
-  supports(op: TimelineOp): boolean;
-  
-  lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[];
-}
-```
-
-## Using the Registry
-
-```typescript
-import { adapterRegistry, WhatsAppAdapter } from "@tokovo/adapters";
-
-// Register adapters
-adapterRegistry.register(WhatsAppAdapter);
-
-// Lower all timeline ops to runtime events
-const events = adapterRegistry.lowerAll(timeline);
-```
-
-## WhatsApp Adapter
-
-The built-in WhatsApp adapter handles:
-
-| Timeline Op | Runtime Event |
-|-------------|---------------|
-| DeviceUnlocked | DEVICE/UNLOCK |
-| AppOpened | DEVICE/OPEN_APP |
-| ConversationOpened | APP/NAVIGATE |
-| TypingStarted | APP/TYPING_START |
-| TypingEnded | APP/TYPING_END |
-| MessageReceived | APP/MESSAGE_RECEIVED |
-| MessageSent | APP/MESSAGE_RECEIVED (from: "me") |
-| MessageRead | APP/MESSAGE_READ |
-| MessageDeleted | APP/MESSAGE_DELETED |
-
-## Building Custom Adapters
-
-```typescript
-import { AppAdapter, TimelineOp, RuntimeEvent } from "@tokovo/adapters";
-
-export const InstagramAdapter: AppAdapter = {
-  appId: "app_instagram",
-
-  supports(op: TimelineOp): boolean {
-    if ("appId" in op && op.appId === "app_instagram") {
-      return true;
-    }
-    return false;
-  },
-
-  lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[] {
-    switch (op.kind) {
-      case "MessageReceived":
-        return [{
-          at: op.at,
-          kind: "APP",
-          type: "DM_RECEIVED",
-          appId: "app_instagram",
-          // Instagram-specific fields...
-        }];
-      // ... other cases
-    }
-    return [];
-  }
-};
-```
-
-## Adapter Context
-
-Adapters receive context for additional info:
-
-```typescript
-interface AdapterContext {
-  fps: number;
-  episodeId: string;
-}
-```
-
-## Multi-App Episodes
-
-Register multiple adapters:
-
-```typescript
-adapterRegistry.register(WhatsAppAdapter);
-adapterRegistry.register(InstagramAdapter);
-adapterRegistry.register(MessagesAdapter);
-
-// Each op is routed to the right adapter
-const events = adapterRegistry.lowerAll(timeline);
-```
-
-## Adapter Registration
-
-```typescript
-class AdapterRegistry {
-  register(adapter: AppAdapter): void;
-  getAdapter(appId: string): AppAdapter | undefined;
-  lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[];
-  lowerAll(timeline: TimelineIR): RuntimeEvent[];
-}
-```
-
-## File Structure
-
-```
-packages/adapters/
-├── src/
-│   ├── adapter.ts       # AppAdapter interface
-│   ├── registry.ts      # AdapterRegistry
-│   ├── whatsapp/
-│   │   └── index.ts     # WhatsApp adapter
-│   └── index.ts         # Exports
-```
-
-## Adding a New App
-
-1. Create adapter file: `packages/adapters/src/myapp/index.ts`
-2. Implement `AppAdapter` interface
-3. Export from `packages/adapters/src/index.ts`
-4. Register in your episode setup
-
-```typescript
-// myapp/index.ts
-export const MyAppAdapter: AppAdapter = {
-  appId: "app_myapp",
-  supports(op) { /* ... */ },
-  lower(op, ctx) { /* ... */ }
-};
-
-// Usage
-import { MyAppAdapter } from "@tokovo/adapters";
-adapterRegistry.register(MyAppAdapter);
-```
-````
-
-## File: apps/docs/pages/compiler/index.mdx
-````
-# Compiler Overview
-
-The Tokovo Compiler transforms **Scene IR** into **Timeline IR** through a series of pure passes.
-
-## Usage
-
-```typescript
-import { compile } from "@tokovo/compiler";
-
-const { timeline, validation, durationInFrames } = compile(sceneIR, {
-  mode: "lenient",  // or "strict"
-  debug: true,
-});
-```
-
-## Pipeline
-
-```
-Scene IR
-    ↓
-┌─────────────┐
-│  normalize  │  ← Expand sugar
-└─────────────┘
-    ↓
-┌─────────────┐
-│ resolveRefs │  ← Assign message IDs
-└─────────────┘
-    ↓
-┌─────────────────┐
-│  virtualDevice  │  ← Auto-insert glue events
-└─────────────────┘
-    ↓
-┌─────────────────┐
-│  timeLowering   │  ← Duration → frames
-└─────────────────┘
-    ↓
-┌─────────────┐
-│  validate   │  ← Semantic checks
-└─────────────┘
-    ↓
-┌─────────────┐
-│    sort     │  ← Canonical ordering
-└─────────────┘
-    ↓
-Timeline IR
-```
-
-## Pass Details
-
-### 1. normalize
-
-Expands syntactic sugar:
-
-```typescript
-// Input (DSL sugar)
-b.typing("Bob").for("1.5s")
-
-// Output (3 ops)
-{ kind: "TypingStart", actor: "Bob", ... }
-{ kind: "Wait", duration: "1.5s" }
-{ kind: "TypingEnd", actor: "Bob", ... }
-```
-
-### 2. resolveRefs
-
-Assigns stable, deterministic message IDs:
-
-```typescript
-// Before
-const msg = b.receive("Bob", "Hello");
-b.read(msg);
-
-// After
-msg._resolvedMessageId = "msg_AlicePhone_dm_bob_1"
-```
-
-### 3. virtualDevice
-
-Tracks device state and auto-inserts glue events:
-
-```typescript
-// Virtual state
-{
-  isLocked: true,
-  foregroundAppId: undefined,
-  activeConversationId: undefined,
-}
-
-// Auto-inserted at frame 0:
-{ kind: "DeviceUnlocked", ... }
-{ kind: "AppOpened", appId: "app_whatsapp", ... }
-{ kind: "ConversationOpened", conversationId: "dm_bob", ... }
-```
-
-### 4. timeLowering
-
-Converts durations to frames:
-
-```typescript
-// Input (Scene IR)
-{ kind: "Wait", duration: "1.5s" }
-
-// At 30 FPS: 1.5s = 45 frames
-// Wait advances cursor but emits no event
-// Next op gets: { at: 45, ... }
-```
-
-### 5. validate
-
-Checks semantic correctness:
-
-| Check | Strict | Lenient |
-|-------|--------|---------|
-| Read before send | Error | Warning |
-| Delete missing message | Error | Warning |
-| Negative frame | Error | Error |
-
-### 6. sort
-
-Canonical ordering for determinism:
-
-```typescript
-// Sort key: (at, phase, priority, trackId, sceneOpIndex)
-
-enum Phase {
-  DEVICE = 0,  // unlock, lock
-  NAV = 10,    // open app, navigate
-  APP = 20,    // messages, typing
-  FX = 30,     // reserved
-}
-```
-
-## Options
-
-| Option | Default | Description |
-|--------|---------|-------------|
-| `mode` | `"lenient"` | Error handling mode |
-| `debug` | `false` | Include extra trace info |
-| `fps` | From `sceneIR.meta.fps` | Override FPS |
-
-## Output
-
-```typescript
-interface CompileResult {
-  timeline: TimelineIR;
-  validation: ValidationResult;
-  durationInFrames: number;
-}
-```
-````
-
-## File: apps/docs/pages/compiler/passes.mdx
-````
-# Compiler Passes
-
-The compiler transforms Scene IR to Timeline IR through 6 sequential passes.
-
-## Pass Pipeline
-
-```
-Scene IR
-    ↓
-normalize     (sugar expansion)
-    ↓
-resolveRefs   (message ID assignment)
-    ↓
-virtualDevice (glue event insertion)
-    ↓
-timeLowering  (duration → frames)
-    ↓
-validate      (semantic checks)
-    ↓
-sort          (canonical ordering)
-    ↓
-Timeline IR
-```
-
-## 1. normalize
-
-**Purpose:** Expand syntactic sugar into primitive operations.
-
-**Input:** Scene operations as written
-**Output:** Fully expanded operations
-
-### Example
-
-```typescript
-// DSL Sugar
-b.typing("Bob").for("1.5s");
-
-// After normalize
-[
-  { kind: "TypingStart", actor: "Bob", conversationId: "dm_bob" },
-  { kind: "Wait", duration: "1.5s" },
-  { kind: "TypingEnd", actor: "Bob", conversationId: "dm_bob" }
-]
-```
-
-**Note:** Currently a pass-through since expansion happens in DSL, but reserved for future sugar.
-
----
-
-## 2. resolveRefs
-
-**Purpose:** Assign stable, deterministic message IDs.
-
-**Input:** Operations with temporary refs
-**Output:** Operations with resolved `_resolvedMessageId`
-
-### ID Format
-
-```
-msg_{deviceId}_{conversationId}_{counter}
-```
-
-Example: `msg_AlicePhone_dm_bob_1`
-
-### Why This Matters
-
-Message references like `b.read(msg)` need stable IDs for:
-- Cross-beat references
-- Compiler validation
-- Runtime tracking
-
----
-
-## 3. virtualDevice
-
-**Purpose:** Auto-insert glue events based on virtual device state.
-
-**What It Tracks:**
-
-```typescript
-interface VirtualDeviceState {
-  isLocked: boolean;          // Device lock status
-  foregroundAppId: string;    // Current app
-  activeConversationId: string; // Current chat
-}
-```
-
-### Auto-Inserted Events
-
-At the start of first beat:
-
-```typescript
-{ kind: "DeviceUnlocked", at: 0, ... }
-{ kind: "AppOpened", appId: "app_whatsapp", at: 0, ... }
-{ kind: "ConversationOpened", conversationId: "dm_bob", at: 0, ... }
-```
-
-### Why This Matters
-
-Writers don't need to manually write "unlock phone, open app, navigate to chat" — the compiler handles it.
-
----
-
-## 4. timeLowering
-
-**Purpose:** Convert durations to frame numbers.
-
-**Input:** Scene operations with duration strings
-**Output:** Timeline operations with `at` frame numbers
-
-### Duration Parsing
-
-| Expression | At 30 FPS |
-|------------|-----------|
-| `"1s"` | 30 frames |
-| `"500ms"` | 15 frames |
-| `"2.5s"` | 75 frames |
-| `"45frames"` | 45 frames |
-
-### Cursor Advancement
-
-```typescript
-// cursor starts at 0
-
-{ kind: "Wait", duration: "1s" }
-// cursor advances to 30, no event emitted
-
-{ kind: "ReceiveMessage", ... }
-// emits at frame 30
-
-{ kind: "Wait", duration: "0.5s" }
-// cursor advances to 45
-```
-
-### Concurrent Tracks
-
-For concurrent operations, the compiler:
-1. Forks cursor per track
-2. Compiles each track independently
-3. Joins at `max(trackEnds)`
-
-```typescript
-b.concurrent([
-  t => t.wait("2s"),      // track ends at 60
-  t => t.wait("1s")       // track ends at 30
-]);
-// cursor after: 60 (max)
-```
-
----
-
-## 5. validate
-
-**Purpose:** Check semantic correctness.
-
-### Checks Performed
-
-| Check | Strict | Lenient |
-|-------|--------|---------|
-| Read before send | Error | Warning |
-| Delete missing message | Error | Warning |
-| Negative frame numbers | Error | Error |
-| Invalid message refs | Error | Warning |
-
-### Validation Modes
-
-```typescript
-compile(sceneIR, { mode: "strict" });  // Throws on errors
-compile(sceneIR, { mode: "lenient" }); // Collects warnings
-```
-
-### Result
-
-```typescript
-interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-```
-
----
-
-## 6. sort
-
-**Purpose:** Canonical ordering for determinism.
-
-### Sort Key
-
-```
-(at, phase, priority, trackId, opIndex)
-```
-
-### Phases
-
-```typescript
-enum Phase {
-  DEVICE = 0,   // unlock, lock
-  NAV = 10,     // open app, navigate
-  APP = 20,     // messages, typing
-  FX = 30,      // effects (reserved)
-}
-```
-
-### Why This Matters
-
-Canonical sorting ensures:
-- Same input → same output, every time
-- Golden tests work reliably
-- AI-generated content is reproducible
-
----
-
-## Using the Compiler
-
-```typescript
-import { compile } from "@tokovo/compiler";
-
-const { timeline, validation, durationInFrames, debug } = compile(sceneIR, {
-  mode: "lenient",
-  debug: true
-});
-
-if (!validation.valid) {
-  console.warn("Warnings:", validation.warnings);
-}
-
-console.log(`Episode is ${durationInFrames} frames`);
-```
-
-## CompileResult
-
-```typescript
-interface CompileResult {
-  timeline: TimelineIR;
-  validation: ValidationResult;
-  durationInFrames: number;
-  debug?: {
-    sceneIR: SceneIR;
-    unsortedOps: TimelineOp[];
-  };
-}
-```
-````
-
-## File: apps/docs/pages/director/_meta.json
-````json
-{
-    "index": "Overview",
-    "signals": "Signals",
-    "rules": "Rules",
-    "effects": "Effects"
-}
-````
-
-## File: apps/docs/pages/director/effects.mdx
-````
-# Director Effects
-
-Effects are the **camera changes** that DirectorLite produces. They're applied through the Camera Composer.
-
-## Effect Types
-
-### ZoomToRect
-
-Zoom the camera to frame a specific rectangle (usually a message).
-
-```typescript
-{
-  type: "ZoomToRect",
-  category: "framing",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 },
-  scale: 1.2,
-  progress: 0.5
-}
-```
-
-**Result:** Camera zooms in 1.2× centered on the message.
-
-### PushIn
-
-Slow, anticipatory zoom (used during typing).
-
-```typescript
-{
-  type: "PushIn",
-  category: "framing",
-  targetRect: { x: 0, y: 600, w: 320, h: 50 }, // input area
-  scale: 1.12,
-  progress: 0.3
-}
-```
-
-**Result:** Subtle 12% zoom building tension.
-
-### PullBack
-
-Zoom out to show more context.
-
-```typescript
-{
-  type: "PullBack",
-  category: "framing",
-  scale: 0.88,
-  progress: 0.8
-}
-```
-
-**Result:** Camera zooms out to 88% (showing more of the screen).
-
-### MicroShake
-
-Quick shake for drama/impact.
-
-```typescript
-{
-  type: "MicroShake",
-  category: "shake",
-  intensity: 6,
-  progress: 0.5,
-  seed: 12345
-}
-```
-
-**Result:** Small camera shake using seeded randomness.
-
-## Effect Properties
-
-```typescript
-interface DerivedCameraEffect {
-  type: "ZoomToRect" | "PushIn" | "PullBack" | "MicroShake";
-  category: "framing" | "shake";
-  priority: number;
-  progress: number;        // 0-1, eased
-  target?: LayoutRect;     // For framing effects
-  scale?: number;          // Zoom factor
-  intensity?: number;      // Shake strength
-  seed?: number;           // For deterministic shake
-}
-```
-
-## Progress & Easing
-
-`progress` is automatically eased from rule timing:
-
-```typescript
-const localProgress = (currentFrame - startFrame) / duration;
-const progress = applyEasing(localProgress, "ease-out");
-```
-
-This creates smooth animations without explicit keyframing.
-
-## How Effects Become Transforms
-
-The Camera Composer converts effects to camera transforms:
-
-```typescript
-// Effect
-{
-  type: "ZoomToRect",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 },
-  scale: 1.2,
-  progress: 0.5
-}
-
-// Becomes transform
-{
-  offsetX: -30,    // Pan to center target
-  offsetY: -120,
-  scale: 1.1       // 50% of the way to 1.2 (eased)
-}
-```
-
-## Effect Categories
-
-### Framing (One Winner)
-
-Only one framing effect active at a time. Highest priority wins.
-
-Examples: ZoomToRect, PushIn, PullBack
-
-### Shake (Stacks)
-
-Up to 2 shake effects can stack for compound shake.
-
-Examples: MicroShake
-
-## Deterministic Shake
-
-Shake uses seeded random for determinism:
-
-```typescript
-{
-  type: "MicroShake",
-  seed: signalAt + baseSeed,  // Consistent across renders
-  intensity: 6
-}
-```
-
-Same seed → same shake pattern → scrubbing works.
-
-## Effect Lifecycle
-
-```
-Rule triggers (frame 45)
-    ↓
-Effect active (frames 45-70)
-    ↓
-Progress eases 0 → 1
-    ↓
-  Effect ends (frame 70)
-    ↓
-Camera returns to neutral
-```
-
-## Combining Effects
-
-Multiple effects can be active, but arbitration ensures coherence:
-
-```
-Frame 50:
-  Active Effects:
-    - PushIn (framing, priority 10)
-    - ZoomToRect (framing, priority 30)
-    - MicroShake (shake, priority 25)
-
-  After Arbitration:
-    - ZoomToRect (framing winner)
-    - MicroShake (shake stacks)
-```
-
-## Manual Camera Override
-
-When timeline has explicit CAMERA events:
-
-```typescript
-// Manual camera event in timeline
-{ at: 60, kind: "CAMERA", effect: "ZoomIn", ... }
-```
-
-DirectorLite yields:
-
-```typescript
-if (manualCameraEffects.length > 0) {
-  return { effects: [], skipped: "manual-camera-active" };
-}
-```
-
-## Debug Output
-
-```typescript
-interface DirectorOutput {
-  effects: DerivedCameraEffect[];
-  skipped?: "manual-camera-active";
-  debug?: {
-    signalsInWindow: number;
-    matchedRules: number;
-    winningFraming?: string;
-    skippedCooldown: number;
-  };
-}
-```
-````
-
-## File: apps/docs/pages/director/index.mdx
-````
-# DirectorLite Overview
-
-DirectorLite is Tokovo's **automatic camera director**. It observes runtime events and applies cinematic camera effects without manual choreography.
-
-## Philosophy
-
-> "Don't tell writers about cameras. Let the drama drive the frame."
-
-Writers focus on **story**. DirectorLite handles **cinematography**.
-
-## How It Works
-
-```
-Runtime Events → Signal Extraction → Rule Matching → Camera Effects → Final Transform
-```
-
-### 1. Events Happen
-
-```typescript
-{ at: 45, kind: "APP", type: "MESSAGE_RECEIVED", ... }
-```
-
-### 2. Signals Extracted
-
-```typescript
-{ at: 45, type: "NewMessage", targetRect: {...}, messageId: "msg_1" }
-```
-
-### 3. Rules Match
-
-```typescript
-// Rule: NewMessage → ZoomToRect
-{
-  signal: "NewMessage",
-  effect: "ZoomToRect",
-  duration: 25 frames,
-  cooldown: 20 frames
-}
-```
-
-### 4. Effects Applied
-
-```typescript
-{
-  effect: "ZoomToRect",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 },
-  progress: 0.5,
-  scale: 1.2
-}
-```
-
-### 5. Camera Transform
-
-```typescript
-{
-  offsetX: -30,
-  offsetY: -120,
-  scale: 1.2
-}
-```
-
-## Enabling DirectorLite
-
-```tsx
-<TokovoRenderer
-  world={world}
-  t={frame}
-  eventIndex={eventIndex}      // Required for signals
-  directorEnabled={true}       // Enable DirectorLite
-/>
-```
-
-## Key Properties
-
-### Pure & Stateless
-
-```typescript
-// Same inputs → Same outputs
-const output1 = deriveDirectorEffects({ t: 45, signals, layout });
-const output2 = deriveDirectorEffects({ t: 45, signals, layout });
-// output1 === output2 (functionally)
-```
-
-### Scrubbing-Safe
-
-No accumulated state. Jump to any frame instantly.
-
-### Cooldown-Aware
-
-Won't spam zooms. Respects cooldowns per signal type.
-
-```typescript
-// Frame 45: NewMessage → ZoomToRect ✅
-// Frame 55: NewMessage → SKIPPED (cooldown)
-// Frame 75: NewMessage → ZoomToRect ✅
-```
-
-## The ViralDramaV1 Style
-
-Current implementation uses a single baked style optimized for **viral drama videos**:
-
-- **Aggressive zooms** on new messages
-- **Anticipatory push** during typing
-- **Quick shakes** on message deletes
-- **Smart cooldowns** to prevent jitter
-
-## Architecture
-
-```
-packages/core/src/director-lite/
-├── types.ts      # Signal, Effect, Output types
-├── signals.ts    # Extract signals from events
-├── rules.ts      # ViralDramaV1 rule definitions
-├── derive.ts     # Main pure function
-└── index.ts      # Exports
-```
-
-## Integration Points
-
-| Component | Responsibility |
-|-----------|----------------|
-| `TokovoRenderer` | Creates layout model, calls derive |
-| `CameraComposer` | Applies effects to camera transform |
-| `signals.ts` | Extracts signals from event index |
-| `derive.ts` | Matches rules, generates effects |
-
-## Debug Mode
-
-Enable logging to understand decisions:
-
-```tsx
-<TokovoRenderer
-  directorEnabled={true}
-  directorDebug={true}  // Log decisions
-/>
-```
-
-Output:
-```
-[DirectorLite] Frame 45: NewMessage → ZoomToRect (msg_1)
-[DirectorLite] Frame 60: TypingStarted → PushIn (cooldown OK)
-[DirectorLite] Frame 65: NewMessage → SKIPPED (cooldown 5 remaining)
-```
-````
-
-## File: apps/docs/pages/director/rules.mdx
-````
-# Director Rules
-
-Rules define how signals map to camera effects. Tokovo ships with **ViralDramaV1** — a single, opinionated style.
-
-## Rule Structure
-
-```typescript
-interface Rule {
-  id: string;              // Unique identifier
-  signal: SignalType;      // Which signal triggers this
-  effect: EffectType;      // What camera effect to apply
-  category: EffectCategory;// "framing" or "shake"
-  priority: number;        // Higher wins arbitration
-  cooldownFrames: number;  // Minimum frames between triggers
-  durationFrames: number;  // How long the effect lasts
-  targetType: TargetType;  // What to target
-  scale?: number;          // Zoom scale (framing effects)
-  intensity?: number;      // Shake intensity
-}
-```
-
-## ViralDramaV1 Rules
-
-| ID | Signal | Effect | Duration | Cooldown | Scale |
-|----|--------|--------|----------|----------|-------|
-| `typing-push` | TypingStarted | PushIn | 45 | 90 | 1.12× |
-| `message-zoom` | NewMessage | ZoomToRect | 25 | 20 | 1.20× |
-| `read-zoom` | MessageRead | ZoomToRect | 18 | 45 | 1.08× |
-| `deleted-shake` | MessageDeleted | MicroShake | 12 | 60 | — |
-| `call-pullback` | CallIncoming | PullBack | 40 | 0 | 0.88× |
-
-## Understanding the Numbers
-
-### Duration (frames)
-
-How long the effect is active:
-
-```
-typing-push: 45 frames = 1.5 seconds @ 30fps
-message-zoom: 25 frames = 0.83 seconds
-```
-
-### Cooldown (frames)
-
-Minimum gap before same rule triggers again:
-
-```
-message-zoom cooldown: 20 frames = 0.67 seconds
-→ Prevents jittery zooms on rapid messages
-```
-
-### Priority
-
-Higher priority wins when multiple effects compete:
-
-```
-MessageRead (40) beats NewMessage (30) beats TypingStarted (10)
-```
-
-### Scale
-
-Zoom factor for framing effects:
-
-```
-1.20× = 20% zoom in
-0.88× = 12% zoom out (pull back)
-```
-
-## Target Types
-
-| Type | Description | Used By |
-|------|-------------|---------|
-| `message` | Specific message rect | ZoomToRect |
-| `inputArea` | Chat input area | PushIn |
-| `lastMessage` | Most recent message | PullBack fallback |
-
-## Arbitration
-
-When multiple effects are active at the same frame:
-
-### Framing Effects
-Only **one** framing effect can win. Highest priority wins.
-
-```
-Frame 45:
-  - TypingStarted → PushIn (priority 10)
-  - NewMessage → ZoomToRect (priority 30)
-
-Winner: ZoomToRect (30 > 10)
-```
-
-### Shake Effects
-Up to **two** shake effects can stack.
-
-```
-Frame 60:
-  - MessageDeleted → MicroShake
-  - MessageDeleted → MicroShake
-
-Both apply (stacked shake)
-```
-
-## Code Reference
-
-```typescript
-// From rules.ts
-export const RULES: Rule[] = [
-  {
-    id: "typing-push",
-    signal: "TypingStarted",
-    effect: "PushIn",
-    category: "framing",
-    priority: 10,
-    cooldownFrames: 90,
-    durationFrames: 45,
-    targetType: "inputArea",
-    scale: 1.12,
-  },
-  {
-    id: "message-zoom",
-    signal: "NewMessage",
-    effect: "ZoomToRect",
-    category: "framing",
-    priority: 30,
-    cooldownFrames: 20,
-    durationFrames: 25,
-    targetType: "message",
-    scale: 1.2,
-  },
-  // ... more rules
-];
-```
-
-## Pre-Indexed Lookup
-
-Rules are indexed by signal type for O(1) lookup:
-
-```typescript
-export const RULES_BY_SIGNAL: Record<SignalType, Rule[]>;
-
-// Usage
-const rules = RULES_BY_SIGNAL["NewMessage"]; // [message-zoom rule]
-```
-
-## Future: Custom Rules
-
-Currently rules are baked. Future versions may support:
-
-```typescript
-// Hypothetical custom rules API
-director.addRule({
-  id: "high-intensity-zoom",
-  signal: "NewMessage",
-  condition: (signal) => signal.semantic?.intensity > 0.8,
-  effect: "ZoomToRect",
-  scale: 1.5  // More aggressive
-});
-```
-````
-
-## File: apps/docs/pages/director/signals.mdx
-````
-# Director Signals
-
-Signals are **camera-relevant events** extracted from the timeline. They bridge runtime events to director decisions.
-
-## Signal Extraction
-
-```typescript
-// Input: Runtime event
-{
-  at: 45,
-  kind: "APP",
-  type: "MESSAGE_RECEIVED",
-  message: { id: "msg_1", ... },
-  conversationId: "dm_bob"
-}
-
-// Output: Director signal
-{
-  at: 45,
-  type: "NewMessage",
-  deviceId: "AlicePhone",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  messageId: "msg_1",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 }
-}
-```
-
-## Signal Types
-
-| Type | Triggered By | Camera Effect |
-|------|--------------|---------------|
-| `NewMessage` | MESSAGE_RECEIVED | ZoomToRect |
-| `TypingStarted` | TYPING_START | PushIn |
-| `TypingEnded` | TYPING_END | Release |
-| `MessageRead` | MESSAGE_READ | ZoomToRect (subtle) |
-| `MessageDeleted` | MESSAGE_DELETED | MicroShake |
-| `CallIncoming` | CALL_INCOMING | PullBack |
-
-## Signal Properties
-
-```typescript
-interface DirectorSignal {
-  // Timing
-  at: number;              // Frame when signal occurs
-
-  // Classification
-  type: SignalType;        // What kind of signal
-
-  // Context
-  deviceId: string;        // Which device
-  appId: string;           // Which app
-  conversationId?: string; // Which conversation
-
-  // Target (for framing effects)
-  messageId?: string;      // For message-based signals
-  targetRect?: LayoutRect; // Computed rect for camera
-}
-```
-
-## TargetRect
-
-For framing effects, signals include a target rectangle:
-
-```typescript
-interface LayoutRect {
-  x: number;     // Left edge (screen coords)
-  y: number;     // Top edge (screen coords)
-  width: number;
-  height: number;
-}
-```
-
-This is computed from the layout at signal time.
-
-## Cooldown Keys
-
-Signals are grouped for cooldown by:
-
-```
-{type}:{deviceId}:{appId}:{conversationId}
-```
-
-Example: `NewMessage:AlicePhone:app_whatsapp:dm_bob`
-
-**Why?** Typing in chat A won't cooldown typing in chat B.
-
-## Signal Extraction Code
-
-```typescript
-// From signals.ts
-export function extractSignals(
-  events: RuntimeEvent[],
-  layout: DirectorLayoutModel
-): DirectorSignal[] {
-  const signals: DirectorSignal[] = [];
-
-  for (const event of events) {
-    if (event.kind === "APP") {
-      switch (event.type) {
-        case "MESSAGE_RECEIVED":
-          signals.push({
-            at: event.at,
-            type: "NewMessage",
-            deviceId: event.deviceId,
-            appId: event.appId,
-            conversationId: event.conversationId,
-            messageId: event.message.id,
-            targetRect: layout.messageRects[event.message.id]
-          });
-          break;
-        // ... other cases
-      }
-    }
-  }
-
-  return signals.sort((a, b) => a.at - b.at);
-}
-```
-
-## Using Signals Directly
-
-```typescript
-import { extractSignals } from "@tokovo/core/director-lite";
-
-const signals = extractSignals(events, layoutModel);
-
-for (const signal of signals) {
-  console.log(`Frame ${signal.at}: ${signal.type}`);
-}
-```
-````
-
-## File: apps/docs/pages/dsl/camera.mdx
-````
----
-title: Camera Builder
-description: Multi-POV camera control in DSL
----
-
-# Camera Builder
-
-The Camera Builder controls cuts, layouts, and camera effects for multi-device episodes.
-
----
-
-## Basic Usage
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-episode("multi-pov", ep => {
-    ep.device("AlicePhone", d => { /* ... */ });
-    ep.device("BobPhone", d => { /* ... */ });
-    
-    ep.camera(c => {
-        c.at("0s").cut("AlicePhone");      // Start on Alice
-        c.at("5s").cut("BobPhone");         // Cut to Bob at 5s
-        c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-    });
-});
-```
-
----
-
-## Methods
-
-### at(time)
-
-Set the time for following operations.
-
-```typescript
-c.at("3s");     // 3 seconds
-c.at("1.5s");   // 1.5 seconds
-c.at("0s");     // Start of episode
-```
-
-### cut(deviceId, transition?)
-
-Cut to a specific device.
-
-```typescript
-c.at("5s").cut("BobPhone");
-c.at("8s").cut("AlicePhone", "crossfade");
-```
-
-Transition options: `"cut"` (default), `"crossfade"`, `"wipe"`
-
-### layout(type, primary, secondary?, options?)
-
-Set multi-device layout.
-
-```typescript
-// Side by side
-c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-
-// Stacked
-c.at("15s").layout("SPLIT_VERTICAL", "AlicePhone", "BobPhone");
-
-// Picture-in-picture
-c.at("20s").layout("PIP", "BobPhone", "AlicePhone", {
-    position: "top-right",
-    scale: 0.35
-});
-
-// Back to single
-c.at("25s").layout("SINGLE", "AlicePhone");
-```
-
----
-
-## Layout Types
-
-| Type | Description |
-|------|-------------|
-| `SINGLE` | Single device view |
-| `SPLIT_HORIZONTAL` | Side by side |
-| `SPLIT_VERTICAL` | Stacked (top/bottom) |
-| `PIP` | Picture-in-picture |
-
----
-
-## PIP Options
-
-```typescript
-interface PIPOptions {
-    position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    scale?: number;  // 0-1, default 0.3
-}
-```
-
----
-
-## Full Example
-
-```typescript
-ep.camera(c => {
-    // Start on Alice checking her phone
-    c.at("0s").cut("AlicePhone");
-    
-    // Cut to Bob when he starts typing
-    c.at("3s").cut("BobPhone", "crossfade");
-    
-    // Show both in split screen during argument
-    c.at("8s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-    
-    // Focus on Alice's reaction
-    c.at("15s").layout("PIP", "AlicePhone", "BobPhone", {
-        position: "bottom-right",
-        scale: 0.25
-    });
-    
-    // End on single shot
-    c.at("25s").layout("SINGLE", "AlicePhone");
-});
-```
-````
-
-## File: apps/docs/pages/dsl/device.mdx
-````
-# Device Builder
-
-The Device Builder configures a single device's story — its app, conversations, and beats.
-
-## Import
-
-```typescript
-// Used internally by episode()
-import { DeviceBuilder } from "@tokovo/dsl";
-```
-
-## Accessing the Builder
-
-You receive a `DeviceBuilder` in the device callback:
-
-```typescript
-ep.device("AlicePhone", "iphone16", d => {
-  // `d` is a DeviceBuilder
-  d.app("app_whatsapp");
-  d.conversation("dm_bob");
-  d.beat("intro", b => { /* ... */ });
-});
-```
-
-## Methods
-
-### app(appId)
-
-Set the foreground app for this device.
-
-```typescript
-d.app("app_whatsapp");    // WhatsApp
-d.app("app_instagram");   // Instagram DMs
-d.app("app_messages");    // iMessage (planned)
-```
-
-**Default:** `"app_whatsapp"` if not specified.
-
----
-
-### conversation(id, config?)
-
-Define a conversation within the current app.
-
-```typescript
-// Minimal
-d.conversation("dm_bob");
-
-// With config
-d.conversation("dm_bob", {
-  name: "Bob",
-  avatar: "bob.png",
-  type: "dm"  // dm | group
-});
-
-// Group chat
-d.conversation("group_family", {
-  name: "Family ❤️",
-  type: "group"
-});
-```
-
-**Important:** Calling `conversation()` sets it as the current conversation for all subsequent `beat()` calls.
-
-#### Config Options
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `name` | `string` | — | Display name in header |
-| `avatar` | `string` | — | Avatar image path |
-| `type` | `"dm"` \| `"group"` | `"dm"` | Conversation type |
-
----
-
-### beat(name, fn)
-
-Define a beat (named group of actions).
-
-```typescript
-d.beat("tension", b => {
-  b.wait("2s");
-  b.typing("Bob").for("1.5s");
-  b.receive("Bob", "We need to talk.");
-});
-```
-
-**Requirement:** You must call `conversation()` before `beat()`.
-
-```typescript
-// ❌ Error: No conversation defined
-d.beat("intro", b => { /* ... */ });
-
-// ✅ Correct
-d.conversation("dm_bob");
-d.beat("intro", b => { /* ... */ });
-```
-
----
-
-## Complete Example
-
-```typescript
-ep.device("AlicePhone", "iphone16", d => {
-  // 1. Set app
-  d.app("app_whatsapp");
-
-  // 2. Define conversation
-  d.conversation("dm_bob", { 
-    name: "Bob 💔",
-    avatar: "avatars/bob.png",
-    type: "dm"
-  });
-
-  // 3. Define beats (sequential story)
-  d.beat("silence", b => {
-    b.wait("3s");
-  });
-
-  d.beat("typing-tension", b => {
-    b.typing("Bob").for("2s");
-  });
-
-  d.beat("the-message", b => {
-    b.receive("Bob", "We need to talk.", {
-      mood: "tense",
-      intensity: 0.8
-    });
-    b.wait("1s");
-    b.readLast();
-  });
-
-  d.beat("panic", b => {
-    b.send("What do you mean?", {
-      mood: "anxious"
-    });
-    b.wait("0.5s");
-    b.send("Is everything okay?");
-  });
-
-  d.beat("no-response", b => {
-    b.wait("3s");
-    b.typing("Bob").for("2s");
-    // Typing ends, no message...
-    b.wait("2s");
-  });
-});
-```
-
-## Multiple Conversations
-
-Switch between conversations in the same device:
-
-```typescript
-ep.device("Phone", d => {
-  d.app("app_whatsapp");
-
-  // First conversation
-  d.conversation("dm_bob", { name: "Bob" });
-  d.beat("bob-chat", b => {
-    b.receive("Bob", "Hey there!");
-  });
-
-  // Switch to another conversation
-  d.conversation("dm_alice", { name: "Alice" });
-  d.beat("alice-chat", b => {
-    b.receive("Alice", "Did you see Bob's message?");
-  });
-});
-```
-
-## Device Profiles
-
-| Profile ID | Description |
-|------------|-------------|
-| `"iphone16"` | iPhone 16 Pro (default) |
-| `"pixel"` | Google Pixel |
-
-Profile determines:
-- Screen dimensions
-- Notch/punch-hole style
-- System UI look
-````
-
-## File: apps/docs/pages/dsl/episode.mdx
-````
-# episode()
-
-The entry point for creating Tokovo episodes.
-
-## Import
-
-```typescript
-import { episode } from "@tokovo/dsl";
-```
-
-## Signature
-
-```typescript
-function episode(
-  episodeId: string,
-  fn: (ep: EpisodeBuilder) => void,
-  config?: EpisodeConfig
-): SceneIR
-```
-
-## Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `episodeId` | `string` | ✅ | Unique identifier for the episode |
-| `fn` | `(ep: EpisodeBuilder) => void` | ✅ | Builder callback |
-| `config` | `EpisodeConfig` | ❌ | Initial configuration |
-
-## Returns
-
-Returns `SceneIR` — the compiled scene intermediate representation.
-
-## Basic Usage
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-const sceneIR = episode("my-first-episode", ep => {
-  ep.device("Phone", d => {
-    d.conversation("dm_friend");
-    d.beat("hello", b => {
-      b.receive("Friend", "Hey!");
-    });
-  });
-});
-```
-
-## With Configuration
-
-```typescript
-const sceneIR = episode("drama-01", ep => {
-  ep.config({
-    fps: 30,
-    title: "The Breakup",
-    pacing: "slow-burn",
-    director: "auto",
-    aspectRatio: "9:16",
-    theme: "dark",
-    tags: ["drama", "breakup"]
-  });
-
-  // ... device definitions
-});
-```
-
-## EpisodeBuilder Methods
-
-### config(cfg)
-
-Set episode-level configuration.
-
-```typescript
-ep.config({
-  fps: 24,           // Frames per second (default: 30)
-  title: "My Video", // Display title
-  pacing: "chaotic", // slow-burn | normal | chaotic | explosive
-  director: "auto",  // auto | manual | hybrid
-  aspectRatio: "9:16",
-  theme: "dark",
-  tags: ["comedy"],
-  targetDuration: "30s" // Hint for AI generation
-});
-```
-
-### device(deviceId, fn)
-
-Define a device with default profile (iPhone 16).
-
-```typescript
-ep.device("AlicePhone", d => {
-  // device configuration...
-});
-```
-
-### device(deviceId, profileId, fn)
-
-Define a device with specific profile.
-
-```typescript
-ep.device("AlicePhone", "iphone16", d => {
-  // device configuration...
-});
-
-ep.device("BobPhone", "pixel", d => {
-  // device configuration...
-});
-```
-
-## EpisodeConfig Reference
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `fps` | `number` | `30` | Frames per second |
-| `title` | `string` | `episodeId` | Display title |
-| `pacing` | `string` | `"normal"` | Story pacing style |
-| `director` | `string` | `"auto"` | Camera control mode |
-| `aspectRatio` | `string` | `"9:16"` | Output aspect ratio |
-| `theme` | `string` | `"system"` | Visual theme |
-| `tags` | `string[]` | `[]` | Content tags |
-| `targetDuration` | `string` | — | Duration hint (e.g., "30s") |
-
-### Pacing Values
-
-| Value | Description | Camera Behavior |
-|-------|-------------|-----------------|
-| `"slow-burn"` | Deliberate, tension-building | Slower zooms, longer holds |
-| `"normal"` | Balanced pacing | Standard timing |
-| `"chaotic"` | Fast, unpredictable | Quick cuts, interrupts |
-| `"explosive"` | High-energy climax | Aggressive zooms, shakes |
-
-### Director Modes
-
-| Value | Description |
-|-------|-------------|
-| `"auto"` | DirectorLite controls camera automatically |
-| `"manual"` | No automatic camera, use `CAMERA` events |
-| `"hybrid"` | Director active, but manual events override |
-
-## Multi-Device Example
-
-```typescript
-episode("pov-switch", ep => {
-  ep.config({ director: "auto" });
-
-  ep.device("AlicePhone", "iphone16", d => {
-    d.conversation("dm_bob", { name: "Bob" });
-    d.beat("alice-pov", b => {
-      b.receive("Bob", "Are you there?");
-      b.wait("1s");
-      b.pov("BobPhone"); // Switch POV
-    });
-  });
-
-  ep.device("BobPhone", "iphone16", d => {
-    d.conversation("dm_alice", { name: "Alice" });
-    d.beat("bob-pov", b => {
-      b.wait("2s");
-      b.typing("Alice").for("1s");
-    });
-  });
-});
-```
-
-## What Happens Next
-
-After calling `episode()`, you have Scene IR. To render:
-
-1. **Compile** — `compile(sceneIR)` → Timeline IR
-2. **Adapt** — `adapterRegistry.lowerAll(timeline)` → Runtime events
-3. **Render** — Pass events to `TokovoRenderer`
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { compile } from "@tokovo/compiler";
-import { adapterRegistry } from "@tokovo/adapters";
-
-const sceneIR = episode("demo", ep => { /* ... */ });
-const { timeline } = compile(sceneIR);
-const events = adapterRegistry.lowerAll(timeline);
-```
-````
-
-## File: apps/docs/pages/dsl/index.mdx
-````
-# DSL Overview
-
-The Tokovo DSL is a **TypeScript fluent API** for writing stories.
-
-## Design Goals
-
-1. **Human-readable** — Writers can understand it
-2. **AI-friendly** — Structured, deterministic output
-3. **Zero frames** — Express intent, not timing
-4. **Fully typed** — IDE autocomplete + compile-time safety
-
-## Basic Structure
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-const scene = episode("breakup-01", ep => {
-  // Episode configuration
-  ep.config({ 
-    pacing: "slow-burn",
-    director: "auto" 
-  });
-
-  // Device context
-  ep.device("AlicePhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_bob", { name: "Bob" });
-
-    // Beats (semantic groups)
-    d.beat("tension", b => {
-      b.wait("2s");
-      b.typing("Bob").for("1.5s");
-      b.receive("Bob", "We need to talk.");
-    });
-  });
-});
-```
-
-## Hierarchy
-
-```
-episode()
-  └── ep.device()
-        ├── d.app()
-        ├── d.conversation()
-        └── d.beat()
-              ├── b.wait()
-              ├── b.typing().for()
-              ├── b.send()
-              ├── b.receive()
-              ├── b.read()
-              ├── b.delete()
-              ├── b.concurrent()
-              ├── b.pov()
-              └── b.screenshot()
-```
-
-## Output
-
-The DSL produces **Scene IR** — semantic truth with no frames:
-
-```typescript
-// Scene IR output
-{
-  episodeId: "breakup-01",
-  meta: { fps: 30, pacing: "slow-burn" },
-  devices: [{
-    deviceId: "AlicePhone",
-    profileId: "iphone16",
-    beats: [{
-      name: "tension",
-      ops: [
-        { kind: "Wait", duration: "2s" },
-        { kind: "TypingStart", actor: "Bob", conversationId: "dm_bob" },
-        { kind: "Wait", duration: "1.5s" },
-        { kind: "TypingEnd", actor: "Bob", conversationId: "dm_bob" },
-        { kind: "ReceiveMessage", actor: "Bob", text: "We need to talk.", ... }
-      ]
-    }]
-  }]
-}
-```
-
-## Next Steps
-
-- [episode()](/dsl/episode) — Entry point
-- [Device Builder](/dsl/device) — Device context
-- [Beat Builder](/dsl/beat) — Actions reference
-- [Semantic Annotations](/dsl/semantic) — Story intelligence
-- [POV Control](/dsl/pov) — Camera grammar
-````
-
-## File: apps/docs/pages/dsl/pov.mdx
-````
-# POV Control
-
-Point-of-View control is a **first-class story primitive** in Tokovo. It allows:
-- Switching between device perspectives
-- Split-screen multi-device views
-- Cinematic transitions
-
-## Single POV Switch
-
-Switch to another device's perspective:
-
-```typescript
-b.pov("BobPhone");
-```
-
-### With Transition
-
-```typescript
-b.pov("BobPhone", "cut");       // Instant cut (default)
-b.pov("BobPhone", "crossfade"); // Smooth fade between devices
-b.pov("BobPhone", "wipe");      // Wipe transition
-```
-
-### Transition Types
-
-| Transition | Description | Best For |
-|------------|-------------|----------|
-| `"cut"` | Instant switch | Drama, tension |
-| `"crossfade"` | Smooth blend | Parallel narratives |
-| `"wipe"` | Side-to-side wipe | Scene changes |
-
-## Split POV
-
-Show multiple devices simultaneously:
-
-```typescript
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-```
-
-### Layout Options
-
-```typescript
-// Side by side
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-
-// Stacked vertically  
-b.splitPov(["AlicePhone", "BobPhone"], "vertical");
-
-// Picture-in-picture (primary + small overlay)
-b.splitPov(["AlicePhone", "BobPhone"], "pip");
-```
-
-### Layout Types
-
-| Layout | Description | Use Case |
-|--------|-------------|----------|
-| `"horizontal"` | Side by side | Reactions, parallel action |
-| `"vertical"` | Stacked | Long-form content |
-| `"pip"` | Picture-in-picture | Focus + context |
-| `"split-diagonal"` | Diagonal split | Stylistic choice |
-
-## Multi-Device Story Example
-
-```typescript
-episode("pov-drama", ep => {
-  ep.config({ director: "auto" });
-
-  // Alice's phone
-  ep.device("AlicePhone", d => {
-    d.conversation("dm_bob", { name: "Bob" });
-    
-    d.beat("alice-receives", b => {
-      b.receive("Bob", "Are you cheating on me?", {
-        mood: "angry",
-        intensity: 0.9
-      });
-      b.wait("1s");
-      
-      // Switch to Bob's perspective
-      b.pov("BobPhone", "cut");
-    });
-  });
-
-  // Bob's phone
-  ep.device("BobPhone", d => {
-    d.conversation("dm_alice", { name: "Alice" });
-    
-    d.beat("bob-waits", b => {
-      b.wait("2s");
-      
-      // Show both phones
-      b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-      
-      b.typing("Alice").for("3s");
-    });
-
-    d.beat("response", b => {
-      // Back to single view
-      b.pov("AlicePhone", "crossfade");
-    });
-  });
-});
-```
-
-## POV Timing
-
-POV operations are **instantaneous** — they don't consume time:
-
-```typescript
-d.beat("switch", b => {
-  b.wait("2s");           // 2 seconds pass
-  b.pov("BobPhone");      // Instant switch (0 time)
-  b.wait("1s");           // 1 more second
-  // Total: 3 seconds
-});
-```
-
-## Scene IR Output
-
-POV operations produce Scene IR operations:
-
-```typescript
-// b.pov("BobPhone", "crossfade")
-{
-  kind: "POVSwitch",
-  deviceId: "BobPhone",
-  transition: "crossfade"
-}
-
-// b.splitPov(["AlicePhone", "BobPhone"], "horizontal")
-{
-  kind: "SplitPOV",
-  devices: ["AlicePhone", "BobPhone"],
-  layout: "horizontal"
-}
-```
-
-## Concurrent POV
-
-POV can be used inside concurrent tracks:
-
-```typescript
-b.concurrent([
-  t => {
-    t.typing("Bob").for("2s");
-  },
-  t => {
-    t.wait("1s");
-    t.pov("BobPhone"); // Switch mid-track
-  }
-]);
-```
-
-## Best Practices
-
-### For Tension
-```typescript
-// Quick cuts build tension
-b.pov("AlicePhone", "cut");
-b.wait("0.5s");
-b.pov("BobPhone", "cut");
-```
-
-### For Parallel Action
-```typescript
-// Show both perspectives
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-// Both conversations continue...
-```
-
-### For Reveals
-```typescript
-// Dramatic reveal
-b.receive("Detective", "The killer is...");
-b.wait("1s");
-b.pov("SuspectPhone", "crossfade"); // Reveal!
-```
-
-## Validation
-
-POV targets must be valid devices:
-
-```typescript
-ep.device("AlicePhone", d => {
-  d.beat("intro", b => {
-    // ❌ Error: "UnknownPhone" not defined
-    b.pov("UnknownPhone");
-  });
-});
-```
-
-The compiler validates:
-- Device exists in episode
-- Split POV has valid device list
-- No circular references
-````
-
-## File: apps/docs/pages/dsl/scene.mdx
-````
----
-title: Scene Builder
-description: Cross-device scene coordination
----
-
-# Scene Builder
-
-The Scene Builder coordinates actions across multiple devices within a single scene.
-
----
-
-## Basic Usage
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-episode("cross-device", ep => {
-    ep.device("AlicePhone", d => { /* setup */ });
-    ep.device("BobPhone", d => { /* setup */ });
-    
-    ep.scene("argument", s => {
-        s.device("AlicePhone", d => {
-            d.conversation("dm_bob");
-            d.beat("alice-sends", b => {
-                b.send("Where are you?!");
-            });
-        });
-        
-        s.device("BobPhone", d => {
-            d.conversation("dm_alice");
-            d.beat("bob-receives", b => {
-                b.receive("Alice", "Where are you?!");
-                b.wait("1.5s");
-            });
-        });
-    });
-});
-```
-
----
-
-## Why Scenes?
-
-Scenes enable:
-
-1. **Coordinated timing** - Actions across devices happen in sync
-2. **Story clarity** - Groups related cross-device moments
-3. **Camera cues** - Easy to align camera cuts with scene boundaries
-
----
-
-## Scene Builder Methods
-
-### device(deviceId, fn)
-
-Define actions for a device within this scene.
-
-```typescript
-s.device("AlicePhone", d => {
-    d.conversation("dm_bob");
-    d.beat("action", b => {
-        b.send("Hello!");
-    });
-});
-```
-
----
-
-## SceneDeviceBuilder Methods
-
-### conversation(id)
-
-Set the conversation context.
-
-```typescript
-d.conversation("dm_bob");
-```
-
-### beat(name, fn)
-
-Define a beat with actions.
-
-```typescript
-d.beat("my-beat", b => {
-    b.receive("Bob", "Hey!");
-    b.send("Hi there!");
-});
-```
-
----
-
-## Full Example
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-export default episode("two-sides", ep => {
-    ep.config({ fps: 30, title: "Two Sides" });
-
-    // Setup devices
-    ep.device("AlicePhone", "iphone16", d => {
-        d.owner("Alice");
-        d.app("app_whatsapp");
-        d.conversation("dm_bob", { name: "Bob 💕" });
-    });
-
-    ep.device("BobPhone", "iphone16", d => {
-        d.owner("Bob");
-        d.app("app_whatsapp");
-        d.conversation("dm_alice", { name: "Alice ❤️" });
-    });
-
-    // Scene 1: Alice texts Bob
-    ep.scene("alice-texts", s => {
-        s.device("AlicePhone", d => {
-            d.conversation("dm_bob");
-            d.beat("send", b => {
-                b.send("Where are you? 👀");
-            });
-        });
-        s.device("BobPhone", d => {
-            d.conversation("dm_alice");
-            d.beat("receive", b => {
-                b.receive("Alice ❤️", "Where are you? 👀");
-            });
-        });
-    });
-
-    // Scene 2: Bob's excuse
-    ep.scene("bob-lies", s => {
-        s.device("BobPhone", d => {
-            d.conversation("dm_alice");
-            d.beat("reply", b => {
-                b.typing("Bob").for("2s");
-                b.send("Traffic is crazy! 🚗");
-            });
-        });
-        s.device("AlicePhone", d => {
-            d.conversation("dm_bob");
-            d.beat("sees-reply", b => {
-                b.receive("Bob 💕", "Traffic is crazy! 🚗");
-            });
-        });
-    });
-
-    // Camera matches scenes
-    ep.camera(c => {
-        c.at("0s").cut("AlicePhone");
-        c.at("4s").cut("BobPhone");
-        c.at("8s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-    });
-});
-```
-````
-
-## File: apps/docs/pages/dsl/semantic.mdx
-````
-# Semantic Annotations
-
-Add meaning to your story beyond raw events. Semantic annotations enable:
-- **Camera intelligence** — React to emotional weight, not just events
-- **AI generation** — Understand story context and intent
-- **Analytics** — Track dramatic moments and engagement
-
-## Message Annotations
-
-Attach semantic metadata to `send()` and `receive()`:
-
-```typescript
-b.receive("Bob", "We need to talk.", {
-  mood: "tense",
-  intensity: 0.7,
-  secrecy: "high",
-  urgency: 0.8,
-  intimacy: 0.3,
-  subtext: "breakup-coming"
-});
-```
-
-## Available Fields
-
-### mood
-
-The emotional mood of the message.
-
-| Value | Description | Camera Hint |
-|-------|-------------|-------------|
-| `"calm"` | Relaxed, peaceful | Slow movements |
-| `"tense"` | Anticipation, dread | Hold, slight push |
-| `"angry"` | Rage, frustration | Quick, aggressive |
-| `"sad"` | Melancholy, grief | Pull back, soft |
-| `"anxious"` | Worry, fear | Jittery, uncertain |
-| `"excited"` | Joy, enthusiasm | Dynamic, energetic |
-| `"confused"` | Uncertainty | Slow movements |
-| `"neutral"` | No strong emotion | Standard |
-
-```typescript
-b.receive("Bob", "I'm so happy!", { mood: "excited" });
-b.receive("Bob", "Wait, what?", { mood: "confused" });
-b.receive("Bob", "That's not fair!", { mood: "angry" });
-```
-
-### intensity
-
-Emotional intensity from 0 (minimal) to 1 (maximum).
-
-```typescript
-b.receive("Bob", "Hey", { intensity: 0.1 });        // Casual
-b.receive("Bob", "I HATE YOU!", { intensity: 1.0 }); // Extreme
-```
-
-**DirectorLite v2 will use this for:**
-- Zoom speed and distance
-- Hold duration
-- Shake intensity
-
-### secrecy
-
-How private or secret is this message?
-
-| Value | Description |
-|-------|-------------|
-| `"low"` | Public, casual information |
-| `"medium"` | Semi-private |
-| `"high"` | Very secret, juicy gossip |
-
-```typescript
-b.receive("Bob", "I have to tell you something...", { secrecy: "high" });
-```
-
-### urgency
-
-How urgent is this message? (0-1)
-
-```typescript
-b.receive("Bob", "CALL ME NOW!", { urgency: 1.0 });
-b.receive("Bob", "When you get a chance...", { urgency: 0.2 });
-```
-
-### intimacy
-
-Relationship closeness level (0-1).
-
-```typescript
-// Stranger
-b.receive("Unknown", "Hi", { intimacy: 0.0 });
-
-// Close friend/partner
-b.receive("Love", "Miss you ❤️", { intimacy: 0.9 });
-```
-
-### subtext
-
-Free-form hint for AI and debugging.
-
-```typescript
-b.receive("Bob", "We need to talk.", {
-  subtext: "this is the breakup message"
-});
-
-b.receive("Mom", "Are you coming home?", {
-  subtext: "guilt trip"
-});
-```
-
-### tags
-
-Custom tags for categorization.
-
-```typescript
-b.receive("Bob", "I'm sorry.", {
-  tags: ["apology", "turning-point", "emotional-peak"]
-});
-```
-
-## Beat Metadata
-
-Beats can also have semantic metadata:
-
-```typescript
-d.beat("climax", { 
-  tempo: "fast", 
-  emotionalPeak: true,
-  function: "climax"
-}, b => {
-  // The most dramatic moment
-});
-```
-
-### BeatMeta Fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `tempo` | `"slow"` \| `"medium"` \| `"fast"` | Pacing tempo |
-| `emotionalPeak` | `boolean` | Is this the peak moment? |
-| `release` | `boolean` | Is this tension release? |
-| `function` | `string` | Dramatic function |
-| `mood` | `Mood` | Overall beat mood |
-
-### Dramatic Functions
-
-| Value | Description |
-|-------|-------------|
-| `"setup"` | Establishing the scene |
-| `"buildup"` | Building tension |
-| `"climax"` | The peak moment |
-| `"release"` | Tension release |
-| `"resolution"` | Wrapping up |
-
-## Complete Example
-
-```typescript
-episode("semantic-demo", ep => {
-  ep.config({ pacing: "slow-burn" });
-
-  ep.device("Phone", d => {
-    d.conversation("dm_ex", { name: "Ex 💔" });
-
-    d.beat("setup", { function: "setup", tempo: "slow" }, b => {
-      b.wait("3s");
-    });
-
-    d.beat("buildup", { function: "buildup", tempo: "slow" }, b => {
-      b.typing("Ex").for("2s");
-    });
-
-    d.beat("climax", { 
-      function: "climax", 
-      tempo: "medium",
-      emotionalPeak: true 
-    }, b => {
-      b.receive("Ex", "I think we should break up.", {
-        mood: "tense",
-        intensity: 0.9,
-        secrecy: "high",
-        subtext: "the-breakup"
-      });
-      b.wait("2s");
-      b.readLast();
-    });
-
-    d.beat("aftermath", { function: "release", tempo: "slow" }, b => {
-      b.send("...", { mood: "sad", intensity: 0.8 });
-      b.wait("3s");
-    });
-  });
-});
-```
-
-## Validation
-
-Semantic values are validated:
-
-```typescript
-// ❌ Error: intensity must be 0-1
-b.receive("Bob", "Hi", { intensity: 1.5 });
-
-// ❌ Error: urgency must be 0-1  
-b.send("Help!", { urgency: -0.5 });
-
-// ✅ Valid
-b.receive("Bob", "Hi", { intensity: 0.5 });
-```
-
-## Future: Semantic-Aware Camera
-
-DirectorLite v2 will use semantic annotations:
-
-| Annotation | Camera Behavior |
-|------------|-----------------|
-| High intensity | Faster, closer zoom |
-| Tense mood | Slow push, longer hold |
-| High urgency | Quick cuts |
-| Emotional peak | Full attention framing |
-````
-
-## File: apps/docs/pages/guides/ai-contract.mdx
-````
-# AI Generation Contract
-
-This document defines the **AI-safe subset** of Tokovo DSL — the exact contract AI agents must follow to generate valid episodes.
-
----
-
-## The Contract
-
-AI agents generate **Scene IR** (or equivalent DSL). Tokovo validates and compiles.
-
-```
-AI Prompt → DSL/JSON → validateConstraints() → compile() → Timeline IR → Render
-```
-
----
-
-## Output Format Options
-
-### Option 1: TypeScript DSL (Recommended)
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-export default episode("ai-generated", ep => {
-  ep.config({
-    fps: 30,
-    pacing: "normal",
-    director: "auto"
-  });
-
-  ep.device("Phone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_friend", { name: "Friend" });
-
-    d.beat("intro", b => {
-      b.wait("1s");
-      b.receive("Friend", "Hey!");
-    });
-  });
-});
-```
-
-### Option 2: Scene IR JSON
-
-```json
-{
-  "episodeId": "ai-generated",
-  "meta": {
-    "fps": 30,
-    "pacing": "normal",
-    "director": "auto"
-  },
-  "devices": [{
-    "deviceId": "Phone",
-    "profileId": "iphone16",
-    "appId": "app_whatsapp",
-    "conversations": [{
-      "id": "dm_friend",
-      "name": "Friend"
-    }],
-    "beats": [{
-      "name": "intro",
-      "ops": [
-        { "kind": "Wait", "duration": "1s" },
-        { "kind": "ReceiveMessage", "actor": "Friend", "text": "Hey!", "conversationId": "dm_friend" }
-      ]
-    }]
-  }]
-}
-```
-
----
-
-## Required Structure
-
-### Episode
-
-```typescript
-episode(id: string, fn: (ep) => void, config?: EpisodeConfig)
-```
-
-| Field | Type | Required | Default |
-|-------|------|----------|---------|
-| `id` | string | ✅ | — |
-| `fps` | number | ❌ | 30 |
-| `pacing` | string | ❌ | "normal" |
-| `director` | string | ❌ | "auto" |
-
-### Device
-
-```typescript
-ep.device(deviceId: string, profileId?: string, fn: (d) => void)
-```
-
-| Field | Type | Required | Values |
-|-------|------|----------|--------|
-| `deviceId` | string | ✅ | Any unique ID |
-| `profileId` | string | ❌ | "iphone16", "pixel" |
-
-### Conversation
-
-```typescript
-d.conversation(id: string, config?: ConversationConfig)
-```
-
-| Field | Type | Required |
-|-------|------|----------|
-| `id` | string | ✅ |
-| `name` | string | ❌ |
-| `type` | "dm" \| "group" | ❌ |
-
-### Beat
-
-```typescript
-d.beat(name: string, fn: (b) => void, meta?: BeatMeta)
-```
-
-| Field | Type | Required |
-|-------|------|----------|
-| `name` | string | ✅ |
-| `meta.tempo` | string | ❌ |
-| `meta.function` | string | ❌ |
-
----
-
-## Allowed Operations
-
-### Core Operations
-
-| Operation | Method | Required Args |
-|-----------|--------|---------------|
-| Wait | `b.wait(duration)` | duration |
-| Typing | `b.typing(actor).for(duration)` | actor, duration |
-| Send | `b.send(text, options?)` | text |
-| Receive | `b.receive(actor, text, options?)` | actor, text |
-| Read | `b.read(ref)` | ref |
-| Delete | `b.delete(ref)` | ref |
-
-### Duration Format
-
-```
-"1s"       → 1 second
-"1.5s"     → 1.5 seconds
-"500ms"    → 500 milliseconds
-"30frames" → 30 frames
-```
-
-### Semantic Options
-
-```typescript
-{
-  mood: "tense" | "calm" | "angry" | "sad" | "anxious" | "excited" | "confused" | "neutral",
-  intensity: 0.0 - 1.0,
-  urgency: 0.0 - 1.0,
-  secrecy: "low" | "medium" | "high",
-  subtext: string  // Hint for AI/human
-}
-```
-
----
-
-## Validation Checklist
-
-AI-generated content must pass:
-
-1. ✅ `validateConstraints(sceneIR).valid === true`
-2. ✅ `compile(sceneIR, { mode: "strict" }).validation.valid === true`
-3. ✅ All device IDs are unique
-4. ✅ All conversation IDs are unique
-5. ✅ All beat names are non-empty
-6. ✅ All durations are positive
-7. ✅ Semantic values are in valid ranges
-8. ✅ Message refs are valid
-
----
-
-## Common Mistakes
-
-### ❌ Empty Beats
-
-```typescript
-d.beat("empty", b => {
-  // Nothing — will fail validation
-});
-```
-
-### ❌ Invalid Duration
-
-```typescript
-b.wait("-1s");      // Negative
-b.wait("forever");  // Unparseable
-```
-
-### ❌ Missing Actor
-
-```typescript
-b.receive("", "Hey!");  // Empty actor
-```
-
-### ❌ Invalid Mood
-
-```typescript
-{ mood: "happy" }  // Should be "excited"
-```
-
-### ❌ Out-of-Range Intensity
-
-```typescript
-{ intensity: 1.5 }  // Max is 1.0
-```
-
-### ❌ Read Before Send
-
-```typescript
-const msg = b.send("Hello");
-b.read(msg);  // ✅ OK
-
-b.read(nonexistentRef);  // ❌ Invalid
-```
-
----
-
-## Prompt Template
-
-```
-Generate a Tokovo episode in TypeScript using @tokovo/dsl.
-
-Requirements:
-- Characters: [list characters]
-- Mood: [tense/calm/dramatic/etc]
-- Duration: approximately [N] seconds
-- Use semantic annotations (mood, intensity)
-- Include realistic typing delays
-
-Constraints:
-- All beats must have at least one operation
-- Durations must be in format "Ns" or "Nms"
-- Mood must be one of: tense, calm, angry, sad, anxious, excited, confused, neutral
-- Intensity must be 0.0-1.0
-
-Output only the TypeScript code, no explanation.
-```
-
----
-
-## Validation Code
-
-```typescript
-import { validateConstraints } from "@tokovo/ir";
-import { compile } from "@tokovo/compiler";
-
-function validateAIOutput(sceneIR: SceneIR): ValidationResult {
-  // Step 1: Constraint check
-  const constraints = validateConstraints(sceneIR);
-  if (!constraints.valid) {
-    return {
-      valid: false,
-      stage: "constraints",
-      errors: constraints.violations.map(v => v.message)
-    };
-  }
-  
-  // Step 2: Compile check
-  const { validation } = compile(sceneIR, { mode: "strict" });
-  if (!validation.valid) {
-    return {
-      valid: false,
-      stage: "compile",
-      errors: validation.errors
-    };
-  }
-  
-  return { valid: true };
-}
-```
-
----
-
-## Feedback Loop
-
-When validation fails, provide structured feedback to AI:
-
-```typescript
-if (!result.valid) {
-  const feedback = {
-    error: result.errors[0],
-    suggestion: getSuggestion(result.errors[0]),
-    example: getCorrectExample(result.stage)
-  };
-  
-  // Re-prompt AI with feedback
-  regenerate(originalPrompt, feedback);
-}
-```
-
----
-
-## Determinism Notes
-
-- Is this pure? **Yes** — Same input → same output
-- Is ordering stable? **Yes** — Constraints check deterministically
-- Is randomness seeded? **N/A** — No randomness in validation
-````
-
-## File: apps/docs/pages/guides/ai-generation.mdx
-````
-# AI Generation
-
-Tokovo is designed for AI-generated content. Here's how to use it.
-
-## Why Tokovo + AI Works
-
-1. **Structured Output** — AI generates Scene IR, not magic strings
-2. **Validation** — Compiler catches errors before rendering
-3. **Deterministic** — Same output every time = testable
-4. **Semantic** — Rich annotations for AI to understand intent
-
-## The Generation Pipeline
-
-```
-AI Prompt → Scene IR (JSON/TypeScript) → Compile → Render
-```
-
-## Prompt Engineering
-
-### Good Prompt
-
-```
-Generate a Tokovo episode in TypeScript using the @tokovo/dsl.
-
-Requirements:
-- 2 characters: Alice (protagonist) and Bob (antagonist)
-- Mood: tense, building to a revelation
-- Duration: ~30 seconds
-- Use semantic annotations for mood and intensity
-- Include typing indicators for realism
-
-Output the complete episode() call.
-```
-
-### What AI Produces
-
-```typescript
-const sceneIR = episode("ai-generated-drama", ep => {
-  ep.config({
-    pacing: "slow-burn",
-    director: "auto",
-    tags: ["drama", "revelation"]
-  });
-
-  ep.device("AlicePhone", "iphone16", d => {
-    d.conversation("dm_bob", { name: "Bob" });
-
-    d.beat("opening", { tempo: "slow" }, b => {
-      b.wait("2s");
-    });
-
-    d.beat("tension", { tempo: "slow", function: "buildup" }, b => {
-      b.typing("Bob").for("3s");
-      b.receive("Bob", "I need to tell you something.", {
-        mood: "tense",
-        intensity: 0.6
-      });
-    });
-
-    // ... more beats
-  });
-});
-```
-
-## Validation Loop
-
-```typescript
-import { compile } from "@tokovo/compiler";
-import { validateConstraints } from "@tokovo/ir";
-
-// 1. AI generates Scene IR
-const sceneIR = aiGeneratedEpisode();
-
-// 2. Validate constraints
-const constraints = validateConstraints(sceneIR);
-if (!constraints.valid) {
-  console.log("AI output invalid:", constraints.violations);
-  // Feed back to AI for correction
-}
-
-// 3. Compile
-const { validation } = compile(sceneIR, { mode: "strict" });
-if (!validation.valid) {
-  console.log("Compiler errors:", validation.errors);
-  // Feed back to AI for correction
-}
-```
-
-## Semantic Guidance
-
-Use semantic annotations to guide AI understanding:
-
-```typescript
-// AI understands the story context
-b.receive("Bob", "I've been thinking...", {
-  mood: "tense",
-  intensity: 0.5,
-  subtext: "about-to-say-something-important"
-});
-
-b.receive("Bob", "We should break up.", {
-  mood: "sad",
-  intensity: 0.9,
-  tags: ["climax", "revelation"]
-});
-```
-
-## JSON Format
-
-AI can also output Scene IR as JSON:
-
-```json
-{
-  "episodeId": "ai-drama",
-  "meta": {
-    "fps": 30,
-    "pacing": "slow-burn"
-  },
-  "devices": [{
-    "deviceId": "Phone",
-    "profileId": "iphone16",
-    "appId": "app_whatsapp",
-    "conversations": [{
-      "id": "dm_bob",
-      "name": "Bob"
-    }],
-    "beats": [{
-      "name": "tension",
-      "ops": [
-        { "kind": "Wait", "duration": "2s" },
-        { "kind": "TypingStart", "actor": "Bob", "conversationId": "dm_bob" },
-        // ...
-      ]
-    }]
-  }]
-}
-```
-
-## Batch Generation
-
-Generate multiple episodes efficiently:
-
-```typescript
-const prompts = [
-  "A romantic first date over text",
-  "An argument about borrowed money",
-  "A surprise birthday reveal"
-];
-
-const episodes = await Promise.all(
-  prompts.map(prompt => generateEpisode(prompt))
-);
-
-// Validate and compile all
-const results = episodes.map(ep => ({
-  sceneIR: ep,
-  compiled: compile(ep),
-  valid: validateConstraints(ep).valid
-}));
-```
-
-## Fine-Tuning Tips
-
-1. **Provide examples** — Show AI complete episode examples
-2. **Use constraints** — Tell AI about validation rules
-3. **Iterate on failures** — Feed errors back for correction
-4. **Semantic hints** — Use subtext to guide narrative
-
-## Integration with LLMs
-
-```typescript
-async function generateEpisode(prompt: string): Promise<SceneIR> {
-  const systemPrompt = `
-You are a Tokovo episode generator.
-Output valid TypeScript using @tokovo/dsl.
-Include semantic annotations (mood, intensity, subtext).
-Use proper beat structure with meaningful names.
-`;
-
-  const response = await llm.complete({
-    system: systemPrompt,
-    user: prompt
-  });
-
-  // Parse and validate
-  const sceneIR = evaluateTypeScript(response.content);
-  return sceneIR;
-}
-```
-
-## Guardrails
-
-Tokovo's structure provides natural guardrails:
-
-| Guardrail | How |
-|-----------|-----|
-| Type safety | TypeScript compilation |
-| Semantic validation | `validateConstraints()` |
-| Compiler checks | `compile({ mode: "strict" })` |
-| Determinism | Same input = same output |
-
-## Future: AI-DirectorLite
-
-DirectorLite v2 will use semantic annotations:
-
-```typescript
-// AI generates with semantics
-b.receive("Bob", "I hate you!", {
-  mood: "angry",
-  intensity: 1.0
-});
-
-// DirectorLite v2 reacts:
-// → Fast, aggressive zoom
-// → Camera shake
-// → Intense framing
-```
-````
-
-## File: apps/docs/pages/guides/custom-apps.mdx
-````
-# Custom Apps
-
-Add support for new messaging apps beyond WhatsApp.
-
-## Architecture
-
-Custom apps require three components:
-
-1. **Adapter** — Converts Timeline IR to runtime events
-2. **UI Components** — React components for the app
-3. **State Shape** — App-specific state structure
-
-## Step 1: Create the Adapter
-
-```typescript
-// packages/adapters/src/instagram/index.ts
-import { AppAdapter, TimelineOp, RuntimeEvent } from "../adapter";
-
-export const InstagramAdapter: AppAdapter = {
-  appId: "app_instagram",
-
-  supports(op: TimelineOp): boolean {
-    if ("appId" in op && op.appId === "app_instagram") {
-      return true;
-    }
-    return false;
-  },
-
-  lower(op: TimelineOp, ctx: AdapterContext): RuntimeEvent[] {
-    switch (op.kind) {
-      case "MessageReceived":
-        return [{
-          at: op.at,
-          kind: "APP",
-          type: "DM_RECEIVED",
-          appId: "app_instagram",
-          conversationId: op.conversationId,
-          from: op.message.from,
-          message: {
-            id: op.message.id,
-            type: "text",
-            text: op.message.text,
-            // Instagram-specific: reactions, hearts, etc.
-            reactions: [],
-          },
-          _trace: op.trace,
-        }];
-
-      case "TypingStarted":
-        return [{
-          at: op.at,
-          kind: "APP",
-          type: "TYPING_INDICATOR",
-          appId: "app_instagram",
-          conversationId: op.conversationId,
-          userId: op.actor,
-          isTyping: true,
-        }];
-
-      // ... handle other operations
-
-      default:
-        return [];
-    }
-  }
-};
-```
-
-## Step 2: Register the Adapter
-
-```typescript
-// packages/adapters/src/index.ts
-export { InstagramAdapter } from "./instagram";
-
-// In your episode setup
-import { adapterRegistry, InstagramAdapter } from "@tokovo/adapters";
-
-adapterRegistry.register(InstagramAdapter);
-```
-
-## Step 3: Define State Shape
-
-```typescript
-// packages/apps-instagram/src/types.ts
-export interface InstagramDMState {
-  conversationId: string;
-  participants: string[];
-  messages: InstagramMessage[];
-  typingUsers: Set<string>;
-}
-
-export interface InstagramMessage {
-  id: string;
-  from: string;
-  text: string;
-  timestamp: string;
-  reactions: Reaction[];
-  seen: boolean;
-}
-```
-
-## Step 4: Create Engine Reducer
-
-```typescript
-// packages/apps-instagram/src/reducer.ts
-import { InstagramDMState } from "./types";
-
-export function reduceInstagramEvent(
-  state: InstagramDMState,
-  event: RuntimeEvent
-): InstagramDMState {
-  switch (event.type) {
-    case "DM_RECEIVED":
-      return {
-        ...state,
-        messages: [
-          ...state.messages,
-          {
-            id: event.message.id,
-            from: event.from,
-            text: event.message.text,
-            timestamp: event.message.timestamp,
-            reactions: [],
-            seen: false,
-          }
-        ]
-      };
-
-    case "TYPING_INDICATOR":
-      const typingUsers = new Set(state.typingUsers);
-      if (event.isTyping) {
-        typingUsers.add(event.userId);
-      } else {
-        typingUsers.delete(event.userId);
-      }
-      return { ...state, typingUsers };
-
-    default:
-      return state;
-  }
-}
-```
-
-## Step 5: Create UI Components
-
-```tsx
-// packages/apps-instagram/src/DMView.tsx
-import React from "react";
-import { InstagramDMState } from "./types";
-
-export const InstagramDMView: React.FC<{
-  state: InstagramDMState;
-  t: number;
-}> = ({ state, t }) => {
-  return (
-    <div className="instagram-dm">
-      <InstagramHeader 
-        conversationName={state.participants.join(", ")} 
-      />
-      <MessageList messages={state.messages} />
-      {state.typingUsers.size > 0 && (
-        <TypingIndicator users={Array.from(state.typingUsers)} />
-      )}
-      <InputArea />
-    </div>
-  );
-};
-```
-
-## Step 6: Integrate with Renderer
-
-```tsx
-// packages/renderer/src/AppRenderer.tsx
-import { InstagramDMView } from "@tokovo/apps-instagram";
-
-function renderApp(appId: string, state: AppState, t: number) {
-  switch (appId) {
-    case "app_whatsapp":
-      return <WhatsAppView state={state} t={t} />;
-    case "app_instagram":
-      return <InstagramDMView state={state} t={t} />;
-    default:
-      return <div>Unknown app: {appId}</div>;
-  }
-}
-```
-
-## Using Your Custom App
-
-```typescript
-episode("instagram-drama", ep => {
-  ep.device("Phone", d => {
-    d.app("app_instagram");  // Use Instagram instead of WhatsApp
-    d.conversation("dm_influencer", { 
-      name: "Influencer ✨" 
-    });
-
-    d.beat("dm", b => {
-      b.receive("Influencer", "Slide into my DMs 😏");
-    });
-  });
-});
-```
-
-## File Structure
-
-```
-packages/
-├── adapters/
-│   └── src/
-│       ├── instagram/
-│       │   └── index.ts     # Adapter
-│       └── index.ts         # Export
-├── apps-instagram/
-│   ├── src/
-│   │   ├── types.ts         # State types
-│   │   ├── reducer.ts       # Event reducer
-│   │   ├── DMView.tsx       # Main component
-│   │   └── components/      # Sub-components
-│   └── package.json
-```
-
-## App Feature Checklist
-
-When adding a new app:
-
-- [ ] Adapter that handles all Timeline IR ops
-- [ ] State shape for the app
-- [ ] Event reducer
-- [ ] Main view component
-- [ ] Header component
-- [ ] Message bubble component
-- [ ] Typing indicator
-- [ ] Input area (visual only)
-- [ ] Integration with renderer
-- [ ] DirectorLite signal support (optional)
-
-## Testing Your App
-
-```typescript
-describe("Instagram Adapter", () => {
-  it("converts MessageReceived to DM_RECEIVED", () => {
-    const op: TimelineOp = {
-      at: 45,
-      kind: "MessageReceived",
-      appId: "app_instagram",
-      message: { id: "msg_1", text: "Hey!", from: "user" }
-    };
-
-    const events = InstagramAdapter.lower(op, ctx);
-    
-    expect(events[0].type).toBe("DM_RECEIVED");
-    expect(events[0].message.text).toBe("Hey!");
-  });
-});
-```
-````
-
-## File: apps/docs/pages/guides/first-episode.mdx
-````
-# Your First Episode
-
-A step-by-step guide to creating a complete Tokovo episode.
-
-## What We're Building
-
-A simple drama: someone receives a concerning message and reacts.
-
-**Duration:** ~15 seconds
-**Devices:** 1 (phone)
-**Conversation:** DM with "Alex"
-
-## Step 1: Create the Episode
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-const sceneIR = episode("first-drama", ep => {
-  // Configuration will go here
-  // Device will go here
-});
-```
-
-## Step 2: Configure the Episode
-
-```typescript
-ep.config({
-  fps: 30,                    // 30 frames per second
-  title: "The Message",
-  pacing: "slow-burn",        // Tension-building pacing
-  director: "auto",           // Let DirectorLite control camera
-  aspectRatio: "9:16",        // Vertical video
-  tags: ["drama", "tension"]
-});
-```
-
-## Step 3: Add a Device
-
-```typescript
-ep.device("MyPhone", "iphone16", d => {
-  // App and conversation go here
-});
-```
-
-## Step 4: Set Up the Conversation
-
-```typescript
-d.app("app_whatsapp");
-d.conversation("dm_alex", { 
-  name: "Alex 💔",
-  type: "dm"
-});
-```
-
-## Step 5: Write the Story (Beats)
-
-### Beat 1: The Setup
-
-```typescript
-d.beat("setup", b => {
-  b.wait("2s");  // Quiet anticipation
-});
-```
-
-### Beat 2: Incoming Message
-
-```typescript
-d.beat("incoming", b => {
-  // Typing indicator (tension!)
-  b.typing("Alex").for("3s");
-  
-  // The message arrives
-  b.receive("Alex", "Can we talk? It's urgent.", {
-    mood: "tense",
-    intensity: 0.8,
-    urgency: 0.9,
-    subtext: "something-bad"
-  });
-});
-```
-
-### Beat 3: The Reaction
-
-```typescript
-d.beat("reaction", b => {
-  // Pause while reading
-  b.wait("2s");
-  
-  // Mark as read
-  b.readLast();
-  
-  // The response
-  b.wait("1s");
-  b.send("What's wrong?", {
-    mood: "anxious"
-  });
-});
-```
-
-### Beat 4: Waiting
-
-```typescript
-d.beat("waiting", b => {
-  // Anxious waiting
-  b.wait("3s");
-  
-  // They start typing...
-  b.typing("Alex").for("2s");
-  
-  // ...but stop (no message!)
-  b.wait("2s");
-});
-```
-
-## Complete Code
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { compile } from "@tokovo/compiler";
-import { adapterRegistry } from "@tokovo/adapters";
-
-const sceneIR = episode("first-drama", ep => {
-  ep.config({
-    fps: 30,
-    title: "The Message",
-    pacing: "slow-burn",
-    director: "auto",
-    aspectRatio: "9:16",
-    tags: ["drama", "tension"]
-  });
-
-  ep.device("MyPhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_alex", { 
-      name: "Alex 💔",
-      type: "dm"
-    });
-
-    d.beat("setup", b => {
-      b.wait("2s");
-    });
-
-    d.beat("incoming", b => {
-      b.typing("Alex").for("3s");
-      b.receive("Alex", "Can we talk? It's urgent.", {
-        mood: "tense",
-        intensity: 0.8,
-        urgency: 0.9,
-        subtext: "something-bad"
-      });
-    });
-
-    d.beat("reaction", b => {
-      b.wait("2s");
-      b.readLast();
-      b.wait("1s");
-      b.send("What's wrong?", {
-        mood: "anxious"
-      });
-    });
-
-    d.beat("waiting", b => {
-      b.wait("3s");
-      b.typing("Alex").for("2s");
-      b.wait("2s");
-    });
-  });
-});
-
-// Compile and export
-const { timeline, durationInFrames } = compile(sceneIR);
-const events = adapterRegistry.lowerAll(timeline);
-
-console.log(`Episode: ${durationInFrames} frames (${durationInFrames / 30}s)`);
-```
-
-## What Happens
-
-1. **Compiler** transforms your beats into Timeline IR
-2. **Adapter** converts to runtime events
-3. **Engine** reduces events to world state
-4. **DirectorLite** adds automatic camera movements
-5. **Renderer** outputs frames
-
-## Expected Output
-
-```
-Episode: 540 frames (18s)
-```
-
-Timeline:
-- 0-60: Setup (2s)
-- 60-150: Typing (3s)
-- 150-180: Message arrives (1s)
-- 180-240: Reading (2s)
-- 240-270: Mark read (1s)
-- 270-300: Reply sent (1s)
-- 300-390: Waiting (3s)
-- 390-450: Typing (2s)
-- 450-510: Nothing (2s)
-- 510-540: Buffer (1s)
-
-## Render It
-
-Create a Remotion composition to render this episode, or use an existing composition and swap in your events.
-
-## Next Steps
-
-- [Multi-Device Stories](/guides/multi-device) — POV switching
-- [Semantic Annotations](/dsl/semantic) — Add meaning
-- [DirectorLite](/director) — Understand auto-camera
-````
-
-## File: apps/docs/pages/guides/multi-device.mdx
-````
-# Multi-Device Stories
-
-Create stories from multiple perspectives using POV control.
-
-## When to Use Multi-Device
-
-- **Reactions:** Show how both people react to the same event
-- **Reveals:** Switch perspective for dramatic effect
-- **Parallel narratives:** Show what's happening on both sides
-
-## Basic POV Switch
-
-```typescript
-episode("pov-drama", ep => {
-  ep.device("AlicePhone", d => {
-    d.conversation("dm_bob", { name: "Bob" });
-    
-    d.beat("alice-view", b => {
-      b.receive("Bob", "I have to tell you something.");
-      b.wait("1s");
-      
-      // Switch to Bob's phone
-      b.pov("BobPhone");
-    });
-  });
-
-  ep.device("BobPhone", d => {
-    d.conversation("dm_alice", { name: "Alice" });
-    
-    d.beat("bob-view", b => {
-      b.wait("2s");
-      b.typing("Alice").for("2s");
-      // Viewer now sees Bob's screen
-    });
-  });
-});
-```
-
-## Split Screen
-
-Show multiple devices at once:
-
-```typescript
-d.beat("confrontation", b => {
-  // Show both phones side by side
-  b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-  
-  // Actions on both phones continue...
-  b.receive("Bob", "Fine. Don't answer.");
-});
-```
-
-## POV Transitions
-
-### Cut (Default)
-Instant switch. Maximum tension.
-
-```typescript
-b.pov("BobPhone"); // or
-b.pov("BobPhone", "cut");
-```
-
-### Crossfade
-Smooth blend. Parallel narratives.
-
-```typescript
-b.pov("BobPhone", "crossfade");
-```
-
-### Wipe
-Side-to-side wipe. Scene changes.
-
-```typescript
-b.pov("BobPhone", "wipe");
-```
-
-## Complete Example: The Other Side
-
-```typescript
-episode("the-other-side", ep => {
-  ep.config({ 
-    pacing: "slow-burn",
-    director: "auto"
-  });
-
-  // Alice's perspective
-  ep.device("AlicePhone", "iphone16", d => {
-    d.conversation("dm_bob", { name: "Bob 💔" });
-
-    d.beat("alice-receives", b => {
-      b.wait("2s");
-      b.typing("Bob").for("2s");
-      b.receive("Bob", "We need to talk.", {
-        mood: "tense",
-        intensity: 0.9
-      });
-      b.wait("1s");
-      b.readLast();
-      
-      // Cut to Bob to see his reaction
-      b.pov("BobPhone", "cut");
-    });
-
-    d.beat("alice-responds", b => {
-      // We're back on Alice after POV switch returns
-      b.pov("AlicePhone");
-      b.send("What do you mean?", { mood: "anxious" });
-    });
-  });
-
-  // Bob's perspective
-  ep.device("BobPhone", "iphone16", d => {
-    d.conversation("dm_alice", { name: "Alice" });
-
-    d.beat("bob-sends", b => {
-      // Bob sends the message
-      b.send("We need to talk.", {
-        mood: "tense",
-        subtext: "breakup"
-      });
-      b.wait("3s");
-      
-      // Waiting for read receipt...
-    });
-
-    d.beat("bob-sees-read", b => {
-      // The message is read (on Bob's side too)
-      b.readLast();
-      
-      // Show split screen for the confrontation
-      b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-    });
-  });
-});
-```
-
-## Layout Options
-
-| Layout | Best For |
-|--------|----------|
-| `horizontal` | Side-by-side comparison |
-| `vertical` | Long-form, scrolling content |
-| `pip` | Main + context (interview style) |
-
-## Tips
-
-### 1. Establish Context First
-Before switching POV, make sure the viewer understands who's who.
-
-### 2. Use Transitions Meaningfully
-- **Cut:** Tension, surprise
-- **Crossfade:** Parallel action
-- **Wipe:** Scene break
-
-### 3. Balance Screen Time
-Don't stay on one device too long before switching.
-
-### 4. Consider Mobile Viewing
-Split screens need to be readable on phones.
-
-## Common Patterns
-
-### Reveal Pattern
-```typescript
-// Build tension on one side
-b.receive("???", "I know your secret.");
-b.wait("2s");
-
-// Cut to reveal who sent it
-b.pov("SenderPhone", "cut");
-```
-
-### Reaction Shot
-```typescript
-// Show the message
-b.send("I'm breaking up with you.");
-b.wait("0.5s");
-
-// Cut to see the reaction
-b.pov("ReceiverPhone", "cut");
-b.wait("3s"); // Let the reaction sink in
-```
-
-### Parallel Conflict
-```typescript
-// Show both sides
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-
-// Both type simultaneously (concurrent)
-b.concurrent([
-  t => t.typing("Alice").for("3s"),
-  t => t.typing("Bob").for("2s")
-]);
-```
-````
-
-## File: apps/docs/pages/guides/quickstart.mdx
-````
-# Quick Start
-
-Get Tokovo running in 5 minutes.
-
-## Prerequisites
-
-- Node.js 18+
-- pnpm
-
-## Installation
-
-```bash
-# Clone the repo
-git clone https://github.com/your-org/tokovo.git
-cd tokovo
-
-# Install dependencies
-pnpm install
-
-# Build packages
-pnpm build
-```
-
-## Run the Example
-
-```bash
-# Start the video runner (Remotion Studio)
-pnpm --filter video-runner dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Your First Episode
-
-Create a new file in `packages/dsl/examples/my-episode.ts`:
-
-```typescript
-import { episode } from "@tokovo/dsl";
-import { compile } from "@tokovo/compiler";
-import { adapterRegistry } from "@tokovo/adapters";
-
-// 1. Define your story
-const sceneIR = episode("my-first-episode", ep => {
-  ep.config({ 
-    pacing: "normal",
-    director: "auto"
-  });
-
-  ep.device("MyPhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_friend", { name: "Friend" });
-
-    d.beat("greeting", b => {
-      b.wait("1s");
-      b.typing("Friend").for("1.5s");
-      b.receive("Friend", "Hey! How are you?");
-      b.wait("2s");
-      b.send("I'm good! What's up?");
-    });
-  });
-});
-
-// 2. Compile to timeline
-const { timeline, durationInFrames } = compile(sceneIR);
-
-// 3. Generate runtime events
-const events = adapterRegistry.lowerAll(timeline);
-
-console.log(`Episode generated: ${durationInFrames} frames`);
-console.log(`Events: ${events.length}`);
-```
-
-Run it:
-
-```bash
-npx ts-node packages/dsl/examples/my-episode.ts
-```
-
-## Project Structure
-
-```
-tokovo/
-├── apps/
-│   ├── video-runner/    # Remotion studio
-│   └── docs/            # This documentation
-├── packages/
-│   ├── ir/              # Intermediate representations
-│   ├── dsl/             # Author DSL
-│   ├── compiler/        # Scene IR → Timeline IR
-│   ├── adapters/        # App-specific adapters
-│   ├── core/            # Engine + DirectorLite
-│   ├── renderer/        # React/Remotion components
-│   ├── apps-whatsapp/   # WhatsApp UI components
-│   └── episodes/        # Episode JSON files
-```
-
-## Key Concepts
-
-| Concept | Description |
-|---------|-------------|
-| **Episode** | A complete story with devices, conversations, and beats |
-| **Device** | A phone with a profile (iPhone, Pixel, etc.) |
-| **Conversation** | A chat thread with a name and type |
-| **Beat** | A named group of actions (semantic chunk) |
-| **Scene IR** | Semantic representation (no frames) |
-| **Timeline IR** | Frame-based execution plan |
-| **Runtime Event** | App-specific event for rendering |
-
-## Next Steps
-
-- [Your First Episode](/guides/first-episode) — Detailed walkthrough
-- [DSL Reference](/dsl) — All DSL methods
-- [Architecture](/architecture) — Understand the system
-````
-
-## File: apps/docs/pages/ir/constraints.mdx
-````
-# Constraints
-
-Constraints are **validation rules** that ensure story correctness by construction.
-
-## Why Constraints?
-
-Instead of catching errors at runtime, constraints catch them at compile time:
-
-```
-DSL → Scene IR → validateConstraints() → Errors/Warnings → Fix before compile
-```
-
-## Using Constraints
-
-```typescript
-import { validateConstraints } from "@tokovo/ir";
-
-const result = validateConstraints(sceneIR);
-
-if (!result.valid) {
-  console.error("Violations:", result.violations);
-}
-```
-
-## Constraint Result
-
-```typescript
-interface ConstraintResult {
-  valid: boolean;
-  violations: Violation[];
-  warnings: Warning[];
-}
-
-interface Violation {
-  rule: string;
-  message: string;
-  location?: {
-    deviceId?: string;
-    beat?: string;
-    opIndex?: number;
-  };
-}
-```
-
-## Built-in Constraints
-
-### 1. Typing Pairing
-
-Every `TypingStart` must have a matching `TypingEnd`.
-
-```typescript
-// ✅ Valid
-b.typing("Bob").for("1.5s");
-
-// ❌ Invalid (orphaned typing)
-ops.push({ kind: "TypingStart", actor: "Bob", ... });
-// Missing TypingEnd
-```
-
-### 2. Valid Device References
-
-POV switches must reference existing devices.
-
-```typescript
-// ✅ Valid
-ep.device("AlicePhone", d => { ... });
-b.pov("AlicePhone");
-
-// ❌ Invalid
-b.pov("UnknownPhone");  // Device doesn't exist
-```
-
-### 3. Valid Conversation References
-
-Operations must reference existing conversations.
-
-```typescript
-// ✅ Valid
-d.conversation("dm_bob");
-b.receive("Bob", "Hey!", { conversationId: "dm_bob" });
-
-// ❌ Invalid
-b.receive("Bob", "Hey!", { conversationId: "nonexistent" });
-```
-
-### 4. Message Reference Validity
-
-Read/Delete must reference existing messages.
-
-```typescript
-// ✅ Valid
-const msg = b.receive("Bob", "Hey!");
-b.read(msg);
-
-// ❌ Invalid
-b.read({ id: "nonexistent" });
-```
-
-### 5. Beat Non-Empty
-
-Beats must contain at least one operation.
-
-```typescript
-// ✅ Valid
-d.beat("intro", b => {
-  b.wait("1s");
-});
-
-// ❌ Invalid (empty beat)
-d.beat("empty", b => {
-  // Nothing here
-});
-```
-
-### 6. Duration Validity
-
-Durations must be positive and parseable.
-
-```typescript
-// ✅ Valid
-b.wait("1.5s");
-b.wait("500ms");
-b.wait("30frames");
-
-// ❌ Invalid
-b.wait("-1s");      // Negative
-b.wait("forever");  // Unparseable
-```
-
-### 7. Semantic Range Validity
-
-Semantic values must be within valid ranges.
-
-```typescript
-// ✅ Valid
-{ intensity: 0.8 }    // 0-1 range
-{ mood: "tense" }     // Valid mood
-
-// ❌ Invalid
-{ intensity: 1.5 }    // Out of range
-{ mood: "happy" }     // Invalid mood (should be "excited")
-```
-
-### 8. Reserved Signal Completeness
-
-Reserved signals must have required fields.
-
-```typescript
-// ✅ Valid
-b.react(msg, "Bob", "❤️");  // Has ref, actor, emoji
-
-// ❌ Invalid
-{ kind: "ReactionAdded", ref: msg }  // Missing actor, emoji
-```
-
-## Constraint Categories
-
-| Category | Severity | Examples |
-|----------|----------|----------|
-| **Critical** | Error | Invalid refs, missing required fields |
-| **Structural** | Error | Empty beats, orphaned typing |
-| **Semantic** | Warning | Out-of-range intensity |
-| **Style** | Warning | Very long waits |
-
-## Running Constraints
-
-### In Compile Pipeline
-
-```typescript
-const { validation } = compile(sceneIR, { mode: "strict" });
-
-if (!validation.valid) {
-  throw new Error(validation.errors.join("\n"));
-}
-```
-
-### Standalone
-
-```typescript
-import { validateConstraints } from "@tokovo/ir";
-
-const result = validateConstraints(sceneIR);
-
-for (const v of result.violations) {
-  console.error(`[${v.rule}] ${v.message}`);
-  if (v.location) {
-    console.error(`  at: ${v.location.beat}, op ${v.location.opIndex}`);
-  }
-}
-```
-
-## Adding Custom Constraints
-
-```typescript
-import { ConstraintRule, validateWithRules } from "@tokovo/ir";
-
-const myRule: ConstraintRule = {
-  id: "no-long-waits",
-  check: (sceneIR) => {
-    const violations = [];
-    // Check for waits > 10s
-    for (const device of sceneIR.devices) {
-      for (const beat of device.beats) {
-        for (const op of beat.ops) {
-          if (op.kind === "Wait") {
-            const frames = parseDuration(op.duration, 30);
-            if (frames > 300) {
-              violations.push({
-                rule: "no-long-waits",
-                message: `Wait of ${op.duration} is too long`,
-                location: { beat: beat.name }
-              });
-            }
-          }
+    "$schema": "https://turbo.build/schema.json",
+    "tasks": {
+        "build": {
+            "dependsOn": [
+                "^build"
+            ],
+            "outputs": [
+                ".next/**",
+                "!.next/cache/**",
+                "dist/**"
+            ]
+        },
+        "lint": {},
+        "dev": {
+            "cache": false,
+            "persistent": true
         }
-      }
     }
-    return violations;
-  }
-};
-
-const result = validateWithRules(sceneIR, [myRule]);
-```
-
-## Determinism Notes
-
-- Is this pure? **Yes** — No side effects
-- Is ordering stable? **Yes** — Same IR → same violations
-- Is randomness seeded? **N/A** — No randomness
-````
-
-## File: apps/docs/pages/ir/index.mdx
-````
-# IR Overview
-
-The Intermediate Representation (IR) is the **source of truth** between layers.
-
-## Two IRs
-
-| IR | Purpose | Has Frames? |
-|----|---------|-------------|
-| **Scene IR** | Semantic truth | No |
-| **Timeline IR** | Execution contract | Yes |
-
-## Why Two IRs?
-
-### Scene IR is Stable
-
-Scene IR doesn't change when:
-- FPS changes (30 → 60)
-- App adapters change
-- Camera rules update
-- Rendering engine changes
-
-### Timeline IR is Executable
-
-Timeline IR is the frame-by-frame plan:
-- Every event has an `at` frame number
-- Sorted deterministically
-- Ready for the engine
-
-## The Transformation
-
-```
-Scene IR (semantic)
-    ↓
-  compile()
-    ↓
-Timeline IR (execution)
-```
-
-## Package Structure
-
-```
-packages/ir/src/
-├── semantic.ts    # EpisodeConfig, SemanticMeta, BeatMeta, POVLayout
-├── trace.ts       # Trace model for debugging
-├── scene.ts       # SceneIR, SceneOp types
-├── timeline.ts    # TimelineIR, TimelineOp types
-├── ordering.ts    # Phase, Priority for sorting
-├── validate.ts    # IR validation utilities
-├── constraints.ts # Narrative constraint checking
-└── index.ts       # Exports
-```
-
-## Type Imports
-
-```typescript
-// Scene IR types
-import {
-  SceneIR,
-  SceneOp,
-  WaitOp,
-  TypingStartOp,
-  SendMessageOp,
-  ReceiveMessageOp,
-  POVSwitchOp,
-  Beat,
-  DeviceScene,
-  EpisodeMeta,
-} from "@tokovo/ir";
-
-// Timeline IR types
-import {
-  TimelineIR,
-  TimelineOp,
-  DeviceUnlockedOp,
-  MessageReceivedOp,
-  Phase,
-} from "@tokovo/ir";
-
-// Semantic types
-import {
-  EpisodeConfig,
-  SemanticMeta,
-  BeatMeta,
-  Mood,
-  POVLayout,
-} from "@tokovo/ir";
-
-// Utilities
-import {
-  parseDuration,
-  messageRef,
-  validateConstraints,
-} from "@tokovo/ir";
-```
-
-## Design Principles
-
-### 1. Readonly Everywhere
-
-All IR types use `readonly`:
-
-```typescript
-interface SceneOp {
-  readonly kind: string;
-  // ...
-}
-```
-
-This enforces immutability.
-
-### 2. Discriminated Unions
-
-Operations use `kind` for discrimination:
-
-```typescript
-type SceneOp =
-  | WaitOp          // kind: "Wait"
-  | TypingStartOp   // kind: "TypingStart"
-  | SendMessageOp   // kind: "SendMessage"
-  // ...
-
-// Type-safe switching
-switch (op.kind) {
-  case "Wait":
-    // TypeScript knows op is WaitOp
-    break;
-}
-```
-
-### 3. No Optional Hell
-
-Required fields are required. Optional only when truly optional.
-
-```typescript
-// Good
-interface WaitOp {
-  readonly kind: "Wait";
-  readonly duration: DurationExpr;  // Required
-}
-
-// Bad
-interface WaitOp {
-  readonly kind?: "Wait";  // Why optional?
-  readonly duration?: string;
-}
-```
-````
-
-## File: apps/docs/pages/ir/trace.mdx
-````
-# Traces
-
-Traces connect runtime pixels to source DSL. Essential for debugging and analytics.
-
-## Trace Structure
-
-```typescript
-interface Trace {
-  // Episode context
-  readonly episodeId: string;
-  readonly beat: string;
-
-  // Position in compilation
-  readonly trackId: number;      // Track within concurrent ops
-  readonly opIndex: number;      // Position in sorted ops
-  readonly sceneOpIndex?: number; // Original Scene IR position
-
-  // Ordering
-  readonly phase: number;
-  readonly priority: number;
-
-  // Device context
-  readonly deviceId?: string;
-  readonly conversationId?: string;
-}
-```
-
-## How Traces Flow
-
-```
-DSL:        d.beat("tension", b => { b.receive("Bob", "Hi") })
-                                          ↓
-Scene IR:   { kind: "ReceiveMessage", ... }
-                                          ↓
-Compiler:   Adds trace: { beat: "tension", opIndex: 3, ... }
-                                          ↓
-Timeline:   { at: 45, kind: "MessageReceived", trace: {...} }
-                                          ↓
-Adapter:    { at: 45, kind: "APP", type: "MESSAGE_RECEIVED", _trace: {...} }
-```
-
-## Trace Fields Explained
-
-### episodeId
-
-Which episode this belongs to.
-
-```typescript
-trace.episodeId === "breakup-01"
-```
-
-### beat
-
-Which beat in the device this came from.
-
-```typescript
-trace.beat === "tension"
-```
-
-### trackId
-
-Which concurrent track (0 for main, >0 for concurrent).
-
-```typescript
-b.concurrent([
-  t => { /* trackId: 1 */ },
-  t => { /* trackId: 2 */ }
-]);
-// Main track: trackId: 0
-```
-
-### opIndex
-
-Position in the final sorted timeline.
-
-```typescript
-// Sorted by: at, phase, priority, trackId, opIndex
-timeline.ops[0].trace.opIndex === 0
-timeline.ops[1].trace.opIndex === 1
-```
-
-### sceneOpIndex
-
-Position in the original Scene IR (before sorting).
-
-```typescript
-// Original order in beat.ops[]
-trace.sceneOpIndex === 3  // Was 4th operation in the beat
-```
-
-### phase
-
-Ordering phase (see Ordering docs):
-
-```typescript
-Phase.DEVICE = 0   // unlock, lock
-Phase.NAV = 10     // open app, navigate
-Phase.APP = 20     // messages, typing
-Phase.FX = 30      // effects
-```
-
-### priority
-
-Priority within phase (higher = earlier).
-
-### deviceId / conversationId
-
-Context for device-specific debugging.
-
-## Using Traces for Debugging
-
-### Find the Source
-
-```typescript
-// Runtime error at frame 127
-const event = getEventAtFrame(127);
-console.log(event._trace);
-// → { episodeId: "drama", beat: "tension", opIndex: 5, ... }
-
-// Go back to DSL
-// beat: "tension" → find d.beat("tension", b => { ... })
-// opIndex: 5 → it's the 6th operation in that beat
-```
-
-### Analytics
-
-```typescript
-// Track which beats users engage with
-for (const event of events) {
-  analytics.track({
-    beat: event._trace?.beat,
-    frameAt: event.at,
-    type: event.type,
-  });
-}
-```
-
-### Validation Errors
-
-```typescript
-// Compiler error includes trace
-{
-  error: "Read before message exists",
-  trace: {
-    beat: "tension",
-    opIndex: 3,
-  }
-}
-// → Check the 4th operation in "tension" beat
-```
-
-## Creating Traces
-
-The compiler creates traces automatically:
-
-```typescript
-// In compiler
-const trace: Trace = {
-  episodeId: ctx.episodeId,
-  beat: beatName,
-  trackId: cursor.trackId,
-  opIndex: ctx.nextOpIndex(),
-  phase: Phase.APP,
-  priority: 0,
-  deviceId,
-  conversationId,
-};
-```
-
-## Trace in Adapters
-
-Adapters preserve traces:
-
-```typescript
-// WhatsApp adapter
-lower(op: TimelineOp): RuntimeEvent[] {
-  return [{
-    at: op.at,
-    kind: "APP",
-    type: "MESSAGE_RECEIVED",
-    // ... other fields
-    _trace: op.trace,  // Preserved!
-  }];
-}
-```
-
-## Debug Output
-
-Enable debug mode to log traces:
-
-```typescript
-const { timeline, debug } = compile(sceneIR, { debug: true });
-
-for (const op of timeline.ops) {
-  console.log(`[${op.at}] ${op.kind} | beat: ${op.trace?.beat}`);
-}
-```
-````
-
-## File: apps/docs/pages/runtime/engine.mdx
-````
-# Engine
-
-The Engine is a **pure reducer** that processes events into world state.
-
-## Core Concept
-
-```typescript
-function advanceWorld(
-  world: WorldState,
-  events: RuntimeEvent[],
-  toFrame: number
-): WorldState {
-  let current = world;
-  
-  for (const event of events) {
-    if (event.at <= toFrame && event.at > world._eventCursor) {
-      current = reduceEvent(current, event);
-    }
-  }
-  
-  return {
-    ...current,
-    _eventCursor: toFrame,
-  };
-}
-```
-
-## WorldState
-
-Complete snapshot of everything:
-
-```typescript
-interface WorldState {
-  // All devices and their state
-  devices: Record<string, DeviceState>;
-  
-  // Camera state
-  camera: CameraState;
-  
-  // Audio state
-  audio: AudioState;
-  
-  // Internal: last processed event frame
-  _eventCursor: number;
-}
-```
-
-## DeviceState
-
-Per-device state:
-
-```typescript
-interface DeviceState {
-  deviceId: string;
-  profileId: string;
-  isLocked: boolean;
-  foregroundAppId?: string;
-  apps: Record<string, AppState>;
-}
-```
-
-## AppState (WhatsApp)
-
-```typescript
-interface WhatsAppState {
-  screen: "home" | "chat";
-  activeConversationId?: string;
-  conversations: Record<string, ConversationState>;
-}
-
-interface ConversationState {
-  id: string;
-  name: string;
-  messages: Message[];
-  typingUsers: Set<string>;
-}
-
-interface Message {
-  id: string;
-  from: string;
-  text: string;
-  status: "sending" | "sent" | "delivered" | "read";
-  timestamp: string;
-}
-```
-
-## Reducer Pattern
-
-```typescript
-function reduceEvent(state: WorldState, event: RuntimeEvent): WorldState {
-  switch (event.kind) {
-    case "DEVICE":
-      return reduceDeviceEvent(state, event);
-    case "APP":
-      return reduceAppEvent(state, event);
-    case "CAMERA":
-      return reduceCameraEvent(state, event);
-    default:
-      return state;
-  }
-}
-
-function reduceDeviceEvent(state: WorldState, event: DeviceEvent): WorldState {
-  switch (event.type) {
-    case "UNLOCK":
-      return {
-        ...state,
-        devices: {
-          ...state.devices,
-          [event.deviceId]: {
-            ...state.devices[event.deviceId],
-            isLocked: false,
-          }
-        }
-      };
-    // ... other cases
-  }
-}
-```
-
-## Pure by Design
-
-The reducer is **pure**:
-
-```typescript
-// Same inputs → Same outputs
-const world1 = reduceEvent(state, event);
-const world2 = reduceEvent(state, event);
-expect(world1).toEqual(world2);
-```
-
-No mutation:
-
-```typescript
-// ❌ Never mutate
-state.devices[deviceId].isLocked = false;
-
-// ✅ Always return new objects
-return {
-  ...state,
-  devices: {
-    ...state.devices,
-    [deviceId]: {
-      ...state.devices[deviceId],
-      isLocked: false,
-    }
-  }
-};
-```
-
-## Building World at Frame
-
-```typescript
-function buildWorldAtFrame(
-  initialWorld: WorldState,
-  events: RuntimeEvent[],
-  frame: number
-): WorldState {
-  let world = { ...initialWorld, _eventCursor: -1 };
-  
-  for (const event of events) {
-    if (event.at <= frame) {
-      world = reduceEvent(world, event);
-    }
-  }
-  
-  return { ...world, _eventCursor: frame };
-}
-```
-
-## Scrubbing Support
-
-Because the reducer is pure, scrubbing works:
-
-```typescript
-// Forward
-const world100 = buildWorldAtFrame(init, events, 100);
-
-// Jump backward (from scratch)
-const world50 = buildWorldAtFrame(init, events, 50);
-
-// Same result as stepping through
-const worldStepped = step(step(step(/*...*/)));
-expect(world50).toEqual(worldStepped);
-```
-
-## Event Processing Examples
-
-### UNLOCK
-
-```typescript
-case "UNLOCK":
-  return updateDevice(state, event.deviceId, {
-    isLocked: false,
-  });
-```
-
-### MESSAGE_RECEIVED
-
-```typescript
-case "MESSAGE_RECEIVED":
-  return updateConversation(state, event, conv => ({
-    ...conv,
-    messages: [
-      ...conv.messages,
-      {
-        id: event.message.id,
-        from: event.from,
-        text: event.message.text,
-        status: event.from === "me" ? "sent" : "delivered",
-        timestamp: event.message.timestamp,
-      }
-    ]
-  }));
-```
-
-### TYPING_START
-
-```typescript
-case "TYPING_START":
-  return updateConversation(state, event, conv => ({
-    ...conv,
-    typingUsers: new Set([...conv.typingUsers, event.from]),
-  }));
-```
-
-### MESSAGE_READ
-
-```typescript
-case "MESSAGE_READ":
-  return updateConversation(state, event, conv => ({
-    ...conv,
-    messages: conv.messages.map(msg =>
-      msg.id === event.messageId
-        ? { ...msg, status: "read" }
-        : msg
-    )
-  }));
-```
-
-## Initial World
-
-```typescript
-function createInitialWorld(sceneIR: SceneIR): WorldState {
-  const devices: Record<string, DeviceState> = {};
-  
-  for (const device of sceneIR.devices) {
-    devices[device.deviceId] = {
-      deviceId: device.deviceId,
-      profileId: device.profileId,
-      isLocked: true,  // Starts locked
-      apps: {},
-    };
-  }
-  
-  return {
-    devices,
-    camera: createInitialCamera(),
-    audio: createInitialAudio(),
-    _eventCursor: -1,
-  };
-}
-```
-````
-
-## File: apps/docs/pages/runtime/events.mdx
-````
-# Runtime Events
-
-Events are the **execution contract** between the compiler and runtime.
-
-## Event Structure
-
-```typescript
-interface RuntimeEvent {
-  at: number;      // Frame when this happens
-  kind: EventKind; // Category
-  type: string;    // Specific type
-  _trace?: Trace;  // Debug info
-  // ... event-specific fields
-}
-```
-
-## Event Kinds
-
-| Kind | Description | Examples |
-|------|-------------|----------|
-| `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP |
-| `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START |
-| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE |
-| `SOUND` | Audio events | PLAY_SOUND |
-
-## Device Events
-
-### UNLOCK
-
-```typescript
-{
-  at: 0,
-  kind: "DEVICE",
-  type: "UNLOCK",
-  deviceId: "AlicePhone"
-}
-```
-
-### OPEN_APP
-
-```typescript
-{
-  at: 0,
-  kind: "DEVICE",
-  type: "OPEN_APP",
-  deviceId: "AlicePhone",
-  appId: "app_whatsapp"
-}
-```
-
-## App Events (WhatsApp)
-
-### NAVIGATE
-
-```typescript
-{
-  at: 0,
-  kind: "APP",
-  type: "NAVIGATE",
-  appId: "app_whatsapp",
-  screen: "chat",
-  conversationId: "dm_bob"
-}
-```
-
-### TYPING_START
-
-```typescript
-{
-  at: 30,
-  kind: "APP",
-  type: "TYPING_START",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  from: "Bob"
-}
-```
-
-### TYPING_END
-
-```typescript
-{
-  at: 60,
-  kind: "APP",
-  type: "TYPING_END",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  from: "Bob"
-}
-```
-
-### MESSAGE_RECEIVED
-
-```typescript
-{
-  at: 60,
-  kind: "APP",
-  type: "MESSAGE_RECEIVED",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  from: "Bob",
-  message: {
-    id: "msg_AlicePhone_dm_bob_1",
-    type: "text",
-    text: "We need to talk.",
-    status: "delivered",
-    timestamp: "10:45 AM"
-  }
-}
-```
-
-### MESSAGE_READ
-
-```typescript
-{
-  at: 90,
-  kind: "APP",
-  type: "MESSAGE_READ",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  messageId: "msg_AlicePhone_dm_bob_1"
-}
-```
-
-### MESSAGE_DELETED
-
-```typescript
-{
-  at: 120,
-  kind: "APP",
-  type: "MESSAGE_DELETED",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  messageId: "msg_AlicePhone_dm_bob_1"
-}
-```
-
-## Camera Events (Manual)
-
-### ZOOM
-
-```typescript
-{
-  at: 45,
-  kind: "CAMERA",
-  type: "ZOOM",
-  target: { x: 20, y: 340, w: 280, h: 60 },
-  scale: 1.3,
-  durationFrames: 20,
-  easing: "ease-out"
-}
-```
-
-### PAN
-
-```typescript
-{
-  at: 100,
-  kind: "CAMERA",
-  type: "PAN",
-  offsetX: 50,
-  offsetY: -30,
-  durationFrames: 15
-}
-```
-
-### SHAKE
-
-```typescript
-{
-  at: 60,
-  kind: "CAMERA",
-  type: "SHAKE",
-  intensity: 8,
-  durationFrames: 12
-}
-```
-
-## Sound Events
-
-### PLAY_SOUND
-
-```typescript
-{
-  at: 60,
-  kind: "SOUND",
-  type: "PLAY_SOUND",
-  soundId: "notification",
-  volume: 1.0
-}
-```
-
-## Event Traces
-
-Every event includes trace info for debugging:
-
-```typescript
-interface Trace {
-  episodeId: string;
-  beat: string;
-  trackId: number;
-  opIndex: number;
-  phase: number;
-  priority: number;
-  sceneOpIndex?: number;
-  deviceId?: string;
-  conversationId?: string;
-}
-```
-
-This enables:
-- **Debugging** — Find which DSL line caused an issue
-- **Analytics** — Track what parts of the story engage
-- **AI feedback** — Learn what works
-
-## Event Ordering
-
-Events are sorted by:
-
-1. `at` (frame)
-2. `phase` (DEVICE < NAV < APP < FX)
-3. `priority` (within phase)
-4. `trackId` (for concurrent operations)
-5. `opIndex` (stable tie-breaker)
-````
-
-## File: apps/docs/pages/runtime/index.mdx
-````
-# Runtime Overview
-
-The runtime is where stories become pixels. It executes events and renders frames.
-
-## Architecture
-
-```
-Timeline Events → Engine (reducer) → World State → Renderer → Pixels
-```
-
-### Components
-
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| Engine | `@tokovo/core` | Reduces events to state |
-| World State | `@tokovo/core` | Complete app state |
-| Renderer | `@tokovo/renderer` | React/Remotion components |
-| DirectorLite | `@tokovo/core` | Automatic camera |
-
-## The Engine
-
-The engine is a pure reducer:
-
-```typescript
-function reduceEvent(state: WorldState, event: RuntimeEvent): WorldState
-```
-
-Given a state and event, produces a new state. No side effects.
-
-## World State
-
-Complete snapshot of everything at a point in time:
-
-```typescript
-interface WorldState {
-  devices: Record<string, DeviceState>;
-  camera: CameraState;
-  audio: AudioState;
-  _eventCursor: number;  // Current timeline position
-}
-```
-
-## Event Processing
-
-```typescript
-// Build world at frame t
-function buildWorldAtFrame(
-  initialWorld: WorldState,
-  events: RuntimeEvent[],
-  frame: number
-): WorldState {
-  let world = initialWorld;
-  
-  for (const event of events) {
-    if (event.at <= frame) {
-      world = reduceEvent(world, event);
-    }
-  }
-  
-  return world;
-}
-```
-
-## Rendering with Remotion
-
-```tsx
-import { TokovoRenderer } from "@tokovo/renderer";
-import { useCurrentFrame } from "remotion";
-
-export const MyVideo: React.FC = () => {
-  const frame = useCurrentFrame();
-  
-  const world = useMemo(() => 
-    buildWorldAtFrame(initialWorld, events, frame),
-    [frame]
-  );
-
-  return (
-    <TokovoRenderer
-      world={world}
-      t={frame}
-      eventIndex={eventIndex}
-      directorEnabled={true}
-    />
-  );
-};
-```
-
-## Event Index
-
-For DirectorLite, create an event index:
-
-```typescript
-const eventIndex = new Map<number, RuntimeEvent[]>();
-
-for (const event of events) {
-  const bucket = eventIndex.get(event.at) || [];
-  bucket.push(event);
-  eventIndex.set(event.at, bucket);
-}
-```
-
-This enables O(1) lookup of events at any frame.
-
-## Determinism Guarantee
-
-The runtime is completely deterministic:
-
-1. Same events → Same world state
-2. Same world state → Same render
-3. Same render → Same pixels
-
-This enables:
-- **Scrubbing** — Jump to any frame instantly
-- **Golden tests** — Compare output frame-by-frame
-- **Reproducibility** — AI can generate and test reliably
-
-## TokovoRenderer Props
-
-```typescript
-interface TokovoRendererProps {
-  // Required
-  world: WorldState;        // Current world state
-  t: number;                // Current frame
-
-  // Optional
-  eventIndex?: Map<number, RuntimeEvent[]>; // For DirectorLite
-  directorEnabled?: boolean;  // Enable auto-camera
-  directorDebug?: boolean;    // Log camera decisions
-  viewportWidth?: number;     // Override viewport
-  viewportHeight?: number;
-}
-```
-
-## Complete Example
-
-```tsx
-import { Composition } from "remotion";
-import { episode } from "@tokovo/dsl";
-import { compile } from "@tokovo/compiler";
-import { adapterRegistry } from "@tokovo/adapters";
-
-// 1. Define story
-const sceneIR = episode("demo", ep => {
-  ep.device("Phone", d => {
-    d.conversation("dm_friend");
-    d.beat("hello", b => {
-      b.receive("Friend", "Hey!");
-    });
-  });
-});
-
-// 2. Compile
-const { timeline } = compile(sceneIR);
-
-// 3. Lower to runtime events
-const events = adapterRegistry.lowerAll(timeline);
-
-// 4. Create initial world
-const initialWorld = createInitialWorld(sceneIR);
-
-// 5. Render
-export const DemoVideo: React.FC = () => {
-  const frame = useCurrentFrame();
-  const world = buildWorldAtFrame(initialWorld, events, frame);
-  
-  return (
-    <TokovoRenderer
-      world={world}
-      t={frame}
-      directorEnabled={true}
-    />
-  );
-};
-```
-````
-
-## File: apps/docs/pages/runtime/world-state.mdx
-````
-# WorldState
-
-WorldState is the **complete snapshot** of everything at a point in time.
-
-## The Golden Rule
-
-> **Frame = f(initialWorld, events, t)**
-
-At any frame t, the world state is computed by:
-1. Start with `initialWorld`
-2. Apply all events where `event.at <= t`
-3. Result is the WorldState at frame t
-
-This is **deterministic** — same inputs always produce same output.
-
-## WorldState Structure
-
-```typescript
-interface WorldState {
-  // All devices
-  devices: Record<DeviceId, DeviceState>;
-  
-  // All conversations (shared across devices)
-  conversations: Record<ConversationId, ConversationState>;
-  
-  // App-specific state
-  appState: Record<AppId, any>;
-  
-  // Camera state
-  camera: CameraState;
-  
-  // Audio state
-  audio: AudioState;
-  
-  // Internal cursor
-  _eventCursor: number;
-}
-```
-
-## DeviceState
-
-```typescript
-interface DeviceState {
-  id: string;                    // "alice_phone"
-  profileId: string;             // "iphone16" | "pixel"
-  ownerName?: string;            // "Alice"
-  isLocked: boolean;             // Show lockscreen?
-  foregroundAppId?: string;      // "app_whatsapp"
-  notifications: Notification[]; // Pending notifications
-  call?: CallState;              // Incoming/active call
-  homeScreen?: HomeScreenConfig; // App grid
-}
-```
-
-## ConversationState
-
-```typescript
-interface ConversationState {
-  id: string;
-  type?: "dm" | "group";
-  name?: string;                  // Contact/group name
-  avatar?: string;
-  members?: GroupMember[];
-  messages: Message[];
-  typing?: Record<string, boolean>;
-}
-```
-
-## Message
-
-```typescript
-interface Message {
-  id: string;
-  from: string;                   // Sender or "me"
-  text?: string;
-  type?: "text" | "image" | "voice" | "system" | "deleted";
-  status?: "sent" | "delivered" | "read";
-  timestamp?: string;             // "10:42 AM"
-  
-  // Semantic metadata (from DSL)
-  semantic?: SemanticMeta;
-}
-```
-
-## CameraState
-
-```typescript
-interface CameraState {
-  // Zoom
-  scale: number;     // 1.0 = no zoom
-  originX: number;   // 0-1, zoom origin
-  originY: number;
-  
-  // Pan
-  panX: number;
-  panY: number;
-  
-  // Effects
-  shake?: {
-    intensity: number;
-    frequency: number;
-    seed: number;
-  };
-  
-  // Multi-device
-  layout?: LayoutMode;
-  primaryDeviceId?: string;
-  secondaryDeviceId?: string;
-}
-```
-
-## AudioState
-
-```typescript
-interface AudioState {
-  playing: PlayingSound[];
-  backgroundMusic?: {
-    soundId: string;
-    volume: number;
-  };
-}
-
-interface PlayingSound {
-  soundId: string;
-  startedAt: number;  // Frame
-  volume: number;
-}
-```
-
-## Building World at Frame
-
-```typescript
-function buildWorldAtFrame(
-  initialWorld: WorldState,
-  events: RuntimeEvent[],
-  frame: number
-): WorldState {
-  let world = { ...initialWorld, _eventCursor: -1 };
-  
-  for (const event of events) {
-    if (event.at <= frame) {
-      world = reduceEvent(world, event);
-    }
-  }
-  
-  return { ...world, _eventCursor: frame };
-}
-```
-
-## Initial World
-
-Created from Scene IR:
-
-```typescript
-function createInitialWorld(sceneIR: SceneIR): WorldState {
-  const devices: Record<string, DeviceState> = {};
-  const conversations: Record<string, ConversationState> = {};
-  
-  for (const device of sceneIR.devices) {
-    // Create device
-    devices[device.deviceId] = {
-      id: device.deviceId,
-      profileId: device.profileId,
-      isLocked: true,  // Start locked
-      notifications: [],
-    };
-    
-    // Create conversations
-    for (const conv of device.conversations) {
-      conversations[conv.id] = {
-        id: conv.id,
-        name: conv.name,
-        type: conv.type,
-        messages: [],
-        typing: {},
-      };
-    }
-  }
-  
-  return {
-    devices,
-    conversations,
-    appState: {},
-    camera: createDefaultCamera(),
-    audio: { playing: [] },
-    _eventCursor: -1,
-  };
-}
-```
-
-## Scrubbing
-
-Because state is computed from events, scrubbing works:
-
-```typescript
-// Jump to frame 100
-const world100 = buildWorldAtFrame(init, events, 100);
-
-// Jump backward to frame 50
-const world50 = buildWorldAtFrame(init, events, 50);
-
-// Jump forward to frame 200
-const world200 = buildWorldAtFrame(init, events, 200);
-```
-
-No accumulated state. Any frame, any time.
-
-## Accessing State
-
-```typescript
-// Get device
-const device = world.devices["AlicePhone"];
-
-// Get foreground app
-const appId = device.foregroundAppId;
-
-// Get conversation
-const conv = world.conversations["dm_bob"];
-
-// Get messages
-const messages = conv.messages;
-
-// Get typing status
-const isTyping = conv.typing?.["Bob"] ?? false;
-
-// Get camera scale
-const zoom = world.camera.scale;
-```
-
-## Determinism Notes
-
-- Is this pure? **Yes** — Computed from events
-- Is ordering stable? **Yes** — Events are sorted
-- Is randomness seeded? **Yes** — Camera shake uses seeds
-````
-
-## File: apps/docs/pages/changelog.mdx
-````
----
-title: Changelog
-description: What's new in Tokovo
----
-
-# Changelog
-
-All notable changes to Tokovo are documented here.
-
----
-
-## [Unreleased] - 2025-12-13
-
-### 🚀 New Features
-
-#### DSL Media Messages
-New fluent API methods for rich media messages:
-
-```typescript
-// Images with captions
-b.sendImage("https://example.com/photo.jpg", { caption: "Check this out!" });
-b.receiveImage("Alice", "https://example.com/sunset.jpg", { height: 450 });
-
-// Videos with thumbnails
-b.sendVideo("https://example.com/video.mp4", 15, { 
-    thumbnailUrl: "https://example.com/thumb.jpg",
-    caption: "Watch this!"
-});
-b.receiveVideo("Bob", "https://example.com/clip.mp4", 30);
-
-// GIFs from Giphy/Tenor
-b.sendGif("https://media.giphy.com/media/abc123/giphy.gif");
-b.receiveGif("Alice", "https://media.giphy.com/media/xyz789/giphy.gif");
-
-// Voice notes with duration
-b.sendVoice(8);  // 8 seconds
-b.receiveVoice("Bob", 15);  // 15 seconds
-```
-
-#### Auto-Timing
-Messages now automatically calculate timing for natural flow:
-- **No explicit `wait()` needed** between messages
-- Configurable via `skipAutoTiming: true` option
-- Smart defaults: 0.5s send delay, 0.8s receive delay
-- Media-specific: 1.5s for images, video duration for videos
-
-#### WhatsApp Media Components
-Production-ready UI components:
-- `ImageMessageBubble` - Images with captions, timestamps
-- `VideoMessageBubble` - Video thumbnails with play overlays
-- `GifMessageBubble` - Inline GIF display
-- `ChatsListScreen` - Main chat list with search, tabs
-
-#### Remotion-Compatible Animations
-- `TypingBubble` now uses frame-based animation (works in renders)
-- No more CSS `@keyframes` issues in video exports
-
-### 📝 API Changes
-
-#### Scene IR
-New operation types:
-- `SendImageOp`, `ReceiveImageOp`
-- `SendVideoOp`, `ReceiveVideoOp`  
-- `SendGifOp`, `ReceiveGifOp`
-- `SendVoiceOp`, `ReceiveVoiceOp`
-
-#### Timeline IR
-Extended message types:
-- Added `video` and `gif` to message type union
-- Added `imageUrl`, `videoUrl`, `gifUrl`, `thumbnailUrl`, `caption`, `duration`, `height` fields
-
-#### Compiler
-- Auto-timing pass in `time-lowering.ts`
-- Configurable `AUTO_TIMING` constants
-
----
-
-## [0.1.0] - Initial Release
-
-- Core engine with WorldState
-- WhatsApp, Instagram, iMessage apps
-- DSL for episode authoring
-- DirectorLite for camera automation
-- Multi-device POV support
-````
-
-## File: apps/docs/pages/glossary.mdx
-````
-# Glossary
-
-Complete reference of Tokovo terminology.
-
----
-
-## A
-
-### Adapter
-Converts Timeline IR operations into runtime events for a specific app. Each supported app (WhatsApp, Instagram, etc.) has its own adapter.
-
-```typescript
-// WhatsApp adapter converts generic MessageReceived to app-specific event
-WhatsAppAdapter.lower(op) → { kind: "APP", type: "MESSAGE_RECEIVED", ... }
-```
-
-### Actor
-A participant in a conversation. Can be `"me"` (device owner) or any string identifier for other people.
-
-```typescript
-b.receive("Bob", "Hello!");  // Bob is the actor
-b.send("Hi back!");          // "me" is the implicit actor
-```
-
----
-
-## B
-
-### Beat
-A named group of operations within a device context. The fundamental unit of story structure.
-
-```typescript
-d.beat("tension", b => {
-  b.wait("2s");
-  b.typing("Bob").for("1.5s");
-  b.receive("Bob", "We need to talk.");
-});
-```
-
-### BeatBuilder
-The fluent API for defining actions within a beat. Provides methods like `wait()`, `typing()`, `send()`, `receive()`, `pov()`, etc.
-
-### BeatMeta
-Metadata for story rhythm attached to a beat.
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `tempo` | string | slow, medium, fast |
-| `emotionalPeak` | boolean | Is this the peak moment? |
-| `release` | boolean | Is this tension release? |
-| `function` | string | setup, buildup, climax, release, resolution |
-
----
-
-## C
-
-### Compiler
-The pure transformation pipeline that converts Scene IR to Timeline IR. Runs through 6 passes: normalize → resolveRefs → virtualDevice → timeLowering → validate → sort.
-
-```typescript
-const { timeline, durationInFrames } = compile(sceneIR);
-```
-
-### Concurrent
-Parallel execution of multiple tracks. Operations in different tracks happen simultaneously.
-
-```typescript
-b.concurrent([
-  t => t.typing("Alice").for("3s"),
-  t => t.typing("Bob").for("2s")
-]);
-```
-
-### Constraints
-Validation rules that ensure story correctness. Part of `@tokovo/ir`.
-
-```typescript
-const result = validateConstraints(sceneIR);
-// Checks: typing pairing, valid device refs, POV targets, etc.
-```
-
-### Cursor
-Internal compiler state tracking the current frame position. Advances on `Wait` operations.
-
----
-
-## D
-
-### DeriveContext
-Input to the DirectorLite `deriveDirectorEffects()` function.
-
-```typescript
-interface DeriveContext {
-  t: number;                    // Current frame
-  signals: DirectorSignal[];    // Sorted by `at`
-  layoutModel: DirectorLayoutModel;
-  manualCameraEffects?: ActiveCameraEffect[];
-}
-```
-
-### DeviceBuilder
-Fluent API for configuring a device's story. Provides `app()`, `conversation()`, and `beat()` methods.
-
-### DeviceScene
-Scene IR representation of a device's story.
-
-```typescript
-interface DeviceScene {
-  deviceId: string;
-  profileId: string;
-  appId: string;
-  conversations: ConversationDef[];
-  beats: Beat[];
-}
-```
-
-### DirectorLite
-Automatic camera director that reacts to runtime events. Produces camera effects based on rules.
-
-### DurationExpr
-Human-readable duration string. Parsed by the compiler.
-
-```typescript
-"1.5s"      // 1.5 seconds
-"500ms"     // 500 milliseconds
-"45frames"  // 45 frames
-```
-
----
-
-## E
-
-### Effect (Camera)
-A camera change produced by DirectorLite.
-
-| Type | Description |
-|------|-------------|
-| ZoomToRect | Zoom to frame a rectangle |
-| PushIn | Slow anticipatory zoom |
-| PullBack | Zoom out |
-| MicroShake | Quick camera shake |
-
-### Engine
-The pure reducer that processes runtime events into world state.
-
-```typescript
-function reduceEvent(state: WorldState, event: RuntimeEvent): WorldState
-```
-
-### Episode
-A complete story with metadata and devices. The top-level unit of content.
-
-### EpisodeBuilder
-Entry point for creating episodes. Provides `config()` and `device()` methods.
-
-### EpisodeConfig
-Episode-level configuration.
-
-| Field | Description |
-|-------|-------------|
-| `fps` | Frames per second |
-| `pacing` | slow-burn, normal, chaotic, explosive |
-| `director` | auto, manual, hybrid |
-| `aspectRatio` | 9:16, 1:1, 16:9 |
-| `theme` | dark, light, system |
-
----
-
-## G
-
-### Golden Test
-Test that compares output against a known-good snapshot. Enabled by determinism.
-
----
-
-## I
-
-### IR (Intermediate Representation)
-Internal data structures between DSL and runtime.
-
-| Type | Description |
-|------|-------------|
-| Scene IR | Semantic (no frames) |
-| Timeline IR | Frame-based (execution plan) |
-
----
-
-## L
-
-### Layout Model (Director)
-Geometric information for camera targeting.
-
-```typescript
-interface DirectorLayoutModel {
-  messageRects: Record<string, LayoutRect>;
-  inputAreaRect: LayoutRect;
-  lastMessageRect?: LayoutRect;
-}
-```
-
-### LayoutRect
-A rectangle in screen coordinates.
-
-```typescript
-interface LayoutRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-```
-
----
-
-## M
-
-### MessageHandle
-Reference to a message for later operations. Returned by `send()` and `receive()`.
-
-```typescript
-const msg = b.receive("Bob", "Hello!");
-b.wait("1s");
-b.read(msg);  // Use the handle
-```
-
-### MessageRef
-Full context for a message reference in IR.
-
-```typescript
-interface MessageRef {
-  _type: "MessageRef";
-  id: string;
-  deviceId: string;
-  appId: string;
-  conversationId: string;
-}
-```
-
-### Mood
-Semantic classification of emotional state.
-
-Values: `calm`, `tense`, `angry`, `sad`, `anxious`, `excited`, `confused`, `neutral`
-
----
-
-## O
-
-### Op (Operation)
-A single action in IR. Scene IR has `SceneOp`, Timeline IR has `TimelineOp`.
-
----
-
-## P
-
-### Pass (Compiler)
-A pure transformation in the compiler pipeline.
-
-| Pass | Purpose |
-|------|---------|
-| normalize | Expand sugar |
-| resolveRefs | Assign message IDs |
-| virtualDevice | Insert glue events |
-| timeLowering | Duration → frames |
-| validate | Semantic checks |
-| sort | Canonical ordering |
-
-### Phase
-Ordering priority for timeline events.
-
-```typescript
-enum Phase {
-  DEVICE = 0,   // unlock, lock
-  NAV = 10,     // open app, navigate
-  APP = 20,     // messages, typing
-  FX = 30,      // effects
-}
-```
-
-### POV (Point of View)
-Camera perspective. Can switch between devices or split-screen.
-
-```typescript
-b.pov("BobPhone", "crossfade");
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-```
-
-### Profile (Device)
-Device hardware configuration (iPhone 16, Pixel, etc.).
-
----
-
-## R
-
-### Rule (Director)
-Mapping from signal to camera effect.
-
-```typescript
-interface Rule {
-  signal: SignalType;
-  effect: EffectType;
-  cooldownFrames: number;
-  durationFrames: number;
-  priority: number;
-}
-```
-
-### Runtime Event
-App-specific event that the engine processes.
-
-```typescript
-{
-  at: 45,
-  kind: "APP",
-  type: "MESSAGE_RECEIVED",
-  message: { ... }
-}
-```
-
----
-
-## S
-
-### Scene IR
-Semantic intermediate representation. Captures WHAT happens without frame timing.
-
-### Scrubbing
-Jumping to any frame in the timeline. Works because of determinism.
-
-### SemanticMeta
-Story intelligence attached to messages.
-
-| Field | Description |
-|-------|-------------|
-| `mood` | Emotional mood |
-| `intensity` | 0-1, emotional weight |
-| `secrecy` | low, medium, high |
-| `urgency` | 0-1, how urgent |
-| `intimacy` | 0-1, relationship closeness |
-| `subtext` | Hint for AI/human |
-
-### Signal (Director)
-Camera-relevant event extracted from runtime events.
-
-Types: `NewMessage`, `TypingStarted`, `TypingEnded`, `MessageRead`, `MessageDeleted`
-
----
-
-## T
-
-### Timeline IR
-Frame-based intermediate representation. The execution plan.
-
-### Trace
-Debug metadata attached to operations for debugging.
-
-```typescript
-interface Trace {
-  episodeId: string;
-  beat: string;
-  trackId: number;
-  opIndex: number;
-}
-```
-
-### Track
-A parallel execution path within concurrent operations.
-
-### Transition (POV)
-How to switch between device views.
-
-Values: `cut`, `crossfade`, `wipe`
-
----
-
-## V
-
-### Virtual Device
-Compiler state tracking device status (locked, foreground app, active conversation).
-
----
-
-## W
-
-### WorldState
-Complete snapshot of everything at a point in time.
-
-```typescript
-interface WorldState {
-  devices: Record<string, DeviceState>;
-  camera: CameraState;
-  audio: AudioState;
-  _eventCursor: number;
-}
-```
-````
-
-## File: apps/docs/pages/index.mdx
-````
-# Tokovo
-
-**A Programmable Narrative Operating System**
-
-Tokovo is a deterministic video engine that transforms stories into viral phone videos. 
-It separates **what happens** (your story) from **how it looks** (the runtime).
-
-## What Makes Tokovo Different
-
-```
-Writers write INTENT → Compiler produces STRUCTURE → Runtime executes EVENTS → Director adds CINEMA
-```
-
-### Four Layers, Zero Coupling
-
-| Layer | What It Does | Example |
-|-------|--------------|---------|
-| **DSL** | Human-friendly story writing | `b.receive("Bob", "We need to talk.")` |
-| **Scene IR** | Semantic truth (no frames) | `{ kind: "ReceiveMessage", actor: "Bob", ... }` |
-| **Timeline IR** | Frame-based execution | `{ at: 45, kind: "MessageReceived", ... }` |
-| **Runtime** | Renders pixels | DirectorLite camera + Renderer |
-
-## Quick Start
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-const scene = episode("breakup-01", ep => {
-  ep.config({ pacing: "slow-burn", director: "auto" });
-
-  ep.device("AlicePhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_bob", { name: "Bob" });
-
-    d.beat("tension", b => {
-      b.typing("Bob").for("2s");
-      b.receive("Bob", "We need to talk.", {
-        mood: "tense",
-        intensity: 0.7
-      });
-    });
-  });
-});
-```
-
-## Why This Matters
-
-1. **AI-Friendly** — Structured output, not magic prompts
-2. **Deterministic** — Same script → same video, every time
-3. **Scalable** — Batch-generate thousands of episodes
-4. **Debuggable** — Trace every frame to its source
-
-## Explore
-
-import { Cards, Card } from 'nextra/components'
-
-<Cards>
-  <Card title="Architecture" href="/architecture" />
-  <Card title="DSL Reference" href="/dsl" />
-  <Card title="Compiler" href="/compiler" />
-  <Card title="DirectorLite" href="/director" />
-</Cards>
-````
-
-## File: apps/docs/next-env.d.ts
-````typescript
-/// <reference types="next" />
-/// <reference types="next/image-types/global" />
-
-// NOTE: This file should not be edited
-// see https://nextjs.org/docs/pages/building-your-application/configuring/typescript for more information.
-````
-
-## File: apps/docs/next.config.js
-````javascript
-const withNextra = require("nextra")({
-    theme: "nextra-theme-docs",
-    themeConfig: "./theme.config.tsx",
-});
-
-module.exports = withNextra();
-````
-
-## File: apps/docs/theme.config.tsx
-````typescript
-import React from "react";
-import { DocsThemeConfig } from "nextra-theme-docs";
-
-const config: DocsThemeConfig = {
-    logo: <span style={{ fontWeight: 700, fontSize: 20 }}>🎬 Tokovo</span>,
-    project: {
-        link: "https://github.com/your-org/tokovo",
-    },
-    docsRepositoryBase: "https://github.com/your-org/tokovo/tree/main/docs",
-    footer: {
-        text: "Tokovo — Deterministic Story Engine",
-    },
-    head: (
-        <>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-            <meta property="og:title" content="Tokovo Documentation" />
-            <meta property="og:description" content="A Programmable Narrative Operating System" />
-        </>
-    ),
-    useNextSeoProps() {
-        return {
-            titleTemplate: "%s – Tokovo",
-        };
-    },
-    sidebar: {
-        defaultMenuCollapseLevel: 1,
-        toggleButton: true,
-    },
-    toc: {
-        backToTop: true,
-    },
-    navigation: {
-        prev: true,
-        next: true,
-    },
-    primaryHue: 200,
-    primarySaturation: 80,
-};
-
-export default config;
-````
-
-## File: apps/docs/tsconfig.json
-````json
-{
-    "compilerOptions": {
-        "target": "ES2020",
-        "lib": [
-            "dom",
-            "dom.iterable",
-            "esnext"
-        ],
-        "allowJs": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "forceConsistentCasingInFileNames": true,
-        "noEmit": true,
-        "esModuleInterop": true,
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "jsx": "preserve",
-        "incremental": true,
-        "plugins": [
-            {
-                "name": "next"
-            }
-        ]
-    },
-    "include": [
-        "next-env.d.ts",
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.mdx"
-    ],
-    "exclude": [
-        "node_modules"
-    ]
 }
 ````
 
@@ -7843,385 +757,6 @@ export const CameraShowcaseVideo: React.FC = () => {
                     world={world}
                     t={t}
                     debug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/CinematicCameraShowcaseVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * Cinematic Camera Showcase Video
- * 
- * Demonstrates the NEW cinematic camera system with DSL-style episode definition:
- * - Camera primitives: hold, follow, pushIn, pullOut, snap, shake, reset
- * - Device-first camera profiles
- * - Cinematic easing functions
- * - Orchestrated camera movements synced to story beats
- * 
- * DirectorLite ENABLED - camera automatically reacts to message events.
- */
-
-// =============================================================================
-// EPISODE DEFINITION (DSL-style)
-// =============================================================================
-
-function createCinematicCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const fps = 30;
-
-    // =========================================================================
-    // INITIAL WORLD STATE
-    // =========================================================================
-    const initialWorld: WorldState = {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-            },
-        },
-        conversations: {
-            dm_ex: {
-                id: "dm_ex",
-                type: "dm" as const,
-                name: "Ex 💔",
-                avatar: undefined,
-                messages: [],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_ex",
-            },
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: "phone",
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: "phone",
-            },
-            activeEffects: [],
-            transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: { activeSounds: {} },
-    };
-
-    // =========================================================================
-    // TIMELINE EVENTS
-    // =========================================================================
-    const events: TimelineEvent[] = [
-        // -----------------------------------------------------------------
-        // BEAT 1: ESTABLISHING (0s - 2s)
-        // Camera holds on empty chat
-        // -----------------------------------------------------------------
-        {
-            at: 0,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.0,
-            duration: 60,
-            easing: "linear",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 2: TENSION BUILDS (2s - 3.5s)
-        // First message arrives, camera follows with high lag
-        // -----------------------------------------------------------------
-        {
-            at: 60,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "We need to talk.",
-        } as any,
-        {
-            at: 60,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.02,
-            originX: 0.5,
-            originY: 0.85,
-            duration: 45,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 3: ANTICIPATION (3.5s - 6.5s)
-        // Typing indicator, camera subtly pushes in
-        // -----------------------------------------------------------------
-        {
-            at: 105,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        {
-            at: 105,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.015,
-            originX: 0.5,
-            originY: 0.95,
-            duration: 60,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 4: THE REVEAL (6.5s - 7.5s)
-        // Long message, camera snaps to it
-        // -----------------------------------------------------------------
-        {
-            at: 195,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        {
-            at: 195,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "I've been thinking about us a lot lately... and I don't think this is working anymore.",
-        } as any,
-        {
-            at: 195,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.08,
-            originX: 0.5,
-            originY: 0.8,
-            duration: 10,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 5: REACTION (7.5s - 9.5s)
-        // Pull out for context
-        // -----------------------------------------------------------------
-        {
-            at: 225,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 0.95,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 45,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 6: ESCALATION (9.5s - 12s)
-        // Rapid exchange, camera gets tighter
-        // -----------------------------------------------------------------
-        {
-            at: 285,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "Hello?",
-        } as any,
-        {
-            at: 285,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.05,
-            originX: 0.5,
-            originY: 0.85,
-            duration: 10,
-            easing: "ease-in-out",
-        } as any,
-
-        {
-            at: 309,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "What do you mean?",
-        } as any,
-        {
-            at: 309,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.08,
-            originX: 0.5,
-            originY: 0.85,
-            duration: 8,
-            easing: "ease-in-out",
-        } as any,
-
-        {
-            at: 324,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "You know exactly what I mean.",
-        } as any,
-        {
-            at: 324,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.1,
-            originX: 0.5,
-            originY: 0.85,
-            duration: 8,
-            easing: "ease-in-out",
-        } as any,
-
-        {
-            at: 339,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "I don't understand...",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 7: DRAMATIC MOMENT (12s - 14s)
-        // Shake + tight zoom on final message
-        // -----------------------------------------------------------------
-        {
-            at: 360,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "It's over.",
-        } as any,
-        {
-            at: 360,
-            kind: "CAMERA",
-            type: "SHAKE",
-            intensity: 8,
-            frequency: 15,
-            decay: 0.6,
-            duration: 15,
-        } as any,
-        {
-            at: 360,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.15,
-            originX: 0.5,
-            originY: 0.85,
-            duration: 15,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 8: AFTERMATH (14s - 18s)
-        // Reply and smooth reset
-        // -----------------------------------------------------------------
-        {
-            at: 420,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "...",
-        } as any,
-        {
-            at: 420,
-            kind: "CAMERA",
-            type: "RESET",
-            duration: 60,
-            easing: "ease-out",
-        } as any,
-    ];
-
-    return { initialWorld, events };
-}
-
-// =============================================================================
-// VIDEO COMPONENT
-// =============================================================================
-
-export const CinematicCameraShowcaseVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Get episode data
-    const episode = useMemo(() => createCinematicCameraEpisode(), []);
-
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
                 />
             </div>
         </AbsoluteFill>
@@ -8727,6 +1262,112 @@ export const NotificationCallDemoVideo: React.FC = () => {
         </AbsoluteFill>
     );
 };
+````
+
+## File: apps/video-runner/src/NotificationShowcaseVideo.tsx
+````typescript
+/**
+ * Notification Showcase Video
+ * 
+ * Demonstrates all notification features in a 40-second video.
+ */
+
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { notificationShowcaseEpisode } from "@tokovo/episodes";
+
+// Import reducers
+import "@tokovo/devices";
+
+export const NotificationShowcaseVideo: React.FC = () => {
+    const t = useCurrentFrame();
+
+    // Memoize the event index for performance
+    const eventIndex = useMemo(() =>
+        createEventIndex(notificationShowcaseEpisode.events),
+        []
+    );
+
+    // Compute world state at current frame
+    const world = useMemo(() =>
+        replay(notificationShowcaseEpisode.initialWorld, notificationShowcaseEpisode.events, t),
+        [t]
+    );
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a1a",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+        }}>
+            {/* Title overlay for demo */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                left: 40,
+                color: "white",
+                fontFamily: "system-ui, sans-serif",
+                zIndex: 100,
+            }}>
+                <h1 style={{ fontSize: 28, margin: 0, opacity: 0.9 }}>
+                    📱 Notification Showcase
+                </h1>
+                <p style={{ fontSize: 14, opacity: 0.6, margin: "8px 0 0 0" }}>
+                    Frame: {t} | Time: {(t / 30).toFixed(1)}s
+                </p>
+            </div>
+
+            {/* Device */}
+            <div style={{
+                transform: "scale(0.7)",
+                transformOrigin: "center center",
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    focusDeviceId="phone"
+                    eventIndex={eventIndex}
+                    directorEnabled={false}
+                />
+            </div>
+
+            {/* Feature timeline */}
+            <div style={{
+                position: "absolute",
+                bottom: 40,
+                left: 40,
+                right: 40,
+                color: "white",
+                fontFamily: "monospace",
+                fontSize: 12,
+                opacity: 0.7,
+            }}>
+                {getFeatureLabel(t)}
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+function getFeatureLabel(frame: number): string {
+    if (frame < 90) return "▸ ACT 1: Basic WhatsApp notification";
+    if (frame < 150) return "▸ ACT 1: Instagram notification";
+    if (frame < 240) return "▸ ACT 2: Time-sensitive (Uber arriving)";
+    if (frame < 360) return "▸ ACT 3: Rich content with image preview + action buttons";
+    if (frame < 480) return "▸ ACT 4: Replyable notification + inline reply";
+    if (frame < 600) return "▸ ACT 5: Notification update (3 new messages)";
+    if (frame < 750) return "▸ ACT 6: Notification grouping (4 emails)";
+    if (frame < 900) return "▸ ACT 7: User interactions (tap, swipe dismiss)";
+    if (frame < 990) return "▸ ACT 8: Critical notification (meeting)";
+    if (frame < 1080) return "▸ ACT 9: Clear all notifications";
+    if (frame < 1140) return "▸ ACT 10: Silent notification (no headsUp)";
+    return "✅ Demo complete!";
+}
+
+export default NotificationShowcaseVideo;
 ````
 
 ## File: apps/video-runner/src/TwitterShowcaseVideo.tsx
@@ -10051,6 +2692,68 @@ export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
 };
 ````
 
+## File: packages/apps-instagram/src/notification-adapter.ts
+````typescript
+/**
+ * Instagram Notification Adapter
+ * 
+ * Formats Instagram notifications with social-specific styling.
+ */
+
+import { NotificationAdapter, NotificationAdapterRegistry, Notification, FormattedNotification } from "@tokovo/core";
+
+const INSTAGRAM_GRADIENT = "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)";
+const INSTAGRAM_PINK = "#E1306C";
+
+const instagramAdapter: NotificationAdapter = {
+    appId: "app_instagram",
+
+    format(notification: Notification): FormattedNotification {
+        const isLike = notification.body?.includes("liked") || notification.body?.includes("❤");
+        const isFollow = notification.body?.includes("follow");
+        const isComment = notification.body?.includes("comment");
+
+        return {
+            title: notification.title,
+            body: notification.body,
+            icon: "📸",
+            iconBackground: INSTAGRAM_PINK,
+            accentColor: INSTAGRAM_PINK,
+            preview: notification.preview || (isLike ? { kind: "text", value: "❤️" } : undefined),
+            actions: [
+                isLike ? { id: "like_back", label: "❤️ Like Back" } : null,
+                isComment ? { id: "reply", label: "Reply" } : null,
+                isFollow ? { id: "follow_back", label: "Follow Back" } : null,
+            ].filter(Boolean) as FormattedNotification["actions"],
+            sender: notification.metadata?.sender,
+        };
+    },
+
+    handleAction(actionId: string, notification: Notification) {
+        return [{
+            at: Date.now(),
+            kind: "DEVICE",
+            deviceId: notification.deviceId || "phone",
+            type: "OPEN_APP",
+            appId: "app_instagram",
+        }] as any[];
+    },
+
+    measureHeight(notification: Notification, viewport: { width: number }) {
+        let height = 160;
+        if (notification.preview?.kind === "image") {
+            height += 200;
+        }
+        return height;
+    },
+};
+
+// Register adapter
+NotificationAdapterRegistry.register(instagramAdapter);
+
+export { instagramAdapter };
+````
+
 ## File: packages/apps-instagram/src/types.ts
 ````typescript
 export type InstagramView = 'dm' | 'feed' | 'stories' | 'profile' | 'post' | 'explore' | 'notifications' | 'reels';
@@ -10147,6 +2850,919 @@ export const initialInstagramState: InstagramState = {
         "outDir": "dist",
         "rootDir": "src",
         "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/apps-spotify/src/widgets/DynamicIslandWidget.tsx
+````typescript
+/**
+ * Spotify Dynamic Island Widget - iOS
+ * 
+ * Renders Spotify Now Playing in the Dynamic Island.
+ * Supports minimal (icon+waveform), compact (track name), and expanded (full player) modes.
+ */
+
+import React from "react";
+import { WidgetProps } from "@tokovo/core";
+
+interface SpotifyDynamicIslandProps extends WidgetProps {
+    appState: {
+        currentTrack?: {
+            name: string;
+            artist: string;
+            albumArt?: string;
+        };
+        isPlaying?: boolean;
+    };
+}
+
+/**
+ * Spotify Dynamic Island Widget Component
+ */
+export const SpotifyDynamicIslandWidget: React.FC<SpotifyDynamicIslandProps> = ({
+    appState,
+    backgroundApp,
+    deviceProfile,
+    currentFrame,
+    expansionMode,
+}) => {
+    const di = deviceProfile.dynamicIsland;
+    if (!di) return null;
+
+    // Parse track info from backgroundApp label
+    const label = backgroundApp?.label || "";
+    const parts = label.split(" - ");
+    const trackName = parts[0] || appState.currentTrack?.name || "Now Playing";
+    const artistName = parts[1] || appState.currentTrack?.artist || "Spotify";
+
+    // Animation
+    const startFrame = backgroundApp?.startedAt || 0;
+    const elapsed = currentFrame - startFrame;
+    const expandDuration = 20;
+    const expandProgress = Math.min(1, elapsed / expandDuration);
+    const ease = 1 - Math.pow(1 - expandProgress, 3);
+
+    // Size interpolation based on expansion mode
+    const isExpanded = expansionMode === "expanded" || expansionMode === "compact";
+    const width = isExpanded
+        ? di.collapsedWidth + (di.expandedWidth - di.collapsedWidth) * ease
+        : di.collapsedWidth;
+    const height = isExpanded
+        ? di.collapsedHeight + (di.expandedHeight - di.collapsedHeight) * ease
+        : di.collapsedHeight;
+
+    return (
+        <div
+            style={{
+                width,
+                height,
+                background: "#000000",
+                borderRadius: di.cornerRadius,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 40px",
+                gap: 30,
+                boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
+                overflow: "hidden",
+            }}
+        >
+            {/* Spotify Logo */}
+            <div
+                style={{
+                    width: 90,
+                    height: 90,
+                    borderRadius: 20,
+                    background: "#1DB954",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                }}
+            >
+                <SpotifyIcon size={50} />
+            </div>
+
+            {/* Track Info - shows when expanded */}
+            {expandProgress > 0.5 && (
+                <div
+                    style={{
+                        flex: 1,
+                        minWidth: 0,
+                        opacity: (expandProgress - 0.5) * 2,
+                    }}
+                >
+                    <div
+                        style={{
+                            fontSize: 42,
+                            fontWeight: 600,
+                            color: "#fff",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                            marginBottom: 6,
+                        }}
+                    >
+                        {trackName}
+                    </div>
+                    <div
+                        style={{
+                            fontSize: 36,
+                            color: "rgba(255,255,255,0.6)",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        }}
+                    >
+                        {artistName}
+                    </div>
+                </div>
+            )}
+
+            {/* Music Wave Animation */}
+            {expandProgress > 0.3 && (
+                <div style={{ opacity: (expandProgress - 0.3) / 0.7, flexShrink: 0 }}>
+                    <MusicWaveIcon />
+                </div>
+            )}
+        </div>
+    );
+};
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+const SpotifyIcon: React.FC<{ size?: number }> = ({ size = 50 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#000">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+    </svg>
+);
+
+const MusicWaveIcon: React.FC = () => (
+    <svg width={60} height={60} viewBox="0 0 24 24" fill="#1DB954">
+        <rect x="4" y="10" width="3" height="4" rx="1">
+            <animate attributeName="height" values="4;12;4" dur="0.6s" repeatCount="indefinite" />
+            <animate attributeName="y" values="10;6;10" dur="0.6s" repeatCount="indefinite" />
+        </rect>
+        <rect x="10" y="6" width="3" height="12" rx="1">
+            <animate attributeName="height" values="12;4;12" dur="0.5s" repeatCount="indefinite" />
+            <animate attributeName="y" values="6;10;6" dur="0.5s" repeatCount="indefinite" />
+        </rect>
+        <rect x="16" y="8" width="3" height="8" rx="1">
+            <animate attributeName="height" values="8;14;8" dur="0.7s" repeatCount="indefinite" />
+            <animate attributeName="y" values="8;5;8" dur="0.7s" repeatCount="indefinite" />
+        </rect>
+    </svg>
+);
+
+export default SpotifyDynamicIslandWidget;
+````
+
+## File: packages/apps-spotify/src/widgets/index.ts
+````typescript
+/**
+ * Spotify Widgets Index
+ * 
+ * Exports all Spotify widgets for registration with PluginManager
+ */
+
+export { SpotifyDynamicIslandWidget } from "./DynamicIslandWidget";
+export { SpotifyStatusBarWidget } from "./StatusBarWidget";
+````
+
+## File: packages/apps-spotify/src/widgets/StatusBarWidget.tsx
+````typescript
+/**
+ * Spotify Status Bar Widget - Android
+ * 
+ * Renders a small music indicator in Android status bar.
+ */
+
+import React from "react";
+import { WidgetProps } from "@tokovo/core";
+
+/**
+ * Spotify Status Bar Widget for Android
+ * Shows a small music note indicator when Spotify is playing
+ */
+export const SpotifyStatusBarWidget: React.FC<WidgetProps> = ({
+    backgroundApp,
+    deviceProfile,
+}) => {
+    const config = deviceProfile.statusBarWidget;
+    if (!config) return null;
+
+    return (
+        <div
+            style={{
+                width: 48,
+                height: 48,
+                borderRadius: 24,
+                background: "#1DB954",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            <svg width={24} height={24} viewBox="0 0 24 24" fill="#000">
+                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+            </svg>
+        </div>
+    );
+};
+
+export default SpotifyStatusBarWidget;
+````
+
+## File: packages/apps-spotify/src/notification-adapter.ts
+````typescript
+/**
+ * Spotify Notification Adapter
+ * 
+ * Converts Spotify events into notification content.
+ * OS surfaces render this using NotificationOverlay/HeadsUpNotification.
+ */
+
+import { SpotifyAppState, NowPlaying, SpotifyTrack } from "./types";
+
+// =============================================================================
+// NOTIFICATION ADAPTER INTERFACE
+// =============================================================================
+
+export interface NotificationContent {
+    appId: string;
+    appName: string;
+    appIcon: string;
+    accentColor: string;
+    title: string;
+    body: string;
+    preview?: {
+        kind: "text" | "image";
+        value: string;
+    };
+    threadId?: string;
+    soundId?: string;
+}
+
+// =============================================================================
+// SPOTIFY ADAPTER
+// =============================================================================
+
+export const SPOTIFY_APP_ID = "app_spotify";
+export const SPOTIFY_APP_NAME = "Spotify";
+export const SPOTIFY_ICON = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Spotify_icon.svg/232px-Spotify_icon.svg.png";
+export const SPOTIFY_ACCENT = "#1DB954";
+
+/**
+ * Format a Spotify Now Playing state into notification content
+ */
+export function formatSpotifyNotification(
+    nowPlaying: NowPlaying,
+    type: "now_playing" | "track_change" | "liked"
+): NotificationContent {
+    const { track } = nowPlaying;
+
+    switch (type) {
+        case "now_playing":
+            return {
+                appId: SPOTIFY_APP_ID,
+                appName: SPOTIFY_APP_NAME,
+                appIcon: SPOTIFY_ICON,
+                accentColor: SPOTIFY_ACCENT,
+                title: "Now Playing",
+                body: `${track.name} • ${track.artist}`,
+                preview: track.albumArt
+                    ? { kind: "image", value: track.albumArt }
+                    : undefined,
+                threadId: "spotify_playback",
+            };
+
+        case "track_change":
+            return {
+                appId: SPOTIFY_APP_ID,
+                appName: SPOTIFY_APP_NAME,
+                appIcon: SPOTIFY_ICON,
+                accentColor: SPOTIFY_ACCENT,
+                title: track.name,
+                body: `${track.artist} • ${track.album}`,
+                preview: track.albumArt
+                    ? { kind: "image", value: track.albumArt }
+                    : undefined,
+                threadId: "spotify_playback",
+            };
+
+        case "liked":
+            return {
+                appId: SPOTIFY_APP_ID,
+                appName: SPOTIFY_APP_NAME,
+                appIcon: SPOTIFY_ICON,
+                accentColor: SPOTIFY_ACCENT,
+                title: "Added to Liked Songs",
+                body: `${track.name} by ${track.artist}`,
+                threadId: "spotify_likes",
+            };
+    }
+}
+
+/**
+ * Create a simple text notification from Spotify
+ */
+export function createSpotifyTextNotification(
+    title: string,
+    body: string
+): NotificationContent {
+    return {
+        appId: SPOTIFY_APP_ID,
+        appName: SPOTIFY_APP_NAME,
+        appIcon: SPOTIFY_ICON,
+        accentColor: SPOTIFY_ACCENT,
+        title,
+        body,
+    };
+}
+
+// =============================================================================
+// SPOTIFY NOTIFICATION ADAPTER (for global registry)
+// =============================================================================
+
+export const SpotifyNotificationAdapter = {
+    appId: SPOTIFY_APP_ID,
+    appName: SPOTIFY_APP_NAME,
+    appIcon: SPOTIFY_ICON,
+    accentColor: SPOTIFY_ACCENT,
+
+    /**
+     * Format notification from raw event
+     */
+    format(event: { title: string; body: string; preview?: string }): NotificationContent {
+        return {
+            appId: SPOTIFY_APP_ID,
+            appName: SPOTIFY_APP_NAME,
+            appIcon: SPOTIFY_ICON,
+            accentColor: SPOTIFY_ACCENT,
+            title: event.title,
+            body: event.body,
+            preview: event.preview
+                ? { kind: "image", value: event.preview }
+                : undefined,
+        };
+    },
+};
+````
+
+## File: packages/apps-spotify/src/types.ts
+````typescript
+/**
+ * Spotify Types
+ * 
+ * Data structures for Spotify app state, tracks, and playback.
+ */
+
+// =============================================================================
+// TRACK & PLAYLIST
+// =============================================================================
+
+export interface SpotifyTrack {
+    id: string;
+    name: string;
+    artist: string;
+    album: string;
+    albumArt?: string;         // URL to album artwork
+    durationMs: number;        // Track duration in milliseconds
+}
+
+export interface SpotifyPlaylist {
+    id: string;
+    name: string;
+    coverArt?: string;
+    tracks: SpotifyTrack[];
+}
+
+// =============================================================================
+// PLAYBACK STATE
+// =============================================================================
+
+export type PlaybackState = "playing" | "paused" | "stopped";
+
+export interface NowPlaying {
+    track: SpotifyTrack;
+    state: PlaybackState;
+    progressMs: number;        // Current position in track
+    startedAtFrame: number;    // Frame when playback started
+    shuffleEnabled: boolean;
+    repeatMode: "off" | "all" | "one";
+}
+
+// =============================================================================
+// SPOTIFY APP STATE
+// =============================================================================
+
+export type SpotifyScreen = "home" | "search" | "library" | "player" | "playlist";
+
+export interface SpotifyAppState {
+    screen: SpotifyScreen;
+    nowPlaying?: NowPlaying;
+    currentPlaylist?: SpotifyPlaylist;
+    recentlyPlayed: SpotifyTrack[];
+    isMinimized: boolean;      // Widget mode vs full app
+}
+
+// =============================================================================
+// DEFAULT STATE
+// =============================================================================
+
+export const DEFAULT_SPOTIFY_STATE: SpotifyAppState = {
+    screen: "home",
+    nowPlaying: undefined,
+    recentlyPlayed: [],
+    isMinimized: false,
+};
+
+// =============================================================================
+// SAMPLE TRACKS (for demos)
+// =============================================================================
+
+export const SAMPLE_TRACKS: SpotifyTrack[] = [
+    {
+        id: "track_1",
+        name: "Blinding Lights",
+        artist: "The Weeknd",
+        album: "After Hours",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+        durationMs: 200000,
+    },
+    {
+        id: "track_2",
+        name: "As It Was",
+        artist: "Harry Styles",
+        album: "Harry's House",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273b46f74097655d7f353caab14",
+        durationMs: 167000,
+    },
+    {
+        id: "track_3",
+        name: "Anti-Hero",
+        artist: "Taylor Swift",
+        album: "Midnights",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5",
+        durationMs: 200000,
+    },
+    {
+        id: "track_4",
+        name: "Unholy",
+        artist: "Sam Smith & Kim Petras",
+        album: "Gloria",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b2730895066d172e1f51f520bc65",
+        durationMs: 157000,
+    },
+];
+````
+
+## File: packages/apps-spotify/src/ui.tsx
+````typescript
+/**
+ * Spotify UI Components
+ * 
+ * - NowPlayingWidget: Floating mini player
+ * - SpotifyPlayer: Full player screen
+ * - StatusBarIndicator: Shows in status bar when playing
+ */
+
+import React from "react";
+import { SpotifyAppState, NowPlaying, SpotifyTrack } from "./types";
+
+// =============================================================================
+// NOW PLAYING WIDGET (Mini Player)
+// =============================================================================
+
+interface NowPlayingWidgetProps {
+    nowPlaying: NowPlaying;
+    currentFrame: number;
+    variant?: "ios" | "android";
+    onTap?: () => void;
+}
+
+/**
+ * Floating Now Playing widget - shows current track with progress
+ */
+export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
+    nowPlaying,
+    currentFrame,
+    variant = "ios",
+    onTap,
+}) => {
+    const { track, state, startedAtFrame } = nowPlaying;
+
+    // Calculate progress (30fps)
+    const elapsedMs = ((currentFrame - startedAtFrame) / 30) * 1000;
+    const progress = state === "playing"
+        ? Math.min(1, elapsedMs / track.durationMs)
+        : (nowPlaying.progressMs / track.durationMs);
+
+    const isIOS = variant === "ios";
+
+    return (
+        <div
+            onClick={onTap}
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "10px 14px",
+                background: isIOS
+                    ? "rgba(30, 30, 31, 0.95)"
+                    : "linear-gradient(180deg, #1DB954 0%, #191414 100%)",
+                borderRadius: isIOS ? 14 : 8,
+                backdropFilter: "blur(20px)",
+                boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                maxWidth: 380,
+                cursor: "pointer",
+            }}
+        >
+            {/* Album Art */}
+            <div style={{
+                width: 48,
+                height: 48,
+                borderRadius: 6,
+                background: track.albumArt
+                    ? `url(${track.albumArt}) center/cover`
+                    : "linear-gradient(135deg, #1DB954 0%, #191414 100%)",
+                flexShrink: 0,
+            }} />
+
+            {/* Track Info */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: "#fff",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                }}>
+                    {track.name}
+                </div>
+                <div style={{
+                    fontSize: 13,
+                    color: "rgba(255,255,255,0.6)",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                }}>
+                    {track.artist}
+                </div>
+
+                {/* Progress Bar */}
+                <div style={{
+                    marginTop: 6,
+                    height: 3,
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                }}>
+                    <div style={{
+                        width: `${progress * 100}%`,
+                        height: "100%",
+                        background: "#1DB954",
+                        transition: "width 0.1s linear",
+                    }} />
+                </div>
+            </div>
+
+            {/* Play/Pause Icon */}
+            <div style={{
+                width: 36,
+                height: 36,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+            }}>
+                {state === "playing" ? (
+                    <PauseIcon />
+                ) : (
+                    <PlayIcon />
+                )}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// STATUS BAR INDICATOR
+// =============================================================================
+
+interface StatusBarMusicIndicatorProps {
+    track?: SpotifyTrack;
+    isPlaying: boolean;
+}
+
+/**
+ * Tiny indicator for status bar showing music is playing
+ */
+export const StatusBarMusicIndicator: React.FC<StatusBarMusicIndicatorProps> = ({
+    track,
+    isPlaying,
+}) => {
+    if (!track || !isPlaying) return null;
+
+    return (
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+            padding: "2px 6px",
+            background: "rgba(29, 185, 84, 0.9)",
+            borderRadius: 4,
+            fontSize: 11,
+            fontWeight: 600,
+            color: "#fff",
+        }}>
+            <MusicWaveIcon />
+            <span style={{
+                maxWidth: 80,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+            }}>
+                {track.name}
+            </span>
+        </div>
+    );
+};
+
+// =============================================================================
+// FULL SPOTIFY PLAYER
+// =============================================================================
+
+interface SpotifyPlayerProps {
+    appState: SpotifyAppState;
+    currentFrame: number;
+}
+
+/**
+ * Full Spotify player screen
+ */
+export const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({
+    appState,
+    currentFrame,
+}) => {
+    const { nowPlaying } = appState;
+
+    if (!nowPlaying) {
+        return <SpotifyHome />;
+    }
+
+    const { track, state, startedAtFrame } = nowPlaying;
+    const elapsedMs = ((currentFrame - startedAtFrame) / 30) * 1000;
+    const progress = state === "playing"
+        ? Math.min(1, elapsedMs / track.durationMs)
+        : (nowPlaying.progressMs / track.durationMs);
+
+    const formatTime = (ms: number) => {
+        const seconds = Math.floor(ms / 1000);
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, "0")}`;
+    };
+
+    return (
+        <div style={{
+            width: "100%",
+            height: "100%",
+            background: "linear-gradient(180deg, #1e3a5f 0%, #121212 40%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            padding: "60px 30px 40px",
+            boxSizing: "border-box",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+        }}>
+            {/* Album Art */}
+            <div style={{
+                width: 320,
+                height: 320,
+                borderRadius: 8,
+                background: track.albumArt
+                    ? `url(${track.albumArt}) center/cover`
+                    : "linear-gradient(135deg, #1DB954 0%, #191414 100%)",
+                boxShadow: "0 8px 48px rgba(0,0,0,0.5)",
+                marginBottom: 40,
+            }} />
+
+            {/* Track Info */}
+            <div style={{ textAlign: "center", width: "100%", marginBottom: 24 }}>
+                <div style={{
+                    fontSize: 24,
+                    fontWeight: 700,
+                    color: "#fff",
+                    marginBottom: 6,
+                }}>
+                    {track.name}
+                </div>
+                <div style={{
+                    fontSize: 16,
+                    color: "rgba(255,255,255,0.6)",
+                }}>
+                    {track.artist}
+                </div>
+            </div>
+
+            {/* Progress Bar */}
+            <div style={{ width: "100%", marginBottom: 8 }}>
+                <div style={{
+                    height: 4,
+                    background: "rgba(255,255,255,0.2)",
+                    borderRadius: 2,
+                    overflow: "hidden",
+                }}>
+                    <div style={{
+                        width: `${progress * 100}%`,
+                        height: "100%",
+                        background: "#1DB954",
+                    }} />
+                </div>
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    marginTop: 8,
+                    fontSize: 12,
+                    color: "rgba(255,255,255,0.6)",
+                }}>
+                    <span>{formatTime(elapsedMs)}</span>
+                    <span>{formatTime(track.durationMs)}</span>
+                </div>
+            </div>
+
+            {/* Controls */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 40,
+                marginTop: 24,
+            }}>
+                <SkipBackIcon />
+                <div style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: 32,
+                    background: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                }}>
+                    {state === "playing" ? (
+                        <PauseIcon color="#000" size={32} />
+                    ) : (
+                        <PlayIcon color="#000" size={32} />
+                    )}
+                </div>
+                <SkipForwardIcon />
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// SPOTIFY HOME (Placeholder)
+// =============================================================================
+
+const SpotifyHome: React.FC = () => (
+    <div style={{
+        width: "100%",
+        height: "100%",
+        background: "#121212",
+        padding: 24,
+        boxSizing: "border-box",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+    }}>
+        <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 24 }}>
+            Good evening
+        </div>
+        <div style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 12
+        }}>
+            {["Liked Songs", "Daily Mix 1", "Discover Weekly", "Release Radar"].map((name, i) => (
+                <div key={i} style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    background: "rgba(255,255,255,0.1)",
+                    borderRadius: 4,
+                    overflow: "hidden",
+                }}>
+                    <div style={{
+                        width: 56,
+                        height: 56,
+                        background: `hsl(${i * 60 + 140}, 60%, 40%)`,
+                    }} />
+                    <div style={{
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                    }}>
+                        {name}
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+const PlayIcon: React.FC<{ color?: string; size?: number }> = ({
+    color = "#fff",
+    size = 20
+}) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+        <path d="M8 5v14l11-7z" />
+    </svg>
+);
+
+const PauseIcon: React.FC<{ color?: string; size?: number }> = ({
+    color = "#fff",
+    size = 20
+}) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+    </svg>
+);
+
+const SkipBackIcon: React.FC = () => (
+    <svg width={28} height={28} viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
+        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
+    </svg>
+);
+
+const SkipForwardIcon: React.FC = () => (
+    <svg width={28} height={28} viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
+        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+    </svg>
+);
+
+const MusicWaveIcon: React.FC = () => (
+    <svg width={12} height={12} viewBox="0 0 24 24" fill="#fff">
+        <rect x="4" y="8" width="3" height="8" rx="1">
+            <animate attributeName="height" values="8;16;8" dur="0.6s" repeatCount="indefinite" />
+            <animate attributeName="y" values="8;4;8" dur="0.6s" repeatCount="indefinite" />
+        </rect>
+        <rect x="10" y="4" width="3" height="16" rx="1">
+            <animate attributeName="height" values="16;8;16" dur="0.5s" repeatCount="indefinite" />
+            <animate attributeName="y" values="4;8;4" dur="0.5s" repeatCount="indefinite" />
+        </rect>
+        <rect x="16" y="6" width="3" height="12" rx="1">
+            <animate attributeName="height" values="12;16;12" dur="0.7s" repeatCount="indefinite" />
+            <animate attributeName="y" values="6;4;6" dur="0.7s" repeatCount="indefinite" />
+        </rect>
+    </svg>
+);
+````
+
+## File: packages/apps-spotify/package.json
+````json
+{
+    "name": "@tokovo/apps-spotify",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
+}
+````
+
+## File: packages/apps-spotify/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "rootDir": "src",
+        "outDir": "dist",
+        "declaration": true,
+        "jsx": "react"
     },
     "include": [
         "src/**/*"
@@ -14445,6 +8061,80 @@ export const ANIMATION_POLISH = {
 };
 ````
 
+## File: packages/apps-whatsapp/src/notification-adapter.ts
+````typescript
+/**
+ * WhatsApp Notification Adapter
+ * 
+ * Formats WhatsApp notifications with messaging-specific styling.
+ */
+
+import { NotificationAdapter, NotificationAdapterRegistry, Notification, FormattedNotification } from "@tokovo/core";
+
+const WHATSAPP_GREEN = "#25D366";
+
+const whatsappAdapter: NotificationAdapter = {
+    appId: "app_whatsapp",
+
+    format(notification: Notification): FormattedNotification {
+        return {
+            title: notification.title,
+            body: notification.body,
+            icon: "💬",
+            iconBackground: WHATSAPP_GREEN,
+            accentColor: WHATSAPP_GREEN,
+            preview: notification.preview,
+            actions: notification.actions || [
+                { id: "reply", label: "Reply" },
+                { id: "mark_read", label: "Mark as Read" },
+            ],
+            sender: notification.metadata?.sender,
+        };
+    },
+
+    handleAction(actionId: string, notification: Notification) {
+        const baseEvents: any[] = [];
+
+        if (actionId === "open" || actionId === "reply") {
+            baseEvents.push({
+                at: Date.now(),
+                kind: "DEVICE",
+                deviceId: notification.deviceId || "phone",
+                type: "OPEN_APP",
+                appId: "app_whatsapp",
+            });
+
+            if (notification.threadId) {
+                baseEvents.push({
+                    at: Date.now(),
+                    kind: "APP",
+                    appId: "app_whatsapp",
+                    type: "NAVIGATE",
+                    screen: "chat",
+                    conversationId: notification.threadId,
+                });
+            }
+        }
+
+        return baseEvents;
+    },
+
+    measureHeight(notification: Notification, viewport: { width: number }) {
+        // Base height + extra for image preview
+        let height = 180;
+        if (notification.preview?.kind === "image") {
+            height += 200;
+        }
+        return height;
+    },
+};
+
+// Register adapter
+NotificationAdapterRegistry.register(whatsappAdapter);
+
+export { whatsappAdapter };
+````
+
 ## File: packages/apps-whatsapp/src/plugin.ts
 ````typescript
 /**
@@ -15363,6 +9053,1018 @@ export * from "./passes";
 ## File: packages/compiler/tsconfig.tsbuildinfo
 ````
 {"root":["./src/compile.ts","./src/context.ts","./src/index.ts","./src/passes/index.ts","./src/passes/normalize.ts","./src/passes/resolve-refs.ts","./src/passes/sort.ts","./src/passes/time-lowering.ts","./src/passes/validate.ts","./src/passes/virtual-device.ts"],"version":"5.9.3"}
+````
+
+## File: packages/core/src/audio/auto-sound.ts
+````typescript
+/**
+ * Auto-Sound Rules - Automatically derive sounds from app/device events
+ * 
+ * Converts semantic events (MESSAGE_RECEIVED, TYPING_START) into sound cues.
+ * This is what makes the audio feel "automatic" and cinematic.
+ */
+
+import { TimelineEvent, SoundCue, AudioBus } from "../types";
+import { createSoundCue, createUISoundCue } from "./mixer";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface AutoSoundRule {
+    // Match conditions
+    match: {
+        kind: string;
+        type?: string;
+        appId?: string;
+        from?: string | "*";  // "*" = any sender
+    };
+
+    // Sound output
+    sound: string;
+    bus: AudioBus;
+
+    // Optional overrides
+    volume?: number;
+    loop?: boolean;
+    duration?: number;
+    duckMusic?: boolean;
+    priority?: number;
+}
+
+// =============================================================================
+// DEFAULT RULES
+// =============================================================================
+
+export const AUTO_SOUND_RULES: AutoSoundRule[] = [
+    // WhatsApp message sounds
+    {
+        match: { kind: "APP", type: "MESSAGE_RECEIVED", from: "me" },
+        sound: "whatsapp_sent",
+        bus: "ui",
+        duckMusic: true,
+    },
+    {
+        match: { kind: "APP", type: "MESSAGE_RECEIVED", from: "*" },
+        sound: "whatsapp_received",
+        bus: "ui",
+        duckMusic: true,
+    },
+
+    // Typing sounds
+    {
+        match: { kind: "APP", type: "TYPING_START" },
+        sound: "whatsapp_typing",
+        bus: "sfx",
+        loop: true,
+        duration: 90,  // 3 seconds max
+        volume: 0.4,
+    },
+
+    // Device sounds
+    {
+        match: { kind: "DEVICE", type: "NOTIFICATION" },
+        sound: "notification",
+        bus: "ui",
+        duckMusic: true,
+    },
+    {
+        match: { kind: "DEVICE", type: "LOCK" },
+        sound: "lock",
+        bus: "sfx",
+    },
+    {
+        match: { kind: "DEVICE", type: "UNLOCK" },
+        sound: "unlock",
+        bus: "sfx",
+    },
+
+    // Call sounds
+    {
+        match: { kind: "DEVICE", type: "CALL_INCOMING" },
+        sound: "ringtone",
+        bus: "ui",
+        loop: true,
+        priority: 90,
+        duckMusic: true,
+    },
+    {
+        match: { kind: "DEVICE", type: "CALL_END" },
+        sound: "call_end",
+        bus: "ui",
+    },
+];
+
+// =============================================================================
+// MATCHING LOGIC
+// =============================================================================
+
+/**
+ * Check if a rule matches an event
+ */
+function matchesRule(event: TimelineEvent, rule: AutoSoundRule): boolean {
+    // Check kind
+    if (event.kind !== rule.match.kind) {
+        return false;
+    }
+
+    // Check type
+    if (rule.match.type && (event as any).type !== rule.match.type) {
+        return false;
+    }
+
+    // Check appId
+    if (rule.match.appId && (event as any).appId !== rule.match.appId) {
+        return false;
+    }
+
+    // Check from
+    if (rule.match.from) {
+        const eventFrom = (event as any).from;
+        if (rule.match.from === "*") {
+            // Match any sender EXCEPT "me"
+            if (eventFrom === "me") {
+                return false;
+            }
+        } else if (eventFrom !== rule.match.from) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// =============================================================================
+// DERIVATION FUNCTIONS
+// =============================================================================
+
+/**
+ * Derive audio cue from an event (if any rule matches)
+ */
+export function deriveAudioFromEvent(
+    event: TimelineEvent,
+    rules: AutoSoundRule[] = AUTO_SOUND_RULES
+): SoundCue | null {
+    // Find matching rule
+    const rule = rules.find((r) => matchesRule(event, r));
+    if (!rule) {
+        return null;
+    }
+
+    // Create sound cue based on rule
+    if (rule.duckMusic) {
+        return createUISoundCue(rule.sound, event.at, {
+            volume: rule.volume,
+            loop: rule.loop,
+            duration: rule.duration,
+            priority: rule.priority,
+            deviceId: (event as any).deviceId,
+        });
+    }
+
+    return createSoundCue(rule.sound, event.at, {
+        bus: rule.bus,
+        volume: rule.volume,
+        loop: rule.loop,
+        duration: rule.duration,
+        priority: rule.priority,
+        deviceId: (event as any).deviceId,
+    });
+}
+
+/**
+ * Process all events and derive audio cues
+ */
+export function deriveAllAudio(
+    events: TimelineEvent[],
+    rules: AutoSoundRule[] = AUTO_SOUND_RULES
+): SoundCue[] {
+    const cues: SoundCue[] = [];
+
+    for (const event of events) {
+        const cue = deriveAudioFromEvent(event, rules);
+        if (cue) {
+            cues.push(cue);
+        }
+    }
+
+    return cues;
+}
+
+/**
+ * Create custom auto-sound rules for a specific app
+ */
+export function createAppRules(
+    appId: string,
+    rules: Partial<AutoSoundRule>[]
+): AutoSoundRule[] {
+    return rules.map((rule) => ({
+        match: {
+            kind: "APP",
+            appId,
+            ...rule.match,
+        },
+        sound: rule.sound || "notification",
+        bus: rule.bus || "ui",
+        volume: rule.volume,
+        loop: rule.loop,
+        duration: rule.duration,
+        duckMusic: rule.duckMusic,
+        priority: rule.priority,
+    }));
+}
+````
+
+## File: packages/core/src/audio/index.ts
+````typescript
+/**
+ * Audio System - Production-grade audio mixing for Tokovo
+ * 
+ * Exports all audio-related modules:
+ * - Mixer: Bus routing, ducking, envelopes
+ * - Policies: Spam gate, concurrency, priority
+ * - Auto-Sound: Derive sounds from events
+ * - Music Bed: Background music with crossfade
+ */
+
+// Mixer
+export {
+    computeSoundVolume,
+    computeBusStates,
+    computeBusDuckMultiplier,
+    applyEnvelope,
+    createSoundCue,
+    createUISoundCue,
+    createVoiceSoundCue,
+    type BusState,
+    type MixerContext,
+} from "./mixer";
+
+// Policies
+export {
+    SpamGate,
+    enforceBusConcurrency,
+    getDefaultPriority,
+    sortByPriority,
+    shouldInterrupt,
+    checkAllPolicies,
+    DEFAULT_POLICY_CONFIG,
+    PRIORITY_LEVELS,
+    type PolicyConfig,
+    type PolicyResult,
+} from "./policies";
+
+// Auto-Sound
+export {
+    deriveAudioFromEvent,
+    deriveAllAudio,
+    createAppRules,
+    AUTO_SOUND_RULES,
+    type AutoSoundRule,
+} from "./auto-sound";
+
+// Music Bed
+export {
+    computeCrossfade,
+    createMusicBed,
+    createTenseMusicBed,
+    createDramaticMusicBed,
+    createCalmMusicBed,
+    getMusicByMood,
+    suggestMood,
+    type CrossfadeState,
+    type MoodTag,
+} from "./music-bed";
+````
+
+## File: packages/core/src/audio/mixer.ts
+````typescript
+/**
+ * Audio Mixer - Production-grade audio mixing for Tokovo
+ * 
+ * Handles:
+ * - Bus-based volume routing
+ * - Ducking (UI/voice lowers music)
+ * - Attack/release envelopes
+ * - Per-frame volume computation
+ */
+
+import {
+    SoundCue,
+    AudioBus,
+    AudioBusConfig,
+    AudioEnvelope,
+    DuckRule,
+    AudioState,
+    ActiveSound,
+} from "../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface BusState {
+    baseGain: number;
+    duckMultiplier: number;  // 0-1, computed from active duckers
+}
+
+export interface MixerContext {
+    frame: number;
+    buses: Record<AudioBus, BusState>;
+    allCues: (SoundCue | ActiveSound)[];
+}
+
+// =============================================================================
+// ENVELOPE FUNCTIONS
+// =============================================================================
+
+/**
+ * Apply envelope (attack/release) to compute volume multiplier
+ */
+export function applyEnvelope(
+    cue: SoundCue,
+    frame: number
+): number {
+    if (!cue.envelope) {
+        return 1.0;
+    }
+
+    const { attack, release, curve = "linear" } = cue.envelope;
+    const elapsed = frame - cue.startFrame;
+    const endFrame = cue.duration ? cue.startFrame + cue.duration : Infinity;
+    const remaining = endFrame - frame;
+
+    let multiplier = 1.0;
+
+    // Attack phase (fade in)
+    if (elapsed < attack && attack > 0) {
+        const progress = elapsed / attack;
+        multiplier = applyCurve(progress, curve);
+    }
+
+    // Release phase (fade out)
+    if (remaining < release && release > 0) {
+        const progress = remaining / release;
+        multiplier *= applyCurve(progress, curve);
+    }
+
+    return Math.max(0, Math.min(1, multiplier));
+}
+
+/**
+ * Apply easing curve to a 0-1 progress value
+ */
+function applyCurve(progress: number, curve: "linear" | "easeOut" | "easeIn"): number {
+    switch (curve) {
+        case "easeOut":
+            return 1 - Math.pow(1 - progress, 2);
+        case "easeIn":
+            return Math.pow(progress, 2);
+        case "linear":
+        default:
+            return progress;
+    }
+}
+
+// =============================================================================
+// DUCKING FUNCTIONS
+// =============================================================================
+
+/**
+ * Check if a sound cue is a SoundCue with ducking info (not legacy ActiveSound)
+ */
+function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
+    return "bus" in sound;
+}
+
+/**
+ * Compute duck multiplier for a bus based on active duckers
+ */
+export function computeBusDuckMultiplier(
+    targetBus: AudioBus,
+    frame: number,
+    allCues: (SoundCue | ActiveSound)[]
+): number {
+    let minMultiplier = 1.0;
+
+    for (const cue of allCues) {
+        if (!isSoundCue(cue) || !cue.duck) continue;
+        if (cue.duck.targetBus !== targetBus) continue;
+
+        // Check if this ducker is active
+        const cueStart = cue.startFrame;
+        const cueEnd = cue.duration ? cue.startFrame + cue.duration : Infinity;
+
+        if (frame < cueStart || frame > cueEnd + cue.duck.release) {
+            continue; // Ducker not active
+        }
+
+        // Compute duck amount with attack/release
+        let duckAmount = cue.duck.amount;
+
+        // Attack: ramp down to duck amount
+        if (frame < cueStart + cue.duck.attack) {
+            const progress = (frame - cueStart) / cue.duck.attack;
+            duckAmount = 1.0 - (1.0 - cue.duck.amount) * progress;
+        }
+
+        // Release: ramp back up after cue ends
+        if (frame > cueEnd) {
+            const releaseProgress = (frame - cueEnd) / cue.duck.release;
+            duckAmount = cue.duck.amount + (1.0 - cue.duck.amount) * releaseProgress;
+        }
+
+        minMultiplier = Math.min(minMultiplier, duckAmount);
+    }
+
+    return minMultiplier;
+}
+
+// =============================================================================
+// MAIN MIXER FUNCTIONS
+// =============================================================================
+
+/**
+ * Compute bus states for current frame
+ */
+export function computeBusStates(
+    audioState: AudioState,
+    frame: number
+): Record<AudioBus, BusState> {
+    const allCues = Object.values(audioState.activeSounds);
+
+    const busStates: Record<AudioBus, BusState> = {
+        music: {
+            baseGain: audioState.buses.music.baseGain,
+            duckMultiplier: computeBusDuckMultiplier("music", frame, allCues),
+        },
+        ui: {
+            baseGain: audioState.buses.ui.baseGain,
+            duckMultiplier: computeBusDuckMultiplier("ui", frame, allCues),
+        },
+        sfx: {
+            baseGain: audioState.buses.sfx.baseGain,
+            duckMultiplier: computeBusDuckMultiplier("sfx", frame, allCues),
+        },
+        voice: {
+            baseGain: audioState.buses.voice.baseGain,
+            duckMultiplier: computeBusDuckMultiplier("voice", frame, allCues),
+        },
+        master: {
+            baseGain: 1.0,
+            duckMultiplier: 1.0,
+        },
+    };
+
+    return busStates;
+}
+
+/**
+ * Compute final volume for a sound at a given frame
+ * 
+ * Formula: finalVolume = cueGain * busBase * duckMultiplier * envelope
+ */
+export function computeSoundVolume(
+    sound: SoundCue | ActiveSound,
+    frame: number,
+    busStates: Record<AudioBus, BusState>
+): number {
+    const cueVolume = sound.volume;
+
+    // If it's a legacy ActiveSound, just return clamped volume
+    if (!isSoundCue(sound)) {
+        // Handle fade if present (legacy approach)
+        let volume = cueVolume;
+        const fadeSound = sound as any;
+        if (fadeSound.fadeTarget !== undefined && fadeSound.fadeStartFrame !== undefined) {
+            const fadeProgress = Math.min(1, (frame - fadeSound.fadeStartFrame) / fadeSound.fadeDuration);
+            volume = cueVolume + (fadeSound.fadeTarget - cueVolume) * fadeProgress;
+        }
+        return clamp01(volume);
+    }
+
+    // Full SoundCue processing
+    const busState = busStates[sound.bus] || busStates.master;
+    const envelopeMult = applyEnvelope(sound, frame);
+
+    // Handle fade if present
+    let baseVolume = cueVolume;
+    if (sound.fadeTarget !== undefined && sound.fadeStartFrame !== undefined && sound.fadeDuration) {
+        const fadeProgress = Math.min(1, (frame - sound.fadeStartFrame) / sound.fadeDuration);
+        baseVolume = cueVolume + (sound.fadeTarget - cueVolume) * fadeProgress;
+    }
+
+    const finalVolume = baseVolume * busState.baseGain * busState.duckMultiplier * envelopeMult;
+
+    return clamp01(finalVolume);
+}
+
+/**
+ * Clamp value between 0 and 1
+ */
+function clamp01(value: number): number {
+    return Math.max(0, Math.min(1, value));
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Create a SoundCue with sensible defaults
+ */
+export function createSoundCue(
+    soundId: string,
+    startFrame: number,
+    options: Partial<Omit<SoundCue, "soundId" | "startFrame">> = {}
+): SoundCue {
+    return {
+        soundId,
+        startFrame,
+        volume: options.volume ?? 1.0,
+        bus: options.bus ?? "sfx",
+        priority: options.priority ?? 50,
+        loop: options.loop,
+        duration: options.duration,
+        deviceId: options.deviceId,
+        origin: options.origin,
+        envelope: options.envelope,
+        duck: options.duck,
+    };
+}
+
+/**
+ * Create a UI sound that ducks music
+ */
+export function createUISoundCue(
+    soundId: string,
+    startFrame: number,
+    options: Partial<Omit<SoundCue, "soundId" | "startFrame" | "bus">> = {}
+): SoundCue {
+    return createSoundCue(soundId, startFrame, {
+        ...options,
+        bus: "ui",
+        priority: 30,
+        duck: options.duck ?? {
+            targetBus: "music",
+            amount: 0.25,
+            attack: 3,
+            release: 20,
+        },
+    });
+}
+
+/**
+ * Create a voice sound that ducks everything
+ */
+export function createVoiceSoundCue(
+    soundId: string,
+    startFrame: number,
+    options: Partial<Omit<SoundCue, "soundId" | "startFrame" | "bus">> = {}
+): SoundCue {
+    return createSoundCue(soundId, startFrame, {
+        ...options,
+        bus: "voice",
+        priority: 100,
+        duck: options.duck ?? {
+            targetBus: "music",
+            amount: 0.15,
+            attack: 5,
+            release: 40,
+        },
+    });
+}
+````
+
+## File: packages/core/src/audio/music-bed.ts
+````typescript
+/**
+ * Music Bed System - Background music with crossfade support
+ * 
+ * Handles:
+ * - Persistent background music
+ * - Mood-based selection
+ * - Crossfade between tracks
+ */
+
+import { MusicBed } from "../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface CrossfadeState {
+    outgoing?: MusicBed;
+    incoming?: MusicBed;
+    progress: number;  // 0-1
+}
+
+// =============================================================================
+// CROSSFADE FUNCTIONS
+// =============================================================================
+
+/**
+ * Compute volumes for crossfading between two music beds
+ */
+export function computeCrossfade(
+    outgoing: MusicBed | undefined,
+    incoming: MusicBed | undefined,
+    frame: number
+): { outVolume: number; inVolume: number } {
+    if (!outgoing && !incoming) {
+        return { outVolume: 0, inVolume: 0 };
+    }
+
+    if (!outgoing && incoming) {
+        // Just incoming - fade in
+        const fadeFrames = incoming.crossfadeFrames || 30;
+        const elapsed = frame - incoming.startFrame;
+        const progress = Math.min(1, elapsed / fadeFrames);
+        return { outVolume: 0, inVolume: incoming.baseGain * progress };
+    }
+
+    if (outgoing && !incoming) {
+        // Just outgoing - normal play
+        return { outVolume: outgoing.baseGain, inVolume: 0 };
+    }
+
+    // Both - crossfade
+    const crossfadeFrames = incoming!.crossfadeFrames || 30;
+    const elapsed = frame - incoming!.startFrame;
+    const progress = Math.min(1, elapsed / crossfadeFrames);
+
+    // Smooth curve for crossfade
+    const smoothProgress = smoothstep(progress);
+
+    return {
+        outVolume: outgoing!.baseGain * (1 - smoothProgress),
+        inVolume: incoming!.baseGain * smoothProgress,
+    };
+}
+
+/**
+ * Smoothstep function for natural crossfade
+ */
+function smoothstep(t: number): number {
+    return t * t * (3 - 2 * t);
+}
+
+// =============================================================================
+// MUSIC BED HELPERS
+// =============================================================================
+
+/**
+ * Create a music bed with sensible defaults
+ */
+export function createMusicBed(
+    soundId: string,
+    startFrame: number,
+    options: Partial<Omit<MusicBed, "id" | "soundId" | "startFrame">> = {}
+): MusicBed {
+    return {
+        id: `music_${soundId}_${startFrame}`,
+        soundId,
+        startFrame,
+        loop: options.loop ?? true,
+        baseGain: options.baseGain ?? 0.35,
+        moodTag: options.moodTag,
+        crossfadeFrames: options.crossfadeFrames ?? 30,
+    };
+}
+
+/**
+ * Create a tense atmosphere music bed
+ */
+export function createTenseMusicBed(
+    soundId: string,
+    startFrame: number
+): MusicBed {
+    return createMusicBed(soundId, startFrame, {
+        moodTag: "tense",
+        baseGain: 0.3,
+        crossfadeFrames: 45,
+    });
+}
+
+/**
+ * Create a dramatic music bed
+ */
+export function createDramaticMusicBed(
+    soundId: string,
+    startFrame: number
+): MusicBed {
+    return createMusicBed(soundId, startFrame, {
+        moodTag: "dramatic",
+        baseGain: 0.4,
+        crossfadeFrames: 20,
+    });
+}
+
+/**
+ * Create a calm music bed
+ */
+export function createCalmMusicBed(
+    soundId: string,
+    startFrame: number
+): MusicBed {
+    return createMusicBed(soundId, startFrame, {
+        moodTag: "calm",
+        baseGain: 0.25,
+        crossfadeFrames: 60,
+    });
+}
+
+// =============================================================================
+// MOOD SELECTION
+// =============================================================================
+
+export type MoodTag = "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
+
+/**
+ * Get music bed by mood (from a library)
+ */
+export function getMusicByMood(
+    mood: MoodTag,
+    library: MusicBed[]
+): MusicBed | undefined {
+    return library.find((bed) => bed.moodTag === mood);
+}
+
+/**
+ * Suggest mood based on conversation intensity
+ */
+export function suggestMood(params: {
+    messageRate: number;     // Messages per second
+    typingDuration: number;  // Frames of typing
+    hasConflict: boolean;    // Keywords detected
+}): MoodTag {
+    if (params.hasConflict) {
+        return "dramatic";
+    }
+
+    if (params.messageRate > 2) {
+        return "chaotic";
+    }
+
+    if (params.typingDuration > 60) {
+        return "tense";
+    }
+
+    return "calm";
+}
+````
+
+## File: packages/core/src/audio/policies.ts
+````typescript
+/**
+ * Audio Policies - Deterministic rules for audio behavior
+ * 
+ * Handles:
+ * - Spam gate (same sound repeated too fast)
+ * - Concurrency limits per bus
+ * - Priority-based sound selection
+ */
+
+import { SoundCue, AudioBus, AudioBusConfig, ActiveSound } from "../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface PolicyConfig {
+    spamGateFrames: number;           // Min frames between same sound
+    softVariant?: string;             // Alternative sound for spam
+    maxConcurrentPerBus: Record<AudioBus, number>;
+}
+
+// Default policy configuration
+export const DEFAULT_POLICY_CONFIG: PolicyConfig = {
+    spamGateFrames: 8,
+    softVariant: "_soft",
+    maxConcurrentPerBus: {
+        music: 1,
+        ui: 3,
+        sfx: 4,
+        voice: 1,
+        master: 10,
+    },
+};
+
+// Priority levels by bus type
+export const PRIORITY_LEVELS: Record<AudioBus, number> = {
+    voice: 100,
+    sfx: 50,
+    ui: 30,
+    music: 10,
+    master: 0,
+};
+
+// =============================================================================
+// SPAM GATE
+// =============================================================================
+
+/**
+ * Track recent sounds for spam detection
+ */
+export class SpamGate {
+    private recentSounds: Map<string, number> = new Map();
+    private config: PolicyConfig;
+
+    constructor(config: PolicyConfig = DEFAULT_POLICY_CONFIG) {
+        this.config = config;
+    }
+
+    /**
+     * Check if a sound should be dropped or softened due to spam
+     */
+    checkSpam(
+        soundId: string,
+        frame: number
+    ): { shouldPlay: boolean; alternateSound?: string } {
+        const lastFrame = this.recentSounds.get(soundId);
+
+        // Record this sound's frame
+        this.recentSounds.set(soundId, frame);
+
+        // First occurrence - always play
+        if (lastFrame === undefined) {
+            return { shouldPlay: true };
+        }
+
+        // Check if too soon
+        if (frame - lastFrame < this.config.spamGateFrames) {
+            // Try soft variant if available
+            const softId = soundId + (this.config.softVariant || "_soft");
+            return {
+                shouldPlay: false,
+                alternateSound: softId,
+            };
+        }
+
+        return { shouldPlay: true };
+    }
+
+    /**
+     * Reset spam tracking (for new episode)
+     */
+    reset(): void {
+        this.recentSounds.clear();
+    }
+
+    /**
+     * Clean old entries (call periodically)
+     */
+    cleanup(currentFrame: number, maxAge: number = 300): void {
+        for (const [soundId, frame] of this.recentSounds.entries()) {
+            if (currentFrame - frame > maxAge) {
+                this.recentSounds.delete(soundId);
+            }
+        }
+    }
+}
+
+// =============================================================================
+// CONCURRENCY LIMIT
+// =============================================================================
+
+/**
+ * Check if a sound cue is a SoundCue (not legacy ActiveSound)
+ */
+function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
+    return "bus" in sound;
+}
+
+/**
+ * Enforce concurrency limit per bus
+ * Returns the sounds that should continue playing (drops lowest priority)
+ */
+export function enforceBusConcurrency(
+    newCue: SoundCue,
+    activeCues: (SoundCue | ActiveSound)[],
+    maxConcurrent: number
+): { shouldAdd: boolean; toRemove: string[] } {
+    // Get active cues on same bus
+    const sameBusCues = activeCues.filter((cue): cue is SoundCue => {
+        return isSoundCue(cue) && cue.bus === newCue.bus;
+    });
+
+    // If under limit, allow
+    if (sameBusCues.length < maxConcurrent) {
+        return { shouldAdd: true, toRemove: [] };
+    }
+
+    // Sort by priority (lowest first)
+    const sorted = [...sameBusCues].sort((a, b) => a.priority - b.priority);
+
+    // If new cue has higher priority than lowest, replace it
+    if (sorted.length > 0 && newCue.priority > sorted[0].priority) {
+        return {
+            shouldAdd: true,
+            toRemove: [sorted[0].soundId],
+        };
+    }
+
+    // New cue doesn't make the cut
+    return { shouldAdd: false, toRemove: [] };
+}
+
+// =============================================================================
+// PRIORITY SYSTEM
+// =============================================================================
+
+/**
+ * Get default priority for a bus type
+ */
+export function getDefaultPriority(bus: AudioBus): number {
+    return PRIORITY_LEVELS[bus] ?? 50;
+}
+
+/**
+ * Sort sounds by priority (highest first)
+ */
+export function sortByPriority(sounds: SoundCue[]): SoundCue[] {
+    return [...sounds].sort((a, b) => b.priority - a.priority);
+}
+
+/**
+ * Check if a new sound should interrupt/replace an existing one
+ */
+export function shouldInterrupt(
+    existing: SoundCue,
+    incoming: SoundCue
+): boolean {
+    // Voice always wins
+    if (incoming.bus === "voice") {
+        return true;
+    }
+
+    // Higher priority wins
+    if (incoming.priority > existing.priority) {
+        return true;
+    }
+
+    return false;
+}
+
+// =============================================================================
+// COMBINED POLICY CHECK
+// =============================================================================
+
+export interface PolicyResult {
+    shouldPlay: boolean;
+    soundId: string;        // May be altered (soft variant)
+    toRemove: string[];     // Sounds to stop
+    reason?: string;        // For debugging
+}
+
+/**
+ * Run all policies on a sound before playing
+ */
+export function checkAllPolicies(
+    cue: SoundCue,
+    frame: number,
+    activeCues: (SoundCue | ActiveSound)[],
+    spamGate: SpamGate,
+    config: PolicyConfig = DEFAULT_POLICY_CONFIG
+): PolicyResult {
+    // 1. Spam gate
+    const spamResult = spamGate.checkSpam(cue.soundId, frame);
+    if (!spamResult.shouldPlay) {
+        if (spamResult.alternateSound) {
+            // Try soft variant
+            return {
+                shouldPlay: true,
+                soundId: spamResult.alternateSound,
+                toRemove: [],
+                reason: "spam_softened",
+            };
+        }
+        return {
+            shouldPlay: false,
+            soundId: cue.soundId,
+            toRemove: [],
+            reason: "spam_dropped",
+        };
+    }
+
+    // 2. Concurrency limit
+    const maxConcurrent = config.maxConcurrentPerBus[cue.bus] ?? 10;
+    const concurrencyResult = enforceBusConcurrency(cue, activeCues, maxConcurrent);
+    if (!concurrencyResult.shouldAdd) {
+        return {
+            shouldPlay: false,
+            soundId: cue.soundId,
+            toRemove: [],
+            reason: "concurrency_limit",
+        };
+    }
+
+    return {
+        shouldPlay: true,
+        soundId: cue.soundId,
+        toRemove: concurrencyResult.toRemove,
+    };
+}
 ````
 
 ## File: packages/core/src/camera/presets.ts
@@ -16829,194 +11531,114 @@ export function filterEventsForDevice(events: TimelineEvent[], deviceId: string)
 }
 ````
 
-## File: packages/core/src/plugin.ts
+## File: packages/core/src/notification-adapter.ts
 ````typescript
 /**
- * Plugin System - Self-contained app registration
+ * Notification Adapter System
  * 
- * Apps register themselves as plugins with all their dependencies:
- * - UI components
- * - State reducers  
- * - Sound effects
- * - Event types they handle
+ * Apps provide adapters to format and handle notifications.
  */
 
-import { WorldState } from "./types";
-import { AppReducer, ReducerRegistry } from "./engine";
+import { Notification, TimelineEvent } from "./types";
 
 // =============================================================================
-// PLUGIN TYPES
+// FORMATTED NOTIFICATION
 // =============================================================================
 
-/**
- * Props passed to all app view components
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: any;
-    platform?: "ios" | "android";
-    deviceId?: string;
-}
-
-/**
- * App view component type (generic, will be React.FC in renderer)
- */
-export type AppViewComponent = (props: AppViewProps) => any;
-
-/**
- * Plugin definition - everything an app needs to function
- */
-export interface TokovoPlugin {
-    /** Unique app ID (e.g., "app_whatsapp") */
-    id: string;
-
-    /** Display name */
-    name: string;
-
-    /** Plugin version */
-    version: string;
-
-    /** App icon for notifications/home screen */
+export interface FormattedNotification {
+    title: string;
+    body: string;
     icon?: string;
-
-    /** Primary color for theming */
-    primaryColor?: string;
-
-    /** React component to render the app view */
-    appView?: AppViewComponent;
-
-    /** State reducer for APP events */
-    reducer?: AppReducer;
-
-    /** Event types this plugin handles */
-    eventTypes?: string[];
-
-    /** Sound effect mappings */
-    sounds?: Record<string, string>;
-
-    /** Notification sound */
-    notificationSound?: string;
-
-    /** Default app state */
-    defaultState?: any;
+    iconBackground?: string;
+    accentColor?: string;
+    preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
+    actions?: Array<{ id: string; label: string; icon?: string }>;
+    sender?: { name: string; avatar?: string };
 }
 
 // =============================================================================
-// PLUGIN MANAGER
+// NOTIFICATION ADAPTER
 // =============================================================================
 
 /**
- * PluginManager - Central registry for all app plugins
+ * NotificationAdapter - App-specific notification formatting and handling
  */
-class PluginManagerClass {
-    private plugins = new Map<string, TokovoPlugin>();
-    private viewRegistry = new Map<string, AppViewComponent>();
+export interface NotificationAdapter {
+    /** App ID this adapter handles */
+    appId: string;
 
-    /**
-     * Register a plugin
+    /** Format notification for display */
+    format(notification: Notification): FormattedNotification;
+
+    /** 
+     * Handle action (tap, button press) - returns events to emit
+     * actionId: "open" (default tap), or button id
      */
-    register(plugin: TokovoPlugin): void {
-        if (this.plugins.has(plugin.id)) {
-            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+    handleAction?(actionId: string, notification: Notification): TimelineEvent[];
+
+    /** Measure height for deterministic layout */
+    measureHeight?(notification: Notification, viewport: { width: number; height: number }): number;
+}
+
+// =============================================================================
+// ADAPTER REGISTRY
+// =============================================================================
+
+class NotificationAdapterRegistryClass {
+    private adapters = new Map<string, NotificationAdapter>();
+
+    register(adapter: NotificationAdapter): void {
+        this.adapters.set(adapter.appId, adapter);
+        console.log(`[NotificationAdapters] Registered adapter for: ${adapter.appId}`);
+    }
+
+    get(appId: string): NotificationAdapter | undefined {
+        return this.adapters.get(appId);
+    }
+
+    format(notification: Notification): FormattedNotification {
+        const adapter = this.adapters.get(notification.appId);
+        if (adapter) {
+            return adapter.format(notification);
         }
-
-        this.plugins.set(plugin.id, plugin);
-
-        // Auto-register reducer
-        if (plugin.reducer) {
-            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-        }
-
-        // Store view component
-        if (plugin.appView) {
-            this.viewRegistry.set(plugin.id, plugin.appView);
-        }
-
-        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
-    }
-
-    /**
-     * Get a plugin by ID
-     */
-    get(id: string): TokovoPlugin | undefined {
-        return this.plugins.get(id);
-    }
-
-    /**
-     * Get app view component
-     */
-    getView(id: string): AppViewComponent | undefined {
-        return this.viewRegistry.get(id);
-    }
-
-    /**
-     * Get all registered plugins
-     */
-    getAll(): TokovoPlugin[] {
-        return Array.from(this.plugins.values());
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getAppIds(): string[] {
-        return Array.from(this.plugins.keys());
-    }
-
-    /**
-     * Check if plugin is registered
-     */
-    has(id: string): boolean {
-        return this.plugins.has(id);
-    }
-
-    /**
-     * Get plugin metadata for display
-     */
-    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
-        const plugin = this.plugins.get(id);
-        if (!plugin) return undefined;
+        // Default formatting
         return {
-            name: plugin.name,
-            icon: plugin.icon,
-            color: plugin.primaryColor,
+            title: notification.title,
+            body: notification.body,
+            icon: notification.icon,
+            preview: notification.preview,
+            actions: notification.actions,
         };
     }
 
-    /**
-     * Get sound for an event from plugin
-     */
-    getSound(pluginId: string, soundKey: string): string | undefined {
-        const plugin = this.plugins.get(pluginId);
-        return plugin?.sounds?.[soundKey];
+    handleAction(notification: Notification, actionId: string = "open"): TimelineEvent[] {
+        const adapter = this.adapters.get(notification.appId);
+        if (adapter?.handleAction) {
+            return adapter.handleAction(actionId, notification);
+        }
+        // Default: just open the app
+        return [{
+            at: Date.now(),
+            kind: "DEVICE",
+            deviceId: notification.deviceId || "phone",
+            type: "OPEN_APP",
+            appId: notification.appId,
+        }] as TimelineEvent[];
     }
 }
 
-export const PluginManager = new PluginManagerClass();
+export const NotificationAdapterRegistry = new NotificationAdapterRegistryClass();
 
 // =============================================================================
-// PLUGIN HELPERS
+// MEASUREMENT CONTRACT
 // =============================================================================
 
-/**
- * Create a plugin definition with defaults
- */
-export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
-    return {
-        ...config,
-        version: config.version ?? "1.0.0",
-        eventTypes: config.eventTypes ?? [],
-        sounds: config.sounds ?? {},
-    } as TokovoPlugin;
+export interface NotificationMeasurable {
+    measureHeight(notification: Notification, viewport: { width: number; height: number }): number;
 }
 
-/**
- * Register multiple plugins at once
- */
-export function registerPlugins(plugins: TokovoPlugin[]): void {
-    plugins.forEach(plugin => PluginManager.register(plugin));
-}
+/** Default height if adapter doesn't provide measurement */
+export const DEFAULT_NOTIFICATION_HEIGHT = 200; // pixels at device scale
 ````
 
 ## File: packages/core/src/sounds.ts
@@ -17594,6 +12216,152 @@ export function isEventForDevice(e: TimelineEvent, deviceId: string): boolean {
 }
 ````
 
+## File: packages/core/src/widget-registry.ts
+````typescript
+/**
+ * Widget Registry - Manages platform-specific widgets from plugins
+ * 
+ * Apps register widgets (Dynamic Island, status bar, etc.) and the registry
+ * resolves which widget to render based on priority and platform.
+ */
+
+import { WidgetSlot, WidgetMode, WidgetComponent } from "./plugin";
+import { Platform } from "./tokens";
+
+// =============================================================================
+// WIDGET REGISTRY
+// =============================================================================
+
+class WidgetRegistryClass {
+    private slots = new Map<string, WidgetSlot[]>();
+
+    /**
+     * Register widgets for an app
+     */
+    register(appId: string, widgets: WidgetSlot[]): void {
+        if (this.slots.has(appId)) {
+            console.warn(`[WidgetRegistry] Overwriting widgets for: ${appId}`);
+        }
+        this.slots.set(appId, widgets);
+        console.log(`[WidgetRegistry] Registered ${widgets.length} widgets for: ${appId}`);
+    }
+
+    /**
+     * Get widget for mode + platform with priority resolution
+     * Returns highest priority widget from active apps
+     */
+    resolve(
+        mode: WidgetMode,
+        platform: Platform,
+        activeAppIds: string[]
+    ): { appId: string; widget: WidgetSlot } | null {
+        let best: { appId: string; widget: WidgetSlot; priority: number } | null = null;
+
+        for (const appId of activeAppIds) {
+            const appWidgets = this.slots.get(appId);
+            if (!appWidgets) continue;
+
+            for (const widget of appWidgets) {
+                // Check mode and platform match
+                if (widget.mode !== mode) continue;
+                if (!widget.platforms.includes(platform)) continue;
+
+                // Higher priority wins
+                if (!best || widget.priority > best.priority) {
+                    best = { appId, widget, priority: widget.priority };
+                }
+            }
+        }
+
+        return best ? { appId: best.appId, widget: best.widget } : null;
+    }
+
+    /**
+     * Get all widgets for a mode (for stacking multiple)
+     */
+    getAll(
+        mode: WidgetMode,
+        platform: Platform,
+        activeAppIds: string[]
+    ): Array<{ appId: string; widget: WidgetSlot }> {
+        const results: Array<{ appId: string; widget: WidgetSlot }> = [];
+
+        for (const appId of activeAppIds) {
+            const appWidgets = this.slots.get(appId);
+            if (!appWidgets) continue;
+
+            for (const widget of appWidgets) {
+                if (widget.mode === mode && widget.platforms.includes(platform)) {
+                    results.push({ appId, widget });
+                }
+            }
+        }
+
+        // Sort by priority (highest first)
+        return results.sort((a, b) => b.widget.priority - a.widget.priority);
+    }
+
+    /**
+     * Get widgets for a specific app
+     */
+    getForApp(appId: string): WidgetSlot[] {
+        return this.slots.get(appId) || [];
+    }
+
+    /**
+     * Check if an app has widgets registered
+     */
+    hasWidgets(appId: string): boolean {
+        return this.slots.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs with widgets
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this.slots.keys());
+    }
+
+    /**
+     * Clear all registered widgets (for testing)
+     */
+    clear(): void {
+        this.slots.clear();
+    }
+}
+
+export const WidgetRegistry = new WidgetRegistryClass();
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Get the Dynamic Island widget for the current context
+ */
+export function getDynamicIslandWidget(
+    platform: Platform,
+    backgroundAppIds: string[]
+): { appId: string; component: WidgetComponent } | null {
+    const result = WidgetRegistry.resolve("dynamicIsland", platform, backgroundAppIds);
+    if (!result) return null;
+    return { appId: result.appId, component: result.widget.component };
+}
+
+/**
+ * Get notification widgets for display
+ */
+export function getNotificationWidgets(
+    platform: Platform,
+    appIds: string[]
+): Array<{ appId: string; component: WidgetComponent }> {
+    return WidgetRegistry.getAll("notification", platform, appIds).map(r => ({
+        appId: r.appId,
+        component: r.widget.component,
+    }));
+}
+````
+
 ## File: packages/core/package.json
 ````json
 {
@@ -17729,6 +12497,226 @@ export const breakupDramaSceneIR: SceneIR = createEpisode("breakup-drama-01", ep
 });
 
 export { breakupDramaSceneIR as default };
+````
+
+## File: packages/dsl/examples/full-cinematic-showcase.dsl.ts
+````typescript
+/**
+ * Full Cinematic Showcase DSL
+ * 
+ * Production-grade DSL episode demonstrating:
+ * - Cinematic camera movements (PAN, ZOOM, SHAKE)
+ * - Production audio (music, sounds, ducking)
+ * - WhatsApp drama story
+ * 
+ * This is the PROPER way to author episodes - using DSL, not JSON.
+ */
+
+import { episode, whatsapp, camera, audio } from "@tokovo/dsl";
+
+export const fullCinematicShowcase = episode("Full Cinematic Showcase")
+    .fps(30)
+    .duration(720)  // 24 seconds
+
+    // Initial state
+    .initialWorld({
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                ownerName: "me",
+                notifications: []
+            }
+        },
+        conversations: {
+            dm_ex: {
+                id: "dm_ex",
+                type: "dm",
+                name: "Ex 💔",
+                avatar: "",
+                messages: [],
+                typing: {}
+            }
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_ex"
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeDeviceId: "phone",
+            layout: {
+                mode: "SINGLE",
+                primaryDeviceId: "phone"
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0
+            },
+            deviceTransforms: {}
+        },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.3, maxConcurrent: 1 },
+                ui: { baseGain: 0.9, maxConcurrent: 3 },
+                sfx: { baseGain: 0.7, maxConcurrent: 4 },
+                voice: { baseGain: 1.0, maxConcurrent: 1 }
+            }
+        }
+    })
+
+    // =========================================================================
+    // BEAT 0: ESTABLISHING (0s)
+    // Background music + macro pan from bottom
+    // =========================================================================
+    .beat("music_start", 0)
+    .with(audio.dramaticMood({ volume: 0.25 }))
+
+    .beat("establishing_zoom", 0)
+    .with(camera.zoom(1.15, "bottom", 1, { easing: "linear" }))
+
+    .beat("pan_up", 1)
+    .with(camera.pan(0, -150, 75, { easing: "ease-in-out" }))
+
+    .beat("reveal_zoom", 30)
+    .with(camera.zoom(1.0, "center", 60, { easing: "ease-out" }))
+
+    // =========================================================================
+    // BEAT 1: FIRST MESSAGE (3s)
+    // Message arrives + sound + camera tracks
+    // =========================================================================
+    .beat("first_message", 90)
+    .with(whatsapp.receive("phone", "dm_ex", {
+        from: "Ex 💔",
+        type: "text",
+        text: "We need to talk."
+    }))
+    .with(audio.whatsappReceived())
+
+    .beat("track_message", 90)
+    .with(camera.pan(0, 50, 45, { easing: "ease-out" }))
+
+    .beat("focus_push", 100)
+    .with(camera.zoom(1.03, "center", 35, {
+        easing: "ease-out",
+        originX: 0.5,
+        originY: 0.75
+    }))
+
+    // =========================================================================
+    // BEAT 2: TYPING ANTICIPATION (5s)
+    // Typing indicator + sound + camera push
+    // =========================================================================
+    .beat("typing_start", 150)
+    .with(whatsapp.typingStart("phone", "dm_ex", "Ex 💔"))
+    .with(audio.typing(90))
+
+    .beat("tension_push", 150)
+    .with(camera.zoom(1.05, "bottom", 75, { easing: "ease-out" }))
+
+    // =========================================================================
+    // BEAT 3: THE REVEAL (8s)
+    // Long message drops - snap camera
+    // =========================================================================
+    .beat("typing_end", 240)
+    .with(whatsapp.typingEnd("phone", "dm_ex", "Ex 💔"))
+    .with(audio.typingStop())
+
+    .beat("reveal_message", 240)
+    .with(whatsapp.receive("phone", "dm_ex", {
+        from: "Ex 💔",
+        type: "text",
+        text: "I've been thinking about us a lot lately... and I don't think this is working anymore."
+    }))
+    .with(audio.whatsappReceived({ volume: 1.0 }))
+    .with(camera.zoom(1.12, "center", 8, { easing: "ease-out" }))
+
+    // =========================================================================
+    // BEAT 4: BREATHING ROOM (10s)
+    // Pull out wide
+    // =========================================================================
+    .beat("breathe", 300)
+    .with(camera.zoom(0.92, "center", 60, { easing: "ease-in-out" }))
+
+    // =========================================================================
+    // BEAT 5: RAPID FIRE ESCALATION (12s-16s)
+    // Quick cuts between speakers
+    // =========================================================================
+    .beat("hello", 360)
+    .with(whatsapp.receive("phone", "dm_ex", {
+        from: "Ex 💔",
+        type: "text",
+        text: "Hello?"
+    }))
+    .with(audio.whatsappReceived({ volume: 0.8 }))
+    .with(camera.zoom(1.06, "center", 8, { originX: 0.35, originY: 0.8 }))
+
+    .beat("reply_1", 385)
+    .with(whatsapp.send("phone", "dm_ex", {
+        type: "text",
+        text: "What do you mean?"
+    }))
+    .with(audio.whatsappSent())
+    .with(camera.zoom(1.09, "center", 8, { originX: 0.65, originY: 0.82 }))
+
+    .beat("accusation", 410)
+    .with(whatsapp.receive("phone", "dm_ex", {
+        from: "Ex 💔",
+        type: "text",
+        text: "You know exactly what I mean."
+    }))
+    .with(audio.whatsappReceived({ volume: 0.9 }))
+    .with(camera.zoom(1.13, "center", 6, { originX: 0.35 }))
+
+    .beat("confusion", 430)
+    .with(whatsapp.send("phone", "dm_ex", {
+        type: "text",
+        text: "I don't understand..."
+    }))
+    .with(audio.whatsappSent())
+    .with(camera.zoom(1.16, "center", 6, { originX: 0.65 }))
+
+    // =========================================================================
+    // BEAT 6: THE BOMB (16s)
+    // "It's over" - shake + dramatic sound
+    // =========================================================================
+    .beat("the_bomb", 480)
+    .with(whatsapp.receive("phone", "dm_ex", {
+        from: "Ex 💔",
+        type: "text",
+        text: "It's over."
+    }))
+    .with(audio.notification())
+    .with(camera.shake(12, 20, { decay: 0.5 }))
+    .with(camera.zoom(1.25, "center", 12, { originX: 0.4, originY: 0.88 }))
+
+    // =========================================================================
+    // BEAT 7: AFTERMATH (18s-24s)
+    // Reply, slow reset
+    // =========================================================================
+    .beat("aftermath", 540)
+    .with(whatsapp.send("phone", "dm_ex", {
+        type: "text",
+        text: "..."
+    }))
+    .with(audio.whatsappSent({ volume: 0.5 }))
+    .with(camera.zoom(1.0, "center", 90, { easing: "ease-in-out" }))
+
+    .beat("end", 660)
+
+    .build();
 ````
 
 ## File: packages/dsl/examples/multi-app-showcase.dsl.ts
@@ -18637,6 +13625,322 @@ export const mediaShowcaseSceneIR: SceneIR = createEpisode("whatsapp-media-showc
 export { mediaShowcaseSceneIR as default };
 ````
 
+## File: packages/dsl/src/author/audio-builder.ts
+````typescript
+/**
+ * Audio Builder
+ * 
+ * Fluent API for audio operations in DSL episodes.
+ * 
+ * AUDIO PRIMITIVES:
+ * - playSound: One-shot sound effect
+ * - music: Background music with optional crossfade
+ * - stopSound: Stop a specific sound instance
+ * - fadeVolume: Fade a sound's volume
+ */
+
+// =============================================================================
+// OPTION TYPES
+// =============================================================================
+
+export interface PlaySoundOptions {
+    volume?: number;      // 0-1, default 1.0
+    loop?: boolean;       // Default false
+    duration?: number;    // Frames, optional
+    bus?: "music" | "ui" | "sfx" | "voice";
+    instanceId?: string;  // For stopping later
+}
+
+export interface BackgroundMusicOptions {
+    volume?: number;       // 0-1, default 0.3
+    loop?: boolean;        // Default true
+    crossfade?: number;    // Frames to crossfade
+    mood?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
+}
+
+export interface FadeVolumeOptions {
+    duration?: number;    // Frames
+}
+
+// =============================================================================
+// AUDIO DSL FUNCTIONS
+// =============================================================================
+
+/**
+ * Audio DSL namespace - provides fluent builders for audio events
+ */
+export const audio = {
+    /**
+     * Play a sound effect
+     */
+    playSound(soundId: string, options: PlaySoundOptions = {}) {
+        return {
+            kind: "AUDIO" as const,
+            type: "PLAY_SOUND" as const,
+            soundId,
+            volume: options.volume ?? 1.0,
+            loop: options.loop ?? false,
+            duration: options.duration,
+            instanceId: options.instanceId,
+        };
+    },
+
+    /**
+     * Start background music
+     */
+    backgroundMusic(soundId: string, options: BackgroundMusicOptions = {}) {
+        return {
+            kind: "AUDIO" as const,
+            type: "BACKGROUND_MUSIC" as const,
+            soundId,
+            volume: options.volume ?? 0.3,
+            loop: options.loop ?? true,
+        };
+    },
+
+    /**
+     * Stop a sound by instance ID
+     */
+    stopSound(instanceId: string) {
+        return {
+            kind: "AUDIO" as const,
+            type: "STOP_SOUND" as const,
+            instanceId,
+        };
+    },
+
+    /**
+     * Fade a sound's volume
+     */
+    fadeVolume(instanceId: string, toVolume: number, options: FadeVolumeOptions = {}) {
+        return {
+            kind: "AUDIO" as const,
+            type: "FADE_VOLUME" as const,
+            instanceId,
+            toVolume,
+            duration: options.duration ?? 30,
+        };
+    },
+
+    // =========================================================================
+    // CONVENIENCE HELPERS
+    // =========================================================================
+
+    /**
+     * Play WhatsApp received notification
+     */
+    whatsappReceived(options: Partial<PlaySoundOptions> = {}) {
+        return audio.playSound("whatsapp_received", { bus: "ui", volume: 0.9, ...options });
+    },
+
+    /**
+     * Play WhatsApp sent sound
+     */
+    whatsappSent(options: Partial<PlaySoundOptions> = {}) {
+        return audio.playSound("whatsapp_sent", { bus: "ui", volume: 0.7, ...options });
+    },
+
+    /**
+     * Play typing sound (with loop)
+     */
+    typing(durationFrames: number, options: Partial<PlaySoundOptions> = {}) {
+        return audio.playSound("whatsapp_typing", {
+            bus: "sfx",
+            volume: 0.4,
+            loop: true,
+            duration: durationFrames,
+            instanceId: "typing",
+            ...options
+        });
+    },
+
+    /**
+     * Stop typing sound
+     */
+    typingStop() {
+        return audio.stopSound("typing");
+    },
+
+    /**
+     * Play notification sound
+     */
+    notification(options: Partial<PlaySoundOptions> = {}) {
+        return audio.playSound("notification", { bus: "ui", volume: 1.0, ...options });
+    },
+
+    /**
+     * Start tense background music
+     */
+    tenseMood(options: Partial<BackgroundMusicOptions> = {}) {
+        return audio.backgroundMusic("suspense", { volume: 0.25, mood: "tense", ...options });
+    },
+
+    /**
+     * Start dramatic background music
+     */
+    dramaticMood(options: Partial<BackgroundMusicOptions> = {}) {
+        return audio.backgroundMusic("dramatic", { volume: 0.3, mood: "dramatic", ...options });
+    },
+};
+````
+
+## File: packages/dsl/src/author/spotify-builder.ts
+````typescript
+/**
+ * Spotify Builder
+ * 
+ * DSL helpers for Spotify events (playback, notifications).
+ */
+
+// =============================================================================
+// SPOTIFY DSL HELPERS
+// =============================================================================
+
+export interface SpotifyTrackInfo {
+    name: string;
+    artist: string;
+    album?: string;
+    albumArt?: string;
+}
+
+export const spotify = {
+    /**
+     * Start playing a track (starts background music visualization)
+     */
+    play(track: SpotifyTrackInfo) {
+        return {
+            kind: "APP" as const,
+            appId: "app_spotify",
+            type: "PLAY_TRACK" as const,
+            track,
+        };
+    },
+
+    /**
+     * Pause current playback
+     */
+    pause() {
+        return {
+            kind: "APP" as const,
+            appId: "app_spotify",
+            type: "PAUSE" as const,
+        };
+    },
+
+    /**
+     * Resume playback
+     */
+    resume() {
+        return {
+            kind: "APP" as const,
+            appId: "app_spotify",
+            type: "RESUME" as const,
+        };
+    },
+
+    /**
+     * Skip to next track
+     */
+    skipNext() {
+        return {
+            kind: "APP" as const,
+            appId: "app_spotify",
+            type: "SKIP_NEXT" as const,
+        };
+    },
+
+    /**
+     * Skip to previous track
+     */
+    skipPrevious() {
+        return {
+            kind: "APP" as const,
+            appId: "app_spotify",
+            type: "SKIP_PREVIOUS" as const,
+        };
+    },
+
+    /**
+     * Show "Now Playing" notification
+     */
+    nowPlayingNotification(deviceId: string, track: SpotifyTrackInfo) {
+        return {
+            kind: "DEVICE" as const,
+            deviceId,
+            type: "SHOW_NOTIFICATION" as const,
+            appId: "app_spotify",
+            title: "Now Playing",
+            body: `${track.name} • ${track.artist}`,
+            mode: "headsup" as const,
+            icon: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Spotify_icon.svg/232px-Spotify_icon.svg.png",
+        };
+    },
+
+    /**
+     * Start Spotify in background (for status bar indicator)
+     */
+    startBackground(deviceId: string, track: SpotifyTrackInfo) {
+        return {
+            kind: "DEVICE" as const,
+            deviceId,
+            type: "START_BACKGROUND_APP" as const,
+            appId: "app_spotify",
+            indicator: "music" as const,
+            label: `${track.name} - ${track.artist}`,
+        };
+    },
+
+    /**
+     * Stop background playback
+     */
+    stopBackground(deviceId: string) {
+        return {
+            kind: "DEVICE" as const,
+            deviceId,
+            type: "STOP_BACKGROUND_APP" as const,
+            appId: "app_spotify",
+        };
+    },
+};
+
+// =============================================================================
+// SAMPLE TRACKS FOR DEMOS
+// =============================================================================
+
+export const DEMO_TRACKS: Record<string, SpotifyTrackInfo> = {
+    blindingLights: {
+        name: "Blinding Lights",
+        artist: "The Weeknd",
+        album: "After Hours",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+    },
+    asItWas: {
+        name: "As It Was",
+        artist: "Harry Styles",
+        album: "Harry's House",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273b46f74097655d7f353caab14",
+    },
+    antiHero: {
+        name: "Anti-Hero",
+        artist: "Taylor Swift",
+        album: "Midnights",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5",
+    },
+    heatWaves: {
+        name: "Heat Waves",
+        artist: "Glass Animals",
+        album: "Dreamland",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273712701c5e263efc8726b1464",
+    },
+    stayWithMe: {
+        name: "Stay With Me",
+        artist: "Sam Smith",
+        album: "In The Lonely Hour",
+        albumArt: "https://i.scdn.co/image/ab67616d0000b273f8dba7a87f3ae0c1c8f3c3a0",
+    },
+};
+````
+
 ## File: packages/dsl/src/index.ts
 ````typescript
 /**
@@ -19027,6 +14331,299 @@ export interface EpisodeConfig {
         }
     ]
 }
+````
+
+## File: packages/episodes/src/notification-showcase.dsl.ts
+````typescript
+/**
+ * Notification Showcase Episode
+ * 
+ * Demonstrates EVERY notification feature:
+ * - HeadsUp notifications in Dynamic Island
+ * - Different priority levels (passive, active, timeSensitive, critical)
+ * - Rich content with preview images
+ * - Action buttons
+ * - Replyable notifications
+ * - Notification updates (real-time changes)
+ * - Tap to open app
+ * - Swipe to dismiss
+ * - Inline reply
+ * - Notification grouping
+ * - Clear all
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    notificationDsl,
+    DEFAULT_BUS_CONFIG,
+} from "@tokovo/core";
+
+// =============================================================================
+// INITIAL WORLD STATE
+// =============================================================================
+
+export const notificationShowcaseWorld: WorldState = {
+    devices: {
+        phone: {
+            id: "phone",
+            profileId: "iphone16",
+            isLocked: false,
+            foregroundAppId: undefined, // Home screen
+            notifications: [],
+            backgroundApps: [],
+            notificationCenter: {
+                items: [],
+                headsUp: null,
+                headsUpQueue: [],
+                groups: [],
+            },
+        },
+    },
+    conversations: {},
+    appState: {},
+    camera: {
+        baseView: "APP_VIEW",
+        activeDeviceId: "phone",
+        layout: { mode: "SINGLE", primaryDeviceId: "phone" },
+        activeEffects: [],
+        transform: {
+            translateX: 0, translateY: 0, scale: 1, rotation: 0,
+            originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+        },
+        deviceTransforms: {},
+    },
+    audio: {
+        activeSounds: {},
+        buses: DEFAULT_BUS_CONFIG,
+    },
+};
+
+// =============================================================================
+// TIMELINE EVENTS
+// =============================================================================
+
+export const notificationShowcaseEvents: TimelineEvent[] = [
+    // =========================================================================
+    // ACT 1: BASIC NOTIFICATIONS (0-5s)
+    // =========================================================================
+
+    // Simple WhatsApp message (frame 0 = 0s)
+    notificationDsl.show(0, "phone", {
+        appId: "app_whatsapp",
+        title: "Sarah 💬",
+        body: "Hey! Are you coming tonight?",
+        priority: "active",
+        icon: "💬",
+    }),
+
+    // Auto-dismiss after ~3s, then Instagram (frame 90 = 3s)
+    notificationDsl.show(90, "phone", {
+        appId: "app_instagram",
+        title: "mike_photos",
+        body: "Liked your photo ❤️",
+        priority: "active",
+        icon: "📸",
+        threadId: "ig_likes",
+    }),
+
+    // =========================================================================
+    // ACT 2: TIME SENSITIVE NOTIFICATION (5-8s)
+    // =========================================================================
+
+    // Time sensitive notification (frame 150 = 5s)
+    notificationDsl.show(150, "phone", {
+        appId: "app_uber",
+        title: "🚗 Your Uber is arriving!",
+        body: "John is 2 min away in Toyota Prius",
+        priority: "timeSensitive",
+        icon: "🚗",
+        preview: {
+            kind: "text",
+            value: "License: ABC 1234",
+        },
+    }),
+
+    // =========================================================================
+    // ACT 3: RICH NOTIFICATION WITH ACTIONS (8-12s)
+    // =========================================================================
+
+    // Rich notification with image preview and action buttons (frame 240 = 8s)
+    notificationDsl.show(240, "phone", {
+        appId: "app_instagram",
+        title: "New post from @travel_vibes",
+        body: "Just landed in Bali! 🌴✨",
+        priority: "active",
+        icon: "📸",
+        preview: {
+            kind: "image",
+            value: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400",
+            aspectRatio: 1.5,
+        },
+        actions: [
+            { id: "like", label: "❤️ Like" },
+            { id: "comment", label: "💬 Comment" },
+        ],
+        threadId: "ig_posts",
+    }),
+
+    // =========================================================================
+    // ACT 4: REPLYABLE NOTIFICATION (12-16s)
+    // =========================================================================
+
+    // Replyable message notification (frame 360 = 12s)
+    notificationDsl.show(360, "phone", {
+        appId: "app_whatsapp",
+        title: "Sarah 💬",
+        body: "What time should I pick you up?",
+        priority: "active",
+        icon: "💬",
+        replyable: true,
+        actions: [
+            { id: "reply", label: "Reply" },
+            { id: "mark_read", label: "Mark as Read" },
+        ],
+        threadId: "sarah_chat",
+    }),
+
+    // User sends a quick reply (frame 420 = 14s)
+    notificationDsl.reply(420, "phone", "notif_360_app_whatsapp", "7:30 works!"),
+
+    // =========================================================================
+    // ACT 5: NOTIFICATION UPDATE (16-20s)
+    // =========================================================================
+
+    // Initial notification (frame 480 = 16s)
+    notificationDsl.show(480, "phone", {
+        appId: "app_messages",
+        title: "Group Chat: Team",
+        body: "Alex: Check the new designs",
+        priority: "active",
+        icon: "💬",
+        groupKey: "team_chat",
+        threadId: "group_team",
+    }),
+
+    // Update notification with more messages (frame 540 = 18s)
+    notificationDsl.update(540, "phone", "notif_480_app_messages", {
+        body: "3 new messages",
+        metadata: { messageCount: 3 },
+    }),
+
+    // =========================================================================
+    // ACT 6: NOTIFICATION GROUPING (20-25s)
+    // =========================================================================
+
+    // Multiple notifications from same app (frame 600-690)
+    notificationDsl.show(600, "phone", {
+        appId: "app_email",
+        title: "Newsletter",
+        body: "Your weekly digest is here",
+        priority: "passive",
+        icon: "📧",
+        groupKey: "emails",
+    }),
+
+    notificationDsl.show(630, "phone", {
+        appId: "app_email",
+        title: "Amazon",
+        body: "Your order has shipped!",
+        priority: "active",
+        icon: "📧",
+        groupKey: "emails",
+    }),
+
+    notificationDsl.show(660, "phone", {
+        appId: "app_email",
+        title: "GitHub",
+        body: "New pull request in tokovo/core",
+        priority: "active",
+        icon: "📧",
+        groupKey: "emails",
+    }),
+
+    notificationDsl.show(690, "phone", {
+        appId: "app_email",
+        title: "Slack",
+        body: "[#general] New message from @john",
+        priority: "active",
+        icon: "📧",
+        groupKey: "emails",
+    }),
+
+    // =========================================================================
+    // ACT 7: USER INTERACTIONS (25-30s)
+    // =========================================================================
+
+    // User taps notification to open app (frame 750 = 25s)
+    notificationDsl.tap(750, "phone", "notif_690_app_email"),
+
+    // User swipes to dismiss (frame 810 = 27s)
+    notificationDsl.swipe(810, "phone", "notif_660_app_email", "right", "dismiss"),
+
+    // =========================================================================
+    // ACT 8: CRITICAL NOTIFICATION (30-33s)
+    // =========================================================================
+
+    // Critical notification (doesn't auto-dismiss) (frame 900 = 30s)
+    notificationDsl.show(900, "phone", {
+        appId: "app_calendar",
+        title: "⚠️ Meeting in 5 minutes!",
+        body: "Team standup - Join Zoom meeting",
+        priority: "critical",
+        icon: "📅",
+        actions: [
+            { id: "join", label: "Join Now" },
+            { id: "snooze", label: "Snooze 5m" },
+        ],
+    }),
+
+    // =========================================================================
+    // ACT 9: CLEAR ALL (33-36s)
+    // =========================================================================
+
+    // Clear all notifications (frame 990 = 33s)
+    notificationDsl.clearAll(990, "phone"),
+
+    // =========================================================================
+    // ACT 10: SILENT NOTIFICATION (36s+)
+    // =========================================================================
+
+    // Silent notification (goes directly to shade, no headsUp) (frame 1080 = 36s)
+    notificationDsl.show(1080, "phone", {
+        appId: "app_weather",
+        title: "Weather Update",
+        body: "Rain expected tomorrow at 3pm",
+        mode: "silent",
+        priority: "passive",
+        icon: "🌧️",
+    }),
+
+    // Final notification to show we're done (frame 1140 = 38s)
+    notificationDsl.show(1140, "phone", {
+        appId: "app_system",
+        title: "✅ Notification Demo Complete",
+        body: "All features demonstrated!",
+        priority: "timeSensitive",
+        icon: "🎉",
+    }),
+];
+
+// =============================================================================
+// EPISODE EXPORT
+// =============================================================================
+
+export const notificationShowcaseEpisode = {
+    id: "notification-showcase",
+    name: "Notification Feature Showcase",
+    description: "Demonstrates all notification features: headsUp, priority levels, rich content, actions, replies, updates, grouping, interactions",
+    fps: 30,
+    durationInFrames: 1200,  // 40 seconds
+    initialWorld: notificationShowcaseWorld,
+    events: notificationShowcaseEvents,
+};
+
+export default notificationShowcaseEpisode;
 ````
 
 ## File: packages/episodes/package.json
@@ -20757,112 +16354,6 @@ export const UnlockTransition: React.FC<UnlockTransitionProps> = ({
 };
 ````
 
-## File: packages/renderer/src/AudioLayer.tsx
-````typescript
-/**
- * AudioLayer - Renders audio for the Tokovo timeline
- * 
- * Uses Remotion's <Audio> component to play sounds synchronized with video frames.
- * Supports both global sounds and per-device sounds.
- */
-
-import React from "react";
-import { Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
-import { WorldState, ActiveSound } from "@tokovo/core";
-import { getSoundPath } from "@tokovo/core";
-
-interface AudioLayerProps {
-    world: WorldState;
-    t: number;
-    focusDeviceId?: string;  // If provided, only play sounds for this device
-}
-
-/**
- * AudioLayer component - renders all active sounds as Remotion Audio components
- */
-export const AudioLayer: React.FC<AudioLayerProps> = ({ world, t, focusDeviceId }) => {
-    const frame = useCurrentFrame();
-
-    // Get audio state with safety check
-    const audio = world.audio;
-    if (!audio) {
-        return null;
-    }
-
-    // Filter sounds based on focusDeviceId
-    const activeSounds = Object.entries(audio.activeSounds).filter(([_, sound]) => {
-        // If no deviceId on sound, it's global - always play
-        if (!sound.deviceId) return true;
-        // If no focusDeviceId specified, play all sounds
-        if (!focusDeviceId) return true;
-        // Only play if device matches
-        return sound.deviceId === focusDeviceId;
-    });
-
-    return (
-        <>
-            {/* Active sounds */}
-            {activeSounds.map(([instanceId, sound]) => (
-                <SoundInstance
-                    key={instanceId}
-                    instanceId={instanceId}
-                    sound={sound}
-                    currentFrame={t}
-                />
-            ))}
-
-            {/* Background music */}
-            {audio.backgroundMusic && (
-                <Sequence from={audio.backgroundMusic.startFrame}>
-                    <Audio
-                        src={staticFile(getSoundPath(audio.backgroundMusic.soundId))}
-                        volume={audio.backgroundMusic.volume}
-                        loop={audio.backgroundMusic.loop}
-                    />
-                </Sequence>
-            )}
-        </>
-    );
-};
-
-/**
- * Individual sound instance - handles timing and volume
- */
-const SoundInstance: React.FC<{
-    instanceId: string;
-    sound: ActiveSound;
-    currentFrame: number;
-}> = ({ instanceId, sound, currentFrame }) => {
-    // Calculate if sound should be playing
-    const soundFrame = currentFrame - sound.startFrame;
-
-    // If sound has a duration and we're past it, don't render
-    if (sound.duration && soundFrame > sound.duration) {
-        return null;
-    }
-
-    // Calculate volume (could be fading)
-    let volume = sound.volume;
-    const fadeSound = sound as any;
-    if (fadeSound.fadeTarget !== undefined && fadeSound.fadeStartFrame !== undefined) {
-        const fadeProgress = Math.min(1, (currentFrame - fadeSound.fadeStartFrame) / fadeSound.fadeDuration);
-        volume = sound.volume + (fadeSound.fadeTarget - sound.volume) * fadeProgress;
-    }
-
-    return (
-        <Sequence from={sound.startFrame} durationInFrames={sound.duration || undefined}>
-            <Audio
-                src={staticFile(getSoundPath(sound.soundId))}
-                volume={Math.max(0, Math.min(1, volume))}
-                loop={sound.loop}
-            />
-        </Sequence>
-    );
-};
-
-export default AudioLayer;
-````
-
 ## File: packages/renderer/src/camera-composer.ts
 ````typescript
 /**
@@ -21124,6 +16615,268 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
         </div>
     );
 };
+````
+
+## File: packages/renderer/src/NotificationShade.tsx
+````typescript
+/**
+ * NotificationShade - Pull-down notification panel
+ * 
+ * Shows all pending notifications grouped by app.
+ * Used for both iOS and Android (with styling differences).
+ */
+
+import React from "react";
+import { NotificationCenterState, NotificationGroup, NotificationAdapterRegistry, Notification } from "@tokovo/core";
+
+interface NotificationShadeProps {
+    notificationCenter: NotificationCenterState;
+    platform?: "ios" | "android";
+    onClose?: () => void;
+}
+
+/**
+ * Single notification card in the shade
+ */
+const NotificationCard: React.FC<{
+    notification: Notification;
+    platform: "ios" | "android";
+}> = ({ notification, platform }) => {
+    const formatted = NotificationAdapterRegistry.format(notification);
+    const isIOS = platform === "ios";
+
+    return (
+        <div
+            style={{
+                background: isIOS ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.95)",
+                backdropFilter: isIOS ? "blur(20px)" : undefined,
+                borderRadius: isIOS ? 30 : 12,
+                padding: "20px 24px",
+                marginBottom: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
+            }}
+        >
+            {/* App icon */}
+            <div
+                style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: isIOS ? 15 : 8,
+                    background: formatted.iconBackground || "#ddd",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 32,
+                    flexShrink: 0,
+                }}
+            >
+                {formatted.icon || "📱"}
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                    style={{
+                        color: "#000",
+                        fontSize: 22,
+                        fontWeight: 600,
+                        marginBottom: 4,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
+                    {formatted.title}
+                </div>
+                <div
+                    style={{
+                        color: "#666",
+                        fontSize: 20,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
+                    {formatted.body}
+                </div>
+            </div>
+
+            {/* Time indicator */}
+            <div style={{ color: "#999", fontSize: 18, flexShrink: 0 }}>
+                now
+            </div>
+        </div>
+    );
+};
+
+/**
+ * Grouped notifications (collapsed)
+ */
+const GroupedNotifications: React.FC<{
+    group: NotificationGroup;
+    platform: "ios" | "android";
+}> = ({ group, platform }) => {
+    const isIOS = platform === "ios";
+    const latestNotif = group.notifications[0];
+    const formatted = NotificationAdapterRegistry.format(latestNotif);
+
+    return (
+        <div
+            style={{
+                background: isIOS ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.95)",
+                backdropFilter: isIOS ? "blur(20px)" : undefined,
+                borderRadius: isIOS ? 30 : 12,
+                padding: "20px 24px",
+                marginBottom: 12,
+                boxShadow: "0 2px 12px rgba(0,0,0,0.1)",
+            }}
+        >
+            {/* Header with app info */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                <div
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 8,
+                        background: formatted.iconBackground || "#ddd",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 20,
+                    }}
+                >
+                    {formatted.icon || "📱"}
+                </div>
+                <div style={{ fontSize: 20, fontWeight: 600, color: "#333" }}>
+                    {group.appId.replace("app_", "").toUpperCase()}
+                </div>
+                <div style={{ fontSize: 18, color: "#999", marginLeft: "auto" }}>
+                    {group.count} notifications
+                </div>
+            </div>
+
+            {/* Stacked preview */}
+            {group.notifications.slice(0, 3).map((n, i) => (
+                <div
+                    key={n.id}
+                    style={{
+                        padding: "8px 0",
+                        borderTop: i > 0 ? "1px solid rgba(0,0,0,0.1)" : undefined,
+                        fontSize: 18,
+                        color: "#333",
+                    }}
+                >
+                    <strong>{n.title}</strong>: {n.body}
+                </div>
+            ))}
+
+            {group.count > 3 && (
+                <div style={{ fontSize: 16, color: "#999", marginTop: 8 }}>
+                    +{group.count - 3} more
+                </div>
+            )}
+        </div>
+    );
+};
+
+/**
+ * NotificationShade Component
+ */
+export const NotificationShade: React.FC<NotificationShadeProps> = ({
+    notificationCenter,
+    platform = "ios",
+    onClose,
+}) => {
+    const isIOS = platform === "ios";
+    const activeGroups = notificationCenter.groups.filter(g => g.count > 0);
+
+    if (activeGroups.length === 0) {
+        return (
+            <div
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    background: "rgba(0,0,0,0.3)",
+                    backdropFilter: "blur(30px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 2000,
+                }}
+            >
+                <div style={{ color: "white", fontSize: 36, opacity: 0.7 }}>
+                    No Notifications
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                background: isIOS ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.4)",
+                backdropFilter: "blur(30px)",
+                padding: "150px 40px 100px",
+                boxSizing: "border-box",
+                overflowY: "auto",
+                zIndex: 2000,
+            }}
+        >
+            {/* Header */}
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                marginBottom: 30,
+            }}>
+                <div style={{ color: "white", fontSize: 40, fontWeight: 700 }}>
+                    {isIOS ? "Notification Center" : "Notifications"}
+                </div>
+                {onClose && (
+                    <button
+                        onClick={onClose}
+                        style={{
+                            background: "rgba(255,255,255,0.2)",
+                            border: "none",
+                            borderRadius: 20,
+                            padding: "10px 20px",
+                            color: "white",
+                            fontSize: 24,
+                            cursor: "pointer",
+                        }}
+                    >
+                        ✕
+                    </button>
+                )}
+            </div>
+
+            {/* Notifications */}
+            {activeGroups.map(group =>
+                group.collapsed ? (
+                    <GroupedNotifications key={group.key} group={group} platform={platform} />
+                ) : (
+                    group.notifications.map(n => (
+                        <NotificationCard key={n.id} notification={n} platform={platform} />
+                    ))
+                )
+            )}
+        </div>
+    );
+};
+
+export default NotificationShade;
 ````
 
 ## File: packages/renderer/src/types.ts
@@ -21615,86 +17368,6 @@ const layout = computeLayout({
 }
 ````
 
-## File: .gitignore
-````
-# Dependencies
-node_modules
-.pnpm-store
-
-# Next.js
-.next
-out
-build
-dist
-
-# Remotion
-.remotion
-render
-
-# Turbo
-.turbo
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-*.env
-*.env.*
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDEs
-.vscode
-.idea
-*.swp
-*.swo
-````
-
-## File: .tool-versions
-````
-nodejs 25.2.0
-````
-
-## File: package.json
-````json
-{
-    "name": "tokovo-monorepo",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "build": "turbo run build",
-        "dev": "turbo run dev",
-        "lint": "turbo run lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
-    },
-    "devDependencies": {
-        "turbo": "latest",
-        "prettier": "latest"
-    },
-    "packageManager": "pnpm@9.0.0",
-    "engines": {
-        "node": ">=18"
-    }
-}
-````
-
-## File: pnpm-workspace.yaml
-````yaml
-packages:
-  - "apps/*"
-  - "packages/*"
-````
-
 ## File: tsconfig.base.json
 ````json
 {
@@ -21711,1803 +17384,6 @@ packages:
         "declarationMap": true,
         "sourceMap": true
     }
-}
-````
-
-## File: turbo.json
-````json
-{
-    "$schema": "https://turbo.build/schema.json",
-    "tasks": {
-        "build": {
-            "dependsOn": [
-                "^build"
-            ],
-            "outputs": [
-                ".next/**",
-                "!.next/cache/**",
-                "dist/**"
-            ]
-        },
-        "lint": {},
-        "dev": {
-            "cache": false,
-            "persistent": true
-        }
-    }
-}
-````
-
-## File: apps/docs/pages/apps/_meta.json
-````json
-{
-    "index": "Overview",
-    "whatsapp": "WhatsApp",
-    "twitter": "Twitter/X",
-    "building-apps": "Building Apps"
-}
-````
-
-## File: apps/docs/pages/apps/building-apps.mdx
-````
----
-title: Building Apps
-description: Architecture guide for building production-ready messaging apps
----
-
-# Building Apps
-
-This guide explains the architecture for building production-ready messaging apps in Tokovo. Follow this pattern to create apps that are:
-
-- ✅ Pixel-perfect UI
-- ✅ Fully configurable
-- ✅ DSL-compatible
-- ✅ Remotion-compatible
-
----
-
-## Architecture Overview
-
-```
-packages/apps-{appname}/
-├── src/
-│   ├── config/                 # Configuration layer
-│   │   ├── layout-config.ts    # Heights, scroll, animations
-│   │   ├── theme.ts            # Colors, typography, styling
-│   │   └── index.ts            # Exports
-│   ├── components/             # UI components
-│   │   ├── Header.tsx
-│   │   ├── MessageBubble.tsx
-│   │   ├── MediaBubbles.tsx
-│   │   └── index.ts
-│   ├── runtime.ts              # Event reducer
-│   ├── plugin.ts               # App registration
-│   ├── ui.tsx                  # Main renderer
-│   └── index.ts
-├── package.json
-└── tsconfig.json
-```
-
----
-
-## Step 1: Layout Configuration
-
-Create configurable height calculations:
-
-```typescript
-// config/layout-config.ts
-export interface MessageLayoutConfig {
-    heights: {
-        text: { base: number; lineHeight: number; charsPerLine: number };
-        image: { default: number; withCaption: number };
-        video: { default: number; withCaption: number };
-        voice: { default: number };
-        // ... app-specific types
-    };
-    additions: {
-        reaction: number;
-        reply: number;
-        senderName: number;
-        timestamp: number;
-    };
-    scroll: {
-        lockToBottom: boolean;
-        smoothScrollDuration: number;
-        easing: "linear" | "easeOut" | "easeInOut";
-    };
-    animation: {
-        messageAppearDuration: number;
-        messageAppearOffset: number;
-    };
-    spacing: {
-        gap: number;
-        topPadding: number;
-        bottomPadding: number;
-        bubbleMargin: number;
-        bubbleMaxWidth: number;
-    };
-}
-
-export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
-    // ... defaults
-};
-
-export function calculateMessageHeight(
-    msg: MessageForHeight,
-    config: MessageLayoutConfig
-): number {
-    // Calculate based on type + add-ons
-}
-```
-
----
-
-## Step 2: Theme Configuration
-
-Create configurable theming:
-
-```typescript
-// config/theme.ts
-export interface AppTheme {
-    mode: "light" | "dark";
-    colors: {
-        bubble: { myBubble: string; otherBubble: string; /* ... */ };
-        header: { background: string; title: string; /* ... */ };
-        input: { background: string; field: string; /* ... */ };
-        system: { accent: string; /* ... */ };
-    };
-    typography: {
-        message: FontConfig;
-        timestamp: FontConfig;
-        // ...
-    };
-    bubble: {
-        borderRadius: number;
-        maxWidth: number;
-        showTail: boolean;
-    };
-}
-
-export const LIGHT_THEME: AppTheme = { /* ... */ };
-export const DARK_THEME: AppTheme = { /* ... */ };
-```
-
----
-
-## Step 3: Runtime Reducer
-
-Handle timeline events:
-
-```typescript
-// runtime.ts
-export function reduce(
-    world: WorldState,
-    event: TimelineEvent,
-    t: number
-): WorldState {
-    if (event.kind !== "APP" || event.appId !== APP_ID) {
-        return world;
-    }
-    
-    switch (event.type) {
-        case "MESSAGE_RECEIVED":
-            return handleMessageReceived(world, event, t);
-        case "MESSAGE_SENT":
-            return handleMessageSent(world, event, t);
-        case "TYPING_START":
-            return handleTypingStart(world, event);
-        case "TYPING_END":
-            return handleTypingEnd(world, event);
-        case "REACTION_ADDED":
-            return handleReactionAdded(world, event);
-        case "SCREEN_NAVIGATED":
-            return handleScreenNavigated(world, event);
-        // ... app-specific events
-        default:
-            return world;
-    }
-}
-```
-
----
-
-## Step 4: UI Components
-
-Create Remotion-compatible components:
-
-```tsx
-// components/MessageBubble.tsx
-export function MessageBubble({ 
-    msg, 
-    layout,
-    theme 
-}: MessageBubbleProps) {
-    // Use frame-based animations (no CSS @keyframes!)
-    const frame = useCurrentFrame();
-    
-    // Apply layout from config
-    const opacity = layout.opacity;
-    const translateY = layout.translateY;
-    
-    // Use theme colors
-    const bgColor = msg.from === "me" 
-        ? theme.colors.bubble.myBubble 
-        : theme.colors.bubble.otherBubble;
-    
-    return (
-        <div style={{
-            backgroundColor: bgColor,
-            borderRadius: theme.bubble.borderRadius,
-            opacity,
-            transform: `translateY(${translateY}px)`
-        }}>
-            {/* Content */}
-        </div>
-    );
-}
-```
-
-### Remotion Rules
-
-> [!IMPORTANT]
-> - **No CSS @keyframes** - Use `useCurrentFrame()` for animations
-> - **No useEffect** - All state from props
-> - **Deterministic** - Same props = same render
-
----
-
-## Step 5: Main UI Renderer
-
-Compose the complete app:
-
-```tsx
-// ui.tsx
-export function AppUI({ 
-    world,
-    layout,
-    theme,
-    deviceId,
-    conversationId
-}: AppUIProps) {
-    const conversation = world.conversations[conversationId];
-    
-    return (
-        <div style={{ 
-            height: "100%",
-            backgroundColor: theme.colors.system.chatBackground
-        }}>
-            <Header 
-                contactName={conversation.name}
-                theme={theme}
-            />
-            <MessageList
-                messages={conversation.messages}
-                layout={layout}
-                theme={theme}
-            />
-            <InputArea theme={theme} />
-        </div>
-    );
-}
-```
-
----
-
-## Step 6: Plugin Registration
-
-Register the app:
-
-```typescript
-// plugin.ts
-import { registerAppReducer } from "@tokovo/core";
-import { reduce } from "./runtime";
-
-const APP_ID = "app_myapp";
-
-registerAppReducer(APP_ID, {
-    reduce,
-    initialState: {
-        screen: "chat",
-        conversationId: null,
-    },
-});
-```
-
----
-
-## Step 7: DSL Integration
-
-Add DSL methods for your app:
-
-```typescript
-// In packages/dsl/src/author/beat-builder.ts
-class BeatBuilder {
-    // App-specific methods
-    sendSticker(packId: string, stickerId: string): MessageHandle {
-        // Push app-specific operation
-    }
-    
-    reactTo(msg: MessageHandle, emoji: string): void {
-        // Add reaction operation
-    }
-}
-```
-
----
-
-## Checklist for New Apps
-
-- [ ] Create package structure (`packages/apps-{name}`)
-- [ ] Define layout config with all message types
-- [ ] Define theme with light/dark modes
-- [ ] Implement runtime reducer
-- [ ] Create UI components (Remotion-compatible)
-- [ ] Register plugin
-- [ ] Add DSL methods for app-specific features
-- [ ] Document in `apps/docs/pages/apps/{name}.mdx`
-- [ ] Add to `apps/docs/pages/apps/_meta.json`
-
----
-
-## Reference Implementation
-
-See the WhatsApp app for a complete reference:
-
-- [layout-config.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/config/layout-config.ts)
-- [whatsapp-theme.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/config/whatsapp-theme.ts)
-- [runtime.ts](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/runtime.ts)
-- [ui.tsx](file:///Users/nishit.gupta/personal/tokovo/packages/apps-whatsapp/src/ui.tsx)
-````
-
-## File: apps/docs/pages/apps/twitter.mdx
-````
----
-title: Twitter/X
-description: Twitter/X iOS dark mode configuration and usage
----
-
-# Twitter/X
-
-Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagement actions.
-
-## Features
-
-- ✅ Timeline feed with tweets
-- ✅ Tweet text with @mentions and #hashtags
-- ✅ Media grids (1-4 images)
-- ✅ Verified badges (blue, gold, grey)
-- ✅ Like, retweet, reply, quote actions
-- ✅ View counts and engagement metrics
-- ✅ Quote tweets (embedded)
-- ✅ Reply context
-- ✅ Header with For You / Following tabs
-- ✅ Bottom navigation (Home, Search, Grok, Notifications, Messages)
-- ✅ Compose FAB button
-- ✅ Tweet detail screen
-- ✅ Profile screen
-- ✅ Notifications screen
-- ✅ Search/Explore screen
-- ✅ Poll component
-- ✅ Compose modal
-
-## DSL Usage
-
-### Receiving Tweets
-
-```typescript
-d.beat("timeline", b => {
-    // Tweet from verified user
-    const tweet = b.tweetReceived(
-        { 
-            name: "Elon Musk", 
-            handle: "elonmusk", 
-            verified: "blue" 
-        },
-        "The future of AI is here 🚀",
-        {
-            likeCount: 89000,
-            retweetCount: 12800,
-            replyCount: 5432,
-            viewCount: 2400000
-        }
-    );
-    
-    // Tweet with media
-    b.tweetReceived(
-        { name: "ESPN", handle: "espn", verified: "gold" },
-        "BREAKING NEWS",
-        {
-            media: [
-                { url: "https://example.com/img1.jpg", type: "image" },
-                { url: "https://example.com/img2.jpg", type: "image" }
-            ]
-        }
-    );
-});
-```
-
-### Posting Tweets
-
-```typescript
-d.beat("post", b => {
-    const myTweet = b.postTweet(
-        "Just shipped a new feature! 🚀 #buildinpublic",
-        {
-            author: { name: "You", handle: "yourhandle", verified: "blue" }
-        }
-    );
-});
-```
-
-### Engagement Actions
-
-```typescript
-d.beat("engagement", b => {
-    // Like a tweet
-    b.likeTweet(tweetRef);
-    
-    // Retweet
-    b.retweetTweet(tweetRef);
-    
-    // Quote tweet with comment
-    b.quoteTweet(tweetRef, "This is huge! 🔥");
-    
-    // Reply to tweet
-    b.replyTweet(tweetRef, "Completely agree!");
-    
-    // Bookmark
-    b.bookmarkTweet(tweetRef);
-});
-```
-
-## Theme Configuration
-
-Dark mode colors matching iOS X app:
-
-```typescript
-import { twitterColors, twitterTypography, twitterSpacing } from "@tokovo/apps-twitter/config";
-
-// Colors
-twitterColors.background.primary    // #000000 (pure black)
-twitterColors.brand.blue            // #1D9BF0 (X blue)
-twitterColors.engagement.like       // #F91880 (pink heart)
-twitterColors.engagement.retweet    // #00BA7C (green)
-twitterColors.verified.blue         // #1D9BF0
-twitterColors.verified.gold         // #E2B719
-twitterColors.verified.grey         // #829AAB
-twitterColors.border.primary        // #2F3336
-
-// Typography (scaled 3x for Remotion)
-twitterTypography.sizes.displayName  // 45px
-twitterTypography.sizes.tweetText    // 45px
-twitterTypography.sizes.engagement   // 39px
-twitterTypography.weights.bold       // 700
-
-// Spacing
-twitterSpacing.avatarSize            // 120px
-twitterSpacing.tweetPadding          // 48px
-twitterSpacing.horizontalPadding     // 48px
-```
-
-## DSL ↔ Runtime Sync
-
-The Twitter DSL methods emit standard Tokovo events:
-
-| DSL Method | IR Op | Timeline Event | Runtime Action |
-|------------|-------|----------------|----------------|
-| `tweetReceived()` | `ReceiveMessage` | `MESSAGE_RECEIVED` | Creates tweet in timeline |
-| `postTweet()` | `SendMessage` | `MESSAGE_SENT` | Creates user's tweet |
-| `likeTweet()` | `ReactionAdded` (❤️) | `REACTION_ADDED` | Sets `isLiked=true` |
-| `retweetTweet()` | `ReactionAdded` (🔁) | `REACTION_ADDED` | Sets `isRetweeted=true` |
-| `quoteTweet()` | `SendMessage` (meta.type=quote) | `MESSAGE_SENT` | Creates quote tweet |
-| `replyTweet()` | `SendMessage` (meta.type=reply) | `MESSAGE_SENT` | Creates reply |
-| `bookmarkTweet()` | `ReactionAdded` (🔖) | `REACTION_ADDED` | Sets `isBookmarked=true` |
-
-**Conversation ID**: `__twitter_timeline__` identifies Twitter events.
-
-## Components
-
-| Component | Description |
-|-----------|-------------|
-| `Header` | X logo, profile avatar, For You/Following tabs |
-| `BottomNav` | 5-tab nav: Home, Search, Grok, Notifications, Messages |
-| `Tweet` | Full tweet with avatar, text, media, actions |
-| `Avatar` | Profile picture with verified badge (small/medium/large) |
-| `TweetActions` | Reply, RT, Like, Views, Bookmark, Share |
-| `MediaGrid` | 1-4 image layouts with video overlays |
-| `TweetDetail` | Full thread view with expanded tweet and replies |
-| `Profile` | User profile with banner, bio, and tweet tabs |
-| `Notifications` | Notification list with like/RT/follow/mention types |
-| `Search` | Explore screen with trending topics |
-| `Poll` | Voting UI with results |
-| `ComposeModal` | Tweet composition with character count |
-
-## Screens
-
-| Screen | Route | Description |
-|--------|-------|-------------|
-| `timeline` | Home | Main feed with tweets |
-| `tweet-detail` | Thread | Single tweet + replies |
-| `profile` | Profile | User's profile page |
-| `notifications` | Notifications | Activity feed |
-| `search` | Explore | Search + trending |
-| `messages` | DMs | Direct messages |
-
-## File Structure
-
-```
-packages/apps-twitter/
-├── src/
-│   ├── config/
-│   │   ├── twitter-theme.ts     # Colors, typography, borders
-│   │   └── layout-config.ts     # Heights, media grids
-│   ├── components/
-│   │   ├── Avatar.tsx           # Profile pic + badges
-│   │   ├── Tweet.tsx            # Main tweet component
-│   │   ├── TweetActions.tsx     # Engagement bar
-│   │   ├── MediaGrid.tsx        # Image layouts
-│   │   ├── Header.tsx           # Top navigation
-│   │   ├── BottomNav.tsx        # Bottom tabs
-│   │   ├── TweetDetail.tsx      # Thread view
-│   │   ├── Profile.tsx          # User profile
-│   │   ├── Notifications.tsx    # Activity feed
-│   │   ├── Search.tsx           # Explore
-│   │   ├── Poll.tsx             # Voting UI
-│   │   └── ComposeModal.tsx     # Composition
-│   ├── runtime.ts               # Event reducer
-│   ├── plugin.ts                # Registration
-│   ├── ui.tsx                   # Main renderer
-│   └── index.ts                 # Exports
-```
-
-## Example Episode
-
-See `packages/dsl/examples/twitter-showcase.dsl.ts` for a complete timeline demo.
-
-For multi-app examples combining Twitter with WhatsApp and notifications, see `packages/dsl/examples/multi-app-showcase.dsl.ts`.
-````
-
-## File: apps/docs/pages/apps/whatsapp.mdx
-````
----
-title: WhatsApp
-description: WhatsApp iOS/Android configuration and usage
----
-
-# WhatsApp
-
-Production-ready WhatsApp iOS and Android UI with all message types.
-
-## Features
-
-- ✅ Text messages with read receipts
-- ✅ Voice notes with waveform animation
-- ✅ Images with captions
-- ✅ Videos with thumbnails
-- ✅ GIFs (inline playback)
-- ✅ Typing indicators
-- ✅ System messages
-- ✅ Chats list screen
-- ✅ Reactions
-- ✅ Reply/quote UI
-- 🔜 Link previews
-
-## DSL Usage
-
-### Basic Chat
-
-```typescript
-d.beat("conversation", b => {
-    b.receive("Alice", "Hey, how are you?");
-    b.send("I'm good! Just got home");
-    b.receiveVoice("Alice", 8);  // 8 second voice note
-});
-```
-
-### Media Messages
-
-```typescript
-d.beat("media-exchange", b => {
-    // Image with caption
-    b.receiveImage("Alice", "https://example.com/photo.jpg", {
-        caption: "Look at this sunset! 🌅",
-        height: 450
-    });
-    
-    // Video with thumbnail
-    b.sendVideo("https://example.com/clip.mp4", 15, {
-        thumbnailUrl: "https://example.com/thumb.jpg"
-    });
-    
-    // GIF
-    b.sendGif("https://media.giphy.com/media/abc/giphy.gif");
-});
-```
-
-## Layout Configuration
-
-Configure message heights, scroll behavior, and animations:
-
-```typescript
-import { MessageLayoutConfig } from "@tokovo/apps-whatsapp/config";
-
-const config: MessageLayoutConfig = {
-    heights: {
-        text: { base: 88, lineHeight: 66, charsPerLine: 26 },
-        image: { default: 400, withCaption: 480 },
-        video: { default: 400, withCaption: 480 },
-        gif: { default: 300 },
-        voice: { default: 180 },
-        system: { default: 80 },
-        deleted: { default: 100 }
-    },
-    additions: {
-        reaction: 36,
-        reply: 90,
-        linkPreview: 180,
-        senderName: 45,
-        timestamp: 40
-    },
-    scroll: {
-        lockToBottom: true,
-        smoothScrollDuration: 15,
-        easing: "easeOut",
-        newMessageScrollDelay: 3,
-        overscanTop: 200,
-        overscanBottom: 200,
-        maxScrollSpeed: 60
-    },
-    animation: {
-        messageAppearDuration: 12,
-        messageAppearOffset: 30,
-        typingPulseDuration: 45,
-        voiceWaveformSpeed: 2
-    },
-    spacing: {
-        gap: 12,
-        topPadding: 48,
-        bottomPadding: 120,
-        bubbleMargin: 36,
-        bubbleMaxWidth: 0.78
-    }
-};
-```
-
-## Theme Configuration
-
-Customize colors and typography:
-
-```typescript
-import { WhatsAppTheme, iOS_WHATSAPP_LIGHT } from "@tokovo/apps-whatsapp/config";
-
-// Use built-in themes
-const lightTheme = iOS_WHATSAPP_LIGHT;
-const darkTheme = iOS_WHATSAPP_DARK;
-
-// Or customize
-const customTheme: WhatsAppTheme = {
-    mode: "light",
-    colors: {
-        bubble: {
-            myBubble: "#DCF8C6",      // Your message background
-            otherBubble: "#FFFFFF",   // Others' message background
-            myText: "#000000",
-            otherText: "#000000",
-            timestamp: "#8E8E93",
-            link: "#007AFF"
-        },
-        header: {
-            background: "#F6F6F6",
-            title: "#000000",
-            subtitle: "#8E8E93",
-            icons: "#007AFF"
-        },
-        system: {
-            accent: "#25D366",         // WhatsApp green
-            readReceipt: "#53BDEB",    // Blue checkmarks
-            chatBackground: "#E5DDD5"  // Chat wallpaper
-        }
-        // ... see full theme interface
-    },
-    typography: {
-        message: { family: "SF Pro", size: 51, weight: 400, lineHeight: 66 }
-        // ...
-    },
-    bubble: {
-        borderRadius: 54,
-        maxWidth: 0.78,
-        showTail: true
-    }
-};
-```
-
-## Components
-
-| Component | Description |
-|-----------|-------------|
-| `Header` | Contact name, avatar, status, call buttons |
-| `MessageBubble` | Text messages with tails |
-| `ImageMessageBubble` | Photos with captions |
-| `VideoMessageBubble` | Videos with thumbnails and play overlay |
-| `GifMessageBubble` | Animated GIFs |
-| `VoiceMessageBubble` | Voice notes with waveform |
-| `TypingBubble` | Animated typing indicator |
-| `SystemMessage` | Group events, time separators |
-| `ChatsListScreen` | Main chat list with search |
-````
-
-## File: apps/docs/pages/architecture/_meta.json
-````json
-{
-    "index": "Overview",
-    "boundaries": "Layer Boundaries",
-    "determinism": "Determinism",
-    "data-flow": "Data Flow",
-    "monorepo": "Monorepo (Turbo)",
-    "plugins": "Plugin System"
-}
-````
-
-## File: apps/docs/pages/dsl/_meta.json
-````json
-{
-    "index": "Overview",
-    "reference": "Complete Reference",
-    "episode": "episode()",
-    "device": "Device Builder",
-    "beat": "Beat Builder",
-    "camera": "Camera Builder",
-    "scene": "Scene Builder",
-    "semantic": "Semantic Annotations",
-    "pov": "POV Control"
-}
-````
-
-## File: apps/docs/pages/dsl/reference.mdx
-````
----
-title: DSL Reference
-description: Complete reference for the Tokovo DSL
----
-
-# DSL Reference
-
-The Tokovo DSL (Domain Specific Language) is a fluent TypeScript API for authoring episodes.
-
----
-
-## Episode Builder
-
-The entry point for creating episodes:
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-const sceneIR = episode("my-episode", ep => {
-    ep.config({ fps: 30, title: "My Episode" });
-    
-    ep.device("MyPhone", "iphone16", d => {
-        d.owner("Alice");  // For multi-POV
-        d.app("app_whatsapp");
-        d.conversation("dm_bob", { name: "Bob" });
-        
-        d.beat("intro", b => {
-            b.receive("Bob", "Hey there!");
-            b.wait("1s");
-            b.send("Hi!");
-        });
-    });
-});
-```
-
----
-
-## Device Builder
-
-Defines a device's story:
-
-| Method | Description |
-|--------|-------------|
-| `owner(name)` | Set owner for multi-POV (their messages on right) |
-| `app(appId)` | Set the app (default: `app_whatsapp`) |
-| `conversation(id, config)` | Define a conversation |
-| `beat(name, fn)` | Define a beat (group of actions) |
-
----
-
-## Beat Builder
-
-Actions within a beat:
-
-### Messages
-
-```typescript
-b.send("Hello");                      // Send text
-b.receive("Bob", "Hi there!");        // Receive text
-b.typing("Bob").for("2s");            // Typing indicator
-```
-
-### Media Messages
-
-```typescript
-b.sendImage("https://...");           // Send image
-b.receiveImage("Bob", "https://...", { caption: "Look!" });
-
-b.sendVideo("https://...", 30);       // 30 second video
-b.receiveVideo("Bob", "https://...", 15);
-
-b.sendGif("https://...");             // GIF
-b.receiveGif("Bob", "https://...");
-
-b.sendVoice(10);                      // 10 second voice note
-b.receiveVoice("Bob", 8);
-```
-
-### Navigation (Phase 12)
-
-```typescript
-b.showScreen("chats-list");           // Navigate to screen
-b.openChat("dm_alice");               // Open specific chat
-b.goBack();                           // Go back
-```
-
-### Control
-
-```typescript
-b.wait("2s");                         // Wait
-b.concurrent([                         // Parallel actions
-    t => t.receive("A", "Hi"),
-    t => t.receive("B", "Hello"),
-]);
-```
-
-### Reactions & Drama Events
-
-```typescript
-const msg = b.receive("Bob", "I love you");
-b.react(msg, "me", "❤️");             // Add reaction to message
-
-b.screenshot();                        // Screenshot notification
-b.missedCall("Bob");                   // Missed call indicator
-```
-
----
-
-## Camera Builder (Phase 13)
-
-For multi-POV episodes:
-
-```typescript
-ep.camera(c => {
-    c.at("3s").cut("BobPhone");
-    c.at("6s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-    c.at("12s").layout("PIP", "BobPhone", "AlicePhone");
-});
-```
-
-| Method | Description |
-|--------|-------------|
-| `at(time)` | Set time for following operations |
-| `cut(deviceId)` | Cut to device |
-| `layout(type, primary, secondary)` | Set multi-device layout |
-
-Layout types: `SINGLE`, `SPLIT_HORIZONTAL`, `SPLIT_VERTICAL`, `PIP`
-
----
-
-## Scene Builder (Phase 13)
-
-Cross-device coordination:
-
-```typescript
-ep.scene("argument", s => {
-    s.device("AlicePhone", d => {
-        d.conversation("dm_bob");
-        d.beat("alice-message", b => b.send("Where are you?"));
-    });
-    
-    s.device("BobPhone", d => {
-        d.conversation("dm_alice");
-        d.beat("bob-sees", b => b.wait("1s"));
-    });
-});
-```
-
----
-
-## Full Example
-
-```typescript
-import { episode } from "@tokovo/dsl";
-
-export const multiPOV = episode("two-sides", ep => {
-    ep.config({ fps: 30, title: "Two Sides of the Story" });
-
-    // Alice's phone
-    ep.device("AlicePhone", "iphone16", d => {
-        d.owner("Alice");
-        d.app("app_whatsapp");
-        d.conversation("dm_bob", { name: "Bob 💕" });
-        
-        d.beat("waiting", b => {
-            b.showScreen("chats-list");
-            b.wait("2s");
-            b.openChat("dm_bob");
-        });
-        
-        d.beat("messages", b => {
-            b.send("Where are you?");
-            b.wait("3s");
-            b.receive("Bob 💕", "On my way!");
-        });
-    });
-
-    // Bob's phone
-    ep.device("BobPhone", "iphone16", d => {
-        d.owner("Bob");
-        d.app("app_whatsapp");
-        d.conversation("dm_alice", { name: "Alice ❤️" });
-        
-        d.beat("reply", b => {
-            b.receive("Alice ❤️", "Where are you?");
-            b.typing("Bob").for("1s");
-            b.send("On my way!");
-        });
-    });
-
-    // Camera cuts
-    ep.camera(c => {
-        c.at("0s").cut("AlicePhone");
-        c.at("5s").cut("BobPhone");
-        c.at("10s").layout("SPLIT_HORIZONTAL", "AlicePhone", "BobPhone");
-    });
-});
-```
-````
-
-## File: apps/docs/pages/guides/_meta.json
-````json
-{
-    "quickstart": "Quick Start",
-    "first-episode": "Your First Episode",
-    "multi-device": "Multi-Device Stories",
-    "ai-generation": "AI Generation",
-    "ai-contract": "AI Contract",
-    "custom-apps": "Custom Apps"
-}
-````
-
-## File: apps/docs/pages/ir/_meta.json
-````json
-{
-    "index": "Overview",
-    "scene-ir": "Scene IR",
-    "timeline-ir": "Timeline IR",
-    "trace": "Traces",
-    "constraints": "Constraints"
-}
-````
-
-## File: apps/docs/pages/ir/scene-ir.mdx
-````
-# Scene IR
-
-Scene IR is the **semantic truth** — what happens in your story without frame timing.
-
-## SceneIR
-
-The top-level structure:
-
-```typescript
-interface SceneIR {
-  readonly episodeId: string;
-  readonly meta: EpisodeMeta;
-  readonly devices: DeviceScene[];
-}
-```
-
-## EpisodeMeta
-
-Episode-level metadata (extends EpisodeConfig):
-
-```typescript
-interface EpisodeMeta extends EpisodeConfig {
-  readonly fps: number;
-  readonly durationInFrames?: number;
-}
-```
-
-## DeviceScene
-
-A device's story:
-
-```typescript
-interface DeviceScene {
-  readonly deviceId: string;
-  readonly profileId: string;
-  readonly appId: string;
-  readonly conversations: ConversationDef[];
-  readonly beats: Beat[];
-}
-```
-
-## Beat
-
-Named group of operations:
-
-```typescript
-interface Beat {
-  readonly name: string;
-  readonly ops: SceneOp[];
-  readonly meta?: BeatMeta;
-}
-```
-
-## Scene Operations
-
-### Core Operations
-
-| Operation | Fields | Description |
-|-----------|--------|-------------|
-| `WaitOp` | duration | Advance cursor, no event |
-| `TypingStartOp` | actor, conversationId | Start typing indicator |
-| `TypingEndOp` | actor, conversationId | End typing indicator |
-| `SendMessageOp` | actor, text, conversationId, meta? | Send message |
-| `ReceiveMessageOp` | actor, text, conversationId, meta? | Receive message |
-| `ReadMessageOp` | ref | Mark message as read |
-| `DeleteMessageOp` | ref | Delete message |
-| `ConcurrentOp` | tracks (SceneOp[][]) | Parallel execution |
-
-### POV Operations
-
-| Operation | Fields | Description |
-|-----------|--------|-------------|
-| `POVSwitchOp` | deviceId, transition? | Switch perspective |
-| `SplitPOVOp` | devices, layout | Split-screen view |
-
-### Reserved Signals
-
-| Operation | Fields | Description |
-|-----------|--------|-------------|
-| `AddReactionOp` | ref, actor, emoji | Add reaction |
-| `VoiceNoteSentOp` | actor, conversationId, durationMs | Send voice note |
-| `VoiceNoteReceivedOp` | actor, conversationId, durationMs | Receive voice note |
-| `MissedCallOp` | actor, conversationId, callType? | Missed call |
-| `OnlineStatusChangedOp` | actor, status | Status change |
-| `ScreenshotTakenOp` | conversationId | Screenshot alert |
-| `BlockedUserOp` | actor | User blocked |
-
-## Full SceneOp Type
-
-```typescript
-type SceneOp =
-  // Core
-  | WaitOp
-  | TypingStartOp
-  | TypingEndOp
-  | SendMessageOp
-  | ReceiveMessageOp
-  | ReadMessageOp
-  | DeleteMessageOp
-  | ConcurrentOp
-  // Media
-  | SendImageOp
-  | ReceiveImageOp
-  | SendVideoOp
-  | ReceiveVideoOp
-  | SendGifOp
-  | ReceiveGifOp
-  | SendVoiceOp
-  | ReceiveVoiceOp
-  // POV
-  | POVSwitchOp
-  | SplitPOVOp
-  // Reserved signals
-  | ReactionAddedOp
-  | ScreenshotTakenOp
-  | MissedCallOp
-  | OnlineStatusChangedOp
-  | BlockedUserOp;
-```
-
-## MessageRef
-
-Full context for message references:
-
-```typescript
-interface MessageRef {
-  readonly _type: "MessageRef";
-  readonly id: string;
-  readonly deviceId: string;
-  readonly appId: string;
-  readonly conversationId: string;
-}
-```
-
-Create with factory function:
-
-```typescript
-import { messageRef } from "@tokovo/ir";
-
-const ref = messageRef(
-  "msg_1",
-  "AlicePhone",
-  "app_whatsapp",
-  "dm_bob"
-);
-```
-
-## MessageMeta
-
-Metadata attached to messages:
-
-```typescript
-interface MessageMeta {
-  type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
-  
-  // Media
-  imageUrl?: string;
-  videoUrl?: string;
-  thumbnailUrl?: string;
-  gifUrl?: string;
-  caption?: string;
-  duration?: number;
-  height?: number;
-
-  // Interactions
-  reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
-  replyTo?: { messageId: string; text: string; from: string; type?: string };
-  edited?: boolean;
-
-  timestamp?: string;
-  semantic?: SemanticMeta;
-  [key: string]: unknown;
-}
-```
-
-## Duration Expressions
-
-Human-readable durations:
-
-```typescript
-type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
-
-// Examples
-"1.5s"      // 1.5 seconds
-"500ms"     // 500 milliseconds
-"45frames"  // 45 frames
-```
-
-Parse with:
-
-```typescript
-import { parseDuration } from "@tokovo/ir";
-
-parseDuration("1.5s", 30);  // → 45 frames
-parseDuration("500ms", 30); // → 15 frames
-```
-
-## Example Scene IR
-
-```typescript
-const sceneIR: SceneIR = {
-  episodeId: "drama-01",
-  meta: {
-    fps: 30,
-    pacing: "slow-burn",
-    director: "auto",
-  },
-  devices: [{
-    deviceId: "AlicePhone",
-    profileId: "iphone16",
-    appId: "app_whatsapp",
-    conversations: [{
-      id: "dm_bob",
-      name: "Bob",
-      type: "dm",
-    }],
-    beats: [{
-      name: "tension",
-      meta: { tempo: "slow", function: "buildup" },
-      ops: [
-        { kind: "Wait", duration: "2s" },
-        { kind: "TypingStart", actor: "Bob", conversationId: "dm_bob" },
-        { kind: "Wait", duration: "1.5s" },
-        { kind: "TypingEnd", actor: "Bob", conversationId: "dm_bob" },
-        {
-          kind: "ReceiveMessage",
-          actor: "Bob",
-          text: "We need to talk.",
-          conversationId: "dm_bob",
-          meta: {
-            semantic: {
-              mood: "tense",
-              intensity: 0.8,
-            }
-          }
-        },
-      ],
-    }],
-  }],
-};
-```
-````
-
-## File: apps/docs/pages/ir/timeline-ir.mdx
-````
-# Timeline IR
-
-Timeline IR is the **frame-based execution contract** — exactly when each event fires.
-
-## TimelineIR
-
-Top-level structure:
-
-```typescript
-interface TimelineIR {
-  readonly episodeId: string;
-  readonly fps: number;
-  readonly durationInFrames: number;
-  readonly ops: TimelineOp[];
-}
-```
-
-## Timeline Operations
-
-### Device Operations
-
-| Operation | Fields | Phase |
-|-----------|--------|-------|
-| `DeviceUnlockedOp` | at, deviceId | DEVICE (0) |
-| `DeviceLockedOp` | at, deviceId | DEVICE (0) |
-
-### Navigation Operations
-
-| Operation | Fields | Phase |
-|-----------|--------|-------|
-| `AppOpenedOp` | at, deviceId, appId | NAV (10) |
-| `ConversationOpenedOp` | at, deviceId, appId, conversationId | NAV (10) |
-
-### App Operations
-
-| Operation | Fields | Phase |
-|-----------|--------|-------|
-| `TypingStartedOp` | at, appId, conversationId, actor | APP (20) |
-| `TypingEndedOp` | at, appId, conversationId, actor | APP (20) |
-| `MessageReceivedOp` | at, appId, conversationId, message | APP (20) |
-| `MessageSentOp` | at, appId, conversationId, message | APP (20) |
-| `MessageReadOp` | at, appId, conversationId, messageId | APP (20) |
-| `MessageDeletedOp` | at, appId, conversationId, messageId | APP (20) |
-| `ReactionAddedOp` | at, appId, conversationId, messageId, reaction | APP (20) |
-
-## Full TimelineOp Type
-
-```typescript
-type TimelineOp =
-  // Device
-  | DeviceUnlockedOp
-  | DeviceLockedOp
-  // Navigation
-  | AppOpenedOp
-  | ConversationOpenedOp
-  // App
-  | TypingStartedOp
-  | TypingEndedOp
-  | MessageReceivedOp
-  | MessageSentOp
-  | MessageReadOp
-  | MessageDeletedOp
-  | ReactionAddedOp;
-```
-
-## Every Op Has `at`
-
-The defining feature of Timeline IR:
-
-```typescript
-interface DeviceUnlockedOp {
-  readonly kind: "DeviceUnlocked";
-  readonly at: number;  // Frame number
-  readonly deviceId: string;
-  readonly trace?: Trace;
-}
-```
-
-## Ordering
-
-Operations are sorted by:
-
-1. `at` — Frame number (primary)
-2. `phase` — Category (DEVICE < NAV < APP < FX)
-3. `priority` — Within phase
-4. `trackId` — For concurrent operations
-5. `opIndex` — Stable tie-breaker
-
-### Phases
-
-```typescript
-enum Phase {
-  DEVICE = 0,   // Unlock, lock
-  NAV = 10,     // Open app, navigate
-  APP = 20,     // Messages, typing
-  FX = 30,      // Effects (reserved)
-}
-```
-
-## Message in Timeline
-
-```typescript
-interface TimelineMessage {
-  readonly id: string;
-  readonly from: string;
-  readonly text: string;
-  readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
-  readonly timestamp?: string;
-  
-  // Media
-  readonly imageUrl?: string;
-  readonly videoUrl?: string;
-  readonly thumbnailUrl?: string;
-  readonly gifUrl?: string;
-  readonly caption?: string;
-  readonly duration?: number;
-  readonly height?: number;
-
-  // Interactions
-  readonly reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
-  readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
-  readonly edited?: boolean;
-
-  readonly semantic?: SemanticMeta;
-}
-```
-
-## Trace
-
-Every operation includes debugging info:
-
-```typescript
-interface Trace {
-  readonly episodeId: string;
-  readonly beat: string;
-  readonly trackId: number;
-  readonly opIndex: number;
-  readonly phase: number;
-  readonly priority: number;
-  readonly sceneOpIndex?: number;
-  readonly deviceId?: string;
-  readonly conversationId?: string;
-}
-```
-
-## Example Timeline IR
-
-```typescript
-const timeline: TimelineIR = {
-  episodeId: "drama-01",
-  fps: 30,
-  durationInFrames: 300,
-  ops: [
-    // Frame 0: Device setup
-    {
-      kind: "DeviceUnlocked",
-      at: 0,
-      deviceId: "AlicePhone",
-      trace: { episodeId: "drama-01", beat: "tension", trackId: 0, opIndex: 0, phase: 0, priority: 0 }
-    },
-    {
-      kind: "AppOpened",
-      at: 0,
-      deviceId: "AlicePhone",
-      appId: "app_whatsapp",
-      trace: { /* ... */ }
-    },
-    {
-      kind: "ConversationOpened",
-      at: 0,
-      deviceId: "AlicePhone",
-      appId: "app_whatsapp",
-      conversationId: "dm_bob",
-      trace: { /* ... */ }
-    },
-    
-    // Frame 60: Typing starts (after 2s wait)
-    {
-      kind: "TypingStarted",
-      at: 60,
-      appId: "app_whatsapp",
-      conversationId: "dm_bob",
-      actor: "Bob",
-      trace: { /* ... */ }
-    },
-    
-    // Frame 105: Typing ends (after 1.5s)
-    {
-      kind: "TypingEnded",
-      at: 105,
-      appId: "app_whatsapp",
-      conversationId: "dm_bob",
-      actor: "Bob",
-      trace: { /* ... */ }
-    },
-    
-    // Frame 105: Message arrives
-    {
-      kind: "MessageReceived",
-      at: 105,
-      appId: "app_whatsapp",
-      conversationId: "dm_bob",
-      message: {
-        id: "msg_AlicePhone_dm_bob_1",
-        from: "Bob",
-        text: "We need to talk.",
-        type: "text",
-        semantic: { mood: "tense", intensity: 0.8 }
-      },
-      trace: { /* ... */ }
-    },
-  ]
-};
-```
-
-## Scene IR → Timeline IR
-
-The compiler transforms:
-
-| Scene IR | Timeline IR |
-|----------|-------------|
-| `Wait` | Cursor advances, no op |
-| `TypingStart` | `TypingStarted` at cursor |
-| `TypingEnd` | `TypingEnded` at cursor |
-| `SendMessage` | `MessageSent` at cursor |
-| `ReceiveMessage` | `MessageReceived` at cursor |
-| `ReadMessage` | `MessageRead` at cursor |
-| `DeleteMessage` | `MessageDeleted` at cursor |
-| `AddReaction` | `ReactionAdded` at cursor |
-
-Plus auto-inserted glue events:
-- `DeviceUnlocked` at frame 0
-- `AppOpened` at frame 0
-- `ConversationOpened` at frame 0
-````
-
-## File: apps/docs/pages/runtime/_meta.json
-````json
-{
-    "index": "Overview",
-    "engine": "Engine",
-    "events": "Event Types",
-    "world-state": "WorldState"
-}
-````
-
-## File: apps/docs/pages/verification.mdx
-````
-# Documentation Verification Checklist
-
-This document verifies that **every file, topic, and code module** in Tokovo is documented.
-
-Last verified: **2025-12-13**
-
----
-
-## ✅ Repository Root Files
-
-| File | Status | Purpose |
-|------|--------|---------|
-| [`DOCS_MASTER_PLAN.md`](file:///Users/nishit.gupta/personal/tokovo/DOCS_MASTER_PLAN.md) | ✅ | Documentation constitution |
-| [`CONTRIBUTING.md`](file:///Users/nishit.gupta/personal/tokovo/CONTRIBUTING.md) | ✅ | Contributor guide |
-| [`DESIGN_PHILOSOPHY.md`](file:///Users/nishit.gupta/personal/tokovo/DESIGN_PHILOSOPHY.md) | ✅ | Design decisions |
-| [`ALL_IN.md`](file:///Users/nishit.gupta/personal/tokovo/ALL_IN.md) | ✅ | Complete reference |
-| `README.md` | ⏳ | Project overview |
-
----
-
-## ✅ Package Coverage
-
-### packages/ir (8 files)
-
-| File | Documented | Page |
-|------|------------|------|
-| `scene.ts` | ✅ | [Scene IR](/ir/scene-ir) |
-| `timeline.ts` | ✅ | [Timeline IR](/ir/timeline-ir) |
-| `semantic.ts` | ✅ | [Semantic](/dsl/semantic) |
-| `trace.ts` | ✅ | [Traces](/ir/trace) |
-| `ordering.ts` | ✅ | [Timeline IR - Ordering](/ir/timeline-ir#ordering) |
-| `constraints.ts` | ✅ | [Constraints](/ir/constraints) |
-| `validate.ts` | ✅ | [Constraints](/ir/constraints) |
-| `index.ts` | ✅ | [IR Overview](/ir) |
-
-### packages/dsl (5 files)
-
-| File | Documented | Page |
-|------|------------|------|
-| `episode-builder.ts` | ✅ | [episode()](/dsl/episode) |
-| `device-builder.ts` | ✅ | [Device Builder](/dsl/device) |
-| `beat-builder.ts` | ✅ | [Beat Builder](/dsl/beat) |
-| `types.ts` | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
-| `index.ts` | ✅ | [DSL Overview](/dsl) |
-
-### packages/compiler (9 files)
-
-| File | Documented | Page |
-|------|------------|------|
-| `compile.ts` | ✅ | [Compiler](/compiler) |
-| `context.ts` | ✅ | [Compiler](/compiler) |
-| `passes/normalize.ts` | ✅ | [Passes](/compiler/passes#1-normalize) |
-| `passes/resolve-refs.ts` | ✅ | [Passes](/compiler/passes#2-resolverefs) |
-| `passes/virtual-device.ts` | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
-| `passes/time-lowering.ts` | ✅ | [Passes](/compiler/passes#4-timelowering) |
-| `passes/validate.ts` | ✅ | [Passes](/compiler/passes#5-validate) |
-| `passes/sort.ts` | ✅ | [Passes](/compiler/passes#6-sort) |
-| `index.ts` | ✅ | [Compiler](/compiler) |
-
-### packages/adapters (4 files)
-
-| File | Documented | Page |
-|------|------------|------|
-| `adapter.ts` | ✅ | [Adapters](/compiler/adapters) |
-| `registry.ts` | ✅ | [Adapters](/compiler/adapters#adapter-registration) |
-| `whatsapp/index.ts` | ✅ | [Adapters](/compiler/adapters#whatsapp-adapter) |
-| `index.ts` | ✅ | [Adapters](/compiler/adapters) |
-
-### packages/core (10+ files)
-
-| File | Documented | Page |
-|------|------------|------|
-| `types.ts` | ✅ | [WorldState](/runtime/world-state) |
-| `engine.ts` | ✅ | [Engine](/runtime/engine) |
-| `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
-| `director-lite/types.ts` | ✅ | [DirectorLite](/director) |
-| `director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
-| `director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
-| `director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
-| `camera/` | ✅ | [Effects](/director/effects) |
-| `tokens.ts` | ✅ | [Glossary](/glossary) |
-| `constants.ts` | ✅ | Embedded in relevant docs |
-
-### packages/renderer
-
-| File | Documented | Page |
-|------|------------|------|
-| `TokovoRenderer.tsx` | ✅ | [Runtime](/runtime) |
-| `MultiDeviceRenderer.tsx` | ✅ | [Multi-Device](/guides/multi-device) |
-| `DeviceFrame.tsx` | ✅ | [Custom Apps](/guides/custom-apps) |
-| `registry.ts` | ✅ | [Plugins](/architecture/plugins) |
-
----
-
-## ✅ Topic Coverage
-
-### Architecture (11 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Four layers | ✅ | [Architecture](/architecture) |
-| Layer boundaries | ✅ | [Boundaries](/architecture/boundaries) |
-| Determinism | ✅ | [Determinism](/architecture/determinism) |
-| Data flow | ✅ | [Data Flow](/architecture/data-flow) |
-| Package dependencies | ✅ | [Architecture](/architecture) |
-| Monorepo structure | ✅ | [Monorepo](/architecture/monorepo) |
-| Turborepo config | ✅ | [Monorepo](/architecture/monorepo#turborepo-configuration) |
-| pnpm workspaces | ✅ | [Monorepo](/architecture/monorepo#pnpm-workspaces) |
-| Plugin system | ✅ | [Plugins](/architecture/plugins) |
-| PluginManager API | ✅ | [Plugins](/architecture/plugins#pluginmanager-api) |
-| Creating plugins | ✅ | [Plugins](/architecture/plugins#creating-a-plugin) |
-
-### DSL (17 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| episode() | ✅ | [episode()](/dsl/episode) |
-| EpisodeConfig | ✅ | [episode() - Config](/dsl/episode#episodeconfig-reference) |
-| Device builder | ✅ | [Device](/dsl/device) |
-| conversation() | ✅ | [Device](/dsl/device#conversationid-config) |
-| Beat builder | ✅ | [Beat](/dsl/beat) |
-| wait() | ✅ | [Beat](/dsl/beat#waitduration) |
-| typing() | ✅ | [Beat](/dsl/beat#typingactorforduration) |
-| send() | ✅ | [Beat](/dsl/beat#sendtext-options) |
-| receive() | ✅ | [Beat](/dsl/beat#receiveactor-text-options) |
-| read() | ✅ | [Beat](/dsl/beat#readref) |
-| delete() | ✅ | [Beat](/dsl/beat#deleteref) |
-| concurrent() | ✅ | [Beat](/dsl/beat#concurrent-operations) |
-| pov() | ✅ | [POV](/dsl/pov) |
-| splitPov() | ✅ | [POV](/dsl/pov#split-pov) |
-| SemanticMeta | ✅ | [Semantic](/dsl/semantic) |
-| BeatMeta | ✅ | [Semantic](/dsl/semantic#beat-metadata) |
-| Mood values | ✅ | [Semantic](/dsl/semantic#mood) |
-
-### IR (10 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| IR overview | ✅ | [IR](/ir) |
-| Scene IR | ✅ | [Scene IR](/ir/scene-ir) |
-| SceneOp types | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
-| Timeline IR | ✅ | [Timeline IR](/ir/timeline-ir) |
-| TimelineOp types | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
-| Traces | ✅ | [Traces](/ir/trace) |
-| Constraints | ✅ | [Constraints](/ir/constraints) |
-| Ordering/Phases | ✅ | [Timeline IR](/ir/timeline-ir#ordering) |
-| Duration expressions | ✅ | [Scene IR](/ir/scene-ir#duration-expressions) |
-| MessageRef | ✅ | [Scene IR](/ir/scene-ir#messageref) |
-
-### Compiler (12 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| compile() | ✅ | [Compiler](/compiler) |
-| Pass pipeline | ✅ | [Passes](/compiler/passes) |
-| normalize | ✅ | [Passes](/compiler/passes#1-normalize) |
-| resolveRefs | ✅ | [Passes](/compiler/passes#2-resolverefs) |
-| virtualDevice | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
-| timeLowering | ✅ | [Passes](/compiler/passes#4-timelowering) |
-| validate | ✅ | [Passes](/compiler/passes#5-validate) |
-| sort | ✅ | [Passes](/compiler/passes#6-sort) |
-| CompileResult | ✅ | [Compiler](/compiler#compileresult) |
-| Validation modes | ✅ | [Passes](/compiler/passes#validation-modes) |
-| Adapters | ✅ | [Adapters](/compiler/adapters) |
-| Custom adapters | ✅ | [Adapters](/compiler/adapters#building-custom-adapters) |
-
-### DirectorLite (12 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Philosophy | ✅ | [DirectorLite](/director) |
-| Signal types | ✅ | [Signals](/director/signals#signal-types) |
-| Signal extraction | ✅ | [Signals](/director/signals#signal-extraction) |
-| Rules | ✅ | [Rules](/director/rules) |
-| ViralDramaV1 | ✅ | [Rules](/director/rules#viraldramav1-rules) |
-| ZoomToRect | ✅ | [Effects](/director/effects#zoomtorect) |
-| PushIn | ✅ | [Effects](/director/effects#pushin) |
-| PullBack | ✅ | [Effects](/director/effects#pullback) |
-| MicroShake | ✅ | [Effects](/director/effects#microshake) |
-| Cooldowns | ✅ | [Rules](/director/rules#understanding-the-numbers) |
-| Arbitration | ✅ | [Rules](/director/rules#arbitration) |
-| Debug mode | ✅ | [DirectorLite](/director#debug-mode) |
-
-### Runtime (10 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Runtime overview | ✅ | [Runtime](/runtime) |
-| Engine | ✅ | [Engine](/runtime/engine) |
-| Reducer pattern | ✅ | [Engine](/runtime/engine#reducer-pattern) |
-| WorldState | ✅ | [WorldState](/runtime/world-state) |
-| DeviceState | ✅ | [WorldState](/runtime/world-state#devicestate) |
-| ConversationState | ✅ | [WorldState](/runtime/world-state#conversationstate) |
-| Event types | ✅ | [Events](/runtime/events) |
-| DEVICE events | ✅ | [Events](/runtime/events#device-events) |
-| APP events | ✅ | [Events](/runtime/events#app-events-whatsapp) |
-| CAMERA events | ✅ | [Events](/runtime/events#camera-events-manual) |
-
-### Guides (6 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Quick start | ✅ | [Quick Start](/guides/quickstart) |
-| First episode | ✅ | [First Episode](/guides/first-episode) |
-| Multi-device | ✅ | [Multi-Device](/guides/multi-device) |
-| AI generation | ✅ | [AI Generation](/guides/ai-generation) |
-| AI contract | ✅ | [AI Contract](/guides/ai-contract) |
-| Custom apps | ✅ | [Custom Apps](/guides/custom-apps) |
-
----
-
-## ✅ Type Reference Coverage
-
-| Type | Documented | Page |
-|------|------------|------|
-| `SceneIR` | ✅ | [Scene IR](/ir/scene-ir#sceneir) |
-| `SceneOp` | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
-| `TimelineIR` | ✅ | [Timeline IR](/ir/timeline-ir#timelineir) |
-| `TimelineOp` | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
-| `Trace` | ✅ | [Traces](/ir/trace#trace-structure) |
-| `EpisodeConfig` | ✅ | [episode()](/dsl/episode#episodeconfig-reference) |
-| `SemanticMeta` | ✅ | [Semantic](/dsl/semantic#available-fields) |
-| `BeatMeta` | ✅ | [Semantic](/dsl/semantic#beatmeta-fields) |
-| `Mood` | ✅ | [Semantic](/dsl/semantic#mood) |
-| `POVLayout` | ✅ | [POV](/dsl/pov#layout-options) |
-| `RuntimeEvent` | ✅ | [Events](/runtime/events#event-structure) |
-| `WorldState` | ✅ | [WorldState](/runtime/world-state#worldstate-structure) |
-| `DeviceState` | ✅ | [WorldState](/runtime/world-state#devicestate) |
-| `DirectorSignal` | ✅ | [Signals](/director/signals#signal-properties) |
-| `Rule` | ✅ | [Rules](/director/rules#rule-structure) |
-| `DerivedCameraEffect` | ✅ | [Effects](/director/effects#effect-properties) |
-| `TokovoPlugin` | ✅ | [Plugins](/architecture/plugins) |
-
----
-
-## Summary
-
-| Category | Items | Documented | Coverage |
-|----------|-------|------------|----------|
-| Root files | 5 | 4 | 80% |
-| IR files | 8 | 8 | 100% |
-| DSL files | 5 | 5 | 100% |
-| Compiler files | 9 | 9 | 100% |
-| Adapter files | 4 | 4 | 100% |
-| Core files | 10 | 10 | 100% |
-| Architecture topics | 11 | 11 | 100% |
-| DSL topics | 17 | 17 | 100% |
-| IR topics | 10 | 10 | 100% |
-| Compiler topics | 12 | 12 | 100% |
-| DirectorLite topics | 12 | 12 | 100% |
-| Runtime topics | 10 | 10 | 100% |
-| Guides | 6 | 6 | 100% |
-| Type references | 17 | 17 | 100% |
-
-### Total Documentation Pages: 38+
-### Overall Coverage: 99%+
-
----
-
-## Feature Implementation Status
-
-### ✅ Complete & Documented
-
-- [x] DSL fluent API
-- [x] Scene IR
-- [x] Timeline IR
-- [x] Compiler passes (6)
-- [x] Adapters (WhatsApp)
-- [x] DirectorLite (ViralDramaV1)
-- [x] Determinism guarantees
-- [x] Plugin system
-- [x] Trace model
-- [x] EpisodeConfig
-- [x] SemanticMeta
-- [x] BeatMeta
-- [x] POV primitives
-- [x] Reserved signals
-- [x] Constraints validation
-- [x] Monorepo architecture
-- [x] AI generation contract
-
-### ⏳ Future (Reserved)
-
-- [ ] DirectorLite v2 (semantic-aware)
-- [ ] Lifecycle hooks
-- [ ] Voice notes adapter
-- [ ] Instagram adapter completion
-- [ ] Platform presets
-
----
-
-## Verification Steps
-
-1. ✅ Run docs: `cd apps/docs && pnpm dev`
-2. ✅ All pages load without errors
-3. ✅ Navigation complete
-4. ✅ Code examples are accurate
-5. ✅ Cross-references work
-6. ✅ Determinism notes included
-````
-
-## File: apps/docs/package.json
-````json
-{
-  "name": "docs",
-  "version": "1.0.0",
-  "description": "Tokovo Documentation - Deterministic Story Engine",
-  "private": true,
-  "scripts": {
-    "dev": "next dev -p 3002",
-    "build": "next build",
-    "start": "next start"
-  },
-  "dependencies": {
-    "next": "^14.0.0",
-    "nextra": "^2.13.4",
-    "nextra-theme-docs": "^2.13.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0",
-    "@types/react": "^18.2.0",
-    "typescript": "^5.3.0"
-  }
 }
 ````
 
@@ -24085,18 +17961,6 @@ export const BottomNav: React.FC<{ currentView: InstagramView }> = ({ currentVie
 };
 ````
 
-## File: packages/apps-instagram/src/index.ts
-````typescript
-import { ReducerRegistry } from "@tokovo/core";
-import { instagramRuntime } from "./runtime";
-
-ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
-
-export * from "./runtime";
-export * from "./ui";
-export * from "./types";
-````
-
 ## File: packages/apps-instagram/src/runtime.ts
 ````typescript
 import { WorldState, TimelineEvent } from "@tokovo/core";
@@ -24168,6 +18032,212 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
         }
     }
 };
+````
+
+## File: packages/apps-spotify/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-spotify - Spotify App Package
+ * 
+ * Features:
+ * - Now Playing widget (background music visualization)
+ * - Dynamic Island widget (iOS)
+ * - Status bar widget (Android)
+ * - Full player UI
+ * - Notification adapter for music notifications
+ */
+
+export * from "./runtime";
+export * from "./ui";
+export * from "./widgets";
+````
+
+## File: packages/apps-spotify/src/runtime.ts
+````typescript
+/**
+ * Spotify Runtime Reducer
+ * 
+ * Handles Spotify-specific events and state updates.
+ */
+
+import { produce } from "immer";
+import { WorldState, TimelineEvent, PluginManager } from "@tokovo/core";
+import { SpotifyAppState, DEFAULT_SPOTIFY_STATE, SAMPLE_TRACKS } from "./types";
+
+// =============================================================================
+// EVENT TYPES
+// =============================================================================
+
+export interface SpotifyPlayEvent extends TimelineEvent {
+    kind: "APP";
+    appId: "app_spotify";
+    type: "PLAY_TRACK";
+    trackId?: string;
+    track?: {
+        name: string;
+        artist: string;
+        album?: string;
+        albumArt?: string;
+    };
+}
+
+export interface SpotifyPauseEvent extends TimelineEvent {
+    kind: "APP";
+    appId: "app_spotify";
+    type: "PAUSE";
+}
+
+export interface SpotifyResumeEvent extends TimelineEvent {
+    kind: "APP";
+    appId: "app_spotify";
+    type: "RESUME";
+}
+
+export interface SpotifySkipEvent extends TimelineEvent {
+    kind: "APP";
+    appId: "app_spotify";
+    type: "SKIP_NEXT" | "SKIP_PREVIOUS";
+}
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export function spotifyReducer(
+    world: WorldState,
+    event: TimelineEvent
+): WorldState {
+    if (event.kind !== "APP" || (event as any).appId !== "app_spotify") {
+        return world;
+    }
+
+    return produce(world, (draft) => {
+        // Ensure spotify app state exists
+        if (!draft.appState.app_spotify) {
+            draft.appState.app_spotify = { ...DEFAULT_SPOTIFY_STATE };
+        }
+
+        const spotify = draft.appState.app_spotify as SpotifyAppState;
+        const eventType = (event as any).type;
+
+        switch (eventType) {
+            case "PLAY_TRACK": {
+                const playEvent = event as SpotifyPlayEvent;
+
+                // Find track by ID or use provided track data
+                let track = SAMPLE_TRACKS.find(t => t.id === playEvent.trackId);
+
+                if (!track && playEvent.track) {
+                    // Create track from event data
+                    track = {
+                        id: `track_${event.at}`,
+                        name: playEvent.track.name,
+                        artist: playEvent.track.artist,
+                        album: playEvent.track.album || "Unknown Album",
+                        albumArt: playEvent.track.albumArt,
+                        durationMs: 180000, // Default 3 min
+                    };
+                }
+
+                if (track) {
+                    spotify.nowPlaying = {
+                        track,
+                        state: "playing",
+                        progressMs: 0,
+                        startedAtFrame: event.at,
+                        shuffleEnabled: false,
+                        repeatMode: "off",
+                    };
+                }
+                break;
+            }
+
+            case "PAUSE": {
+                if (spotify.nowPlaying) {
+                    spotify.nowPlaying.state = "paused";
+                }
+                break;
+            }
+
+            case "RESUME": {
+                if (spotify.nowPlaying) {
+                    spotify.nowPlaying.state = "playing";
+                }
+                break;
+            }
+
+            case "SKIP_NEXT": {
+                // For demo, just switch to next sample track
+                if (spotify.nowPlaying) {
+                    const currentIdx = SAMPLE_TRACKS.findIndex(
+                        t => t.id === spotify.nowPlaying?.track.id
+                    );
+                    const nextIdx = (currentIdx + 1) % SAMPLE_TRACKS.length;
+                    spotify.nowPlaying = {
+                        track: SAMPLE_TRACKS[nextIdx],
+                        state: "playing",
+                        progressMs: 0,
+                        startedAtFrame: event.at,
+                        shuffleEnabled: spotify.nowPlaying.shuffleEnabled,
+                        repeatMode: spotify.nowPlaying.repeatMode,
+                    };
+                }
+                break;
+            }
+
+            case "NAVIGATE": {
+                const screen = (event as any).screen;
+                if (screen) {
+                    spotify.screen = screen;
+                }
+                break;
+            }
+
+            case "MINIMIZE": {
+                spotify.isMinimized = true;
+                break;
+            }
+
+            case "MAXIMIZE": {
+                spotify.isMinimized = false;
+                break;
+            }
+        }
+    });
+}
+
+// =============================================================================
+// REGISTER PLUGIN
+// =============================================================================
+
+import { SpotifyDynamicIslandWidget, SpotifyStatusBarWidget } from "./widgets";
+
+// Register Spotify as a plugin with widgets
+PluginManager.register({
+    id: "app_spotify",
+    name: "Spotify",
+    version: "1.0.0",
+    icon: "♪",
+    primaryColor: "#1DB954",
+    reducer: spotifyReducer,
+
+    // Platform-specific widgets
+    widgets: [
+        {
+            mode: "dynamicIsland",
+            platforms: ["ios"],
+            priority: 80,  // Music gets high priority
+            component: SpotifyDynamicIslandWidget as any,
+            expansionModes: ["minimal", "compact", "expanded"],
+        },
+        {
+            mode: "statusBar",
+            platforms: ["android"],
+            priority: 80,
+            component: SpotifyStatusBarWidget as any,
+        },
+    ],
+});
 ````
 
 ## File: packages/apps-twitter/src/components/index.ts
@@ -25768,143 +19838,211 @@ export function createTheme(
 }
 ````
 
-## File: packages/devices/src/iphone16/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * iPhone 16 camera configuration
- * - Slow pan speed for cinematic feel on mobile
- * - High follow lag for smooth, less reactive tracking
- * - Tighter zoom range for portrait scrolling
- */
-const iPhone16Camera: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "slow",
-    followLag: "high",
-    snapThreshold: 40,
-    safeAreaTop: 110,      // Dynamic Island + status bar
-    safeAreaBottom: 102,   // Home indicator
-    followLagFactor: 0.7,  // Cinematic lag
-    panSpeedMultiplier: 0.6,
-};
-
-export const iPhone16Profile: DeviceProfile = {
-    id: "iphone16",
-    dimensions: { width: 1290, height: 2796 },
-    statusBarHeight: 110,
-    camera: iPhone16Camera,
-};
-````
-
-## File: packages/devices/src/pixel/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * Pixel camera configuration
- * - Medium pan speed for balanced feel
- * - Medium follow lag for responsive tracking
- * - Slightly wider zoom range for Android
- */
-const PixelCamera: CameraDeviceConfig = {
-    minZoom: 0.85,
-    maxZoom: 1.2,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 45,
-    safeAreaTop: 90,       // Status bar
-    safeAreaBottom: 48,    // Navigation bar/gesture area
-    followLagFactor: 0.5,  // Balanced lag
-    panSpeedMultiplier: 1.0,
-};
-
-export const PixelProfile: DeviceProfile = {
-    id: "pixel",
-    dimensions: {
-        width: 1080, // Pixel 7 Pro approx width
-        height: 2400, // Pixel 7 Pro approx height
-    },
-    statusBarHeight: 90, // Approx 30px * 3
-    camera: PixelCamera,
-};
-````
-
-## File: packages/devices/src/types.ts
+## File: packages/core/src/notification-dsl.ts
 ````typescript
 /**
- * Camera motion speed configuration
- */
-export type CameraSpeed = "slow" | "medium" | "fast";
-
-/**
- * Camera follow lag configuration
- * - high: More cinematic, camera lags significantly behind target
- * - medium: Balanced tracking
- * - low: Camera closely follows target (reactive)
- */
-export type CameraFollowLag = "high" | "medium" | "low";
-
-/**
- * Camera configuration for a specific device profile.
+ * Notification DSL Helpers
  * 
- * DESIGN PRINCIPLE: Device profiles define camera physics.
- * Apps do NOT override these values. Ever.
+ * Fluent API for creating notification timeline events.
  */
-export interface CameraDeviceConfig {
-    // === Zoom Constraints ===
-    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
-    minZoom: number;
-    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
-    maxZoom: number;
 
-    // === Motion Characteristics ===
-    /** Pan speed for camera movement */
-    panSpeed: CameraSpeed;
-    /** Lag when following a target (soft tracking delay) */
-    followLag: CameraFollowLag;
-    /** Snap threshold in pixels - below this, snap instantly vs animate */
-    snapThreshold: number;
+import { TimelineEvent, NotificationPriority, NotificationDeliverWhen } from "./types";
 
-    // === Safe Areas for Framing ===
-    /** Top safe area in pixels (status bar, notch, etc.) */
-    safeAreaTop: number;
-    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
-    safeAreaBottom: number;
+// =============================================================================
+// NOTIFICATION DSL
+// =============================================================================
 
-    // === Follow Easing (numeric values for computation) ===
-    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
-    followLagFactor: number;
-    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
-    panSpeedMultiplier: number;
+export interface NotificationOptions {
+    appId: string;
+    title: string;
+    body: string;
+    mode?: "lockscreen" | "headsup" | "both" | "silent";
+    priority?: NotificationPriority;
+    deliverWhen?: NotificationDeliverWhen;
+    groupKey?: string;
+    threadId?: string;
+    icon?: string;
+    preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
+    actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
+    replyable?: boolean;
+    metadata?: Record<string, any>;
 }
 
 /**
- * Default camera configuration for devices
+ * Create a SHOW_NOTIFICATION event
  */
-export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 50,
-    safeAreaTop: 0,
-    safeAreaBottom: 0,
-    followLagFactor: 0.5,
-    panSpeedMultiplier: 1.0,
+export function showNotification(
+    at: number,
+    deviceId: string,
+    opts: NotificationOptions
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "SHOW_NOTIFICATION",
+        ...opts,
+    } as TimelineEvent;
+}
+
+/**
+ * Create an UPDATE_NOTIFICATION event
+ */
+export function updateNotification(
+    at: number,
+    deviceId: string,
+    notificationId: string,
+    patch: { title?: string; body?: string; preview?: NotificationOptions["preview"]; metadata?: Record<string, any> }
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "UPDATE_NOTIFICATION",
+        notificationId,
+        patch,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a DISMISS_NOTIFICATION event
+ */
+export function dismissNotification(
+    at: number,
+    deviceId: string,
+    opts: { notificationId?: string; groupKey?: string; all?: boolean }
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "DISMISS_NOTIFICATION",
+        ...opts,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a TAP_NOTIFICATION event (opens app)
+ */
+export function tapNotification(
+    at: number,
+    deviceId: string,
+    notificationId: string,
+    actionId?: string
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "TAP_NOTIFICATION",
+        notificationId,
+        actionId,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a SWIPE_NOTIFICATION event
+ */
+export function swipeNotification(
+    at: number,
+    deviceId: string,
+    notificationId: string,
+    direction: "left" | "right",
+    action: "dismiss" | "archive" | "snooze" | "mark_read" = "dismiss"
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "SWIPE_NOTIFICATION",
+        notificationId,
+        direction,
+        action,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a REPLY_NOTIFICATION event
+ */
+export function replyToNotification(
+    at: number,
+    deviceId: string,
+    notificationId: string,
+    text: string
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "REPLY_NOTIFICATION",
+        notificationId,
+        text,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a TOGGLE_NOTIFICATION_PANEL event
+ */
+export function toggleNotificationPanel(
+    at: number,
+    deviceId: string,
+    open: boolean
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "TOGGLE_NOTIFICATION_PANEL",
+        open,
+    } as TimelineEvent;
+}
+
+/**
+ * Create a CLEAR_ALL_NOTIFICATIONS event
+ */
+export function clearAllNotifications(at: number, deviceId: string): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "CLEAR_ALL_NOTIFICATIONS",
+    } as TimelineEvent;
+}
+
+/**
+ * Create a SET_DYNAMIC_ISLAND event
+ */
+export function setDynamicIsland(
+    at: number,
+    deviceId: string,
+    visible: boolean,
+    mode?: "idle" | "minimal" | "compact" | "expanded"
+): TimelineEvent {
+    return {
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "SET_DYNAMIC_ISLAND",
+        visible,
+        mode,
+    } as TimelineEvent;
+}
+
+// =============================================================================
+// DSL NAMESPACE (for convenient imports)
+// =============================================================================
+
+export const notificationDsl = {
+    show: showNotification,
+    update: updateNotification,
+    dismiss: dismissNotification,
+    tap: tapNotification,
+    swipe: swipeNotification,
+    reply: replyToNotification,
+    togglePanel: toggleNotificationPanel,
+    clearAll: clearAllNotifications,
+    setDynamicIsland,
 };
-
-/**
- * Device profile defining physical characteristics and camera behavior
- */
-export interface DeviceProfile {
-    id: string;
-    dimensions: { width: number; height: number };
-    statusBarHeight: number;
-    /** Camera behavior configuration (uses defaults if not specified) */
-    camera?: CameraDeviceConfig;
-}
 ````
 
 ## File: packages/devices/package.json
@@ -26179,21 +20317,6 @@ export class DeviceBuilder {
         };
     }
 }
-````
-
-## File: packages/dsl/src/author/index.ts
-````typescript
-/**
- * DSL Author Module
- * 
- * Public API for authoring episodes.
- */
-
-export { episode, EpisodeBuilder, DeviceFn, CameraFn, SceneFn } from "./episode-builder";
-export { DeviceBuilder, BeatFn } from "./device-builder";
-export { BeatBuilder, MessageOptions } from "./beat-builder";
-export { CameraBuilder, CameraEvent, ZoomOptions, ShakeOptions, PIPOptions } from "./camera-builder";
-export { SceneBuilder, SceneDeviceBuilder, SceneDeviceAction } from "./scene-builder";
 ````
 
 ## File: packages/dsl/src/author/scene-builder.ts
@@ -27426,6 +21549,256 @@ export function computeLayout(ctx: LayoutContext): LayoutState {
 }
 ````
 
+## File: packages/renderer/src/AudioLayer.tsx
+````typescript
+/**
+ * AudioLayer - Production-grade audio rendering for Tokovo
+ * 
+ * Uses Remotion's <Audio> component to play sounds synchronized with video frames.
+ * Features:
+ * - Bus-based volume routing
+ * - Ducking (UI/voice lowers music)
+ * - Attack/release envelopes
+ * - Per-device sound filtering
+ */
+
+import React, { useMemo } from "react";
+import { Audio, Sequence, staticFile, useCurrentFrame } from "remotion";
+import {
+    WorldState,
+    SoundCue,
+    ActiveSound,
+    MusicBed,
+    DEFAULT_BUS_CONFIG,
+} from "@tokovo/core";
+import { getSoundPath } from "@tokovo/core";
+import {
+    computeSoundVolume,
+    computeBusStates,
+    BusState,
+} from "@tokovo/core";
+import { computeCrossfade } from "@tokovo/core";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface AudioLayerProps {
+    world: WorldState;
+    t: number;
+    focusDeviceId?: string;  // If provided, only play sounds for this device
+}
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Check if a sound is a SoundCue (has bus property)
+ */
+function isSoundCue(sound: SoundCue | ActiveSound): sound is SoundCue {
+    return "bus" in sound;
+}
+
+/**
+ * Ensure audio state has buses (backward compatibility)
+ */
+function ensureBuses(audio: WorldState["audio"]) {
+    if (!audio.buses) {
+        return {
+            ...audio,
+            buses: DEFAULT_BUS_CONFIG,
+        };
+    }
+    return audio;
+}
+
+// =============================================================================
+// SOUND INSTANCE COMPONENT
+// =============================================================================
+
+interface SoundInstanceProps {
+    instanceId: string;
+    sound: SoundCue | ActiveSound;
+    currentFrame: number;
+    busStates: Record<string, BusState>;
+}
+
+/**
+ * Individual sound instance - handles timing, volume, and mixing
+ */
+const SoundInstance: React.FC<SoundInstanceProps> = ({
+    instanceId,
+    sound,
+    currentFrame,
+    busStates,
+}) => {
+    // Calculate if sound has expired
+    if (sound.duration) {
+        const elapsed = currentFrame - sound.startFrame;
+        if (elapsed > sound.duration) {
+            return null;
+        }
+    }
+
+    // Compute final volume through mixer
+    const finalVolume = computeSoundVolume(sound, currentFrame, busStates as any);
+
+    // Skip if volume is effectively zero
+    if (finalVolume < 0.01) {
+        return null;
+    }
+
+    return (
+        <Sequence
+            from={sound.startFrame}
+            durationInFrames={sound.duration || undefined}
+        >
+            <Audio
+                src={staticFile(getSoundPath(sound.soundId))}
+                volume={finalVolume}
+                loop={sound.loop}
+            />
+        </Sequence>
+    );
+};
+
+// =============================================================================
+// MUSIC BED COMPONENT
+// =============================================================================
+
+interface MusicBedInstanceProps {
+    musicBed: MusicBed;
+    outgoingBed?: MusicBed;
+    currentFrame: number;
+    busStates: Record<string, BusState>;
+}
+
+/**
+ * Music bed instance with crossfade support
+ */
+const MusicBedInstance: React.FC<MusicBedInstanceProps> = ({
+    musicBed,
+    outgoingBed,
+    currentFrame,
+    busStates,
+}) => {
+    // Compute crossfade volumes
+    const { outVolume, inVolume } = computeCrossfade(
+        outgoingBed,
+        musicBed,
+        currentFrame
+    );
+
+    // Apply bus ducking to music
+    const musicBusState = busStates.music || { baseGain: 0.35, duckMultiplier: 1 };
+    const duckMult = musicBusState.duckMultiplier;
+
+    return (
+        <>
+            {/* Outgoing music (if crossfading) */}
+            {outgoingBed && outVolume > 0.01 && (
+                <Sequence from={outgoingBed.startFrame}>
+                    <Audio
+                        src={staticFile(getSoundPath(outgoingBed.soundId))}
+                        volume={outVolume * duckMult}
+                        loop={outgoingBed.loop}
+                    />
+                </Sequence>
+            )}
+
+            {/* Incoming music */}
+            <Sequence from={musicBed.startFrame}>
+                <Audio
+                    src={staticFile(getSoundPath(musicBed.soundId))}
+                    volume={inVolume * duckMult}
+                    loop={musicBed.loop}
+                />
+            </Sequence>
+        </>
+    );
+};
+
+// =============================================================================
+// MAIN AUDIO LAYER COMPONENT
+// =============================================================================
+
+/**
+ * AudioLayer component - renders all active sounds as Remotion Audio components
+ */
+export const AudioLayer: React.FC<AudioLayerProps> = ({
+    world,
+    t,
+    focusDeviceId,
+}) => {
+    const frame = useCurrentFrame();
+
+    // Get audio state with safety check
+    const rawAudio = world.audio;
+    if (!rawAudio) {
+        return null;
+    }
+
+    // Ensure buses exist (backward compatibility)
+    const audio = ensureBuses(rawAudio);
+
+    // Compute bus states (with ducking) for this frame
+    const busStates = useMemo(
+        () => computeBusStates(audio, frame),
+        [audio, frame]
+    );
+
+    // Filter sounds based on focusDeviceId
+    const activeSounds = useMemo(() => {
+        return Object.entries(audio.activeSounds).filter(([_, sound]) => {
+            // If no deviceId on sound, it's global - always play
+            if (!sound.deviceId) return true;
+            // If no focusDeviceId specified, play all sounds
+            if (!focusDeviceId) return true;
+            // Only play if device matches
+            return sound.deviceId === focusDeviceId;
+        });
+    }, [audio.activeSounds, focusDeviceId]);
+
+    return (
+        <>
+            {/* Active sound cues */}
+            {activeSounds.map(([instanceId, sound]) => (
+                <SoundInstance
+                    key={instanceId}
+                    instanceId={instanceId}
+                    sound={sound}
+                    currentFrame={t}
+                    busStates={busStates}
+                />
+            ))}
+
+            {/* Music bed (with crossfade support) */}
+            {audio.musicBed && (
+                <MusicBedInstance
+                    musicBed={audio.musicBed}
+                    currentFrame={t}
+                    busStates={busStates}
+                />
+            )}
+
+            {/* Legacy background music (backward compatible) */}
+            {audio.backgroundMusic && !audio.musicBed && (
+                <Sequence from={audio.backgroundMusic.startFrame}>
+                    <Audio
+                        src={staticFile(getSoundPath(audio.backgroundMusic.soundId))}
+                        volume={audio.backgroundMusic.volume * (busStates.music?.duckMultiplier ?? 1)}
+                        loop={audio.backgroundMusic.loop}
+                    />
+                </Sequence>
+            )}
+        </>
+    );
+};
+
+export default AudioLayer;
+````
+
 ## File: packages/renderer/src/CallOverlay.tsx
 ````typescript
 import React from "react";
@@ -28339,6 +22712,193 @@ function formatDate(): string {
 }
 ````
 
+## File: packages/renderer/src/NowPlayingBar.tsx
+````typescript
+/**
+ * NowPlayingBar - Spotify Dynamic Island Style
+ * 
+ * Shows a Dynamic Island-like Now Playing indicator at the TOP of the screen
+ * when Spotify is playing in the background.
+ * 
+ * NOTE: Dimensions are scaled for iPhone 16 native resolution (1179x2556)
+ */
+
+import React from "react";
+import { BackgroundAppState } from "@tokovo/core";
+
+interface NowPlayingBarProps {
+    backgroundApps?: BackgroundAppState[];
+    currentFrame: number;
+    variant?: "ios" | "android";
+}
+
+/**
+ * Find active music app from background apps
+ */
+function findMusicApp(apps: BackgroundAppState[] = []): BackgroundAppState | undefined {
+    return apps.find(app => app.indicator === "music");
+}
+
+/**
+ * Dynamic Island Now Playing - iOS 14+ style
+ * Scaled for iPhone 16 native resolution
+ */
+export const NowPlayingBar: React.FC<NowPlayingBarProps> = ({
+    backgroundApps,
+    currentFrame,
+    variant = "ios",
+}) => {
+    const musicApp = findMusicApp(backgroundApps);
+
+    if (!musicApp) {
+        return null;
+    }
+
+    // Animation: expand on appear
+    const timeSinceStart = currentFrame - musicApp.startedAt;
+    const expandDuration = 20;
+    const expandProgress = Math.min(1, timeSinceStart / expandDuration);
+
+    // Ease out cubic
+    const ease = 1 - Math.pow(1 - expandProgress, 3);
+
+    // Scaled for iPhone resolution (approx 3x)
+    const minWidth = 450;
+    const maxWidth = 900;
+    const currentWidth = minWidth + (maxWidth - minWidth) * ease;
+    const currentHeight = 120 + 80 * ease; // 120 to 200
+
+    const isAndroid = variant === "android";
+
+    // Extract track info
+    const parts = musicApp.label?.split(" - ") || ["Now Playing", "Spotify"];
+    const trackName = parts[0] || "Now Playing";
+    const artistName = parts[1] || "Spotify";
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: isAndroid ? 150 : 130, // Below status bar (scaled)
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 9999, // Very high to be on top
+            }}
+        >
+            <div
+                style={{
+                    width: currentWidth,
+                    height: currentHeight,
+                    background: "#000000",
+                    borderRadius: currentHeight / 2,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 40px",
+                    gap: 30,
+                    boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
+                    overflow: "hidden",
+                }}
+            >
+                {/* Spotify Logo / Album Art */}
+                <div
+                    style={{
+                        width: 90,
+                        height: 90,
+                        borderRadius: 20,
+                        background: "#1DB954",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0,
+                    }}
+                >
+                    <SpotifyIcon size={50} />
+                </div>
+
+                {/* Track Info - only shows when expanded */}
+                {expandProgress > 0.5 && (
+                    <div
+                        style={{
+                            flex: 1,
+                            minWidth: 0,
+                            opacity: (expandProgress - 0.5) * 2,
+                        }}
+                    >
+                        <div
+                            style={{
+                                fontSize: 42,
+                                fontWeight: 600,
+                                color: "#fff",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                                marginBottom: 6,
+                            }}
+                        >
+                            {trackName}
+                        </div>
+                        <div
+                            style={{
+                                fontSize: 36,
+                                color: "rgba(255,255,255,0.6)",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                            }}
+                        >
+                            {artistName}
+                        </div>
+                    </div>
+                )}
+
+                {/* Music Wave Animation */}
+                {expandProgress > 0.3 && (
+                    <div
+                        style={{
+                            opacity: (expandProgress - 0.3) / 0.7,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <MusicWaveIcon />
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// ICONS (Scaled for iPhone resolution)
+// =============================================================================
+
+const SpotifyIcon: React.FC<{ size?: number }> = ({ size = 50 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#000">
+        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+    </svg>
+);
+
+const MusicWaveIcon: React.FC = () => (
+    <svg width={60} height={60} viewBox="0 0 24 24" fill="#1DB954">
+        <rect x="4" y="10" width="3" height="4" rx="1">
+            <animate attributeName="height" values="4;12;4" dur="0.6s" repeatCount="indefinite" />
+            <animate attributeName="y" values="10;6;10" dur="0.6s" repeatCount="indefinite" />
+        </rect>
+        <rect x="10" y="6" width="3" height="12" rx="1">
+            <animate attributeName="height" values="12;4;12" dur="0.5s" repeatCount="indefinite" />
+            <animate attributeName="y" values="6;10;6" dur="0.5s" repeatCount="indefinite" />
+        </rect>
+        <rect x="16" y="8" width="3" height="8" rx="1">
+            <animate attributeName="height" values="8;14;8" dur="0.7s" repeatCount="indefinite" />
+            <animate attributeName="y" values="8;5;8" dur="0.7s" repeatCount="indefinite" />
+        </rect>
+    </svg>
+);
+
+export default NowPlayingBar;
+````
+
 ## File: repomix.config.json
 ````json
 {
@@ -28377,7 +22937,8 @@ function formatDate(): string {
     "useDefaultPatterns": true,
     "customPatterns": [
       "*.md",
-      "*.mp3"
+      "*.mp3",
+      "apps/docs"
     ]
   },
   "security": {
@@ -28389,300 +22950,524 @@ function formatDate(): string {
 }
 ````
 
-## File: apps/docs/pages/dsl/beat.mdx
-````
-# Beat Builder
-
-The Beat Builder provides fluent methods for defining actions within a beat.
-
-## Core Actions
-
-### wait(duration)
-
-Pause for a duration. Advances the cursor but emits no runtime event.
-
-```typescript
-b.wait("2s");     // 2 seconds
-b.wait("500ms");  // 500 milliseconds
-b.wait("30frames"); // 30 frames
-```
-
-### typing(actor).for(duration)
-
-Show typing indicator for a duration. Expands to:
-- `TypingStart`
-- `Wait`
-- `TypingEnd`
-
-```typescript
-b.typing("Bob").for("1.5s");
-```
-
-### send(text, options?)
-
-Send a message from the device owner.
-
-```typescript
-b.send("Hello!");
-
-// With semantic annotations
-b.send("Are you okay?", {
-  mood: "anxious",
-  intensity: 0.6
-});
-
-// Reply to a message
-b.send("I agree!", {
-  replyTo: {
-    messageId: "msg-123",
-    text: "Previous message text",
-    from: "Bob"
-  }
-});
-```
-
-### receive(actor, text, options?)
-
-Receive a message from someone else.
-
-```typescript
-const msg = b.receive("Bob", "We need to talk.");
-
-// With semantic annotations
-b.receive("Bob", "I'm sorry.", {
-  mood: "sad",
-  intensity: 0.9,
-  subtext: "breakup"
-});
-```
-
-### read(ref)
-
-Mark a message as read.
-
-```typescript
-const msg = b.receive("Bob", "Hello");
-b.wait("0.5s");
-b.read(msg);
-```
-
-### delete(ref)
-
-Delete a message.
-
-```typescript
-const msg = b.send("Sent by mistake");
-b.wait("1s");
-b.delete(msg);
-```
-
-### readLast() / deleteLast()
-
-Operate on the last message.
-
-```typescript
-b.receive("Bob", "Hello");
-b.wait("0.5s");
-b.readLast();
-```
-
-## Media Messages
-
-Rich media messages with automatic timing.
-
-### sendImage(url, options?) / receiveImage(actor, url, options?)
-
-Send or receive images with optional captions.
-
-```typescript
-// Send an image
-b.sendImage("https://example.com/photo.jpg");
-
-// With caption and custom height
-b.sendImage("https://example.com/photo.jpg", { 
-  caption: "Check this out! 📸",
-  height: 450  // Default: 400
-});
-
-// Receive an image
-b.receiveImage("Alice", "https://example.com/sunset.jpg", {
-  caption: "From the beach today! 🏖️"
-});
-```
-
-### sendVideo(url, duration, options?) / receiveVideo(actor, url, duration, options?)
-
-Send or receive video messages with thumbnails.
-
-```typescript
-// Send a video (15 second duration)
-b.sendVideo("https://example.com/video.mp4", 15);
-
-// With thumbnail and caption
-b.sendVideo("https://example.com/video.mp4", 15, {
-  thumbnailUrl: "https://example.com/thumb.jpg",
-  caption: "Watch this wave! 🌊"
-});
-
-// Receive a video
-b.receiveVideo("Bob", "https://example.com/clip.mp4", 30, {
-  thumbnailUrl: "https://example.com/preview.jpg"
-});
-```
-
-### sendGif(url, options?) / receiveGif(actor, url, options?)
-
-Send or receive GIFs from Giphy, Tenor, etc.
-
-```typescript
-// Send a GIF
-b.sendGif("https://media.giphy.com/media/abc123/giphy.gif");
-
-// Receive with custom height
-b.receiveGif("Alice", "https://media.giphy.com/media/xyz789/giphy.gif", {
-  height: 350  // Default: 300
-});
-```
-
-### sendVoice(duration, options?) / receiveVoice(actor, duration, options?)
-
-Send or receive voice notes.
-
-```typescript
-// Send an 8-second voice note
-b.sendVoice(8);
-
-// Receive a 15-second voice note
-b.receiveVoice("Bob", 15);
-```
-
-### Auto-Timing
-
-Media messages automatically advance the timeline:
-- **Images**: 1.5s view time
-- **Videos**: Uses video duration
-- **GIFs**: 1.0s view time
-- **Voice notes**: Uses voice duration
-
-Override with `skipAutoTiming: true`:
-
-```typescript
-b.receiveImage("Alice", "photo.jpg", { skipAutoTiming: true });
-b.wait("0.5s");  // Manually control timing
-```
-
-## Concurrent Operations
-
-Run multiple tracks in parallel:
-
-```typescript
-b.concurrent([
-  t => t.typing("Bob").for("2s"),
-  t => t.wait("0.5s").receive("Bob", "Message during typing!")
-]);
-```
-
-The cursor advances to `max(track ends)`.
-
-## Drama Events
-
-### react(ref, actor, emoji)
-
-Add a reaction to a message.
-
-```typescript
-const msg = b.receive("Bob", "I love you");
-b.react(msg, "me", "❤️");
-```
-
-### screenshot()
-
-Show "screenshot taken" notification.
-
-```typescript
-b.screenshot();  // Drama!
-```
-
-### missedCall(actor, type?)
-
-Show missed call event.
-
-```typescript
-b.missedCall("Bob");           // Voice call
-b.missedCall("Bob", "video");  // Video call
-```
-
-## POV Control
-
-### pov(deviceId, transition?)
-
-Switch point of view.
-
-```typescript
-b.pov("BobPhone");              // Cut (default)
-b.pov("BobPhone", "crossfade"); // Smooth transition
-b.pov("BobPhone", "wipe");      // Wipe transition
-```
-
-### splitPov(devices, layout?)
-
-Show multiple devices.
-
-```typescript
-b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
-b.splitPov(["AlicePhone", "BobPhone"], "vertical");
-b.splitPov(["AlicePhone", "BobPhone"], "pip");
-```
-
-## Complete Reference
-
-| Method | Description | Returns |
-|--------|-------------|---------|
-| `wait(duration)` | Pause | `this` |
-| `typing(actor).for(duration)` | Typing indicator | `void` |
-| `typingStart(actor)` | Start typing (manual) | `this` |
-| `typingEnd(actor)` | End typing | `this` |
-| `send(text, options?)` | Send text message | `MessageHandle` |
-| `receive(actor, text, options?)` | Receive text message | `MessageHandle` |
-| `sendImage(url, options?)` | Send image | `MessageHandle` |
-| `receiveImage(actor, url, options?)` | Receive image | `MessageHandle` |
-| `sendVideo(url, duration, options?)` | Send video | `MessageHandle` |
-| `receiveVideo(actor, url, duration, options?)` | Receive video | `MessageHandle` |
-| `sendGif(url, options?)` | Send GIF | `MessageHandle` |
-| `receiveGif(actor, url, options?)` | Receive GIF | `MessageHandle` |
-| `sendVoice(duration, options?)` | Send voice note | `MessageHandle` |
-| `receiveVoice(actor, duration, options?)` | Receive voice note | `MessageHandle` |
-| `read(ref)` | Mark as read | `this` |
-| `readLast()` | Read last message | `this` |
-| `delete(ref)` | Delete message | `this` |
-| `deleteLast()` | Delete last | `this` |
-| `concurrent(tracks)` | Parallel ops | `this` |
-| `pov(deviceId, transition?)` | Switch POV | `this` |
-| `splitPov(devices, layout?)` | Split screen | `this` |
-| `react(ref, actor, emoji)` | Add reaction | `this` |
-| `screenshot()` | Screenshot alert | `this` |
-| `missedCall(actor, type?)` | Missed call | `this` |
-````
-
-## File: apps/docs/pages/_meta.json
-````json
-{
-    "index": "Introduction",
-    "architecture": "Architecture",
-    "dsl": "DSL Reference",
-    "ir": "IR Reference",
-    "compiler": "Compiler",
-    "director": "DirectorLite",
-    "runtime": "Runtime",
-    "apps": "Apps",
-    "guides": "Guides",
-    "glossary": "Glossary",
-    "---": {
-        "type": "separator"
-    },
-    "changelog": "📝 Changelog",
-    "verification": "✅ Verification"
+## File: apps/video-runner/src/CinematicCameraShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * Cinematic Camera Showcase Video
+ * 
+ * Demonstrates the NEW cinematic camera system with DSL-style episode definition:
+ * - Camera primitives: hold, follow, pushIn, pullOut, snap, shake, reset
+ * - Device-first camera profiles
+ * - Cinematic easing functions
+ * - Orchestrated camera movements synced to story beats
+ * 
+ * DirectorLite ENABLED - camera automatically reacts to message events.
+ */
+
+// =============================================================================
+// EPISODE DEFINITION (DSL-style)
+// =============================================================================
+
+function createCinematicCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // =========================================================================
+    // INITIAL WORLD STATE
+    // =========================================================================
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_ex: {
+                id: "dm_ex",
+                type: "dm" as const,
+                name: "Ex 💔",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_ex",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "phone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // =========================================================================
+    // TIMELINE EVENTS - CINEMATIC CAMERA MOVEMENTS
+    // 
+    // Film techniques used:
+    // - MACRO PAN: Slow vertical pan from bottom to top (establishing shot)
+    // - TRACKING: Camera follows subject with smooth lag
+    // - PUSH IN: Dolly zoom toward subject for emphasis
+    // - PULL OUT: Widen frame for context/breathing room
+    // - SNAP: Quick cut to new framing
+    // - SHAKE: Dramatic emphasis on impact moments
+    // - DRIFT: Subtle continuous movement to keep frame alive
+    // =========================================================================
+    const events: TimelineEvent[] = [
+        // -----------------------------------------------------------------
+        // BEAT 1: ESTABLISHING SHOT (0s - 3s)
+        // MACRO PAN from bottom of screen to top - cinema style reveal
+        // Start zoomed to bottom, slowly pan up to reveal empty chat
+        // -----------------------------------------------------------------
+        {
+            at: 0,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.15,
+            originX: 0.5,
+            originY: 1.0,  // Start at very bottom
+            duration: 1,
+            easing: "linear",
+        } as any,
+        // Slow pan up (moving origin from bottom to center)
+        {
+            at: 1,
+            kind: "CAMERA",
+            type: "PAN",
+            translateX: 0,
+            translateY: -150,  // Pan upward
+            duration: 75,      // 2.5 seconds - slow cinematic
+            easing: "ease-in-out",
+        } as any,
+        // Simultaneously pull out slightly for reveal
+        {
+            at: 30,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.0,
+            originX: 0.5,
+            originY: 0.5,
+            duration: 60,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 2: FIRST MESSAGE - SOFT TRACKING (3s - 5s)
+        // Message arrives, camera smoothly tracks to it with lag
+        // -----------------------------------------------------------------
+        {
+            at: 90,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "We need to talk.",
+        } as any,
+        // Subtle drift toward message (tracking shot)
+        {
+            at: 90,
+            kind: "CAMERA",
+            type: "PAN",
+            translateX: 0,
+            translateY: 50,  // Drift down toward new message
+            duration: 45,
+            easing: "ease-out",
+        } as any,
+        // Gentle push in to emphasize
+        {
+            at: 100,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.03,
+            originX: 0.5,
+            originY: 0.75,  // Focus on message area
+            duration: 35,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 3: TYPING ANTICIPATION (5s - 8s)
+        // Camera slowly drifts and tightens during typing
+        // Creates tension through subtle movement
+        // -----------------------------------------------------------------
+        {
+            at: 150,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+        } as any,
+        // Very slow push toward typing indicator
+        {
+            at: 150,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.05,
+            originX: 0.5,
+            originY: 0.88,  // Near bottom where typing appears
+            duration: 75,    // Slow 2.5s push
+            easing: "ease-out",
+        } as any,
+        // Micro drift to keep frame alive
+        {
+            at: 165,
+            kind: "CAMERA",
+            type: "PAN",
+            translateX: 5,   // Tiny horizontal drift
+            translateY: 15,  // Subtle downward drift
+            duration: 60,
+            easing: "linear",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 4: THE REVEAL (8s - 10s)
+        // Long message drops - SNAP to it, then push in hard
+        // -----------------------------------------------------------------
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+        } as any,
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "I've been thinking about us a lot lately... and I don't think this is working anymore.",
+        } as any,
+        // Quick snap/cut to message
+        {
+            at: 240,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.12,
+            originX: 0.5,
+            originY: 0.7,
+            duration: 8,
+            easing: "ease-out",
+        } as any,
+        // Hold tight on message
+        {
+            at: 260,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.12,
+            originX: 0.5,
+            originY: 0.72,
+            duration: 30,
+            easing: "linear",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 5: BREATHING ROOM (10s - 12s)
+        // Pull out wide - give the viewer context
+        // Slow dolly out movement
+        // -----------------------------------------------------------------
+        {
+            at: 300,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 0.92,
+            originX: 0.5,
+            originY: 0.5,
+            duration: 60,
+            easing: "ease-in-out",
+        } as any,
+        // Reset pan
+        {
+            at: 300,
+            kind: "CAMERA",
+            type: "PAN",
+            translateX: 0,
+            translateY: 0,
+            duration: 45,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 6: RAPID FIRE ESCALATION (12s - 16s)
+        // Quick cuts between speakers, tightening each time
+        // Camera gets progressively more aggressive
+        // -----------------------------------------------------------------
+        {
+            at: 360,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "Hello?",
+        } as any,
+        // Quick snap right (their message)
+        {
+            at: 360,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.06,
+            originX: 0.35,  // Left side where their messages appear
+            originY: 0.8,
+            duration: 8,
+            easing: "ease-out",
+        } as any,
+
+        {
+            at: 385,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "What do you mean?",
+        } as any,
+        // Snap to right (my message)
+        {
+            at: 385,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.09,
+            originX: 0.65,  // Right side where my messages appear
+            originY: 0.82,
+            duration: 8,
+            easing: "ease-out",
+        } as any,
+        // Micro shake for tension
+        {
+            at: 388,
+            kind: "CAMERA",
+            type: "SHAKE",
+            intensity: 2,
+            frequency: 20,
+            decay: 0.8,
+            duration: 6,
+        } as any,
+
+        {
+            at: 410,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "You know exactly what I mean.",
+        } as any,
+        // Tighter snap left
+        {
+            at: 410,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.13,
+            originX: 0.35,
+            originY: 0.85,
+            duration: 6,
+            easing: "ease-out",
+        } as any,
+
+        {
+            at: 430,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "I don't understand...",
+        } as any,
+        // Snap right, even tighter
+        {
+            at: 430,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.16,
+            originX: 0.65,
+            originY: 0.87,
+            duration: 6,
+            easing: "ease-out",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 7: THE BOMB DROP (16s - 18s)
+        // "It's over" - DRAMATIC IMPACT
+        // Hard shake + extreme tight + hold
+        // -----------------------------------------------------------------
+        {
+            at: 480,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "Ex 💔",
+            text: "It's over.",
+        } as any,
+        // Heavy shake for impact
+        {
+            at: 480,
+            kind: "CAMERA",
+            type: "SHAKE",
+            intensity: 12,
+            frequency: 18,
+            decay: 0.5,
+            duration: 20,
+        } as any,
+        // Extreme tight on the message
+        {
+            at: 480,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.25,
+            originX: 0.4,
+            originY: 0.88,
+            duration: 12,
+            easing: "ease-out",
+        } as any,
+        // Hold the frame - let it linger
+        {
+            at: 510,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.25,
+            originX: 0.4,
+            originY: 0.88,
+            duration: 30,
+            easing: "linear",
+        } as any,
+
+        // -----------------------------------------------------------------
+        // BEAT 8: AFTERMATH (18s - 22s)
+        // Slow pull out, user responds with "..."
+        // Camera drifts back to neutral - breathing
+        // -----------------------------------------------------------------
+        {
+            at: 540,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_ex",
+            from: "me",
+            text: "...",
+        } as any,
+        // Very slow pull out
+        {
+            at: 540,
+            kind: "CAMERA",
+            type: "ZOOM",
+            scale: 1.0,
+            originX: 0.5,
+            originY: 0.5,
+            duration: 90,
+            easing: "ease-in-out",
+        } as any,
+        // Slow upward pan (reverse of opening)
+        {
+            at: 570,
+            kind: "CAMERA",
+            type: "PAN",
+            translateX: 0,
+            translateY: -50,
+            duration: 60,
+            easing: "ease-out",
+        } as any,
+        // Final reset
+        {
+            at: 630,
+            kind: "CAMERA",
+            type: "RESET",
+            duration: 30,
+            easing: "ease-out",
+        } as any,
+    ];
+
+    return { initialWorld, events };
 }
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const CinematicCameraShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Get episode data
+    const episode = useMemo(() => createCinematicCameraEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
 ````
 
 ## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
@@ -29262,6 +24047,19 @@ export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
         </div>
     );
 };
+````
+
+## File: packages/apps-instagram/src/index.ts
+````typescript
+import { ReducerRegistry } from "@tokovo/core";
+import { instagramRuntime } from "./runtime";
+
+ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
+
+export * from "./runtime";
+export * from "./ui";
+export * from "./types";
+export * from "./notification-adapter";
 ````
 
 ## File: packages/apps-whatsapp/src/components/index.ts
@@ -29979,6 +24777,54 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
 };
 ````
 
+## File: packages/devices/src/iphone16/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * iPhone 16 camera configuration
+ * - Slow pan speed for cinematic feel on mobile
+ * - High follow lag for smooth, less reactive tracking
+ * - Tighter zoom range for portrait scrolling
+ */
+const iPhone16Camera: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "slow",
+    followLag: "high",
+    snapThreshold: 40,
+    safeAreaTop: 110,      // Dynamic Island + status bar
+    safeAreaBottom: 102,   // Home indicator
+    followLagFactor: 0.7,  // Cinematic lag
+    panSpeedMultiplier: 0.6,
+};
+
+/**
+ * iPhone 16 Device Profile
+ * 
+ * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
+ * Dynamic Island: Centered at top, pill shape
+ */
+export const iPhone16Profile: DeviceProfile = {
+    id: "iphone16",
+    platform: "ios",
+    dimensions: { width: 1290, height: 2796 },
+    statusBarHeight: 110,
+    camera: iPhone16Camera,
+
+    // Dynamic Island dimensions (measured from iPhone 16 specs)
+    dynamicIsland: {
+        centerX: 645,           // 1290 / 2 (centered)
+        topY: 36,               // Top padding
+        collapsedWidth: 370,    // Pill width
+        collapsedHeight: 110,   // Pill height
+        expandedWidth: 900,     // Expanded for Now Playing
+        expandedHeight: 220,    // Expanded height
+        cornerRadius: 55,       // Pill corners
+    },
+};
+````
+
 ## File: packages/devices/src/pixel/Frame.tsx
 ````typescript
 import React from "react";
@@ -30043,159 +24889,172 @@ export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React
 };
 ````
 
-## File: packages/devices/src/StatusBar.tsx
+## File: packages/devices/src/pixel/profile.ts
 ````typescript
-import React from "react";
+import { DeviceProfile, CameraDeviceConfig } from "../types";
 
 /**
- * Authentic iOS Status Bar Component
- * Pixel-perfect SVG icons for signal, WiFi, and battery
+ * Pixel camera configuration
+ * - Medium pan speed for balanced feel
+ * - Medium follow lag for responsive tracking
+ * - Slightly wider zoom range for Android
  */
-
-// iOS Signal Bars (4 bars, varying heights)
-const SignalBarsIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
-    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
-        <rect x="0" y="8" width="3" height="3" rx="0.5" />
-        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" />
-        <rect x="9" y="3" width="3" height="8" rx="0.5" />
-        <rect x="13.5" y="0" width="3" height="11" rx="0.5" />
-    </svg>
-);
-
-// iOS WiFi Icon (3 arcs)
-const WifiIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
-    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M1 4C4 1 12 1 15 4" />
-        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" />
-        <path d="M6 9C7 8 9 8 10 9" />
-        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
-    </svg>
-);
-
-// iOS Battery Icon
-const BatteryIcon: React.FC<{ color?: string; percentage?: number }> = ({ color = "currentColor", percentage = 100 }) => (
-    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
-        {/* Battery body */}
-        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
-        {/* Battery fill */}
-        <rect
-            x="2"
-            y="2"
-            width={Math.max(0, (percentage / 100) * 18)}
-            height="8"
-            rx="1"
-            fill={percentage > 20 ? color : "#FF3B30"}
-        />
-        {/* Battery cap */}
-        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
-    </svg>
-);
-
-interface StatusBarProps {
-    time?: string;
-    variant?: "ios" | "android";
-    theme?: "light" | "dark";
-    batteryPercentage?: number;
-}
-
-export const StatusBar: React.FC<StatusBarProps> = ({
-    time = "9:41",
-    variant = "ios",
-    theme = "light",
-    batteryPercentage = 100
-}) => {
-    const isAndroid = variant === "android";
-    const textColor = theme === "dark" ? "white" : "black";
-
-    if (isAndroid) {
-        return (
-            <div style={{
-                width: "100%",
-                height: 90,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "0 45px",
-                boxSizing: "border-box",
-                fontSize: 36,
-                fontWeight: "500",
-                color: "white",
-                position: "absolute",
-                top: 15,
-                left: 0,
-                zIndex: 20,
-                fontFamily: "Roboto, sans-serif"
-            }}>
-                <div>{time}</div>
-                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                    <SignalBarsIcon color="white" />
-                    <WifiIcon color="white" />
-                    <BatteryIcon color="white" percentage={batteryPercentage} />
-                </div>
-            </div>
-        );
-    }
-
-    // iOS Status Bar
-    return (
-        <div style={{
-            width: "100%",
-            height: 132, // 44pt * 3
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "45px 72px 0 72px",
-            boxSizing: "border-box",
-            color: textColor,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 20
-        }}>
-            {/* Left side - Time */}
-            <div style={{
-                fontSize: 51,
-                fontWeight: "600",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                letterSpacing: 0.5
-            }}>
-                {time}
-            </div>
-
-            {/* Right side - Status icons */}
-            <div style={{
-                display: "flex",
-                gap: 15,
-                alignItems: "center",
-                marginTop: 6
-            }}>
-                <SignalBarsIcon color={textColor} />
-                <WifiIcon color={textColor} />
-                <BatteryIcon color={textColor} percentage={batteryPercentage} />
-            </div>
-        </div>
-    );
+const PixelCamera: CameraDeviceConfig = {
+    minZoom: 0.85,
+    maxZoom: 1.2,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 45,
+    safeAreaTop: 90,       // Status bar
+    safeAreaBottom: 48,    // Navigation bar/gesture area
+    followLagFactor: 0.5,  // Balanced lag
+    panSpeedMultiplier: 1.0,
 };
 
 /**
- * iOS Status Bar specifically styled for dark backgrounds (Instagram, etc.)
+ * Pixel 7 Pro Device Profile
+ * 
+ * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
+ * No Dynamic Island - uses status bar indicators
  */
-export const DarkStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar time={time} theme="dark" batteryPercentage={batteryPercentage} />
-);
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    platform: "android",
+    dimensions: {
+        width: 1080,
+        height: 2400,
+    },
+    statusBarHeight: 90,
+    camera: PixelCamera,
+
+    // Android uses status bar for background app indicators
+    statusBarWidget: {
+        rightX: 1000,      // Near right edge
+        topY: 24,
+        maxWidth: 200,
+        height: 66,
+    },
+};
+````
+
+## File: packages/devices/src/types.ts
+````typescript
+/**
+ * Camera motion speed configuration
+ */
+export type CameraSpeed = "slow" | "medium" | "fast";
 
 /**
- * iOS Status Bar specifically styled for light backgrounds (WhatsApp, etc.)
+ * Camera follow lag configuration
+ * - high: More cinematic, camera lags significantly behind target
+ * - medium: Balanced tracking
+ * - low: Camera closely follows target (reactive)
  */
-export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
-);
+export type CameraFollowLag = "high" | "medium" | "low";
+
+/**
+ * Camera configuration for a specific device profile.
+ * 
+ * DESIGN PRINCIPLE: Device profiles define camera physics.
+ * Apps do NOT override these values. Ever.
+ */
+export interface CameraDeviceConfig {
+    // === Zoom Constraints ===
+    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
+    minZoom: number;
+    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
+    maxZoom: number;
+
+    // === Motion Characteristics ===
+    /** Pan speed for camera movement */
+    panSpeed: CameraSpeed;
+    /** Lag when following a target (soft tracking delay) */
+    followLag: CameraFollowLag;
+    /** Snap threshold in pixels - below this, snap instantly vs animate */
+    snapThreshold: number;
+
+    // === Safe Areas for Framing ===
+    /** Top safe area in pixels (status bar, notch, etc.) */
+    safeAreaTop: number;
+    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
+    safeAreaBottom: number;
+
+    // === Follow Easing (numeric values for computation) ===
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLagFactor: number;
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeedMultiplier: number;
+}
+
+/**
+ * Default camera configuration for devices
+ */
+export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 50,
+    safeAreaTop: 0,
+    safeAreaBottom: 0,
+    followLagFactor: 0.5,
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Dynamic Island configuration (iOS 14+ iPhones)
+ */
+export interface DynamicIslandConfig {
+    /** Center X position in device pixels */
+    centerX: number;
+    /** Top Y position */
+    topY: number;
+    /** Collapsed pill width */
+    collapsedWidth: number;
+    /** Collapsed pill height */
+    collapsedHeight: number;
+    /** Expanded width */
+    expandedWidth: number;
+    /** Expanded height */
+    expandedHeight: number;
+    /** Corner radius for pill shape */
+    cornerRadius: number;
+}
+
+/**
+ * Status bar widget area (Android)
+ */
+export interface StatusBarWidgetConfig {
+    /** Right edge X position */
+    rightX: number;
+    /** Top Y position */
+    topY: number;
+    /** Maximum width for indicators */
+    maxWidth: number;
+    /** Height of indicator area */
+    height: number;
+}
+
+/**
+ * Device profile defining physical characteristics and camera behavior
+ */
+export interface DeviceProfile {
+    id: string;
+    dimensions: { width: number; height: number };
+    statusBarHeight: number;
+
+    /** Platform type */
+    platform: "ios" | "android";
+
+    /** Camera behavior configuration (uses defaults if not specified) */
+    camera?: CameraDeviceConfig;
+
+    /** Dynamic Island configuration (iOS only) */
+    dynamicIsland?: DynamicIslandConfig;
+
+    /** Status bar widget configuration (Android only) */
+    statusBarWidget?: StatusBarWidgetConfig;
+}
 ````
 
 ## File: packages/dsl/src/author/camera-builder.ts
@@ -31058,127 +25917,373 @@ export const defaultLayoutConfig: LayoutConfig = {
 };
 ````
 
-## File: packages/renderer/src/NotificationOverlay.tsx
+## File: apps/video-runner/src/FullCinematicShowcaseVideo.tsx
 ````typescript
-import React from "react";
-import { Notification } from "@tokovo/core";
-import { LayoutState, LockscreenLayoutState } from "./layout/types";
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    DEFAULT_BUS_CONFIG
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
 
-export const NotificationOverlay: React.FC<{ notifications?: Notification[]; variant?: "ios" | "android"; layout?: LayoutState }> = ({ notifications = [], variant = "ios", layout }) => {
-    // If we have a Lockscreen layout, use it
-    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+// Import device reducer
+import "@tokovo/devices";
 
-    // If no layout provided or not lockscreen, we might still want to show notifications (e.g. heads-up)
-    // But for now, let's assume we only use this for lockscreen stacking or heads-up if layout engine supports it.
-    // If layout is missing, fallback to nothing or old behavior? 
-    // Let's stick to layout-driven. If no layout, no render.
-    if (!lockscreenLayout) return null;
+// Import Spotify to register plugin and widgets
+import "@tokovo/apps-spotify";
 
-    const isAndroid = variant === "android";
+/**
+ * Full Cinematic Showcase - DSL Style
+ * 
+ * Demonstrates production-grade episode authoring:
+ * - DSL helpers abstract away raw event structure
+ * - Camera movements synchronized with story beats
+ * - Production audio with buses and ducking
+ * - Spotify background music (Now Playing widget)
+ * - Notification system with grouping
+ */
+
+// =============================================================================
+// DSL HELPERS
+// =============================================================================
+
+const dsl = {
+    // Messages
+    receiveMessage: (at: number, convoId: string, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from,
+        text,
+    } as any),
+
+    sendMessage: (at: number, convoId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    typingEnd: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    // Camera
+    zoom: (at: number, scale: number, duration: number, opts: { originX?: number; originY?: number; easing?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        scale,
+        duration,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    pan: (at: number, x: number, y: number, duration: number, easing = "ease-out"): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "PAN",
+        translateX: x,
+        translateY: y,
+        duration,
+        easing,
+    } as any),
+
+    shake: (at: number, intensity: number, duration: number, decay = 0.5): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        intensity,
+        frequency: 18,
+        decay,
+        duration,
+    } as any),
+
+    reset: (at: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        duration,
+        easing: "ease-out",
+    } as any),
+
+    // Spotify - Background Music
+    spotifyPlay: (at: number, track: { name: string; artist: string; albumArt?: string }): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_spotify",
+        type: "PLAY_TRACK",
+        track,
+    } as any),
+
+    spotifyBackground: (at: number, deviceId: string, track: { name: string; artist: string }): TimelineEvent => ({
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "START_BACKGROUND_APP",
+        appId: "app_spotify",
+        indicator: "music",
+        label: `${track.name} - ${track.artist}`,
+    } as any),
+
+    // Notifications
+    notification: (at: number, deviceId: string, opts: { appId: string; title: string; body: string; mode?: string; threadId?: string; icon?: string }): TimelineEvent => ({
+        at,
+        kind: "DEVICE",
+        deviceId,
+        type: "SHOW_NOTIFICATION",
+        appId: opts.appId,
+        title: opts.title,
+        body: opts.body,
+        mode: opts.mode ?? "headsup",
+        threadId: opts.threadId,
+        icon: opts.icon,
+    } as any),
+
+    // Audio
+    playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "PLAY_SOUND",
+        soundId,
+        volume,
+        loop: opts.loop,
+        duration: opts.duration,
+        instanceId: opts.instanceId,
+    } as any),
+
+    stopSound: (at: number, instanceId: string): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "STOP_SOUND",
+        instanceId,
+    } as any),
+};
+
+// =============================================================================
+// DEMO TRACK
+// =============================================================================
+
+const DEMO_TRACK = {
+    name: "Blinding Lights",
+    artist: "The Weeknd",
+    album: "After Hours",
+    albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
+};
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createFullCinematicEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                backgroundApps: [],
+            },
+        },
+        conversations: {
+            dm_ex: {
+                id: "dm_ex",
+                type: "dm",
+                name: "Ex 💔",
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_ex",
+            },
+            app_spotify: {
+                screen: "player",
+                isMinimized: true,
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE", primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: {
+            activeSounds: {},
+            buses: DEFAULT_BUS_CONFIG,
+        },
+    };
+
+    // -------------------------------------------------------------------------
+    // TIMELINE (DSL STYLE)
+    // -------------------------------------------------------------------------
+    const events: TimelineEvent[] = [
+        // =====================================================================
+        // ACT 0: SPOTIFY STARTS (background music)
+        // =====================================================================
+        dsl.spotifyPlay(0, DEMO_TRACK),
+        dsl.spotifyBackground(0, "phone", DEMO_TRACK),
+
+        // =====================================================================
+        // ACT 1: ESTABLISHING (0-3s)
+        // =====================================================================
+        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),
+        dsl.pan(1, 0, -150, 75, "ease-in-out"),
+        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),
+
+        // =====================================================================
+        // ACT 2: FIRST MESSAGE (3s)
+        // =====================================================================
+        dsl.receiveMessage(90, "dm_ex", "Ex 💔", "We need to talk."),
+        dsl.playSound(90, "whatsapp_received", 0.9),
+        dsl.pan(90, 0, 50, 45),
+        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),
+
+        // =====================================================================
+        // ACT 3: INSTAGRAM NOTIFICATION (4s) - demo grouping
+        // =====================================================================
+        dsl.notification(120, "phone", {
+            appId: "app_instagram",
+            title: "mike_photos",
+            body: "Liked your photo ❤️",
+            threadId: "ig_likes",
+            icon: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
+        }),
+
+        // =====================================================================
+        // ACT 4: TYPING ANTICIPATION (5s)
+        // =====================================================================
+        dsl.typingStart(150, "dm_ex", "Ex 💔"),
+        dsl.playSound(150, "whatsapp_typing", 0.4, { loop: true, duration: 90, instanceId: "typing" }),
+        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),
+
+        // =====================================================================
+        // ACT 5: THE REVEAL (8s)
+        // =====================================================================
+        dsl.typingEnd(240, "dm_ex", "Ex 💔"),
+        dsl.stopSound(240, "typing"),
+        dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
+        dsl.playSound(240, "whatsapp_received", 1.0),
+        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),
+
+        // =====================================================================
+        // ACT 6: ANOTHER IG NOTIFICATION (9s) - grouped with previous
+        // =====================================================================
+        dsl.notification(270, "phone", {
+            appId: "app_instagram",
+            title: "sarah_travels",
+            body: "Also liked your photo ❤️",
+            threadId: "ig_likes",
+        }),
+
+        // =====================================================================
+        // ACT 7: BREATHING ROOM (10s)
+        // =====================================================================
+        dsl.zoom(300, 0.92, 60),
+
+        // =====================================================================
+        // ACT 8: RAPID FIRE (12-16s)
+        // =====================================================================
+        dsl.receiveMessage(360, "dm_ex", "Ex 💔", "Hello?"),
+        dsl.playSound(360, "whatsapp_received", 0.8),
+        dsl.zoom(360, 1.06, 8, { originX: 0.35, originY: 0.8 }),
+
+        dsl.sendMessage(385, "dm_ex", "What do you mean?"),
+        dsl.playSound(385, "whatsapp_sent", 0.7),
+        dsl.zoom(385, 1.09, 8, { originX: 0.65, originY: 0.82 }),
+
+        dsl.receiveMessage(410, "dm_ex", "Ex 💔", "You know exactly what I mean."),
+        dsl.playSound(410, "whatsapp_received", 0.9),
+        dsl.zoom(410, 1.13, 6, { originX: 0.35 }),
+
+        dsl.sendMessage(430, "dm_ex", "I don't understand..."),
+        dsl.playSound(430, "whatsapp_sent", 0.7),
+        dsl.zoom(430, 1.16, 6, { originX: 0.65 }),
+
+        // =====================================================================
+        // ACT 9: THE BOMB (16s)
+        // =====================================================================
+        dsl.receiveMessage(480, "dm_ex", "Ex 💔", "It's over."),
+        dsl.playSound(480, "notification", 1.0),
+        dsl.shake(480, 12, 20, 0.5),
+        dsl.zoom(480, 1.25, 12, { originX: 0.4, originY: 0.88 }),
+
+        // =====================================================================
+        // ACT 10: AFTERMATH (18-24s)
+        // =====================================================================
+        dsl.sendMessage(540, "dm_ex", "..."),
+        dsl.playSound(540, "whatsapp_sent", 0.5),
+        dsl.zoom(540, 1.0, 90),
+        dsl.reset(660, 30),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const FullCinematicShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    const episode = useMemo(() => createFullCinematicEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
 
     return (
-        <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            pointerEvents: "none",
-            zIndex: 100
-        }}>
-            {lockscreenLayout.notificationLayouts.map(nl => {
-                const notification = notifications.find(n => n.id === nl.id);
-                if (!notification) return null;
-
-                return (
-                    <div key={nl.id} style={{
-                        position: "absolute",
-                        top: nl.y,
-                        left: "50%",
-                        transform: `translateX(-50%) translateY(${nl.translateY}px)`,
-                        width: "92%",
-                        opacity: nl.opacity,
-                        height: nl.height
-                    }}>
-                        <div style={{
-                            backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.9)",
-                            backdropFilter: "blur(20px)",
-                            borderRadius: isAndroid ? 24 : 36,
-                            padding: "30px 40px",
-                            boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 30,
-                            color: isAndroid ? "white" : "black",
-                            height: "100%",
-                            boxSizing: "border-box"
-                        }}>
-                            <div style={{
-                                width: 100,
-                                height: 100,
-                                borderRadius: 20,
-                                backgroundColor: "#25D366", // WhatsApp Green (Mock)
-                                display: "flex",
-                                justifyContent: "center",
-                                alignItems: "center",
-                                fontSize: 50,
-                                color: "white"
-                            }}>
-                                W
-                            </div>
-                            <div style={{ flex: 1, overflow: "hidden" }}>
-                                <div style={{ fontSize: 36, fontWeight: "bold", marginBottom: 8, display: "flex", justifyContent: "space-between" }}>
-                                    <span>{notification.title}</span>
-                                    <span style={{ fontSize: 28, opacity: 0.5, fontWeight: "normal" }}>now</span>
-                                </div>
-                                <div style={{ fontSize: 36, opacity: 0.8, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                    {notification.body}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
+        <AbsoluteFill style={{ backgroundColor: "#0a0a1a", justifyContent: "center", alignItems: "center" }}>
+            <AudioLayer world={world} t={t} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
     );
 };
-````
-
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
-}
 ````
 
 ## File: packages/apps-instagram/src/views/feed/FeedView.tsx
@@ -31826,17 +26931,6 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
 
 // Re-export specific views if needed externally, but InstagramApp is the main entry
 export { InstagramChatView };
-````
-
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-export * from "./plugin";
-export * from "./components";
-export * from "./config";
-export * from "./camera";
 ````
 
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
@@ -33034,115 +28128,211 @@ export function getDeviceProfile(profileId: string): DeviceProfile {
 }
 ````
 
-## File: packages/devices/src/reducer.ts
+## File: packages/devices/src/StatusBar.tsx
 ````typescript
-import { produce } from "immer";
-import { TimelineEvent, DeviceState } from "@tokovo/core";
-import { ReducerRegistry } from "@tokovo/core";
+import React from "react";
 
 /**
- * Device Reducer
- * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls, home screen
+ * Authentic iOS Status Bar Component
+ * Pixel-perfect SVG icons for signal, WiFi, and battery
  */
-export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
-    return produce(devices, draft => {
-        if (event.kind !== "DEVICE") return;
 
-        const device = draft[event.deviceId];
-        if (!device) return;
+// iOS Signal Bars (4 bars, varying heights)
+const SignalBarsIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
+        <rect x="0" y="8" width="3" height="3" rx="0.5" />
+        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" />
+        <rect x="9" y="3" width="3" height="8" rx="0.5" />
+        <rect x="13.5" y="0" width="3" height="11" rx="0.5" />
+    </svg>
+);
 
-        switch (event.type) {
-            // --- Lock/Unlock ---
-            case "LOCK":
-                device.isLocked = true;
-                break;
-            case "UNLOCK":
-                device.isLocked = false;
-                break;
+// iOS WiFi Icon (3 arcs)
+const WifiIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M1 4C4 1 12 1 15 4" />
+        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" />
+        <path d="M6 9C7 8 9 8 10 9" />
+        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
+    </svg>
+);
 
-            // --- App Management ---
-            case "OPEN_APP":
-                device.foregroundAppId = event.appId;
-                break;
-            case "CLOSE_APP":
-                device.foregroundAppId = undefined;
-                break;
-            case "GO_HOME":
-                device.foregroundAppId = undefined;
-                break;
+// iOS Battery Icon
+const BatteryIcon: React.FC<{ color?: string; percentage?: number }> = ({ color = "currentColor", percentage = 100 }) => (
+    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+        {/* Battery body */}
+        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
+        {/* Battery fill */}
+        <rect
+            x="2"
+            y="2"
+            width={Math.max(0, (percentage / 100) * 18)}
+            height="8"
+            rx="1"
+            fill={percentage > 20 ? color : "#FF3B30"}
+        />
+        {/* Battery cap */}
+        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
+    </svg>
+);
 
-            // --- Badge ---
-            case "SET_BADGE":
-                if (device.homeScreen) {
-                    // Update badge in dock
-                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
-                    if (dockIcon) {
-                        dockIcon.badge = event.count > 0 ? event.count : undefined;
-                    }
-                    // Update badge in pages
-                    device.homeScreen.pages.forEach(page => {
-                        page.apps.forEach(item => {
-                            if ('appId' in item && item.appId === event.appId) {
-                                item.badge = event.count > 0 ? event.count : undefined;
-                            }
-                        });
-                    });
-                }
-                break;
-
-            // --- Notifications ---
-            case "SHOW_NOTIFICATION":
-                if (!device.notifications) device.notifications = [];
-                device.notifications.push({
-                    id: `notif_${event.at}_${event.appId}`,
-                    appId: event.appId,
-                    title: event.title,
-                    body: event.body,
-                    at: event.at,
-                    mode: event.mode || "both",
-                    icon: event.icon
-                });
-                break;
-
-            case "DISMISS_NOTIFICATION":
-                if (device.notifications) {
-                    const notif = device.notifications.find(n => n.id === event.notificationId);
-                    if (notif) {
-                        notif.dismissedAt = event.at;
-                    }
-                }
-                break;
-
-            // --- Call Events ---
-            case "INCOMING_CALL":
-                device.call = {
-                    status: "incoming",
-                    callerId: event.callerId,
-                    callerName: event.callerName,
-                    callerAvatar: event.callerAvatar,
-                    isVideo: event.isVideo || false,
-                    startedAt: event.at
-                };
-                break;
-
-            case "CALL_ANSWERED":
-                if (device.call && device.call.status === "incoming") {
-                    device.call.status = "active";
-                }
-                break;
-
-            case "CALL_ENDED":
-                if (device.call) {
-                    device.call.status = "ended";
-                    device.call.endedAt = event.at;
-                }
-                break;
-        }
-    });
+interface StatusBarProps {
+    time?: string;
+    variant?: "ios" | "android";
+    theme?: "light" | "dark";
+    batteryPercentage?: number;
+    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
 }
 
-// Register itself with the core engine
-ReducerRegistry.registerDeviceReducer(deviceReducer);
+// Notification icon component
+const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
+    <div style={{ position: "relative" }}>
+        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
+        {count > 1 && (
+            <div style={{
+                position: "absolute",
+                top: -6,
+                right: -8,
+                background: "#ff3b30",
+                borderRadius: 10,
+                padding: "2px 6px",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "white",
+                minWidth: 12,
+                textAlign: "center",
+            }}>
+                {count > 9 ? "9+" : count}
+            </div>
+        )}
+    </div>
+);
+
+export const StatusBar: React.FC<StatusBarProps> = ({
+    time = "9:41",
+    variant = "ios",
+    theme = "light",
+    batteryPercentage = 100,
+    notificationIcons = [],
+}) => {
+    const isAndroid = variant === "android";
+    const textColor = theme === "dark" ? "white" : "black";
+
+    if (isAndroid) {
+        return (
+            <div style={{
+                width: "100%",
+                height: 90,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "0 45px",
+                boxSizing: "border-box",
+                fontSize: 36,
+                fontWeight: "500",
+                color: "white",
+                position: "absolute",
+                top: 15,
+                left: 0,
+                zIndex: 20,
+                fontFamily: "Roboto, sans-serif"
+            }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <span>{time}</span>
+                    {/* Notification icons (Android shows them on left) */}
+                    {notificationIcons.slice(0, 5).map((n, i) => (
+                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
+                    ))}
+                    {notificationIcons.length > 5 && (
+                        <span style={{ fontSize: 28 }}>•</span>
+                    )}
+                </div>
+                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                    <SignalBarsIcon color="white" />
+                    <WifiIcon color="white" />
+                    <BatteryIcon color="white" percentage={batteryPercentage} />
+                </div>
+            </div>
+        );
+    }
+
+    // iOS Status Bar
+    return (
+        <div style={{
+            width: "100%",
+            height: 132, // 44pt * 3
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "45px 72px 0 72px",
+            boxSizing: "border-box",
+            color: textColor,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 20
+        }}>
+            {/* Left side - Time */}
+            <div style={{
+                fontSize: 51,
+                fontWeight: "600",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                letterSpacing: 0.5
+            }}>
+                {time}
+            </div>
+
+            {/* Right side - Status icons */}
+            <div style={{
+                display: "flex",
+                gap: 15,
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                <SignalBarsIcon color={textColor} />
+                <WifiIcon color={textColor} />
+                <BatteryIcon color={textColor} percentage={batteryPercentage} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * iOS Status Bar specifically styled for dark backgrounds (Instagram, etc.)
+ */
+export const DarkStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar time={time} theme="dark" batteryPercentage={batteryPercentage} />
+);
+
+/**
+ * iOS Status Bar specifically styled for light backgrounds (WhatsApp, etc.)
+ */
+export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
+);
+````
+
+## File: packages/dsl/src/author/index.ts
+````typescript
+/**
+ * DSL Author Module
+ * 
+ * Public API for authoring episodes.
+ */
+
+export { episode, EpisodeBuilder, DeviceFn, CameraFn, SceneFn } from "./episode-builder";
+export { DeviceBuilder, BeatFn } from "./device-builder";
+export { BeatBuilder, MessageOptions } from "./beat-builder";
+export { CameraBuilder, CameraEvent, ZoomOptions, ShakeOptions, PIPOptions } from "./camera-builder";
+export { SceneBuilder, SceneDeviceBuilder, SceneDeviceAction } from "./scene-builder";
+export { audio, PlaySoundOptions, BackgroundMusicOptions, FadeVolumeOptions } from "./audio-builder";
+export { spotify, SpotifyTrackInfo, DEMO_TRACKS } from "./spotify-builder";
 ````
 
 ## File: packages/episodes/src/examples/instagram-test.json
@@ -33860,6 +29050,228 @@ export interface TimelineIR {
 }
 ````
 
+## File: packages/renderer/src/DynamicIsland.tsx
+````typescript
+/**
+ * DynamicIsland - iOS Dynamic Island Container
+ * 
+ * Renders the Dynamic Island UI element at the top of iPhone screens.
+ * Priority: HeadsUp Notification > Active Widget > Idle
+ */
+
+import React from "react";
+import { WorldState, DeviceState, WidgetRegistry, WidgetProps, NotificationAdapterRegistry, Notification } from "@tokovo/core";
+import { DeviceProfile, DynamicIslandConfig } from "@tokovo/devices";
+
+interface DynamicIslandProps {
+    device: DeviceState;
+    deviceProfile: DeviceProfile;
+    world: WorldState;
+    t: number;
+}
+
+/**
+ * Idle Dynamic Island - Black pill when nothing is playing
+ */
+const IdleDynamicIsland: React.FC<{ config: DynamicIslandConfig }> = ({ config }) => (
+    <div
+        style={{
+            position: "absolute",
+            top: config.topY,
+            left: config.centerX - config.collapsedWidth / 2,
+            width: config.collapsedWidth,
+            height: config.collapsedHeight,
+            background: "#000000",
+            borderRadius: config.cornerRadius,
+            zIndex: 1000,
+        }}
+    />
+);
+
+/**
+ * Notification in Dynamic Island - expanded state
+ */
+const NotificationDynamicIsland: React.FC<{
+    config: DynamicIslandConfig;
+    notification: Notification;
+}> = ({ config, notification }) => {
+    const formatted = NotificationAdapterRegistry.format(notification);
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: config.topY - 20,
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: config.expandedWidth,
+                background: "#000000",
+                borderRadius: config.cornerRadius,
+                zIndex: 1001,
+                padding: "24px 30px",
+                display: "flex",
+                alignItems: "center",
+                gap: "24px",
+                boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+            }}
+        >
+            {/* App Icon */}
+            <div
+                style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: 20,
+                    background: formatted.iconBackground || "#333",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 40,
+                    flexShrink: 0,
+                }}
+            >
+                {formatted.icon || "📱"}
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                <div
+                    style={{
+                        color: "#fff",
+                        fontSize: 28,
+                        fontWeight: 600,
+                        marginBottom: 8,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
+                    {formatted.title}
+                </div>
+                <div
+                    style={{
+                        color: "rgba(255,255,255,0.7)",
+                        fontSize: 24,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}
+                >
+                    {formatted.body}
+                </div>
+            </div>
+
+            {/* Preview image if present */}
+            {formatted.preview?.kind === "image" && (
+                <div
+                    style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: 12,
+                        background: "#333",
+                        backgroundImage: `url(${formatted.preview.value})`,
+                        backgroundSize: "cover",
+                        flexShrink: 0,
+                    }}
+                />
+            )}
+        </div>
+    );
+};
+
+/**
+ * DynamicIsland Container Component
+ */
+export const DynamicIsland: React.FC<DynamicIslandProps> = ({
+    device,
+    deviceProfile,
+    world,
+    t,
+}) => {
+    // No Dynamic Island on this device?
+    if (!deviceProfile.dynamicIsland) {
+        return null;
+    }
+
+    const config = deviceProfile.dynamicIsland;
+    const platform = deviceProfile.platform;
+
+    // Find the notification that should be displayed as headsUp at current frame
+    // A notification is visible in headsUp if: t >= at AND t < (at + duration)
+    const items = device.notificationCenter?.items || [];
+    const activeHeadsUp = items
+        .filter(n => {
+            // Must not be dismissed
+            if (n.state === "dismissed" || n.dismissedAt !== undefined) return false;
+
+            // Must be in headsUp-capable mode
+            const mode = n.mode || "both";
+            if (mode === "lockscreen" || mode === "silent") return false;
+
+            // Check time window
+            const shownAt = n.headsUp?.shownAt ?? n.at;
+            const duration = n.headsUp?.duration ?? 90; // Default 3s at 30fps
+            const hideAt = shownAt + duration;
+
+            return t >= shownAt && t < hideAt;
+        })
+        .sort((a, b) => b.at - a.at)[0]; // Most recent first
+
+    if (activeHeadsUp) {
+        return <NotificationDynamicIsland config={config} notification={activeHeadsUp} />;
+    }
+
+    // Get active background app IDs
+    const activeAppIds = device.backgroundApps?.map(a => a.appId) || [];
+
+    // Resolve which widget should render
+    const resolved = WidgetRegistry.resolve("dynamicIsland", platform, activeAppIds);
+
+    // If no widget, show idle state
+    if (!resolved) {
+        return <IdleDynamicIsland config={config} />;
+    }
+
+    // Find the background app state for this widget
+    const backgroundApp = device.backgroundApps?.find(a => a.appId === resolved.appId);
+
+    // Get app state
+    const appState = world.appState[resolved.appId] || {};
+
+    // Build widget props
+    const widgetProps: WidgetProps = {
+        appState,
+        backgroundApp,
+        deviceProfile: {
+            dynamicIsland: config,
+        },
+        currentFrame: t,
+        expansionMode: "compact",
+        platform,
+    };
+
+    // Get the widget component
+    const WidgetComponent = resolved.widget.component;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: config.topY,
+                left: "50%",
+                transform: "translateX(-50%)",
+                zIndex: 1000,
+                display: "flex",
+                justifyContent: "center",
+            }}
+        >
+            <WidgetComponent {...widgetProps} />
+        </div>
+    );
+};
+
+export default DynamicIsland;
+````
+
 ## File: packages/renderer/src/MultiDeviceRenderer.tsx
 ````typescript
 import React from "react";
@@ -34369,6 +29781,299 @@ const DevicePaneFit: React.FC<{
 };
 ````
 
+## File: packages/renderer/src/NotificationOverlay.tsx
+````typescript
+import React from "react";
+import { Notification, NotificationGroup } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
+
+// =============================================================================
+// APP BRANDING (for icons and colors)
+// =============================================================================
+
+const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
+    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
+    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
+    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
+    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
+    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
+    default: { color: "#8E8E93", icon: "⬤", name: "App" },
+};
+
+function getAppBranding(appId: string) {
+    return APP_BRANDING[appId] || APP_BRANDING.default;
+}
+
+// =============================================================================
+// GROUPING LOGIC
+// =============================================================================
+
+/**
+ * Group notifications by app or threadId
+ */
+function groupNotifications(notifications: Notification[]): NotificationGroup[] {
+    const groups = new Map<string, NotificationGroup>();
+
+    for (const notif of notifications) {
+        // Skip dismissed notifications
+        if (notif.dismissedAt) continue;
+
+        // Group key: use groupKey if provided, else threadId + appId, else just appId
+        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                appId: notif.appId,
+                notifications: [],
+                collapsed: true,
+                count: 0,
+                latestAt: 0,
+            });
+        }
+
+        const group = groups.get(key)!;
+        group.notifications.push(notif);
+        group.count++;
+        group.latestAt = Math.max(group.latestAt, notif.at);
+    }
+
+    // Sort by latest notification time (most recent first)
+    return Array.from(groups.values()).sort((a, b) => b.latestAt - a.latestAt);
+}
+
+// =============================================================================
+// NOTIFICATION GROUP CARD
+// =============================================================================
+
+interface GroupCardProps {
+    group: NotificationGroup;
+    y: number;
+    opacity: number;
+    translateY: number;
+    variant: "ios" | "android";
+}
+
+const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
+    const isAndroid = variant === "android";
+    const branding = getAppBranding(group.appId);
+    const latestNotif = group.notifications[group.notifications.length - 1];
+    const hasMultiple = group.count > 1;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: y,
+                left: "50%",
+                transform: `translateX(-50%) translateY(${translateY}px)`,
+                width: "92%",
+                opacity,
+            }}
+        >
+            {/* Stacked cards effect (show 2 cards behind if multiple) */}
+            {hasMultiple && (
+                <>
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: 6,
+                            left: "2%",
+                            right: "2%",
+                            height: 100,
+                            backgroundColor: isAndroid ? "#252525" : "rgba(255, 255, 255, 0.6)",
+                            borderRadius: isAndroid ? 24 : 36,
+                            zIndex: 1,
+                        }}
+                    />
+                    {group.count > 2 && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 12,
+                                left: "4%",
+                                right: "4%",
+                                height: 100,
+                                backgroundColor: isAndroid ? "#1a1a1a" : "rgba(255, 255, 255, 0.3)",
+                                borderRadius: isAndroid ? 24 : 36,
+                                zIndex: 0,
+                            }}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* Main notification card */}
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 2,
+                    backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    borderRadius: isAndroid ? 24 : 36,
+                    padding: "30px 40px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 30,
+                    color: isAndroid ? "white" : "black",
+                }}
+            >
+                {/* App Icon */}
+                <div
+                    style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: 20,
+                        backgroundColor: branding.color,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontSize: 50,
+                        color: "white",
+                        flexShrink: 0,
+                    }}
+                >
+                    {branding.icon}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                    {/* Header: App name + count + time */}
+                    <div
+                        style={{
+                            fontSize: 30,
+                            fontWeight: 600,
+                            marginBottom: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            color: isAndroid ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
+                            {branding.name}
+                        </span>
+                        {hasMultiple && (
+                            <span
+                                style={{
+                                    fontSize: 24,
+                                    backgroundColor: branding.color,
+                                    color: "white",
+                                    borderRadius: 12,
+                                    padding: "2px 10px",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                {group.count}
+                            </span>
+                        )}
+                        <span style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}>
+                            now
+                        </span>
+                    </div>
+
+                    {/* Title */}
+                    <div
+                        style={{
+                            fontSize: 36,
+                            fontWeight: "bold",
+                            marginBottom: 8,
+                            color: isAndroid ? "white" : "black",
+                        }}
+                    >
+                        {latestNotif.title}
+                    </div>
+
+                    {/* Body */}
+                    <div
+                        style={{
+                            fontSize: 34,
+                            opacity: 0.8,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}
+                    >
+                        {latestNotif.body}
+                    </div>
+
+                    {/* Summary for groups */}
+                    {hasMultiple && (
+                        <div
+                            style={{
+                                fontSize: 28,
+                                marginTop: 8,
+                                opacity: 0.5,
+                            }}
+                        >
+                            +{group.count - 1} more notification{group.count > 2 ? "s" : ""}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// NOTIFICATION OVERLAY
+// =============================================================================
+
+interface NotificationOverlayProps {
+    notifications?: Notification[];
+    variant?: "ios" | "android";
+    layout?: LayoutState;
+}
+
+export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
+    notifications = [],
+    variant = "ios",
+    layout,
+}) => {
+    // Only render on lockscreen with layout
+    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+    if (!lockscreenLayout) return null;
+
+    // Group notifications
+    const groups = groupNotifications(notifications);
+
+    // Map groups to layout positions
+    // For simplicity, use first N layout positions for groups
+    const visibleGroups = groups.slice(0, lockscreenLayout.notificationLayouts.length);
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: "none",
+                zIndex: 100,
+            }}
+        >
+            {visibleGroups.map((group, index) => {
+                const layoutInfo = lockscreenLayout.notificationLayouts[index];
+                if (!layoutInfo) return null;
+
+                return (
+                    <GroupCard
+                        key={group.key}
+                        group={group}
+                        y={layoutInfo.y}
+                        opacity={layoutInfo.opacity}
+                        translateY={layoutInfo.translateY}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+````
+
 ## File: packages/renderer/package.json
 ````json
 {
@@ -34445,6 +30150,44 @@ export const Video: React.FC = () => {
         </div>
     );
 };
+````
+
+## File: apps/video-runner/package.json
+````json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/apps-spotify": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
 ## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
@@ -34802,6 +30545,18 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
         </div>
     );
 };
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+export * from "./config";
+export * from "./camera";
+export * from "./notification-adapter";
 ````
 
 ## File: packages/core/src/camera/index.ts
@@ -35252,6 +31007,296 @@ export * from "./timeline";
 
 // Presets
 export * from "./presets";
+````
+
+## File: packages/core/src/plugin.ts
+````typescript
+/**
+ * Plugin System - Self-contained app registration
+ * 
+ * Apps register themselves as plugins with all their dependencies:
+ * - UI components
+ * - State reducers  
+ * - Sound effects
+ * - Event types they handle
+ * - Platform-specific widgets (Dynamic Island, status bar)
+ */
+
+import { WorldState, Notification, BackgroundAppState } from "./types";
+import { AppReducer, ReducerRegistry } from "./engine";
+import { Platform } from "./tokens";
+import type { NotificationAdapter } from "./notification-adapter";
+export type { NotificationAdapter };
+
+// =============================================================================
+// PLUGIN TYPES
+// =============================================================================
+
+/**
+ * Props passed to all app view components
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: any;
+    platform?: "ios" | "android";
+    deviceId?: string;
+}
+
+/**
+ * App view component type (generic, will be React.FC in renderer)
+ */
+export type AppViewComponent = (props: AppViewProps) => any;
+
+// =============================================================================
+// WIDGET TYPES
+// =============================================================================
+
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+// Platform type is re-exported from tokens.ts
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: any;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => any;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+
+
+
+/**
+ * Plugin definition - everything an app needs to function
+ */
+export interface TokovoPlugin {
+    /** Unique app ID (e.g., "app_whatsapp") */
+    id: string;
+
+    /** Display name */
+    name: string;
+
+    /** Plugin version */
+    version: string;
+
+    /** App icon for notifications/home screen */
+    icon?: string;
+
+    /** Primary color for theming */
+    primaryColor?: string;
+
+    /** React component to render the app view */
+    appView?: AppViewComponent;
+
+    /** State reducer for APP events */
+    reducer?: AppReducer;
+
+    /** Event types this plugin handles */
+    eventTypes?: string[];
+
+    /** Sound effect mappings */
+    sounds?: Record<string, string>;
+
+    /** Notification sound */
+    notificationSound?: string;
+
+    /** Default app state */
+    defaultState?: any;
+
+    // === NEW: Widget System ===
+
+    /** Platform-specific widgets this app provides */
+    widgets?: WidgetSlot[];
+
+    /** Notification adapter for formatting */
+    notificationAdapter?: NotificationAdapter;
+}
+
+// =============================================================================
+// PLUGIN MANAGER
+// =============================================================================
+
+/**
+ * PluginManager - Central registry for all app plugins
+ */
+class PluginManagerClass {
+    private plugins = new Map<string, TokovoPlugin>();
+    private viewRegistry = new Map<string, AppViewComponent>();
+
+    /**
+     * Register a plugin
+     */
+    register(plugin: TokovoPlugin): void {
+        if (this.plugins.has(plugin.id)) {
+            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+        }
+
+        this.plugins.set(plugin.id, plugin);
+
+        // Auto-register reducer
+        if (plugin.reducer) {
+            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+        }
+
+        // Store view component
+        if (plugin.appView) {
+            this.viewRegistry.set(plugin.id, plugin.appView);
+        }
+
+        // Auto-register widgets with WidgetRegistry
+        if (plugin.widgets && plugin.widgets.length > 0) {
+            // Import dynamically to avoid circular dependency
+            const { WidgetRegistry } = require("./widget-registry");
+            WidgetRegistry.register(plugin.id, plugin.widgets);
+            console.log(`[PluginManager] Registered ${plugin.widgets.length} widgets for: ${plugin.id}`);
+        }
+
+        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
+    }
+
+    /**
+     * Get a plugin by ID
+     */
+    get(id: string): TokovoPlugin | undefined {
+        return this.plugins.get(id);
+    }
+
+    /**
+     * Get app view component
+     */
+    getView(id: string): AppViewComponent | undefined {
+        return this.viewRegistry.get(id);
+    }
+
+    /**
+     * Get all registered plugins
+     */
+    getAll(): TokovoPlugin[] {
+        return Array.from(this.plugins.values());
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getAppIds(): string[] {
+        return Array.from(this.plugins.keys());
+    }
+
+    /**
+     * Check if plugin is registered
+     */
+    has(id: string): boolean {
+        return this.plugins.has(id);
+    }
+
+    /**
+     * Get plugin metadata for display
+     */
+    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+        const plugin = this.plugins.get(id);
+        if (!plugin) return undefined;
+        return {
+            name: plugin.name,
+            icon: plugin.icon,
+            color: plugin.primaryColor,
+        };
+    }
+
+    /**
+     * Get sound for an event from plugin
+     */
+    getSound(pluginId: string, soundKey: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.sounds?.[soundKey];
+    }
+}
+
+export const PluginManager = new PluginManagerClass();
+
+// =============================================================================
+// PLUGIN HELPERS
+// =============================================================================
+
+/**
+ * Create a plugin definition with defaults
+ */
+export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
+    return {
+        ...config,
+        version: config.version ?? "1.0.0",
+        eventTypes: config.eventTypes ?? [],
+        sounds: config.sounds ?? {},
+    } as TokovoPlugin;
+}
+
+/**
+ * Register multiple plugins at once
+ */
+export function registerPlugins(plugins: TokovoPlugin[]): void {
+    plugins.forEach(plugin => PluginManager.register(plugin));
+}
 ````
 
 ## File: packages/episodes/src/schema.ts
@@ -35975,6 +32020,334 @@ export function createInitialWorld(partial: Partial<WorldState> = {}): WorldStat
         ...partial,
     };
 }
+````
+
+## File: packages/devices/src/reducer.ts
+````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    DeviceState,
+    Notification,
+    NotificationPriority,
+    NotificationCenterState,
+    DEFAULT_NOTIFICATION_CENTER,
+    DEFAULT_DYNAMIC_ISLAND,
+    IOS_NOTIFICATION_POLICY,
+} from "@tokovo/core";
+import { ReducerRegistry } from "@tokovo/core";
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+function generateNotificationId(event: any): string {
+    return `notif_${event.at}_${event.appId}_${Math.random().toString(36).substr(2, 5)}`;
+}
+
+function computeGroups(items: Notification[]): NotificationCenterState["groups"] {
+    const groupMap = new Map<string, Notification[]>();
+
+    items.filter(n => n.state !== "dismissed").forEach(n => {
+        const key = n.groupKey || n.appId;
+        if (!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key)!.push(n);
+    });
+
+    return Array.from(groupMap.entries()).map(([key, notifs]) => ({
+        key,
+        appId: notifs[0].appId,
+        notifications: notifs,
+        collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
+        count: notifs.length,
+        latestAt: Math.max(...notifs.map(n => n.at)),
+    }));
+}
+
+// =============================================================================
+// DEVICE REDUCER
+// =============================================================================
+
+/**
+ * Device Reducer
+ * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls
+ */
+export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
+    return produce(devices, draft => {
+        if (event.kind !== "DEVICE") return;
+
+        const device = draft[event.deviceId];
+        if (!device) return;
+
+        // Initialize notification center if needed
+        if (!device.notificationCenter) {
+            device.notificationCenter = { ...DEFAULT_NOTIFICATION_CENTER };
+        }
+
+        switch (event.type) {
+            // --- Lock/Unlock ---
+            case "LOCK":
+                device.isLocked = true;
+                break;
+            case "UNLOCK":
+                device.isLocked = false;
+                break;
+
+            // --- App Management ---
+            case "OPEN_APP":
+                device.foregroundAppId = event.appId;
+                break;
+            case "CLOSE_APP":
+                device.foregroundAppId = undefined;
+                break;
+            case "GO_HOME":
+                device.foregroundAppId = undefined;
+                break;
+
+            // --- Badge ---
+            case "SET_BADGE":
+                if (device.homeScreen) {
+                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
+                    if (dockIcon) dockIcon.badge = event.count > 0 ? event.count : undefined;
+                    device.homeScreen.pages.forEach(page => {
+                        page.apps.forEach(item => {
+                            if ('appId' in item && item.appId === event.appId) {
+                                item.badge = event.count > 0 ? event.count : undefined;
+                            }
+                        });
+                    });
+                }
+                break;
+
+            // =================================================================
+            // NOTIFICATION EVENTS (IR-compliant)
+            // =================================================================
+
+            case "SHOW_NOTIFICATION": {
+                const e = event as any;
+                const notification: Notification = {
+                    id: generateNotificationId(e),
+                    deviceId: e.deviceId,
+                    appId: e.appId,
+                    title: e.title,
+                    body: e.body,
+                    at: e.at,
+                    deliveredAt: e.at,
+                    state: e.mode === "silent" ? "inShade" : "headsUp",
+                    mode: e.mode || "both",
+                    priority: e.priority || "active",
+                    deliverWhen: e.deliverWhen || "always",
+                    groupKey: e.groupKey,
+                    threadId: e.threadId,
+                    icon: e.icon,
+                    preview: e.preview,
+                    actions: e.actions,
+                    replyable: e.replyable,
+                    metadata: e.metadata,
+                    headsUp: e.mode !== "silent" ? {
+                        shownAt: e.at,
+                        duration: IOS_NOTIFICATION_POLICY.headsUpDurationByPriority[(e.priority || "active") as NotificationPriority],
+                    } : undefined,
+                };
+
+                // Add to items
+                device.notificationCenter!.items.push(notification);
+
+                // Legacy array
+                if (!device.notifications) device.notifications = [];
+                device.notifications.push(notification);
+
+                // Set as headsUp if not silent
+                if (notification.state === "headsUp") {
+                    const currentHeadsUp = device.notificationCenter!.headsUp;
+                    if (!currentHeadsUp) {
+                        device.notificationCenter!.headsUp = notification.id;
+                    } else {
+                        // Queue it
+                        device.notificationCenter!.headsUpQueue.push(notification.id);
+                    }
+                }
+
+                // Update groups
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "UPDATE_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    Object.assign(item, e.patch);
+                    item.updatedAt = e.at;
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "DISMISS_NOTIFICATION": {
+                const e = event as any;
+                if (e.all) {
+                    device.notificationCenter!.items.forEach(n => {
+                        n.state = "dismissed";
+                        n.dismissedAt = e.at;
+                    });
+                    device.notificationCenter!.headsUp = null;
+                    device.notificationCenter!.headsUpQueue = [];
+                } else if (e.groupKey) {
+                    device.notificationCenter!.items.filter(n => n.groupKey === e.groupKey).forEach(n => {
+                        n.state = "dismissed";
+                        n.dismissedAt = e.at;
+                    });
+                } else if (e.notificationId) {
+                    const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                    if (item) {
+                        item.state = "dismissed";
+                        item.dismissedAt = e.at;
+                    }
+                    // Clear headsUp if dismissed
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+
+                // Legacy
+                if (device.notifications && e.notificationId) {
+                    const notif = device.notifications.find(n => n.id === e.notificationId);
+                    if (notif) notif.dismissedAt = e.at;
+                }
+                break;
+            }
+
+            case "TAP_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    // Transition: headsUp → inShade (or dismissed)
+                    item.state = "inShade";
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                    // Open the app
+                    device.foregroundAppId = item.appId;
+                }
+                break;
+            }
+
+            case "SWIPE_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item && (e.action === "dismiss" || e.direction === "right")) {
+                    item.state = "dismissed";
+                    item.dismissedAt = e.at;
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "REPLY_NOTIFICATION": {
+                // App-level handling - reducer just marks as replied
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    item.metadata = { ...item.metadata, replied: true, replyText: e.text };
+                    item.state = "inShade";
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                break;
+            }
+
+            case "TOGGLE_NOTIFICATION_PANEL": {
+                // Will be used by renderer to show/hide panel
+                // State managed in renderer, but we could add panelOpen to DeviceState if needed
+                break;
+            }
+
+            case "CLEAR_ALL_NOTIFICATIONS": {
+                device.notificationCenter!.items.forEach(n => {
+                    n.state = "dismissed";
+                    n.dismissedAt = event.at;
+                });
+                device.notificationCenter!.headsUp = null;
+                device.notificationCenter!.headsUpQueue = [];
+                device.notificationCenter!.groups = [];
+                break;
+            }
+
+            case "SET_DYNAMIC_ISLAND": {
+                const e = event as any;
+                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+                device.dynamicIsland.visible = e.visible;
+                if (e.mode) device.dynamicIsland.mode = e.mode;
+                break;
+            }
+
+            // --- Call Events ---
+            case "INCOMING_CALL":
+                device.call = {
+                    status: "incoming",
+                    callerId: event.callerId,
+                    callerName: event.callerName,
+                    callerAvatar: event.callerAvatar,
+                    isVideo: event.isVideo || false,
+                    startedAt: event.at
+                };
+                break;
+
+            case "CALL_ANSWERED":
+                if (device.call && device.call.status === "incoming") {
+                    device.call.status = "active";
+                }
+                break;
+
+            case "CALL_ENDED":
+                if (device.call) {
+                    device.call.status = "ended";
+                    device.call.endedAt = event.at;
+                }
+                break;
+
+            // --- Background Apps ---
+            case "START_BACKGROUND_APP": {
+                const e = event as any;
+                if (!device.backgroundApps) device.backgroundApps = [];
+                device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
+                device.backgroundApps.push({
+                    appId: e.appId,
+                    startedAt: e.at,
+                    indicator: e.indicator || "music",
+                    label: e.label,
+                });
+                // Update Dynamic Island to show music
+                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+                device.dynamicIsland.activeContent = e.indicator || "music";
+                device.dynamicIsland.mode = "compact";
+                break;
+            }
+
+            case "STOP_BACKGROUND_APP": {
+                const e = event as any;
+                if (device.backgroundApps) {
+                    device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
+                }
+                // Reset Dynamic Island if no more background apps
+                if (device.dynamicIsland && device.backgroundApps?.length === 0) {
+                    device.dynamicIsland.activeContent = null;
+                    device.dynamicIsland.mode = "idle";
+                }
+                break;
+            }
+        }
+    });
+}
+
+// Register itself with the core engine
+ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
 ## File: packages/dsl/src/author/beat-builder.ts
@@ -37510,56 +33883,6 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
 };
 ````
 
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-export * from "./engine";
-export * from "./tokens";
-export * from "./camera";
-export * from "./sounds";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./transitions";
-export * from "./director-lite";
-````
-
-## File: packages/renderer/src/index.ts
-````typescript
-export { TokovoRenderer } from "./TokovoRenderer";
-export { DeviceFrame } from "./DeviceFrame";
-export { computeLayout } from "./layout";
-export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
-export { VisualDebugger } from "./VisualDebugger";
-export { NotificationOverlay } from "./NotificationOverlay";
-export { HeadsUpNotification } from "./HeadsUpNotification";
-export { CallOverlay } from "./CallOverlay";
-export { LockscreenView } from "./LockscreenView";
-export { HomeScreenView } from "./HomeScreenView";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
-export { AudioLayer } from "./AudioLayer";
-export { UnlockTransition } from "./AppTransition";
-export { AppRegistry } from "./registry";
-export * from "./layout";
-````
-
-## File: packages/episodes/src/index.ts
-````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
-import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
-import cameraShowcase from "./examples/camera-showcase.json";
-import multiPovDemo from "./examples/multi-pov-demo.json";
-import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
-
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
-````
-
 ## File: packages/apps-whatsapp/src/runtime.ts
 ````typescript
 /**
@@ -37880,6 +34203,65 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
 // Register the reducer with the core engine
 ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
+````
+
+## File: packages/episodes/src/index.ts
+````typescript
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+import androidEpisode from "./examples/android-test.json";
+import instagramEpisode from "./examples/instagram-test.json";
+import notificationCallDemo from "./examples/notification-call-demo.json";
+import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
+import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
+import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
+
+// DSL-based episodes
+export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
+````
+
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+export * from "./engine";
+export * from "./tokens";
+export * from "./camera";
+export * from "./sounds";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./widget-registry";
+export * from "./notification-adapter";
+export * from "./notification-dsl";
+export * from "./transitions";
+export * from "./director-lite";
+export * from "./audio";
+````
+
+## File: packages/renderer/src/index.ts
+````typescript
+export { TokovoRenderer } from "./TokovoRenderer";
+export { DeviceFrame } from "./DeviceFrame";
+export { computeLayout } from "./layout";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export { VisualDebugger } from "./VisualDebugger";
+export { NotificationOverlay } from "./NotificationOverlay";
+export { HeadsUpNotification } from "./HeadsUpNotification";
+export { CallOverlay } from "./CallOverlay";
+export { LockscreenView } from "./LockscreenView";
+export { HomeScreenView } from "./HomeScreenView";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
+export { AudioLayer } from "./AudioLayer";
+export { UnlockTransition } from "./AppTransition";
+export { AppRegistry } from "./registry";
+export { DynamicIsland } from "./DynamicIsland";
+export { NotificationShade } from "./NotificationShade";
+export * from "./layout";
 ````
 
 ## File: packages/renderer/src/registry.ts
@@ -38826,20 +35208,38 @@ import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
 import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
+import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
 import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
+import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
             <Composition
+                id="NotificationShowcase"
+                component={NotificationShowcaseVideo}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="FullCinematicShowcase"
+                component={FullCinematicShowcaseVideo}
+                durationInFrames={720}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
                 id="CinematicCameraShowcase"
                 component={CinematicCameraShowcaseVideo}
-                durationInFrames={540}
+                durationInFrames={720}
                 fps={30}
                 width={1080}
                 height={1920}
@@ -38969,22 +35369,544 @@ export const RemotionRoot: React.FC = () => {
 };
 ````
 
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+import React from "react";
+import {
+    WorldState,
+    Notification,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    LAYOUT,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+} from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { computeLayout } from "./layout";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { HeadsUpNotification } from "./HeadsUpNotification";
+import { CallOverlay } from "./CallOverlay";
+import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
+import { VisualDebugger } from "./VisualDebugger";
+import { DynamicIsland } from "./DynamicIsland";
+import { Audio, staticFile } from "remotion";
+import { ViewKind, LayoutContext } from "./layout/types";
+import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
+import { createDirectorLayoutModel } from "./layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "./camera-composer";
+
+/**
+ * Configuration for heads-up notification behavior
+ */
+interface NotificationConfig {
+    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
+    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
+}
+
+/**
+ * TokovoRenderer
+ * Main rendering component that orchestrates device frame, app views, and overlays
+ */
+export const TokovoRenderer: React.FC<{
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;  // Which device to render (for multi-device POV)
+    // DirectorLite integration
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+}) => {
+        const {
+            headsUpDuration = 150,
+            showHeadsUpWhenAppOpen = true
+        } = notificationConfig;
+
+        // 1. Determine active device & app
+        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
+        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+        const device = world.devices[deviceId];
+
+        if (!device) {
+            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
+            return null;
+        }
+
+        const appId = device.foregroundAppId;
+
+        // 2. Determine ViewKind
+        let viewKind: ViewKind = "TRANSITION";
+        let activeConversationId: string | undefined;
+        let activeStoryId: string | undefined;
+
+        if (device.isLocked) {
+            viewKind = "LOCKSCREEN";
+        } else if (appId) {
+            if (appId === "app_whatsapp") {
+                viewKind = "CHAT";
+                activeConversationId = Object.keys(world.conversations)[0];
+            } else if (appId === "app_instagram") {
+                const appState = world.appState?.["app_instagram"];
+                const currentView = appState?.currentView || "feed";
+
+                switch (currentView) {
+                    case "dm":
+                        viewKind = "CHAT";
+                        activeConversationId = Object.keys(world.conversations)[0];
+                        break;
+                    case "stories":
+                        viewKind = "STORY";
+                        activeStoryId = appState?.stories?.activeStoryId;
+                        break;
+                    case "feed":
+                    case "explore":
+                    case "profile":
+                    case "notifications":
+                    case "reels":
+                    case "post":
+                        viewKind = "FEED";
+                        break;
+                    default:
+                        viewKind = "FEED";
+                }
+            }
+        } else {
+            // No app open, show home screen
+            viewKind = "HOMESCREEN";
+        }
+
+        // 3. Compute Layout
+        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+
+        // For chat views, reduce viewport height to account for header and input area
+        // Use constants instead of magic numbers
+        const effectiveViewportHeight = viewKind === "CHAT"
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
+            : profile.dimensions.height;
+
+        const layoutContext: LayoutContext = {
+            world,
+            t,
+            activeDeviceId: deviceId,
+            activeAppId: appId || "",
+            viewKind,
+            activeConversationId,
+            activeStoryId,
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: effectiveViewportHeight
+        };
+
+        const layout = computeLayout(layoutContext);
+
+        // 4. Select App View
+        let AppView = null;
+        if (appId && AppRegistry.views[appId]) {
+            AppView = AppRegistry.views[appId];
+        }
+
+        // 5. Determine Device Variant
+        const isPixel = device.profileId.includes("pixel");
+        const variant = isPixel ? "android" : "ios";
+
+        // 6. Get Base Camera Transform (from timeline events)
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        // 6b. DirectorLite Integration
+        let finalCameraTransform = baseCameraTransform;
+
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                profile.dimensions.width,  // viewportWidth
+                effectiveViewportHeight
+            );
+
+            // Derive effects (PURE FUNCTION - no state)
+            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            // Log debug info if enabled
+            if (directorDebug && directorDebugOutput) {
+                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!skipped && effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(effects, viewport);
+            }
+        }
+
+        // 7. Build camera transform style
+        // The transform-origin uses the originX/originY from camera to zoom toward specific point
+        // Origin is in 0-1 range where (0.5, 0.5) is center
+        const cameraTransformString = `
+        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+        scale(${finalCameraTransform.scale})
+        rotate(${finalCameraTransform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
+        // Use device profile dimensions
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            // No CSS transition - we handle all animation in JS for frame-perfect sync
+            transition: 'none',
+        };
+
+        // 8. Device-specific transforms (legacy layout system)
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        // 9. Find active notifications for heads-up display
+        const getActiveHeadsUpNotification = (): Notification | null => {
+            if (!device.notifications || device.isLocked) return null;
+            if (!showHeadsUpWhenAppOpen && appId) return null;
+
+            // Find the most recent notification that should show as heads-up
+            const headsUpNotifs = device.notifications.filter(n => {
+                // Check mode
+                const mode = n.mode || "both";
+                if (mode === "lockscreen") return false;
+
+                // Check if not dismissed and within display window
+                if (n.dismissedAt !== undefined) return false;
+
+                const timeSinceAppear = t - n.at;
+                if (timeSinceAppear < 0) return false; // Not yet visible
+                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
+
+                // Don't show notification from current app
+                if (n.appId === appId) return false;
+
+                return true;
+            });
+
+            // Return the most recent one
+            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
+        };
+
+        const activeHeadsUp = getActiveHeadsUpNotification();
+
+        // 10. Check for active call
+        const hasActiveCall = device.call && device.call.status !== "ended";
+
+        return (
+            <div style={{
+                width: profile.dimensions.width,
+                height: profile.dimensions.height,
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                {/* Camera wrapper - applies cinematic transforms */}
+                <div style={cameraStyle}>
+                    {/* Device wrapper - applies layout transforms */}
+                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                        <DeviceFrame profileId={device.profileId} variant={variant}>
+                            {/* Call Overlay (takes precedence over everything) */}
+                            {hasActiveCall && (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            )}
+
+                            {/* App View / Lockscreen / Home Screen */}
+                            {!hasActiveCall && AppView && !device.isLocked ? (
+                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                            ) : !hasActiveCall && device.isLocked ? (
+                                <LockscreenView
+                                    notifications={device.notifications}
+                                    layout={layout}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && device.homeScreen ? (
+                                <HomeScreenView
+                                    config={device.homeScreen}
+                                    variant={variant}
+                                />
+                            ) : !hasActiveCall && (
+                                <div style={{ flex: 1, backgroundColor: "black" }} />
+                            )}
+
+                            {/* Lockscreen Notification Overlay */}
+                            <NotificationOverlay
+                                notifications={device?.notifications}
+                                variant={variant}
+                                layout={layout}
+                            />
+
+                            {/* Heads-Up Notification (when unlocked) - SKIP on iOS when Dynamic Island handles it */}
+                            {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
+                                <HeadsUpNotification
+                                    notification={activeHeadsUp}
+                                    currentTime={t}
+                                    variant={variant}
+                                    autoDismissAfter={headsUpDuration}
+                                />
+                            )}
+
+                            {/* Dynamic Island (iOS) / Status Bar Widget (Android) */}
+                            {!device.isLocked && !hasActiveCall && (
+                                <DynamicIsland
+                                    device={device}
+                                    deviceProfile={profile}
+                                    world={world}
+                                    t={t}
+                                />
+                            )}
+                        </DeviceFrame>
+                    </div>
+                </div>
+
+                {debug && <VisualDebugger world={world} t={t} />}
+            </div>
+        );
+    };
+````
+
 ## File: packages/core/src/types.ts
 ````typescript
 export type DeviceId = string;
 export type AppId = string;
 export type ConversationId = string;
 
+// =============================================================================
+// NOTIFICATION IR (Intermediate Representation)
+// =============================================================================
+
+/** Notification priority levels */
+export type NotificationPriority = "passive" | "active" | "timeSensitive" | "critical";
+
+/** Notification lifecycle state */
+export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
+
+/** Notification delivery conditions */
+export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
+
+/**
+ * NotificationIR - Production-grade notification representation
+ */
 export interface Notification {
     id: string;
+    deviceId?: string;                // Who receives it
     appId: string;
+
+    // Content
     title: string;
     body: string;
-    at: number;
-    dismissedAt?: number;         // When auto-dismissed or manually dismissed
-    mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
-    icon?: string;                // App icon URL (optional)
+    icon?: string;
+    preview?: {
+        kind: "text" | "image" | "video";
+        value: string;
+        aspectRatio?: number;
+    };
+
+    // Action buttons (max 3)
+    actions?: Array<{
+        id: string;
+        label: string;
+        icon?: string;
+        destructive?: boolean;
+    }>;
+    replyable?: boolean;              // Quick reply input
+
+    // Grouping
+    groupKey?: string;
+    threadId?: string;
+
+    // Priority & Mode
+    priority?: NotificationPriority;
+    mode?: "lockscreen" | "headsup" | "both" | "silent";
+    deliverWhen?: NotificationDeliverWhen;
+
+    // === LIFECYCLE (state machine) ===
+    at: number;                       // DSL spawn time
+    deliveredAt?: number;             // When entered device state
+    state?: NotificationState;
+    updatedAt?: number;               // For updates (same id)
+    dismissedAt?: number;
+
+    // Heads-up lifecycle
+    headsUp?: {
+        shownAt?: number;
+        hideAt?: number;
+        duration?: number;            // OS default if not set
+    };
+
+    // Metadata
+    metadata?: Record<string, any>;
 }
+
+// Alias for backward compatibility
+export type NotificationIR = Notification;
+
+/**
+ * Notification group for stacking multiple notifications
+ */
+export interface NotificationGroup {
+    key: string;
+    appId: string;
+    notifications: Notification[];
+    collapsed: boolean;
+    count: number;
+    latestAt: number;
+}
+
+// =============================================================================
+// NOTIFICATION POLICY (OS-level rules)
+// =============================================================================
+
+export interface NotificationPolicyIR {
+    maxHeadsUpVisible: number;
+    headsUpDurationByPriority: Record<NotificationPriority, number>;
+    replaceOnNewFromSameThread: boolean;
+    groupCollapseThreshold: number;
+    autoGroupByApp: boolean;
+    statusBarIconLimit: number;
+    expandDurationMs: number;
+}
+
+export const IOS_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 90, timeSensitive: 150, critical: 240 }, // frames
+    replaceOnNewFromSameThread: true,
+    groupCollapseThreshold: 3,
+    autoGroupByApp: true,
+    statusBarIconLimit: 0,
+    expandDurationMs: 300,
+};
+
+export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 120, timeSensitive: 180, critical: 9999 },
+    replaceOnNewFromSameThread: false,
+    groupCollapseThreshold: 4,
+    autoGroupByApp: true,
+    statusBarIconLimit: 5,
+    expandDurationMs: 200,
+};
+
+// =============================================================================
+// NOTIFICATION CENTER STATE
+// =============================================================================
+
+export interface NotificationCenterState {
+    items: Notification[];            // All notifications (persistent)
+    headsUp: string | null;           // Currently shown notification ID
+    headsUpQueue: string[];           // Pending heads-up if current is shown
+    groups: NotificationGroup[];      // Computed groups
+}
+
+export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
+    items: [],
+    headsUp: null,
+    headsUpQueue: [],
+    groups: [],
+};
+
+// =============================================================================
+// DYNAMIC ISLAND STATE
+// =============================================================================
+
+export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
+export type DynamicIslandContent = "notification" | "music" | "call" | "timer" | null;
+
+export interface DynamicIslandState {
+    visible: boolean;
+    mode: DynamicIslandMode;
+    activeContent: DynamicIslandContent;
+    lockedUntil?: number;             // Frame lock for animations
+}
+
+export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
+    visible: true,
+    mode: "idle",
+    activeContent: null,
+};
+
+// =============================================================================
+// STATUS BAR ICONS (Android)
+// =============================================================================
+
+export interface StatusBarIcon {
+    appId: string;
+    count: number;
+    iconUrl?: string;
+}
+
+// =============================================================================
+// BACKGROUND APP STATE
+// =============================================================================
+
+export interface BackgroundAppState {
+    appId: string;
+    startedAt: number;
+    indicator?: "music" | "call" | "recording" | "location";
+    label?: string;
+}
+
+// =============================================================================
+// CALL STATE
+// =============================================================================
 
 export interface CallState {
     status: "incoming" | "active" | "ended";
@@ -38996,21 +35918,31 @@ export interface CallState {
     endedAt?: number;
 }
 
+// =============================================================================
+// DEVICE STATE
+// =============================================================================
+
 export interface DeviceState {
     id: string;
     profileId: string;
-    ownerName?: string;            // Who owns this device (for POV - their messages on right)
+    ownerName?: string;
     isLocked: boolean;
     foregroundAppId?: string;
-    notifications: Notification[];
+
+    // === NOTIFICATIONS (enhanced) ===
+    notifications: Notification[];           // Legacy access
+    notificationCenter?: NotificationCenterState;
+    dynamicIsland?: DynamicIslandState;
+    statusBarIcons?: StatusBarIcon[];
+
+    // Background apps
+    backgroundApps?: BackgroundAppState[];
     call?: CallState;
     homeScreen?: HomeScreenConfig;
-    sound?: {
-        activeSoundId?: string;
-    };
-    // Theming & Configuration
+    sound?: { activeSoundId?: string };
     theme?: DeviceTheme;
 }
+
 
 // Device-level theme configuration
 export interface DeviceTheme {
@@ -39347,22 +36279,97 @@ export interface CameraViewConfig {
 }
 
 // =============================================================================
-// AUDIO SYSTEM TYPES
+// AUDIO SYSTEM TYPES (Production-Grade)
 // =============================================================================
 
-// Active sound instance
+// Audio bus types - routes audio through mixer
+export type AudioBus = "music" | "ui" | "sfx" | "voice" | "master";
+
+// Sound origin - where the sound comes from
+export type SoundOrigin = "device" | "app" | "world";
+
+// Bus configuration
+export interface AudioBusConfig {
+    baseGain: number;          // 0-1, default volume for this bus
+    maxConcurrent: number;     // Max simultaneous sounds on this bus
+}
+
+// Envelope for attack/release (avoid clicks, add cinema feel)
+export interface AudioEnvelope {
+    attack: number;            // Frames to fade in
+    release: number;           // Frames to fade out
+    curve?: "linear" | "easeOut" | "easeIn";
+}
+
+// Ducking rule - temporarily lower another bus
+export interface DuckRule {
+    targetBus: AudioBus;       // Bus to duck (usually "music")
+    amount: number;            // 0-1 multiplier (0.25 = duck to 25%)
+    attack: number;            // Frames to duck down
+    release: number;           // Frames to recover
+}
+
+// Sound cue - enhanced active sound with mixing metadata
+export interface SoundCue {
+    // Core fields (from ActiveSound)
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;
+    duration?: number;
+
+    // Mixing fields
+    bus: AudioBus;
+    priority: number;          // Higher = more important (voice=100, music=10)
+    origin?: SoundOrigin;
+    envelope?: AudioEnvelope;
+    duck?: DuckRule;           // If this sound should duck others
+
+    // Fade tracking (set by engine)
+    fadeTarget?: number;
+    fadeDuration?: number;
+    fadeStartFrame?: number;
+}
+
+// Legacy ActiveSound (backward compatible)
 export interface ActiveSound {
     soundId: string;
     startFrame: number;
     volume: number;
     loop?: boolean;
-    deviceId?: string;  // If set, only plays for this device's context
-    duration?: number;  // Optional duration in frames
+    deviceId?: string;
+    duration?: number;
 }
 
-// Audio state (stored in WorldState)
+// Music bed - persistent background music with mood
+export interface MusicBed {
+    id: string;
+    soundId: string;
+    startFrame: number;
+    loop: boolean;
+    baseGain: number;
+    moodTag?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
+    crossfadeFrames?: number;  // Frames to crossfade when changing
+}
+
+// Full audio state with bus system
 export interface AudioState {
-    activeSounds: Record<string, ActiveSound>;  // key = unique instance ID
+    // Active sounds (key = unique instance ID)
+    activeSounds: Record<string, SoundCue | ActiveSound>;
+
+    // Bus configuration
+    buses: {
+        music: AudioBusConfig;
+        ui: AudioBusConfig;
+        sfx: AudioBusConfig;
+        voice: AudioBusConfig;
+    };
+
+    // Music bed (special handling for background music)
+    musicBed?: MusicBed;
+
+    // Legacy background music (backward compatible)
     backgroundMusic?: {
         soundId: string;
         volume: number;
@@ -39371,9 +36378,18 @@ export interface AudioState {
     };
 }
 
+// Default bus configuration
+export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
+    music: { baseGain: 0.35, maxConcurrent: 1 },
+    ui: { baseGain: 0.9, maxConcurrent: 3 },
+    sfx: { baseGain: 0.8, maxConcurrent: 4 },
+    voice: { baseGain: 1.0, maxConcurrent: 1 },
+};
+
 // Default audio state
 export const DEFAULT_AUDIO_STATE: AudioState = {
     activeSounds: {},
+    buses: DEFAULT_BUS_CONFIG,
 };
 
 // =============================================================================
@@ -39432,15 +36448,70 @@ export interface WorldState {
 
 // Event Union
 export type TimelineEvent =
-    // Device events
+    // Device events - core
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
+
+    // === NOTIFICATION EVENTS (IR-compliant) ===
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
+        appId: string; title: string; body: string;
+        mode?: "lockscreen" | "headsup" | "both" | "silent";
+        priority?: NotificationPriority;
+        deliverWhen?: NotificationDeliverWhen;
+        groupKey?: string; threadId?: string;
+        icon?: string;
+        preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
+        actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
+        replyable?: boolean;
+        metadata?: Record<string, any>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
+        notificationId: string;
+        patch: Partial<{ title: string; body: string; preview: Notification["preview"]; metadata: Record<string, any> }>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";
+        notificationId?: string;        // Specific notification
+        groupKey?: string;               // Entire group
+        all?: boolean;                   // All notifications
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TAP_NOTIFICATION";
+        notificationId: string;
+        actionId?: string;               // Button action ID or "open" (default)
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SWIPE_NOTIFICATION";
+        notificationId: string;
+        direction: "left" | "right";
+        action: "dismiss" | "archive" | "snooze" | "mark_read";
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "REPLY_NOTIFICATION";
+        notificationId: string;
+        text: string;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TOGGLE_NOTIFICATION_PANEL";
+        open: boolean;
+    }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CLEAR_ALL_NOTIFICATIONS" }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SET_DYNAMIC_ISLAND";
+        visible: boolean;
+        mode?: DynamicIslandMode;
+    }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
+
     // Call events
     | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
+
+    // Background app events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "START_BACKGROUND_APP"; appId: string; indicator?: "music" | "call" | "recording" | "location"; label?: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "STOP_BACKGROUND_APP"; appId: string }
     // App events - messaging
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
@@ -39735,349 +36806,6 @@ export interface TransitionLayoutState extends BaseLayoutState {
 export interface TransitionLayoutMeta {
     // Add any meta fields if needed
 }
-````
-
-## File: packages/renderer/src/TokovoRenderer.tsx
-````typescript
-import React from "react";
-import {
-    WorldState,
-    Notification,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    LAYOUT,
-    EventIndex,
-    getEventsInRange,
-    deriveDirectorEffects,
-    extractSignals,
-    ChatLayoutState,
-} from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { computeLayout } from "./layout";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
-import { VisualDebugger } from "./VisualDebugger";
-import { Audio, staticFile } from "remotion";
-import { ViewKind, LayoutContext } from "./layout/types";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
-import { createDirectorLayoutModel } from "./layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "./camera-composer";
-
-/**
- * Configuration for heads-up notification behavior
- */
-interface NotificationConfig {
-    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
-    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
-}
-
-/**
- * TokovoRenderer
- * Main rendering component that orchestrates device frame, app views, and overlays
- */
-export const TokovoRenderer: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;  // Which device to render (for multi-device POV)
-    // DirectorLite integration
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-}> = ({
-    world,
-    t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
-    eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-}) => {
-        const {
-            headsUpDuration = 150,
-            showHeadsUpWhenAppOpen = true
-        } = notificationConfig;
-
-        // 1. Determine active device & app
-        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
-        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
-        const device = world.devices[deviceId];
-
-        if (!device) {
-            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
-            return null;
-        }
-
-        const appId = device.foregroundAppId;
-
-        // 2. Determine ViewKind
-        let viewKind: ViewKind = "TRANSITION";
-        let activeConversationId: string | undefined;
-        let activeStoryId: string | undefined;
-
-        if (device.isLocked) {
-            viewKind = "LOCKSCREEN";
-        } else if (appId) {
-            if (appId === "app_whatsapp") {
-                viewKind = "CHAT";
-                activeConversationId = Object.keys(world.conversations)[0];
-            } else if (appId === "app_instagram") {
-                const appState = world.appState?.["app_instagram"];
-                const currentView = appState?.currentView || "feed";
-
-                switch (currentView) {
-                    case "dm":
-                        viewKind = "CHAT";
-                        activeConversationId = Object.keys(world.conversations)[0];
-                        break;
-                    case "stories":
-                        viewKind = "STORY";
-                        activeStoryId = appState?.stories?.activeStoryId;
-                        break;
-                    case "feed":
-                    case "explore":
-                    case "profile":
-                    case "notifications":
-                    case "reels":
-                    case "post":
-                        viewKind = "FEED";
-                        break;
-                    default:
-                        viewKind = "FEED";
-                }
-            }
-        } else {
-            // No app open, show home screen
-            viewKind = "HOMESCREEN";
-        }
-
-        // 3. Compute Layout
-        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-
-        // For chat views, reduce viewport height to account for header and input area
-        // Use constants instead of magic numbers
-        const effectiveViewportHeight = viewKind === "CHAT"
-            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
-            : profile.dimensions.height;
-
-        const layoutContext: LayoutContext = {
-            world,
-            t,
-            activeDeviceId: deviceId,
-            activeAppId: appId || "",
-            viewKind,
-            activeConversationId,
-            activeStoryId,
-            viewportWidth: profile.dimensions.width,
-            viewportHeight: effectiveViewportHeight
-        };
-
-        const layout = computeLayout(layoutContext);
-
-        // 4. Select App View
-        let AppView = null;
-        if (appId && AppRegistry.views[appId]) {
-            AppView = AppRegistry.views[appId];
-        }
-
-        // 5. Determine Device Variant
-        const isPixel = device.profileId.includes("pixel");
-        const variant = isPixel ? "android" : "ios";
-
-        // 6. Get Base Camera Transform (from timeline events)
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        // 6b. DirectorLite Integration
-        let finalCameraTransform = baseCameraTransform;
-
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
-
-            // Signal window: past 90 frames, future 15 frames
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
-
-            // Create layout model from computed layout
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,  // viewportWidth
-                effectiveViewportHeight
-            );
-
-            // Derive effects (PURE FUNCTION - no state)
-            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
-                debug: directorDebug,
-                manualCameraEffects,
-            });
-
-            // Log debug info if enabled
-            if (directorDebug && directorDebugOutput) {
-                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
-            }
-
-            // Apply director effects if not skipped and effects exist
-            if (!skipped && effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(effects, viewport);
-            }
-        }
-
-        // 7. Build camera transform style
-        // The transform-origin uses the originX/originY from camera to zoom toward specific point
-        // Origin is in 0-1 range where (0.5, 0.5) is center
-        const cameraTransformString = `
-        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-        scale(${finalCameraTransform.scale})
-        rotate(${finalCameraTransform.rotation}deg)
-    `.replace(/\s+/g, ' ').trim();
-
-        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
-        // Use device profile dimensions
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            // No CSS transition - we handle all animation in JS for frame-perfect sync
-            transition: 'none',
-        };
-
-        // 8. Device-specific transforms (legacy layout system)
-        let deviceStyle: React.CSSProperties = {};
-
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
-
-        // 9. Find active notifications for heads-up display
-        const getActiveHeadsUpNotification = (): Notification | null => {
-            if (!device.notifications || device.isLocked) return null;
-            if (!showHeadsUpWhenAppOpen && appId) return null;
-
-            // Find the most recent notification that should show as heads-up
-            const headsUpNotifs = device.notifications.filter(n => {
-                // Check mode
-                const mode = n.mode || "both";
-                if (mode === "lockscreen") return false;
-
-                // Check if not dismissed and within display window
-                if (n.dismissedAt !== undefined) return false;
-
-                const timeSinceAppear = t - n.at;
-                if (timeSinceAppear < 0) return false; // Not yet visible
-                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
-
-                // Don't show notification from current app
-                if (n.appId === appId) return false;
-
-                return true;
-            });
-
-            // Return the most recent one
-            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-        };
-
-        const activeHeadsUp = getActiveHeadsUpNotification();
-
-        // 10. Check for active call
-        const hasActiveCall = device.call && device.call.status !== "ended";
-
-        return (
-            <div style={{
-                width: profile.dimensions.width,
-                height: profile.dimensions.height,
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                {/* Camera wrapper - applies cinematic transforms */}
-                <div style={cameraStyle}>
-                    {/* Device wrapper - applies layout transforms */}
-                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                        <DeviceFrame profileId={device.profileId} variant={variant}>
-                            {/* Call Overlay (takes precedence over everything) */}
-                            {hasActiveCall && (
-                                <CallOverlay
-                                    call={device.call!}
-                                    currentTime={t}
-                                    variant={variant}
-                                />
-                            )}
-
-                            {/* App View / Lockscreen / Home Screen */}
-                            {!hasActiveCall && AppView && !device.isLocked ? (
-                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
-                            ) : !hasActiveCall && device.isLocked ? (
-                                <LockscreenView
-                                    notifications={device.notifications}
-                                    layout={layout}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && device.homeScreen ? (
-                                <HomeScreenView
-                                    config={device.homeScreen}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && (
-                                <div style={{ flex: 1, backgroundColor: "black" }} />
-                            )}
-
-                            {/* Lockscreen Notification Overlay */}
-                            <NotificationOverlay
-                                notifications={device?.notifications}
-                                variant={variant}
-                                layout={layout}
-                            />
-
-                            {/* Heads-Up Notification (when unlocked) */}
-                            {activeHeadsUp && !hasActiveCall && (
-                                <HeadsUpNotification
-                                    notification={activeHeadsUp}
-                                    currentTime={t}
-                                    variant={variant}
-                                    autoDismissAfter={headsUpDuration}
-                                />
-                            )}
-                        </DeviceFrame>
-                    </div>
-                </div>
-
-                {debug && <VisualDebugger world={world} t={t} />}
-            </div>
-        );
-    };
 ````
 
 ## File: packages/apps-whatsapp/src/ui.tsx

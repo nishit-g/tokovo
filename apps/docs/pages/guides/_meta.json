@@ -1,9 +1,10 @@
 {
     "quickstart": "Quick Start",
     "first-episode": "Your First Episode",
+    "creating-an-app": "Creating an App Package",
     "notification-adapters": "Notification Adapters",
     "multi-device": "Multi-Device Stories",
     "ai-generation": "AI Generation",
     "ai-contract": "AI Contract",
-    "custom-apps": "Custom Apps"
+    "custom-apps": "Custom Apps (Legacy)"
 }

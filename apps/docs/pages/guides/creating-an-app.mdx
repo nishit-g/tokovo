@@ -1,0 +1,382 @@
+---
+title: Creating an App Package
+description: Complete guide to building a new app package for Tokovo
+---
+
+import { Callout, Steps, Tabs, Tab, FileTree } from 'nextra/components'
+
+# Creating an App Package
+
+This guide walks you through creating a complete app package from scratch, including UI components, state management, notification adapters, and widgets.
+
+<Callout type="info">
+App packages live in `packages/apps-{appname}/` and are self-contained units with their own UI, state, and integrations.
+</Callout>
+
+## Package Structure
+
+<FileTree>
+  <FileTree.Folder name="packages/apps-yourapp" defaultOpen>
+    <FileTree.Folder name="src" defaultOpen>
+      <FileTree.File name="index.ts" />
+      <FileTree.File name="types.ts" />
+      <FileTree.File name="runtime.ts" />
+      <FileTree.File name="plugin.ts" />
+      <FileTree.File name="notification-adapter.ts" />
+      <FileTree.Folder name="ui" defaultOpen>
+        <FileTree.File name="index.tsx" />
+        <FileTree.File name="ChatScreen.tsx" />
+        <FileTree.File name="MessageBubble.tsx" />
+      </FileTree.Folder>
+      <FileTree.Folder name="widgets" defaultOpen>
+        <FileTree.File name="DynamicIslandWidget.tsx" />
+      </FileTree.Folder>
+    </FileTree.Folder>
+    <FileTree.File name="package.json" />
+    <FileTree.File name="tsconfig.json" />
+  </FileTree.Folder>
+</FileTree>
+
+## Step-by-Step Guide
+
+<Steps>
+
+### Create Package Directory
+
+```bash
+mkdir -p packages/apps-telegram/src/{ui,widgets}
+cd packages/apps-telegram
+```
+
+### Create package.json
+
+```json
+{
+  "name": "@tokovo/apps-telegram",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "dependencies": {
+    "@tokovo/core": "workspace:*",
+    "@tokovo/devices": "workspace:*",
+    "react": "^18.2.0"
+  }
+}
+```
+
+### Define Types
+
+```typescript
+// src/types.ts
+export interface TelegramState {
+    conversations: Record<string, TelegramConversation>;
+    activeConversationId?: string;
+}
+
+export interface TelegramConversation {
+    id: string;
+    name: string;
+    avatar?: string;
+    messages: TelegramMessage[];
+    typing?: { user: string; startedAt: number };
+}
+
+export interface TelegramMessage {
+    id: string;
+    text: string;
+    sender: "me" | string;
+    timestamp: number;
+    status?: "sent" | "delivered" | "read";
+    reactions?: Array<{ emoji: string; count: number }>;
+}
+```
+
+### Create Runtime Reducer
+
+```typescript
+// src/runtime.ts
+import { produce } from "immer";
+import type { TimelineEvent, WorldState } from "@tokovo/core";
+import type { TelegramState } from "./types";
+
+const initialState: TelegramState = {
+    conversations: {},
+};
+
+export function telegramRuntime(
+    state: WorldState,
+    event: TimelineEvent
+): WorldState {
+    if (event.kind !== "APP" || event.appId !== "app_telegram") {
+        return state;
+    }
+
+    return produce(state, draft => {
+        const appState = (draft.appState.app_telegram || initialState) as TelegramState;
+
+        switch (event.type) {
+            case "RECEIVE_MESSAGE":
+                const conv = appState.conversations[event.conversationId];
+                if (conv) {
+                    conv.messages.push({
+                        id: event.messageId,
+                        text: event.text,
+                        sender: event.sender,
+                        timestamp: event.at,
+                    });
+                }
+                break;
+
+            case "SEND_MESSAGE":
+                const sendConv = appState.conversations[event.conversationId];
+                if (sendConv) {
+                    sendConv.messages.push({
+                        id: event.messageId,
+                        text: event.text,
+                        sender: "me",
+                        timestamp: event.at,
+                        status: "sent",
+                    });
+                }
+                break;
+
+            case "START_TYPING":
+                const typingConv = appState.conversations[event.conversationId];
+                if (typingConv) {
+                    typingConv.typing = { user: event.user, startedAt: event.at };
+                }
+                break;
+        }
+
+        draft.appState.app_telegram = appState;
+    });
+}
+```
+
+### Register the Runtime
+
+```typescript
+// src/index.ts
+import { ReducerRegistry } from "@tokovo/core";
+import { telegramRuntime } from "./runtime";
+
+// Auto-register when imported
+ReducerRegistry.registerAppReducer("app_telegram", telegramRuntime);
+
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./notification-adapter";
+```
+
+### Create Notification Adapter
+
+```typescript
+// src/notification-adapter.ts
+import { 
+    NotificationAdapter, 
+    NotificationAdapterRegistry,
+    Notification,
+    FormattedNotification 
+} from "@tokovo/core";
+
+const TELEGRAM_BLUE = "#0088CC";
+
+const telegramAdapter: NotificationAdapter = {
+    appId: "app_telegram",
+    
+    format(notification: Notification): FormattedNotification {
+        return {
+            title: notification.title,
+            body: notification.body,
+            icon: "✈️",
+            iconBackground: TELEGRAM_BLUE,
+            accentColor: TELEGRAM_BLUE,
+            preview: notification.preview,
+            actions: notification.actions || [
+                { id: "reply", label: "Reply" },
+                { id: "mute", label: "Mute" },
+            ],
+        };
+    },
+    
+    handleAction(actionId: string, notification: Notification) {
+        if (actionId === "reply" || actionId === "open") {
+            return [{
+                at: Date.now(),
+                kind: "DEVICE",
+                deviceId: notification.deviceId || "phone",
+                type: "OPEN_APP",
+                appId: "app_telegram",
+            }];
+        }
+        return [];
+    },
+    
+    measureHeight(notification: Notification) {
+        let height = 180;
+        if (notification.preview?.kind === "image") height += 200;
+        return height;
+    },
+};
+
+// Auto-register
+NotificationAdapterRegistry.register(telegramAdapter);
+
+export { telegramAdapter, TELEGRAM_BLUE };
+```
+
+### Create UI Components
+
+```tsx
+// src/ui/ChatScreen.tsx
+import React from "react";
+import type { TelegramConversation } from "../types";
+
+interface ChatScreenProps {
+    conversation: TelegramConversation;
+    t: number;
+    platform: "ios" | "android";
+}
+
+export const TelegramChatScreen: React.FC<ChatScreenProps> = ({
+    conversation,
+    t,
+    platform,
+}) => {
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            background: platform === "ios" ? "#EFEFF4" : "#E4DCD5",
+        }}>
+            {/* Header */}
+            <header style={{
+                padding: "60px 20px 20px",
+                background: "#0088CC",
+                color: "white",
+            }}>
+                <h1>{conversation.name}</h1>
+            </header>
+            
+            {/* Messages */}
+            <div style={{ flex: 1, overflow: "auto", padding: 20 }}>
+                {conversation.messages.map(msg => (
+                    <MessageBubble key={msg.id} message={msg} />
+                ))}
+            </div>
+            
+            {/* Typing indicator */}
+            {conversation.typing && (
+                <TypingIndicator user={conversation.typing.user} />
+            )}
+            
+            {/* Input */}
+            <InputArea />
+        </div>
+    );
+};
+```
+
+### Create Plugin (Optional)
+
+```typescript
+// src/plugin.ts
+import { TokovoPlugin, WidgetRegistry } from "@tokovo/core";
+import { telegramRuntime } from "./runtime";
+import { TelegramDynamicIslandWidget } from "./widgets/DynamicIslandWidget";
+
+export const telegramPlugin: TokovoPlugin = {
+    id: "app_telegram",
+    name: "Telegram",
+    
+    register() {
+        // Register widget for Dynamic Island
+        WidgetRegistry.register({
+            appId: "app_telegram",
+            slot: "dynamicIsland",
+            platform: "ios",
+            priority: 60,
+            component: TelegramDynamicIslandWidget,
+            expansionModes: ["compact", "expanded"],
+        });
+    },
+    
+    reducer: telegramRuntime,
+};
+```
+
+### Register with Renderer
+
+```typescript
+// packages/renderer/src/registry.ts
+import { TelegramChatScreen } from "@tokovo/apps-telegram";
+
+AppRegistry.register("app_telegram", TelegramChatScreen);
+```
+
+</Steps>
+
+## Complete Feature Checklist
+
+When building a new app, ensure you have:
+
+### Core Requirements
+- [ ] `types.ts` - State and message types
+- [ ] `runtime.ts` - Event reducer with all event types
+- [ ] `index.ts` - Exports and auto-registration
+
+### UI Components
+- [ ] Main screen component (ChatScreen, FeedView, etc.)
+- [ ] Message/content components
+- [ ] Header with app styling
+- [ ] Input area (visual only)
+- [ ] Typing indicator
+
+### Integrations
+- [ ] `notification-adapter.ts` - Brand-colored notifications
+- [ ] Plugin registration (if using widgets)
+- [ ] Dynamic Island widget (iOS)
+- [ ] Status bar icons (Android)
+
+### Styling
+- [ ] Brand colors defined as constants
+- [ ] Platform-specific styling (iOS vs Android)
+- [ ] Proper typography and spacing
+- [ ] Dark mode support (optional)
+
+## Using Your App
+
+```typescript
+// In an episode DSL
+import "@tokovo/apps-telegram"; // Auto-registers
+
+const events = [
+    {
+        at: 0,
+        kind: "DEVICE",
+        type: "OPEN_APP",
+        deviceId: "phone",
+        appId: "app_telegram",
+    },
+    {
+        at: 30,
+        kind: "APP",
+        type: "RECEIVE_MESSAGE",
+        appId: "app_telegram",
+        conversationId: "conv_1",
+        messageId: "msg_1",
+        sender: "Alex",
+        text: "Hey, are you there?",
+    },
+];
+```
+
+## Related
+
+- [Plugin System](/architecture/plugins) - Plugin architecture
+- [Notification Adapters](/guides/notification-adapters) - Notification integration
+- [Widget System](/architecture/widgets) - Dynamic Island widgets
+- [Custom Apps (Legacy)](/guides/custom-apps) - Previous approach

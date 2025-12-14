@@ -3,7 +3,9 @@
     "boundaries": "Layer Boundaries",
     "determinism": "Determinism",
     "data-flow": "Data Flow",
+    "camera": "Camera System",
     "dynamic-island": "Dynamic Island",
+    "widgets": "Widget System",
     "monorepo": "Monorepo (Turbo)",
     "plugins": "Plugin System"
 }

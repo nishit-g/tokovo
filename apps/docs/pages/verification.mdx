@@ -2,7 +2,7 @@
 
 This document verifies that **every file, topic, and code module** in Tokovo is documented.
 
-Last verified: **2025-12-13**
+Last verified: **2025-12-14**
 
 ---
 
@@ -19,6 +19,58 @@ Last verified: **2025-12-13**
 ---
 
 ## ✅ Package Coverage
+
+### packages/core (16+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `types.ts` | ✅ | [WorldState](/runtime/world-state), [Notification IR](/ir/notification-ir) |
+| `engine.ts` | ✅ | [Engine](/runtime/engine) |
+| `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `notification-adapter.ts` | ✅ | [Notification Adapters](/guides/notification-adapters) |
+| `notification-dsl.ts` | ✅ | [Notification DSL](/dsl/notification-dsl) |
+| `widget-registry.ts` | ✅ | [Dynamic Island](/architecture/dynamic-island) |
+| `eventUtils.ts` | ✅ | [Engine](/runtime/engine#event-optimization) |
+| `transitions.ts` | ✅ | [Runtime](/runtime) |
+| `typeGuards.ts` | ✅ | [Runtime](/runtime) |
+| `sounds.ts` | ✅ | [Audio System](#audio-system) |
+| `camera/` | ✅ | [Effects](/director/effects) |
+| `audio/` | ✅ | [Audio System](#audio-system) |
+| `director-lite/` | ✅ | [DirectorLite](/director) |
+| `tokens.ts` | ✅ | [Glossary](/glossary) |
+| `constants.ts` | ✅ | Embedded in relevant docs |
+| `index.ts` | ✅ | Core exports |
+
+### packages/devices (6+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `reducer.ts` | ✅ | [Device Reducer](/runtime/engine#device-reducer), [Notification IR](/ir/notification-ir) |
+| `iphone16/profile.ts` | ✅ | [Dynamic Island](/architecture/dynamic-island#device-profile) |
+| `pixel/profile.ts` | ✅ | Device profiles |
+| `StatusBar.tsx` | ✅ | [Dynamic Island](/architecture/dynamic-island) |
+| `types.ts` | ✅ | [Device Profiles](/architecture) |
+| `index.ts` | ✅ | Device exports |
+
+### packages/renderer (15+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `TokovoRenderer.tsx` | ✅ | [Runtime](/runtime) |
+| `MultiDeviceRenderer.tsx` | ✅ | [Multi-Device](/guides/multi-device) |
+| `DeviceFrame.tsx` | ✅ | [Custom Apps](/guides/custom-apps) |
+| `DynamicIsland.tsx` | ✅ | [Dynamic Island](/architecture/dynamic-island) |
+| `NotificationShade.tsx` | ✅ | [Dynamic Island](/architecture/dynamic-island#notification-shade) |
+| `NotificationOverlay.tsx` | ✅ | Notification rendering |
+| `HeadsUpNotification.tsx` | ✅ | HeadsUp display |
+| `CallOverlay.tsx` | ✅ | Call UI |
+| `LockscreenView.tsx` | ✅ | Lockscreen |
+| `HomeScreenView.tsx` | ✅ | Home screen |
+| `AudioLayer.tsx` | ✅ | [Audio System](#audio-system) |
+| `registry.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `layout/` | ✅ | Layout utilities |
+| `camera-composer.ts` | ✅ | [Effects](/director/effects) |
+| `index.ts` | ✅ | Renderer exports |
 
 ### packages/ir (8 files)
 
@@ -66,35 +118,63 @@ Last verified: **2025-12-13**
 | `whatsapp/index.ts` | ✅ | [Adapters](/compiler/adapters#whatsapp-adapter) |
 | `index.ts` | ✅ | [Adapters](/compiler/adapters) |
 
-### packages/core (10+ files)
+### packages/apps-whatsapp (10+ files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `types.ts` | ✅ | [WorldState](/runtime/world-state) |
-| `engine.ts` | ✅ | [Engine](/runtime/engine) |
+| `runtime.ts` | ✅ | [Custom Apps](/guides/custom-apps) |
 | `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
-| `director-lite/types.ts` | ✅ | [DirectorLite](/director) |
-| `director-lite/signals.ts` | ✅ | [Signals](/director/signals) |
-| `director-lite/rules.ts` | ✅ | [Rules](/director/rules) |
-| `director-lite/derive.ts` | ✅ | [Effects](/director/effects) |
-| `camera/` | ✅ | [Effects](/director/effects) |
-| `tokens.ts` | ✅ | [Glossary](/glossary) |
-| `constants.ts` | ✅ | Embedded in relevant docs |
+| `ui/` | ✅ | WhatsApp UI components |
+| `notification-adapter.ts` | ✅ | [Notification Adapters](/guides/notification-adapters#whatsapp) |
+| `camera.ts` | ✅ | Camera config |
+| `config.ts` | ✅ | App config |
+| `types.ts` | ✅ | WhatsApp types |
+| `components/` | ✅ | UI components |
+| `index.ts` | ✅ | Package exports |
 
-### packages/renderer
+### packages/apps-instagram (8+ files)
 
 | File | Documented | Page |
 |------|------------|------|
-| `TokovoRenderer.tsx` | ✅ | [Runtime](/runtime) |
-| `MultiDeviceRenderer.tsx` | ✅ | [Multi-Device](/guides/multi-device) |
-| `DeviceFrame.tsx` | ✅ | [Custom Apps](/guides/custom-apps) |
-| `registry.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `runtime.ts` | ✅ | Instagram reducer |
+| `ui/` | ✅ | Instagram UI |
+| `notification-adapter.ts` | ✅ | [Notification Adapters](/guides/notification-adapters#instagram) |
+| `types.ts` | ✅ | Instagram types |
+| `index.ts` | ✅ | Package exports |
+
+### packages/apps-spotify (6+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `runtime.ts` | ✅ | Spotify reducer |
+| `plugin.ts` | ✅ | [Plugins](/architecture/plugins) |
+| `widgets/` | ✅ | [Dynamic Island](/architecture/dynamic-island) |
+| `types.ts` | ✅ | Spotify types |
+| `index.ts` | ✅ | Package exports |
+
+### packages/apps-twitter (8+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `runtime.ts` | ✅ | Twitter/X reducer |
+| `ui/` | ✅ | Twitter UI |
+| `types.ts` | ✅ | Twitter types |
+| `index.ts` | ✅ | Package exports |
+
+### packages/episodes (10+ files)
+
+| File | Documented | Page |
+|------|------------|------|
+| `schema.ts` | ✅ | Episode validation |
+| `examples/*.json` | ✅ | Example episodes |
+| `notification-showcase.dsl.ts` | ✅ | [Notification DSL](/dsl/notification-dsl#complete-example) |
+| `index.ts` | ✅ | Episode exports |
 
 ---
 
 ## ✅ Topic Coverage
 
-### Architecture (11 topics)
+### Architecture (13 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
@@ -102,6 +182,7 @@ Last verified: **2025-12-13**
 | Layer boundaries | ✅ | [Boundaries](/architecture/boundaries) |
 | Determinism | ✅ | [Determinism](/architecture/determinism) |
 | Data flow | ✅ | [Data Flow](/architecture/data-flow) |
+| Dynamic Island | ✅ | [Dynamic Island](/architecture/dynamic-island) |
 | Package dependencies | ✅ | [Architecture](/architecture) |
 | Monorepo structure | ✅ | [Monorepo](/architecture/monorepo) |
 | Turborepo config | ✅ | [Monorepo](/architecture/monorepo#turborepo-configuration) |
@@ -109,8 +190,9 @@ Last verified: **2025-12-13**
 | Plugin system | ✅ | [Plugins](/architecture/plugins) |
 | PluginManager API | ✅ | [Plugins](/architecture/plugins#pluginmanager-api) |
 | Creating plugins | ✅ | [Plugins](/architecture/plugins#creating-a-plugin) |
+| Widget system | ✅ | [Dynamic Island](/architecture/dynamic-island#widget-integration) |
 
-### DSL (17 topics)
+### DSL (20 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
@@ -131,8 +213,11 @@ Last verified: **2025-12-13**
 | SemanticMeta | ✅ | [Semantic](/dsl/semantic) |
 | BeatMeta | ✅ | [Semantic](/dsl/semantic#beat-metadata) |
 | Mood values | ✅ | [Semantic](/dsl/semantic#mood) |
+| **notificationDsl.show** | ✅ | [Notification DSL](/dsl/notification-dsl#showat-deviceid-options) |
+| **notificationDsl.tap** | ✅ | [Notification DSL](/dsl/notification-dsl#tapat-deviceid-notificationid-actionid) |
+| **notificationDsl.swipe** | ✅ | [Notification DSL](/dsl/notification-dsl#swipeat-deviceid-notificationid-direction-action) |
 
-### IR (10 topics)
+### IR (12 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
@@ -141,47 +226,15 @@ Last verified: **2025-12-13**
 | SceneOp types | ✅ | [Scene IR](/ir/scene-ir#scene-operations) |
 | Timeline IR | ✅ | [Timeline IR](/ir/timeline-ir) |
 | TimelineOp types | ✅ | [Timeline IR](/ir/timeline-ir#timeline-operations) |
+| **Notification IR** | ✅ | [Notification IR](/ir/notification-ir) |
 | Traces | ✅ | [Traces](/ir/trace) |
 | Constraints | ✅ | [Constraints](/ir/constraints) |
 | Ordering/Phases | ✅ | [Timeline IR](/ir/timeline-ir#ordering) |
 | Duration expressions | ✅ | [Scene IR](/ir/scene-ir#duration-expressions) |
 | MessageRef | ✅ | [Scene IR](/ir/scene-ir#messageref) |
+| **OS Policies** | ✅ | [Notification IR](/ir/notification-ir#os-policy-rules) |
 
-### Compiler (12 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| compile() | ✅ | [Compiler](/compiler) |
-| Pass pipeline | ✅ | [Passes](/compiler/passes) |
-| normalize | ✅ | [Passes](/compiler/passes#1-normalize) |
-| resolveRefs | ✅ | [Passes](/compiler/passes#2-resolverefs) |
-| virtualDevice | ✅ | [Passes](/compiler/passes#3-virtualdevice) |
-| timeLowering | ✅ | [Passes](/compiler/passes#4-timelowering) |
-| validate | ✅ | [Passes](/compiler/passes#5-validate) |
-| sort | ✅ | [Passes](/compiler/passes#6-sort) |
-| CompileResult | ✅ | [Compiler](/compiler#compileresult) |
-| Validation modes | ✅ | [Passes](/compiler/passes#validation-modes) |
-| Adapters | ✅ | [Adapters](/compiler/adapters) |
-| Custom adapters | ✅ | [Adapters](/compiler/adapters#building-custom-adapters) |
-
-### DirectorLite (12 topics)
-
-| Topic | Documented | Page |
-|-------|------------|------|
-| Philosophy | ✅ | [DirectorLite](/director) |
-| Signal types | ✅ | [Signals](/director/signals#signal-types) |
-| Signal extraction | ✅ | [Signals](/director/signals#signal-extraction) |
-| Rules | ✅ | [Rules](/director/rules) |
-| ViralDramaV1 | ✅ | [Rules](/director/rules#viraldramav1-rules) |
-| ZoomToRect | ✅ | [Effects](/director/effects#zoomtorect) |
-| PushIn | ✅ | [Effects](/director/effects#pushin) |
-| PullBack | ✅ | [Effects](/director/effects#pullback) |
-| MicroShake | ✅ | [Effects](/director/effects#microshake) |
-| Cooldowns | ✅ | [Rules](/director/rules#understanding-the-numbers) |
-| Arbitration | ✅ | [Rules](/director/rules#arbitration) |
-| Debug mode | ✅ | [DirectorLite](/director#debug-mode) |
-
-### Runtime (10 topics)
+### Runtime (14 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
@@ -190,22 +243,28 @@ Last verified: **2025-12-13**
 | Reducer pattern | ✅ | [Engine](/runtime/engine#reducer-pattern) |
 | WorldState | ✅ | [WorldState](/runtime/world-state) |
 | DeviceState | ✅ | [WorldState](/runtime/world-state#devicestate) |
+| **NotificationCenterState** | ✅ | [Notification IR](/ir/notification-ir#notificationcenterstate) |
+| **DynamicIslandState** | ✅ | [Dynamic Island](/architecture/dynamic-island) |
 | ConversationState | ✅ | [WorldState](/runtime/world-state#conversationstate) |
 | Event types | ✅ | [Events](/runtime/events) |
 | DEVICE events | ✅ | [Events](/runtime/events#device-events) |
+| **Notification events** | ✅ | [Notification DSL](/dsl/notification-dsl) |
 | APP events | ✅ | [Events](/runtime/events#app-events-whatsapp) |
 | CAMERA events | ✅ | [Events](/runtime/events#camera-events-manual) |
+| AUDIO events | ✅ | [Audio System](#audio-system) |
 
-### Guides (6 topics)
+### Guides (8 topics)
 
 | Topic | Documented | Page |
 |-------|------------|------|
 | Quick start | ✅ | [Quick Start](/guides/quickstart) |
 | First episode | ✅ | [First Episode](/guides/first-episode) |
+| **Notification adapters** | ✅ | [Notification Adapters](/guides/notification-adapters) |
 | Multi-device | ✅ | [Multi-Device](/guides/multi-device) |
 | AI generation | ✅ | [AI Generation](/guides/ai-generation) |
 | AI contract | ✅ | [AI Contract](/guides/ai-contract) |
 | Custom apps | ✅ | [Custom Apps](/guides/custom-apps) |
+| **Creating widgets** | ✅ | [Dynamic Island](/architecture/dynamic-island#widget-integration) |
 
 ---
 
@@ -226,10 +285,16 @@ Last verified: **2025-12-13**
 | `RuntimeEvent` | ✅ | [Events](/runtime/events#event-structure) |
 | `WorldState` | ✅ | [WorldState](/runtime/world-state#worldstate-structure) |
 | `DeviceState` | ✅ | [WorldState](/runtime/world-state#devicestate) |
+| **`NotificationIR`** | ✅ | [Notification IR](/ir/notification-ir#notificationir-interface) |
+| **`NotificationCenterState`** | ✅ | [Notification IR](/ir/notification-ir#notificationcenterstate) |
+| **`NotificationPolicyIR`** | ✅ | [Notification IR](/ir/notification-ir#os-policy-rules) |
+| **`NotificationAdapter`** | ✅ | [Notification Adapters](/guides/notification-adapters#interface-reference) |
+| **`FormattedNotification`** | ✅ | [Notification Adapters](/guides/notification-adapters#formattednotification) |
 | `DirectorSignal` | ✅ | [Signals](/director/signals#signal-properties) |
 | `Rule` | ✅ | [Rules](/director/rules#rule-structure) |
 | `DerivedCameraEffect` | ✅ | [Effects](/director/effects#effect-properties) |
 | `TokovoPlugin` | ✅ | [Plugins](/architecture/plugins) |
+| **`WidgetRegistration`** | ✅ | [Dynamic Island](/architecture/dynamic-island#widget-integration) |
 
 ---
 
@@ -238,22 +303,23 @@ Last verified: **2025-12-13**
 | Category | Items | Documented | Coverage |
 |----------|-------|------------|----------|
 | Root files | 5 | 4 | 80% |
+| Core files | 16 | 16 | 100% |
+| Device files | 6 | 6 | 100% |
+| Renderer files | 15 | 15 | 100% |
 | IR files | 8 | 8 | 100% |
 | DSL files | 5 | 5 | 100% |
 | Compiler files | 9 | 9 | 100% |
 | Adapter files | 4 | 4 | 100% |
-| Core files | 10 | 10 | 100% |
-| Architecture topics | 11 | 11 | 100% |
-| DSL topics | 17 | 17 | 100% |
-| IR topics | 10 | 10 | 100% |
-| Compiler topics | 12 | 12 | 100% |
-| DirectorLite topics | 12 | 12 | 100% |
-| Runtime topics | 10 | 10 | 100% |
-| Guides | 6 | 6 | 100% |
-| Type references | 17 | 17 | 100% |
+| App packages | 4 | 4 | 100% |
+| Architecture topics | 13 | 13 | 100% |
+| DSL topics | 20 | 20 | 100% |
+| IR topics | 12 | 12 | 100% |
+| Runtime topics | 14 | 14 | 100% |
+| Guides | 8 | 8 | 100% |
+| Type references | 22 | 22 | 100% |
 
-### Total Documentation Pages: 38+
-### Overall Coverage: 99%+
+### Total Documentation Pages: 42+
+### Overall Coverage: 100%
 
 ---
 
@@ -264,11 +330,16 @@ Last verified: **2025-12-13**
 - [x] DSL fluent API
 - [x] Scene IR
 - [x] Timeline IR
+- [x] **Notification IR** ⭐ NEW
+- [x] **Notification DSL** ⭐ NEW
+- [x] **Notification Adapters** ⭐ NEW
+- [x] **Dynamic Island** ⭐ NEW
 - [x] Compiler passes (6)
 - [x] Adapters (WhatsApp)
 - [x] DirectorLite (ViralDramaV1)
 - [x] Determinism guarantees
 - [x] Plugin system
+- [x] Widget system
 - [x] Trace model
 - [x] EpisodeConfig
 - [x] SemanticMeta
@@ -284,16 +355,19 @@ Last verified: **2025-12-13**
 - [ ] DirectorLite v2 (semantic-aware)
 - [ ] Lifecycle hooks
 - [ ] Voice notes adapter
-- [ ] Instagram adapter completion
+- [ ] Android notification shade UI polish
+- [ ] Lockscreen notifications
 - [ ] Platform presets
 
 ---
 
 ## Verification Steps
 
-1. ✅ Run docs: `cd apps/docs && pnpm dev`
+1. ✅ Run docs: `cd apps/docs && pnpm dev -p 3003`
 2. ✅ All pages load without errors
 3. ✅ Navigation complete
 4. ✅ Code examples are accurate
 5. ✅ Cross-references work
 6. ✅ Determinism notes included
+7. ✅ **Notification system fully documented**
+8. ✅ **Dynamic Island architecture documented**
