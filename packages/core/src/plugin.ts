@@ -201,6 +201,14 @@ class PluginManagerClass {
             this.viewRegistry.set(plugin.id, plugin.appView);
         }
 
+        // Auto-register widgets with WidgetRegistry
+        if (plugin.widgets && plugin.widgets.length > 0) {
+            // Import dynamically to avoid circular dependency
+            const { WidgetRegistry } = require("./widget-registry");
+            WidgetRegistry.register(plugin.id, plugin.widgets);
+            console.log(`[PluginManager] Registered ${plugin.widgets.length} widgets for: ${plugin.id}`);
+        }
+
         console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
     }
 

@@ -45,6 +45,7 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
 }) => {
     // No Dynamic Island on this device?
     if (!deviceProfile.dynamicIsland) {
+        console.log("[DynamicIsland] No dynamicIsland config on deviceProfile");
         return null;
     }
 
@@ -54,8 +55,12 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
     // Get active background app IDs
     const activeAppIds = device.backgroundApps?.map(a => a.appId) || [];
 
+    // Debug logging
+    console.log("[DynamicIsland] platform:", platform, "activeAppIds:", activeAppIds);
+
     // Resolve which widget should render
     const resolved = WidgetRegistry.resolve("dynamicIsland", platform, activeAppIds);
+    console.log("[DynamicIsland] resolved widget:", resolved);
 
     // If no widget, show idle state
     if (!resolved) {
