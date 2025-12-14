@@ -14,12 +14,14 @@ import {
     WorldState,
     Notification,
     EventIndex,
+    PluginManager,
+    APP_IDS,
 } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
+import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
@@ -156,14 +158,22 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
                     <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
-                        {/* Call Overlay (takes precedence) */}
-                        {hasActiveCall && (
-                            <CallOverlay
-                                call={device.call!}
-                                currentTime={t}
-                                variant={variant}
-                            />
-                        )}
+                        {/* Call View - Plugin-based (or fallback to CallOverlay) */}
+                        {hasActiveCall && (() => {
+                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
+                            console.log('[TokovoRenderer] PhoneView lookup:', APP_IDS.PHONE, '→', PhoneView ? 'FOUND' : 'NOT FOUND');
+                            if (PhoneView) {
+                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
+                            }
+                            // Fallback to built-in CallOverlay if no plugin registered
+                            return (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            );
+                        })()}
 
                         {/* App View / Lockscreen / Home Screen */}
                         {!hasActiveCall && AppView && !device.isLocked ? (

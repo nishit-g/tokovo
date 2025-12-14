@@ -25,6 +25,8 @@ export const IncomingIOS: React.FC<IncomingIOSProps> = ({ call, profile, current
     // Check if caller has a poster image (iOS 17+ style)
     const hasPoster = !!call.callerMetadata?.posterImage;
 
+    console.log('[IncomingIOS] hasPoster:', hasPoster, 'routing to:', hasPoster ? 'ContactPoster' : 'ClassicIncoming');
+
     if (hasPoster) {
         return <ContactPoster call={call} profile={profile} currentFrame={currentFrame} />;
     }

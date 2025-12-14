@@ -217,8 +217,8 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                     color: "rgba(255, 255, 255, 0.6)"
                 }}>
                     {isIncoming && (call.isVideo ? "FaceTime Video..." : "Incoming call...")}
-                    {isActive && call.startedAt && (
-                        <CallTimer startedAt={call.startedAt} currentTime={currentTime} />
+                    {isActive && call.answeredAt && (
+                        <CallTimer startedAt={call.answeredAt} currentTime={currentTime} />
                     )}
                 </div>
             </div>
@@ -262,9 +262,9 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                         maxWidth: 600,
                         justifyItems: "center"
                     }}>
-                        <ControlButton icon={<MuteIcon />} label="mute" />
+                        <ControlButton icon={<MuteIcon />} label="mute" isActive={call.isMuted} />
                         <ControlButton icon={<KeypadIcon />} label="keypad" />
-                        <ControlButton icon={<SpeakerIcon />} label="speaker" />
+                        <ControlButton icon={<SpeakerIcon />} label="speaker" isActive={call.isSpeakerOn} />
                         <ControlButton icon={<AddCallIcon />} label="add call" />
                         <ControlButton icon={<VideoIcon />} label="FaceTime" />
                         <div style={{ width: 150 }} /> {/* Spacer */}

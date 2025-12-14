@@ -36,6 +36,9 @@ export const PhoneApp: React.FC<AppViewProps> = ({ world, deviceId, platform, t 
     const detectedPlatform = platform || profile?.platform || "ios";
     const call = device.call;
 
+    // DEBUG
+    console.log('[PhoneApp] call:', call?.status, 'callerMetadata:', call?.callerMetadata);
+
     // No active call - show recents screen
     if (!call || call.status === "ended" || call.status === "declined") {
         return <RecentsScreen platform={detectedPlatform} />;
