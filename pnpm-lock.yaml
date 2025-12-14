@@ -66,6 +66,9 @@ importers:
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../../packages/devices
+      '@tokovo/dsl':
+        specifier: workspace:*
+        version: link:../../packages/dsl
       '@tokovo/episodes':
         specifier: workspace:*
         version: link:../../packages/episodes
@@ -243,6 +246,9 @@ importers:
 
   packages/dsl:
     dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir

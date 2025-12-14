@@ -17,6 +17,7 @@
         "@tokovo/apps-twitter": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
         "@tokovo/episodes": "workspace:*",
         "@tokovo/renderer": "workspace:*",
         "react": "18.2.0",

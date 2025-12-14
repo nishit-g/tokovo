@@ -12,6 +12,7 @@
         "dev": "tsc --watch"
     },
     "dependencies": {
+        "@tokovo/core": "workspace:*",
         "@tokovo/ir": "workspace:*"
     },
     "devDependencies": {
