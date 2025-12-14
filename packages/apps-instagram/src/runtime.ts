@@ -44,26 +44,31 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
         const conversation = draft.conversations[conversationId];
 
         switch (type) {
-            case "MESSAGE_RECEIVED":
+            case "MESSAGE_RECEIVED": {
+                const e = event as any;
                 conversation.messages.push({
                     id: `msg_${Date.now()}_${Math.random()}`,
-                    from: event.from,
-                    text: event.text,
+                    from: e.from,
+                    text: e.text,
                     at: event.at,
-                    liked: false // Instagram specific
                 });
                 break;
+            }
 
-            case "TYPING_START":
+            case "TYPING_START": {
+                const e = event as any;
                 if (!conversation.typing) conversation.typing = {};
-                conversation.typing[event.from] = true;
+                conversation.typing[e.from] = true;
                 break;
+            }
 
-            case "TYPING_END":
+            case "TYPING_END": {
+                const e = event as any;
                 if (conversation.typing) {
-                    conversation.typing[event.from] = false;
+                    conversation.typing[e.from] = false;
                 }
                 break;
+            }
         }
     }
 };

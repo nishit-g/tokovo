@@ -1,5 +1,5 @@
 import React from "react";
-import { WorldState, LayoutState } from "@tokovo/core";
+import { WorldState, LayoutState, ChatLayoutState } from "@tokovo/core";
 import { InstagramState } from "./types";
 import { InstagramChatView } from "./views/dm/InstagramChatView";
 import { FeedView } from "./views/feed/FeedView";
@@ -20,10 +20,13 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
     // Views that show the bottom navigation
     const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
 
+    // Cast layout to ChatLayoutState for views that need it
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : undefined;
+
     const renderView = () => {
         switch (currentView) {
             case "dm":
-                return <InstagramChatView world={world} t={t} layout={layout} />;
+                return <InstagramChatView world={world} t={t} layout={chatLayout} />;
             case "feed":
                 return <FeedView state={appState} layout={layout} />;
             case "stories":
@@ -39,7 +42,7 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
             case "reels":
                 return <ReelsView state={appState} />;
             default:
-                return <InstagramChatView world={world} t={t} layout={layout} />;
+                return <InstagramChatView world={world} t={t} layout={chatLayout} />;
         }
     };
 

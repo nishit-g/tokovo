@@ -250,7 +250,8 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
                 alignItems: "center",
                 borderBottom: `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}`,
                 marginBottom: 12,
-                paddingHorizontal: 24,
+                paddingLeft: 24,
+                paddingRight: 24,
             }}>
                 {["The", "I", "a"].map((word, i) => (
                     <div key={i} style={{
@@ -260,7 +261,8 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
                         color: variant === "light" ? "#000" : "#FFF",
                         fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
                         borderRight: i < 2 ? `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}` : "none",
-                        paddingVertical: 12,
+                        paddingTop: 12,
+                        paddingBottom: 12,
                     }}>
                         {word}
                     </div>

@@ -147,6 +147,9 @@ importers:
       react:
         specifier: ^18.0.0
         version: 18.2.0
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
       '@types/react':
         specifier: ^18.2.0
@@ -262,6 +265,9 @@ importers:
       '@types/react':
         specifier: 18.2.0
         version: 18.2.0
+      remotion:
+        specifier: 4.0.265
+        version: 4.0.265(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -2423,6 +2429,12 @@ packages:
 
   remotion@4.0.211:
     resolution: {integrity: sha512-KUgY1a8kc1CsYpMxGYflnxgMxQWjjTHt0tWbuJZ/W0vocre6HLQAsWmG8yRqQe3KX9DKEyHdyhxEgRiVoKENkQ==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  remotion@4.0.265:
+    resolution: {integrity: sha512-KMCTqh/zOlH2vg+DuzmQI3Z4vCk1yJWEpEden1ZFWlwGnYGyBURQPB2xylRg4KlIUFqdJbEWBFTGmgZPvgkJ4g==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -5452,6 +5464,11 @@ snapshots:
       unified: 10.1.2
 
   remotion@4.0.211(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+
+  remotion@4.0.265(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)

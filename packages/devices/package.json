@@ -14,6 +14,10 @@
     "devDependencies": {
         "typescript": "^5.0.0",
         "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
+        "@types/react": "18.2.0",
+        "remotion": "4.0.265"
+    },
+    "peerDependencies": {
+        "remotion": ">=4.0.0"
     }
 }
