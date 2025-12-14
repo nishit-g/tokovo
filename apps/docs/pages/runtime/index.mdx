@@ -5,7 +5,7 @@ The runtime is where stories become pixels. It executes events and renders frame
 ## Architecture
 
 ```
-Timeline Events → Engine (reducer) → World State → Renderer → Pixels
+Timeline Events → Engine (reducer) → World State → Renderer Engines → Pixels
 ```
 
 ### Components
@@ -14,8 +14,12 @@ Timeline Events → Engine (reducer) → World State → Renderer → Pixels
 |-----------|----------|---------|
 | Engine | `@tokovo/core` | Reduces events to state |
 | World State | `@tokovo/core` | Complete app state |
-| Renderer | `@tokovo/renderer` | React/Remotion components |
-| DirectorLite | `@tokovo/core` | Automatic camera |
+| **Layout Engine** | `@tokovo/renderer` | Computes view kind, positions |
+| **Camera Engine** | `@tokovo/renderer` | Computes transforms + DirectorLite |
+| **Audio Engine** | `@tokovo/renderer` | Computes bus states, active sounds |
+| TokovoRenderer | `@tokovo/renderer` | Paints JSX (no compute) |
+
+> See [Renderer Engines](/architecture/renderer-engines) for details on the 3-engine split.
 
 ## The Engine
 

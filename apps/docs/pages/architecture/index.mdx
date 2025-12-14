@@ -21,9 +21,13 @@ Tokovo is built on a **strict layered architecture** that enforces separation of
 └────────────┬──────────────┘
              ↓
 ┌────────────▼──────────────┐
-│    RUNTIME + DIRECTOR     │  ← Renders pixels + camera
+│      RENDERER ENGINES     │  ← Layout/Camera/Audio
+│     + DUMB RENDERER       │  ← Paints pixels
 └───────────────────────────┘
 ```
+
+> **New**: The runtime uses a [3-engine split](/architecture/renderer-engines) for layout, camera, and audio computation.
+
 
 ## Key Invariants
 
