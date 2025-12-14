@@ -221,6 +221,9 @@ import type { EasingType } from "../types";
  * These are simpler than full CameraPresets — just the core motion parameters.
  *
  * USAGE: Apps reference by name, optionally override with deltas.
+ * 
+ * v1 PRESETS ARE SACRED. Do not modify their semantics.
+ * v2 presets are expressive and feature-flagged.
  */
 export interface ShotPreset {
     /** Zoom scale (1.0 = no zoom) */
@@ -237,69 +240,316 @@ export interface ShotPreset {
 
     /** Hold at peak before returning (frames) */
     holdFrames?: number;
+
+    // === v1 ADDITIONS ===
+
+    /** Subtle camera drift (for breathing/anticipation) */
+    drift?: number;
+
+    // === TRACKING (for ANCHOR_TRACK effects) ===
+
+    /** Whether this preset uses tracking (per-frame follow) */
+    tracking?: boolean;
+
+    /** Smoothing factor for tracking (0.08=slow, 0.18=operator, 0.6=whip) */
+    smoothing?: number;
+
+    /** For punchGlide: punch phase frames */
+    punchFrames?: number;
+
+    /** For punchGlide: glide phase frames */
+    glideFrames?: number;
+
+    // === VERSIONING ===
+
+    /** If true, this is a v2 preset (feature-flagged, not in v1 ship set) */
+    v2?: boolean;
 }
 
 /**
  * Global shot presets — shared across all apps.
  * Apps reference these by name. This is the "Tokovo look".
  *
- * If an app needs customization, use presetOverrides (deltas, not new presets).
+ * ⚠️ v1 PRESETS ARE SACRED — Do not modify their values.
+ * v2 presets are feature-flagged and require emotional state model.
+ * 
+ * v1 SHIP SET (8): message, subtle, impact, snap, operatorFollow, punchGlide, interrupt, reset
  */
 export const SHOT_PRESETS = {
-    /** Dramatic push-in for emotional moments */
-    dramatic: {
-        scale: 1.3,
+    // =========================================================================
+    // 🟢 v1 CORE FLOW PRESETS (LOCKED — DO NOT MODIFY)
+    // =========================================================================
+
+    /**
+     * MESSAGE - Default follow for new messages
+     * @locked v1
+     */
+    message: {
+        scale: 1.08,
         easing: "ease-out" as EasingType,
-        shake: 4,
-        durationFrames: 25,
+        shake: 0,
+        durationFrames: 22,
     },
 
-    /** Subtle zoom for typing/anticipation */
+    /**
+     * SUBTLE - Anticipation / breathing
+     * @locked v1
+     */
     subtle: {
-        scale: 1.08,
+        scale: 1.04,
         easing: "cinematic" as EasingType,
         shake: 0,
         durationFrames: 30,
+        drift: 0.003,  // Subtle breathing motion
     },
 
-    /** Quick snap for reactions/likes */
+    /**
+     * IMPACT - Emotional hit (big reveal, breakup, confession)
+     * @locked v1
+     */
+    impact: {
+        scale: 1.35,
+        easing: "expoOut" as EasingType,  // Fast deceleration
+        shake: 6,
+        durationFrames: 14,
+    },
+
+    /**
+     * SNAP - Fast reaction (like, emoji, quick reply)
+     * @locked v1
+     */
     snap: {
         scale: 1.15,
         easing: "ease-out" as EasingType,
+        shake: 1,
+        durationFrames: 8,
+    },
+
+    // =========================================================================
+    // 🟡 v1 MOTION / TRAVEL PRESETS (LOCKED)
+    // =========================================================================
+
+    /**
+     * OPERATOR FOLLOW - Camera travels with content (webseries standard)
+     * @locked v1
+     */
+    operatorFollow: {
+        scale: 1.22,
+        easing: "ease-out" as EasingType,
         shake: 0,
+        durationFrames: 40,
+        tracking: true,
+        smoothing: 0.18,  // Operator feel
+    },
+
+    /**
+     * PUNCH GLIDE - Punch in → glide follow (webseries signature)
+     * @locked v1
+     */
+    punchGlide: {
+        scale: 1.35,
+        easing: "ease-out" as EasingType,
+        shake: 3,
+        durationFrames: 40,  // Total (punch: 10 + glide: 30)
+        tracking: true,
+        smoothing: 0.18,
+        punchFrames: 10,
+        glideFrames: 30,
+    },
+
+    // =========================================================================
+    // 🟠 v1 INTERRUPTION PRESETS (LOCKED)
+    // =========================================================================
+
+    /**
+     * INTERRUPT - Attention break (notification, typing interrupted)
+     * @locked v1
+     */
+    interrupt: {
+        scale: 1.25,
+        easing: "ease-out" as EasingType,
+        shake: 4,
         durationFrames: 10,
     },
 
-    /** Documentary style — minimal movement */
-    documentary: {
-        scale: 1.0,
-        easing: "linear" as EasingType,
-        shake: 2,
-        durationFrames: 45,
-    },
-
-    /** Impact shake for emphasis */
-    impact: {
-        scale: 1.25,
-        easing: "ease-out" as EasingType,
-        shake: 8,
-        durationFrames: 15,
-    },
-
-    /** Smooth push for new messages */
-    message: {
-        scale: 1.2,
-        easing: "ease-out" as EasingType,
+    /**
+     * TAKEOVER - Call/notification takes full control
+     * @locked v1 (optional)
+     */
+    takeover: {
+        scale: 0.85,
+        easing: "ease-in" as EasingType,
         shake: 0,
-        durationFrames: 25,
+        durationFrames: 20,
     },
 
-    /** Reset/pullback to neutral */
+    // =========================================================================
+    // ⚪ v1 STRUCTURAL PRESETS (LOCKED)
+    // =========================================================================
+
+    /**
+     * RESET - Return to neutral
+     * @locked v1
+     */
     reset: {
         scale: 1.0,
         easing: "ease-out" as EasingType,
         shake: 0,
         durationFrames: 20,
+    },
+
+    /**
+     * ESTABLISH - Scene start (wide shot)
+     * @locked v1 (optional)
+     */
+    establish: {
+        scale: 0.9,
+        easing: "cinematic" as EasingType,
+        shake: 0,
+        durationFrames: 30,
+    },
+
+    // =========================================================================
+    // 🔵 v2 PSYCHOLOGICAL PRESETS (FEATURE-FLAGGED)
+    // =========================================================================
+
+    /**
+     * SUSPENSE HOLD - Tension stretch
+     * @v2 - Requires emotional state model
+     */
+    suspenseHold: {
+        scale: 1.1,
+        easing: "cinematic" as EasingType,
+        shake: 0,
+        durationFrames: 50,
+        drift: 0.002,
+        v2: true,
+    },
+
+    /**
+     * VOYEUR - Distant observation
+     * @v2 - Requires emotional state model
+     */
+    voyeur: {
+        scale: 0.92,
+        easing: "linear" as EasingType,
+        shake: 0,
+        durationFrames: 40,
+        v2: true,
+    },
+
+    /**
+     * ISOLATION - Emotional withdrawal
+     * @v2 - Requires emotional state model
+     */
+    isolation: {
+        scale: 0.88,
+        easing: "ease-in" as EasingType,
+        shake: 0,
+        durationFrames: 35,
+        v2: true,
+    },
+
+    // =========================================================================
+    // 🟣 v2 DYNAMIC MOVEMENT PRESETS (FEATURE-FLAGGED)
+    // =========================================================================
+
+    /**
+     * WHIP SNAP - Fast pan with overshoot
+     * @v2 - Requires multi-anchor awareness
+     */
+    whipSnap: {
+        scale: 1.18,
+        easing: "ease-in-out" as EasingType,
+        shake: 0,
+        durationFrames: 6,
+        tracking: true,
+        smoothing: 0.6,
+        v2: true,
+    },
+
+    /**
+     * FLOAT FOLLOW - Slow emotional drift
+     * @v2 - Requires emotional state model
+     */
+    floatFollow: {
+        scale: 1.15,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 60,
+        tracking: true,
+        smoothing: 0.08,  // Very slow = dreamy
+        v2: true,
+    },
+
+    // =========================================================================
+    // 🔴 v2 META PRESETS (FEATURE-FLAGGED)
+    // =========================================================================
+
+    /**
+     * PANIC - Loss of control
+     * @v2 - Requires emotional state model
+     */
+    panic: {
+        scale: 1.4,
+        easing: "expoOut" as EasingType,
+        shake: 10,
+        durationFrames: 12,
+        v2: true,
+    },
+
+    /**
+     * COLLAPSE - Aftermath (pullback)
+     * @v2 - Requires emotional state model
+     */
+    collapse: {
+        scale: 0.8,
+        easing: "ease-in-out" as EasingType,
+        shake: 0,
+        durationFrames: 40,
+        v2: true,
+    },
+
+    // =========================================================================
+    // 🗄️ LEGACY (DEPRECATED — use v1 equivalents)
+    // =========================================================================
+
+    /** @deprecated Use `impact` instead */
+    dramatic: {
+        scale: 1.3,
+        easing: "ease-out" as EasingType,
+        shake: 4,
+        durationFrames: 25,
+        v2: true,  // Feature-flagged out
+    },
+
+    /** @deprecated Use `voyeur` instead */
+    documentary: {
+        scale: 1.0,
+        easing: "linear" as EasingType,
+        shake: 2,
+        durationFrames: 45,
+        v2: true,
+    },
+
+    /** @deprecated Use `suspenseHold` instead */
+    documentaryHold: {
+        scale: 1.05,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 24,
+        smoothing: 0.08,
+        v2: true,
+    },
+
+    /** @deprecated Merged into `impact` */
+    impactPunch: {
+        scale: 1.35,
+        easing: "ease-out" as EasingType,
+        shake: 5,
+        durationFrames: 10,
+        smoothing: 0.6,
+        v2: true,
     },
 } as const;
 

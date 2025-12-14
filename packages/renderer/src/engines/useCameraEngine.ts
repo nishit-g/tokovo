@@ -136,6 +136,13 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // Anchor stability state (persists across frames)
     const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
 
+    // Tracking state for ANCHOR_TRACK smoothing (persists across frames)
+    const trackingStateRef = useRef<{
+        prevOriginX: number;
+        prevOriginY: number;
+        prevScale: number;
+    }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0 });
+
     return useMemo(() => {
         const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
 
@@ -351,6 +358,85 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         }
 
         // =====================================================================
+        // 3.6. ANCHOR_TRACK PROCESSING (Webseries Camera)
+        // =====================================================================
+        // Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
+        // follows the anchor rect with exponential smoothing for cinematic feel.
+        const anchorTrackEffects = activeEffects.filter(
+            (ae) => ae.effect.type === "ANCHOR_TRACK" && t >= ae.startFrame && t < ae.endFrame
+        );
+
+        if (anchorTrackEffects.length > 0 && anchorSnapshot) {
+            for (const ae of anchorTrackEffects) {
+                const effect = ae.effect as any;  // CameraAnchorTrackEffect
+                const anchorId = effect.anchor;
+
+                // Resolve anchor rect EVERY FRAME (this is the key!)
+                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+
+                if (resolved) {
+                    const rect = resolved.rect;
+                    const viewportWidth = profile.dimensions.width;
+                    const viewportHeight = profile.dimensions.height;
+
+                    // Compute target origin from rect center
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+                    const targetOriginX = Math.max(0.1, Math.min(0.9, centerX / viewportWidth));
+                    const targetOriginY = Math.max(0.1, Math.min(0.9, centerY / viewportHeight));
+
+                    // Get previous origin from tracking state
+                    const prev = trackingStateRef.current;
+
+                    // Smoothing factor: lower = smoother/laggier
+                    const smoothing = effect.smoothing ?? 0.18;
+
+                    // DEADZONE: don't move if delta is tiny (prevents jitter)
+                    const DEADZONE = 0.01;  // 1% of viewport
+                    const deltaX = Math.abs(targetOriginX - prev.prevOriginX);
+                    const deltaY = Math.abs(targetOriginY - prev.prevOriginY);
+
+                    let smoothedOriginX = prev.prevOriginX;
+                    let smoothedOriginY = prev.prevOriginY;
+
+                    if (deltaX > DEADZONE || deltaY > DEADZONE) {
+                        // EXPONENTIAL SMOOTHING (lerp toward target)
+                        smoothedOriginX = lerp(prev.prevOriginX, targetOriginX, smoothing);
+                        smoothedOriginY = lerp(prev.prevOriginY, targetOriginY, smoothing);
+                    }
+
+                    // Calculate animation progress
+                    const duration = ae.endFrame - ae.startFrame;
+                    const progress = Math.min(1, (t - ae.startFrame) / duration);
+
+                    // Get scale from preset or effect
+                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+                    const easedProgress = applyEasingSimple(progress, effect.easing || "ease-out");
+                    const scale = 1 + (targetScale - 1) * easedProgress;
+
+                    // Apply transform with smoothed origin
+                    finalCameraTransform = {
+                        ...finalCameraTransform,
+                        scale,
+                        originX: smoothedOriginX,
+                        originY: smoothedOriginY,
+                    };
+
+                    // Update tracking state for next frame
+                    trackingStateRef.current = {
+                        prevOriginX: smoothedOriginX,
+                        prevOriginY: smoothedOriginY,
+                        prevScale: scale,
+                    };
+
+                    if (directorDebug) {
+                        console.log(`[CameraEngine] ANCHOR_TRACK: anchor=${anchorId} target=(${targetOriginX.toFixed(2)}, ${targetOriginY.toFixed(2)}) smoothed=(${smoothedOriginX.toFixed(2)}, ${smoothedOriginY.toFixed(2)})`);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
         // 4. BUILD CAMERA CSS STYLE
         // =====================================================================
         const cameraTransformString = `
@@ -434,22 +520,46 @@ function applyEasingSimple(t: number, easing: string): number {
         case "cinematic":
             // S-curve for smooth cinematic motion
             return t * t * (3 - 2 * t);
+        case "expoOut":
+            // Fast deceleration — used for impact/emotional hits
+            return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
         default:
             return 1 - (1 - t) * (1 - t); // Default to ease-out
     }
 }
 
 /**
- * Get scale for a preset.
+ * Get scale for a preset (v1 locked values).
  */
 function getPresetScaleSimple(preset?: string): number {
     switch (preset) {
-        case "dramatic": return 1.3;
-        case "subtle": return 1.08;
+        // v1 CORE (LOCKED)
+        case "message": return 1.08;
+        case "subtle": return 1.04;
+        case "impact": return 1.35;
         case "snap": return 1.15;
-        case "impact": return 1.4;
-        case "message": return 1.1;
+        // v1 MOTION (LOCKED)
+        case "operatorFollow": return 1.22;
+        case "punchGlide": return 1.35;
+        // v1 INTERRUPTION (LOCKED)
+        case "interrupt": return 1.25;
+        case "takeover": return 0.85;
+        // v1 STRUCTURAL (LOCKED)
         case "reset": return 1.0;
+        case "establish": return 0.9;
+        // v2 (feature-flagged)
+        case "suspenseHold": return 1.1;
+        case "voyeur": return 0.92;
+        case "isolation": return 0.88;
+        case "whipSnap": return 1.18;
+        case "floatFollow": return 1.15;
+        case "panic": return 1.4;
+        case "collapse": return 0.8;
+        // Legacy (deprecated)
+        case "dramatic": return 1.3;
+        case "impactPunch": return 1.35;
+        case "documentaryHold": return 1.05;
+        case "documentary": return 1.0;
         default: return 1.15;
     }
 }
@@ -462,4 +572,12 @@ function seededRandom(seed: number): number {
     t = Math.imul(t ^ (t >>> 15), t | 1);
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+/**
+ * Linear interpolation.
+ * The key to smooth camera tracking (exponential smoothing).
+ */
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
 }

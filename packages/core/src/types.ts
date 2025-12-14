@@ -607,12 +607,62 @@ export interface CameraAnchorFocusEffect {
     viewport?: { width: number; height: number };
 }
 
+/**
+ * Anchor Tracking Effect (Webseries Camera)
+ * 
+ * Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
+ * follows the anchor rect over the duration. Uses exponential smoothing
+ * (low-pass filter) for cinematic "operator follow" feel.
+ * 
+ * THE KEY: Rect is resolved EVERY FRAME, and origin is smoothed toward it.
+ * 
+ * Use cases:
+ * - Message animation (bubble slides in → camera follows)
+ * - Scroll tracking (chat scrolls → camera travels)
+ * - Content updates (typing pushes layout → camera adjusts)
+ */
+export interface CameraAnchorTrackEffect {
+    type: "ANCHOR_TRACK";
+    /** Semantic anchor to track */
+    anchor: string;
+    /** Duration to track in frames */
+    duration: number;
+    /** 
+     * Smoothing factor (0.0 - 1.0)
+     * - 0.08 = slow float (documentary)
+     * - 0.18 = operator follow (webseries standard)
+     * - 0.35 = snappy tracking
+     * - 0.60 = whip snap (fast travel)
+     */
+    smoothing?: number;
+    /** Shot preset for scale/shake */
+    preset?: string;
+    /** Override scale */
+    scale?: number;
+    /** Optional easing for scale animation */
+    easing?: EasingType;
+}
+
+/**
+ * Camera Hold Effect
+ * 
+ * Hold current position for a specified duration.
+ * Gives viewer time to read content.
+ */
+export interface CameraHoldEffect {
+    type: "HOLD";
+    /** Duration in frames */
+    duration: number;
+}
+
 export type CameraEffect =
     | CameraZoomEffect
     | CameraPanEffect
     | CameraShakeEffect
     | CameraFocusEffect
     | CameraAnchorFocusEffect
+    | CameraAnchorTrackEffect
+    | CameraHoldEffect
     | CameraCutEffect
     | CameraResetEffect;
 
@@ -994,6 +1044,8 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
     // ANCHOR-DRIVEN CAMERA - Semantic anchor system
     | { at: number; kind: "CAMERA"; type: "ANCHOR_FOCUS"; deviceId?: string; anchor: string; preset?: string; scale?: number; duration: number; easing?: EasingType; shake?: number }
+    | { at: number; kind: "CAMERA"; type: "ANCHOR_TRACK"; deviceId?: string; anchor: string; duration: number; smoothing?: number; preset?: string; scale?: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "HOLD"; duration: number }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }

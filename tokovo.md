@@ -1194,6 +1194,135 @@ Core logic for the Tokovo engine.
 }
 ````
 
+## File: packages/devices/src/iphone16/Frame.tsx
+````typescript
+import React from "react";
+import { iPhone16Profile } from "./profile";
+
+export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = iPhone16Profile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 165, // Scaled radius (55 * 3)
+            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Dynamic Island Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150, // Enough space for status bar
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "40px 60px 0 60px"
+            }}>
+                {/* Status Bar Content (Time, Battery, etc.) */}
+                {statusBar}
+            </div>
+
+            {/* Dynamic Island Cutout */}
+            <div style={{
+                position: "absolute",
+                top: 33, // 11 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 378, // 126 * 3
+                height: 111, // 37 * 3
+                backgroundColor: "black",
+                borderRadius: 60, // 20 * 3
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative"
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/devices/src/pixel/Frame.tsx
+````typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Status Bar Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                zIndex: 1000,
+                pointerEvents: "none",
+                padding: "30px 40px 0 40px"
+            }}>
+                {statusBar}
+            </div>
+
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white"
+            }}>
+
+                {children}
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/devices/package.json
 ````json
 {
@@ -1404,6 +1533,67 @@ export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
 }
 ````
 
+## File: packages/renderer/src/layout/strategies/lockscreen.ts
+````typescript
+import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
+
+export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
+    const { world, t, activeDeviceId, config } = ctx;
+    const lockConfig = config!.lockscreen!;
+
+    const device = world.devices[activeDeviceId];
+    const notifications = device?.notifications || [];
+
+    const notificationLayouts: NotificationLayout[] = [];
+    let currentY = lockConfig.topPadding;
+
+    // Layout notifications
+    // Show only the last N notifications
+    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
+
+    for (const notification of visibleNotifications) {
+        // Calculate height
+        // Heuristic: base height + text length
+        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
+        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
+        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
+
+        // Animation: Slide in
+        const appearAt = notification.at || 0;
+        const timeSinceAppear = t - appearAt;
+
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear < lockConfig.appearDuration) {
+            const progress = Math.max(0, timeSinceAppear / lockConfig.appearDuration);
+            // Cubic bezier approximation for ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            opacity = ease;
+            // Slide down from -50px
+            translateY = -50 * (1 - ease);
+        }
+
+        notificationLayouts.push({
+            id: notification.id,
+            y: currentY,
+            height,
+            opacity,
+            translateY
+        });
+
+        currentY += height + lockConfig.notificationGap;
+    }
+
+    return {
+        kind: "LOCKSCREEN",
+        notificationLayouts,
+        meta: {}
+    };
+}
+````
+
 ## File: packages/renderer/src/layout/strategies/story.ts
 ````typescript
 import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
@@ -1528,6 +1718,58 @@ export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutSta
         overlayOpacity,
         meta: {}
     };
+}
+````
+
+## File: packages/renderer/src/layout/index.ts
+````typescript
+import { LayoutContext, LayoutState } from "./types";
+import { defaultLayoutConfig } from "./config";
+import { computeChatLayout } from "./strategies/chat";
+import { computeFeedLayout } from "./strategies/feed";
+import { computeStoryLayout } from "./strategies/story";
+import { computeLockscreenLayout } from "./strategies/lockscreen";
+import { computeTransitionLayout } from "./strategies/transition";
+
+export * from "./types";
+export * from "./config";
+
+export function computeLayout(ctx: LayoutContext): LayoutState {
+    // Deep merge provided config with defaults
+    const config = {
+        ...defaultLayoutConfig,
+        ...ctx.config,
+        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
+        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
+        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
+        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
+        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
+    };
+    const fullCtx = { ...ctx, config };
+
+    switch (ctx.viewKind) {
+        case "CHAT":
+            return computeChatLayout(fullCtx);
+        case "FEED":
+            return computeFeedLayout(fullCtx);
+        case "STORY":
+            return computeStoryLayout(fullCtx);
+        case "LOCKSCREEN":
+            return computeLockscreenLayout(fullCtx);
+        case "TRANSITION":
+            return computeTransitionLayout(fullCtx);
+        default:
+            // Fallback to empty transition state
+            return {
+                kind: "TRANSITION",
+                deviceTranslateX: 0,
+                deviceTranslateY: 0,
+                deviceScale: 1,
+                deviceRotation: 0,
+                overlayOpacity: 0,
+                meta: {}
+            };
+    }
 }
 ````
 
@@ -6463,6 +6705,363 @@ export const adapterRegistry = new AdapterRegistry();
 ## File: packages/adapters/tsconfig.tsbuildinfo
 ````
 {"root":["./src/adapter.ts","./src/index.ts","./src/registry.ts","./src/whatsapp/index.ts"],"version":"5.9.3"}
+````
+
+## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
+
+// ============================================================================
+// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
+// ============================================================================
+
+const ChevronLeftIcon = () => (
+    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const VideoCallIcon = () => (
+    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
+        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
+        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+
+const InfoIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
+        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+const CameraCircleIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
+        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
+        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
+    </svg>
+);
+
+const MicrophoneIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
+        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+);
+
+const ImageIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
+        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
+        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const StickerIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
+        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="8" cy="9" r="1" fill="white" />
+        <circle cx="14" cy="9" r="1" fill="white" />
+    </svg>
+);
+
+const HeartIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
+    </svg>
+);
+
+// ============================================================================
+// HEADER COMPONENT - Authentic Instagram DM Navigation
+// ============================================================================
+
+interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    isActive?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
+    <div style={{
+        height: 180,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 42px",
+        marginTop: 144, // Below dynamic island
+        zIndex: 10
+    }}>
+        {/* Back button */}
+        <ChevronLeftIcon />
+
+        {/* Avatar + Name Group */}
+        <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            marginLeft: 36,
+            gap: 30
+        }}>
+            {/* Avatar with active indicator */}
+            <div style={{ position: "relative" }}>
+                <div style={{
+                    width: 102,
+                    height: 102,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 42,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                </div>
+                {isActive && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 3,
+                        right: 3,
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        backgroundColor: "#44D62D",
+                        border: "4px solid #000"
+                    }} />
+                )}
+            </div>
+
+            {/* Username + Status */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{
+                    fontSize: 48,
+                    fontWeight: "600",
+                    color: "white",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+                }}>
+                    {contactName}
+                </span>
+                <span style={{
+                    fontSize: 36,
+                    color: "#A8A8A8",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {isActive ? "Active now" : "Active 2h ago"}
+                </span>
+            </div>
+        </div>
+
+        {/* Action icons */}
+        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
+            <VideoCallIcon />
+            <InfoIcon />
+        </div>
+    </div>
+);
+
+// ============================================================================
+// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
+// ============================================================================
+
+interface MessageBubbleProps {
+    msg: { id: string; from: string; text: string };
+    layout: ChatMessageLayout;
+}
+
+const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, y } = layout;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 42,
+            right: isMe ? 42 : "auto",
+            maxWidth: "70%",
+            opacity,
+            transform: `translateY(${translateY}px)`,
+        }}>
+            <div style={{
+                // Instagram gradient for sent messages
+                background: isMe
+                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
+                    : "#262626",
+                color: "white",
+                padding: "30px 42px",
+                borderRadius: 66, // Fully pill-shaped
+                fontSize: 48,
+                lineHeight: "60px",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                wordWrap: "break-word"
+            }}>
+                {msg.text}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// MESSAGE LIST
+// ============================================================================
+
+interface MessageListProps {
+    messages: any[];
+    layout?: ChatLayoutState;
+}
+
+const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
+
+    return (
+        <div style={{
+            flex: 1,
+            position: "relative",
+            overflow: "hidden"
+        }}>
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: contentHeight,
+                transform: `translateY(-${scrollY}px)`,
+                paddingTop: 30,
+                paddingBottom: 30
+            }}>
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// INPUT AREA - Authentic Instagram DM Composer
+// ============================================================================
+
+interface InputAreaProps {
+    text?: string;
+}
+
+const InputArea: React.FC<InputAreaProps> = ({ text }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "24px 42px",
+        gap: 24
+    }}>
+        {/* Input container */}
+        <div style={{
+            flex: 1,
+            minHeight: 132,
+            backgroundColor: "#262626",
+            borderRadius: 66,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 24px",
+            gap: 18,
+            border: "1px solid #363636"
+        }}>
+            {/* Camera button */}
+            <CameraCircleIcon />
+
+            {/* Input text */}
+            <div style={{
+                flex: 1,
+                fontSize: 48,
+                color: text ? "white" : "#A8A8A8",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                padding: "0 12px"
+            }}>
+                {text || "Message..."}
+            </div>
+
+            {/* Right icons - hidden when typing */}
+            {!text && (
+                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
+                    <MicrophoneIcon />
+                    <ImageIcon />
+                    <StickerIcon />
+                </div>
+            )}
+        </div>
+
+        {/* Heart or Send button */}
+        {text ? (
+            <span style={{
+                color: "#0095F6",
+                fontSize: 48,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                Send
+            </span>
+        ) : (
+            <HeartIcon />
+        )}
+    </div>
+);
+
+// ============================================================================
+// HOME INDICATOR
+// ============================================================================
+
+const HomeIndicator: React.FC = () => (
+    <div style={{
+        height: 102,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-end",
+        paddingBottom: 24
+    }}>
+        <div style={{
+            width: 402,
+            height: 15,
+            backgroundColor: "white",
+            borderRadius: 9,
+            opacity: 0.4
+        }} />
+    </div>
+);
+
+// ============================================================================
+// MAIN VIEW EXPORT
+// ============================================================================
+
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
+    const conversationId = Object.keys(world.conversations)[0];
+    const conversation = world.conversations[conversationId];
+    const messages = conversation ? conversation.messages : [];
+
+    return (
+        <div style={{
+            backgroundColor: "#000000",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            color: "white",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
+        }}>
+            <Header contactName="sarah.design" isActive={true} />
+            <MessageList messages={messages} layout={layout} />
+            <InputArea />
+            <HomeIndicator />
+        </div>
+    );
+};
 ````
 
 ## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
@@ -16113,253 +16712,6 @@ export function createResetTimeline(
 }
 ````
 
-## File: packages/core/src/director-lite/derive.ts
-````typescript
-/**
- * DirectorLite Derive
- *
- * Pure function that derives camera effects for frame t.
- * Stateless, deterministic, scrubbing-safe.
- *
- * FIXES from review:
- * - Cooldown uses inline lastSeen (no map key mismatch)
- * - Signals assumed pre-sorted; debug guard if not
- * - Manual camera skip policy: if any manual camera active, skip director
- * - viewport removed from this function (only needed in composer)
- */
-
-import {
-    DirectorSignal,
-    DirectorLayoutModel,
-    DirectorOutput,
-    DerivedCameraEffect,
-    DirectorDebug,
-    LayoutRect,
-} from "./types";
-import { Rule, RULES_BY_SIGNAL } from "./rules";
-import { applyEasing } from "../camera";
-import { ActiveCameraEffect } from "../types";
-
-// =============================================================================
-// MAIN ENTRY
-// =============================================================================
-
-export interface DeriveContext {
-    t: number;
-    signals: DirectorSignal[]; // Must be pre-sorted by `at`
-    layoutModel: DirectorLayoutModel;
-    seed?: number;
-    debug?: boolean;
-    // Manual camera skip: if any active effects from timeline, skip director
-    manualCameraEffects?: ActiveCameraEffect[];
-}
-
-/**
- * Derive camera effects for frame t.
- *
- * PURE FUNCTION: No internal state.
- * O(n) complexity with inline cooldown tracking.
- */
-export function deriveDirectorEffects(ctx: DeriveContext): DirectorOutput {
-    const {
-        t,
-        signals,
-        layoutModel,
-        seed = 0,
-        debug: debugEnabled = false,
-        manualCameraEffects = [],
-    } = ctx;
-
-    // Policy A: Skip director if any manual camera event is active
-    if (manualCameraEffects.length > 0) {
-        const hasActiveManual = manualCameraEffects.some(
-            (ae) => t >= ae.startFrame && t < ae.endFrame
-        );
-        if (hasActiveManual) {
-            return {
-                effects: [],
-                skipped: "manual-camera-active",
-                debug: debugEnabled
-                    ? {
-                        signalsInWindow: signals.length,
-                        matchedRules: 0,
-                        skippedCooldown: 0,
-                    }
-                    : undefined,
-            };
-        }
-    }
-
-    // Debug guard: check signals are sorted
-    if (debugEnabled && signals.length > 1) {
-        for (let i = 1; i < signals.length; i++) {
-            if (signals[i].at < signals[i - 1].at) {
-                console.warn(
-                    `[DirectorLite] Signals not sorted! at[${i}]=${signals[i].at} < at[${i - 1}]=${signals[i - 1].at}`
-                );
-                break;
-            }
-        }
-    }
-
-    // Match rules with INLINE cooldown tracking (no separate map)
-    const matches: Match[] = [];
-    let skippedCooldown = 0;
-
-    // Track last seen time per cooldown key (inline, as we iterate sorted signals)
-    const lastSeenByKey = new Map<string, number>();
-
-    for (const signal of signals) {
-        const cooldownKey = getCooldownKey(signal);
-        const prevAt = lastSeenByKey.get(cooldownKey) ?? -Infinity;
-
-        // Get rules for this signal type (O(1) lookup)
-        const rules = RULES_BY_SIGNAL[signal.type] || [];
-
-        for (const rule of rules) {
-            const startFrame = signal.at;
-            const endFrame = startFrame + rule.durationFrames;
-
-            // Active at time t?
-            if (t < startFrame || t >= endFrame) continue;
-
-            // Cooldown check
-            const framesSinceLast = signal.at - prevAt;
-            if (framesSinceLast < rule.cooldownFrames && prevAt !== -Infinity) {
-                skippedCooldown++;
-                continue;
-            }
-
-            matches.push({ rule, signal, startFrame, endFrame });
-        }
-
-        // Update lastSeen after processing this signal
-        lastSeenByKey.set(cooldownKey, signal.at);
-    }
-
-    // Generate effects
-    const allEffects: DerivedCameraEffect[] = [];
-
-    for (const match of matches) {
-        const effect = generateEffect(match, layoutModel, t, seed);
-        if (effect) allEffects.push(effect);
-    }
-
-    // Arbitrate: 1 framing wins, shake stacks (max 2)
-    const finalEffects = arbitrate(allEffects);
-
-    // Debug (only if enabled)
-    let debug: DirectorDebug | undefined;
-    if (debugEnabled) {
-        const framingWinner = finalEffects.find((e) => e.category === "framing");
-        debug = {
-            signalsInWindow: signals.length,
-            matchedRules: matches.length,
-            winningFraming: framingWinner?.type,
-            skippedCooldown,
-        };
-    }
-
-    return { effects: finalEffects, debug };
-}
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-interface Match {
-    rule: Rule;
-    signal: DirectorSignal;
-    startFrame: number;
-    endFrame: number;
-}
-
-/**
- * Cooldown key includes conversation to scope properly.
- * Typing in chat A won't cooldown typing in chat B.
- */
-function getCooldownKey(signal: DirectorSignal): string {
-    return `${signal.type}:${signal.deviceId}:${signal.appId}:${signal.conversationId ?? ""}`;
-}
-
-function generateEffect(
-    match: Match,
-    layout: DirectorLayoutModel,
-    t: number,
-    seed: number
-): DerivedCameraEffect | null {
-    const { rule, signal, startFrame, endFrame } = match;
-    const duration = endFrame - startFrame;
-    const localProgress = (t - startFrame) / duration;
-    const progress = applyEasing(
-        Math.min(1, Math.max(0, localProgress)),
-        "ease-out"
-    );
-
-    // Resolve target
-    const target = resolveTarget(signal, layout, rule.targetType);
-    if (!target && rule.category === "framing" && rule.effect !== "PullBack") {
-        return null;
-    }
-
-    return {
-        type: rule.effect,
-        category: rule.category,
-        priority: rule.priority,
-        progress,
-        target: target ?? undefined,
-        scale: rule.scale,
-        intensity: rule.intensity,
-        seed: seed + signal.at,
-    };
-}
-
-function resolveTarget(
-    signal: DirectorSignal,
-    layout: DirectorLayoutModel,
-    targetType: string
-): LayoutRect | null {
-    switch (targetType) {
-        case "message":
-            return signal.messageId ? layout.messageRects[signal.messageId] : null;
-        case "inputArea":
-            return layout.inputAreaRect;
-        case "lastMessage":
-            return layout.lastMessageRect ?? null;
-        default:
-            return null;
-    }
-}
-
-/**
- * Arbitrate effects by category.
- * - Framing: exactly 1 wins (highest priority)
- * - Shake: max 2, stacks
- */
-function arbitrate(effects: DerivedCameraEffect[]): DerivedCameraEffect[] {
-    const result: DerivedCameraEffect[] = [];
-
-    // Framing: exactly 1 wins (highest priority)
-    const framing = effects
-        .filter((e) => e.category === "framing")
-        .sort((a, b) => b.priority - a.priority);
-
-    if (framing.length > 0) {
-        result.push(framing[0]);
-    }
-
-    // Shake: max 2
-    const shake = effects
-        .filter((e) => e.category === "shake")
-        .sort((a, b) => b.priority - a.priority)
-        .slice(0, 2);
-
-    result.push(...shake);
-
-    return result;
-}
-````
-
 ## File: packages/core/src/director-lite/index.ts
 ````typescript
 /**
@@ -16375,105 +16727,6 @@ export type { DeriveContext } from "./derive";
 export { extractSignals } from "./signals";
 export { RULES, RULES_BY_SIGNAL } from "./rules";
 export type { Rule } from "./rules";
-````
-
-## File: packages/core/src/director-lite/rules.ts
-````typescript
-/**
- * DirectorLite Rules
- *
- * ViralDramaV1 - The only style. Opinionated. Ships.
- * Pre-indexed by signal type for O(1) lookup.
- */
-
-import { SignalType, EffectCategory } from "./types";
-
-export interface Rule {
-    id: string;
-    signal: SignalType;
-    effect: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
-    category: EffectCategory;
-    priority: number;
-    cooldownFrames: number;
-    durationFrames: number;
-    targetType: "message" | "inputArea" | "lastMessage";
-    scale?: number;
-    intensity?: number;
-}
-
-/**
- * ViralDramaV1 - Baked rules for dramatic chat videos.
- */
-export const RULES: Rule[] = [
-    {
-        id: "typing-push",
-        signal: "TypingStarted",
-        effect: "PushIn",
-        category: "framing",
-        priority: 10,
-        cooldownFrames: 90,
-        durationFrames: 45,
-        targetType: "inputArea", // Always exists (not typing rect!)
-        scale: 1.12,
-    },
-    {
-        id: "message-zoom",
-        signal: "NewMessage",
-        effect: "ZoomToRect",
-        category: "framing",
-        priority: 30,
-        cooldownFrames: 20,
-        durationFrames: 25,
-        targetType: "message",
-        scale: 1.2,
-    },
-    {
-        id: "read-zoom",
-        signal: "MessageRead",
-        effect: "ZoomToRect",
-        category: "framing",
-        priority: 40,
-        cooldownFrames: 45,
-        durationFrames: 18,
-        targetType: "message",
-        scale: 1.08,
-    },
-    {
-        id: "deleted-shake",
-        signal: "MessageDeleted",
-        effect: "MicroShake",
-        category: "shake",
-        priority: 25,
-        cooldownFrames: 60,
-        durationFrames: 12,
-        targetType: "message",
-        intensity: 6,
-    },
-    {
-        id: "call-pullback",
-        signal: "CallIncoming",
-        effect: "PullBack",
-        category: "framing",
-        priority: 50,
-        cooldownFrames: 0,
-        durationFrames: 40,
-        targetType: "inputArea",
-        scale: 0.88,
-    },
-];
-
-/**
- * Pre-indexed rules by signal type for O(1) lookup.
- * Built once at module load.
- */
-export const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
-    (acc, rule) => {
-        if (!acc[rule.signal]) acc[rule.signal] = [];
-        acc[rule.signal].push(rule);
-        return acc;
-    },
-    {} as Record<SignalType, Rule[]>
-);
 ````
 
 ## File: packages/core/src/director-lite/signals.ts
@@ -17929,71 +18182,6 @@ export function getNotificationWidgets(
 }
 ````
 
-## File: packages/devices/src/iphone16/Frame.tsx
-````typescript
-import React from "react";
-import { iPhone16Profile } from "./profile";
-
-export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = iPhone16Profile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 165, // Scaled radius (55 * 3)
-            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Dynamic Island Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150, // Enough space for status bar
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "40px 60px 0 60px"
-            }}>
-                {/* Status Bar Content (Time, Battery, etc.) */}
-                {statusBar}
-            </div>
-
-            {/* Dynamic Island Cutout */}
-            <div style={{
-                position: "absolute",
-                top: 33, // 11 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 378, // 126 * 3
-                height: 111, // 37 * 3
-                backgroundColor: "black",
-                borderRadius: 60, // 20 * 3
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: packages/devices/src/keyboards/index.ts
 ````typescript
 /**
@@ -18288,70 +18476,6 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
 };
 
 export default IOSKeyboard;
-````
-
-## File: packages/devices/src/pixel/Frame.tsx
-````typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Status Bar Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                zIndex: 1000,
-                pointerEvents: "none",
-                padding: "30px 40px 0 40px"
-            }}>
-                {statusBar}
-            </div>
-
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#121212", // Dark mode default for Android
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                color: "white"
-            }}>
-
-                {children}
-            </div>
-        </div>
-    );
-};
 ````
 
 ## File: packages/dsl/examples/breakup-01.dsl.ts
@@ -20351,7 +20475,120 @@ export const camera = {
         duration,
         easing,
     } as TimelineEvent),
+
+    // =========================================================================
+    // SEMANTIC ANCHOR CAMERA (Webseries Style)
+    // =========================================================================
+
+    /**
+     * Focus on a semantic anchor (one-time origin set)
+     * 
+     * @param at - Frame to start effect
+     * @param anchor - Semantic anchor ID (lastMessage, inputArea, etc.)
+     * @param preset - Shot preset (dramatic, subtle, impact, etc.)
+     * @param shake - Optional shake intensity
+     */
+    anchorFocus: (at: number, anchor: string, preset = "message", shake = 0): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        anchor,
+        preset,
+        shake,
+        duration: getPresetDuration(preset),
+        easing: "ease-out",
+    } as TimelineEvent),
+
+    /**
+     * Track a semantic anchor with smooth following (Webseries Camera!)
+     * 
+     * Unlike anchorFocus which sets origin once, anchorTrack continuously
+     * follows the anchor rect with exponential smoothing.
+     * 
+     * @param at - Frame to start tracking
+     * @param anchor - Semantic anchor ID
+     * @param duration - Frames to track (default: 35)
+     * @param smoothing - Smoothing factor: 0.08=slow, 0.18=operator, 0.35=snappy, 0.6=whip
+     * @param preset - Optional preset for scale (default uses operatorFollow)
+     */
+    anchorTrack: (at: number, anchor: string, duration = 35, smoothing = 0.18, preset?: string): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_TRACK",
+        anchor,
+        duration,
+        smoothing,
+        preset: preset ?? "operatorFollow",
+        easing: "ease-out",
+    } as TimelineEvent),
+
+    /**
+     * Hold current camera position (let viewer read)
+     * 
+     * @param at - Frame to start hold
+     * @param duration - Frames to hold (min 12 recommended)
+     */
+    hold: (at: number, duration = 18): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "HOLD",
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Punch + Glide: The webseries signature move
+     * Fast zoom-in, then smooth follow.
+     * 
+     * Combines: impactPunch(10 frames) → operatorFollow(35 frames)
+     * 
+     * @param at - Frame to start
+     * @param anchor - Semantic anchor to follow
+     */
+    punchGlide: (at: number, anchor: string): TimelineEvent[] => [
+        // Phase 1: Punch (fast zoom + shake)
+        {
+            at,
+            kind: "CAMERA",
+            type: "ANCHOR_FOCUS",
+            anchor,
+            preset: "impactPunch",
+            shake: 3,
+            duration: 10,
+            easing: "ease-out",
+        } as TimelineEvent,
+        // Phase 2: Glide (smooth follow)
+        {
+            at: at + 10,
+            kind: "CAMERA",
+            type: "ANCHOR_TRACK",
+            anchor,
+            duration: 35,
+            smoothing: 0.18,
+            preset: "operatorFollow",
+            easing: "ease-out",
+        } as TimelineEvent,
+    ],
 };
+
+/**
+ * Get duration from preset name
+ */
+function getPresetDuration(preset: string): number {
+    switch (preset) {
+        case "dramatic": return 25;
+        case "subtle": return 30;
+        case "snap": return 10;
+        case "impact": return 15;
+        case "impactPunch": return 10;
+        case "operatorFollow": return 35;
+        case "punchGlide": return 45;
+        case "whipSnap": return 8;
+        case "documentaryHold": return 24;
+        case "message": return 25;
+        case "reset": return 20;
+        default: return 25;
+    }
+}
 ````
 
 ## File: packages/dsl/src/events/keyboard.ts
@@ -23079,119 +23316,6 @@ export function useAudioEngine(input: AudioEngineInput): AudioEngineOutput {
 }
 ````
 
-## File: packages/renderer/src/layout/strategies/lockscreen.ts
-````typescript
-import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
-
-export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
-    const { world, t, activeDeviceId, config } = ctx;
-    const lockConfig = config!.lockscreen!;
-
-    const device = world.devices[activeDeviceId];
-    const notifications = device?.notifications || [];
-
-    const notificationLayouts: NotificationLayout[] = [];
-    let currentY = lockConfig.topPadding;
-
-    // Layout notifications
-    // Show only the last N notifications
-    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
-
-    for (const notification of visibleNotifications) {
-        // Calculate height
-        // Heuristic: base height + text length
-        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
-        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
-        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
-
-        // Animation: Slide in
-        const appearAt = notification.at || 0;
-        const timeSinceAppear = t - appearAt;
-
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear < lockConfig.appearDuration) {
-            const progress = Math.max(0, timeSinceAppear / lockConfig.appearDuration);
-            // Cubic bezier approximation for ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
-
-            opacity = ease;
-            // Slide down from -50px
-            translateY = -50 * (1 - ease);
-        }
-
-        notificationLayouts.push({
-            id: notification.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY
-        });
-
-        currentY += height + lockConfig.notificationGap;
-    }
-
-    return {
-        kind: "LOCKSCREEN",
-        notificationLayouts,
-        meta: {}
-    };
-}
-````
-
-## File: packages/renderer/src/layout/index.ts
-````typescript
-import { LayoutContext, LayoutState } from "./types";
-import { defaultLayoutConfig } from "./config";
-import { computeChatLayout } from "./strategies/chat";
-import { computeFeedLayout } from "./strategies/feed";
-import { computeStoryLayout } from "./strategies/story";
-import { computeLockscreenLayout } from "./strategies/lockscreen";
-import { computeTransitionLayout } from "./strategies/transition";
-
-export * from "./types";
-export * from "./config";
-
-export function computeLayout(ctx: LayoutContext): LayoutState {
-    // Deep merge provided config with defaults
-    const config = {
-        ...defaultLayoutConfig,
-        ...ctx.config,
-        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
-        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
-        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
-        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
-        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
-    };
-    const fullCtx = { ...ctx, config };
-
-    switch (ctx.viewKind) {
-        case "CHAT":
-            return computeChatLayout(fullCtx);
-        case "FEED":
-            return computeFeedLayout(fullCtx);
-        case "STORY":
-            return computeStoryLayout(fullCtx);
-        case "LOCKSCREEN":
-            return computeLockscreenLayout(fullCtx);
-        case "TRANSITION":
-            return computeTransitionLayout(fullCtx);
-        default:
-            // Fallback to empty transition state
-            return {
-                kind: "TRANSITION",
-                deviceTranslateX: 0,
-                deviceTranslateY: 0,
-                deviceScale: 1,
-                deviceRotation: 0,
-                overlayOpacity: 0,
-                meta: {}
-            };
-    }
-}
-````
-
 ## File: packages/renderer/src/shared/Components.tsx
 ````typescript
 /**
@@ -23769,115 +23893,78 @@ export const UnlockTransition: React.FC<UnlockTransitionProps> = ({
 };
 ````
 
-## File: packages/renderer/src/camera-composer.ts
+## File: packages/renderer/src/DeviceFrame.tsx
 ````typescript
-/**
- * Camera Composer
- *
- * Applies director effects to create final camera transform.
- * Director owns framing when enabled - base transform should be neutral.
- */
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { DeviceState } from "@tokovo/core";
 
-import {
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-} from "@tokovo/core";
-import { DerivedCameraEffect, LayoutRect } from "@tokovo/core";
-
-export interface Viewport {
-    width: number;
-    height: number;
-    scrollY: number;
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
 }
 
-/**
- * Apply director effects to create final transform.
- *
- * POLICY: Director owns framing when enabled.
- * When director effects exist, we start from neutral and apply them.
- */
-export function applyDirectorEffects(
-    effects: DerivedCameraEffect[],
-    viewport: Viewport
-): CameraTransform {
-    // Start fresh - director owns the frame
-    const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
+    // Strategy pattern: Select frame component based on profile ID
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
 
-    // Apply framing (there's at most 1 after arbitration)
-    const framing = effects.find((e) => e.category === "framing");
-    if (framing) {
-        applyFramingEffect(transform, framing, viewport);
-    }
-
-    // Apply shake (additive, can stack)
-    const shakes = effects.filter((e) => e.category === "shake");
-    for (const shake of shakes) {
-        applyShakeEffect(transform, shake);
-    }
-
-    return transform;
-}
-
-function applyFramingEffect(
-    transform: CameraTransform,
-    effect: DerivedCameraEffect,
-    viewport: Viewport
-): void {
-    const { progress, scale, target } = effect;
-
-    switch (effect.type) {
-        case "PushIn":
-        case "ZoomToRect": {
-            if (!scale || !target) return;
-
-            // Scale interpolation
-            transform.scale = 1 + (scale - 1) * progress;
-
-            // Origin: center on target rect (adjusted for scroll)
-            const centerX = target.x + target.width / 2;
-            const centerY = target.y + target.height / 2 - viewport.scrollY;
-
-            transform.originX = centerX / viewport.width;
-            transform.originY = centerY / viewport.height;
-            break;
-        }
-
-        case "PullBack": {
-            if (!scale) return;
-            transform.scale = 1 + (scale - 1) * progress;
-            // Origin stays centered for pullback
-            transform.originX = 0.5;
-            transform.originY = 0.5;
-            break;
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
         }
     }
-}
 
-function applyShakeEffect(
-    transform: CameraTransform,
-    effect: DerivedCameraEffect
-): void {
-    const { intensity, seed, progress } = effect;
-    if (!intensity || seed === undefined) return;
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
 
-    // Decay shake over progress
-    const decay = 1 - progress;
-    const amp = intensity * decay;
-
-    // Deterministic shake
-    transform.shakeX += (seededRandom(seed) - 0.5) * 2 * amp;
-    transform.shakeY += (seededRandom(seed + 1) - 0.5) * 2 * amp;
-}
-
-/**
- * Deterministic random (mulberry32)
- */
-function seededRandom(seed: number): number {
-    let t = seed + 0x6d2b79f5;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
+    return (
+        <FrameComponent {...frameProps} statusBar={statusBar}>
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)",
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
 ````
 
 ## File: packages/renderer/src/HeadsUpNotification.tsx
@@ -29483,102 +29570,499 @@ export function createTheme(
 }
 ````
 
-## File: packages/core/src/director-lite/types.ts
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
 ````typescript
+import React from "react";
+
 /**
- * DirectorLite Types
- *
- * Minimal types for the camera director system.
- * No framework, no configurability - just what ships.
+ * WhatsApp iOS Typing Indicator
+ * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
+ * Uses frame-based animation for proper rendering in video output
+ * 
+ * @param frame - Current frame from Remotion (passed in from renderer)
+ * @param fps - Frames per second (default 30)
  */
 
-// =============================================================================
-// LAYOUT
-// =============================================================================
-
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
+export interface TypingBubbleProps {
+    platform?: string;
+    frame?: number;
+    fps?: number;
 }
 
-export interface DirectorLayoutModel {
-    deviceId: string;
-    appId: string;
-    conversationId?: string;
-    messageRects: Record<string, LayoutRect>;
-    inputAreaRect: LayoutRect; // Always available
-    typingIndicatorRect?: LayoutRect; // Only when typing
-    lastMessageRect?: LayoutRect;
+import { LAYOUT_CONSTANTS } from "./config/layout-config";
+
+export const TypingBubble: React.FC<TypingBubbleProps> = ({
+    platform = "ios",
+    frame = 0,
+    fps = 30
+}) => {
+    return (
+        <div style={{
+            backgroundColor: "#FFFFFF",
+            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
+            borderRadius: 24,
+            borderTopLeftRadius: 6,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+            display: "flex",
+            alignItems: "center",
+            gap: 15,
+            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
+        }}>
+            <TypingDot frame={frame} fps={fps} delayFrames={0} />
+            <TypingDot frame={frame} fps={fps} delayFrames={5} />
+            <TypingDot frame={frame} fps={fps} delayFrames={10} />
+        </div>
+    );
+};
+
+interface TypingDotProps {
+    frame: number;
+    fps: number;
+    delayFrames: number;
+}
+
+/**
+ * Simple interpolation function (avoiding remotion dependency)
+ */
+function interpolate(
+    value: number,
+    inputRange: number[],
+    outputRange: number[],
+): number {
+    // Find the segment
+    let i = 0;
+    for (i = 0; i < inputRange.length - 1; i++) {
+        if (value <= inputRange[i + 1]) break;
+    }
+
+    // Clamp to range
+    if (value <= inputRange[0]) return outputRange[0];
+    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
+
+    // Linear interpolation between points
+    const inputStart = inputRange[i];
+    const inputEnd = inputRange[i + 1];
+    const outputStart = outputRange[i];
+    const outputEnd = outputRange[i + 1];
+
+    const t = (value - inputStart) / (inputEnd - inputStart);
+    return outputStart + (outputEnd - outputStart) * t;
+}
+
+const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
+    // Animation cycle: 36 frames at 30fps = 1.2 seconds
+    const cycleLength = Math.round(1.2 * fps);
+    const adjustedFrame = (frame + delayFrames) % cycleLength;
+
+    // Bounce animation: up for first quarter, down for second quarter
+    const quarterCycle = cycleLength / 4;
+    const translateY = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0, -9, 0, 0]
+    );
+
+    // Opacity: brighten when bouncing up
+    const opacity = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0.4, 1, 0.4, 0.4]
+    );
+
+    return (
+        <div style={{
+            width: 24,
+            height: 24,
+            backgroundColor: "#8696A0",
+            borderRadius: "50%",
+            transform: `translateY(${translateY}px)`,
+            opacity
+        }} />
+    );
+};
+
+export default TypingBubble;
+````
+
+## File: packages/core/src/director-lite/derive.ts
+````typescript
+/**
+ * DirectorLite Derive
+ *
+ * Pure function that derives camera effects for frame t.
+ * Stateless, deterministic, scrubbing-safe.
+ *
+ * FIXES from review:
+ * - Cooldown uses inline lastSeen (no map key mismatch)
+ * - Signals assumed pre-sorted; debug guard if not
+ * - Manual camera skip policy: if any manual camera active, skip director
+ * - viewport removed from this function (only needed in composer)
+ */
+
+import {
+    DirectorSignal,
+    DirectorLayoutModel,
+    DirectorOutput,
+    DerivedCameraEffect,
+    DirectorDebug,
+    LayoutRect,
+} from "./types";
+import { Rule, RULES_BY_SIGNAL } from "./rules";
+import { applyEasing } from "../camera";
+import { ActiveCameraEffect } from "../types";
+
+// =============================================================================
+// MAIN ENTRY
+// =============================================================================
+
+export interface DeriveContext {
+    t: number;
+    signals: DirectorSignal[]; // Must be pre-sorted by `at`
+    layoutModel: DirectorLayoutModel;
+    seed?: number;
+    debug?: boolean;
+    // Manual camera skip: if any active effects from timeline, skip director
+    manualCameraEffects?: ActiveCameraEffect[];
+}
+
+/**
+ * Derive camera effects for frame t.
+ *
+ * PURE FUNCTION: No internal state.
+ * O(n) complexity with inline cooldown tracking.
+ */
+export function deriveDirectorEffects(ctx: DeriveContext): DirectorOutput {
+    const {
+        t,
+        signals,
+        layoutModel,
+        seed = 0,
+        debug: debugEnabled = false,
+        manualCameraEffects = [],
+    } = ctx;
+
+    // Policy A: Skip director if any manual camera event is active
+    if (manualCameraEffects.length > 0) {
+        const hasActiveManual = manualCameraEffects.some(
+            (ae) => t >= ae.startFrame && t < ae.endFrame
+        );
+        if (hasActiveManual) {
+            return {
+                effects: [],
+                skipped: "manual-camera-active",
+                debug: debugEnabled
+                    ? {
+                        signalsInWindow: signals.length,
+                        matchedRules: 0,
+                        skippedCooldown: 0,
+                    }
+                    : undefined,
+            };
+        }
+    }
+
+    // Debug guard: check signals are sorted
+    if (debugEnabled && signals.length > 1) {
+        for (let i = 1; i < signals.length; i++) {
+            if (signals[i].at < signals[i - 1].at) {
+                console.warn(
+                    `[DirectorLite] Signals not sorted! at[${i}]=${signals[i].at} < at[${i - 1}]=${signals[i - 1].at}`
+                );
+                break;
+            }
+        }
+    }
+
+    // Match rules with INLINE cooldown tracking (no separate map)
+    const matches: Match[] = [];
+    let skippedCooldown = 0;
+
+    // Track last seen time per cooldown key (inline, as we iterate sorted signals)
+    const lastSeenByKey = new Map<string, number>();
+
+    for (const signal of signals) {
+        const cooldownKey = getCooldownKey(signal);
+        const prevAt = lastSeenByKey.get(cooldownKey) ?? -Infinity;
+
+        // Get rules for this signal type (O(1) lookup)
+        const rules = RULES_BY_SIGNAL[signal.type] || [];
+
+        for (const rule of rules) {
+            const startFrame = signal.at;
+            const endFrame = startFrame + rule.durationFrames;
+
+            // Active at time t?
+            if (t < startFrame || t >= endFrame) continue;
+
+            // Cooldown check
+            const framesSinceLast = signal.at - prevAt;
+            if (framesSinceLast < rule.cooldownFrames && prevAt !== -Infinity) {
+                skippedCooldown++;
+                continue;
+            }
+
+            matches.push({ rule, signal, startFrame, endFrame });
+        }
+
+        // Update lastSeen after processing this signal
+        lastSeenByKey.set(cooldownKey, signal.at);
+    }
+
+    // Generate effects
+    const allEffects: DerivedCameraEffect[] = [];
+
+    for (const match of matches) {
+        const effect = generateEffect(match, layoutModel, t, seed);
+        if (effect) allEffects.push(effect);
+    }
+
+    // Arbitrate: 1 framing wins, shake stacks (max 2)
+    const finalEffects = arbitrate(allEffects);
+
+    // Debug (only if enabled)
+    let debug: DirectorDebug | undefined;
+    if (debugEnabled) {
+        const framingWinner = finalEffects.find((e) => e.category === "framing");
+        debug = {
+            signalsInWindow: signals.length,
+            matchedRules: matches.length,
+            winningFraming: framingWinner?.type,
+            skippedCooldown,
+        };
+    }
+
+    return { effects: finalEffects, debug };
 }
 
 // =============================================================================
-// SIGNALS
+// HELPERS
 // =============================================================================
 
-export type SignalType =
-    | "TypingStarted"
-    | "TypingEnded"
-    | "NewMessage"
-    | "MessageRead"
-    | "MessageDeleted"
-    | "CallIncoming";
-
-export interface DirectorSignal {
-    type: SignalType;
-    deviceId: string;
-    appId: string;
-    conversationId?: string;
-    at: number;
-    messageId?: string;
-    from?: string;
+interface Match {
+    rule: Rule;
+    signal: DirectorSignal;
+    startFrame: number;
+    endFrame: number;
 }
 
-// =============================================================================
-// EFFECTS
-// =============================================================================
+/**
+ * Cooldown key includes conversation to scope properly.
+ * Typing in chat A won't cooldown typing in chat B.
+ */
+function getCooldownKey(signal: DirectorSignal): string {
+    return `${signal.type}:${signal.deviceId}:${signal.appId}:${signal.conversationId ?? ""}`;
+}
 
-export type EffectCategory = "framing" | "shake";
+function generateEffect(
+    match: Match,
+    layout: DirectorLayoutModel,
+    t: number,
+    seed: number
+): DerivedCameraEffect | null {
+    const { rule, signal, startFrame, endFrame } = match;
+    const duration = endFrame - startFrame;
+    const localProgress = (t - startFrame) / duration;
+    const progress = applyEasing(
+        Math.min(1, Math.max(0, localProgress)),
+        "ease-out"
+    );
 
-export interface DerivedCameraEffect {
-    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    // === NEW: FocusAnchor effects use semantic anchors ===
+    if (rule.effect === "FocusAnchor" && rule.anchor) {
+        return {
+            type: "FocusAnchor",
+            category: rule.category,
+            priority: rule.priority,
+            progress,
+            anchor: rule.anchor,      // Semantic anchor ID
+            preset: rule.preset,      // Shot preset
+            scale: rule.scale,
+            seed: seed + signal.at,
+        };
+    }
+
+    // === Legacy: PushIn, ZoomToRect, PullBack use pixel rects ===
+    // Resolve target (only for legacy effects)
+    const target = resolveTarget(signal, layout, rule.targetType || "");
+    if (!target && rule.category === "framing" && rule.effect !== "PullBack") {
+        return null;
+    }
+
+    return {
+        type: rule.effect,
+        category: rule.category,
+        priority: rule.priority,
+        progress,
+        target: target ?? undefined,
+        scale: rule.scale,
+        intensity: rule.intensity,
+        seed: seed + signal.at,
+    };
+}
+
+function resolveTarget(
+    signal: DirectorSignal,
+    layout: DirectorLayoutModel,
+    targetType: string
+): LayoutRect | null {
+    switch (targetType) {
+        case "message":
+            return signal.messageId ? layout.messageRects[signal.messageId] : null;
+        case "inputArea":
+            return layout.inputAreaRect;
+        case "lastMessage":
+            return layout.lastMessageRect ?? null;
+        default:
+            return null;
+    }
+}
+
+/**
+ * Arbitrate effects by category.
+ * - Framing: exactly 1 wins (highest priority)
+ * - Shake: max 2, stacks
+ */
+function arbitrate(effects: DerivedCameraEffect[]): DerivedCameraEffect[] {
+    const result: DerivedCameraEffect[] = [];
+
+    // Framing: exactly 1 wins (highest priority)
+    const framing = effects
+        .filter((e) => e.category === "framing")
+        .sort((a, b) => b.priority - a.priority);
+
+    if (framing.length > 0) {
+        result.push(framing[0]);
+    }
+
+    // Shake: max 2
+    const shake = effects
+        .filter((e) => e.category === "shake")
+        .sort((a, b) => b.priority - a.priority)
+        .slice(0, 2);
+
+    result.push(...shake);
+
+    return result;
+}
+````
+
+## File: packages/core/src/director-lite/rules.ts
+````typescript
+/**
+ * DirectorLite Rules
+ *
+ * ViralDramaV1 - The only style. Opinionated. Ships.
+ * Pre-indexed by signal type for O(1) lookup.
+ * 
+ * UPDATE: Now uses semantic anchors (FocusAnchor) instead of pixel targets.
+ */
+
+import { SignalType, EffectCategory } from "./types";
+
+export interface Rule {
+    id: string;
+    signal: SignalType;
+    /** 
+     * Effect type:
+     * - FocusAnchor: NEW semantic anchor-based (PREFERRED)
+     * - PushIn, ZoomToRect, PullBack: Legacy pixel-based (DEPRECATED)
+     * - MicroShake: Camera shake effect
+     */
+    effect: "FocusAnchor" | "MicroShake" | "PushIn" | "ZoomToRect" | "PullBack";
     category: EffectCategory;
     priority: number;
-    progress: number;
-    // Framing effects
-    target?: LayoutRect;
+    cooldownFrames: number;
+    durationFrames: number;
+
+    // === NEW: Anchor-based targeting (PREFERRED) ===
+    /** Semantic anchor to focus on */
+    anchor?: string;  // SemanticAnchorId
+    /** Shot preset (matches SHOT_PRESETS in camera/presets.ts) */
+    preset?: string;  // ShotPresetId
+
+    // === Legacy ===
+    targetType?: "message" | "inputArea" | "lastMessage";  // DEPRECATED
     scale?: number;
-    // Shake effects
     intensity?: number;
-    seed?: number;
 }
 
-// =============================================================================
-// OUTPUT
-// =============================================================================
+/**
+ * ViralDramaV1 - Baked rules for dramatic chat videos.
+ * 
+ * NOW USING SEMANTIC ANCHORS!
+ */
+export const RULES: Rule[] = [
+    {
+        id: "typing-push",
+        signal: "TypingStarted",
+        effect: "FocusAnchor",
+        category: "framing",
+        priority: 10,
+        cooldownFrames: 90,
+        durationFrames: 45,
+        anchor: "inputArea",     // Stable anchor for typing
+        preset: "subtle",        // Subtle zoom during anticipation
+    },
+    {
+        id: "message-zoom",
+        signal: "NewMessage",
+        effect: "FocusAnchor",
+        category: "framing",
+        priority: 30,
+        cooldownFrames: 20,
+        durationFrames: 25,
+        anchor: "lastMessage",   // Follow the new message
+        preset: "message",       // Standard message follow preset
+    },
+    {
+        id: "read-zoom",
+        signal: "MessageRead",
+        effect: "FocusAnchor",
+        category: "framing",
+        priority: 40,
+        cooldownFrames: 45,
+        durationFrames: 18,
+        anchor: "lastMessage",   // Focus on read message
+        preset: "subtle",        // Subtle acknowledgment
+    },
+    {
+        id: "deleted-shake",
+        signal: "MessageDeleted",
+        effect: "MicroShake",
+        category: "shake",
+        priority: 25,
+        cooldownFrames: 60,
+        durationFrames: 12,
+        anchor: "lastMessage",   // Shake near the deleted message
+        intensity: 6,
+    },
+    {
+        id: "call-pullback",
+        signal: "CallIncoming",
+        effect: "FocusAnchor",
+        category: "framing",
+        priority: 50,
+        cooldownFrames: 0,
+        durationFrames: 40,
+        anchor: "callPoster",    // Focus on incoming call poster
+        preset: "dramatic",      // Dramatic for incoming calls
+    },
+];
 
-export interface DirectorOutput {
-    effects: DerivedCameraEffect[];
-    debug?: DirectorDebug;
-    skipped?: "manual-camera-active";
-}
-
-export interface DirectorDebug {
-    signalsInWindow: number;
-    matchedRules: number;
-    winningFraming?: string;
-    skippedCooldown: number;
-}
-
-// =============================================================================
-// CAMERA INTENTS (re-exported from behavior-registry)
-// =============================================================================
-
-// CameraIntent and AppBehavior are defined in behavior-registry.ts
-// to avoid circular dependencies and duplicate exports.
-// Re-export for backwards compatibility:
-export type { CameraIntent, AppBehavior } from "../behavior-registry";
+/**
+ * Pre-indexed rules by signal type for O(1) lookup.
+ * Built once at module load.
+ */
+export const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
+    (acc, rule) => {
+        if (!acc[rule.signal]) acc[rule.signal] = [];
+        acc[rule.signal].push(rule);
+        return acc;
+    },
+    {} as Record<SignalType, Rule[]>
+);
 ````
 
 ## File: packages/core/src/constants.ts
@@ -30103,6 +30587,292 @@ const deviceProfileRegistry: Record<string, DeviceProfile> = {
 export function getDeviceProfile(profileId: string): DeviceProfile {
     return deviceProfileRegistry[profileId] || iPhone16Profile;
 }
+````
+
+## File: packages/devices/src/StatusBar.tsx
+````typescript
+import React from "react";
+import { DeviceOSState } from "@tokovo/core";
+
+/**
+ * StatusBar - Authentic iOS/Android status bar
+ * 
+ * Reads from DeviceOSState for:
+ * - Time (formatted from clock timestamp)
+ * - Battery percentage and charging state
+ * - Network type and signal strength
+ * - DND mode (moon icon)
+ */
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+// iOS Signal Bars (4 bars, varying heights based on strength)
+const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 4 // 0-4
+}) => (
+    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
+        <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
+        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
+        <rect x="13.5" y="0" width="3" height="11" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
+    </svg>
+);
+
+// iOS WiFi Icon (3 arcs based on strength)
+const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 3 // 0-3
+}) => (
+    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
+        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
+        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
+    </svg>
+);
+
+// iOS Battery Icon
+const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
+    color = "currentColor",
+    percentage = 100,
+    charging = false
+}) => (
+    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+        {/* Battery body */}
+        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
+        {/* Battery fill */}
+        <rect
+            x="2"
+            y="2"
+            width={Math.max(0, (percentage / 100) * 18)}
+            height="8"
+            rx="1"
+            fill={percentage > 20 ? (charging ? "#34C759" : color) : "#FF3B30"}
+        />
+        {/* Battery cap */}
+        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
+        {/* Charging bolt */}
+        {charging && (
+            <path d="M11 2L8 6H11L10 10L13 6H10L11 2Z" fill="white" />
+        )}
+    </svg>
+);
+
+// Network type label for cellular
+const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
+    const label = network === "wifi" ? null : network.toUpperCase();
+    if (!label) return null;
+    return (
+        <span style={{
+            fontSize: 36,
+            fontWeight: 600,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            marginRight: 6,
+            color,
+        }}>
+            {label}
+        </span>
+    );
+};
+
+// DND Moon Icon
+const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
+        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
+    </svg>
+);
+
+// =============================================================================
+// PROPS
+// =============================================================================
+
+interface StatusBarProps {
+    /** Device OS state (preferred - reads time, battery, network from here) */
+    os?: DeviceOSState;
+    /** Fallback: manual time string */
+    time?: string;
+    /** Fallback: manual battery percentage */
+    batteryPercentage?: number;
+    /** Platform variant */
+    variant?: "ios" | "android";
+    /** Theme */
+    theme?: "light" | "dark";
+    /** Notification icons (Android left side) */
+    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/** Format timestamp to HH:MM */
+function formatTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: false,
+    });
+}
+
+// =============================================================================
+// NOTIFICATION ICON
+// =============================================================================
+
+const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
+    <div style={{ position: "relative" }}>
+        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
+        {count > 1 && (
+            <div style={{
+                position: "absolute",
+                top: -6,
+                right: -8,
+                background: "#ff3b30",
+                borderRadius: 10,
+                padding: "2px 6px",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "white",
+                minWidth: 12,
+                textAlign: "center",
+            }}>
+                {count > 9 ? "9+" : count}
+            </div>
+        )}
+    </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const StatusBar: React.FC<StatusBarProps> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100,
+    variant = "ios",
+    theme = "light",
+    notificationIcons = [],
+}) => {
+    // Read from device.os if available, otherwise use props
+    const displayTime = os ? formatTime(os.clock) : time;
+    const displayBattery = os ? os.battery : batteryPercentage;
+    const isCharging = os?.charging ?? false;
+    const network = os?.network ?? "wifi";
+    const wifiStrength = os?.wifiStrength ?? 3;
+    const cellStrength = os?.cellStrength ?? 4;
+    const isDND = os?.dnd ?? false;
+
+    const isAndroid = variant === "android";
+    const textColor = theme === "dark" ? "white" : "black";
+
+    // Android Status Bar
+    if (isAndroid) {
+        return (
+            <div style={{
+                width: "100%",
+                height: 90,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "0 45px",
+                boxSizing: "border-box",
+                fontSize: 36,
+                fontWeight: "500",
+                color: "white",
+                position: "absolute",
+                top: 15,
+                left: 0,
+                zIndex: 20,
+                fontFamily: "Roboto, sans-serif"
+            }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <span>{displayTime}</span>
+                    {notificationIcons.slice(0, 5).map((n, i) => (
+                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
+                    ))}
+                    {notificationIcons.length > 5 && (
+                        <span style={{ fontSize: 28 }}>•</span>
+                    )}
+                </div>
+                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                    {isDND && <DNDIcon color="white" />}
+                    {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
+                    <SignalBarsIcon color="white" strength={cellStrength} />
+                    {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
+                    <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
+                </div>
+            </div>
+        );
+    }
+
+    // iOS Status Bar
+    return (
+        <div style={{
+            width: "100%",
+            height: 132,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "45px 72px 0 72px",
+            boxSizing: "border-box",
+            color: textColor,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 20
+        }}>
+            {/* Left side - Time */}
+            <div style={{
+                fontSize: 51,
+                fontWeight: "600",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                letterSpacing: 0.5
+            }}>
+                {displayTime}
+            </div>
+
+            {/* Right side - Status icons */}
+            <div style={{
+                display: "flex",
+                gap: 15,
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                {isDND && <DNDIcon color={textColor} />}
+                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
+                <SignalBarsIcon color={textColor} strength={cellStrength} />
+                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
+                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * iOS Status Bar specifically styled for dark backgrounds
+ */
+export const DarkStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar os={os} time={time} theme="dark" batteryPercentage={batteryPercentage} />
+);
+
+/**
+ * iOS Status Bar specifically styled for light backgrounds
+ */
+export const LightStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar os={os} time={time} theme="light" batteryPercentage={batteryPercentage} />
+);
 ````
 
 ## File: packages/devices/src/types.ts
@@ -32374,78 +33144,117 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
 export default AudioLayer;
 ````
 
-## File: packages/renderer/src/DeviceFrame.tsx
+## File: packages/renderer/src/camera-composer.ts
 ````typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { DeviceState } from "@tokovo/core";
+/**
+ * Camera Composer
+ *
+ * Applies director effects to create final camera transform.
+ * Director owns framing when enabled - base transform should be neutral.
+ */
 
-interface DeviceFrameProps {
-    profileId: string;
-    isLocked?: boolean;
-    notifications?: any[];
-    children: React.ReactNode;
-    variant?: "ios" | "android";
-    /** Device state - used to read os for StatusBar */
-    device?: DeviceState;
+import {
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+} from "@tokovo/core";
+import { DerivedCameraEffect, LayoutRect } from "@tokovo/core";
+
+export interface Viewport {
+    width: number;
+    height: number;
+    scrollY: number;
 }
 
-export const DeviceFrame: React.FC<DeviceFrameProps> = ({
-    profileId,
-    isLocked,
-    notifications,
-    children,
-    variant,
-    device
-}) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
+/**
+ * Apply director effects to create final transform.
+ *
+ * POLICY: Director owns framing when enabled.
+ * When director effects exist, we start from neutral and apply them.
+ */
+export function applyDirectorEffects(
+    effects: DerivedCameraEffect[],
+    viewport: Viewport
+): CameraTransform {
+    // Start fresh - director owns the frame
+    const transform: CameraTransform = { ...DEFAULT_CAMERA_TRANSFORM };
 
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
+    // Apply framing (there's at most 1 after arbitration)
+    const framing = effects.find((e) => e.category === "framing");
+    if (framing) {
+        applyFramingEffect(transform, framing, viewport);
     }
 
-    // StatusBar reads from device.os if available
-    const statusBar = (
-        <StatusBar
-            os={device?.os}
-            variant={variant}
-            theme={variant === "android" ? "dark" : "light"}
-        />
-    );
+    // Apply shake (additive, can stack)
+    const shakes = effects.filter((e) => e.category === "shake");
+    for (const shake of shakes) {
+        applyShakeEffect(transform, shake);
+    }
 
-    return (
-        <FrameComponent {...frameProps} statusBar={statusBar}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
-};
+    return transform;
+}
+
+function applyFramingEffect(
+    transform: CameraTransform,
+    effect: DerivedCameraEffect,
+    viewport: Viewport
+): void {
+    const { progress, scale, target } = effect;
+
+    switch (effect.type) {
+        case "PushIn":
+        case "ZoomToRect":
+        case "FocusAnchor": {
+            // FocusAnchor effects should have target injected by useCameraEngine
+            if (!scale || !target) return;
+
+            // Scale interpolation
+            transform.scale = 1 + (scale - 1) * progress;
+
+            // Origin: center on target rect (adjusted for scroll)
+            const centerX = target.x + target.width / 2;
+            const centerY = target.y + target.height / 2 - viewport.scrollY;
+
+            transform.originX = Math.max(0.1, Math.min(0.9, centerX / viewport.width));
+            transform.originY = Math.max(0.1, Math.min(0.9, centerY / viewport.height));
+            break;
+        }
+
+        case "PullBack": {
+            if (!scale) return;
+            transform.scale = 1 + (scale - 1) * progress;
+            // Origin stays centered for pullback
+            transform.originX = 0.5;
+            transform.originY = 0.5;
+            break;
+        }
+    }
+}
+
+function applyShakeEffect(
+    transform: CameraTransform,
+    effect: DerivedCameraEffect
+): void {
+    const { intensity, seed, progress } = effect;
+    if (!intensity || seed === undefined) return;
+
+    // Decay shake over progress
+    const decay = 1 - progress;
+    const amp = intensity * decay;
+
+    // Deterministic shake
+    transform.shakeX += (seededRandom(seed) - 0.5) * 2 * amp;
+    transform.shakeY += (seededRandom(seed + 1) - 0.5) * 2 * amp;
+}
+
+/**
+ * Deterministic random (mulberry32)
+ */
+function seededRandom(seed: number): number {
+    let t = seed + 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
 ````
 
 ## File: packages/renderer/src/HomeScreenView.tsx
@@ -33831,363 +34640,6 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
-
-// ============================================================================
-// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
-// ============================================================================
-
-const ChevronLeftIcon = () => (
-    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const VideoCallIcon = () => (
-    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
-        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
-        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-
-const InfoIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
-        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-const CameraCircleIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
-        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
-        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
-    </svg>
-);
-
-const MicrophoneIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
-        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-);
-
-const ImageIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
-        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
-        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const StickerIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
-        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="9" r="1" fill="white" />
-        <circle cx="14" cy="9" r="1" fill="white" />
-    </svg>
-);
-
-const HeartIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// HEADER COMPONENT - Authentic Instagram DM Navigation
-// ============================================================================
-
-interface HeaderProps {
-    contactName: string;
-    avatarUrl?: string;
-    isActive?: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
-    <div style={{
-        height: 180,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 42px",
-        marginTop: 144, // Below dynamic island
-        zIndex: 10
-    }}>
-        {/* Back button */}
-        <ChevronLeftIcon />
-
-        {/* Avatar + Name Group */}
-        <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            marginLeft: 36,
-            gap: 30
-        }}>
-            {/* Avatar with active indicator */}
-            <div style={{ position: "relative" }}>
-                <div style={{
-                    width: 102,
-                    height: 102,
-                    borderRadius: "50%",
-                    background: avatarUrl
-                        ? `url(${avatarUrl}) center/cover`
-                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: 42,
-                    fontWeight: "600"
-                }}>
-                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
-                </div>
-                {isActive && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 3,
-                        right: 3,
-                        width: 30,
-                        height: 30,
-                        borderRadius: "50%",
-                        backgroundColor: "#44D62D",
-                        border: "4px solid #000"
-                    }} />
-                )}
-            </div>
-
-            {/* Username + Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                    fontSize: 48,
-                    fontWeight: "600",
-                    color: "white",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-                }}>
-                    {contactName}
-                </span>
-                <span style={{
-                    fontSize: 36,
-                    color: "#A8A8A8",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {isActive ? "Active now" : "Active 2h ago"}
-                </span>
-            </div>
-        </div>
-
-        {/* Action icons */}
-        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
-            <VideoCallIcon />
-            <InfoIcon />
-        </div>
-    </div>
-);
-
-// ============================================================================
-// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
-// ============================================================================
-
-interface MessageBubbleProps {
-    msg: { id: string; from: string; text: string };
-    layout: ChatMessageLayout;
-}
-
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 42,
-            right: isMe ? 42 : "auto",
-            maxWidth: "70%",
-            opacity,
-            transform: `translateY(${translateY}px)`,
-        }}>
-            <div style={{
-                // Instagram gradient for sent messages
-                background: isMe
-                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
-                    : "#262626",
-                color: "white",
-                padding: "30px 42px",
-                borderRadius: 66, // Fully pill-shaped
-                fontSize: 48,
-                lineHeight: "60px",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                wordWrap: "break-word"
-            }}>
-                {msg.text}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// MESSAGE LIST
-// ============================================================================
-
-interface MessageListProps {
-    messages: any[];
-    layout?: ChatLayoutState;
-}
-
-const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
-    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
-    const scrollY = chatLayout?.scrollY || 0;
-    const contentHeight = chatLayout?.contentHeight || "100%";
-
-    return (
-        <div style={{
-            flex: 1,
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: contentHeight,
-                transform: `translateY(-${scrollY}px)`,
-                paddingTop: 30,
-                paddingBottom: 30
-            }}>
-                {messages.map((msg: any) => {
-                    const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) return null;
-                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// INPUT AREA - Authentic Instagram DM Composer
-// ============================================================================
-
-interface InputAreaProps {
-    text?: string;
-}
-
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 42px",
-        gap: 24
-    }}>
-        {/* Input container */}
-        <div style={{
-            flex: 1,
-            minHeight: 132,
-            backgroundColor: "#262626",
-            borderRadius: 66,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 24px",
-            gap: 18,
-            border: "1px solid #363636"
-        }}>
-            {/* Camera button */}
-            <CameraCircleIcon />
-
-            {/* Input text */}
-            <div style={{
-                flex: 1,
-                fontSize: 48,
-                color: text ? "white" : "#A8A8A8",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                padding: "0 12px"
-            }}>
-                {text || "Message..."}
-            </div>
-
-            {/* Right icons - hidden when typing */}
-            {!text && (
-                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-                    <MicrophoneIcon />
-                    <ImageIcon />
-                    <StickerIcon />
-                </div>
-            )}
-        </div>
-
-        {/* Heart or Send button */}
-        {text ? (
-            <span style={{
-                color: "#0095F6",
-                fontSize: 48,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                Send
-            </span>
-        ) : (
-            <HeartIcon />
-        )}
-    </div>
-);
-
-// ============================================================================
-// HOME INDICATOR
-// ============================================================================
-
-const HomeIndicator: React.FC = () => (
-    <div style={{
-        height: 102,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        paddingBottom: 24
-    }}>
-        <div style={{
-            width: 402,
-            height: 15,
-            backgroundColor: "white",
-            borderRadius: 9,
-            opacity: 0.4
-        }} />
-    </div>
-);
-
-// ============================================================================
-// MAIN VIEW EXPORT
-// ============================================================================
-
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
-    const conversationId = Object.keys(world.conversations)[0];
-    const conversation = world.conversations[conversationId];
-    const messages = conversation ? conversation.messages : [];
-
-    return (
-        <div style={{
-            backgroundColor: "#000000",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            color: "white",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            <Header contactName="sarah.design" isActive={true} />
-            <MessageList messages={messages} layout={layout} />
-            <InputArea />
-            <HomeIndicator />
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/components/index.ts
 ````typescript
 /**
@@ -34838,122 +35290,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
 };
 ````
 
-## File: packages/apps-whatsapp/src/TypingBubble.tsx
-````typescript
-import React from "react";
-
-/**
- * WhatsApp iOS Typing Indicator
- * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
- * Uses frame-based animation for proper rendering in video output
- * 
- * @param frame - Current frame from Remotion (passed in from renderer)
- * @param fps - Frames per second (default 30)
- */
-
-export interface TypingBubbleProps {
-    platform?: string;
-    frame?: number;
-    fps?: number;
-}
-
-import { LAYOUT_CONSTANTS } from "./config/layout-config";
-
-export const TypingBubble: React.FC<TypingBubbleProps> = ({
-    platform = "ios",
-    frame = 0,
-    fps = 30
-}) => {
-    return (
-        <div style={{
-            backgroundColor: "#FFFFFF",
-            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
-            borderRadius: 24,
-            borderTopLeftRadius: 6,
-            alignSelf: "flex-start",
-            width: "fit-content",
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-            display: "flex",
-            alignItems: "center",
-            gap: 15,
-            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
-        }}>
-            <TypingDot frame={frame} fps={fps} delayFrames={0} />
-            <TypingDot frame={frame} fps={fps} delayFrames={5} />
-            <TypingDot frame={frame} fps={fps} delayFrames={10} />
-        </div>
-    );
-};
-
-interface TypingDotProps {
-    frame: number;
-    fps: number;
-    delayFrames: number;
-}
-
-/**
- * Simple interpolation function (avoiding remotion dependency)
- */
-function interpolate(
-    value: number,
-    inputRange: number[],
-    outputRange: number[],
-): number {
-    // Find the segment
-    let i = 0;
-    for (i = 0; i < inputRange.length - 1; i++) {
-        if (value <= inputRange[i + 1]) break;
-    }
-
-    // Clamp to range
-    if (value <= inputRange[0]) return outputRange[0];
-    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
-
-    // Linear interpolation between points
-    const inputStart = inputRange[i];
-    const inputEnd = inputRange[i + 1];
-    const outputStart = outputRange[i];
-    const outputEnd = outputRange[i + 1];
-
-    const t = (value - inputStart) / (inputEnd - inputStart);
-    return outputStart + (outputEnd - outputStart) * t;
-}
-
-const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
-    // Animation cycle: 36 frames at 30fps = 1.2 seconds
-    const cycleLength = Math.round(1.2 * fps);
-    const adjustedFrame = (frame + delayFrames) % cycleLength;
-
-    // Bounce animation: up for first quarter, down for second quarter
-    const quarterCycle = cycleLength / 4;
-    const translateY = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0, -9, 0, 0]
-    );
-
-    // Opacity: brighten when bouncing up
-    const opacity = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0.4, 1, 0.4, 0.4]
-    );
-
-    return (
-        <div style={{
-            width: 24,
-            height: 24,
-            backgroundColor: "#8696A0",
-            borderRadius: "50%",
-            transform: `translateY(${translateY}px)`,
-            opacity
-        }} />
-    );
-};
-
-export default TypingBubble;
-````
-
 ## File: packages/core/src/camera/presets.ts
 ````typescript
 /**
@@ -35259,6 +35595,78 @@ export const SHOT_PRESETS = {
         shake: 0,
         durationFrames: 20,
     },
+
+    // =========================================================================
+    // WEBSERIES CAMERA PRESETS (Cinematic Tracking)
+    // =========================================================================
+
+    /** 
+     * Impact Punch - Fast zoom + shake for "OH SHIT" moments
+     * Use for: big reveals, emotional peaks, plot twists
+     */
+    impactPunch: {
+        scale: 1.35,
+        easing: "ease-out" as EasingType,
+        shake: 5,
+        durationFrames: 10,
+        // For ANCHOR_TRACK - fast punch, no trailing
+        smoothing: 0.6,
+    },
+
+    /**
+     * Operator Follow - Smooth tracking like a camera operator
+     * Use for: following moving content, message animations
+     */
+    operatorFollow: {
+        scale: 1.15,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 35,
+        // Key: low smoothing = smooth lag
+        smoothing: 0.18,
+    },
+
+    /**
+     * Punch + Glide - Webseries signature move
+     * Fast zoom-in, then smooth follow
+     * Composed as: impactPunch(10 frames) → operatorFollow(35 frames)
+     */
+    punchGlide: {
+        scale: 1.35,
+        easing: "ease-out" as EasingType,
+        shake: 3,
+        durationFrames: 45,  // Total (punch: 10 + glide: 35)
+        // Starts at 0.5, decays to 0.18 over duration
+        smoothing: 0.18,
+        punchFrames: 10,     // Fast initial phase
+        glideFrames: 35,     // Smooth follow phase
+    },
+
+    /**
+     * Whip Snap - Fast travel to new target
+     * Use for: switching between characters, quick reactions
+     */
+    whipSnap: {
+        scale: 1.2,
+        easing: "ease-out" as EasingType,
+        shake: 2,
+        durationFrames: 8,
+        // High smoothing = snappy movement
+        smoothing: 0.6,
+    },
+
+    /**
+     * Documentary Hold - Stable with tiny drift
+     * Use for: giving viewer time to read, contemplative moments
+     */
+    documentaryHold: {
+        scale: 1.05,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 24,
+        // Very low = slow float
+        smoothing: 0.08,
+    },
 } as const;
 
 export type ShotPresetId = keyof typeof SHOT_PRESETS;
@@ -35383,290 +35791,117 @@ export function getShotPreset(
 export default CAMERA_PRESETS;
 ````
 
-## File: packages/devices/src/StatusBar.tsx
+## File: packages/core/src/director-lite/types.ts
 ````typescript
-import React from "react";
-import { DeviceOSState } from "@tokovo/core";
-
 /**
- * StatusBar - Authentic iOS/Android status bar
- * 
- * Reads from DeviceOSState for:
- * - Time (formatted from clock timestamp)
- * - Battery percentage and charging state
- * - Network type and signal strength
- * - DND mode (moon icon)
+ * DirectorLite Types
+ *
+ * Minimal types for the camera director system.
+ * No framework, no configurability - just what ships.
  */
 
 // =============================================================================
-// ICONS
+// LAYOUT
 // =============================================================================
 
-// iOS Signal Bars (4 bars, varying heights based on strength)
-const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
-    color = "currentColor",
-    strength = 4 // 0-4
-}) => (
-    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
-        <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
-        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
-        <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
-        <rect x="13.5" y="0" width="3" height="11" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
-    </svg>
-);
+export interface LayoutRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
 
-// iOS WiFi Icon (3 arcs based on strength)
-const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
-    color = "currentColor",
-    strength = 3 // 0-3
-}) => (
-    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
-        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
-        <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
-        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
-    </svg>
-);
-
-// iOS Battery Icon
-const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
-    color = "currentColor",
-    percentage = 100,
-    charging = false
-}) => (
-    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
-        {/* Battery body */}
-        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
-        {/* Battery fill */}
-        <rect
-            x="2"
-            y="2"
-            width={Math.max(0, (percentage / 100) * 18)}
-            height="8"
-            rx="1"
-            fill={percentage > 20 ? (charging ? "#34C759" : color) : "#FF3B30"}
-        />
-        {/* Battery cap */}
-        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
-        {/* Charging bolt */}
-        {charging && (
-            <path d="M11 2L8 6H11L10 10L13 6H10L11 2Z" fill="white" />
-        )}
-    </svg>
-);
-
-// Network type label for cellular
-const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
-    const label = network === "wifi" ? null : network.toUpperCase();
-    if (!label) return null;
-    return (
-        <span style={{
-            fontSize: 36,
-            fontWeight: 600,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            marginRight: 6,
-            color,
-        }}>
-            {label}
-        </span>
-    );
-};
-
-// DND Moon Icon
-const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
-        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
-    </svg>
-);
-
-// =============================================================================
-// PROPS
-// =============================================================================
-
-interface StatusBarProps {
-    /** Device OS state (preferred - reads time, battery, network from here) */
-    os?: DeviceOSState;
-    /** Fallback: manual time string */
-    time?: string;
-    /** Fallback: manual battery percentage */
-    batteryPercentage?: number;
-    /** Platform variant */
-    variant?: "ios" | "android";
-    /** Theme */
-    theme?: "light" | "dark";
-    /** Notification icons (Android left side) */
-    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
+export interface DirectorLayoutModel {
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    messageRects: Record<string, LayoutRect>;
+    inputAreaRect: LayoutRect; // Always available
+    typingIndicatorRect?: LayoutRect; // Only when typing
+    lastMessageRect?: LayoutRect;
 }
 
 // =============================================================================
-// HELPERS
+// SIGNALS
 // =============================================================================
 
-/** Format timestamp to HH:MM */
-function formatTime(timestamp: number): string {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: false,
-    });
+export type SignalType =
+    | "TypingStarted"
+    | "TypingEnded"
+    | "NewMessage"
+    | "MessageRead"
+    | "MessageDeleted"
+    | "CallIncoming";
+
+export interface DirectorSignal {
+    type: SignalType;
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    at: number;
+    messageId?: string;
+    from?: string;
 }
 
 // =============================================================================
-// NOTIFICATION ICON
+// EFFECTS
 // =============================================================================
 
-const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
-    <div style={{ position: "relative" }}>
-        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
-        {count > 1 && (
-            <div style={{
-                position: "absolute",
-                top: -6,
-                right: -8,
-                background: "#ff3b30",
-                borderRadius: 10,
-                padding: "2px 6px",
-                fontSize: 18,
-                fontWeight: 600,
-                color: "white",
-                minWidth: 12,
-                textAlign: "center",
-            }}>
-                {count > 9 ? "9+" : count}
-            </div>
-        )}
-    </div>
-);
-
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
-
-export const StatusBar: React.FC<StatusBarProps> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100,
-    variant = "ios",
-    theme = "light",
-    notificationIcons = [],
-}) => {
-    // Read from device.os if available, otherwise use props
-    const displayTime = os ? formatTime(os.clock) : time;
-    const displayBattery = os ? os.battery : batteryPercentage;
-    const isCharging = os?.charging ?? false;
-    const network = os?.network ?? "wifi";
-    const wifiStrength = os?.wifiStrength ?? 3;
-    const cellStrength = os?.cellStrength ?? 4;
-    const isDND = os?.dnd ?? false;
-
-    const isAndroid = variant === "android";
-    const textColor = theme === "dark" ? "white" : "black";
-
-    // Android Status Bar
-    if (isAndroid) {
-        return (
-            <div style={{
-                width: "100%",
-                height: 90,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "0 45px",
-                boxSizing: "border-box",
-                fontSize: 36,
-                fontWeight: "500",
-                color: "white",
-                position: "absolute",
-                top: 15,
-                left: 0,
-                zIndex: 20,
-                fontFamily: "Roboto, sans-serif"
-            }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span>{displayTime}</span>
-                    {notificationIcons.slice(0, 5).map((n, i) => (
-                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
-                    ))}
-                    {notificationIcons.length > 5 && (
-                        <span style={{ fontSize: 28 }}>•</span>
-                    )}
-                </div>
-                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                    {isDND && <DNDIcon color="white" />}
-                    {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
-                    <SignalBarsIcon color="white" strength={cellStrength} />
-                    {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
-                    <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
-                </div>
-            </div>
-        );
-    }
-
-    // iOS Status Bar
-    return (
-        <div style={{
-            width: "100%",
-            height: 132,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "45px 72px 0 72px",
-            boxSizing: "border-box",
-            color: textColor,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 20
-        }}>
-            {/* Left side - Time */}
-            <div style={{
-                fontSize: 51,
-                fontWeight: "600",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                letterSpacing: 0.5
-            }}>
-                {displayTime}
-            </div>
-
-            {/* Right side - Status icons */}
-            <div style={{
-                display: "flex",
-                gap: 15,
-                alignItems: "center",
-                marginTop: 6
-            }}>
-                {isDND && <DNDIcon color={textColor} />}
-                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
-                <SignalBarsIcon color={textColor} strength={cellStrength} />
-                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
-                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
-            </div>
-        </div>
-    );
-};
+export type EffectCategory = "framing" | "shake";
 
 /**
- * iOS Status Bar specifically styled for dark backgrounds
+ * Effect types:
+ * - PushIn, ZoomToRect, PullBack: Legacy pixel-based (DEPRECATED)
+ * - FocusAnchor: NEW semantic anchor-based (PREFERRED)
+ * - MicroShake: Camera shake effect
  */
-export const DarkStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar os={os} time={time} theme="dark" batteryPercentage={batteryPercentage} />
-);
+export interface DerivedCameraEffect {
+    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake" | "FocusAnchor";
+    category: EffectCategory;
+    priority: number;
+    progress: number;
 
-/**
- * iOS Status Bar specifically styled for light backgrounds
- */
-export const LightStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar os={os} time={time} theme="light" batteryPercentage={batteryPercentage} />
-);
+    // === NEW: Anchor-based framing (PREFERRED) ===
+    /** Semantic anchor to focus on */
+    anchor?: string;  // SemanticAnchorId
+    /** Shot preset (dramatic, subtle, snap, etc.) */
+    preset?: string;  // ShotPresetId
+
+    // === Legacy: Pixel-based framing (DEPRECATED) ===
+    /** Direct rect target — prefer using `anchor` instead */
+    target?: LayoutRect;
+    scale?: number;
+
+    // Shake effects
+    intensity?: number;
+    seed?: number;
+}
+
+// =============================================================================
+// OUTPUT
+// =============================================================================
+
+export interface DirectorOutput {
+    effects: DerivedCameraEffect[];
+    debug?: DirectorDebug;
+    skipped?: "manual-camera-active";
+}
+
+export interface DirectorDebug {
+    signalsInWindow: number;
+    matchedRules: number;
+    winningFraming?: string;
+    skippedCooldown: number;
+}
+
+// =============================================================================
+// CAMERA INTENTS (re-exported from behavior-registry)
+// =============================================================================
+
+// CameraIntent and AppBehavior are defined in behavior-registry.ts
+// to avoid circular dependencies and duplicate exports.
+// Re-export for backwards compatibility:
+export type { CameraIntent, AppBehavior } from "../behavior-registry";
 ````
 
 ## File: packages/dsl/src/author/camera-builder.ts
@@ -36949,448 +37184,6 @@ export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
-````
-
-## File: packages/renderer/src/engines/useCameraEngine.ts
-````typescript
-/**
- * Camera Engine
- *
- * Pure computation layer that determines:
- * - Base camera transform from world state
- * - DirectorLite effects (if enabled)
- * - Semantic Anchor integration (NEW)
- * - Final CSS styles for camera wrapper
- *
- * ARCHITECTURE:
- * 1. Get base transform from world state
- * 2. Get anchors from registered anchor providers
- * 3. Derive director effects using signals + anchors
- * 4. Apply effects to produce final transform
- * 5. Build CSS styles
- */
-
-import { useMemo, useRef } from "react";
-import {
-    WorldState,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    EventIndex,
-    getEventsInRange,
-    deriveDirectorEffects,
-    extractSignals,
-    ChatLayoutState,
-    DirectorOutput,
-    AnchorSnapshot,
-    AnchorStabilityState,
-    DEFAULT_ANCHOR_STABILITY,
-    ANCHOR_STABILITY_FRAMES,
-    SemanticAnchorId,
-    resolveAnchorWithFallback,
-} from "@tokovo/core";
-import { LayoutEngineOutput } from "./useLayoutEngine";
-import { createDirectorLayoutModel } from "../layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "../camera-composer";
-import { getAnchorsForApp } from "../anchor-providers/registry";
-
-// =============================================================================
-// INPUT / OUTPUT TYPES
-// =============================================================================
-
-export interface CameraEngineInput {
-    world: WorldState;
-    t: number;
-    layoutOutput: LayoutEngineOutput;
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-    /** Enable semantic anchor system (NEW) */
-    anchorSystemEnabled?: boolean;
-}
-
-export interface CameraEngineOutput {
-    /** Final camera transform (after DirectorLite) */
-    transform: CameraTransform;
-    /** CSS style for camera wrapper */
-    cameraStyle: React.CSSProperties;
-    /** CSS style for device wrapper (legacy layout transforms) */
-    deviceStyle: React.CSSProperties;
-    /** DirectorLite output (for debugging) */
-    directorOutput?: DirectorOutput;
-    /** Current anchor snapshot (for debugging) */
-    anchorSnapshot?: AnchorSnapshot;
-    /** Anchor stability state (for debugging) */
-    anchorStability?: AnchorStabilityState;
-}
-
-// =============================================================================
-// ANCHOR STABILITY TRACKING
-// =============================================================================
-
-/**
- * Track anchor stability across frames.
- * Implements hysteresis: only switch anchors after N stable frames.
- */
-function updateAnchorStability(
-    prevState: AnchorStabilityState,
-    candidateAnchor: SemanticAnchorId | null,
-    t: number
-): { state: AnchorStabilityState; effectiveAnchor: SemanticAnchorId | null } {
-    // Same anchor as candidate → increment stable frames
-    if (candidateAnchor === prevState.candidateAnchor) {
-        const newStableFrames = prevState.stableFrames + 1;
-
-        // Check if candidate has been stable long enough to become current
-        if (newStableFrames >= ANCHOR_STABILITY_FRAMES && candidateAnchor !== prevState.currentAnchor) {
-            return {
-                state: {
-                    currentAnchor: candidateAnchor,
-                    candidateAnchor,
-                    stableFrames: newStableFrames,
-                    lastSwitchFrame: t,
-                },
-                effectiveAnchor: candidateAnchor,
-            };
-        }
-
-        return {
-            state: {
-                ...prevState,
-                stableFrames: newStableFrames,
-            },
-            effectiveAnchor: prevState.currentAnchor,
-        };
-    }
-
-    // Different anchor → reset stability counter
-    return {
-        state: {
-            ...prevState,
-            candidateAnchor,
-            stableFrames: 1,
-        },
-        effectiveAnchor: prevState.currentAnchor,
-    };
-}
-
-// =============================================================================
-// CAMERA ENGINE HOOK
-// =============================================================================
-
-export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-    const {
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled = true,
-        directorDebug = false,
-        anchorSystemEnabled = true,
-    } = input;
-
-    // Anchor stability state (persists across frames)
-    const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
-
-    return useMemo(() => {
-        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
-
-        // =====================================================================
-        // 1. BASE CAMERA TRANSFORM
-        // =====================================================================
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        let finalCameraTransform = baseCameraTransform;
-        let directorOutput: DirectorOutput | undefined;
-        let anchorSnapshot: AnchorSnapshot | undefined;
-        let anchorStability: AnchorStabilityState | undefined;
-
-        // =====================================================================
-        // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
-        // =====================================================================
-        if (anchorSystemEnabled && appId) {
-            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId) ?? undefined;
-
-            if (directorDebug && anchorSnapshot) {
-                const anchorCount = Object.keys(anchorSnapshot.anchors).length;
-                console.log(`[CameraEngine] t=${t} app=${appId} anchors=${anchorCount}`, Object.keys(anchorSnapshot.anchors));
-            }
-        }
-
-        // =====================================================================
-        // 3. DIRECTOR LITE INTEGRATION (with anchor support)
-        // =====================================================================
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
-
-            // Signal window: past 90 frames, future 15 frames
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
-
-            // Create layout model from computed layout
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,
-                effectiveViewportHeight
-            );
-
-            // =========================================================================
-            // ANCHOR STABILITY (Hysteresis)
-            // =========================================================================
-            // Determine candidate anchor from latest signal
-            let candidateAnchor: SemanticAnchorId | null = null;
-            if (signals.length > 0 && anchorSnapshot) {
-                const latestSignal = signals[signals.length - 1];
-                // Map signal type to target anchor
-                candidateAnchor = mapSignalToAnchor(latestSignal.type);
-
-                // Resolve with fallback if anchor not present
-                if (candidateAnchor) {
-                    const resolved = resolveAnchorWithFallback(candidateAnchor, anchorSnapshot.anchors);
-                    if (resolved) {
-                        candidateAnchor = resolved.anchor;
-                    }
-                }
-            }
-
-            // Update stability tracking
-            const stabilityResult = updateAnchorStability(
-                anchorStabilityRef.current,
-                candidateAnchor,
-                t
-            );
-            anchorStabilityRef.current = stabilityResult.state;
-            anchorStability = stabilityResult.state;
-
-            // Derive effects (PURE FUNCTION - no state)
-            const result = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
-                debug: directorDebug,
-                manualCameraEffects,
-            });
-
-            directorOutput = result;
-
-            // Log debug info if enabled
-            if (directorDebug && result.debug) {
-                console.log(`[CameraEngine] t=${t}`, result.debug, {
-                    currentAnchor: anchorStability?.currentAnchor,
-                    candidateAnchor: anchorStability?.candidateAnchor,
-                    stableFrames: anchorStability?.stableFrames,
-                });
-            }
-
-            // Apply director effects if not skipped and effects exist
-            if (!result.skipped && result.effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
-            }
-        }
-
-        // =====================================================================
-        // 3.5. ANCHOR_FOCUS EFFECT RESOLUTION (THE MISSING LINK!)
-        // =====================================================================
-        // Process manual ANCHOR_FOCUS effects from timeline and resolve their
-        // anchor rects from the anchor snapshot. This is where semantic anchors
-        // finally become camera origins!
-        const activeEffects = world.camera?.activeEffects || [];
-        const anchorFocusEffects = activeEffects.filter(
-            (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
-        );
-
-        if (anchorFocusEffects.length > 0 && anchorSnapshot) {
-            for (const ae of anchorFocusEffects) {
-                const effect = ae.effect as any; // CameraAnchorFocusEffect
-                const anchorId = effect.anchor;
-
-                // Resolve anchor rect from snapshot (with fallback chain)
-                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
-
-                if (resolved) {
-                    const rect = resolved.rect;
-                    const viewportWidth = profile.dimensions.width;
-                    const viewportHeight = profile.dimensions.height;
-
-                    // === THE KEY MATH: Convert rect → origin ===
-                    // Center of the rect becomes the transform origin
-                    const centerX = rect.x + rect.width / 2;
-                    const centerY = rect.y + rect.height / 2;
-
-                    // Normalize to 0-1 range
-                    const originX = centerX / viewportWidth;
-                    const originY = centerY / viewportHeight;
-
-                    // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
-                    const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
-                    const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
-
-                    // Calculate animation progress
-                    const duration = ae.endFrame - ae.startFrame;
-                    const progress = Math.min(1, (t - ae.startFrame) / duration);
-
-                    // Apply easing
-                    const easing = effect.easing || "ease-out";
-                    const easedProgress = applyEasingSimple(progress, easing);
-
-                    // Get scale from preset or effect
-                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
-
-                    // Apply transform (blend from current to target)
-                    finalCameraTransform = {
-                        ...finalCameraTransform,
-                        scale: 1 + (targetScale - 1) * easedProgress,
-                        originX: clampedOriginX,
-                        originY: clampedOriginY,
-                    };
-
-                    // Apply shake if specified
-                    if (effect.shake && effect.shake > 0) {
-                        const frameInEffect = t - ae.startFrame;
-                        const shakeDecay = 1 - progress * 0.6;
-                        const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
-                        const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
-                        finalCameraTransform.shakeX = shakeX;
-                        finalCameraTransform.shakeY = shakeY;
-                    }
-
-                    if (directorDebug) {
-                        console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
-                    }
-                }
-            }
-        }
-
-        // =====================================================================
-        // 4. BUILD CAMERA CSS STYLE
-        // =====================================================================
-        const cameraTransformString = `
-            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-            scale(${finalCameraTransform.scale})
-            rotate(${finalCameraTransform.rotation}deg)
-        `.replace(/\s+/g, ' ').trim();
-
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            transition: 'none', // Frame-perfect sync
-        };
-
-        // =====================================================================
-        // 5. BUILD DEVICE CSS STYLE (legacy layout transforms)
-        // =====================================================================
-        let deviceStyle: React.CSSProperties = {};
-
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
-
-        return {
-            transform: finalCameraTransform,
-            cameraStyle,
-            deviceStyle,
-            directorOutput,
-            anchorSnapshot,
-            anchorStability,
-        };
-    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
-}
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-/**
- * Map signal type to semantic anchor.
- * This is the "intent" mapping.
- */
-function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
-    switch (signalType) {
-        case "TypingStarted":
-        case "TypingEnded":
-            return "inputArea"; // Stable anchor for typing (not typingIndicator!)
-        case "NewMessage":
-            return "lastMessage";
-        case "MessageRead":
-            return "lastMessage";
-        case "CallIncoming":
-            return "callPoster";
-        default:
-            return null;
-    }
-}
-
-/**
- * Simple easing function for ANCHOR_FOCUS effects.
- */
-function applyEasingSimple(t: number, easing: string): number {
-    switch (easing) {
-        case "linear":
-            return t;
-        case "ease-in":
-            return t * t;
-        case "ease-out":
-            return 1 - (1 - t) * (1 - t);
-        case "ease-in-out":
-            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        case "cinematic":
-            // S-curve for smooth cinematic motion
-            return t * t * (3 - 2 * t);
-        default:
-            return 1 - (1 - t) * (1 - t); // Default to ease-out
-    }
-}
-
-/**
- * Get scale for a preset.
- */
-function getPresetScaleSimple(preset?: string): number {
-    switch (preset) {
-        case "dramatic": return 1.3;
-        case "subtle": return 1.08;
-        case "snap": return 1.15;
-        case "impact": return 1.4;
-        case "message": return 1.1;
-        case "reset": return 1.0;
-        default: return 1.15;
-    }
-}
-
-/**
- * Deterministic seeded random (mulberry32).
- */
-function seededRandom(seed: number): number {
-    let t = seed + 0x6d2b79f5;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
 ````
 
 ## File: packages/renderer/src/engines/useLayoutEngine.ts
@@ -39582,6 +39375,575 @@ export interface TimelineIR {
     readonly fps: number;
     readonly durationInFrames: number;
     readonly ops: TimelineOp[];
+}
+````
+
+## File: packages/renderer/src/engines/useCameraEngine.ts
+````typescript
+/**
+ * Camera Engine
+ *
+ * Pure computation layer that determines:
+ * - Base camera transform from world state
+ * - DirectorLite effects (if enabled)
+ * - Semantic Anchor integration (NEW)
+ * - Final CSS styles for camera wrapper
+ *
+ * ARCHITECTURE:
+ * 1. Get base transform from world state
+ * 2. Get anchors from registered anchor providers
+ * 3. Derive director effects using signals + anchors
+ * 4. Apply effects to produce final transform
+ * 5. Build CSS styles
+ */
+
+import { useMemo, useRef } from "react";
+import {
+    WorldState,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+    DirectorOutput,
+    AnchorSnapshot,
+    AnchorStabilityState,
+    DEFAULT_ANCHOR_STABILITY,
+    ANCHOR_STABILITY_FRAMES,
+    SemanticAnchorId,
+    resolveAnchorWithFallback,
+} from "@tokovo/core";
+import { LayoutEngineOutput } from "./useLayoutEngine";
+import { createDirectorLayoutModel } from "../layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "../camera-composer";
+import { getAnchorsForApp } from "../anchor-providers/registry";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface CameraEngineInput {
+    world: WorldState;
+    t: number;
+    layoutOutput: LayoutEngineOutput;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+    /** Enable semantic anchor system (NEW) */
+    anchorSystemEnabled?: boolean;
+}
+
+export interface CameraEngineOutput {
+    /** Final camera transform (after DirectorLite) */
+    transform: CameraTransform;
+    /** CSS style for camera wrapper */
+    cameraStyle: React.CSSProperties;
+    /** CSS style for device wrapper (legacy layout transforms) */
+    deviceStyle: React.CSSProperties;
+    /** DirectorLite output (for debugging) */
+    directorOutput?: DirectorOutput;
+    /** Current anchor snapshot (for debugging) */
+    anchorSnapshot?: AnchorSnapshot;
+    /** Anchor stability state (for debugging) */
+    anchorStability?: AnchorStabilityState;
+}
+
+// =============================================================================
+// ANCHOR STABILITY TRACKING
+// =============================================================================
+
+/**
+ * Track anchor stability across frames.
+ * Implements hysteresis: only switch anchors after N stable frames.
+ */
+function updateAnchorStability(
+    prevState: AnchorStabilityState,
+    candidateAnchor: SemanticAnchorId | null,
+    t: number
+): { state: AnchorStabilityState; effectiveAnchor: SemanticAnchorId | null } {
+    // Same anchor as candidate → increment stable frames
+    if (candidateAnchor === prevState.candidateAnchor) {
+        const newStableFrames = prevState.stableFrames + 1;
+
+        // Check if candidate has been stable long enough to become current
+        if (newStableFrames >= ANCHOR_STABILITY_FRAMES && candidateAnchor !== prevState.currentAnchor) {
+            return {
+                state: {
+                    currentAnchor: candidateAnchor,
+                    candidateAnchor,
+                    stableFrames: newStableFrames,
+                    lastSwitchFrame: t,
+                },
+                effectiveAnchor: candidateAnchor,
+            };
+        }
+
+        return {
+            state: {
+                ...prevState,
+                stableFrames: newStableFrames,
+            },
+            effectiveAnchor: prevState.currentAnchor,
+        };
+    }
+
+    // Different anchor → reset stability counter
+    return {
+        state: {
+            ...prevState,
+            candidateAnchor,
+            stableFrames: 1,
+        },
+        effectiveAnchor: prevState.currentAnchor,
+    };
+}
+
+// =============================================================================
+// CAMERA ENGINE HOOK
+// =============================================================================
+
+export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
+    const {
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled = true,
+        directorDebug = false,
+        anchorSystemEnabled = true,
+    } = input;
+
+    // Anchor stability state (persists across frames)
+    const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
+
+    // Tracking state for ANCHOR_TRACK smoothing (persists across frames)
+    const trackingStateRef = useRef<{
+        prevOriginX: number;
+        prevOriginY: number;
+        prevScale: number;
+    }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0 });
+
+    return useMemo(() => {
+        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
+
+        // =====================================================================
+        // 1. BASE CAMERA TRANSFORM
+        // =====================================================================
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        let finalCameraTransform = baseCameraTransform;
+        let directorOutput: DirectorOutput | undefined;
+        let anchorSnapshot: AnchorSnapshot | undefined;
+        let anchorStability: AnchorStabilityState | undefined;
+
+        // =====================================================================
+        // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
+        // =====================================================================
+        if (anchorSystemEnabled && appId) {
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId) ?? undefined;
+
+            if (directorDebug && anchorSnapshot) {
+                const anchorCount = Object.keys(anchorSnapshot.anchors).length;
+                console.log(`[CameraEngine] t=${t} app=${appId} anchors=${anchorCount}`, Object.keys(anchorSnapshot.anchors));
+            }
+        }
+
+        // =====================================================================
+        // 3. DIRECTOR LITE INTEGRATION (with anchor support)
+        // =====================================================================
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                profile.dimensions.width,
+                effectiveViewportHeight
+            );
+
+            // =========================================================================
+            // ANCHOR STABILITY (Hysteresis)
+            // =========================================================================
+            // Determine candidate anchor from latest signal
+            let candidateAnchor: SemanticAnchorId | null = null;
+            if (signals.length > 0 && anchorSnapshot) {
+                const latestSignal = signals[signals.length - 1];
+                // Map signal type to target anchor
+                candidateAnchor = mapSignalToAnchor(latestSignal.type);
+
+                // Resolve with fallback if anchor not present
+                if (candidateAnchor) {
+                    const resolved = resolveAnchorWithFallback(candidateAnchor, anchorSnapshot.anchors);
+                    if (resolved) {
+                        candidateAnchor = resolved.anchor;
+                    }
+                }
+            }
+
+            // Update stability tracking
+            const stabilityResult = updateAnchorStability(
+                anchorStabilityRef.current,
+                candidateAnchor,
+                t
+            );
+            anchorStabilityRef.current = stabilityResult.state;
+            anchorStability = stabilityResult.state;
+
+            // Derive effects (PURE FUNCTION - no state)
+            const result = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            directorOutput = result;
+
+            // Log debug info if enabled
+            if (directorDebug && result.debug) {
+                console.log(`[CameraEngine] t=${t}`, result.debug, {
+                    currentAnchor: anchorStability?.currentAnchor,
+                    candidateAnchor: anchorStability?.candidateAnchor,
+                    stableFrames: anchorStability?.stableFrames,
+                });
+            }
+
+            // =========================================================================
+            // RESOLVE FOCUSANCHOR EFFECTS FROM DIRECTOR
+            // =========================================================================
+            // Convert FocusAnchor effects (semantic) to resolved effects (with rects)
+            // This is where director's semantic output meets the anchor system!
+            if (!result.skipped && result.effects.length > 0 && anchorSnapshot) {
+                for (const effect of result.effects) {
+                    if (effect.type === "FocusAnchor" && effect.anchor) {
+                        // Resolve anchor to rect
+                        const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
+                        if (resolved) {
+                            // Inject the resolved rect into the effect
+                            effect.target = resolved.rect;
+
+                            // Get scale from preset if not explicitly set
+                            if (!effect.scale && effect.preset) {
+                                effect.scale = getPresetScaleSimple(effect.preset);
+                            }
+
+                            if (directorDebug) {
+                                console.log(`[CameraEngine] FocusAnchor resolved: ${effect.anchor} → rect`, resolved.rect);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!result.skipped && result.effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
+            }
+        }
+
+        // =====================================================================
+        // 3.5. ANCHOR_FOCUS EFFECT RESOLUTION (THE MISSING LINK!)
+        // =====================================================================
+        // Process manual ANCHOR_FOCUS effects from timeline and resolve their
+        // anchor rects from the anchor snapshot. This is where semantic anchors
+        // finally become camera origins!
+        const activeEffects = world.camera?.activeEffects || [];
+        const anchorFocusEffects = activeEffects.filter(
+            (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
+        );
+
+        if (anchorFocusEffects.length > 0 && anchorSnapshot) {
+            for (const ae of anchorFocusEffects) {
+                const effect = ae.effect as any; // CameraAnchorFocusEffect
+                const anchorId = effect.anchor;
+
+                // Resolve anchor rect from snapshot (with fallback chain)
+                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+
+                if (resolved) {
+                    const rect = resolved.rect;
+                    const viewportWidth = profile.dimensions.width;
+                    const viewportHeight = profile.dimensions.height;
+
+                    // === THE KEY MATH: Convert rect → origin ===
+                    // Center of the rect becomes the transform origin
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+
+                    // Normalize to 0-1 range
+                    const originX = centerX / viewportWidth;
+                    const originY = centerY / viewportHeight;
+
+                    // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
+                    const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
+                    const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
+
+                    // Calculate animation progress
+                    const duration = ae.endFrame - ae.startFrame;
+                    const progress = Math.min(1, (t - ae.startFrame) / duration);
+
+                    // Apply easing
+                    const easing = effect.easing || "ease-out";
+                    const easedProgress = applyEasingSimple(progress, easing);
+
+                    // Get scale from preset or effect
+                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+
+                    // Apply transform (blend from current to target)
+                    finalCameraTransform = {
+                        ...finalCameraTransform,
+                        scale: 1 + (targetScale - 1) * easedProgress,
+                        originX: clampedOriginX,
+                        originY: clampedOriginY,
+                    };
+
+                    // Apply shake if specified
+                    if (effect.shake && effect.shake > 0) {
+                        const frameInEffect = t - ae.startFrame;
+                        const shakeDecay = 1 - progress * 0.6;
+                        const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
+                        const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
+                        finalCameraTransform.shakeX = shakeX;
+                        finalCameraTransform.shakeY = shakeY;
+                    }
+
+                    if (directorDebug) {
+                        console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // 3.6. ANCHOR_TRACK PROCESSING (Webseries Camera)
+        // =====================================================================
+        // Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
+        // follows the anchor rect with exponential smoothing for cinematic feel.
+        const anchorTrackEffects = activeEffects.filter(
+            (ae) => ae.effect.type === "ANCHOR_TRACK" && t >= ae.startFrame && t < ae.endFrame
+        );
+
+        if (anchorTrackEffects.length > 0 && anchorSnapshot) {
+            for (const ae of anchorTrackEffects) {
+                const effect = ae.effect as any;  // CameraAnchorTrackEffect
+                const anchorId = effect.anchor;
+
+                // Resolve anchor rect EVERY FRAME (this is the key!)
+                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+
+                if (resolved) {
+                    const rect = resolved.rect;
+                    const viewportWidth = profile.dimensions.width;
+                    const viewportHeight = profile.dimensions.height;
+
+                    // Compute target origin from rect center
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+                    const targetOriginX = Math.max(0.1, Math.min(0.9, centerX / viewportWidth));
+                    const targetOriginY = Math.max(0.1, Math.min(0.9, centerY / viewportHeight));
+
+                    // Get previous origin from tracking state
+                    const prev = trackingStateRef.current;
+
+                    // Smoothing factor: lower = smoother/laggier
+                    const smoothing = effect.smoothing ?? 0.18;
+
+                    // DEADZONE: don't move if delta is tiny (prevents jitter)
+                    const DEADZONE = 0.01;  // 1% of viewport
+                    const deltaX = Math.abs(targetOriginX - prev.prevOriginX);
+                    const deltaY = Math.abs(targetOriginY - prev.prevOriginY);
+
+                    let smoothedOriginX = prev.prevOriginX;
+                    let smoothedOriginY = prev.prevOriginY;
+
+                    if (deltaX > DEADZONE || deltaY > DEADZONE) {
+                        // EXPONENTIAL SMOOTHING (lerp toward target)
+                        smoothedOriginX = lerp(prev.prevOriginX, targetOriginX, smoothing);
+                        smoothedOriginY = lerp(prev.prevOriginY, targetOriginY, smoothing);
+                    }
+
+                    // Calculate animation progress
+                    const duration = ae.endFrame - ae.startFrame;
+                    const progress = Math.min(1, (t - ae.startFrame) / duration);
+
+                    // Get scale from preset or effect
+                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+                    const easedProgress = applyEasingSimple(progress, effect.easing || "ease-out");
+                    const scale = 1 + (targetScale - 1) * easedProgress;
+
+                    // Apply transform with smoothed origin
+                    finalCameraTransform = {
+                        ...finalCameraTransform,
+                        scale,
+                        originX: smoothedOriginX,
+                        originY: smoothedOriginY,
+                    };
+
+                    // Update tracking state for next frame
+                    trackingStateRef.current = {
+                        prevOriginX: smoothedOriginX,
+                        prevOriginY: smoothedOriginY,
+                        prevScale: scale,
+                    };
+
+                    if (directorDebug) {
+                        console.log(`[CameraEngine] ANCHOR_TRACK: anchor=${anchorId} target=(${targetOriginX.toFixed(2)}, ${targetOriginY.toFixed(2)}) smoothed=(${smoothedOriginX.toFixed(2)}, ${smoothedOriginY.toFixed(2)})`);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // 4. BUILD CAMERA CSS STYLE
+        // =====================================================================
+        const cameraTransformString = `
+            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+            scale(${finalCameraTransform.scale})
+            rotate(${finalCameraTransform.rotation}deg)
+        `.replace(/\s+/g, ' ').trim();
+
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            transition: 'none', // Frame-perfect sync
+        };
+
+        // =====================================================================
+        // 5. BUILD DEVICE CSS STYLE (legacy layout transforms)
+        // =====================================================================
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        return {
+            transform: finalCameraTransform,
+            cameraStyle,
+            deviceStyle,
+            directorOutput,
+            anchorSnapshot,
+            anchorStability,
+        };
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Map signal type to semantic anchor.
+ * This is the "intent" mapping.
+ */
+function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
+    switch (signalType) {
+        case "TypingStarted":
+        case "TypingEnded":
+            return "inputArea"; // Stable anchor for typing (not typingIndicator!)
+        case "NewMessage":
+            return "lastMessage";
+        case "MessageRead":
+            return "lastMessage";
+        case "CallIncoming":
+            return "callPoster";
+        default:
+            return null;
+    }
+}
+
+/**
+ * Simple easing function for ANCHOR_FOCUS effects.
+ */
+function applyEasingSimple(t: number, easing: string): number {
+    switch (easing) {
+        case "linear":
+            return t;
+        case "ease-in":
+            return t * t;
+        case "ease-out":
+            return 1 - (1 - t) * (1 - t);
+        case "ease-in-out":
+            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        case "cinematic":
+            // S-curve for smooth cinematic motion
+            return t * t * (3 - 2 * t);
+        default:
+            return 1 - (1 - t) * (1 - t); // Default to ease-out
+    }
+}
+
+/**
+ * Get scale for a preset.
+ */
+function getPresetScaleSimple(preset?: string): number {
+    switch (preset) {
+        case "dramatic": return 1.3;
+        case "subtle": return 1.08;
+        case "snap": return 1.15;
+        case "impact": return 1.4;
+        case "message": return 1.1;
+        case "reset": return 1.0;
+        // Webseries presets
+        case "impactPunch": return 1.35;
+        case "operatorFollow": return 1.15;
+        case "punchGlide": return 1.35;
+        case "whipSnap": return 1.2;
+        case "documentaryHold": return 1.05;
+        default: return 1.15;
+    }
+}
+
+/**
+ * Deterministic seeded random (mulberry32).
+ */
+function seededRandom(seed: number): number {
+    let t = seed + 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+
+/**
+ * Linear interpolation.
+ * The key to smooth camera tracking (exponential smoothing).
+ */
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
 }
 ````
 
@@ -47272,12 +47634,62 @@ export interface CameraAnchorFocusEffect {
     viewport?: { width: number; height: number };
 }
 
+/**
+ * Anchor Tracking Effect (Webseries Camera)
+ * 
+ * Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
+ * follows the anchor rect over the duration. Uses exponential smoothing
+ * (low-pass filter) for cinematic "operator follow" feel.
+ * 
+ * THE KEY: Rect is resolved EVERY FRAME, and origin is smoothed toward it.
+ * 
+ * Use cases:
+ * - Message animation (bubble slides in → camera follows)
+ * - Scroll tracking (chat scrolls → camera travels)
+ * - Content updates (typing pushes layout → camera adjusts)
+ */
+export interface CameraAnchorTrackEffect {
+    type: "ANCHOR_TRACK";
+    /** Semantic anchor to track */
+    anchor: string;
+    /** Duration to track in frames */
+    duration: number;
+    /** 
+     * Smoothing factor (0.0 - 1.0)
+     * - 0.08 = slow float (documentary)
+     * - 0.18 = operator follow (webseries standard)
+     * - 0.35 = snappy tracking
+     * - 0.60 = whip snap (fast travel)
+     */
+    smoothing?: number;
+    /** Shot preset for scale/shake */
+    preset?: string;
+    /** Override scale */
+    scale?: number;
+    /** Optional easing for scale animation */
+    easing?: EasingType;
+}
+
+/**
+ * Camera Hold Effect
+ * 
+ * Hold current position for a specified duration.
+ * Gives viewer time to read content.
+ */
+export interface CameraHoldEffect {
+    type: "HOLD";
+    /** Duration in frames */
+    duration: number;
+}
+
 export type CameraEffect =
     | CameraZoomEffect
     | CameraPanEffect
     | CameraShakeEffect
     | CameraFocusEffect
     | CameraAnchorFocusEffect
+    | CameraAnchorTrackEffect
+    | CameraHoldEffect
     | CameraCutEffect
     | CameraResetEffect;
 
@@ -47659,6 +48071,8 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
     // ANCHOR-DRIVEN CAMERA - Semantic anchor system
     | { at: number; kind: "CAMERA"; type: "ANCHOR_FOCUS"; deviceId?: string; anchor: string; preset?: string; scale?: number; duration: number; easing?: EasingType; shake?: number }
+    | { at: number; kind: "CAMERA"; type: "ANCHOR_TRACK"; deviceId?: string; anchor: string; duration: number; smoothing?: number; preset?: string; scale?: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "HOLD"; duration: number }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }

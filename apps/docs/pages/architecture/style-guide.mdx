@@ -1,0 +1,199 @@
+---
+title: Cinematography Style Guide
+description: v1 → v2 Evolution Plan and Preset Catalog
+---
+
+import { Callout } from 'nextra/components'
+
+# 🎬 Tokovo Cinematography Style Guide
+
+<Callout type="warning">
+**v1 PRESETS ARE SACRED. Do not modify their semantics.**
+</Callout>
+
+## v1 → v2 Evolution Plan
+
+### v1 Goal
+
+> **Make 90% of chat-based stories feel cinematic, readable, and emotionally intentional.**
+
+### v1 Characteristics
+
+- Deterministic
+- Rule-based
+- Small preset vocabulary
+- Mostly reactive camera
+- One active anchor at a time
+- No AI "creativity", only correctness
+
+### v1 Camera Personality
+
+> A careful human operator who reacts, but does not anticipate.
+
+**v1 does NOT predict emotion. It responds to events.**
+
+---
+
+### v2 Goal
+
+> **Make the camera feel anticipatory, intelligent, and narratively aware.**
+
+v2 does **not** replace v1. It *layers on top* of it.
+
+### v2 Unlocks
+
+- Pre-emptive camera movement
+- Multi-anchor awareness
+- Emotional state continuity
+- Style profiles (genre-level)
+- AI-assisted intent selection
+- Micro-variation to avoid repetition
+
+---
+
+## Evolution Axes
+
+| Axis      | v1       | v2                    |
+| --------- | -------- | --------------------- |
+| Anchor    | Single   | Primary + secondary   |
+| Timing    | Reactive | Anticipatory          |
+| Presets   | Static   | Parameterized         |
+| Emotion   | Implicit | Explicit              |
+| Style     | Global   | Profile-driven        |
+| Variation | None     | Controlled randomness |
+
+---
+
+## v1 Preset Catalog (LOCKED — DO NOT MODIFY)
+
+### 🟢 Core Flow Presets
+
+| Preset | Scale | Duration | Shake | Easing | Use Case |
+|--------|-------|----------|-------|--------|----------|
+| `message` | 1.08 | 22f | 0 | ease-out | Default follow |
+| `subtle` | 1.04 | 30f | 0 | cinematic | Anticipation + drift |
+| `impact` | 1.35 | 14f | 6 | expoOut | Emotional hit |
+| `snap` | 1.15 | 8f | 1 | ease-out | Fast reaction |
+
+### 🟡 Motion / Travel Presets
+
+| Preset | Scale | Duration | Smoothing | Use Case |
+|--------|-------|----------|-----------|----------|
+| `operatorFollow` | 1.22 | 40f | 0.18 | Camera travels with content |
+| `punchGlide` | 1.35 | 40f | 0.18 | Punch in → glide follow |
+
+### 🟠 Interruption Presets
+
+| Preset | Scale | Duration | Shake | Use Case |
+|--------|-------|----------|-------|----------|
+| `interrupt` | 1.25 | 10f | 4 | Attention break |
+| `takeover` | 0.85 | 20f | 0 | Call takes control |
+
+### ⚪ Structural Presets
+
+| Preset | Scale | Duration | Use Case |
+|--------|-------|----------|----------|
+| `reset` | 1.0 | 20f | Return to neutral |
+| `establish` | 0.9 | 30f | Scene start |
+
+---
+
+## v1 Ship Set (Minimum)
+
+1. `message`
+2. `subtle`
+3. `impact`
+4. `snap`
+5. `operatorFollow`
+6. `punchGlide`
+7. `interrupt`
+8. `reset`
+
+Everything else is feature-flagged.
+
+---
+
+## v2 Preset Extensions (Feature-Flagged)
+
+### 🔵 Psychological Presets
+
+| Preset | Scale | Duration | Use Case |
+|--------|-------|----------|----------|
+| `suspenseHold` | 1.1 | 50f | Tension stretch |
+| `voyeur` | 0.92 | 40f | Distant observation |
+| `isolation` | 0.88 | 35f | Emotional withdrawal |
+
+### 🟣 Dynamic Movement Presets
+
+| Preset | Scale | Duration | Smoothing | Use Case |
+|--------|-------|----------|-----------|----------|
+| `whipSnap` | 1.18 | 6f | 0.6 | Fast pan with overshoot |
+| `floatFollow` | 1.15 | 60f | 0.08 | Slow emotional drift |
+
+### 🔴 Meta Presets
+
+| Preset | Scale | Duration | Shake | Use Case |
+|--------|-------|----------|-------|----------|
+| `panic` | 1.4 | 12f | 10 | Loss of control |
+| `collapse` | 0.8 | 40f | 0 | Aftermath |
+
+---
+
+## v2 System Requirements
+
+Do **not** enable v2 presets until these exist:
+
+### 1️⃣ Emotional State Model
+
+```typescript
+emotion = {
+  tension: 0..1,
+  intimacy: 0..1,
+  volatility: 0..1
+}
+```
+
+### 2️⃣ Multi-Anchor Awareness
+
+Camera can reason about primary + secondary anchors.
+
+### 3️⃣ Preset Parameterization
+
+```typescript
+impact(emotion) → { scale, shake }
+```
+
+### 4️⃣ Controlled Randomness
+
+Tiny variations (±3%) to avoid repetition. Seeded. Deterministic.
+
+---
+
+## Migration Plan
+
+### Phase A (Now) ✅
+
+- Lock v1 presets
+- Ship style guide
+- Enforce preset usage
+
+### Phase B
+
+- Add `ANCHOR_TRACK` ✅
+- Add `operatorFollow` everywhere needed
+
+### Phase C (v2)
+
+- Add emotion model
+- Enable v2 presets behind flag
+- AI director can choose presets
+
+---
+
+## Final Rule
+
+<Callout type="error">
+**v1 presets are sacred.**  
+**v2 presets are expressive.**  
+**Never mix the two casually.**
+</Callout>
