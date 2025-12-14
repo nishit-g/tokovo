@@ -578,6 +578,11 @@ export interface CameraResetEffect {
  * 
  * This is the key to "cinematic" camera — the camera follows semantic
  * meaning, not arbitrary coordinates.
+ * 
+ * RUNTIME RESOLUTION:
+ * - `anchor` is the semantic ID (e.g., "lastMessage")
+ * - `resolvedRect` is populated at render time by useCameraEngine
+ * - `viewport` is needed to convert rect → normalized origin
  */
 export interface CameraAnchorFocusEffect {
     type: "ANCHOR_FOCUS";
@@ -593,6 +598,13 @@ export interface CameraAnchorFocusEffect {
     easing?: EasingType;
     /** Optional shake intensity */
     shake?: number;
+
+    // === RUNTIME-RESOLVED FIELDS (populated by useCameraEngine) ===
+
+    /** The actual rect of the anchor (resolved at runtime) */
+    resolvedRect?: { x: number; y: number; width: number; height: number };
+    /** Viewport dimensions for normalizing rect → origin */
+    viewport?: { width: number; height: number };
 }
 
 export type CameraEffect =

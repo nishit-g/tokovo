@@ -156,7 +156,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
         // =====================================================================
         if (anchorSystemEnabled && appId) {
-            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId) ?? undefined;
 
             if (directorDebug && anchorSnapshot) {
                 const anchorCount = Object.keys(anchorSnapshot.anchors).length;
@@ -251,6 +251,79 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         }
 
         // =====================================================================
+        // 3.5. ANCHOR_FOCUS EFFECT RESOLUTION (THE MISSING LINK!)
+        // =====================================================================
+        // Process manual ANCHOR_FOCUS effects from timeline and resolve their
+        // anchor rects from the anchor snapshot. This is where semantic anchors
+        // finally become camera origins!
+        const activeEffects = world.camera?.activeEffects || [];
+        const anchorFocusEffects = activeEffects.filter(
+            (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
+        );
+
+        if (anchorFocusEffects.length > 0 && anchorSnapshot) {
+            for (const ae of anchorFocusEffects) {
+                const effect = ae.effect as any; // CameraAnchorFocusEffect
+                const anchorId = effect.anchor;
+
+                // Resolve anchor rect from snapshot (with fallback chain)
+                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+
+                if (resolved) {
+                    const rect = resolved.rect;
+                    const viewportWidth = profile.dimensions.width;
+                    const viewportHeight = profile.dimensions.height;
+
+                    // === THE KEY MATH: Convert rect → origin ===
+                    // Center of the rect becomes the transform origin
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+
+                    // Normalize to 0-1 range
+                    const originX = centerX / viewportWidth;
+                    const originY = centerY / viewportHeight;
+
+                    // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
+                    const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
+                    const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
+
+                    // Calculate animation progress
+                    const duration = ae.endFrame - ae.startFrame;
+                    const progress = Math.min(1, (t - ae.startFrame) / duration);
+
+                    // Apply easing
+                    const easing = effect.easing || "ease-out";
+                    const easedProgress = applyEasingSimple(progress, easing);
+
+                    // Get scale from preset or effect
+                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+
+                    // Apply transform (blend from current to target)
+                    finalCameraTransform = {
+                        ...finalCameraTransform,
+                        scale: 1 + (targetScale - 1) * easedProgress,
+                        originX: clampedOriginX,
+                        originY: clampedOriginY,
+                    };
+
+                    // Apply shake if specified
+                    if (effect.shake && effect.shake > 0) {
+                        const frameInEffect = t - ae.startFrame;
+                        const shakeDecay = 1 - progress * 0.6;
+                        const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
+                        const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
+                        finalCameraTransform.shakeX = shakeX;
+                        finalCameraTransform.shakeY = shakeY;
+                    }
+
+                    if (directorDebug) {
+                        console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
         // 4. BUILD CAMERA CSS STYLE
         // =====================================================================
         const cameraTransformString = `
@@ -316,4 +389,50 @@ function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
         default:
             return null;
     }
+}
+
+/**
+ * Simple easing function for ANCHOR_FOCUS effects.
+ */
+function applyEasingSimple(t: number, easing: string): number {
+    switch (easing) {
+        case "linear":
+            return t;
+        case "ease-in":
+            return t * t;
+        case "ease-out":
+            return 1 - (1 - t) * (1 - t);
+        case "ease-in-out":
+            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        case "cinematic":
+            // S-curve for smooth cinematic motion
+            return t * t * (3 - 2 * t);
+        default:
+            return 1 - (1 - t) * (1 - t); // Default to ease-out
+    }
+}
+
+/**
+ * Get scale for a preset.
+ */
+function getPresetScaleSimple(preset?: string): number {
+    switch (preset) {
+        case "dramatic": return 1.3;
+        case "subtle": return 1.08;
+        case "snap": return 1.15;
+        case "impact": return 1.4;
+        case "message": return 1.1;
+        case "reset": return 1.0;
+        default: return 1.15;
+    }
+}
+
+/**
+ * Deterministic seeded random (mulberry32).
+ */
+function seededRandom(seed: number): number {
+    let t = seed + 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
 }
