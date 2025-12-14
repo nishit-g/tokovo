@@ -6,568 +6,517 @@
 
 The Semantic Anchor-Driven Camera System (SACS) is a production-grade cinematography engine for Tokovo that moves cameras based on **semantic anchors** (like "lastMessage" or "inputArea") rather than hardcoded pixel coordinates.
 
-**Before:**
+**The Old Way:**
 ```typescript
 // ❌ Magic numbers - what does originY: 0.8 mean?
 dsl.zoom(60, 1.25, 20, { originY: 0.8 })
 ```
 
-**After:**
+**The New Way:**
 ```typescript
 // ✅ Semantic intent - camera follows the last message
 dsl.anchorFocus(60, "lastMessage", "dramatic")
+```
+
+**The Result:** Camera origins are now computed from ACTUAL MESSAGE POSITIONS at runtime, not magic numbers.
+
+---
+
+## Quick Start
+
+```typescript
+// Create a showcase with semantic camera control
+const events = [
+  dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉"),
+  dsl.anchorFocus(60, "lastMessage", "dramatic", 5),  // Zoom to actual message location
+  
+  dsl.send(120, "OMG CONGRATS!!! 🎊"),
+  dsl.anchorFocus(120, "lastMessage", "snap", 2),     // Snap to wherever the reply landed
+  
+  dsl.reset(200, 40),                                  // Pull back to neutral
+];
 ```
 
 ---
 
 ## Table of Contents
 
-1. [Architecture Overview](#architecture-overview)
-2. [Core Concepts](#core-concepts)
-3. [Layer 1: Anchor Providers](#layer-1-anchor-providers)
-4. [Layer 2: Intent Resolution](#layer-2-intent-resolution)
-5. [Layer 3: Shot Presets](#layer-3-shot-presets)
-6. [Layer 4: Camera Math](#layer-4-camera-math)
-7. [DSL Usage](#dsl-usage)
-8. [Files Created](#files-created)
-9. [Extension Guide](#extension-guide)
+1. [How It Actually Works](#how-it-actually-works) ⭐ **Start Here**
+2. [Architecture Overview](#architecture-overview)
+3. [The Four Layers](#the-four-layers)
+4. [Coordinate Spaces](#coordinate-spaces)
+5. [DSL Reference](#dsl-reference)
+6. [Extension Guide](#extension-guide)
+7. [File Reference](#file-reference)
+
+---
+
+## How It Actually Works
+
+> **This is the complete frame-by-frame walkthrough of a WhatsApp message being followed by the camera.**
+
+### Scenario: "A new message arrives, camera follows"
+
+```
+Frame t=60: "Bestie 💕" sends "I got the job!!! 🎉"
+```
+
+---
+
+### Step 1: World State Update
+
+The DSL event updates the world:
+
+```typescript
+// Input
+dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉")
+
+// Result: WorldState is updated
+world.conversations["chat-1"].messages.push({
+  id: "m_42",
+  text: "I got the job!!! 🎉",
+  sender: "Bestie 💕"
+});
+```
+
+**No camera logic yet.** Just data.
+
+---
+
+### Step 2: Layout Computes Pixels
+
+The Layout Engine computes where everything goes:
+
+```typescript
+const layout = computeLayout(world);
+
+// Result:
+chatLayout.messageLayouts = {
+  "m_42": {
+    rect: { x: 50, y: 650, width: 280, height: 45 }  // ACTUAL PIXELS
+  }
+};
+```
+
+**This is where pixels are born.** Layout owns all positioning.
+
+---
+
+### Step 3: Anchor Provider Extracts Meaning
+
+WhatsApp's AnchorProvider names the rects:
+
+```typescript
+// packages/renderer/src/anchor-providers/whatsapp.ts
+
+WhatsAppAnchorProvider.getAnchors(world, layout, deviceId);
+
+// Result:
+anchorSnapshot = {
+  appId: "app_whatsapp",
+  deviceId: "phone",
+  anchors: {
+    lastMessage: { x: 50, y: 650, width: 280, height: 45 },  // ← FROM LAYOUT
+    inputArea: { x: 0, y: 880, width: 430, height: 52 },
+    device: { x: 0, y: 0, width: 430, height: 932 },
+  }
+};
+```
+
+**This is the semantic bridge:** Pixels → Named anchors.
+
+---
+
+### Step 4: Camera Effect Triggers
+
+The DSL event creates an ANCHOR_FOCUS effect:
+
+```typescript
+// Input
+dsl.anchorFocus(60, "lastMessage", "dramatic", 5)
+
+// Result: Timeline event
+{
+  at: 60,
+  kind: "CAMERA",
+  type: "ANCHOR_FOCUS",
+  anchor: "lastMessage",
+  preset: "dramatic",
+  shake: 5,
+  duration: 25,
+  easing: "ease-out"
+}
+```
+
+**Still no pixels.** Just semantic intent.
+
+---
+
+### Step 5: THE MISSING LINK — Anchor Resolution
+
+> **This is where the magic happens.**
+
+In `useCameraEngine.ts`, Section 3.5:
+
+```typescript
+// 1. Filter active ANCHOR_FOCUS effects
+const anchorFocusEffects = activeEffects.filter(
+  (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
+);
+
+// 2. Resolve anchor rect from snapshot
+const resolved = resolveAnchorWithFallback("lastMessage", anchorSnapshot.anchors);
+// → { anchor: "lastMessage", rect: { x: 50, y: 650, width: 280, height: 45 } }
+
+// 3. THE KEY MATH: Convert rect center → normalized origin
+const rect = resolved.rect;
+const centerX = rect.x + rect.width / 2;    // 50 + 140 = 190
+const centerY = rect.y + rect.height / 2;   // 650 + 22.5 = 672.5
+
+const originX = centerX / viewportWidth;    // 190 / 430 = 0.442
+const originY = centerY / viewportHeight;   // 672.5 / 932 = 0.721
+
+// 4. Apply to camera transform
+finalCameraTransform = {
+  scale: 1.3,           // From "dramatic" preset
+  originX: 0.442,       // FROM THE ACTUAL RECT!
+  originY: 0.721,       // FROM THE ACTUAL RECT!
+  shakeX: 2.1,          // Calculated shake
+  shakeY: -1.4,
+};
+```
+
+**The camera now knows WHERE the message actually is.**
+
+---
+
+### Step 6: CSS Output
+
+The transform becomes CSS:
+
+```css
+.camera-wrapper {
+  transform: scale(1.3) translate(2.1px, -1.4px);
+  transform-origin: 44.2% 72.1%;
+}
+```
+
+**🎥 Result:** Camera smoothly zooms to the center of the actual message bubble.
+
+---
+
+### Complete Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     COMPLETE ANCHOR → CAMERA FLOW                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  t=60: dsl.receive("Bestie 💕", "I got the job!!!")                         │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │ WORLD STATE                                                     │        │
+│  │ messages.push({ id: "m_42", text: "I got the job!!!" })        │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │ LAYOUT ENGINE                                                   │        │
+│  │ messageLayouts["m_42"].rect = { x:50, y:650, w:280, h:45 }     │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │ ANCHOR PROVIDER (WhatsApp)                                      │        │
+│  │ anchors.lastMessage = { x:50, y:650, w:280, h:45 }             │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                         │                                                    │
+│                         ▼                                                    │
+│  t=60: dsl.anchorFocus("lastMessage", "dramatic", 5)                        │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │ useCameraEngine — Section 3.5                                    │        │
+│  │                                                                  │        │
+│  │ rect = resolveAnchorWithFallback("lastMessage")                 │        │
+│  │      → { x:50, y:650, w:280, h:45 }                             │        │
+│  │                                                                  │        │
+│  │ centerX = 50 + 280/2 = 190                                      │        │
+│  │ centerY = 650 + 45/2 = 672.5                                    │        │
+│  │                                                                  │        │
+│  │ originX = 190 / 430 = 0.442                                     │        │
+│  │ originY = 672.5 / 932 = 0.721                                   │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                         │                                                    │
+│                         ▼                                                    │
+│  ┌─────────────────────────────────────────────────────────────────┐        │
+│  │ CSS OUTPUT                                                      │        │
+│  │                                                                  │        │
+│  │ transform: scale(1.3)                                           │        │
+│  │ transform-origin: 44.2% 72.1%                                   │        │
+│  └─────────────────────────────────────────────────────────────────┘        │
+│                                                                              │
+│  🎥 CAMERA ZOOMS TO THE ACTUAL MESSAGE LOCATION                             │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
 ## Architecture Overview
 
+### Four-Layer Architecture
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                           SEMANTIC CAMERA PIPELINE                           │
+│  LAYER 1: ANCHOR PROVIDERS                                                   │
+│  "What can be focused?"                                                      │
+│                                                                              │
+│  WhatsApp → lastMessage, typingIndicator, inputArea                         │
+│  Phone    → callPoster, acceptButton, declineButton                         │
+│  Twitter  → focusedTweet, replyBox, likeButton                              │
 ├─────────────────────────────────────────────────────────────────────────────┤
+│  LAYER 2: INTENT RESOLUTION                                                  │
+│  "When to focus?"                                                            │
 │                                                                              │
-│  ┌────────────────┐    ┌────────────────┐    ┌────────────────┐             │
-│  │   DSL Event    │───▶│  Anchor       │───▶│  Shot Preset   │             │
-│  │                │    │  Resolution   │    │                │             │
-│  │ anchorFocus(   │    │               │    │  "dramatic"    │             │
-│  │  "lastMessage",│    │  lastMessage  │    │  scale: 1.3    │             │
-│  │  "dramatic"    │    │  → rect       │    │  shake: auto   │             │
-│  │ )              │    │  → origin     │    │  easing: out   │             │
-│  └────────────────┘    └────────────────┘    └────────────────┘             │
-│           │                    │                    │                        │
-│           └────────────────────┴────────────────────┘                        │
-│                                │                                             │
-│                                ▼                                             │
-│                    ┌────────────────────────┐                               │
-│                    │     Camera Transform    │                               │
-│                    │                         │                               │
-│                    │  scale: 1.3             │                               │
-│                    │  originX: 0.5           │                               │
-│                    │  originY: 0.78          │                               │
-│                    │  shakeX: 2.3            │                               │
-│                    │  shakeY: -1.1           │                               │
-│                    └────────────────────────┘                               │
-│                                │                                             │
-│                                ▼                                             │
-│                    ┌────────────────────────┐                               │
-│                    │      CSS Transform      │                               │
-│                    │                         │                               │
-│                    │  transform: scale(1.3)  │                               │
-│                    │  transform-origin: 50%  │                               │
-│                    │                   78%   │                               │
-│                    └────────────────────────┘                               │
+│  MESSAGE_RECEIVED → FOCUS(lastMessage)                                       │
+│  TYPING_STARTED   → FOCUS(inputArea)                                        │
+│  CALL_INCOMING    → FOCUS(callPoster)                                       │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  LAYER 3: SHOT PRESETS                                                       │
+│  "How should it look?"                                                       │
 │                                                                              │
+│  dramatic → scale: 1.3, shake: 4, easing: ease-out                          │
+│  subtle   → scale: 1.08, shake: 0, easing: cinematic                        │
+│  snap     → scale: 1.15, shake: 0, easing: ease-out                         │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  LAYER 4: CAMERA MATH                                                        │
+│  "Pure transform computation"                                                │
+│                                                                              │
+│  Input:  rect + preset + viewport                                           │
+│  Output: { scale, originX, originY, shakeX, shakeY }                        │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Four-Layer Architecture
+### Separation of Concerns
 
-| Layer | Responsibility | Owner | Example |
-|-------|----------------|-------|---------|
-| **Layer 1: Anchor Providers** | Define *what* can be focused | Apps | `WhatsAppAnchorProvider` extracts `lastMessage` rect |
-| **Layer 2: Intent Resolution** | Decide *when* to focus | Director | "On MESSAGE_RECEIVED → FOCUS lastMessage" |
-| **Layer 3: Shot Presets** | Define *how* to look | Global | `dramatic` = scale 1.3, shake 4, ease-out |
-| **Layer 4: Camera Math** | Execute pure transforms | Engine | Apply scale + shake + easing to CSS |
+| Layer | Owner | Knows About | Doesn't Know About |
+|-------|-------|-------------|-------------------|
+| **Anchor Providers** | Apps | UI layout, semantics | Camera, presets |
+| **Intent Resolution** | Director | Events, timing | Pixels, layout |
+| **Shot Presets** | Designer | Cinematography | Specific apps |
+| **Camera Math** | Engine | Rects, transforms | Semantics, apps |
 
 ---
 
-## Core Concepts
+## The Four Layers
 
-### Semantic Anchors
+### Layer 1: Anchor Providers
 
-A **semantic anchor** is a named, meaningful UI element that the camera can focus on.
-
-```typescript
-// Core anchors (built-in)
-type CoreSemanticAnchorId = 
-  | "lastMessage"       // Most recent message bubble
-  | "typingIndicator"   // Three dots animation
-  | "inputArea"         // Text input field
-  | "device"            // Full device frame
-  ;
-
-// Extensible: apps can add their own
-type SemanticAnchorId = CoreSemanticAnchorId | string;
-```
-
-### Why Semantic Anchors?
-
-| Problem | Old Way | Semantic Way |
-|---------|---------|--------------|
-| Message position changes | Hardcode `originY: 0.8` | Query `lastMessage.rect` |
-| Different screen sizes | Hope it works | Anchor normalized to viewport |
-| New UI elements | Add more magic numbers | Register new anchor |
-| Debug camera issues | "Why is it zooming there?" | "It's targeting lastMessage" |
-
-### Anchor Snapshot
-
-At any frame, an `AnchorSnapshot` captures all available anchors:
+Anchor providers extract **semantic meaning** from layout:
 
 ```typescript
+interface AnchorProvider {
+  appId: string;
+  getAnchors(world: WorldState, layout: LayoutState, deviceId: string): AnchorSnapshot;
+}
+
 interface AnchorSnapshot {
   appId: string;
   deviceId: string;
-  anchors: Record<SemanticAnchorId, LayoutRect>;
-}
-
-// Example at frame 60:
-{
-  appId: "app_whatsapp",
-  deviceId: "phone",
-  anchors: {
-    lastMessage: { x: 50, y: 650, width: 280, height: 45 },
-    inputArea: { x: 0, y: 780, width: 390, height: 50 },
-    typingIndicator: { x: 50, y: 700, width: 60, height: 30 },
-    device: { x: 0, y: 0, width: 390, height: 844 },
-  }
+  anchors: Partial<Record<SemanticAnchorId, LayoutRect>>;
 }
 ```
 
-### LayoutRect
+**Built-in anchors:**
 
-All anchors are expressed as `LayoutRect` in **device-viewport space**:
+| Anchor | Meaning | Apps |
+|--------|---------|------|
+| `lastMessage` | Most recent message bubble | WhatsApp, Twitter DMs |
+| `typingIndicator` | Typing dots (volatile) | WhatsApp |
+| `inputArea` | Text input field | All chat apps |
+| `callPoster` | Contact poster image | Phone |
+| `device` | Full screen (fallback) | All |
+
+**WhatsApp Provider:**
 
 ```typescript
-interface LayoutRect {
-  x: number;       // Left edge (pixels from device left)
-  y: number;       // Top edge (pixels from device top)
-  width: number;   // Width in pixels
-  height: number;  // Height in pixels
-}
+// packages/renderer/src/anchor-providers/whatsapp.ts
+
+export const WhatsAppAnchorProvider: AnchorProvider = {
+  appId: "app_whatsapp",
+
+  getAnchors(world, layout, deviceId) {
+    const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+    const profile = getDeviceProfile(world.devices[deviceId]?.profileId);
+    
+    if (layout.kind === "CHAT") {
+      const chatLayout = layout as ChatLayoutState;
+      
+      // Last message from layout
+      const lastMsgId = chatLayout.meta?.lastMessageId;
+      if (lastMsgId && chatLayout.messageLayouts[lastMsgId]) {
+        anchors.lastMessage = chatLayout.messageLayouts[lastMsgId].rect;
+      }
+      
+      // Input area
+      anchors.inputArea = {
+        x: 0,
+        y: profile.dimensions.height - 52,
+        width: profile.dimensions.width,
+        height: 52,
+      };
+    }
+    
+    // Device is always available (from profile, NOT hardcoded!)
+    anchors.device = { x: 0, y: 0, ...profile.dimensions };
+    
+    return { anchors, deviceId, appId: "app_whatsapp" };
+  }
+};
+```
+
+---
+
+### Layer 2: Intent Resolution
+
+**Fallback Chains** handle missing anchors:
+
+```typescript
+const FALLBACK_CHAINS = {
+  typingIndicator: ["inputArea", "lastMessage", "device"],
+  lastMessage: ["inputArea", "device"],
+  inputArea: ["lastMessage", "device"],
+  device: [],  // Always available
+};
+```
+
+**Hysteresis** prevents jitter:
+
+```typescript
+const ANCHOR_STABILITY_FRAMES = 3;
+
+// Anchor must be stable for 3 consecutive frames before switching
+// Prevents: typingIndicator flickers → camera doesn't spaz out
+```
+
+---
+
+### Layer 3: Shot Presets
+
+```typescript
+// packages/core/src/camera/presets.ts
+
+export const SHOT_PRESETS = {
+  dramatic: { scale: 1.3, durationFrames: 25, easing: "ease-out", shake: 4 },
+  subtle:   { scale: 1.08, durationFrames: 30, easing: "cinematic", shake: 0 },
+  snap:     { scale: 1.15, durationFrames: 10, easing: "ease-out", shake: 0 },
+  impact:   { scale: 1.4, durationFrames: 15, easing: "ease-out", shake: 8 },
+  message:  { scale: 1.1, durationFrames: 25, easing: "ease-out", shake: 0 },
+  reset:    { scale: 1.0, durationFrames: 20, easing: "ease-out", shake: 0 },
+};
+```
+
+**Anchor Framing** (where anchors should appear in frame):
+
+```typescript
+export const ANCHOR_FRAMING = {
+  lastMessage:      { anchorPoint: { x: 0.5, y: 0.75 }, targetFill: 0.55 },
+  inputArea:        { anchorPoint: { x: 0.5, y: 0.9 }, targetFill: 0.4 },
+  typingIndicator:  { anchorPoint: { x: 0.5, y: 0.82 }, targetFill: 0.3 },
+  callPoster:       { anchorPoint: { x: 0.5, y: 0.4 }, targetFill: 0.65 },
+  device:           { anchorPoint: { x: 0.5, y: 0.5 }, targetFill: 1.0 },
+};
+```
+
+---
+
+### Layer 4: Camera Math
+
+The camera engine is **semantically ignorant** — it just does math:
+
+```typescript
+// packages/renderer/src/engines/useCameraEngine.ts — Section 3.5
+
+// 1. Get the rect
+const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+const rect = resolved.rect;
+
+// 2. Compute center
+const centerX = rect.x + rect.width / 2;
+const centerY = rect.y + rect.height / 2;
+
+// 3. Normalize to 0-1
+const originX = Math.max(0.1, Math.min(0.9, centerX / viewportWidth));
+const originY = Math.max(0.1, Math.min(0.9, centerY / viewportHeight));
+
+// 4. Apply easing
+const easedProgress = applyEasingSimple(progress, easing);
+const scale = 1 + (targetScale - 1) * easedProgress;
+
+// 5. Output transform
+finalCameraTransform = { scale, originX, originY, shakeX, shakeY };
 ```
 
 ---
 
 ## Coordinate Spaces
 
-> **Fix #4:** Explicit coordinate space responsibilities.
+| Space | Owner | Origin | Use Case |
+|-------|-------|--------|----------|
+| **Content Space** | Layout Engine | Scroll-relative | Message at y=2000px in long chat |
+| **Viewport Space** | Anchor Providers | Device top-left | All anchors (standard) |
+| **Composition Space** | Camera Engine | Video frame | Multi-device layouts |
 
-The camera pipeline operates across three coordinate spaces:
-
-| Space | Owner | Description |
-|-------|-------|-------------|
-| **Content Space** | Layout Engine | Scroll-relative coordinates (e.g., message Y = 2000px in long chat) |
-| **Viewport Space** | Anchor Providers | Device-relative coordinates (0,0 = top-left of device) |
-| **Composition Space** | Camera Engine | Video frame coordinates (may differ if multi-device) |
-
-### Conversion Responsibilities
-
-1. **Layout Engine** outputs content-space rects.
-2. **Anchor Providers** convert content → viewport by subtracting scrollY:
-   ```typescript
-   // In AnchorProvider
-   const viewportY = contentY - chatLayout.scrollY;
-   ```
-3. **Camera Engine** may convert viewport → composition for multi-device layouts.
-
-### Rule: Anchor Providers Return Viewport Space
-
-Anchors MUST be in viewport space. This is the contract:
-
-```typescript
-interface AnchorProvider {
-  // Returns rects in VIEWPORT space (not content space)
-  getAnchors(world, layout, deviceId): AnchorSnapshot;
-}
-```
+**Rule:** Anchor Providers always return **Viewport Space** rects.
 
 ---
 
-## Layer 1: Anchor Providers
+## DSL Reference
 
-Anchor providers extract semantic anchors from app state and layout.
+### `anchorFocus(at, anchor, preset, shake?)`
 
-### Interface
-
-```typescript
-interface AnchorProvider {
-  id: string;           // e.g., "app_whatsapp"
-  supportedAnchors: SemanticAnchorId[];
-  
-  getAnchors(
-    world: WorldState,
-    layout: LayoutState,
-    deviceId: string
-  ): AnchorSnapshot;
-}
-```
-
-### WhatsApp Provider Example
+Focus camera on a semantic anchor with a preset style.
 
 ```typescript
-// packages/renderer/src/anchor-providers/whatsapp.ts
-
-export const WhatsAppAnchorProvider: AnchorProvider = {
-  id: "app_whatsapp",
-  supportedAnchors: ["lastMessage", "typingIndicator", "inputArea", "device"],
-
-  getAnchors(world, layout, deviceId) {
-    const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
-    const device = world.devices[deviceId];
-    
-    // Get viewport from device profile (NOT hardcoded!)
-    const profile = getDeviceProfile(device?.profileId);
-    const viewportWidth = profile.dimensions.width;
-    const viewportHeight = profile.dimensions.height;
-
-    if (layout.kind === "CHAT") {
-      const chatLayout = layout as ChatLayoutState;
-      
-      // Last message anchor (convert to viewport space)
-      if (chatLayout.messageRects.length > 0) {
-        const lastMsg = chatLayout.messageRects[chatLayout.messageRects.length - 1];
-        anchors.lastMessage = lastMsg.rect;
-      }
-
-      // Input area anchor
-      if (chatLayout.inputAreaRect) {
-        anchors.inputArea = chatLayout.inputAreaRect;
-      }
-    }
-
-    // Device anchor from viewport (NOT hardcoded 390×844!)
-    anchors.device = { x: 0, y: 0, width: viewportWidth, height: viewportHeight };
-
-    return { appId: "app_whatsapp", deviceId, anchors };
-  }
-};
+dsl.anchorFocus(60, "lastMessage", "dramatic", 5)
+//              │    │             │           └── Optional shake intensity
+//              │    │             └── Shot preset
+//              │    └── Semantic anchor ID
+//              └── Frame number
 ```
 
-> **Fix #1:** Device rect comes from device profile, never hardcoded.
+### `reset(at, duration)`
 
-### Built-in Providers
-
-| Provider | App | Anchors |
-|----------|-----|---------|
-| `WhatsAppAnchorProvider` | WhatsApp | lastMessage, typingIndicator, inputArea, device |
-| `PhoneAnchorProvider` | Phone | callPoster, acceptButton, declineButton, device |
-| `NotificationAnchorProvider` | Notifications | headsUpNotification, dynamicIsland, device |
-
-### Registration
+Return camera to neutral position.
 
 ```typescript
-import { AnchorRegistry } from "@tokovo/core";
-import { WhatsAppAnchorProvider } from "@tokovo/renderer";
-
-// At startup
-AnchorRegistry.register(WhatsAppAnchorProvider);
-
-// Or use auto-registration
-import { registerBuiltInAnchorProviders } from "@tokovo/renderer";
-registerBuiltInAnchorProviders();
+dsl.reset(200, 40)
+//        │    └── Duration in frames
+//        └── Frame number
 ```
 
----
-
-## Layer 2: Intent Resolution
-
-### Camera Intent
-
-A `CameraIntent` expresses what the camera should do semantically:
-
-```typescript
-type CameraIntent =
-  | { type: "FOCUS"; anchor: SemanticAnchorId; preset?: ShotPresetId }
-  | { type: "RESET"; preset?: ShotPresetId }
-  | { type: "HOLD" };
-```
-
-### Fallback Chains
-
-When an anchor isn't available, the system falls back to alternatives:
-
-```typescript
-const FALLBACK_CHAINS: Record<SemanticAnchorId, SemanticAnchorId[]> = {
-  typingIndicator: ["inputArea", "lastMessage", "device"],
-  lastMessage: ["inputArea", "device"],
-  inputArea: ["device"],
-  device: [],
-};
-```
-
-**Example:** If `typingIndicator` isn't visible:
-1. Try `inputArea` → Found? Use it
-2. Try `lastMessage` → Found? Use it
-3. Default to `device` (whole screen)
-
-### Hysteresis (Anti-Jitter)
-
-To prevent camera jitter when anchors flicker (e.g., typing dots appearing/disappearing), anchors must be **stable for 3 consecutive frames** before the camera switches:
-
-```typescript
-const ANCHOR_STABILITY_FRAMES = 3;
-
-// State tracked in useCameraEngine
-interface AnchorStabilityState {
-  currentAnchor: SemanticAnchorId | null;
-  candidateAnchor: SemanticAnchorId | null;
-  stableFrames: number;
-  lastSwitchFrame: number;
-}
-```
-
----
-
-## Layer 3: Shot Presets
-
-Shot presets define the *cinematography* — how the camera should look and feel.
-
-### Global Presets
-
-```typescript
-// packages/core/src/camera/presets.ts
-
-const SHOT_PRESETS = {
-  dramatic: {
-    scale: 1.3,           // Significant zoom
-    durationFrames: 25,   // ~0.8s at 30fps
-    easing: "ease-out",
-    shake: 4,             // Adding impact
-  },
-  subtle: {
-    scale: 1.08,          // Barely noticeable
-    durationFrames: 30,   // 1s smooth
-    easing: "cinematic",  // S-curve
-    shake: 0,
-  },
-  snap: {
-    scale: 1.15,          // Quick punch
-    durationFrames: 10,   // Very fast
-    easing: "ease-out",
-    shake: 0,
-  },
-  impact: {
-    scale: 1.4,           // Dramatic
-    durationFrames: 15,
-    easing: "ease-out",
-    shake: 8,             // Heavy shake
-  },
-  message: {
-    scale: 1.1,           // Standard message follow
-    durationFrames: 25,
-    easing: "ease-out",
-    shake: 0,
-  },
-  reset: {
-    scale: 1.0,           // Return to neutral
-    durationFrames: 20,
-    easing: "ease-out",
-    shake: 0,
-  }
-};
-```
-
-### App-Specific Overrides
-
-Apps can provide **deltas** (not new presets) to customize behavior:
-
-```typescript
-// packages/apps-whatsapp/src/behaviors.ts
-
-export const WHATSAPP_PRESET_OVERRIDES: Partial<Record<ShotPresetId, Partial<ShotPreset>>> = {
-  // WhatsApp messages should zoom slightly less
-  message: { scale: 1.08 },
-  // Dramatic moments need more emphasis
-  dramatic: { shake: 6 },
-};
-```
-
-The system merges: `globalPreset + appOverride`:
-```typescript
-const finalPreset = getShotPreset("dramatic", "app_whatsapp");
-// { scale: 1.3, shake: 6, ... } — 6 from override, rest from global
-```
-
----
-
-## Layer 4: Camera Math
-
-### CameraController
-
-The `CameraController` is a pure function that computes transforms:
-
-```typescript
-// packages/core/src/camera/index.ts
-
-class CameraController {
-  computeTransform(state: CameraState, t: number): CameraTransform;
-}
-```
-
-### ANCHOR_FOCUS Effect
-
-The new `ANCHOR_FOCUS` effect type:
-
-```typescript
-interface CameraAnchorFocusEffect {
-  type: "ANCHOR_FOCUS";
-  anchor: string;        // SemanticAnchorId
-  preset?: string;       // ShotPresetId
-  scale?: number;        // Override preset scale
-  duration: number;      // Frames
-  easing?: EasingType;
-  shake?: number;        // Override preset shake
-}
-```
-
-### Processing Pipeline
-
-```
-┌──────────────┐    ┌──────────────┐    ┌──────────────┐    ┌──────────────┐
-│    Event     │───▶│ createActive │───▶│ applyEffect  │───▶│  Transform   │
-│              │    │   Effect     │    │              │    │              │
-│ ANCHOR_FOCUS │    │ ActiveCamera │    │ applyAnchor  │    │ scale: 1.3   │
-│ anchor:      │    │ Effect       │    │ Focus()      │    │ originY: 0.75│
-│ "lastMessage"│    │              │    │              │    │ shakeX: 2.1  │
-│ preset:      │    │              │    │ ↓            │    │              │
-│ "dramatic"   │    │              │    │ getAnchor    │    │              │
-│              │    │              │    │ Framing()    │    │              │
-└──────────────┘    └──────────────┘    └──────────────┘    └──────────────┘
-```
-
-### Anchor Framing (Layer 3 — Presets)
-
-> **Fix #3:** Semantic interpretation lives in presets, NOT camera math.
-
-The `ANCHOR_FRAMING` config defines WHERE anchors should appear in frame:
-
-```typescript
-// packages/core/src/camera/presets.ts
-
-export interface AnchorFraming {
-  anchorPoint: { x: number; y: number };  // Where in frame (0-1 normalized)
-  paddingPx?: number;                      // Padding around anchor
-  targetFill?: number;                     // How much of frame to fill (0-1)
-}
-
-export const ANCHOR_FRAMING: Record<string, AnchorFraming> = {
-  lastMessage: {
-    anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third
-    paddingPx: 24,
-    targetFill: 0.55,
-  },
-  inputArea: {
-    anchorPoint: { x: 0.5, y: 0.9 },   // Very bottom
-    paddingPx: 16,
-    targetFill: 0.4,
-  },
-  device: {
-    anchorPoint: { x: 0.5, y: 0.5 },   // Center
-    paddingPx: 0,
-    targetFill: 1.0,
-  },
-};
-
-export function getAnchorFraming(anchor: string): AnchorFraming;
-```
-
-Camera Math (Layer 4) calls `getAnchorFraming("lastMessage")` — it does NOT interpret what "lastMessage" means.
-
----
-
-## DSL Usage
-
-### Basic Syntax
-
-```typescript
-const dsl = {
-  // ANCHOR_FOCUS - The semantic way
-  anchorFocus: (at, anchor, preset?, shake?) => ({
-    at,
-    kind: "CAMERA",
-    type: "ANCHOR_FOCUS",
-    anchor,           // "lastMessage" | "inputArea" | etc.
-    preset,           // "dramatic" | "subtle" | "snap" | etc.
-    duration: getPresetDuration(preset),
-    shake,            // Optional shake intensity
-    easing: getPresetEasing(preset),
-  }),
-};
-```
-
-### Complete Example
-
-```typescript
-// SemanticCameraShowcase.tsx
-
-const events = [
-  // === FOLLOWING MESSAGES ===
-  dsl.receive(60, "Bestie 💕", "omg hi!! 👋"),
-  dsl.anchorFocus(60, "lastMessage", "message"),   // Camera follows
-
-  dsl.send(100, "heyyy!!"),
-  dsl.anchorFocus(100, "lastMessage", "message"),  // Camera follows right
-
-  // === TYPING ANTICIPATION ===
-  dsl.typingStart(200, "Bestie 💕"),
-  dsl.anchorFocus(200, "inputArea", "subtle"),     // Focus on stable anchor
-
-  // === DRAMATIC REVEAL ===
-  dsl.receive(280, "Bestie 💕", "I got the job!!! 🎉🎉🎉"),
-  dsl.anchorFocus(280, "lastMessage", "dramatic", 5),  // DRAMATIC + shake!
-
-  // === SNAP TO REACTION ===
-  dsl.send(440, "❤️"),
-  dsl.anchorFocus(440, "lastMessage", "snap", 2),  // Quick snap
-
-  // === RESET ===
-  dsl.reset(560, 40),  // Pull back to neutral
-];
-```
-
-### Comparison
-
-| Technique | Code | Meaning |
-|-----------|------|---------|
-| Manual zoom | `zoom(60, 1.25, 20, { originY: 0.8 })` | "Zoom 25% toward bottom" |
-| Anchor focus | `anchorFocus(60, "lastMessage", "dramatic")` | "Dramatically focus on the last message" |
-
----
-
-## Files Created
-
-### Core Package (`@tokovo/core`)
-
-| File | Purpose |
-|------|---------|
-| `anchors.ts` | SemanticAnchorId, AnchorProvider, AnchorRegistry, fallbacks, hysteresis |
-| `behavior-registry.ts` | BehaviorRegistry, CameraIntent, AppBehavior |
-| `camera/presets.ts` | SHOT_PRESETS, getShotPreset() |
-| `camera/index.ts` | CameraController.applyAnchorFocus(), createActiveEffect(ANCHOR_FOCUS) |
-| `types.ts` | CameraAnchorFocusEffect, ANCHOR_FOCUS event |
-
-### Renderer Package (`@tokovo/renderer`)
-
-| File | Purpose |
-|------|---------|
-| `anchor-providers/whatsapp.ts` | WhatsApp anchor extraction |
-| `anchor-providers/phone.ts` | Phone/Call anchor extraction |
-| `anchor-providers/notification.ts` | Notification anchor extraction |
-| `anchor-providers/registry.ts` | registerBuiltInAnchorProviders() |
-| `engines/useCameraEngine.ts` | Anchor snapshot integration, stability tracking |
-
-### App Packages
-
-| File | Package | Purpose |
-|------|---------|---------|
-| `behaviors.ts` | apps-whatsapp | Event→Intent mappings, preset overrides |
-| `behaviors.ts` | apps-phone | Call event mappings |
-| `behaviors.ts` | apps-twitter | Social event mappings |
+### Available Anchors
+
+| Anchor | Description | Apps |
+|--------|-------------|------|
+| `lastMessage` | Most recent message | WhatsApp, Instagram DM |
+| `inputArea` | Text input field | All chat apps |
+| `typingIndicator` | Typing dots | WhatsApp |
+| `callPoster` | Contact poster | Phone |
+| `device` | Full device | All (fallback) |
+
+### Available Presets
+
+| Preset | Scale | Shake | Duration | Use Case |
+|--------|-------|-------|----------|----------|
+| `dramatic` | 1.3 | 4 | 25 frames | Big reveals, emotional moments |
+| `subtle` | 1.08 | 0 | 30 frames | Typing anticipation |
+| `snap` | 1.15 | 0 | 10 frames | Quick reactions |
+| `impact` | 1.4 | 8 | 15 frames | Maximum intensity |
+| `message` | 1.1 | 0 | 25 frames | Standard message follow |
+| `reset` | 1.0 | 0 | 20 frames | Return to neutral |
 
 ---
 
@@ -575,108 +524,83 @@ const events = [
 
 ### Adding a New Anchor
 
-1. **Register in AnchorProvider:**
+1. Update your app's anchor provider:
    ```typescript
-   // In your app's anchor provider
-   supportedAnchors: [...existing, "myNewAnchor"],
-   
-   getAnchors(world, layout, deviceId) {
-     anchors.myNewAnchor = computeRect(/*...*/);
-   }
+   // packages/renderer/src/anchor-providers/myapp.ts
+   anchors.myNewAnchor = computeRect(/*...*/);
    ```
 
-2. **Add default origin** (optional):
+2. Add framing config (optional):
    ```typescript
-   // In camera/index.ts applyAnchorFocus
-   const anchorOrigins = {
-     ...existing,
-     myNewAnchor: { x: 0.5, y: 0.6 },
-   };
+   // packages/core/src/camera/presets.ts
+   ANCHOR_FRAMING.myNewAnchor = { anchorPoint: { x: 0.5, y: 0.6 }, targetFill: 0.5 };
    ```
 
-3. **Use in DSL:**
+3. Use in DSL:
    ```typescript
    dsl.anchorFocus(frame, "myNewAnchor", "dramatic")
    ```
 
 ### Adding a New Preset
 
-1. **Add to SHOT_PRESETS:**
-   ```typescript
-   // In camera/presets.ts
-   const SHOT_PRESETS = {
-     ...existing,
-     myPreset: {
-       scale: 1.2,
-       durationFrames: 18,
-       easing: "ease-out",
-       shake: 2,
-     },
-   };
-   ```
+```typescript
+// packages/core/src/camera/presets.ts
+SHOT_PRESETS.myPreset = {
+  scale: 1.25,
+  durationFrames: 20,
+  easing: "ease-out",
+  shake: 3,
+};
 
-2. **Update getPresetScale (if needed):**
-   ```typescript
-   // In camera/index.ts CameraController
-   private getPresetScale(preset?: string): number {
-     switch (preset) {
-       ...existing,
-       case "myPreset": return 1.2;
-     }
-   }
-   ```
+// packages/renderer/src/engines/useCameraEngine.ts
+function getPresetScaleSimple(preset?: string): number {
+  case "myPreset": return 1.25;
+}
+```
 
-3. **Use in DSL:**
-   ```typescript
-   dsl.anchorFocus(frame, "lastMessage", "myPreset")
-   ```
+---
 
-### Adding a New App
+## File Reference
 
-1. **Create AnchorProvider:**
-   ```typescript
-   // packages/renderer/src/anchor-providers/myapp.ts
-   export const MyAppAnchorProvider: AnchorProvider = {
-     id: "app_myapp",
-     supportedAnchors: ["mainContent", "footer", "device"],
-     getAnchors(world, layout, deviceId) { /*...*/ }
-   };
-   ```
+### Core Package (`@tokovo/core`)
 
-2. **Register provider:**
-   ```typescript
-   // In anchor-providers/registry.ts
-   AnchorRegistry.register(MyAppAnchorProvider);
-   ```
+| File | Purpose |
+|------|---------|
+| `anchors.ts` | AnchorProvider, AnchorSnapshot, fallback chains, hysteresis |
+| `camera/presets.ts` | SHOT_PRESETS, ANCHOR_FRAMING, getShotPreset() |
+| `camera/index.ts` | CameraController, applyAnchorFocus() |
+| `types.ts` | CameraAnchorFocusEffect, ANCHOR_FOCUS event |
 
-3. **Create behavior file:**
-   ```typescript
-   // packages/apps-myapp/src/behaviors.ts
-   export const MyAppBehavior: AppBehavior = {
-     appId: "app_myapp",
-     eventMappings: {
-       CONTENT_UPDATED: { type: "FOCUS", anchor: "mainContent", preset: "subtle" },
-     },
-   };
-   ```
+### Renderer Package (`@tokovo/renderer`)
+
+| File | Purpose |
+|------|---------|
+| `anchor-providers/whatsapp.ts` | WhatsApp anchor extraction |
+| `anchor-providers/phone.ts` | Phone call anchor extraction |
+| `anchor-providers/notification.ts` | Notification anchor extraction |
+| `anchor-providers/registry.ts` | Provider registration |
+| `engines/useCameraEngine.ts` | **THE MISSING LINK** — anchor resolution (Section 3.5) |
 
 ---
 
 ## Summary
 
-The Semantic Anchor-Driven Camera System transforms Tokovo's cinematography from:
+**Before (The Old Way):**
+```typescript
+// Magic numbers everywhere
+dsl.zoom(60, 1.25, 20, { originX: 0.5, originY: 0.8 })  // What is 0.8???
+```
 
-**Before:** "Zoom 25% toward coordinates (0.5, 0.8) with ease-out easing"
+**After (The New Way):**
+```typescript
+// Semantic intent
+dsl.anchorFocus(60, "lastMessage", "dramatic")
+// → Resolves to actual message rect { x:50, y:650, w:280, h:45 }
+// → Computes origin: 44.2%, 72.1%
+// → Camera follows the ACTUAL message
+```
 
-**After:** "Dramatically focus on the last message"
-
-This makes the camera system:
-- ✅ **Semantic** — Speaks in UI language, not pixels
-- ✅ **Robust** — Fallback chains handle missing anchors
-- ✅ **Stable** — Hysteresis prevents jitter
-- ✅ **Extensible** — Apps register their own anchors
-- ✅ **Configurable** — Shot presets control cinematography
-- ✅ **Production-ready** — Handles edge cases gracefully
+**The camera now follows meaning, not magic numbers.**
 
 ---
 

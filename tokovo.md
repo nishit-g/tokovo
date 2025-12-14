@@ -65,6 +65,7 @@ apps/
       NotificationShowcaseVideo.tsx
       PhoneCallShowcase.tsx
       Root.tsx
+      SemanticCameraShowcase.tsx
       TwitterShowcaseVideo.tsx
       UltimateShowcase.tsx
       UltimateShowcaseVideo.tsx
@@ -148,6 +149,7 @@ packages/
         IncomingCallBanner.tsx
         index.ts
         PhoneDynamicIsland.tsx
+      behaviors.ts
       index.ts
       plugin.ts
       runtime.ts
@@ -187,6 +189,7 @@ packages/
         index.ts
         layout-config.ts
         twitter-theme.ts
+      behaviors.ts
       index.ts
       plugin.ts
       runtime.ts
@@ -215,6 +218,7 @@ packages/
         layout-config.ts
         polish.ts
         whatsapp-theme.ts
+      behaviors.ts
       index.ts
       notification-adapter.ts
       plugin.ts
@@ -260,6 +264,8 @@ packages/
         rules.ts
         signals.ts
         types.ts
+      anchors.ts
+      behavior-registry.ts
       constants.ts
       engine.ts
       eventUtils.ts
@@ -301,6 +307,7 @@ packages/
       multi-app-showcase.dsl.ts
       multi-pov-demo.dsl.ts
       production-demo.dsl.ts
+      semantic-camera-showcase.dsl.ts
       toxic-ex-drama.dsl.ts
       twitter-showcase.dsl.ts
       ultimate-showcase.dsl.ts
@@ -363,6 +370,12 @@ packages/
     tsconfig.tsbuildinfo
   renderer/
     src/
+      anchor-providers/
+        index.ts
+        notification.ts
+        phone.ts
+        registry.ts
+        whatsapp.ts
       engines/
         index.ts
         useAudioEngine.ts
@@ -542,6 +555,306 @@ Config.setOverwriteOutput(true);
 }
 ````
 
+## File: packages/apps-instagram/src/views/explore/ExploreView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+const SearchBar = () => (
+    <div style={{
+        height: 80,
+        backgroundColor: "#262626",
+        borderRadius: 20,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 30px",
+        margin: "20px 30px",
+        gap: 20
+    }}>
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <div style={{ fontSize: 32, color: "#888" }}>Search</div>
+    </div>
+);
+
+export const ExploreView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Generate some mock explore content
+    const exploreItems = Array.from({ length: 15 }).map((_, i) => ({
+        id: `exp_${i}`,
+        image: `https://picsum.photos/seed/exp${i}/500/500`,
+        isLarge: i % 10 === 0 // Every 10th item is large (2x2)
+    }));
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <div style={{ marginTop: 60 }}>
+                <SearchBar />
+            </div>
+
+            <div style={{
+                flex: 1,
+                overflow: "hidden",
+                display: "flex",
+                flexWrap: "wrap",
+                gap: 3,
+                alignContent: "flex-start"
+            }}>
+                {exploreItems.map((item, i) => (
+                    <div key={item.id} style={{
+                        width: item.isLarge ? "calc(66.66% - 2px)" : "calc(33.33% - 2px)",
+                        aspectRatio: item.isLarge ? "1/1" : "1/1",
+                        backgroundColor: "#222",
+                        backgroundImage: `url(${item.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        position: "relative"
+                    }}>
+                        {i % 5 === 0 && (
+                            <div style={{ position: "absolute", top: 10, right: 10 }}>
+                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
+                                    <path d="M2 2l20 20" stroke="none" />
+                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="none" />
+                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white" />
+                                </svg>
+                            </div>
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/notifications/NotificationsView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+const NotificationItem: React.FC<{ type: string; username: string; time: string; text?: string; avatar: string }> = ({ type, username, time, text, avatar }) => (
+    <div style={{ display: "flex", alignItems: "center", padding: "20px 30px", gap: 20 }}>
+        <div style={{
+            width: 90,
+            height: 90,
+            borderRadius: "50%",
+            backgroundImage: `url(${avatar})`,
+            backgroundSize: "cover",
+            backgroundColor: "#333"
+        }} />
+        <div style={{ flex: 1, fontSize: 30, lineHeight: "1.3" }}>
+            <span style={{ fontWeight: "bold" }}>{username}</span>
+            {" "}
+            {type === "like" && "liked your photo."}
+            {type === "follow" && "started following you."}
+            {type === "comment" && `commented: ${text}`}
+            {" "}
+            <span style={{ color: "#888" }}>{time}</span>
+        </div>
+        {type === "follow" ? (
+            <div style={{
+                backgroundColor: "#0095f6",
+                color: "white",
+                padding: "10px 30px",
+                borderRadius: 10,
+                fontSize: 28,
+                fontWeight: "600"
+            }}>
+                Follow
+            </div>
+        ) : (
+            <div style={{
+                width: 90,
+                height: 90,
+                backgroundColor: "#333",
+                backgroundImage: `url(https://picsum.photos/seed/post1/100/100)`, // Mock post image
+                backgroundSize: "cover"
+            }} />
+        )}
+    </div>
+);
+
+export const NotificationsView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Mock notifications
+    const notifications = [
+        { id: "n1", type: "like", username: "alice_wonder", time: "2m", avatar: "https://i.pravatar.cc/150?u=alice" },
+        { id: "n2", type: "follow", username: "bob_builder", time: "15m", avatar: "https://i.pravatar.cc/150?u=bob" },
+        { id: "n3", type: "comment", username: "charlie_chaplin", time: "1h", text: "Great shot! 🔥", avatar: "https://i.pravatar.cc/150?u=charlie" },
+        { id: "n4", type: "like", username: "dave_diver", time: "3h", avatar: "https://i.pravatar.cc/150?u=dave" },
+        { id: "n5", type: "follow", username: "eve_hacker", time: "5h", avatar: "https://i.pravatar.cc/150?u=eve" },
+    ];
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            <div style={{
+                height: 120,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 30px",
+                marginTop: 60,
+                fontSize: 42,
+                fontWeight: "bold",
+                borderBottom: "1px solid #222"
+            }}>
+                Notifications
+            </div>
+
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                <div style={{ padding: "20px 0" }}>
+                    <div style={{ padding: "0 30px 20px", fontSize: 32, fontWeight: "bold" }}>New</div>
+                    {notifications.slice(0, 2).map(n => (
+                        <NotificationItem key={n.id} {...n} />
+                    ))}
+                    <div style={{ padding: "40px 30px 20px", fontSize: 32, fontWeight: "bold" }}>Today</div>
+                    {notifications.slice(2).map(n => (
+                        <NotificationItem key={n.id} {...n} />
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/post/PostView.tsx
+````typescript
+import React from "react";
+import { InstagramState } from "../../types";
+
+// Reuse icons from FeedView or create shared icon library
+const BackIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M15 18l-6-6 6-6" />
+    </svg>
+);
+
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "#ed4956" : "none"} stroke={filled ? "#ed4956" : "white"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const CommentIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
+    // Mock single post data
+    const post = {
+        username: "instagram_user",
+        avatar: "https://i.pravatar.cc/150?u=instagram_user",
+        image: "https://picsum.photos/seed/insta1/1080/1080",
+        caption: "Living my best life! 🌟 #blessed",
+        likes: 1234,
+        comments: 42,
+        liked: false,
+        saved: false
+    };
+
+    return (
+        <div style={{
+            backgroundColor: "black",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Header */}
+            <div style={{
+                height: 120,
+                display: "flex",
+                alignItems: "center",
+                padding: "0 30px",
+                marginTop: 60,
+                borderBottom: "1px solid #222"
+            }}>
+                <BackIcon />
+                <div style={{ marginLeft: 30, fontSize: 36, fontWeight: "bold" }}>Posts</div>
+            </div>
+
+            {/* Post Content (Similar to Feed Item) */}
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                <div style={{ display: "flex", alignItems: "center", padding: "20px 30px" }}>
+                    <div style={{
+                        width: 70,
+                        height: 70,
+                        borderRadius: "50%",
+                        backgroundImage: `url(${post.avatar})`,
+                        backgroundSize: "cover",
+                        backgroundColor: "#333",
+                        marginRight: 20
+                    }} />
+                    <div style={{ flex: 1, color: "white", fontSize: 32, fontWeight: "600" }}>{post.username}</div>
+                    <div style={{ color: "white", fontSize: 40 }}>...</div>
+                </div>
+
+                <div style={{
+                    width: "100%",
+                    aspectRatio: "1/1",
+                    backgroundColor: "#222",
+                    backgroundImage: `url(${post.image})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center"
+                }} />
+
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 30px" }}>
+                    <div style={{ display: "flex", gap: 40 }}>
+                        <HeartIcon filled={post.liked} />
+                        <CommentIcon />
+                        <ShareIcon />
+                    </div>
+                    <BookmarkIcon filled={post.saved} />
+                </div>
+
+                <div style={{ padding: "0 30px" }}>
+                    <div style={{ color: "white", fontSize: 32, fontWeight: "600", marginBottom: 10 }}>
+                        {post.likes.toLocaleString()} likes
+                    </div>
+                    <div style={{ color: "white", fontSize: 32 }}>
+                        <span style={{ fontWeight: "600", marginRight: 10 }}>{post.username}</span>
+                        {post.caption}
+                    </div>
+                    <div style={{ color: "#888", fontSize: 28, marginTop: 10 }}>
+                        View all {post.comments} comments
+                    </div>
+                    <div style={{ color: "#888", fontSize: 24, marginTop: 10, textTransform: "uppercase" }}>
+                        2 hours ago
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/apps-instagram/src/runtime.ts
 ````typescript
 import { WorldState, TimelineEvent } from "@tokovo/core";
@@ -682,6 +995,67 @@ export const initialInstagramState: InstagramState = {
         items: []
     }
 };
+````
+
+## File: packages/apps-instagram/src/ui.tsx
+````typescript
+import React from "react";
+import { WorldState, LayoutState } from "@tokovo/core";
+import { InstagramState } from "./types";
+import { InstagramChatView } from "./views/dm/InstagramChatView";
+import { FeedView } from "./views/feed/FeedView";
+import { StoriesView } from "./views/stories/StoriesView";
+import { ProfileView } from "./views/profile/ProfileView";
+import { ExploreView } from "./views/explore/ExploreView";
+import { NotificationsView } from "./views/notifications/NotificationsView";
+import { ReelsView } from "./views/reels/ReelsView";
+import { PostView } from "./views/post/PostView";
+import { BottomNav } from "./views/BottomNav";
+
+export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
+    const appState = world.appState?.["app_instagram"] as InstagramState;
+    const currentView = appState?.currentView || "dm";
+
+    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
+
+    // Views that show the bottom navigation
+    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
+
+    const renderView = () => {
+        switch (currentView) {
+            case "dm":
+                return <InstagramChatView world={world} t={t} layout={layout} />;
+            case "feed":
+                return <FeedView state={appState} layout={layout} />;
+            case "stories":
+                return <StoriesView state={appState} t={t} layout={layout} />;
+            case "profile":
+                return <ProfileView state={appState} />;
+            case "post":
+                return <PostView state={appState} />;
+            case "explore":
+                return <ExploreView state={appState} />;
+            case "notifications":
+                return <NotificationsView state={appState} />;
+            case "reels":
+                return <ReelsView state={appState} />;
+            default:
+                return <InstagramChatView world={world} t={t} layout={layout} />;
+        }
+    };
+
+    return (
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                {renderView()}
+            </div>
+            {showBottomNav && <BottomNav currentView={currentView} />}
+        </div>
+    );
+};
+
+// Re-export specific views if needed externally, but InstagramApp is the main entry
+export { InstagramChatView };
 ````
 
 ## File: packages/apps-instagram/package.json
@@ -962,6 +1336,211 @@ Device profiles and reducers.
 }
 ````
 
+## File: packages/renderer/src/layout/strategies/feed.ts
+````typescript
+import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
+
+export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
+    const { world, t, activeAppId, config, viewportHeight } = ctx;
+    const feedConfig = config!.feed!;
+
+    // Get feed data from app state
+    // Heuristic: look for "feed" property in the active app state
+    const appState = world.appState?.[activeAppId];
+    const posts = appState?.feed?.posts || [];
+
+    const itemLayouts: Record<string, FeedItemLayout> = {};
+    let currentY = feedConfig.topPadding;
+
+    // 1. Layout posts
+    for (const post of posts) {
+        // Calculate height
+        // Heuristic: base height + caption lines
+        const captionLength = post.caption?.length || 0;
+        const lines = Math.ceil(Math.max(1, captionLength) / feedConfig.charsPerLine);
+        const height = feedConfig.baseCardHeight + (lines * feedConfig.lineHeight);
+
+        itemLayouts[post.id] = {
+            id: post.id,
+            y: currentY,
+            height,
+            opacity: 1,
+            translateY: 0,
+            scale: 1
+        };
+
+        currentY += height + feedConfig.verticalGap;
+    }
+
+    const contentHeight = currentY + feedConfig.bottomPadding;
+
+    // 2. Scroll Position
+    // Default: start at top (0)
+    // If autoScroll is enabled, scroll over time
+    let scrollY = 0;
+    if (feedConfig.autoScroll) {
+        // Simple auto-scroll: 50px per second (assuming 30fps)
+        const speed = 50 / 30;
+        scrollY = t * speed;
+    } else if (appState?.feed?.scrollPosition !== undefined) {
+        // Use scroll position from app state if available (manual control)
+        scrollY = appState.feed.scrollPosition;
+    }
+
+    // Clamp scroll
+    const maxScroll = Math.max(0, contentHeight - viewportHeight);
+    scrollY = Math.min(scrollY, maxScroll);
+
+    return {
+        kind: "FEED",
+        scrollY,
+        contentHeight,
+        isAtBottom: Math.abs(scrollY - maxScroll) < 10,
+        itemLayouts,
+        meta: {
+            // TODO: Calculate visible items
+        }
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/story.ts
+````typescript
+import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
+
+export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
+    const { world, t, activeAppId, config } = ctx;
+    const storyConfig = config!.story!;
+
+    // Get stories from app state
+    const appState = world.appState?.[activeAppId];
+    // Find active user's stories
+    // Heuristic: activeStoryId format "username:storyId"
+    // Or just use the first user in the stories list for now if no ID
+    const activeStoryId = ctx.activeStoryId || appState?.stories?.activeStoryId;
+
+    let stories: any[] = [];
+    let activeUserIndex = 0;
+
+    if (activeStoryId) {
+        const username = activeStoryId.split(':')[0];
+        const user = appState?.stories?.users.find((u: any) => u.username === username);
+        if (user) {
+            stories = user.stories;
+        }
+    } else if (appState?.stories?.users?.length > 0) {
+        // Fallback to first user
+        stories = appState.stories.users[0].stories;
+    }
+
+    const storyCount = stories.length;
+    if (storyCount === 0) {
+        return {
+            kind: "STORY",
+            activeStoryIndex: 0,
+            storyCount: 0,
+            storyProgress: 0,
+            storyLayouts: []
+        };
+    }
+
+    // Calculate active index based on time
+    // We assume t starts at 0 when the story view opens. 
+    // In a real app, we might need a "startT" in the context or meta.
+    // For now, let's assume global t maps to story progress.
+
+    const totalDuration = storyCount * storyConfig.defaultStoryDuration;
+    // Loop or clamp? Let's clamp.
+    const effectiveT = Math.max(0, Math.min(t, totalDuration - 1));
+
+    const activeStoryIndex = Math.floor(effectiveT / storyConfig.defaultStoryDuration);
+    const timeInStory = effectiveT % storyConfig.defaultStoryDuration;
+    const storyProgress = timeInStory / storyConfig.defaultStoryDuration;
+
+    const storyLayouts: StoryItemLayout[] = stories.map((story: any, index: number) => {
+        let opacity = 0;
+        let scale = 1;
+        let translateX = 0;
+
+        if (index === activeStoryIndex) {
+            opacity = 1;
+            // Subtle zoom effect
+            scale = 1 + (storyProgress * 0.05);
+        } else if (index < activeStoryIndex) {
+            // Previous story
+            opacity = 0;
+            translateX = -100; // Move left
+        } else {
+            // Next story
+            opacity = 0;
+            translateX = 100; // Move right
+        }
+
+        return {
+            id: story.id,
+            index,
+            translateX,
+            translateY: 0,
+            scale,
+            opacity
+        };
+    });
+
+    return {
+        kind: "STORY",
+        activeStoryIndex,
+        storyCount,
+        storyProgress,
+        storyLayouts
+    };
+}
+````
+
+## File: packages/renderer/src/layout/strategies/transition.ts
+````typescript
+import { LayoutContext, TransitionLayoutState } from "../types";
+
+export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutState {
+    const { world, t, config } = ctx;
+    const transitionConfig = config!.transition!;
+
+    // Basic transition logic based on camera state
+    // If camera.type is "TRANSITION", we use its params
+    // Otherwise we use defaults
+
+    let deviceScale = transitionConfig.defaultScale;
+    let deviceTranslateX = 0;
+    let deviceTranslateY = 0;
+    let deviceRotation = 0;
+    let overlayOpacity = 0;
+
+    if (world.camera?.type === "TRANSITION") {
+        // TODO: Implement complex transitions based on camera params
+        // For now, just a placeholder
+    }
+
+    return {
+        kind: "TRANSITION",
+        deviceTranslateX,
+        deviceTranslateY,
+        deviceScale,
+        deviceRotation,
+        overlayOpacity,
+        meta: {}
+    };
+}
+````
+
+## File: packages/renderer/src/layout/types.ts
+````typescript
+export * from "@tokovo/core";
+````
+
+## File: packages/renderer/src/types.ts
+````typescript
+export * from "@tokovo/core";
+````
+
 ## File: packages/renderer/src/VisualDebugger.tsx
 ````typescript
 import React from "react";
@@ -994,6 +1573,441 @@ export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ wor
         </div>
     );
 };
+````
+
+## File: packages/renderer/README.md
+````markdown
+# Tokovo Layout System — Unified Spec (All UI Types)
+
+## 0. Concept
+
+The **Tokovo Layout System** is the layer that turns:
+
+* `WorldState` (devices, conversations, notifications, camera, etc.)
+* episode timeline (via `replay(...)`)
+* current frame/time `t`
+* active device + app + view type
+
+into **view-specific layouts** for:
+
+* Chat views
+* Feed views
+* Story views
+* Lockscreen views
+* Transitional/cinematic scenes
+
+Each layout is:
+
+* deterministic
+* frame-driven
+* Remotion-safe (no DOM measurement / no CSS transitions)
+
+---
+
+## 1. Core Types
+
+### 1.1 ViewKind
+
+```ts
+export type ViewKind =
+  | "CHAT"
+  | "FEED"
+  | "STORY"
+  | "LOCKSCREEN"
+  | "TRANSITION";
+```
+
+### 1.2 LayoutContext (global)
+
+```ts
+export interface LayoutContext {
+  world: WorldState;
+  t: number; // current frame
+  activeDeviceId: string;
+  activeAppId: string;
+  viewKind: ViewKind;
+
+  // View-specific selectors
+  activeConversationId?: string;   // CHAT
+  activeFeedId?: string;           // FEED (e.g. timeline id)
+  activeStoryId?: string;          // STORY (e.g. story reel id)
+
+  viewportWidth: number;
+  viewportHeight: number;
+
+  // Optional configuration overrides
+  config?: Partial<LayoutConfig>;
+}
+```
+
+> **Note:** different view kinds will care about different selectors (e.g., `activeConversationId` only matters for `"CHAT"`).
+
+---
+
+## 2. LayoutConfig (global + per-view strategy)
+
+```ts
+export interface LayoutConfig {
+  // Global-ish things
+  cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
+
+  // Chat-specific
+  chat: ChatLayoutConfig;
+
+  // Feed-specific
+  feed: FeedLayoutConfig;
+
+  // Story-specific
+  story: StoryLayoutConfig;
+
+  // Lock screen
+  lockscreen: LockscreenLayoutConfig;
+
+  // Transitions
+  transition: TransitionLayoutConfig;
+}
+```
+
+You’ll define **per-view configs**:
+
+### 2.1 ChatLayoutConfig (what we already designed)
+
+```ts
+export interface ChatLayoutConfig {
+  bubbleWidth: number;
+  baseBubbleHeight: number;
+  charsPerLine: number;
+  lineHeight: number;
+  verticalGap: number;
+  topPadding: number;
+  bottomPadding: number;
+
+  messageAppearDuration: number;
+  messageAppearOffset: number;
+  scrollEasingDuration: number;
+  maxScrollCatchupSpeed: number;
+
+  lockToBottom: boolean;
+}
+```
+
+### 2.2 FeedLayoutConfig (for Instagram / X / TikTok feeds)
+
+```ts
+export interface FeedLayoutConfig {
+  cardWidth: number;
+  baseCardHeight: number;
+  verticalGap: number;
+  topPadding: number;
+  bottomPadding: number;
+
+  // For variable-height posts, same trick as chat:
+  charsPerLine: number;
+  lineHeight: number;
+
+  scrollEasingDuration: number;
+  maxScrollCatchupSpeed: number;
+
+  startAtTop: boolean;      // typical feed behaviour
+  autoScroll?: boolean;     // for cinematic auto-scroll episodes
+}
+```
+
+### 2.3 StoryLayoutConfig (Instagram Stories / Snap)
+
+```ts
+export interface StoryLayoutConfig {
+  // Each story = full-screen page
+  defaultStoryDuration: number; // in frames
+  progressBarHeight: number;
+  storyGap: number;             // for 3D-ish page stack if needed
+
+  // Animation
+  storyTransitionDuration: number; // frames between stories
+}
+```
+
+### 2.4 LockscreenLayoutConfig
+
+```ts
+export interface LockscreenLayoutConfig {
+  topPadding: number;
+  notificationGap: number;
+  notificationWidth: number;
+  baseNotificationHeight: number;
+  charsPerLine: number;
+  lineHeight: number;
+
+  stackMaxNotifications: number; // older ones collapsed/hidden
+  appearDuration: number;
+}
+```
+
+### 2.5 TransitionLayoutConfig
+
+```ts
+export interface TransitionLayoutConfig {
+  // Device position in composition
+  defaultScale: number;
+  zoomedScale: number;
+  panDuration: number;
+  zoomDuration: number;
+
+  // Optionally, per-transition presets (open app, unlock, etc.)
+}
+```
+
+---
+
+## 3. LayoutState — Tagged Union (all view kinds)
+
+Single function, **multi-view outputs**:
+
+```ts
+export type LayoutState =
+  | ChatLayoutState
+  | FeedLayoutState
+  | StoryLayoutState
+  | LockscreenLayoutState
+  | TransitionLayoutState;
+```
+
+Each state has a `kind` field:
+
+```ts
+export interface BaseLayoutState {
+  kind: ViewKind;
+}
+```
+
+---
+
+### 3.1 ChatLayoutState
+
+```ts
+export interface ChatLayoutState extends BaseLayoutState {
+  kind: "CHAT";
+  scrollY: number;
+  contentHeight: number;
+  isAtBottom: boolean;
+  messageLayouts: Record<string, ChatMessageLayout>;
+  typingLayout?: TypingLayout | null;
+  meta: ChatLayoutMeta;
+}
+```
+
+Where `ChatMessageLayout`, `TypingLayout`, `ChatLayoutMeta` are what we already specced (id, y, height, opacity, translateY, etc.).
+
+---
+
+### 3.2 FeedLayoutState
+
+```ts
+export interface FeedLayoutState extends BaseLayoutState {
+  kind: "FEED";
+  scrollY: number;
+  contentHeight: number;
+  isAtBottom: boolean;
+  itemLayouts: Record<string, FeedItemLayout>;
+  meta: FeedLayoutMeta;
+}
+```
+
+```ts
+export interface FeedItemLayout {
+  id: string;
+  y: number;
+  height: number;
+  opacity: number;
+  translateY: number;
+  scale: number;   // for subtle parallax / entry
+}
+```
+
+`FeedLayoutMeta` can include:
+
+```ts
+export interface FeedLayoutMeta {
+  firstVisibleItemId?: string;
+  lastVisibleItemId?: string;
+  focusedItemId?: string; // for cinematic highlight
+}
+```
+
+The **geometry model** is similar to chat: stack cards with a deterministic height function (based on text length, optional media flags, etc.).
+
+---
+
+### 3.3 StoryLayoutState
+
+```ts
+export interface StoryLayoutState extends BaseLayoutState {
+  kind: "STORY";
+  activeStoryIndex: number;
+  storyCount: number;
+  storyProgress: number; // 0..1 within current story
+  storyLayouts: StoryItemLayout[];
+}
+```
+
+```ts
+export interface StoryItemLayout {
+  id: string;
+  index: number;
+  // For 3D card stack / page-motion effects:
+  translateX: number;
+  translateY: number;
+  scale: number;
+  opacity: number;
+}
+```
+
+Behaviour:
+
+* Given timeline of stories (either from episode or world state),
+* Given `t`, compute which story index is active and the progress inside that story:
+
+  ```ts
+  const storyIndex = floor((t - startT) / storyDuration);
+  const localProgress = ((t - startT) % storyDuration) / storyDuration;
+  ```
+* Use `storyTransitionDuration` to add slide/fade between storyIndex and storyIndex+1.
+
+---
+
+### 3.4 LockscreenLayoutState
+
+```ts
+export interface LockscreenLayoutState extends BaseLayoutState {
+  kind: "LOCKSCREEN";
+  notificationLayouts: NotificationLayout[];
+  meta: LockscreenLayoutMeta;
+}
+```
+
+```ts
+export interface NotificationLayout {
+  id: string;
+  y: number;
+  height: number;
+  opacity: number;
+  translateY: number;
+}
+```
+
+The inputs come from `device.notifications` in `WorldState`. 
+
+Geometry is again deterministic: approximate height from title/body length and stack them with gap & padding. Animation: when a notification appears at `event.at`, fade/slide it in similar to messages.
+
+---
+
+### 3.5 TransitionLayoutState
+
+```ts
+export interface TransitionLayoutState extends BaseLayoutState {
+  kind: "TRANSITION";
+  // These values are for the outer DeviceFrame / TokovoRenderer
+  deviceTranslateX: number;
+  deviceTranslateY: number;
+  deviceScale: number;
+  deviceRotation: number;
+  overlayOpacity: number;
+  meta: TransitionLayoutMeta;
+}
+```
+
+This layer treats the **device as an actor** in the composition:
+
+* Unlock animation: fade in, scale up from center.
+* Open app: slight bump-in, tilt, zoom.
+* Cutscenes: pan device left/right, etc.
+
+The inputs can be:
+
+* Derived from `world.camera` (if you extend it with more camera modes) 
+* Derived from timeline CAMERA events (already defined in your `TimelineEvent` union). 
+
+---
+
+## 4. The Core Function
+
+Single entry point:
+
+```ts
+export function computeLayout(ctx: LayoutContext): LayoutState {
+  switch (ctx.viewKind) {
+    case "CHAT":
+      return computeChatLayout(ctx);
+    case "FEED":
+      return computeFeedLayout(ctx);
+    case "STORY":
+      return computeStoryLayout(ctx);
+    case "LOCKSCREEN":
+      return computeLockscreenLayout(ctx);
+    case "TRANSITION":
+      return computeTransitionLayout(ctx);
+  }
+}
+```
+
+Each `computeXLayout` is:
+
+* pure
+* deterministic
+* uses only `world`, `t`, `config` and known IDs.
+
+---
+
+## 5. Determinism & Remotion Rules (still apply for ALL)
+
+For **every** viewKind:
+
+* ❌ No DOM measurement / `getBoundingClientRect()`
+
+* ❌ No CSS transitions / `transition: ...`
+
+* ❌ No `setTimeout`, `requestAnimationFrame` inside animation logic
+
+* ❌ No randomness (or if used, seed-based deterministic)
+
+* ✅ All animation values: pure math from `(t, world, config)`
+
+* ✅ `useCurrentFrame()` and `useVideoConfig()` only used to get `t` and fps
+
+* ✅ Styling is done in React via inline styles using the LayoutState
+
+This is consistent with Remotion’s SSR + frame-based rendering model and your current `TokovoRenderer` usage. 
+
+---
+
+## 6. Integration in TokovoRenderer
+
+Your `TokovoRenderer` can now:
+
+1. **Decide which viewKind** to use:
+
+   * If device is locked → `LOCKSCREEN`
+   * If app is WhatsApp/IG DM → `CHAT`
+   * If app is Instagram feed → `FEED`
+   * If app is stories → `STORY`
+   * If you insert explicit camera transition scenes → `TRANSITION`
+
+2. Call:
+
+```ts
+const layout = computeLayout({
+  world,
+  t,
+  activeDeviceId,
+  activeAppId,
+  viewKind,
+  activeConversationId,
+  viewportWidth: deviceWidth,
+  viewportHeight: deviceHeight,
+});
+```
+
+3. Pass `layout` down to the specific App View, which will branch based on `layout.kind` and render accordingly.
 ````
 
 ## File: packages/renderer/tsconfig.json
@@ -2264,6 +3278,368 @@ export const phoneCallShowcaseConfig = {
     fps: 30,
     width: 1920,
     height: 1080,
+};
+````
+
+## File: apps/video-runner/src/SemanticCameraShowcase.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+// Register anchor providers for semantic camera system
+registerBuiltInAnchorProviders();
+
+/**
+ * Semantic Camera System Showcase
+ * 
+ * Demonstrates the NEW Semantic Anchor-Driven Camera System:
+ * 
+ * Unlike the old system with hardcoded coordinates (originY: 0.8),
+ * this uses SEMANTIC ANCHORS:
+ * 
+ *   dsl.anchorFocus(at, "lastMessage", "dramatic")
+ *   dsl.anchorFocus(at, "inputArea", "subtle")
+ *   dsl.anchorFocus(at, "typingIndicator", "snap")
+ * 
+ * The camera FOLLOWS the meaning, not the pixels.
+ * DirectorLite + Anchor System resolves anchors → rects at runtime.
+ */
+
+// =============================================================================
+// DSL HELPERS - Now with SEMANTIC ANCHORS
+// =============================================================================
+
+const dsl = {
+    // =========================================================================
+    // MESSAGES
+    // =========================================================================
+    receive: (at: number, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_bestie",
+        from,
+        text,
+    } as any),
+
+    send: (at: number, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_bestie",
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: "dm_bestie",
+        from,
+    } as any),
+
+    typingEnd: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: "dm_bestie",
+        from,
+    } as any),
+
+    // =========================================================================
+    // SEMANTIC ANCHOR CAMERA - The NEW way! 🎬
+    // =========================================================================
+
+    /**
+     * ANCHOR FOCUS - Focus on a semantic anchor
+     * 
+     * @param at - Frame number
+     * @param anchor - Semantic anchor: "lastMessage" | "inputArea" | "typingIndicator" | "device"
+     * @param preset - Shot preset: "dramatic" | "subtle" | "snap" | "impact" | "message" | "reset"
+     * @param shake - Optional shake intensity
+     */
+    anchorFocus: (at: number, anchor: string, preset?: string, shake?: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        anchor,
+        preset,
+        duration: getPresetDuration(preset),
+        shake,
+        easing: getPresetEasing(preset),
+    } as any),
+
+    // =========================================================================
+    // LEGACY CAMERA (for comparison / fallback)
+    // =========================================================================
+    zoom: (at: number, scale: number, durationFrames: number, opts: { originX?: number; originY?: number; easing?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        scale,
+        duration: durationFrames,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    shake: (at: number, intensity: number, durationFrames: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        intensity,
+        frequency: 18,
+        decay: 0.6,
+        duration: durationFrames,
+    } as any),
+
+    reset: (at: number, durationFrames: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        duration: durationFrames,
+        easing: "ease-out",
+    } as any),
+};
+
+// Preset duration defaults
+function getPresetDuration(preset?: string): number {
+    switch (preset) {
+        case "dramatic": return 25;
+        case "subtle": return 30;
+        case "snap": return 10;
+        case "impact": return 15;
+        case "message": return 25;
+        case "reset": return 20;
+        default: return 25;
+    }
+}
+
+// Preset easing defaults
+function getPresetEasing(preset?: string): string {
+    switch (preset) {
+        case "dramatic": return "ease-out";
+        case "subtle": return "cinematic";
+        case "snap": return "ease-out";
+        case "impact": return "ease-out";
+        default: return "ease-out";
+    }
+}
+
+// =============================================================================
+// EPISODE DEFINITION - CINEMATIC ANCHOR-DRIVEN CAMERA
+// =============================================================================
+
+function createSemanticCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_bestie: {
+                id: "dm_bestie",
+                type: "dm" as const,
+                name: "Bestie 💕",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bestie",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // =========================================================================
+    // TIMELINE - CINEMATIC ANCHOR-DRIVEN CAMERA
+    // 
+    // Notice: NO hardcoded originY values!
+    // Camera targets SEMANTIC ANCHORS that resolve at runtime.
+    // =========================================================================
+    const events: TimelineEvent[] = [
+        // =====================================================================
+        // SCENE 1: FOLLOWING MESSAGES (2s - 5s)
+        // Each message → camera follows → focus on "lastMessage" anchor
+        // =====================================================================
+        dsl.receive(60, "Bestie 💕", "omg hi!! 👋"),
+        dsl.anchorFocus(60, "lastMessage", "message"),  // 🎬 Follow the message!
+
+        dsl.send(100, "heyyy!! what's up?"),
+        dsl.anchorFocus(100, "lastMessage", "message"), // 🎬 Camera follows right
+
+        dsl.receive(140, "Bestie 💕", "you will NOT believe what just happened 😱"),
+        dsl.anchorFocus(140, "lastMessage", "subtle"),  // 🎬 Subtle anticipation
+
+        // =====================================================================
+        // SCENE 2: TYPING ANTICIPATION (5s - 9s)
+        // Typing starts → camera focuses on "inputArea" (stable anchor!)
+        // NOT the volatile typingIndicator
+        // =====================================================================
+        dsl.reset(180, 20),
+
+        dsl.typingStart(200, "Bestie 💕"),
+        dsl.anchorFocus(200, "inputArea", "subtle"),    // 🎬 Focus on stable input area
+
+        dsl.typingEnd(270, "Bestie 💕"),
+
+        // =====================================================================
+        // SCENE 3: DRAMATIC REVEAL (9s - 13s)
+        // Big news → DRAMATIC zoom with shake → "lastMessage" anchor
+        // =====================================================================
+        dsl.receive(280, "Bestie 💕", "I just got the job!!! 🎉🎉🎉"),
+        dsl.anchorFocus(280, "lastMessage", "dramatic", 5), // 🎬 DRAMATIC + shake!
+
+        dsl.send(340, "OMG CONGRATS!!! 🥳🎊"),
+        dsl.anchorFocus(340, "lastMessage", "message"),
+
+        // =====================================================================
+        // SCENE 4: SNAP TO REACTION (13s - 16s)
+        // Heart emoji → quick SNAP → focus on "lastMessage"
+        // =====================================================================
+        dsl.receive(400, "Bestie 💕", "I start next Monday!! So nervous 😅"),
+        dsl.anchorFocus(400, "lastMessage", "subtle"),
+
+        dsl.send(440, "❤️"),
+        dsl.anchorFocus(440, "lastMessage", "snap", 2),  // 🎬 SNAP with micro-shake
+
+        // =====================================================================
+        // SCENE 5: RESET (16s - 22s)
+        // Conversation wraps up → camera pulls back to neutral
+        // =====================================================================
+        dsl.receive(500, "Bestie 💕", "lunch tomorrow to celebrate? 🍣"),
+        dsl.anchorFocus(500, "lastMessage", "message"),
+
+        dsl.send(560, "yesss!! can't wait! 💕"),
+        dsl.reset(560, 40), // 🎬 Pull back to neutral
+
+        dsl.receive(620, "Bestie 💕", "love youuu 💛"),
+        dsl.anchorFocus(620, "lastMessage", "subtle"),
+        dsl.reset(650, 30),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const SemanticCameraShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    const episode = useMemo(() => createSemanticCameraEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            {/* Demo label */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                left: 40,
+                color: "#ffffff80",
+                fontSize: 24,
+                fontFamily: "system-ui, sans-serif",
+                fontWeight: 500,
+                zIndex: 100,
+            }}>
+                Semantic Anchor Camera Demo 🎬
+            </div>
+
+            {/* Scene indicator */}
+            <div style={{
+                position: "absolute",
+                top: 80,
+                left: 40,
+                color: "#00ff88",
+                fontSize: 18,
+                fontFamily: "monospace",
+                zIndex: 100,
+            }}>
+                {t < 60 ? "Establishing..." :
+                    t < 180 ? "🎬 ANCHOR: lastMessage → following" :
+                        t < 280 ? "🎬 ANCHOR: inputArea → anticipation" :
+                            t < 400 ? "🎬 ANCHOR: lastMessage → DRAMATIC!" :
+                                t < 500 ? "🎬 ANCHOR: lastMessage → SNAP!" :
+                                    "🎬 ANCHOR: reset → pullback"}
+            </div>
+
+            {/* Anchor being targeted */}
+            <div style={{
+                position: "absolute",
+                top: 120,
+                left: 40,
+                color: "#ffaa00",
+                fontSize: 14,
+                fontFamily: "monospace",
+                zIndex: 100,
+            }}>
+                {t < 60 ? "" :
+                    t < 180 ? 'anchorFocus("lastMessage", "message")' :
+                        t < 280 ? 'anchorFocus("inputArea", "subtle")' :
+                            t < 400 ? 'anchorFocus("lastMessage", "dramatic", shake=5)' :
+                                t < 500 ? 'anchorFocus("lastMessage", "snap", shake=2)' :
+                                    'reset()'}
+            </div>
+
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
 };
 ````
 
@@ -5089,299 +6465,310 @@ export const adapterRegistry = new AdapterRegistry();
 {"root":["./src/adapter.ts","./src/index.ts","./src/registry.ts","./src/whatsapp/index.ts"],"version":"5.9.3"}
 ````
 
-## File: packages/apps-instagram/src/views/explore/ExploreView.tsx
+## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
 ````typescript
 import React from "react";
 import { InstagramState } from "../../types";
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
-const SearchBar = () => (
-    <div style={{
-        height: 80,
-        backgroundColor: "#262626",
-        borderRadius: 20,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 30px",
-        margin: "20px 30px",
-        gap: 20
-    }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <div style={{ fontSize: 32, color: "#888" }}>Search</div>
-    </div>
+// ============================================================================
+// ICONS
+// ============================================================================
+
+const GridIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
+    </svg>
 );
 
-export const ExploreView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Generate some mock explore content
-    const exploreItems = Array.from({ length: 15 }).map((_, i) => ({
-        id: `exp_${i}`,
-        image: `https://picsum.photos/seed/exp${i}/500/500`,
-        isLarge: i % 10 === 0 // Every 10th item is large (2x2)
-    }));
+const ReelsIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <polygon points="10,8 16,12 10,16" />
+    </svg>
+);
 
-    return (
+const TaggedIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
+
+const SettingsIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+);
+
+const AddIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+);
+
+const ChevronDownIcon = () => (
+    <svg width="42" height="42" viewBox="0 0 12 12" fill="none">
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ============================================================================
+// STAT ITEM
+// ============================================================================
+
+const StatItem: React.FC<{ value: string | number; label: string }> = ({ value, label }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column"
+            fontSize: 48,
+            fontWeight: 700,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
         }}>
-            <div style={{ marginTop: 60 }}>
-                <SearchBar />
-            </div>
-
-            <div style={{
-                flex: 1,
-                overflow: "hidden",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                alignContent: "flex-start"
-            }}>
-                {exploreItems.map((item, i) => (
-                    <div key={item.id} style={{
-                        width: item.isLarge ? "calc(66.66% - 2px)" : "calc(33.33% - 2px)",
-                        aspectRatio: item.isLarge ? "1/1" : "1/1",
-                        backgroundColor: "#222",
-                        backgroundImage: `url(${item.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        position: "relative"
-                    }}>
-                        {i % 5 === 0 && (
-                            <div style={{ position: "absolute", top: 10, right: 10 }}>
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
-                                    <path d="M2 2l20 20" stroke="none" />
-                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="none" />
-                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white" />
-                                </svg>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+            {value}
         </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/notifications/NotificationsView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-const NotificationItem: React.FC<{ type: string; username: string; time: string; text?: string; avatar: string }> = ({ type, username, time, text, avatar }) => (
-    <div style={{ display: "flex", alignItems: "center", padding: "20px 30px", gap: 20 }}>
-        <div style={{
-            width: 90,
-            height: 90,
-            borderRadius: "50%",
-            backgroundImage: `url(${avatar})`,
-            backgroundSize: "cover",
-            backgroundColor: "#333"
-        }} />
-        <div style={{ flex: 1, fontSize: 30, lineHeight: "1.3" }}>
-            <span style={{ fontWeight: "bold" }}>{username}</span>
-            {" "}
-            {type === "like" && "liked your photo."}
-            {type === "follow" && "started following you."}
-            {type === "comment" && `commented: ${text}`}
-            {" "}
-            <span style={{ color: "#888" }}>{time}</span>
-        </div>
-        {type === "follow" ? (
-            <div style={{
-                backgroundColor: "#0095f6",
-                color: "white",
-                padding: "10px 30px",
-                borderRadius: 10,
-                fontSize: 28,
-                fontWeight: "600"
-            }}>
-                Follow
-            </div>
-        ) : (
-            <div style={{
-                width: 90,
-                height: 90,
-                backgroundColor: "#333",
-                backgroundImage: `url(https://picsum.photos/seed/post1/100/100)`, // Mock post image
-                backgroundSize: "cover"
-            }} />
-        )}
+        <div style={{ fontSize: 36, opacity: 0.9 }}>{label}</div>
     </div>
 );
 
-export const NotificationsView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Mock notifications
-    const notifications = [
-        { id: "n1", type: "like", username: "alice_wonder", time: "2m", avatar: "https://i.pravatar.cc/150?u=alice" },
-        { id: "n2", type: "follow", username: "bob_builder", time: "15m", avatar: "https://i.pravatar.cc/150?u=bob" },
-        { id: "n3", type: "comment", username: "charlie_chaplin", time: "1h", text: "Great shot! 🔥", avatar: "https://i.pravatar.cc/150?u=charlie" },
-        { id: "n4", type: "like", username: "dave_diver", time: "3h", avatar: "https://i.pravatar.cc/150?u=dave" },
-        { id: "n5", type: "follow", username: "eve_hacker", time: "5h", avatar: "https://i.pravatar.cc/150?u=eve" },
+// ============================================================================
+// HIGHLIGHT BUBBLE
+// ============================================================================
+
+const HighlightBubble: React.FC<{ title: string; imageUrl?: string; isNew?: boolean }> = ({ title, imageUrl, isNew }) => (
+    <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginRight: 36,
+        width: 192
+    }}>
+        <div style={{
+            width: 192,
+            height: 192,
+            borderRadius: "50%",
+            border: isNew ? "none" : "3px solid #444",
+            backgroundColor: "#1a1a1a",
+            backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
+            backgroundSize: "cover",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center"
+        }}>
+            {isNew && (
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+            )}
+        </div>
+        <div style={{
+            marginTop: 15,
+            fontSize: 30,
+            textAlign: "center",
+            maxWidth: 192,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+        }}>
+            {title}
+        </div>
+    </div>
+);
+
+// ============================================================================
+// PROFILE VIEW - Main export
+// ============================================================================
+
+export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
+
+    // Mock user data
+    const user = {
+        username: "instagram_user",
+        name: "Instagram User",
+        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
+        posts: 42,
+        followers: "1.2M",
+        following: 250,
+        avatar: "https://i.pravatar.cc/300?u=profile"
+    };
+
+    const highlights = [
+        { title: "New", isNew: true },
+        { title: "Travel ✈️", imageUrl: "https://picsum.photos/seed/h1/200" },
+        { title: "Food 🍕", imageUrl: "https://picsum.photos/seed/h2/200" },
+        { title: "Pets 🐕", imageUrl: "https://picsum.photos/seed/h3/200" },
     ];
 
     return (
         <div style={{
-            backgroundColor: "black",
+            backgroundColor: "#000",
             height: "100%",
             color: "white",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
+            overflow: "hidden",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
         }}>
+            {/* Scrollable Content */}
             <div style={{
-                height: 120,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 30px",
-                marginTop: 60,
-                fontSize: 42,
-                fontWeight: "bold",
-                borderBottom: "1px solid #222"
+                transform: `translateY(-${scrollY}px)`,
+                width: "100%"
             }}>
-                Notifications
-            </div>
-
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                <div style={{ padding: "20px 0" }}>
-                    <div style={{ padding: "0 30px 20px", fontSize: 32, fontWeight: "bold" }}>New</div>
-                    {notifications.slice(0, 2).map(n => (
-                        <NotificationItem key={n.id} {...n} />
-                    ))}
-                    <div style={{ padding: "40px 30px 20px", fontSize: 32, fontWeight: "bold" }}>Today</div>
-                    {notifications.slice(2).map(n => (
-                        <NotificationItem key={n.id} {...n} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/post/PostView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-// Reuse icons from FeedView or create shared icon library
-const BackIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 18l-6-6 6-6" />
-    </svg>
-);
-
-const HeartIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "#ed4956" : "none"} stroke={filled ? "#ed4956" : "white"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13" />
-        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-);
-
-const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Mock single post data
-    const post = {
-        username: "instagram_user",
-        avatar: "https://i.pravatar.cc/150?u=instagram_user",
-        image: "https://picsum.photos/seed/insta1/1080/1080",
-        caption: "Living my best life! 🌟 #blessed",
-        likes: 1234,
-        comments: 42,
-        liked: false,
-        saved: false
-    };
-
-    return (
-        <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Header */}
-            <div style={{
-                height: 120,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 30px",
-                marginTop: 60,
-                borderBottom: "1px solid #222"
-            }}>
-                <BackIcon />
-                <div style={{ marginLeft: 30, fontSize: 36, fontWeight: "bold" }}>Posts</div>
-            </div>
-
-            {/* Post Content (Similar to Feed Item) */}
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", padding: "20px 30px" }}>
-                    <div style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: "50%",
-                        backgroundImage: `url(${post.avatar})`,
-                        backgroundSize: "cover",
-                        backgroundColor: "#333",
-                        marginRight: 20
-                    }} />
-                    <div style={{ flex: 1, color: "white", fontSize: 32, fontWeight: "600" }}>{post.username}</div>
-                    <div style={{ color: "white", fontSize: 40 }}>...</div>
-                </div>
-
+                {/* Header */}
                 <div style={{
-                    width: "100%",
-                    aspectRatio: "1/1",
-                    backgroundColor: "#222",
-                    backgroundImage: `url(${post.image})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center"
-                }} />
-
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 30px" }}>
-                    <div style={{ display: "flex", gap: 40 }}>
-                        <HeartIcon filled={post.liked} />
-                        <CommentIcon />
-                        <ShareIcon />
+                    height: 150,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 36px",
+                    marginTop: 120
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontSize: 54, fontWeight: 700 }}>{user.username}</span>
+                        <ChevronDownIcon />
                     </div>
-                    <BookmarkIcon filled={post.saved} />
+                    <div style={{ display: "flex", gap: 48 }}>
+                        <AddIcon />
+                        <SettingsIcon />
+                    </div>
                 </div>
 
-                <div style={{ padding: "0 30px" }}>
-                    <div style={{ color: "white", fontSize: 32, fontWeight: "600", marginBottom: 10 }}>
-                        {post.likes.toLocaleString()} likes
+                {/* Profile Info Section */}
+                <div style={{ padding: "24px 36px" }}>
+                    {/* Avatar + Stats Row */}
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+                        {/* Avatar */}
+                        <div style={{
+                            width: 240,
+                            height: 240,
+                            borderRadius: "50%",
+                            backgroundImage: `url(${user.avatar})`,
+                            backgroundSize: "cover",
+                            backgroundColor: "#333",
+                            marginRight: 60
+                        }} />
+
+                        {/* Stats */}
+                        <div style={{
+                            flex: 1,
+                            display: "flex",
+                            justifyContent: "space-around"
+                        }}>
+                            <StatItem value={user.posts} label="Posts" />
+                            <StatItem value={user.followers} label="Followers" />
+                            <StatItem value={user.following} label="Following" />
+                        </div>
                     </div>
-                    <div style={{ color: "white", fontSize: 32 }}>
-                        <span style={{ fontWeight: "600", marginRight: 10 }}>{post.username}</span>
-                        {post.caption}
+
+                    {/* Name & Bio */}
+                    <div style={{ marginBottom: 27 }}>
+                        <div style={{ fontSize: 39, fontWeight: 600, marginBottom: 6 }}>
+                            {user.name}
+                        </div>
+                        <div style={{ fontSize: 39, whiteSpace: "pre-wrap", lineHeight: 1.35, opacity: 0.95 }}>
+                            {user.bio}
+                        </div>
                     </div>
-                    <div style={{ color: "#888", fontSize: 28, marginTop: 10 }}>
-                        View all {post.comments} comments
+
+                    {/* Edit & Share Buttons */}
+                    <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
+                        <div style={{
+                            flex: 1,
+                            height: 102,
+                            backgroundColor: "#262626",
+                            borderRadius: 24,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 39,
+                            fontWeight: 600
+                        }}>
+                            Edit profile
+                        </div>
+                        <div style={{
+                            flex: 1,
+                            height: 102,
+                            backgroundColor: "#262626",
+                            borderRadius: 24,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 39,
+                            fontWeight: 600
+                        }}>
+                            Share profile
+                        </div>
                     </div>
-                    <div style={{ color: "#888", fontSize: 24, marginTop: 10, textTransform: "uppercase" }}>
-                        2 hours ago
+                </div>
+
+                {/* Highlights Row */}
+                <div style={{
+                    display: "flex",
+                    padding: "12px 36px 30px",
+                    overflowX: "hidden"
+                }}>
+                    {highlights.map((h, i) => (
+                        <HighlightBubble key={i} {...h} />
+                    ))}
+                </div>
+
+                {/* Tabs */}
+                <div style={{
+                    display: "flex",
+                    borderTop: "1px solid #262626",
+                    borderBottom: "1px solid #262626"
+                }}>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderBottom: "3px solid white"
+                    }}>
+                        <GridIcon active={true} />
                     </div>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <ReelsIcon active={false} />
+                    </div>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <TaggedIcon active={false} />
+                    </div>
+                </div>
+
+                {/* Grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {state.feed.posts.map(post => (
+                        <div key={post.id} style={{
+                            width: "calc(33.33% - 2px)",
+                            aspectRatio: "1/1",
+                            backgroundColor: "#1a1a1a",
+                            backgroundImage: `url(${post.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center"
+                        }} />
+                    ))}
                 </div>
             </div>
         </div>
@@ -6782,33 +8169,65 @@ export const PhoneDynamicIsland: React.FC<WidgetProps> = ({
 };
 ````
 
-## File: packages/apps-phone/src/index.ts
+## File: packages/apps-phone/src/behaviors.ts
 ````typescript
 /**
- * @tokovo/apps-phone
- * 
- * Phone Call Simulation Package
- * 
- * Features:
- * - Incoming call screens (iOS/Android variants)
- * - Active call screens with controls
- * - Dynamic Island widget (iOS)
- * - Notification banner (overlay mode)
- * - Platform-specific UI (iOS 16, 17, Android Pixel, Samsung)
+ * Phone Behaviors
+ *
+ * Defines how Phone/Call events map to camera intents.
  */
 
-// Export plugin
-export { PhonePlugin, registerPhonePlugin } from "./plugin";
+import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
 
-// Export UI
-export { PhoneApp } from "./ui";
+const APP_ID = "app_phone";
 
-// Export runtime
-export { phoneReducer } from "./runtime";
+// =============================================================================
+// EVENT → INTENT MAPPINGS
+// =============================================================================
 
-// Auto-register on import
-import { registerPhonePlugin } from "./plugin";
-registerPhonePlugin();
+export const PHONE_INTENT_MAPPINGS: Record<string, CameraIntent> = {
+    // Call incoming
+    INCOMING_CALL: { type: "FOCUS", anchor: "callPoster", preset: "dramatic" },
+
+    // Call answered
+    CALL_ANSWERED: { type: "FOCUS", anchor: "callPoster", preset: "subtle" },
+
+    // Call declined
+    CALL_DECLINED: { type: "RESET", preset: "reset" },
+
+    // Call ended
+    CALL_ENDED: { type: "RESET", preset: "reset" },
+
+    // Button interactions
+    MUTE_TOGGLED: { type: "HOLD" },
+    SPEAKER_TOGGLED: { type: "HOLD" },
+    HOLD_TOGGLED: { type: "HOLD" },
+};
+
+// =============================================================================
+// PRESET OVERRIDES
+// =============================================================================
+
+export const PHONE_PRESET_OVERRIDES: Partial<
+    Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
+> = {
+    // Phone uses more dramatic effects for incoming calls
+    dramatic: { scale: 1.35, shake: 5 },
+};
+
+// =============================================================================
+// APP BEHAVIOR EXPORT
+// =============================================================================
+
+export const PhoneBehavior: AppBehavior = {
+    appId: APP_ID,
+    eventMappings: PHONE_INTENT_MAPPINGS,
+    presetOverrides: PHONE_PRESET_OVERRIDES,
+};
+
+export function getPhoneIntent(eventType: string): CameraIntent | undefined {
+    return PHONE_INTENT_MAPPINGS[eventType];
+}
 ````
 
 ## File: packages/apps-phone/src/plugin.ts
@@ -10692,23 +12111,62 @@ export default {
 };
 ````
 
-## File: packages/apps-twitter/src/index.ts
+## File: packages/apps-twitter/src/behaviors.ts
 ````typescript
 /**
- * @tokovo/apps-twitter
- * 
- * Twitter/X app for Tokovo video generation.
+ * Twitter Behaviors
+ *
+ * Defines how Twitter/X events map to camera intents.
  */
 
-// Plugin registration (side-effect import)
-import "./plugin";
+import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
 
-// Exports
-export * from "./config";
-export * from "./components";
-export * from "./runtime";
-export * from "./ui";
-export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
+const APP_ID = "app_twitter";
+
+// =============================================================================
+// EVENT → INTENT MAPPINGS
+// =============================================================================
+
+export const TWITTER_INTENT_MAPPINGS: Record<string, CameraIntent> = {
+    // Tweet events
+    TWEET_POSTED: { type: "FOCUS", anchor: "focusedTweet", preset: "dramatic" },
+    TWEET_RECEIVED: { type: "FOCUS", anchor: "focusedTweet", preset: "message" },
+
+    // Engagement events
+    LIKE_ADDED: { type: "FOCUS", anchor: "likeButton", preset: "snap" },
+    RETWEET_ADDED: { type: "FOCUS", anchor: "focusedTweet", preset: "snap" },
+    REPLY_STARTED: { type: "FOCUS", anchor: "replyBox", preset: "subtle" },
+    REPLY_SENT: { type: "FOCUS", anchor: "focusedTweet", preset: "message" },
+
+    // Navigation
+    PROFILE_OPENED: { type: "FOCUS", anchor: "profileCard", preset: "subtle" },
+    PROFILE_CLOSED: { type: "RESET", preset: "reset" },
+};
+
+// =============================================================================
+// PRESET OVERRIDES
+// =============================================================================
+
+export const TWITTER_PRESET_OVERRIDES: Partial<
+    Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
+> = {
+    // Twitter uses quick snaps for likes
+    snap: { scale: 1.12 },
+};
+
+// =============================================================================
+// APP BEHAVIOR EXPORT
+// =============================================================================
+
+export const TwitterBehavior: AppBehavior = {
+    appId: APP_ID,
+    eventMappings: TWITTER_INTENT_MAPPINGS,
+    presetOverrides: TWITTER_PRESET_OVERRIDES,
+};
+
+export function getTwitterIntent(eventType: string): CameraIntent | undefined {
+    return TWITTER_INTENT_MAPPINGS[eventType];
+}
 ````
 
 ## File: packages/apps-twitter/src/plugin.ts
@@ -12238,6 +13696,96 @@ export const ANIMATION_POLISH = {
         easing: "ease-out",
     },
 };
+````
+
+## File: packages/apps-whatsapp/src/behaviors.ts
+````typescript
+/**
+ * WhatsApp Behaviors
+ *
+ * Defines how WhatsApp events map to camera intents.
+ * Apps reference global presets by name, with optional delta overrides.
+ */
+
+import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
+
+const APP_ID = "app_whatsapp";
+
+// =============================================================================
+// EVENT → INTENT MAPPINGS
+// =============================================================================
+
+/**
+ * WhatsApp event to camera intent mappings.
+ *
+ * Each event produces a camera intent:
+ * - FOCUS: zoom to specific anchor
+ * - RESET: return to neutral
+ * - HOLD: maintain current position
+ */
+export const WHATSAPP_INTENT_MAPPINGS: Record<string, CameraIntent> = {
+    // Message events
+    MESSAGE_RECEIVED: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    MESSAGE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
+
+    // Typing events (use stable inputArea, not volatile typingIndicator)
+    TYPING_START: { type: "FOCUS", anchor: "inputArea", preset: "subtle" },
+    TYPING_END: { type: "RESET", preset: "reset" },
+
+    // Reaction events
+    REACTION_ADDED: { type: "FOCUS", anchor: "reactionBubble", preset: "snap" },
+    REACTION_REMOVED: { type: "HOLD" },
+
+    // Read receipts
+    MESSAGE_READ: { type: "FOCUS", anchor: "lastMessage", preset: "subtle" },
+    MESSAGE_DELIVERED: { type: "HOLD" },
+
+    // Media events
+    IMAGE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    IMAGE_RECEIVED: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    VOICE_NOTE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
+    VOICE_NOTE_RECEIVED: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+};
+
+// =============================================================================
+// PRESET OVERRIDES (Deltas only)
+// =============================================================================
+
+/**
+ * Optional preset overrides for WhatsApp.
+ * Only delta values — not new presets.
+ *
+ * Example: WhatsApp wants slightly more zoom on snaps.
+ */
+export const WHATSAPP_PRESET_OVERRIDES: Partial<
+    Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
+> = {
+    // WhatsApp uses slightly less dramatic zoom on messages
+    dramatic: { scale: 1.25 }, // Global is 1.3
+
+    // Snaps for reactions are a bit snappier
+    snap: { scale: 1.18 }, // Global is 1.15
+};
+
+// =============================================================================
+// APP BEHAVIOR EXPORT
+// =============================================================================
+
+export const WhatsAppBehavior: AppBehavior = {
+    appId: APP_ID,
+    eventMappings: WHATSAPP_INTENT_MAPPINGS,
+    presetOverrides: WHATSAPP_PRESET_OVERRIDES,
+};
+
+/**
+ * Get camera intent for a WhatsApp event.
+ *
+ * @param eventType - Event type (e.g., MESSAGE_RECEIVED)
+ * @returns Camera intent or undefined if no mapping
+ */
+export function getWhatsAppIntent(eventType: string): CameraIntent | undefined {
+    return WHATSAPP_INTENT_MAPPINGS[eventType];
+}
 ````
 
 ## File: packages/apps-whatsapp/src/notification-adapter.ts
@@ -14213,227 +15761,6 @@ export function checkAllPolicies(
 }
 ````
 
-## File: packages/core/src/camera/presets.ts
-````typescript
-/**
- * Cinematic Camera Presets
- * 
- * Pre-configured motion profiles for common scenarios.
- * Presets provide consistent look-and-feel across episodes.
- * 
- * USAGE:
- * ```ts
- * const preset = CAMERA_PRESETS["tense-chat"];
- * // Apply preset values to camera behavior
- * ```
- */
-
-// =============================================================================
-// PRESET TYPES
-// =============================================================================
-
-/**
- * Numeric preset configuration
- */
-export interface CameraPreset {
-    /** Display name */
-    name: string;
-
-    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
-    followLag: number;
-
-    /** Push-in intensity for new messages: 0.01 (subtle) to 0.15 (dramatic) */
-    pushInIntensity: number;
-
-    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
-    panSpeed: number;
-
-    /** Default easing function */
-    easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
-
-    /** Shake intensity for reactions/emphasis: 0 (none) to 10 (strong) */
-    shakeIntensity: number;
-
-    /** Minimum time between camera moves (frames) */
-    cooldownFrames: number;
-
-    /** Whether to auto-follow new messages */
-    autoFollow: boolean;
-
-    /** Description for documentation */
-    description: string;
-}
-
-// =============================================================================
-// PRESET DEFINITIONS
-// =============================================================================
-
-export const CAMERA_PRESETS: Record<string, CameraPreset> = {
-    /**
-     * Calm Chat
-     * - Slow, smooth, minimal movement
-     * - Ideal for: normal conversations, casual chat
-     */
-    "calm-chat": {
-        name: "Calm Chat",
-        followLag: 0.8,
-        pushInIntensity: 0.02,
-        panSpeed: 0.5,
-        easing: "cinematic",
-        shakeIntensity: 0,
-        cooldownFrames: 60, // 2 seconds
-        autoFollow: true,
-        description: "Slow, smooth, minimal movement for relaxed conversations",
-    },
-
-    /**
-     * Tense Chat
-     * - Faster, tighter, more reactive
-     * - Ideal for: arguments, drama, confrontation
-     */
-    "tense-chat": {
-        name: "Tense Chat",
-        followLag: 0.3,
-        pushInIntensity: 0.08,
-        panSpeed: 1.2,
-        easing: "ease-out",
-        shakeIntensity: 3,
-        cooldownFrames: 20,
-        autoFollow: true,
-        description: "Faster, tighter framing for tense conversations",
-    },
-
-    /**
-     * Fast Chat
-     * - Rapid exchanges, minimal lag
-     * - Ideal for: rapid-fire texting, jokes, banter
-     */
-    "fast-chat": {
-        name: "Fast Chat",
-        followLag: 0.1,
-        pushInIntensity: 0.05,
-        panSpeed: 2.0,
-        easing: "ease-in-out",
-        shakeIntensity: 1,
-        cooldownFrames: 10,
-        autoFollow: true,
-        description: "Quick, reactive camera for rapid exchanges",
-    },
-
-    /**
-     * Dramatic
-     * - Maximum intensity for reveals and emotional moments
-     * - Ideal for: breakups, confessions, plot twists
-     */
-    "dramatic": {
-        name: "Dramatic",
-        followLag: 0.5,
-        pushInIntensity: 0.12,
-        panSpeed: 0.8,
-        easing: "cinematic",
-        shakeIntensity: 5,
-        cooldownFrames: 45,
-        autoFollow: true,
-        description: "High intensity framing for emotional moments",
-    },
-
-    /**
-     * Static
-     * - No automatic camera movement
-     * - Ideal for: showcase, manual camera control
-     */
-    "static": {
-        name: "Static",
-        followLag: 1.0,
-        pushInIntensity: 0,
-        panSpeed: 0,
-        easing: "linear",
-        shakeIntensity: 0,
-        cooldownFrames: 9999,
-        autoFollow: false,
-        description: "No automatic camera movement - fully manual",
-    },
-
-    /**
-     * Documentary
-     * - Somewhat detached, observational
-     * - Ideal for: recaps, explanations, tutorials
-     */
-    "documentary": {
-        name: "Documentary",
-        followLag: 0.7,
-        pushInIntensity: 0.03,
-        panSpeed: 0.6,
-        easing: "ease-out",
-        shakeIntensity: 0,
-        cooldownFrames: 90,
-        autoFollow: true,
-        description: "Detached, observational framing for recaps",
-    },
-};
-
-// =============================================================================
-// PRESET HELPERS
-// =============================================================================
-
-/**
- * Get a preset by name (case-insensitive)
- * Falls back to "calm-chat" if not found
- */
-export function getPreset(name: string): CameraPreset {
-    const normalized = name.toLowerCase().replace(/\s+/g, "-");
-    return CAMERA_PRESETS[normalized] || CAMERA_PRESETS["calm-chat"];
-}
-
-/**
- * List all available preset names
- */
-export function listPresets(): string[] {
-    return Object.keys(CAMERA_PRESETS);
-}
-
-/**
- * Blend two presets together
- * Useful for gradual transitions (e.g., conversation escalating)
- * 
- * @param from - Starting preset
- * @param to - Ending preset  
- * @param t - Blend factor 0-1 (0 = from, 1 = to)
- */
-export function blendPresets(
-    from: CameraPreset,
-    to: CameraPreset,
-    t: number
-): CameraPreset {
-    const blend = Math.max(0, Math.min(1, t));
-
-    return {
-        name: `${from.name} → ${to.name}`,
-        followLag: lerp(from.followLag, to.followLag, blend),
-        pushInIntensity: lerp(from.pushInIntensity, to.pushInIntensity, blend),
-        panSpeed: lerp(from.panSpeed, to.panSpeed, blend),
-        easing: blend < 0.5 ? from.easing : to.easing,
-        shakeIntensity: lerp(from.shakeIntensity, to.shakeIntensity, blend),
-        cooldownFrames: Math.round(lerp(from.cooldownFrames, to.cooldownFrames, blend)),
-        autoFollow: blend < 0.5 ? from.autoFollow : to.autoFollow,
-        description: `Blend: ${from.name} to ${to.name}`,
-    };
-}
-
-/**
- * Linear interpolation helper
- */
-function lerp(a: number, b: number, t: number): number {
-    return a + (b - a) * t;
-}
-
-// =============================================================================
-// DEFAULT EXPORT
-// =============================================================================
-
-export default CAMERA_PRESETS;
-````
-
 ## File: packages/core/src/camera/timeline.ts
 ````typescript
 /**
@@ -15252,93 +16579,371 @@ export function extractSignals(
 }
 ````
 
-## File: packages/core/src/director-lite/types.ts
+## File: packages/core/src/anchors.ts
 ````typescript
 /**
- * DirectorLite Types
+ * Semantic Anchor System
  *
- * Minimal types for the camera director system.
- * No framework, no configurability - just what ships.
+ * Core types for the Semantic Anchor-Driven Camera System.
+ *
+ * ARCHITECTURE:
+ * - Apps expose WHAT can be focused (anchors)
+ * - Director decides WHEN to focus (signals → intents)
+ * - Presets define HOW it looks (scale, easing, shake)
+ * - Camera math executes (pure transforms)
+ *
+ * RULES:
+ * - Anchors are in device-viewport space
+ * - No timestamp — anchors are "what exists right now given (world, layout)"
+ * - SemanticAnchorId is extensible for plugins
+ * - Hysteresis: 3 frames stability required before switching
  */
 
+import { WorldState } from "./types";
+import { LayoutRect } from "./director-lite";
+
+// Re-export LayoutRect for convenience
+export { LayoutRect };
+
 // =============================================================================
-// LAYOUT
+// ANCHOR IDS
 // =============================================================================
 
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+/**
+ * Core semantic anchors — type-safe, always available
+ */
+export type CoreSemanticAnchorId =
+    | "lastMessage"
+    | "typingIndicator"
+    | "inputArea"
+    | "device"; // Always available fallback
 
-export interface DirectorLayoutModel {
+/**
+ * Extensible anchor ID — plugins can add custom anchors as strings
+ *
+ * Pattern: Core anchors are type-safe, extensions are strings.
+ * This avoids core churn when adding new app-specific anchors.
+ */
+export type SemanticAnchorId = CoreSemanticAnchorId | (string & {});
+
+// =============================================================================
+// APP-SPECIFIC ANCHOR TYPES (for type-safety in known apps)
+// =============================================================================
+
+/** WhatsApp-specific anchors */
+export type WhatsAppAnchorId =
+    | CoreSemanticAnchorId
+    | "reactionBubble"
+    | "voiceNote"
+    | "imagePreview";
+
+/** Phone app anchors */
+export type PhoneAnchorId =
+    | CoreSemanticAnchorId
+    | "callPoster"
+    | "acceptButton"
+    | "declineButton"
+    | "callTimer"
+    | "muteButton";
+
+/** Notification anchors */
+export type NotificationAnchorId =
+    | CoreSemanticAnchorId
+    | "headsUpNotification"
+    | "dynamicIsland"
+    | "notificationStack";
+
+/** Twitter/X anchors */
+export type TwitterAnchorId =
+    | CoreSemanticAnchorId
+    | "focusedTweet"
+    | "replyBox"
+    | "profileCard"
+    | "likeButton";
+
+// =============================================================================
+// ANCHOR SNAPSHOT
+// =============================================================================
+
+/**
+ * Snapshot of available anchors at the current moment.
+ *
+ * IMPORTANT: No timestamp! Anchors are computed from (world, layout) and
+ * represent "what exists right now". The camera evaluation owns frame time.
+ */
+export interface AnchorSnapshot {
+    /** Available anchors mapped to their rects */
+    anchors: Partial<Record<SemanticAnchorId, LayoutRect>>;
+
+    /** Device this snapshot belongs to */
     deviceId: string;
+
+    /** App providing these anchors */
     appId: string;
-    conversationId?: string;
-    messageRects: Record<string, LayoutRect>;
-    inputAreaRect: LayoutRect; // Always available
-    typingIndicatorRect?: LayoutRect; // Only when typing
-    lastMessageRect?: LayoutRect;
 }
 
 // =============================================================================
-// SIGNALS
+// ANCHOR PROVIDER INTERFACE
 // =============================================================================
 
-export type SignalType =
-    | "TypingStarted"
-    | "TypingEnded"
-    | "NewMessage"
-    | "MessageRead"
-    | "MessageDeleted"
-    | "CallIncoming";
-
-export interface DirectorSignal {
-    type: SignalType;
-    deviceId: string;
+/**
+ * Interface that apps implement to expose semantic anchors.
+ *
+ * Apps are the ONLY source of truth for what can be focused.
+ * Camera never understands UI semantics — just rectangles.
+ *
+ * @example
+ * ```typescript
+ * const WhatsAppAnchorProvider: AnchorProvider = {
+ *   appId: "app_whatsapp",
+ *   getAnchors(world, layout) {
+ *     return {
+ *       anchors: { lastMessage: rect, typingIndicator: rect },
+ *       deviceId: "phone",
+ *       appId: "app_whatsapp"
+ *     };
+ *   }
+ * };
+ * ```
+ */
+export interface AnchorProvider {
+    /** App ID this provider handles */
     appId: string;
-    conversationId?: string;
-    at: number;
-    messageId?: string;
-    from?: string;
+
+    /**
+     * Extract anchors from current world/layout state.
+     *
+     * @param world - Current world state
+     * @param layout - Computed layout state
+     * @param deviceId - Device being rendered
+     * @returns Snapshot of available anchors
+     */
+    getAnchors(
+        world: WorldState,
+        layout: unknown, // LayoutState from renderer
+        deviceId: string
+    ): AnchorSnapshot;
 }
 
 // =============================================================================
-// EFFECTS
+// ANCHOR REGISTRY
 // =============================================================================
 
-export type EffectCategory = "framing" | "shake";
+/**
+ * Registry of anchor providers by app ID.
+ * Apps self-register their providers at module load time.
+ */
+export class AnchorRegistryClass {
+    private providers = new Map<string, AnchorProvider>();
 
-export interface DerivedCameraEffect {
-    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
-    category: EffectCategory;
-    priority: number;
-    progress: number;
-    // Framing effects
-    target?: LayoutRect;
-    scale?: number;
-    // Shake effects
-    intensity?: number;
-    seed?: number;
+    /** Register an anchor provider for an app */
+    register(provider: AnchorProvider): void {
+        this.providers.set(provider.appId, provider);
+    }
+
+    /** Get provider for an app ID */
+    get(appId: string): AnchorProvider | undefined {
+        return this.providers.get(appId);
+    }
+
+    /** Check if a provider exists */
+    has(appId: string): boolean {
+        return this.providers.has(appId);
+    }
+
+    /** Get all registered app IDs */
+    getRegisteredApps(): string[] {
+        return Array.from(this.providers.keys());
+    }
+}
+
+/** Global anchor registry */
+export const AnchorRegistry = new AnchorRegistryClass();
+
+// =============================================================================
+// HYSTERESIS (Anchor Stability)
+// =============================================================================
+
+/**
+ * Number of frames an anchor must be stable before switching to it.
+ * Prevents camera jitter from volatile anchors (typing dots, reactions).
+ */
+export const ANCHOR_STABILITY_FRAMES = 3;
+
+/**
+ * State for tracking anchor stability.
+ * Used by intent resolution to implement hysteresis.
+ */
+export interface AnchorStabilityState {
+    /** Currently focused anchor (after hysteresis) */
+    currentAnchor: SemanticAnchorId | null;
+
+    /** Candidate anchor being evaluated */
+    candidateAnchor: SemanticAnchorId | null;
+
+    /** How many frames candidate has been stable */
+    stableFrames: number;
+
+    /** Frame when we last switched targets */
+    lastSwitchFrame: number;
+}
+
+/** Default stability state */
+export const DEFAULT_ANCHOR_STABILITY: AnchorStabilityState = {
+    currentAnchor: null,
+    candidateAnchor: null,
+    stableFrames: 0,
+    lastSwitchFrame: 0,
+};
+
+// =============================================================================
+// FALLBACK CHAINS
+// =============================================================================
+
+/**
+ * Fallback chains for anchor resolution.
+ * If primary anchor is missing, try next in chain until found.
+ * "device" is always the final fallback (full device frame).
+ */
+export const FALLBACK_CHAINS: Partial<
+    Record<SemanticAnchorId, SemanticAnchorId[]>
+> = {
+    // Chat anchors
+    typingIndicator: ["inputArea", "lastMessage", "device"],
+    lastMessage: ["inputArea", "device"],
+    reactionBubble: ["lastMessage", "device"],
+    inputArea: ["lastMessage", "device"],
+
+    // Notification anchors
+    headsUpNotification: ["dynamicIsland", "device"],
+    dynamicIsland: ["device"],
+
+    // Call anchors
+    callPoster: ["device"],
+    acceptButton: ["callPoster", "device"],
+    declineButton: ["callPoster", "device"],
+
+    // Feed anchors
+    focusedTweet: ["device"],
+    replyBox: ["focusedTweet", "device"],
+};
+
+/**
+ * Resolve an anchor with fallback chain.
+ *
+ * @param targetAnchor - Primary anchor to find
+ * @param anchors - Available anchors
+ * @returns Resolved anchor ID and rect, or null if all fallbacks exhausted
+ */
+export function resolveAnchorWithFallback(
+    targetAnchor: SemanticAnchorId,
+    anchors: AnchorSnapshot["anchors"]
+): { anchor: SemanticAnchorId; rect: LayoutRect } | null {
+    // Try primary anchor first
+    if (anchors[targetAnchor]) {
+        return { anchor: targetAnchor, rect: anchors[targetAnchor]! };
+    }
+
+    // Try fallback chain
+    const chain = FALLBACK_CHAINS[targetAnchor];
+    if (chain) {
+        for (const fallback of chain) {
+            if (anchors[fallback]) {
+                return { anchor: fallback, rect: anchors[fallback]! };
+            }
+        }
+    }
+
+    // Final fallback: device
+    if (anchors.device) {
+        return { anchor: "device", rect: anchors.device };
+    }
+
+    return null;
+}
+````
+
+## File: packages/core/src/behavior-registry.ts
+````typescript
+/**
+ * Behavior Registry
+ *
+ * Central registry for app-specific camera behaviors.
+ * Apps self-register their behaviors at module load time.
+ */
+
+import type { ShotPresetId } from "./camera/presets";
+
+// =============================================================================
+// CAMERA INTENT TYPES (Re-exported for convenience)
+// =============================================================================
+
+import type { SemanticAnchorId } from "./anchors";
+
+export type CameraIntent =
+    | { type: "FOCUS"; anchor: SemanticAnchorId; preset?: ShotPresetId }
+    | { type: "RESET"; preset?: ShotPresetId }
+    | { type: "HOLD" };
+
+export interface AppBehavior {
+    appId: string;
+    eventMappings: Record<string, CameraIntent>;
+    presetOverrides?: Partial<Record<ShotPresetId, Partial<{ scale: number; shake: number }>>>;
 }
 
 // =============================================================================
-// OUTPUT
+// BEHAVIOR REGISTRY
 // =============================================================================
 
-export interface DirectorOutput {
-    effects: DerivedCameraEffect[];
-    debug?: DirectorDebug;
-    skipped?: "manual-camera-active";
+class BehaviorRegistryClass {
+    private behaviors = new Map<string, AppBehavior>();
+
+    /**
+     * Register an app behavior
+     */
+    register(behavior: AppBehavior): void {
+        this.behaviors.set(behavior.appId, behavior);
+    }
+
+    /**
+     * Get behavior for an app
+     */
+    get(appId: string): AppBehavior | undefined {
+        return this.behaviors.get(appId);
+    }
+
+    /**
+     * Check if behavior exists
+     */
+    has(appId: string): boolean {
+        return this.behaviors.has(appId);
+    }
+
+    /**
+     * Get intent for an app event
+     */
+    getIntent(appId: string, eventType: string): CameraIntent | undefined {
+        const behavior = this.behaviors.get(appId);
+        return behavior?.eventMappings[eventType];
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this.behaviors.keys());
+    }
+
+    /**
+     * Clear all registrations (for testing)
+     */
+    clear(): void {
+        this.behaviors.clear();
+    }
 }
 
-export interface DirectorDebug {
-    signalsInWindow: number;
-    matchedRules: number;
-    winningFraming?: string;
-    skippedCooldown: number;
-}
+/** Global behavior registry */
+export const BehaviorRegistry = new BehaviorRegistryClass();
 ````
 
 ## File: packages/core/src/eventUtils.ts
@@ -17406,6 +19011,134 @@ export const productionDemoSceneIR: SceneIR = createEpisode("whatsapp-production
 export { productionDemoSceneIR as default };
 ````
 
+## File: packages/dsl/examples/semantic-camera-showcase.dsl.ts
+````typescript
+/**
+ * Semantic Camera System Showcase
+ * 
+ * DSL episode demonstrating the Semantic Anchor-Driven Camera System:
+ * 
+ * 1. FOLLOWING MESSAGES - Camera follows new messages as they appear
+ * 2. TYPING ANTICIPATION - Focus on input area during typing  
+ * 3. DRAMATIC ZOOM - Push in on emotional/important messages
+ * 4. SNAP TO REACTION - Quick snap when reactions/hearts are sent
+ * 5. RESET/PULLBACK - Return to neutral framing
+ */
+
+import { episode } from "@tokovo/dsl";
+
+export const semanticCameraShowcase = episode("semantic-camera-showcase", ep => {
+    ep.config({ fps: 30, title: "Semantic Camera System Demo" });
+
+    ep.device("phone", "iphone16", d => {
+        d.app("app_whatsapp");
+        d.conversation("dm_bestie", { name: "Bestie 💕" });
+
+        // =====================================================================
+        // SCENE 1: ESTABLISHING + FOLLOWING MESSAGES (0s - 5s)
+        // Camera follows each message as it arrives
+        // =====================================================================
+
+        d.beat("establishing", b => {
+            b.wait("1s");
+        });
+
+        d.beat("following-messages", b => {
+            // Message 1 - camera follows
+            b.receive("Bestie 💕", "omg hi!! 👋");
+            b.wait("0.8s");
+
+            // Message 2 - quick reply, camera follows right
+            b.send("heyyy!! what's up?");
+            b.wait("0.8s");
+
+            // Message 3 - camera follows back left
+            b.receive("Bestie 💕", "you will NOT believe what just happened 😱");
+            b.wait("0.5s");
+        });
+
+        // =====================================================================
+        // SCENE 2: TYPING ANTICIPATION (5s - 9s)
+        // Camera focuses on input area during typing - builds tension
+        // =====================================================================
+
+        d.beat("typing-anticipation", b => {
+            // Typing starts - focus shifts to input area (stable anchor)
+            b.typing("Bestie 💕").for("2.5s");
+            b.wait("0.3s");
+        });
+
+        // =====================================================================
+        // SCENE 3: DRAMATIC ZOOM (9s - 13s)
+        // Important message gets dramatic camera treatment
+        // =====================================================================
+
+        d.beat("dramatic-reveal", b => {
+            // The big reveal - DRAMATIC ZOOM expected
+            b.receive("Bestie 💕", "I just got the job!!! 🎉🎉🎉");
+            b.wait("1.5s");
+
+            // Excited reply
+            b.send("OMG CONGRATS!!! 🥳🎊");
+            b.wait("1s");
+        });
+
+        // =====================================================================
+        // SCENE 4: SNAP TO REACTION (13s - 16s)
+        // Quick camera snap when heart/reaction is sent
+        // =====================================================================
+
+        d.beat("reaction-snap", b => {
+            b.receive("Bestie 💕", "I start next Monday!! So nervous 😅");
+            b.wait("1s");
+
+            // Heart reaction - SNAP expected
+            b.send("❤️");
+            b.wait("1s");
+        });
+
+        // =====================================================================
+        // SCENE 5: RESET/PULLBACK (16s - 22s)
+        // Camera returns to neutral framing
+        // =====================================================================
+
+        d.beat("reset-pullback", b => {
+            b.receive("Bestie 💕", "lunch tomorrow to celebrate? 🍣");
+            b.wait("1s");
+
+            // Camera should reset/pullback here
+            b.send("yesss!! can't wait! 💕");
+            b.wait("1.5s");
+
+            // Final beat
+            b.receive("Bestie 💕", "love youuu 💛");
+            b.wait("1s");
+        });
+    });
+
+    // Camera events (optional: let DirectorLite handle most of it)
+    ep.camera(c => {
+        // SCENE 1: Following messages - let DirectorLite auto-handle
+
+        // SCENE 2: Typing anticipation - subtle focus
+        c.at("5s").zoom({ scale: 1.06, origin: { y: 0.85 }, duration: "1s", easing: "cinematic" });
+
+        // SCENE 3: Dramatic zoom on big news
+        c.at("9s").zoom({ scale: 1.25, origin: { y: 0.8 }, duration: "0.5s", easing: "ease-out" });
+        c.at("9s").shake({ intensity: 5, duration: "0.5s" });
+
+        // SCENE 4: Snap on reaction
+        c.at("14s").zoom({ scale: 1.15, origin: { y: 0.88 }, duration: "0.25s", easing: "ease-out" });
+        c.at("14s").shake({ intensity: 2, duration: "0.25s" });
+
+        // SCENE 5: Reset to neutral
+        c.at("16s").reset({ duration: "1.5s", easing: "ease-in-out" });
+    });
+});
+
+export default semanticCameraShowcase;
+````
+
 ## File: packages/dsl/examples/toxic-ex-drama.dsl.ts
 ````typescript
 /**
@@ -19096,6 +20829,194 @@ export interface EpisodeConfig {
 ## File: packages/dsl/tsconfig.tsbuildinfo
 ````
 {"root":["./src/index.ts","./src/types.ts","./src/author/beat-builder.ts","./src/author/device-builder.ts","./src/author/episode-builder.ts","./src/author/index.ts"],"version":"5.9.3"}
+````
+
+## File: packages/episodes/src/examples/instagram-test.json
+````json
+{
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "instagram_user",
+                        "text": "Hey! Did you see my new post?",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "currentView": "feed",
+                "feed": {
+                    "posts": [
+                        {
+                            "id": "p1",
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "image": "https://picsum.photos/seed/insta1/1080/1080",
+                            "caption": "Living my best life! 🌟 #blessed",
+                            "likes": 1234,
+                            "comments": 42,
+                            "liked": false,
+                            "saved": false
+                        },
+                        {
+                            "id": "p2",
+                            "username": "travel_blogger",
+                            "avatar": "https://i.pravatar.cc/150?u=travel",
+                            "image": "https://picsum.photos/seed/insta2/1080/1080",
+                            "caption": "Sunset vibes 🌅",
+                            "likes": 890,
+                            "comments": 12,
+                            "liked": true,
+                            "saved": true
+                        }
+                    ],
+                    "scrollPosition": 0
+                },
+                "stories": {
+                    "users": [
+                        {
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s1",
+                                    "image": "https://picsum.photos/seed/story1/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        },
+                        {
+                            "username": "friend_1",
+                            "avatar": "https://i.pravatar.cc/150?u=friend1",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s2",
+                                    "image": "https://picsum.photos/seed/story2/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notifications": {
+                    "items": []
+                }
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW",
+            "appId": "app_instagram"
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "stories"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "feed"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "explore"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "reels"
+            }
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "notifications"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "profile"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "post"
+            }
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "dm"
+            }
+        },
+        {
+            "at": 260,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Wow, this app is huge!"
+        }
+    ]
+}
 ````
 
 ## File: packages/episodes/src/examples/whatsapp-breakup-01.json
@@ -20818,6 +22739,229 @@ export function validateTimelineIRFull(ir: TimelineIR): ValidationError[] {
 }
 ````
 
+## File: packages/renderer/src/anchor-providers/index.ts
+````typescript
+/**
+ * Anchor Providers
+ *
+ * Per-app providers that expose semantic anchors from layout state.
+ * Apps are the ONLY source of truth for what can be focused.
+ */
+
+export * from "./whatsapp";
+export * from "./phone";
+export * from "./notification";
+export * from "./registry";
+````
+
+## File: packages/renderer/src/anchor-providers/registry.ts
+````typescript
+/**
+ * Anchor Provider Registry
+ *
+ * Central registry for all anchor providers.
+ * Providers self-register at module load time.
+ */
+
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    AnchorRegistry,
+} from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
+
+import { WhatsAppAnchorProvider } from "./whatsapp";
+import { PhoneAnchorProvider } from "./phone";
+import { NotificationAnchorProvider } from "./notification";
+
+// =============================================================================
+// AUTO-REGISTER PROVIDERS
+// =============================================================================
+
+/**
+ * Register all built-in anchor providers.
+ * Call this once at app startup.
+ */
+export function registerBuiltInAnchorProviders(): void {
+    AnchorRegistry.register(WhatsAppAnchorProvider);
+    AnchorRegistry.register(PhoneAnchorProvider);
+    AnchorRegistry.register(NotificationAnchorProvider);
+}
+
+// =============================================================================
+// ANCHOR EXTRACTION
+// =============================================================================
+
+/**
+ * Get anchors for a specific app from the registry.
+ *
+ * @param appId - App to get anchors for
+ * @param world - Current world state
+ * @param layout - Computed layout
+ * @param deviceId - Device ID
+ * @returns Anchor snapshot or null if no provider registered
+ */
+export function getAnchorsForApp(
+    appId: string,
+    world: WorldState,
+    layout: unknown,
+    deviceId: string
+): AnchorSnapshot | null {
+    const provider = AnchorRegistry.get(appId);
+    if (!provider) return null;
+    return provider.getAnchors(world, layout, deviceId);
+}
+
+/**
+ * Get all anchors across all registered providers.
+ * Useful for multi-app scenarios.
+ */
+export function getAllAnchors(
+    world: WorldState,
+    layout: unknown,
+    deviceId: string
+): Map<string, AnchorSnapshot> {
+    const results = new Map<string, AnchorSnapshot>();
+
+    for (const appId of AnchorRegistry.getRegisteredApps()) {
+        const provider = AnchorRegistry.get(appId);
+        if (provider) {
+            results.set(appId, provider.getAnchors(world, layout, deviceId));
+        }
+    }
+
+    return results;
+}
+````
+
+## File: packages/renderer/src/anchor-providers/whatsapp.ts
+````typescript
+/**
+ * WhatsApp Anchor Provider
+ *
+ * Extracts semantic anchors from WhatsApp chat layout.
+ * Apps are the ONLY source of truth for what can be focused.
+ */
+
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    SemanticAnchorId,
+    LayoutRect,
+    WhatsAppAnchorId,
+    LAYOUT,
+} from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
+import type { ChatLayoutState } from "../layout/types";
+
+const APP_ID = "app_whatsapp";
+
+/**
+ * WhatsApp Anchor Provider
+ *
+ * Exposes anchors for:
+ * - lastMessage: Most recent message bubble
+ * - typingIndicator: Typing dots (when active)
+ * - inputArea: Input bar (always available)
+ * - reactionBubble: Active reaction popup (when visible)
+ */
+export const WhatsAppAnchorProvider: AnchorProvider = {
+    appId: APP_ID,
+
+    getAnchors(
+        world: WorldState,
+        layout: unknown,
+        deviceId: string
+    ): AnchorSnapshot {
+        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+
+        // Type guard for chat layout
+        if (!layout || typeof layout !== "object" || (layout as any).kind !== "CHAT") {
+            // Not a chat layout — return device anchor only
+            return {
+                anchors: { device: getDeviceRect(world, deviceId) },
+                deviceId,
+                appId: APP_ID,
+            };
+        }
+
+        const chatLayout = layout as ChatLayoutState;
+        const device = world.devices[deviceId];
+        const profile = getDeviceProfile(device?.profileId);
+        const viewportWidth = profile?.dimensions?.width ?? 430;
+        const viewportHeight = profile?.dimensions?.height ?? 932;
+
+        // =========================================================================
+        // LAST MESSAGE
+        // =========================================================================
+        const lastMessageId = chatLayout.meta?.lastMessageId;
+        if (lastMessageId && chatLayout.messageLayouts[lastMessageId]?.rect) {
+            anchors.lastMessage = chatLayout.messageLayouts[lastMessageId].rect;
+        }
+
+        // =========================================================================
+        // TYPING INDICATOR
+        // =========================================================================
+        if (chatLayout.typingLayout?.rect) {
+            anchors.typingIndicator = chatLayout.typingLayout.rect;
+        }
+
+        // =========================================================================
+        // INPUT AREA (always available)
+        // =========================================================================
+        const inputHeight = LAYOUT.CHAT_INPUT_HEIGHT;
+        anchors.inputArea = {
+            x: 0,
+            y: chatLayout.scrollY + viewportHeight - inputHeight,
+            width: viewportWidth,
+            height: inputHeight,
+        };
+
+        // =========================================================================
+        // DEVICE (full frame — final fallback)
+        // =========================================================================
+        anchors.device = {
+            x: 0,
+            y: 0,
+            width: viewportWidth,
+            height: viewportHeight,
+        };
+
+        return {
+            anchors,
+            deviceId,
+            appId: APP_ID,
+        };
+    },
+};
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+function getDeviceRect(world: WorldState, deviceId: string): LayoutRect {
+    const device = world.devices[deviceId];
+    const profile = getDeviceProfile(device?.profileId);
+    return {
+        x: 0,
+        y: 0,
+        width: profile?.dimensions?.width ?? 430,
+        height: profile?.dimensions?.height ?? 932,
+    };
+}
+
+function getDeviceProfile(profileId?: string): { dimensions: { width: number; height: number } } | null {
+    // Simplified profile lookup — in production, use DeviceProfiles registry
+    const profiles: Record<string, { dimensions: { width: number; height: number } }> = {
+        iphone16: { dimensions: { width: 430, height: 932 } },
+        iphone15: { dimensions: { width: 430, height: 932 } },
+        iphone14: { dimensions: { width: 390, height: 844 } },
+        pixel8: { dimensions: { width: 412, height: 915 } },
+    };
+    return profiles[profileId || "iphone16"] || profiles.iphone16;
+}
+````
+
 ## File: packages/renderer/src/engines/useAudioEngine.ts
 ````typescript
 /**
@@ -20935,375 +23079,117 @@ export function useAudioEngine(input: AudioEngineInput): AudioEngineOutput {
 }
 ````
 
-## File: packages/renderer/src/engines/useCameraEngine.ts
+## File: packages/renderer/src/layout/strategies/lockscreen.ts
 ````typescript
-/**
- * Camera Engine
- *
- * Pure computation layer that determines:
- * - Base camera transform from world state
- * - DirectorLite effects (if enabled)
- * - Final CSS styles for camera wrapper
- *
- * Input: world + time + layout
- * Output: camera transform (no JSX)
- */
+import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
 
-import { useMemo } from "react";
-import {
-    WorldState,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    EventIndex,
-    getEventsInRange,
-    deriveDirectorEffects,
-    extractSignals,
-    ChatLayoutState,
-    DirectorOutput,
-} from "@tokovo/core";
-import { LayoutEngineOutput } from "./useLayoutEngine";
-import { createDirectorLayoutModel } from "../layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "../camera-composer";
+export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
+    const { world, t, activeDeviceId, config } = ctx;
+    const lockConfig = config!.lockscreen!;
 
-// =============================================================================
-// INPUT / OUTPUT TYPES
-// =============================================================================
+    const device = world.devices[activeDeviceId];
+    const notifications = device?.notifications || [];
 
-export interface CameraEngineInput {
-    world: WorldState;
-    t: number;
-    layoutOutput: LayoutEngineOutput;
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-}
+    const notificationLayouts: NotificationLayout[] = [];
+    let currentY = lockConfig.topPadding;
 
-export interface CameraEngineOutput {
-    /** Final camera transform (after DirectorLite) */
-    transform: CameraTransform;
-    /** CSS style for camera wrapper */
-    cameraStyle: React.CSSProperties;
-    /** CSS style for device wrapper (legacy layout transforms) */
-    deviceStyle: React.CSSProperties;
-    /** DirectorLite output (for debugging) */
-    directorOutput?: DirectorOutput;
-}
+    // Layout notifications
+    // Show only the last N notifications
+    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
 
-// =============================================================================
-// CAMERA ENGINE HOOK
-// =============================================================================
-
-export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-    const {
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled = true,
-        directorDebug = false,
-    } = input;
-
-    return useMemo(() => {
-        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
-
-        // 1. Get base camera transform from world state
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        let finalCameraTransform = baseCameraTransform;
-        let directorOutput: DirectorOutput | undefined;
-
-        // 2. DirectorLite integration (only for CHAT views with layout)
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
-
-            // Signal window: past 90 frames, future 15 frames
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
-
-            // Create layout model from computed layout
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,
-                effectiveViewportHeight
-            );
-
-            // Derive effects (PURE FUNCTION - no state)
-            const result = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
-                debug: directorDebug,
-                manualCameraEffects,
-            });
-
-            directorOutput = result;
-
-            // Log debug info if enabled
-            if (directorDebug && result.debug) {
-                console.log(`[CameraEngine] t=${t}`, result.debug);
-            }
-
-            // Apply director effects if not skipped and effects exist
-            if (!result.skipped && result.effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
-            }
-        }
-
-        // 3. Build camera CSS style
-        const cameraTransformString = `
-            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-            scale(${finalCameraTransform.scale})
-            rotate(${finalCameraTransform.rotation}deg)
-        `.replace(/\s+/g, ' ').trim();
-
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            transition: 'none', // Frame-perfect sync
-        };
-
-        // 4. Build device CSS style (legacy layout transforms)
-        let deviceStyle: React.CSSProperties = {};
-
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
-
-        return {
-            transform: finalCameraTransform,
-            cameraStyle,
-            deviceStyle,
-            directorOutput,
-        };
-    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
-}
-````
-
-## File: packages/renderer/src/layout/strategies/feed.ts
-````typescript
-import { LayoutContext, FeedLayoutState, FeedItemLayout } from "../types";
-
-export function computeFeedLayout(ctx: LayoutContext): FeedLayoutState {
-    const { world, t, activeAppId, config, viewportHeight } = ctx;
-    const feedConfig = config!.feed!;
-
-    // Get feed data from app state
-    // Heuristic: look for "feed" property in the active app state
-    const appState = world.appState?.[activeAppId];
-    const posts = appState?.feed?.posts || [];
-
-    const itemLayouts: Record<string, FeedItemLayout> = {};
-    let currentY = feedConfig.topPadding;
-
-    // 1. Layout posts
-    for (const post of posts) {
+    for (const notification of visibleNotifications) {
         // Calculate height
-        // Heuristic: base height + caption lines
-        const captionLength = post.caption?.length || 0;
-        const lines = Math.ceil(Math.max(1, captionLength) / feedConfig.charsPerLine);
-        const height = feedConfig.baseCardHeight + (lines * feedConfig.lineHeight);
+        // Heuristic: base height + text length
+        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
+        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
+        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
 
-        itemLayouts[post.id] = {
-            id: post.id,
+        // Animation: Slide in
+        const appearAt = notification.at || 0;
+        const timeSinceAppear = t - appearAt;
+
+        let opacity = 1;
+        let translateY = 0;
+
+        if (timeSinceAppear < lockConfig.appearDuration) {
+            const progress = Math.max(0, timeSinceAppear / lockConfig.appearDuration);
+            // Cubic bezier approximation for ease-out
+            const ease = 1 - Math.pow(1 - progress, 3);
+
+            opacity = ease;
+            // Slide down from -50px
+            translateY = -50 * (1 - ease);
+        }
+
+        notificationLayouts.push({
+            id: notification.id,
             y: currentY,
             height,
-            opacity: 1,
-            translateY: 0,
-            scale: 1
-        };
+            opacity,
+            translateY
+        });
 
-        currentY += height + feedConfig.verticalGap;
-    }
-
-    const contentHeight = currentY + feedConfig.bottomPadding;
-
-    // 2. Scroll Position
-    // Default: start at top (0)
-    // If autoScroll is enabled, scroll over time
-    let scrollY = 0;
-    if (feedConfig.autoScroll) {
-        // Simple auto-scroll: 50px per second (assuming 30fps)
-        const speed = 50 / 30;
-        scrollY = t * speed;
-    } else if (appState?.feed?.scrollPosition !== undefined) {
-        // Use scroll position from app state if available (manual control)
-        scrollY = appState.feed.scrollPosition;
-    }
-
-    // Clamp scroll
-    const maxScroll = Math.max(0, contentHeight - viewportHeight);
-    scrollY = Math.min(scrollY, maxScroll);
-
-    return {
-        kind: "FEED",
-        scrollY,
-        contentHeight,
-        isAtBottom: Math.abs(scrollY - maxScroll) < 10,
-        itemLayouts,
-        meta: {
-            // TODO: Calculate visible items
-        }
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/story.ts
-````typescript
-import { LayoutContext, StoryLayoutState, StoryItemLayout } from "../types";
-
-export function computeStoryLayout(ctx: LayoutContext): StoryLayoutState {
-    const { world, t, activeAppId, config } = ctx;
-    const storyConfig = config!.story!;
-
-    // Get stories from app state
-    const appState = world.appState?.[activeAppId];
-    // Find active user's stories
-    // Heuristic: activeStoryId format "username:storyId"
-    // Or just use the first user in the stories list for now if no ID
-    const activeStoryId = ctx.activeStoryId || appState?.stories?.activeStoryId;
-
-    let stories: any[] = [];
-    let activeUserIndex = 0;
-
-    if (activeStoryId) {
-        const username = activeStoryId.split(':')[0];
-        const user = appState?.stories?.users.find((u: any) => u.username === username);
-        if (user) {
-            stories = user.stories;
-        }
-    } else if (appState?.stories?.users?.length > 0) {
-        // Fallback to first user
-        stories = appState.stories.users[0].stories;
-    }
-
-    const storyCount = stories.length;
-    if (storyCount === 0) {
-        return {
-            kind: "STORY",
-            activeStoryIndex: 0,
-            storyCount: 0,
-            storyProgress: 0,
-            storyLayouts: []
-        };
-    }
-
-    // Calculate active index based on time
-    // We assume t starts at 0 when the story view opens. 
-    // In a real app, we might need a "startT" in the context or meta.
-    // For now, let's assume global t maps to story progress.
-
-    const totalDuration = storyCount * storyConfig.defaultStoryDuration;
-    // Loop or clamp? Let's clamp.
-    const effectiveT = Math.max(0, Math.min(t, totalDuration - 1));
-
-    const activeStoryIndex = Math.floor(effectiveT / storyConfig.defaultStoryDuration);
-    const timeInStory = effectiveT % storyConfig.defaultStoryDuration;
-    const storyProgress = timeInStory / storyConfig.defaultStoryDuration;
-
-    const storyLayouts: StoryItemLayout[] = stories.map((story: any, index: number) => {
-        let opacity = 0;
-        let scale = 1;
-        let translateX = 0;
-
-        if (index === activeStoryIndex) {
-            opacity = 1;
-            // Subtle zoom effect
-            scale = 1 + (storyProgress * 0.05);
-        } else if (index < activeStoryIndex) {
-            // Previous story
-            opacity = 0;
-            translateX = -100; // Move left
-        } else {
-            // Next story
-            opacity = 0;
-            translateX = 100; // Move right
-        }
-
-        return {
-            id: story.id,
-            index,
-            translateX,
-            translateY: 0,
-            scale,
-            opacity
-        };
-    });
-
-    return {
-        kind: "STORY",
-        activeStoryIndex,
-        storyCount,
-        storyProgress,
-        storyLayouts
-    };
-}
-````
-
-## File: packages/renderer/src/layout/strategies/transition.ts
-````typescript
-import { LayoutContext, TransitionLayoutState } from "../types";
-
-export function computeTransitionLayout(ctx: LayoutContext): TransitionLayoutState {
-    const { world, t, config } = ctx;
-    const transitionConfig = config!.transition!;
-
-    // Basic transition logic based on camera state
-    // If camera.type is "TRANSITION", we use its params
-    // Otherwise we use defaults
-
-    let deviceScale = transitionConfig.defaultScale;
-    let deviceTranslateX = 0;
-    let deviceTranslateY = 0;
-    let deviceRotation = 0;
-    let overlayOpacity = 0;
-
-    if (world.camera?.type === "TRANSITION") {
-        // TODO: Implement complex transitions based on camera params
-        // For now, just a placeholder
+        currentY += height + lockConfig.notificationGap;
     }
 
     return {
-        kind: "TRANSITION",
-        deviceTranslateX,
-        deviceTranslateY,
-        deviceScale,
-        deviceRotation,
-        overlayOpacity,
+        kind: "LOCKSCREEN",
+        notificationLayouts,
         meta: {}
     };
 }
 ````
 
-## File: packages/renderer/src/layout/types.ts
+## File: packages/renderer/src/layout/index.ts
 ````typescript
-export * from "@tokovo/core";
+import { LayoutContext, LayoutState } from "./types";
+import { defaultLayoutConfig } from "./config";
+import { computeChatLayout } from "./strategies/chat";
+import { computeFeedLayout } from "./strategies/feed";
+import { computeStoryLayout } from "./strategies/story";
+import { computeLockscreenLayout } from "./strategies/lockscreen";
+import { computeTransitionLayout } from "./strategies/transition";
+
+export * from "./types";
+export * from "./config";
+
+export function computeLayout(ctx: LayoutContext): LayoutState {
+    // Deep merge provided config with defaults
+    const config = {
+        ...defaultLayoutConfig,
+        ...ctx.config,
+        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
+        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
+        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
+        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
+        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
+    };
+    const fullCtx = { ...ctx, config };
+
+    switch (ctx.viewKind) {
+        case "CHAT":
+            return computeChatLayout(fullCtx);
+        case "FEED":
+            return computeFeedLayout(fullCtx);
+        case "STORY":
+            return computeStoryLayout(fullCtx);
+        case "LOCKSCREEN":
+            return computeLockscreenLayout(fullCtx);
+        case "TRANSITION":
+            return computeTransitionLayout(fullCtx);
+        default:
+            // Fallback to empty transition state
+            return {
+                kind: "TRANSITION",
+                deviceTranslateX: 0,
+                deviceTranslateY: 0,
+                deviceScale: 1,
+                deviceRotation: 0,
+                overlayOpacity: 0,
+                meta: {}
+            };
+    }
+}
 ````
 
 ## File: packages/renderer/src/shared/Components.tsx
@@ -22146,6 +24032,299 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
 };
 ````
 
+## File: packages/renderer/src/NotificationOverlay.tsx
+````typescript
+import React from "react";
+import { Notification, NotificationGroup } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
+
+// =============================================================================
+// APP BRANDING (for icons and colors)
+// =============================================================================
+
+const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
+    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
+    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
+    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
+    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
+    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
+    default: { color: "#8E8E93", icon: "⬤", name: "App" },
+};
+
+function getAppBranding(appId: string) {
+    return APP_BRANDING[appId] || APP_BRANDING.default;
+}
+
+// =============================================================================
+// GROUPING LOGIC
+// =============================================================================
+
+/**
+ * Group notifications by app or threadId
+ */
+function groupNotifications(notifications: Notification[]): NotificationGroup[] {
+    const groups = new Map<string, NotificationGroup>();
+
+    for (const notif of notifications) {
+        // Skip dismissed notifications
+        if (notif.dismissedAt) continue;
+
+        // Group key: use groupKey if provided, else threadId + appId, else just appId
+        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                appId: notif.appId,
+                notifications: [],
+                collapsed: true,
+                count: 0,
+                latestAt: 0,
+            });
+        }
+
+        const group = groups.get(key)!;
+        group.notifications.push(notif);
+        group.count++;
+        group.latestAt = Math.max(group.latestAt, notif.at);
+    }
+
+    // Sort by latest notification time (most recent first)
+    return Array.from(groups.values()).sort((a, b) => b.latestAt - a.latestAt);
+}
+
+// =============================================================================
+// NOTIFICATION GROUP CARD
+// =============================================================================
+
+interface GroupCardProps {
+    group: NotificationGroup;
+    y: number;
+    opacity: number;
+    translateY: number;
+    variant: "ios" | "android";
+}
+
+const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
+    const isAndroid = variant === "android";
+    const branding = getAppBranding(group.appId);
+    const latestNotif = group.notifications[group.notifications.length - 1];
+    const hasMultiple = group.count > 1;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: y,
+                left: "50%",
+                transform: `translateX(-50%) translateY(${translateY}px)`,
+                width: "92%",
+                opacity,
+            }}
+        >
+            {/* Stacked cards effect (show 2 cards behind if multiple) */}
+            {hasMultiple && (
+                <>
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: 6,
+                            left: "2%",
+                            right: "2%",
+                            height: 100,
+                            backgroundColor: isAndroid ? "#252525" : "rgba(255, 255, 255, 0.6)",
+                            borderRadius: isAndroid ? 24 : 36,
+                            zIndex: 1,
+                        }}
+                    />
+                    {group.count > 2 && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 12,
+                                left: "4%",
+                                right: "4%",
+                                height: 100,
+                                backgroundColor: isAndroid ? "#1a1a1a" : "rgba(255, 255, 255, 0.3)",
+                                borderRadius: isAndroid ? 24 : 36,
+                                zIndex: 0,
+                            }}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* Main notification card */}
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 2,
+                    backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    borderRadius: isAndroid ? 24 : 36,
+                    padding: "30px 40px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 30,
+                    color: isAndroid ? "white" : "black",
+                }}
+            >
+                {/* App Icon */}
+                <div
+                    style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: 20,
+                        backgroundColor: branding.color,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontSize: 50,
+                        color: "white",
+                        flexShrink: 0,
+                    }}
+                >
+                    {branding.icon}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                    {/* Header: App name + count + time */}
+                    <div
+                        style={{
+                            fontSize: 30,
+                            fontWeight: 600,
+                            marginBottom: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            color: isAndroid ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
+                            {branding.name}
+                        </span>
+                        {hasMultiple && (
+                            <span
+                                style={{
+                                    fontSize: 24,
+                                    backgroundColor: branding.color,
+                                    color: "white",
+                                    borderRadius: 12,
+                                    padding: "2px 10px",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                {group.count}
+                            </span>
+                        )}
+                        <span style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}>
+                            now
+                        </span>
+                    </div>
+
+                    {/* Title */}
+                    <div
+                        style={{
+                            fontSize: 36,
+                            fontWeight: "bold",
+                            marginBottom: 8,
+                            color: isAndroid ? "white" : "black",
+                        }}
+                    >
+                        {latestNotif.title}
+                    </div>
+
+                    {/* Body */}
+                    <div
+                        style={{
+                            fontSize: 34,
+                            opacity: 0.8,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}
+                    >
+                        {latestNotif.body}
+                    </div>
+
+                    {/* Summary for groups */}
+                    {hasMultiple && (
+                        <div
+                            style={{
+                                fontSize: 28,
+                                marginTop: 8,
+                                opacity: 0.5,
+                            }}
+                        >
+                            +{group.count - 1} more notification{group.count > 2 ? "s" : ""}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// NOTIFICATION OVERLAY
+// =============================================================================
+
+interface NotificationOverlayProps {
+    notifications?: Notification[];
+    variant?: "ios" | "android";
+    layout?: LayoutState;
+}
+
+export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
+    notifications = [],
+    variant = "ios",
+    layout,
+}) => {
+    // Only render on lockscreen with layout
+    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+    if (!lockscreenLayout) return null;
+
+    // Group notifications
+    const groups = groupNotifications(notifications);
+
+    // Map groups to layout positions
+    // For simplicity, use first N layout positions for groups
+    const visibleGroups = groups.slice(0, lockscreenLayout.notificationLayouts.length);
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: "none",
+                zIndex: 100,
+            }}
+        >
+            {visibleGroups.map((group, index) => {
+                const layoutInfo = lockscreenLayout.notificationLayouts[index];
+                if (!layoutInfo) return null;
+
+                return (
+                    <GroupCard
+                        key={group.key}
+                        group={group}
+                        y={layoutInfo.y}
+                        opacity={layoutInfo.opacity}
+                        translateY={layoutInfo.translateY}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+````
+
 ## File: packages/renderer/src/NotificationShade.tsx
 ````typescript
 /**
@@ -22545,11 +24724,6 @@ export const TouchOverlay: React.FC<TouchOverlayProps> = ({ touches, t }) => {
 export default TouchOverlay;
 ````
 
-## File: packages/renderer/src/types.ts
-````typescript
-export * from "@tokovo/core";
-````
-
 ## File: packages/renderer/package.json
 ````json
 {
@@ -22577,441 +24751,6 @@ export * from "@tokovo/core";
         "@types/react-dom": "18.2.0"
     }
 }
-````
-
-## File: packages/renderer/README.md
-````markdown
-# Tokovo Layout System — Unified Spec (All UI Types)
-
-## 0. Concept
-
-The **Tokovo Layout System** is the layer that turns:
-
-* `WorldState` (devices, conversations, notifications, camera, etc.)
-* episode timeline (via `replay(...)`)
-* current frame/time `t`
-* active device + app + view type
-
-into **view-specific layouts** for:
-
-* Chat views
-* Feed views
-* Story views
-* Lockscreen views
-* Transitional/cinematic scenes
-
-Each layout is:
-
-* deterministic
-* frame-driven
-* Remotion-safe (no DOM measurement / no CSS transitions)
-
----
-
-## 1. Core Types
-
-### 1.1 ViewKind
-
-```ts
-export type ViewKind =
-  | "CHAT"
-  | "FEED"
-  | "STORY"
-  | "LOCKSCREEN"
-  | "TRANSITION";
-```
-
-### 1.2 LayoutContext (global)
-
-```ts
-export interface LayoutContext {
-  world: WorldState;
-  t: number; // current frame
-  activeDeviceId: string;
-  activeAppId: string;
-  viewKind: ViewKind;
-
-  // View-specific selectors
-  activeConversationId?: string;   // CHAT
-  activeFeedId?: string;           // FEED (e.g. timeline id)
-  activeStoryId?: string;          // STORY (e.g. story reel id)
-
-  viewportWidth: number;
-  viewportHeight: number;
-
-  // Optional configuration overrides
-  config?: Partial<LayoutConfig>;
-}
-```
-
-> **Note:** different view kinds will care about different selectors (e.g., `activeConversationId` only matters for `"CHAT"`).
-
----
-
-## 2. LayoutConfig (global + per-view strategy)
-
-```ts
-export interface LayoutConfig {
-  // Global-ish things
-  cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
-
-  // Chat-specific
-  chat: ChatLayoutConfig;
-
-  // Feed-specific
-  feed: FeedLayoutConfig;
-
-  // Story-specific
-  story: StoryLayoutConfig;
-
-  // Lock screen
-  lockscreen: LockscreenLayoutConfig;
-
-  // Transitions
-  transition: TransitionLayoutConfig;
-}
-```
-
-You’ll define **per-view configs**:
-
-### 2.1 ChatLayoutConfig (what we already designed)
-
-```ts
-export interface ChatLayoutConfig {
-  bubbleWidth: number;
-  baseBubbleHeight: number;
-  charsPerLine: number;
-  lineHeight: number;
-  verticalGap: number;
-  topPadding: number;
-  bottomPadding: number;
-
-  messageAppearDuration: number;
-  messageAppearOffset: number;
-  scrollEasingDuration: number;
-  maxScrollCatchupSpeed: number;
-
-  lockToBottom: boolean;
-}
-```
-
-### 2.2 FeedLayoutConfig (for Instagram / X / TikTok feeds)
-
-```ts
-export interface FeedLayoutConfig {
-  cardWidth: number;
-  baseCardHeight: number;
-  verticalGap: number;
-  topPadding: number;
-  bottomPadding: number;
-
-  // For variable-height posts, same trick as chat:
-  charsPerLine: number;
-  lineHeight: number;
-
-  scrollEasingDuration: number;
-  maxScrollCatchupSpeed: number;
-
-  startAtTop: boolean;      // typical feed behaviour
-  autoScroll?: boolean;     // for cinematic auto-scroll episodes
-}
-```
-
-### 2.3 StoryLayoutConfig (Instagram Stories / Snap)
-
-```ts
-export interface StoryLayoutConfig {
-  // Each story = full-screen page
-  defaultStoryDuration: number; // in frames
-  progressBarHeight: number;
-  storyGap: number;             // for 3D-ish page stack if needed
-
-  // Animation
-  storyTransitionDuration: number; // frames between stories
-}
-```
-
-### 2.4 LockscreenLayoutConfig
-
-```ts
-export interface LockscreenLayoutConfig {
-  topPadding: number;
-  notificationGap: number;
-  notificationWidth: number;
-  baseNotificationHeight: number;
-  charsPerLine: number;
-  lineHeight: number;
-
-  stackMaxNotifications: number; // older ones collapsed/hidden
-  appearDuration: number;
-}
-```
-
-### 2.5 TransitionLayoutConfig
-
-```ts
-export interface TransitionLayoutConfig {
-  // Device position in composition
-  defaultScale: number;
-  zoomedScale: number;
-  panDuration: number;
-  zoomDuration: number;
-
-  // Optionally, per-transition presets (open app, unlock, etc.)
-}
-```
-
----
-
-## 3. LayoutState — Tagged Union (all view kinds)
-
-Single function, **multi-view outputs**:
-
-```ts
-export type LayoutState =
-  | ChatLayoutState
-  | FeedLayoutState
-  | StoryLayoutState
-  | LockscreenLayoutState
-  | TransitionLayoutState;
-```
-
-Each state has a `kind` field:
-
-```ts
-export interface BaseLayoutState {
-  kind: ViewKind;
-}
-```
-
----
-
-### 3.1 ChatLayoutState
-
-```ts
-export interface ChatLayoutState extends BaseLayoutState {
-  kind: "CHAT";
-  scrollY: number;
-  contentHeight: number;
-  isAtBottom: boolean;
-  messageLayouts: Record<string, ChatMessageLayout>;
-  typingLayout?: TypingLayout | null;
-  meta: ChatLayoutMeta;
-}
-```
-
-Where `ChatMessageLayout`, `TypingLayout`, `ChatLayoutMeta` are what we already specced (id, y, height, opacity, translateY, etc.).
-
----
-
-### 3.2 FeedLayoutState
-
-```ts
-export interface FeedLayoutState extends BaseLayoutState {
-  kind: "FEED";
-  scrollY: number;
-  contentHeight: number;
-  isAtBottom: boolean;
-  itemLayouts: Record<string, FeedItemLayout>;
-  meta: FeedLayoutMeta;
-}
-```
-
-```ts
-export interface FeedItemLayout {
-  id: string;
-  y: number;
-  height: number;
-  opacity: number;
-  translateY: number;
-  scale: number;   // for subtle parallax / entry
-}
-```
-
-`FeedLayoutMeta` can include:
-
-```ts
-export interface FeedLayoutMeta {
-  firstVisibleItemId?: string;
-  lastVisibleItemId?: string;
-  focusedItemId?: string; // for cinematic highlight
-}
-```
-
-The **geometry model** is similar to chat: stack cards with a deterministic height function (based on text length, optional media flags, etc.).
-
----
-
-### 3.3 StoryLayoutState
-
-```ts
-export interface StoryLayoutState extends BaseLayoutState {
-  kind: "STORY";
-  activeStoryIndex: number;
-  storyCount: number;
-  storyProgress: number; // 0..1 within current story
-  storyLayouts: StoryItemLayout[];
-}
-```
-
-```ts
-export interface StoryItemLayout {
-  id: string;
-  index: number;
-  // For 3D card stack / page-motion effects:
-  translateX: number;
-  translateY: number;
-  scale: number;
-  opacity: number;
-}
-```
-
-Behaviour:
-
-* Given timeline of stories (either from episode or world state),
-* Given `t`, compute which story index is active and the progress inside that story:
-
-  ```ts
-  const storyIndex = floor((t - startT) / storyDuration);
-  const localProgress = ((t - startT) % storyDuration) / storyDuration;
-  ```
-* Use `storyTransitionDuration` to add slide/fade between storyIndex and storyIndex+1.
-
----
-
-### 3.4 LockscreenLayoutState
-
-```ts
-export interface LockscreenLayoutState extends BaseLayoutState {
-  kind: "LOCKSCREEN";
-  notificationLayouts: NotificationLayout[];
-  meta: LockscreenLayoutMeta;
-}
-```
-
-```ts
-export interface NotificationLayout {
-  id: string;
-  y: number;
-  height: number;
-  opacity: number;
-  translateY: number;
-}
-```
-
-The inputs come from `device.notifications` in `WorldState`. 
-
-Geometry is again deterministic: approximate height from title/body length and stack them with gap & padding. Animation: when a notification appears at `event.at`, fade/slide it in similar to messages.
-
----
-
-### 3.5 TransitionLayoutState
-
-```ts
-export interface TransitionLayoutState extends BaseLayoutState {
-  kind: "TRANSITION";
-  // These values are for the outer DeviceFrame / TokovoRenderer
-  deviceTranslateX: number;
-  deviceTranslateY: number;
-  deviceScale: number;
-  deviceRotation: number;
-  overlayOpacity: number;
-  meta: TransitionLayoutMeta;
-}
-```
-
-This layer treats the **device as an actor** in the composition:
-
-* Unlock animation: fade in, scale up from center.
-* Open app: slight bump-in, tilt, zoom.
-* Cutscenes: pan device left/right, etc.
-
-The inputs can be:
-
-* Derived from `world.camera` (if you extend it with more camera modes) 
-* Derived from timeline CAMERA events (already defined in your `TimelineEvent` union). 
-
----
-
-## 4. The Core Function
-
-Single entry point:
-
-```ts
-export function computeLayout(ctx: LayoutContext): LayoutState {
-  switch (ctx.viewKind) {
-    case "CHAT":
-      return computeChatLayout(ctx);
-    case "FEED":
-      return computeFeedLayout(ctx);
-    case "STORY":
-      return computeStoryLayout(ctx);
-    case "LOCKSCREEN":
-      return computeLockscreenLayout(ctx);
-    case "TRANSITION":
-      return computeTransitionLayout(ctx);
-  }
-}
-```
-
-Each `computeXLayout` is:
-
-* pure
-* deterministic
-* uses only `world`, `t`, `config` and known IDs.
-
----
-
-## 5. Determinism & Remotion Rules (still apply for ALL)
-
-For **every** viewKind:
-
-* ❌ No DOM measurement / `getBoundingClientRect()`
-
-* ❌ No CSS transitions / `transition: ...`
-
-* ❌ No `setTimeout`, `requestAnimationFrame` inside animation logic
-
-* ❌ No randomness (or if used, seed-based deterministic)
-
-* ✅ All animation values: pure math from `(t, world, config)`
-
-* ✅ `useCurrentFrame()` and `useVideoConfig()` only used to get `t` and fps
-
-* ✅ Styling is done in React via inline styles using the LayoutState
-
-This is consistent with Remotion’s SSR + frame-based rendering model and your current `TokovoRenderer` usage. 
-
----
-
-## 6. Integration in TokovoRenderer
-
-Your `TokovoRenderer` can now:
-
-1. **Decide which viewKind** to use:
-
-   * If device is locked → `LOCKSCREEN`
-   * If app is WhatsApp/IG DM → `CHAT`
-   * If app is Instagram feed → `FEED`
-   * If app is stories → `STORY`
-   * If you insert explicit camera transition scenes → `TRANSITION`
-
-2. Call:
-
-```ts
-const layout = computeLayout({
-  world,
-  t,
-  activeDeviceId,
-  activeAppId,
-  viewKind,
-  activeConversationId,
-  viewportWidth: deviceWidth,
-  viewportHeight: deviceHeight,
-});
-```
-
-3. Pass `layout` down to the specific App View, which will branch based on `layout.kind` and render accordingly.
 ````
 
 ## File: llms.txt
@@ -24336,148 +26075,297 @@ export const WhatsappPsychoticDemoVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
+## File: packages/apps-instagram/src/views/feed/FeedView.tsx
 ````typescript
 import React from "react";
-import { InstagramState } from "../../types";
+import { InstagramState, Post, StoryUser } from "../../types";
 import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
 // ============================================================================
-// ICONS
+// HEADER ICONS - Authentic Instagram iOS
 // ============================================================================
 
-const GridIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
+const CameraIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8" />
     </svg>
 );
 
-const ReelsIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <polygon points="10,8 16,12 10,16" />
+const MessengerIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const TaggedIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "#FF3040" : "none"} stroke={filled ? "#FF3040" : "white"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
 );
 
-const SettingsIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
+const CommentIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const AddIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <line x1="12" y1="8" x2="12" y2="16" />
-        <line x1="8" y1="12" x2="16" y2="12" />
+const ShareIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const ChevronDownIcon = () => (
-    <svg width="42" height="42" viewBox="0 0 12 12" fill="none">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
+        <circle cx="12" cy="5" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="12" cy="19" r="1.5" />
     </svg>
 );
 
 // ============================================================================
-// STAT ITEM
+// INSTAGRAM LOGO - Script font with dropdown
 // ============================================================================
 
-const StatItem: React.FC<{ value: string | number; label: string }> = ({ value, label }) => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{
-            fontSize: 48,
-            fontWeight: 700,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+const InstagramLogo = () => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+    }}>
+        <span style={{
+            fontFamily: "'Billabong', 'Grand Hotel', cursive, -apple-system",
+            fontSize: 90,
+            color: "white",
+            letterSpacing: 1,
+            fontWeight: 400
         }}>
-            {value}
-        </div>
-        <div style={{ fontSize: 36, opacity: 0.9 }}>{label}</div>
+            Instagram
+        </span>
+        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
     </div>
 );
 
 // ============================================================================
-// HIGHLIGHT BUBBLE
+// STORY BUBBLE - Larger authentic Instagram style
 // ============================================================================
 
-const HighlightBubble: React.FC<{ title: string; imageUrl?: string; isNew?: boolean }> = ({ title, imageUrl, isNew }) => (
+const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
     <div style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         marginRight: 36,
-        width: 192
+        width: 210
     }}>
+        {/* Story Ring */}
         <div style={{
-            width: 192,
-            height: 192,
+            width: 210,
+            height: 210,
             borderRadius: "50%",
-            border: isNew ? "none" : "3px solid #444",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
-            backgroundSize: "cover",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
+            padding: 9,
+            background: isYourStory
+                ? "transparent"
+                : user.hasUnseen
+                    ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
+                    : "#444"
         }}>
-            {isNew && (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            )}
+            <div style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                border: "6px solid #000",
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                <div style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    backgroundSize: "cover",
+                    backgroundColor: "#333"
+                }} />
+
+                {/* Your Story + icon */}
+                {isYourStory && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        backgroundColor: "#0095F6",
+                        border: "4px solid #000",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                    </div>
+                )}
+            </div>
         </div>
+
+        {/* Username */}
         <div style={{
-            marginTop: 15,
+            color: "white",
             fontSize: 30,
-            textAlign: "center",
-            maxWidth: 192,
+            marginTop: 15,
+            maxWidth: 210,
             overflow: "hidden",
             textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
+            whiteSpace: "nowrap",
+            textAlign: "center"
         }}>
-            {title}
+            {isYourStory ? "Your story" : user.username}
         </div>
     </div>
 );
 
 // ============================================================================
-// PROFILE VIEW - Main export
+// POST ITEM - Authentic Instagram post
 // ============================================================================
 
-export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+const PostItem: React.FC<{ post: Post }> = ({ post }) => (
+    <div style={{ marginBottom: 48 }}>
+        {/* Header */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "24px 36px",
+            gap: 24
+        }}>
+            {/* Avatar with story ring if applicable */}
+            <div style={{
+                width: 102,
+                height: 102,
+                borderRadius: "50%",
+                padding: 6,
+                background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
+            }}>
+                <div style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    border: "4px solid #000",
+                    backgroundImage: `url(${post.avatar})`,
+                    backgroundSize: "cover",
+                    backgroundColor: "#333"
+                }} />
+            </div>
+
+            {/* Username + Location */}
+            <div style={{ flex: 1 }}>
+                <div style={{
+                    color: "white",
+                    fontSize: 39,
+                    fontWeight: 600,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {post.username}
+                </div>
+            </div>
+
+            <MoreIcon />
+        </div>
+
+        {/* Image */}
+        <div style={{
+            width: "100%",
+            aspectRatio: "1/1",
+            backgroundColor: "#1a1a1a",
+            backgroundImage: `url(${post.image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+        }} />
+
+        {/* Actions */}
+        <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "30px 36px 18px",
+            alignItems: "center"
+        }}>
+            <div style={{ display: "flex", gap: 48 }}>
+                <HeartIcon filled={post.liked} />
+                <CommentIcon />
+                <ShareIcon />
+            </div>
+            <BookmarkIcon filled={post.saved} />
+        </div>
+
+        {/* Likes */}
+        <div style={{ padding: "0 36px", marginBottom: 12 }}>
+            <div style={{
+                color: "white",
+                fontSize: 39,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                {post.likes.toLocaleString()} likes
+            </div>
+        </div>
+
+        {/* Caption */}
+        <div style={{ padding: "0 36px", marginBottom: 12 }}>
+            <span style={{
+                color: "white",
+                fontSize: 39,
+                fontWeight: 600,
+                marginRight: 12,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                {post.username}
+            </span>
+            <span style={{ color: "white", fontSize: 39 }}>
+                {post.caption}
+            </span>
+        </div>
+
+        {/* Comments link */}
+        <div style={{ padding: "0 36px", marginBottom: 6 }}>
+            <span style={{ color: "#A8A8A8", fontSize: 36 }}>
+                View all {post.comments} comments
+            </span>
+        </div>
+
+        {/* Timestamp */}
+        <div style={{ padding: "0 36px" }}>
+            <span style={{ color: "#A8A8A8", fontSize: 30, textTransform: "uppercase" }}>
+                2 hours ago
+            </span>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// FEED VIEW - Main export
+// ============================================================================
+
+export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
     const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
     const scrollY = feedLayout?.scrollY || 0;
 
-    // Mock user data
-    const user = {
-        username: "instagram_user",
-        name: "Instagram User",
-        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
-        posts: 42,
-        followers: "1.2M",
-        following: 250,
-        avatar: "https://i.pravatar.cc/300?u=profile"
+    // Create "Your Story" user for first position
+    const yourStory: StoryUser = {
+        username: "Your story",
+        avatar: "",
+        hasUnseen: false,
+        stories: []
     };
-
-    const highlights = [
-        { title: "New", isNew: true },
-        { title: "Travel ✈️", imageUrl: "https://picsum.photos/seed/h1/200" },
-        { title: "Food 🍕", imageUrl: "https://picsum.photos/seed/h2/200" },
-        { title: "Pets 🐕", imageUrl: "https://picsum.photos/seed/h3/200" },
-    ];
 
     return (
         <div style={{
@@ -24486,159 +26374,53 @@ export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState
             color: "white",
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
         }}>
+            {/* Header */}
+            <div style={{
+                height: 156,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 36px",
+                marginTop: 120,
+                backgroundColor: "#000",
+                zIndex: 10
+            }}>
+                <CameraIcon />
+                <InstagramLogo />
+                <div style={{ display: "flex", gap: 60 }}>
+                    <HeartIcon />
+                    <MessengerIcon />
+                </div>
+            </div>
+
             {/* Scrollable Content */}
             <div style={{
-                transform: `translateY(-${scrollY}px)`,
-                width: "100%"
+                flex: 1,
+                overflow: "hidden",
+                position: "relative"
             }}>
-                {/* Header */}
                 <div style={{
-                    height: 150,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0 36px",
-                    marginTop: 120
+                    transform: `translateY(-${scrollY}px)`
                 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: 54, fontWeight: 700 }}>{user.username}</span>
-                        <ChevronDownIcon />
-                    </div>
-                    <div style={{ display: "flex", gap: 48 }}>
-                        <AddIcon />
-                        <SettingsIcon />
-                    </div>
-                </div>
-
-                {/* Profile Info Section */}
-                <div style={{ padding: "24px 36px" }}>
-                    {/* Avatar + Stats Row */}
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
-                        {/* Avatar */}
-                        <div style={{
-                            width: 240,
-                            height: 240,
-                            borderRadius: "50%",
-                            backgroundImage: `url(${user.avatar})`,
-                            backgroundSize: "cover",
-                            backgroundColor: "#333",
-                            marginRight: 60
-                        }} />
-
-                        {/* Stats */}
-                        <div style={{
-                            flex: 1,
-                            display: "flex",
-                            justifyContent: "space-around"
-                        }}>
-                            <StatItem value={user.posts} label="Posts" />
-                            <StatItem value={user.followers} label="Followers" />
-                            <StatItem value={user.following} label="Following" />
-                        </div>
-                    </div>
-
-                    {/* Name & Bio */}
-                    <div style={{ marginBottom: 27 }}>
-                        <div style={{ fontSize: 39, fontWeight: 600, marginBottom: 6 }}>
-                            {user.name}
-                        </div>
-                        <div style={{ fontSize: 39, whiteSpace: "pre-wrap", lineHeight: 1.35, opacity: 0.95 }}>
-                            {user.bio}
-                        </div>
-                    </div>
-
-                    {/* Edit & Share Buttons */}
-                    <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Edit profile
-                        </div>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Share profile
-                        </div>
-                    </div>
-                </div>
-
-                {/* Highlights Row */}
-                <div style={{
-                    display: "flex",
-                    padding: "12px 36px 30px",
-                    overflowX: "hidden"
-                }}>
-                    {highlights.map((h, i) => (
-                        <HighlightBubble key={i} {...h} />
-                    ))}
-                </div>
-
-                {/* Tabs */}
-                <div style={{
-                    display: "flex",
-                    borderTop: "1px solid #262626",
-                    borderBottom: "1px solid #262626"
-                }}>
+                    {/* Stories Row */}
                     <div style={{
-                        flex: 1,
-                        height: 132,
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderBottom: "3px solid white"
+                        padding: "24px 36px",
+                        borderBottom: "1px solid #262626",
+                        marginBottom: 6,
+                        overflowX: "hidden"
                     }}>
-                        <GridIcon active={true} />
+                        <StoryBubble user={yourStory} isYourStory />
+                        {state.stories.users.map(user => (
+                            <StoryBubble key={user.username} user={user} />
+                        ))}
                     </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <ReelsIcon active={false} />
-                    </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <TaggedIcon active={false} />
-                    </div>
-                </div>
 
-                {/* Grid */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {/* Posts */}
                     {state.feed.posts.map(post => (
-                        <div key={post.id} style={{
-                            width: "calc(33.33% - 2px)",
-                            aspectRatio: "1/1",
-                            backgroundColor: "#1a1a1a",
-                            backgroundImage: `url(${post.image})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center"
-                        }} />
+                        <PostItem key={post.id} post={post} />
                     ))}
                 </div>
             </div>
@@ -24647,65 +26429,504 @@ export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState
 };
 ````
 
-## File: packages/apps-instagram/src/ui.tsx
+## File: packages/apps-instagram/src/views/reels/ReelsView.tsx
 ````typescript
 import React from "react";
-import { WorldState, LayoutState } from "@tokovo/core";
-import { InstagramState } from "./types";
-import { InstagramChatView } from "./views/dm/InstagramChatView";
-import { FeedView } from "./views/feed/FeedView";
-import { StoriesView } from "./views/stories/StoriesView";
-import { ProfileView } from "./views/profile/ProfileView";
-import { ExploreView } from "./views/explore/ExploreView";
-import { NotificationsView } from "./views/notifications/NotificationsView";
-import { ReelsView } from "./views/reels/ReelsView";
-import { PostView } from "./views/post/PostView";
-import { BottomNav } from "./views/BottomNav";
+import { InstagramState } from "../../types";
 
-export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
-    const appState = world.appState?.["app_instagram"] as InstagramState;
-    const currentView = appState?.currentView || "dm";
+// ============================================================================
+// REELS ICONS - Authentic Instagram style
+// ============================================================================
 
-    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
+const CameraIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 24 24" fill="none">
+        <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" />
+        <polygon points="10,8 17,12 10,16" fill="white" />
+    </svg>
+);
 
-    // Views that show the bottom navigation
-    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
+const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
+    <svg width="84" height="84" viewBox="0 0 24 24">
+        <path
+            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
+            fill={filled ? "#FF3040" : "none"}
+            stroke={filled ? "#FF3040" : "white"}
+            strokeWidth="1.8"
+        />
+    </svg>
+);
 
-    const renderView = () => {
-        switch (currentView) {
-            case "dm":
-                return <InstagramChatView world={world} t={t} layout={layout} />;
-            case "feed":
-                return <FeedView state={appState} layout={layout} />;
-            case "stories":
-                return <StoriesView state={appState} t={t} layout={layout} />;
-            case "profile":
-                return <ProfileView state={appState} />;
-            case "post":
-                return <PostView state={appState} />;
-            case "explore":
-                return <ExploreView state={appState} />;
-            case "notifications":
-                return <NotificationsView state={appState} />;
-            case "reels":
-                return <ReelsView state={appState} />;
-            default:
-                return <InstagramChatView world={world} t={t} layout={layout} />;
-        }
-    };
+const CommentIcon = () => (
+    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" />
+    </svg>
+);
 
+const ShareIcon = () => (
+    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="white">
+        <circle cx="12" cy="5" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="12" cy="19" r="2" />
+    </svg>
+);
+
+const BookmarkIcon = () => (
+    <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+// ============================================================================
+// AUDIO BAR - Scrolling song at bottom
+// ============================================================================
+
+const AudioBar: React.FC<{ song: string; artist: string }> = ({ song, artist }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 18,
+        paddingRight: 30
+    }}>
+        {/* Music note icon */}
+        <svg width="42" height="42" viewBox="0 0 24 24" fill="white">
+            <path d="M9 18V5l12-2v13" />
+            <circle cx="6" cy="18" r="3" fill="white" />
+            <circle cx="18" cy="16" r="3" fill="white" />
+        </svg>
+        {/* Song text */}
+        <div style={{
+            fontSize: 36,
+            overflow: "hidden",
+            whiteSpace: "nowrap",
+            maxWidth: 600
+        }}>
+            {artist} · {song}
+        </div>
+    </div>
+);
+
+// ============================================================================
+// ROTATING ALBUM COVER
+// ============================================================================
+
+const AlbumCover: React.FC<{ imageUrl?: string }> = ({ imageUrl }) => (
+    <div style={{
+        width: 108,
+        height: 108,
+        borderRadius: 18,
+        border: "3px solid rgba(255,255,255,0.6)",
+        backgroundImage: imageUrl
+            ? `url(${imageUrl})`
+            : "linear-gradient(135deg, #405DE6 0%, #833AB4 50%, #C13584 100%)",
+        backgroundSize: "cover",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+    }}>
+        {!imageUrl && (
+            <div style={{
+                width: 45,
+                height: 45,
+                borderRadius: "50%",
+                backgroundColor: "white",
+                border: "3px solid #333"
+            }} />
+        )}
+    </div>
+);
+
+// ============================================================================
+// SIDE ACTION BUTTON
+// ============================================================================
+
+const SideAction: React.FC<{ icon: React.ReactNode; count?: string }> = ({ icon, count }) => (
+    <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 9
+    }}>
+        {icon}
+        {count && (
+            <span style={{ fontSize: 30, fontWeight: 500 }}>{count}</span>
+        )}
+    </div>
+);
+
+// ============================================================================
+// REELS VIEW - Main export
+// ============================================================================
+
+export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
     return (
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                {renderView()}
+        <div style={{
+            backgroundColor: "#000",
+            height: "100%",
+            color: "white",
+            position: "relative",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+        }}>
+            {/* Video Background */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundImage: `url(https://picsum.photos/seed/reel1/1080/1920)`,
+                backgroundSize: "cover",
+                backgroundPosition: "center"
+            }} />
+
+            {/* Gradient Overlay */}
+            <div style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: "50%",
+                background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
+                pointerEvents: "none"
+            }} />
+
+            {/* Header */}
+            <div style={{
+                position: "absolute",
+                top: 150,
+                left: 36,
+                right: 36,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                zIndex: 10
+            }}>
+                <div style={{
+                    fontSize: 54,
+                    fontWeight: 700,
+                    textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+                }}>
+                    Reels
+                </div>
+                <CameraIcon />
             </div>
-            {showBottomNav && <BottomNav currentView={currentView} />}
+
+            {/* Right Side Actions */}
+            <div style={{
+                position: "absolute",
+                bottom: 420,
+                right: 30,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 48,
+                zIndex: 10
+            }}>
+                <SideAction icon={<HeartIcon />} count="123K" />
+                <SideAction icon={<CommentIcon />} count="1.2K" />
+                <SideAction icon={<ShareIcon />} />
+                <SideAction icon={<BookmarkIcon />} />
+                <SideAction icon={<MoreIcon />} />
+                <AlbumCover />
+            </div>
+
+            {/* Bottom Info Section */}
+            <div style={{
+                position: "absolute",
+                bottom: 300,
+                left: 36,
+                right: 180, // Space for side actions
+                zIndex: 10
+            }}>
+                {/* User Info */}
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 24,
+                    marginBottom: 21
+                }}>
+                    {/* Avatar */}
+                    <div style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: "50%",
+                        border: "3px solid white",
+                        backgroundImage: `url(https://i.pravatar.cc/150?u=reel)`,
+                        backgroundSize: "cover"
+                    }} />
+                    {/* Username */}
+                    <span style={{
+                        fontSize: 42,
+                        fontWeight: 600,
+                        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
+                    }}>
+                        reels_creator
+                    </span>
+                    {/* Follow Button */}
+                    <div style={{
+                        border: "2px solid white",
+                        borderRadius: 12,
+                        padding: "12px 30px",
+                        fontSize: 36,
+                        fontWeight: 600
+                    }}>
+                        Follow
+                    </div>
+                </div>
+
+                {/* Caption */}
+                <div style={{
+                    fontSize: 39,
+                    marginBottom: 21,
+                    textShadow: "0 1px 3px rgba(0,0,0,0.5)",
+                    lineHeight: 1.3
+                }}>
+                    Wait for the drop! 🎵🔥 #dance #viral #trending
+                </div>
+
+                {/* Audio Bar */}
+                <AudioBar song="Original Audio" artist="reels_creator" />
+            </div>
         </div>
     );
 };
+````
 
-// Re-export specific views if needed externally, but InstagramApp is the main entry
-export { InstagramChatView };
+## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
+````typescript
+import React from "react";
+import { InstagramState, StoryUser } from "../../types";
+import { LayoutState, StoryLayoutState } from "@tokovo/core";
+
+// ============================================================================
+// ICONS
+// ============================================================================
+
+const CloseIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 24 24" fill="white">
+        <circle cx="5" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="19" cy="12" r="2" />
+    </svg>
+);
+
+const HeartIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+    </svg>
+);
+
+// ============================================================================
+// PROGRESS BAR
+// ============================================================================
+
+const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
+    <div style={{ display: "flex", gap: 9, padding: "30px 24px" }}>
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} style={{
+                flex: 1,
+                height: 9,
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderRadius: 6,
+                overflow: "hidden"
+            }}>
+                <div style={{
+                    height: "100%",
+                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
+                    backgroundColor: "white",
+                    borderRadius: 6,
+                    transition: "width 0.1s linear"
+                }} />
+            </div>
+        ))}
+    </div>
+);
+
+// ============================================================================
+// EMOJI SHORTCUTS
+// ============================================================================
+
+const EmojiShortcuts = () => (
+    <div style={{ display: "flex", gap: 30 }}>
+        {["❤️", "🔥", "👏", "😂", "😮", "😢"].map(emoji => (
+            <span key={emoji} style={{ fontSize: 66 }}>{emoji}</span>
+        ))}
+    </div>
+);
+
+// ============================================================================
+// STORIES VIEW - Main export
+// ============================================================================
+
+export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
+    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
+
+    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
+    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeIndex = storyLayout.activeStoryIndex;
+    const progress = storyLayout.storyProgress;
+    const activeStory = activeUser.stories[activeIndex];
+
+    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    return (
+        <div style={{
+            backgroundColor: "#000",
+            height: "100%",
+            color: "white",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+        }}>
+            {/* Story Images (with transitions) */}
+            {storyLayout.storyLayouts.map(sl => {
+                const story = activeUser.stories[sl.index];
+                if (!story) return null;
+
+                return (
+                    <div key={story.id} style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: `url(${story.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        opacity: sl.opacity,
+                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`
+                    }} />
+                );
+            })}
+
+            {/* Top Gradient */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 450,
+                background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
+                pointerEvents: "none",
+                zIndex: 5
+            }} />
+
+            {/* Bottom Gradient */}
+            <div style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 450,
+                background: "linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
+                pointerEvents: "none",
+                zIndex: 5
+            }} />
+
+            {/* Top UI */}
+            <div style={{ position: "relative", zIndex: 10, paddingTop: 120 }}>
+                {/* Progress bars */}
+                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
+
+                {/* User info */}
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 24px",
+                    marginTop: 12
+                }}>
+                    {/* Avatar */}
+                    <div style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: "50%",
+                        backgroundImage: `url(${activeUser.avatar})`,
+                        backgroundSize: "cover",
+                        backgroundColor: "#333",
+                        marginRight: 24
+                    }} />
+
+                    {/* Username + Time */}
+                    <span style={{
+                        fontSize: 42,
+                        fontWeight: 600,
+                        marginRight: 18
+                    }}>
+                        {activeUser.username}
+                    </span>
+                    <span style={{
+                        fontSize: 36,
+                        opacity: 0.7
+                    }}>
+                        12h
+                    </span>
+
+                    <div style={{ flex: 1 }} />
+
+                    {/* Actions */}
+                    <MoreIcon />
+                    <div style={{ width: 30 }} />
+                    <CloseIcon />
+                </div>
+            </div>
+
+            {/* Bottom UI */}
+            <div style={{
+                position: "absolute",
+                bottom: 60,
+                left: 0,
+                right: 0,
+                padding: "0 36px",
+                display: "flex",
+                alignItems: "center",
+                gap: 30,
+                zIndex: 10
+            }}>
+                {/* Message Input */}
+                <div style={{
+                    flex: 1,
+                    height: 132,
+                    borderRadius: 66,
+                    border: "3px solid rgba(255,255,255,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 42px",
+                    fontSize: 42,
+                    color: "rgba(255,255,255,0.8)"
+                }}>
+                    Send message
+                </div>
+
+                {/* Quick reactions */}
+                <HeartIcon />
+                <ShareIcon />
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/apps-phone/src/components/ios/ActiveCallIOS.tsx
@@ -25361,6 +27582,38 @@ export const IncomingIOS: React.FC<IncomingIOSProps> = ({ call, profile, current
 };
 ````
 
+## File: packages/apps-phone/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-phone
+ * 
+ * Phone Call Simulation Package
+ * 
+ * Features:
+ * - Incoming call screens (iOS/Android variants)
+ * - Active call screens with controls
+ * - Dynamic Island widget (iOS)
+ * - Notification banner (overlay mode)
+ * - Platform-specific UI (iOS 16, 17, Android Pixel, Samsung)
+ */
+
+// Export plugin
+export { PhonePlugin, registerPhonePlugin } from "./plugin";
+
+// Export UI
+export { PhoneApp } from "./ui";
+
+// Export runtime
+export { phoneReducer } from "./runtime";
+
+// Export behaviors (Semantic Camera System)
+export * from "./behaviors";
+
+// Auto-register on import
+import { registerPhonePlugin } from "./plugin";
+registerPhonePlugin();
+````
+
 ## File: packages/apps-phone/src/ui.tsx
 ````typescript
 /**
@@ -25857,6 +28110,28 @@ export const dimTheme: TwitterTheme = {
 };
 
 export default darkTheme;
+````
+
+## File: packages/apps-twitter/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-twitter
+ * 
+ * Twitter/X app for Tokovo video generation.
+ */
+
+// Plugin registration (side-effect import)
+import "./plugin";
+
+// Exports
+export * from "./config";
+export * from "./components";
+export * from "./runtime";
+export * from "./ui";
+export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
+
+// Export behaviors (Semantic Camera System)
+export * from "./behaviors";
 ````
 
 ## File: packages/apps-twitter/src/runtime.ts
@@ -27206,6 +29481,104 @@ export function createTheme(
         },
     };
 }
+````
+
+## File: packages/core/src/director-lite/types.ts
+````typescript
+/**
+ * DirectorLite Types
+ *
+ * Minimal types for the camera director system.
+ * No framework, no configurability - just what ships.
+ */
+
+// =============================================================================
+// LAYOUT
+// =============================================================================
+
+export interface LayoutRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+export interface DirectorLayoutModel {
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    messageRects: Record<string, LayoutRect>;
+    inputAreaRect: LayoutRect; // Always available
+    typingIndicatorRect?: LayoutRect; // Only when typing
+    lastMessageRect?: LayoutRect;
+}
+
+// =============================================================================
+// SIGNALS
+// =============================================================================
+
+export type SignalType =
+    | "TypingStarted"
+    | "TypingEnded"
+    | "NewMessage"
+    | "MessageRead"
+    | "MessageDeleted"
+    | "CallIncoming";
+
+export interface DirectorSignal {
+    type: SignalType;
+    deviceId: string;
+    appId: string;
+    conversationId?: string;
+    at: number;
+    messageId?: string;
+    from?: string;
+}
+
+// =============================================================================
+// EFFECTS
+// =============================================================================
+
+export type EffectCategory = "framing" | "shake";
+
+export interface DerivedCameraEffect {
+    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    category: EffectCategory;
+    priority: number;
+    progress: number;
+    // Framing effects
+    target?: LayoutRect;
+    scale?: number;
+    // Shake effects
+    intensity?: number;
+    seed?: number;
+}
+
+// =============================================================================
+// OUTPUT
+// =============================================================================
+
+export interface DirectorOutput {
+    effects: DerivedCameraEffect[];
+    debug?: DirectorDebug;
+    skipped?: "manual-camera-active";
+}
+
+export interface DirectorDebug {
+    signalsInWindow: number;
+    matchedRules: number;
+    winningFraming?: string;
+    skippedCooldown: number;
+}
+
+// =============================================================================
+// CAMERA INTENTS (re-exported from behavior-registry)
+// =============================================================================
+
+// CameraIntent and AppBehavior are defined in behavior-registry.ts
+// to avoid circular dependencies and duplicate exports.
+// Re-export for backwards compatibility:
+export type { CameraIntent, AppBehavior } from "../behavior-registry";
 ````
 
 ## File: packages/core/src/constants.ts
@@ -29086,194 +31459,6 @@ export type {
 }
 ````
 
-## File: packages/episodes/src/examples/instagram-test.json
-````json
-{
-    "initialWorld": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_instagram",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "instagram_user",
-                        "text": "Hey! Did you see my new post?",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "appState": {
-            "app_instagram": {
-                "currentView": "feed",
-                "feed": {
-                    "posts": [
-                        {
-                            "id": "p1",
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "image": "https://picsum.photos/seed/insta1/1080/1080",
-                            "caption": "Living my best life! 🌟 #blessed",
-                            "likes": 1234,
-                            "comments": 42,
-                            "liked": false,
-                            "saved": false
-                        },
-                        {
-                            "id": "p2",
-                            "username": "travel_blogger",
-                            "avatar": "https://i.pravatar.cc/150?u=travel",
-                            "image": "https://picsum.photos/seed/insta2/1080/1080",
-                            "caption": "Sunset vibes 🌅",
-                            "likes": 890,
-                            "comments": 12,
-                            "liked": true,
-                            "saved": true
-                        }
-                    ],
-                    "scrollPosition": 0
-                },
-                "stories": {
-                    "users": [
-                        {
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s1",
-                                    "image": "https://picsum.photos/seed/story1/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        },
-                        {
-                            "username": "friend_1",
-                            "avatar": "https://i.pravatar.cc/150?u=friend1",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s2",
-                                    "image": "https://picsum.photos/seed/story2/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "notifications": {
-                    "items": []
-                }
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_instagram"
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "stories"
-            }
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "feed"
-            }
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "explore"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "reels"
-            }
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "notifications"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "profile"
-            }
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "post"
-            }
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "dm"
-            }
-        },
-        {
-            "at": 260,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "Wow, this app is huge!"
-        }
-    ]
-}
-````
-
 ## File: packages/episodes/src/examples/notification-call-demo.json
 ````json
 {
@@ -29565,6 +31750,234 @@ export * from "./constraints";
 {"root":["./src/constraints.ts","./src/index.ts","./src/ordering.ts","./src/scene.ts","./src/semantic.ts","./src/timeline.ts","./src/trace.ts","./src/validate.ts"],"version":"5.9.3"}
 ````
 
+## File: packages/renderer/src/anchor-providers/notification.ts
+````typescript
+/**
+ * Notification Anchor Provider
+ *
+ * Extracts semantic anchors from notification overlays.
+ * Handles heads-up notifications and Dynamic Island.
+ */
+
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    SemanticAnchorId,
+    LayoutRect,
+} from "@tokovo/core";
+import type { WorldState, Notification } from "@tokovo/core";
+
+const APP_ID = "app_notification";
+
+// Device profile lookup (shared pattern across providers)
+function getDeviceProfile(profileId?: string): { dimensions: { width: number; height: number } } {
+    const profiles: Record<string, { dimensions: { width: number; height: number } }> = {
+        iphone16: { dimensions: { width: 430, height: 932 } },
+        iphone15: { dimensions: { width: 430, height: 932 } },
+        iphone14: { dimensions: { width: 390, height: 844 } },
+        pixel8: { dimensions: { width: 412, height: 915 } },
+        pixel7: { dimensions: { width: 412, height: 915 } },
+    };
+    return profiles[profileId || "iphone16"] || profiles.iphone16;
+}
+
+/**
+ * Notification Anchor Provider
+ *
+ * Exposes anchors for:
+ * - headsUpNotification: Banner notification at top
+ * - dynamicIsland: Dynamic Island (iOS 14+)
+ * - device: Full frame fallback
+ */
+export const NotificationAnchorProvider: AnchorProvider = {
+    appId: APP_ID,
+
+    getAnchors(
+        world: WorldState,
+        layout: unknown,
+        deviceId: string
+    ): AnchorSnapshot {
+        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+
+        const device = world.devices[deviceId];
+        const notifications = device?.notifications || [];
+
+        // Get viewport dimensions from device profile (NOT hardcoded)
+        const profile = getDeviceProfile(device?.profileId);
+        const viewportWidth = profile.dimensions.width;
+        const viewportHeight = profile.dimensions.height;
+
+        // =========================================================================
+        // HEADS-UP NOTIFICATION
+        // =========================================================================
+        const activeHeadsUp = notifications.find(n => {
+            if (n.dismissedAt !== undefined) return false;
+            const mode = n.mode || "both";
+            return mode !== "lockscreen";
+        });
+
+        if (activeHeadsUp) {
+            // Heads-up at top of screen, below Dynamic Island
+            anchors.headsUpNotification = {
+                x: 16,
+                y: 60,  // Below Dynamic Island
+                width: viewportWidth - 32,
+                height: 100,  // Typical banner height
+            };
+        }
+
+        // =========================================================================
+        // DYNAMIC ISLAND
+        // =========================================================================
+        // Dynamic Island is always available on modern iPhones
+        const hasDynamicIsland = device?.profileId?.includes("iphone1") || true;
+        if (hasDynamicIsland) {
+            anchors.dynamicIsland = {
+                x: viewportWidth * 0.3,
+                y: 11,
+                width: viewportWidth * 0.4,
+                height: 37,
+            };
+        }
+
+        // =========================================================================
+        // DEVICE (full frame — final fallback, from viewport)
+        // =========================================================================
+        anchors.device = {
+            x: 0,
+            y: 0,
+            width: viewportWidth,
+            height: viewportHeight,
+        };
+
+        return {
+            anchors,
+            deviceId,
+            appId: APP_ID,
+        };
+    },
+};
+````
+
+## File: packages/renderer/src/anchor-providers/phone.ts
+````typescript
+/**
+ * Phone Anchor Provider
+ *
+ * Extracts semantic anchors from phone/call screens.
+ * Handles incoming call, active call, and Dynamic Island states.
+ */
+
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    SemanticAnchorId,
+    LayoutRect,
+} from "@tokovo/core";
+import type { WorldState, CallState } from "@tokovo/core";
+
+const APP_ID = "app_phone";
+
+// Device profile lookup (mirrors WhatsApp provider)
+function getDeviceProfile(profileId?: string): { dimensions: { width: number; height: number } } {
+    const profiles: Record<string, { dimensions: { width: number; height: number } }> = {
+        iphone16: { dimensions: { width: 430, height: 932 } },
+        iphone15: { dimensions: { width: 430, height: 932 } },
+        iphone14: { dimensions: { width: 390, height: 844 } },
+        pixel8: { dimensions: { width: 412, height: 915 } },
+        pixel7: { dimensions: { width: 412, height: 915 } },
+    };
+    return profiles[profileId || "iphone16"] || profiles.iphone16;
+}
+
+/**
+ * Phone Anchor Provider
+ *
+ * Exposes anchors for:
+ * - callPoster: Contact poster image (iOS 17 style)
+ * - acceptButton: Answer button
+ * - declineButton: Decline button
+ * - device: Full frame fallback
+ */
+export const PhoneAnchorProvider: AnchorProvider = {
+    appId: APP_ID,
+
+    getAnchors(
+        world: WorldState,
+        layout: unknown,
+        deviceId: string
+    ): AnchorSnapshot {
+        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+
+        const device = world.devices[deviceId];
+        const call = device?.call;
+
+        // Get viewport dimensions from device profile (NOT hardcoded)
+        const profile = getDeviceProfile(device?.profileId);
+        const viewportWidth = profile.dimensions.width;
+        const viewportHeight = profile.dimensions.height;
+
+        // =========================================================================
+        // CALL POSTER (iOS 17+ style)
+        // =========================================================================
+        if (call && (call.status === "incoming" || call.status === "ringing")) {
+            // Contact poster takes most of the screen
+            anchors.callPoster = {
+                x: 0,
+                y: 100,  // Below status bar
+                width: viewportWidth,
+                height: viewportHeight * 0.55,  // Relative to viewport
+            };
+
+            // Accept button (green, bottom right area)
+            anchors.acceptButton = {
+                x: viewportWidth * 0.6,
+                y: viewportHeight - 200,
+                width: 100,
+                height: 100,
+            };
+
+            // Decline button (red, bottom left area)
+            anchors.declineButton = {
+                x: viewportWidth * 0.15,
+                y: viewportHeight - 200,
+                width: 100,
+                height: 100,
+            };
+        }
+
+        // =========================================================================
+        // ACTIVE CALL (mute, speaker, etc.)
+        // =========================================================================
+        if (call && call.status === "active") {
+            // During active call, poster is centered
+            anchors.callPoster = {
+                x: viewportWidth * 0.25,
+                y: 150,
+                width: viewportWidth * 0.5,
+                height: 300,
+            };
+        }
+
+        // =========================================================================
+        // DEVICE (full frame — final fallback, from viewport)
+        // =========================================================================
+        anchors.device = {
+            x: 0,
+            y: 0,
+            width: viewportWidth,
+            height: viewportHeight,
+        };
+
+        return {
+            anchors,
+            deviceId,
+            appId: APP_ID,
+        };
+    },
+};
+````
+
 ## File: packages/renderer/src/engines/index.ts
 ````typescript
 /**
@@ -29582,65 +31995,62 @@ export { useCameraEngine, type CameraEngineInput, type CameraEngineOutput } from
 export { useAudioEngine, type AudioEngineInput, type AudioEngineOutput, NULL_AUDIO_OUTPUT } from "./useAudioEngine";
 ````
 
-## File: packages/renderer/src/layout/strategies/lockscreen.ts
+## File: packages/renderer/src/layout/config.ts
 ````typescript
-import { LayoutContext, LockscreenLayoutState, NotificationLayout } from "../types";
+import { LayoutConfig } from "./types";
 
-export function computeLockscreenLayout(ctx: LayoutContext): LockscreenLayoutState {
-    const { world, t, activeDeviceId, config } = ctx;
-    const lockConfig = config!.lockscreen!;
-
-    const device = world.devices[activeDeviceId];
-    const notifications = device?.notifications || [];
-
-    const notificationLayouts: NotificationLayout[] = [];
-    let currentY = lockConfig.topPadding;
-
-    // Layout notifications
-    // Show only the last N notifications
-    const visibleNotifications = notifications.slice(-lockConfig.stackMaxNotifications);
-
-    for (const notification of visibleNotifications) {
-        // Calculate height
-        // Heuristic: base height + text length
-        const textLength = (notification.title?.length || 0) + (notification.body?.length || 0);
-        const lines = Math.ceil(Math.max(1, textLength) / lockConfig.charsPerLine);
-        const height = lockConfig.baseNotificationHeight + (lines * lockConfig.lineHeight);
-
-        // Animation: Slide in
-        const appearAt = notification.at || 0;
-        const timeSinceAppear = t - appearAt;
-
-        let opacity = 1;
-        let translateY = 0;
-
-        if (timeSinceAppear < lockConfig.appearDuration) {
-            const progress = Math.max(0, timeSinceAppear / lockConfig.appearDuration);
-            // Cubic bezier approximation for ease-out
-            const ease = 1 - Math.pow(1 - progress, 3);
-
-            opacity = ease;
-            // Slide down from -50px
-            translateY = -50 * (1 - ease);
-        }
-
-        notificationLayouts.push({
-            id: notification.id,
-            y: currentY,
-            height,
-            opacity,
-            translateY
-        });
-
-        currentY += height + lockConfig.notificationGap;
+export const defaultLayoutConfig: LayoutConfig = {
+    cinematicMode: "NONE",
+    chat: {
+        bubbleWidth: 0.78,              // 78% max width for bubbles
+        baseBubbleHeight: 120,          // Base height for message bubble (increased)
+        charsPerLine: 26,               // Characters per line before wrap
+        lineHeight: 66,                 // Line height for text (3x of 22px)
+        verticalGap: 36,                // Gap between messages (3x of 12px)
+        topPadding: 48,                 // Padding from top (reduced)
+        bottomPadding: 120,             // Padding at bottom
+        messageAppearDuration: 15,      // Animation duration (frames)
+        messageAppearOffset: 30,        // Slide-in offset
+        scrollEasingDuration: 20,       // Scroll animation duration
+        maxScrollCatchupSpeed: 50,      // Max scroll speed
+        lockToBottom: true              // Keep scrolled to bottom
+    },
+    feed: {
+        cardWidth: 1.0, // 100% width
+        baseCardHeight: 600,
+        verticalGap: 20,
+        topPadding: 150, // Header + Stories
+        bottomPadding: 150, // Bottom nav
+        charsPerLine: 40,
+        lineHeight: 30,
+        scrollEasingDuration: 20,
+        maxScrollCatchupSpeed: 50,
+        startAtTop: true,
+        autoScroll: false
+    },
+    story: {
+        defaultStoryDuration: 150, // 5 seconds at 30fps
+        progressBarHeight: 4,
+        storyGap: 0,
+        storyTransitionDuration: 15
+    },
+    lockscreen: {
+        topPadding: 150,
+        notificationGap: 10,
+        notificationWidth: 0.9,
+        baseNotificationHeight: 100,
+        charsPerLine: 40,
+        lineHeight: 30,
+        stackMaxNotifications: 5,
+        appearDuration: 15
+    },
+    transition: {
+        defaultScale: 1.0,
+        zoomedScale: 1.2,
+        panDuration: 30,
+        zoomDuration: 30
     }
-
-    return {
-        kind: "LOCKSCREEN",
-        notificationLayouts,
-        meta: {}
-    };
-}
+};
 ````
 
 ## File: packages/renderer/src/layout/director-adapter.ts
@@ -29711,58 +32121,6 @@ export function createDirectorLayoutModel(
         typingIndicatorRect: chatLayout.typingLayout?.rect,
         lastMessageRect,
     };
-}
-````
-
-## File: packages/renderer/src/layout/index.ts
-````typescript
-import { LayoutContext, LayoutState } from "./types";
-import { defaultLayoutConfig } from "./config";
-import { computeChatLayout } from "./strategies/chat";
-import { computeFeedLayout } from "./strategies/feed";
-import { computeStoryLayout } from "./strategies/story";
-import { computeLockscreenLayout } from "./strategies/lockscreen";
-import { computeTransitionLayout } from "./strategies/transition";
-
-export * from "./types";
-export * from "./config";
-
-export function computeLayout(ctx: LayoutContext): LayoutState {
-    // Deep merge provided config with defaults
-    const config = {
-        ...defaultLayoutConfig,
-        ...ctx.config,
-        chat: { ...defaultLayoutConfig.chat, ...ctx.config?.chat },
-        feed: { ...defaultLayoutConfig.feed, ...ctx.config?.feed },
-        story: { ...defaultLayoutConfig.story, ...ctx.config?.story },
-        lockscreen: { ...defaultLayoutConfig.lockscreen, ...ctx.config?.lockscreen },
-        transition: { ...defaultLayoutConfig.transition, ...ctx.config?.transition },
-    };
-    const fullCtx = { ...ctx, config };
-
-    switch (ctx.viewKind) {
-        case "CHAT":
-            return computeChatLayout(fullCtx);
-        case "FEED":
-            return computeFeedLayout(fullCtx);
-        case "STORY":
-            return computeStoryLayout(fullCtx);
-        case "LOCKSCREEN":
-            return computeLockscreenLayout(fullCtx);
-        case "TRANSITION":
-            return computeTransitionLayout(fullCtx);
-        default:
-            // Fallback to empty transition state
-            return {
-                kind: "TRANSITION",
-                deviceTranslateX: 0,
-                deviceTranslateY: 0,
-                deviceScale: 1,
-                deviceRotation: 0,
-                overlayOpacity: 0,
-                meta: {}
-            };
-    }
 }
 ````
 
@@ -30014,6 +32372,80 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
 };
 
 export default AudioLayer;
+````
+
+## File: packages/renderer/src/DeviceFrame.tsx
+````typescript
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { DeviceState } from "@tokovo/core";
+
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
+}
+
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
+    // Strategy pattern: Select frame component based on profile ID
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
+
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
+
+    return (
+        <FrameComponent {...frameProps} statusBar={statusBar}>
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)",
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
 ````
 
 ## File: packages/renderer/src/HomeScreenView.tsx
@@ -31399,855 +33831,358 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/feed/FeedView.tsx
+## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
 ````typescript
 import React from "react";
-import { InstagramState, Post, StoryUser } from "../../types";
-import { LayoutState, FeedLayoutState } from "@tokovo/core";
+import { WorldState } from "@tokovo/core";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
 // ============================================================================
-// HEADER ICONS - Authentic Instagram iOS
+// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
 // ============================================================================
 
-const CameraIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8" />
+const ChevronLeftIcon = () => (
+    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const MessengerIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+const VideoCallIcon = () => (
+    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
+        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
+        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
     </svg>
 );
 
-const HeartIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "#FF3040" : "none"} stroke={filled ? "#FF3040" : "white"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+const InfoIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
+        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-const CommentIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+const CameraCircleIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
+        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
+        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
     </svg>
 );
 
-const ShareIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+const MicrophoneIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
+        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
 );
 
-const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+const ImageIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
+        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
+        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const MoreIcon = () => (
-    <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
-        <circle cx="12" cy="5" r="1.5" />
-        <circle cx="12" cy="12" r="1.5" />
-        <circle cx="12" cy="19" r="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// INSTAGRAM LOGO - Script font with dropdown
-// ============================================================================
-
-const InstagramLogo = () => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12
-    }}>
-        <span style={{
-            fontFamily: "'Billabong', 'Grand Hotel', cursive, -apple-system",
-            fontSize: 90,
-            color: "white",
-            letterSpacing: 1,
-            fontWeight: 400
-        }}>
-            Instagram
-        </span>
-        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    </div>
-);
-
-// ============================================================================
-// STORY BUBBLE - Larger authentic Instagram style
-// ============================================================================
-
-const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginRight: 36,
-        width: 210
-    }}>
-        {/* Story Ring */}
-        <div style={{
-            width: 210,
-            height: 210,
-            borderRadius: "50%",
-            padding: 9,
-            background: isYourStory
-                ? "transparent"
-                : user.hasUnseen
-                    ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-                    : "#444"
-        }}>
-            <div style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "50%",
-                border: "6px solid #000",
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-
-                {/* Your Story + icon */}
-                {isYourStory && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: 0,
-                        width: 60,
-                        height: 60,
-                        borderRadius: "50%",
-                        backgroundColor: "#0095F6",
-                        border: "4px solid #000",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="3" strokeLinecap="round" />
-                        </svg>
-                    </div>
-                )}
-            </div>
-        </div>
-
-        {/* Username */}
-        <div style={{
-            color: "white",
-            fontSize: 30,
-            marginTop: 15,
-            maxWidth: 210,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            textAlign: "center"
-        }}>
-            {isYourStory ? "Your story" : user.username}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// POST ITEM - Authentic Instagram post
-// ============================================================================
-
-const PostItem: React.FC<{ post: Post }> = ({ post }) => (
-    <div style={{ marginBottom: 48 }}>
-        {/* Header */}
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "24px 36px",
-            gap: 24
-        }}>
-            {/* Avatar with story ring if applicable */}
-            <div style={{
-                width: 102,
-                height: 102,
-                borderRadius: "50%",
-                padding: 6,
-                background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    border: "4px solid #000",
-                    backgroundImage: `url(${post.avatar})`,
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-            </div>
-
-            {/* Username + Location */}
-            <div style={{ flex: 1 }}>
-                <div style={{
-                    color: "white",
-                    fontSize: 39,
-                    fontWeight: 600,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {post.username}
-                </div>
-            </div>
-
-            <MoreIcon />
-        </div>
-
-        {/* Image */}
-        <div style={{
-            width: "100%",
-            aspectRatio: "1/1",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: `url(${post.image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }} />
-
-        {/* Actions */}
-        <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "30px 36px 18px",
-            alignItems: "center"
-        }}>
-            <div style={{ display: "flex", gap: 48 }}>
-                <HeartIcon filled={post.liked} />
-                <CommentIcon />
-                <ShareIcon />
-            </div>
-            <BookmarkIcon filled={post.saved} />
-        </div>
-
-        {/* Likes */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <div style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.likes.toLocaleString()} likes
-            </div>
-        </div>
-
-        {/* Caption */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <span style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                marginRight: 12,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.username}
-            </span>
-            <span style={{ color: "white", fontSize: 39 }}>
-                {post.caption}
-            </span>
-        </div>
-
-        {/* Comments link */}
-        <div style={{ padding: "0 36px", marginBottom: 6 }}>
-            <span style={{ color: "#A8A8A8", fontSize: 36 }}>
-                View all {post.comments} comments
-            </span>
-        </div>
-
-        {/* Timestamp */}
-        <div style={{ padding: "0 36px" }}>
-            <span style={{ color: "#A8A8A8", fontSize: 30, textTransform: "uppercase" }}>
-                2 hours ago
-            </span>
-        </div>
-    </div>
-);
-
-// ============================================================================
-// FEED VIEW - Main export
-// ============================================================================
-
-export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
-    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
-    const scrollY = feedLayout?.scrollY || 0;
-
-    // Create "Your Story" user for first position
-    const yourStory: StoryUser = {
-        username: "Your story",
-        avatar: "",
-        hasUnseen: false,
-        stories: []
-    };
-
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            {/* Header */}
-            <div style={{
-                height: 156,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 36px",
-                marginTop: 120,
-                backgroundColor: "#000",
-                zIndex: 10
-            }}>
-                <CameraIcon />
-                <InstagramLogo />
-                <div style={{ display: "flex", gap: 60 }}>
-                    <HeartIcon />
-                    <MessengerIcon />
-                </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div style={{
-                flex: 1,
-                overflow: "hidden",
-                position: "relative"
-            }}>
-                <div style={{
-                    transform: `translateY(-${scrollY}px)`
-                }}>
-                    {/* Stories Row */}
-                    <div style={{
-                        display: "flex",
-                        padding: "24px 36px",
-                        borderBottom: "1px solid #262626",
-                        marginBottom: 6,
-                        overflowX: "hidden"
-                    }}>
-                        <StoryBubble user={yourStory} isYourStory />
-                        {state.stories.users.map(user => (
-                            <StoryBubble key={user.username} user={user} />
-                        ))}
-                    </div>
-
-                    {/* Posts */}
-                    {state.feed.posts.map(post => (
-                        <PostItem key={post.id} post={post} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/reels/ReelsView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-// ============================================================================
-// REELS ICONS - Authentic Instagram style
-// ============================================================================
-
-const CameraIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" />
-        <polygon points="10,8 17,12 10,16" fill="white" />
-    </svg>
-);
-
-const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
-    <svg width="84" height="84" viewBox="0 0 24 24">
-        <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            fill={filled ? "#FF3040" : "none"}
-            stroke={filled ? "#FF3040" : "white"}
-            strokeWidth="1.8"
-        />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="white">
-        <circle cx="12" cy="5" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="12" cy="19" r="2" />
-    </svg>
-);
-
-const BookmarkIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-// ============================================================================
-// AUDIO BAR - Scrolling song at bottom
-// ============================================================================
-
-const AudioBar: React.FC<{ song: string; artist: string }> = ({ song, artist }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 18,
-        paddingRight: 30
-    }}>
-        {/* Music note icon */}
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="white">
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" fill="white" />
-            <circle cx="18" cy="16" r="3" fill="white" />
-        </svg>
-        {/* Song text */}
-        <div style={{
-            fontSize: 36,
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-            maxWidth: 600
-        }}>
-            {artist} · {song}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// ROTATING ALBUM COVER
-// ============================================================================
-
-const AlbumCover: React.FC<{ imageUrl?: string }> = ({ imageUrl }) => (
-    <div style={{
-        width: 108,
-        height: 108,
-        borderRadius: 18,
-        border: "3px solid rgba(255,255,255,0.6)",
-        backgroundImage: imageUrl
-            ? `url(${imageUrl})`
-            : "linear-gradient(135deg, #405DE6 0%, #833AB4 50%, #C13584 100%)",
-        backgroundSize: "cover",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-    }}>
-        {!imageUrl && (
-            <div style={{
-                width: 45,
-                height: 45,
-                borderRadius: "50%",
-                backgroundColor: "white",
-                border: "3px solid #333"
-            }} />
-        )}
-    </div>
-);
-
-// ============================================================================
-// SIDE ACTION BUTTON
-// ============================================================================
-
-const SideAction: React.FC<{ icon: React.ReactNode; count?: string }> = ({ icon, count }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 9
-    }}>
-        {icon}
-        {count && (
-            <span style={{ fontSize: 30, fontWeight: 500 }}>{count}</span>
-        )}
-    </div>
-);
-
-// ============================================================================
-// REELS VIEW - Main export
-// ============================================================================
-
-export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            position: "relative",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-        }}>
-            {/* Video Background */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `url(https://picsum.photos/seed/reel1/1080/1920)`,
-                backgroundSize: "cover",
-                backgroundPosition: "center"
-            }} />
-
-            {/* Gradient Overlay */}
-            <div style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "50%",
-                background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
-                pointerEvents: "none"
-            }} />
-
-            {/* Header */}
-            <div style={{
-                position: "absolute",
-                top: 150,
-                left: 36,
-                right: 36,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                zIndex: 10
-            }}>
-                <div style={{
-                    fontSize: 54,
-                    fontWeight: 700,
-                    textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-                }}>
-                    Reels
-                </div>
-                <CameraIcon />
-            </div>
-
-            {/* Right Side Actions */}
-            <div style={{
-                position: "absolute",
-                bottom: 420,
-                right: 30,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 48,
-                zIndex: 10
-            }}>
-                <SideAction icon={<HeartIcon />} count="123K" />
-                <SideAction icon={<CommentIcon />} count="1.2K" />
-                <SideAction icon={<ShareIcon />} />
-                <SideAction icon={<BookmarkIcon />} />
-                <SideAction icon={<MoreIcon />} />
-                <AlbumCover />
-            </div>
-
-            {/* Bottom Info Section */}
-            <div style={{
-                position: "absolute",
-                bottom: 300,
-                left: 36,
-                right: 180, // Space for side actions
-                zIndex: 10
-            }}>
-                {/* User Info */}
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 24,
-                    marginBottom: 21
-                }}>
-                    {/* Avatar */}
-                    <div style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: "50%",
-                        border: "3px solid white",
-                        backgroundImage: `url(https://i.pravatar.cc/150?u=reel)`,
-                        backgroundSize: "cover"
-                    }} />
-                    {/* Username */}
-                    <span style={{
-                        fontSize: 42,
-                        fontWeight: 600,
-                        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-                    }}>
-                        reels_creator
-                    </span>
-                    {/* Follow Button */}
-                    <div style={{
-                        border: "2px solid white",
-                        borderRadius: 12,
-                        padding: "12px 30px",
-                        fontSize: 36,
-                        fontWeight: 600
-                    }}>
-                        Follow
-                    </div>
-                </div>
-
-                {/* Caption */}
-                <div style={{
-                    fontSize: 39,
-                    marginBottom: 21,
-                    textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                    lineHeight: 1.3
-                }}>
-                    Wait for the drop! 🎵🔥 #dance #viral #trending
-                </div>
-
-                {/* Audio Bar */}
-                <AudioBar song="Original Audio" artist="reels_creator" />
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
-````typescript
-import React from "react";
-import { InstagramState, StoryUser } from "../../types";
-import { LayoutState, StoryLayoutState } from "@tokovo/core";
-
-// ============================================================================
-// ICONS
-// ============================================================================
-
-const CloseIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="white">
-        <circle cx="5" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="19" cy="12" r="2" />
+const StickerIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
+        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="8" cy="9" r="1" fill="white" />
+        <circle cx="14" cy="9" r="1" fill="white" />
     </svg>
 );
 
 const HeartIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
     </svg>
 );
 
 // ============================================================================
-// PROGRESS BAR
+// HEADER COMPONENT - Authentic Instagram DM Navigation
 // ============================================================================
 
-const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
-    <div style={{ display: "flex", gap: 9, padding: "30px 24px" }}>
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} style={{
-                flex: 1,
-                height: 9,
-                backgroundColor: "rgba(255,255,255,0.3)",
-                borderRadius: 6,
-                overflow: "hidden"
-            }}>
+interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    isActive?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
+    <div style={{
+        height: 180,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 42px",
+        marginTop: 144, // Below dynamic island
+        zIndex: 10
+    }}>
+        {/* Back button */}
+        <ChevronLeftIcon />
+
+        {/* Avatar + Name Group */}
+        <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            marginLeft: 36,
+            gap: 30
+        }}>
+            {/* Avatar with active indicator */}
+            <div style={{ position: "relative" }}>
                 <div style={{
-                    height: "100%",
-                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
-                    backgroundColor: "white",
-                    borderRadius: 6,
-                    transition: "width 0.1s linear"
-                }} />
+                    width: 102,
+                    height: 102,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 42,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                </div>
+                {isActive && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 3,
+                        right: 3,
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        backgroundColor: "#44D62D",
+                        border: "4px solid #000"
+                    }} />
+                )}
             </div>
-        ))}
+
+            {/* Username + Status */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{
+                    fontSize: 48,
+                    fontWeight: "600",
+                    color: "white",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+                }}>
+                    {contactName}
+                </span>
+                <span style={{
+                    fontSize: 36,
+                    color: "#A8A8A8",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {isActive ? "Active now" : "Active 2h ago"}
+                </span>
+            </div>
+        </div>
+
+        {/* Action icons */}
+        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
+            <VideoCallIcon />
+            <InfoIcon />
+        </div>
     </div>
 );
 
 // ============================================================================
-// EMOJI SHORTCUTS
+// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
 // ============================================================================
 
-const EmojiShortcuts = () => (
-    <div style={{ display: "flex", gap: 30 }}>
-        {["❤️", "🔥", "👏", "😂", "😮", "😢"].map(emoji => (
-            <span key={emoji} style={{ fontSize: 66 }}>{emoji}</span>
-        ))}
-    </div>
-);
+interface MessageBubbleProps {
+    msg: { id: string; from: string; text: string };
+    layout: ChatMessageLayout;
+}
 
-// ============================================================================
-// STORIES VIEW - Main export
-// ============================================================================
-
-export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
-    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
-
-    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
-    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeIndex = storyLayout.activeStoryIndex;
-    const progress = storyLayout.storyProgress;
-    const activeStory = activeUser.stories[activeIndex];
-
-    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, y } = layout;
 
     return (
         <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 42,
+            right: isMe ? 42 : "auto",
+            maxWidth: "70%",
+            opacity,
+            transform: `translateY(${translateY}px)`,
         }}>
-            {/* Story Images (with transitions) */}
-            {storyLayout.storyLayouts.map(sl => {
-                const story = activeUser.stories[sl.index];
-                if (!story) return null;
+            <div style={{
+                // Instagram gradient for sent messages
+                background: isMe
+                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
+                    : "#262626",
+                color: "white",
+                padding: "30px 42px",
+                borderRadius: 66, // Fully pill-shaped
+                fontSize: 48,
+                lineHeight: "60px",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                wordWrap: "break-word"
+            }}>
+                {msg.text}
+            </div>
+        </div>
+    );
+};
 
-                return (
-                    <div key={story.id} style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundImage: `url(${story.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        opacity: sl.opacity,
-                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`
-                    }} />
-                );
-            })}
+// ============================================================================
+// MESSAGE LIST
+// ============================================================================
 
-            {/* Top Gradient */}
+interface MessageListProps {
+    messages: any[];
+    layout?: ChatLayoutState;
+}
+
+const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
+
+    return (
+        <div style={{
+            flex: 1,
+            position: "relative",
+            overflow: "hidden"
+        }}>
             <div style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 450,
-                background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Bottom Gradient */}
-            <div style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 450,
-                background: "linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Top UI */}
-            <div style={{ position: "relative", zIndex: 10, paddingTop: 120 }}>
-                {/* Progress bars */}
-                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
-
-                {/* User info */}
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 24px",
-                    marginTop: 12
-                }}>
-                    {/* Avatar */}
-                    <div style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: "50%",
-                        backgroundImage: `url(${activeUser.avatar})`,
-                        backgroundSize: "cover",
-                        backgroundColor: "#333",
-                        marginRight: 24
-                    }} />
-
-                    {/* Username + Time */}
-                    <span style={{
-                        fontSize: 42,
-                        fontWeight: 600,
-                        marginRight: 18
-                    }}>
-                        {activeUser.username}
-                    </span>
-                    <span style={{
-                        fontSize: 36,
-                        opacity: 0.7
-                    }}>
-                        12h
-                    </span>
-
-                    <div style={{ flex: 1 }} />
-
-                    {/* Actions */}
-                    <MoreIcon />
-                    <div style={{ width: 30 }} />
-                    <CloseIcon />
-                </div>
-            </div>
-
-            {/* Bottom UI */}
-            <div style={{
-                position: "absolute",
-                bottom: 60,
-                left: 0,
-                right: 0,
-                padding: "0 36px",
-                display: "flex",
-                alignItems: "center",
-                gap: 30,
-                zIndex: 10
+                height: contentHeight,
+                transform: `translateY(-${scrollY}px)`,
+                paddingTop: 30,
+                paddingBottom: 30
             }}>
-                {/* Message Input */}
-                <div style={{
-                    flex: 1,
-                    height: 132,
-                    borderRadius: 66,
-                    border: "3px solid rgba(255,255,255,0.5)",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 42px",
-                    fontSize: 42,
-                    color: "rgba(255,255,255,0.8)"
-                }}>
-                    Send message
-                </div>
-
-                {/* Quick reactions */}
-                <HeartIcon />
-                <ShareIcon />
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
             </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// INPUT AREA - Authentic Instagram DM Composer
+// ============================================================================
+
+interface InputAreaProps {
+    text?: string;
+}
+
+const InputArea: React.FC<InputAreaProps> = ({ text }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "24px 42px",
+        gap: 24
+    }}>
+        {/* Input container */}
+        <div style={{
+            flex: 1,
+            minHeight: 132,
+            backgroundColor: "#262626",
+            borderRadius: 66,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 24px",
+            gap: 18,
+            border: "1px solid #363636"
+        }}>
+            {/* Camera button */}
+            <CameraCircleIcon />
+
+            {/* Input text */}
+            <div style={{
+                flex: 1,
+                fontSize: 48,
+                color: text ? "white" : "#A8A8A8",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                padding: "0 12px"
+            }}>
+                {text || "Message..."}
+            </div>
+
+            {/* Right icons - hidden when typing */}
+            {!text && (
+                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
+                    <MicrophoneIcon />
+                    <ImageIcon />
+                    <StickerIcon />
+                </div>
+            )}
+        </div>
+
+        {/* Heart or Send button */}
+        {text ? (
+            <span style={{
+                color: "#0095F6",
+                fontSize: 48,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                Send
+            </span>
+        ) : (
+            <HeartIcon />
+        )}
+    </div>
+);
+
+// ============================================================================
+// HOME INDICATOR
+// ============================================================================
+
+const HomeIndicator: React.FC = () => (
+    <div style={{
+        height: 102,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-end",
+        paddingBottom: 24
+    }}>
+        <div style={{
+            width: 402,
+            height: 15,
+            backgroundColor: "white",
+            borderRadius: 9,
+            opacity: 0.4
+        }} />
+    </div>
+);
+
+// ============================================================================
+// MAIN VIEW EXPORT
+// ============================================================================
+
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
+    const conversationId = Object.keys(world.conversations)[0];
+    const conversation = world.conversations[conversationId];
+    const messages = conversation ? conversation.messages : [];
+
+    return (
+        <div style={{
+            backgroundColor: "#000000",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            color: "white",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
+        }}>
+            <Header contactName="sarah.design" isActive={true} />
+            <MessageList messages={messages} layout={layout} />
+            <InputArea />
+            <HomeIndicator />
         </div>
     );
 };
@@ -33017,6 +34952,435 @@ const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
 };
 
 export default TypingBubble;
+````
+
+## File: packages/core/src/camera/presets.ts
+````typescript
+/**
+ * Cinematic Camera Presets
+ * 
+ * Pre-configured motion profiles for common scenarios.
+ * Presets provide consistent look-and-feel across episodes.
+ * 
+ * USAGE:
+ * ```ts
+ * const preset = CAMERA_PRESETS["tense-chat"];
+ * // Apply preset values to camera behavior
+ * ```
+ */
+
+// =============================================================================
+// PRESET TYPES
+// =============================================================================
+
+/**
+ * Numeric preset configuration
+ */
+export interface CameraPreset {
+    /** Display name */
+    name: string;
+
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLag: number;
+
+    /** Push-in intensity for new messages: 0.01 (subtle) to 0.15 (dramatic) */
+    pushInIntensity: number;
+
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeed: number;
+
+    /** Default easing function */
+    easing: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+
+    /** Shake intensity for reactions/emphasis: 0 (none) to 10 (strong) */
+    shakeIntensity: number;
+
+    /** Minimum time between camera moves (frames) */
+    cooldownFrames: number;
+
+    /** Whether to auto-follow new messages */
+    autoFollow: boolean;
+
+    /** Description for documentation */
+    description: string;
+}
+
+// =============================================================================
+// PRESET DEFINITIONS
+// =============================================================================
+
+export const CAMERA_PRESETS: Record<string, CameraPreset> = {
+    /**
+     * Calm Chat
+     * - Slow, smooth, minimal movement
+     * - Ideal for: normal conversations, casual chat
+     */
+    "calm-chat": {
+        name: "Calm Chat",
+        followLag: 0.8,
+        pushInIntensity: 0.02,
+        panSpeed: 0.5,
+        easing: "cinematic",
+        shakeIntensity: 0,
+        cooldownFrames: 60, // 2 seconds
+        autoFollow: true,
+        description: "Slow, smooth, minimal movement for relaxed conversations",
+    },
+
+    /**
+     * Tense Chat
+     * - Faster, tighter, more reactive
+     * - Ideal for: arguments, drama, confrontation
+     */
+    "tense-chat": {
+        name: "Tense Chat",
+        followLag: 0.3,
+        pushInIntensity: 0.08,
+        panSpeed: 1.2,
+        easing: "ease-out",
+        shakeIntensity: 3,
+        cooldownFrames: 20,
+        autoFollow: true,
+        description: "Faster, tighter framing for tense conversations",
+    },
+
+    /**
+     * Fast Chat
+     * - Rapid exchanges, minimal lag
+     * - Ideal for: rapid-fire texting, jokes, banter
+     */
+    "fast-chat": {
+        name: "Fast Chat",
+        followLag: 0.1,
+        pushInIntensity: 0.05,
+        panSpeed: 2.0,
+        easing: "ease-in-out",
+        shakeIntensity: 1,
+        cooldownFrames: 10,
+        autoFollow: true,
+        description: "Quick, reactive camera for rapid exchanges",
+    },
+
+    /**
+     * Dramatic
+     * - Maximum intensity for reveals and emotional moments
+     * - Ideal for: breakups, confessions, plot twists
+     */
+    "dramatic": {
+        name: "Dramatic",
+        followLag: 0.5,
+        pushInIntensity: 0.12,
+        panSpeed: 0.8,
+        easing: "cinematic",
+        shakeIntensity: 5,
+        cooldownFrames: 45,
+        autoFollow: true,
+        description: "High intensity framing for emotional moments",
+    },
+
+    /**
+     * Static
+     * - No automatic camera movement
+     * - Ideal for: showcase, manual camera control
+     */
+    "static": {
+        name: "Static",
+        followLag: 1.0,
+        pushInIntensity: 0,
+        panSpeed: 0,
+        easing: "linear",
+        shakeIntensity: 0,
+        cooldownFrames: 9999,
+        autoFollow: false,
+        description: "No automatic camera movement - fully manual",
+    },
+
+    /**
+     * Documentary
+     * - Somewhat detached, observational
+     * - Ideal for: recaps, explanations, tutorials
+     */
+    "documentary": {
+        name: "Documentary",
+        followLag: 0.7,
+        pushInIntensity: 0.03,
+        panSpeed: 0.6,
+        easing: "ease-out",
+        shakeIntensity: 0,
+        cooldownFrames: 90,
+        autoFollow: true,
+        description: "Detached, observational framing for recaps",
+    },
+};
+
+// =============================================================================
+// PRESET HELPERS
+// =============================================================================
+
+/**
+ * Get a preset by name (case-insensitive)
+ * Falls back to "calm-chat" if not found
+ */
+export function getPreset(name: string): CameraPreset {
+    const normalized = name.toLowerCase().replace(/\s+/g, "-");
+    return CAMERA_PRESETS[normalized] || CAMERA_PRESETS["calm-chat"];
+}
+
+/**
+ * List all available preset names
+ */
+export function listPresets(): string[] {
+    return Object.keys(CAMERA_PRESETS);
+}
+
+/**
+ * Blend two presets together
+ * Useful for gradual transitions (e.g., conversation escalating)
+ * 
+ * @param from - Starting preset
+ * @param to - Ending preset  
+ * @param t - Blend factor 0-1 (0 = from, 1 = to)
+ */
+export function blendPresets(
+    from: CameraPreset,
+    to: CameraPreset,
+    t: number
+): CameraPreset {
+    const blend = Math.max(0, Math.min(1, t));
+
+    return {
+        name: `${from.name} → ${to.name}`,
+        followLag: lerp(from.followLag, to.followLag, blend),
+        pushInIntensity: lerp(from.pushInIntensity, to.pushInIntensity, blend),
+        panSpeed: lerp(from.panSpeed, to.panSpeed, blend),
+        easing: blend < 0.5 ? from.easing : to.easing,
+        shakeIntensity: lerp(from.shakeIntensity, to.shakeIntensity, blend),
+        cooldownFrames: Math.round(lerp(from.cooldownFrames, to.cooldownFrames, blend)),
+        autoFollow: blend < 0.5 ? from.autoFollow : to.autoFollow,
+        description: `Blend: ${from.name} to ${to.name}`,
+    };
+}
+
+/**
+ * Linear interpolation helper
+ */
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+
+// =============================================================================
+// SHOT PRESETS (for Semantic Anchor System)
+// =============================================================================
+
+import type { EasingType } from "../types";
+
+/**
+ * Shot preset for semantic anchor-driven camera.
+ * These are simpler than full CameraPresets — just the core motion parameters.
+ *
+ * USAGE: Apps reference by name, optionally override with deltas.
+ */
+export interface ShotPreset {
+    /** Zoom scale (1.0 = no zoom) */
+    scale: number;
+
+    /** Easing function */
+    easing: EasingType;
+
+    /** Optional shake intensity */
+    shake?: number;
+
+    /** Duration in frames */
+    durationFrames: number;
+
+    /** Hold at peak before returning (frames) */
+    holdFrames?: number;
+}
+
+/**
+ * Global shot presets — shared across all apps.
+ * Apps reference these by name. This is the "Tokovo look".
+ *
+ * If an app needs customization, use presetOverrides (deltas, not new presets).
+ */
+export const SHOT_PRESETS = {
+    /** Dramatic push-in for emotional moments */
+    dramatic: {
+        scale: 1.3,
+        easing: "ease-out" as EasingType,
+        shake: 4,
+        durationFrames: 25,
+    },
+
+    /** Subtle zoom for typing/anticipation */
+    subtle: {
+        scale: 1.08,
+        easing: "cinematic" as EasingType,
+        shake: 0,
+        durationFrames: 30,
+    },
+
+    /** Quick snap for reactions/likes */
+    snap: {
+        scale: 1.15,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 10,
+    },
+
+    /** Documentary style — minimal movement */
+    documentary: {
+        scale: 1.0,
+        easing: "linear" as EasingType,
+        shake: 2,
+        durationFrames: 45,
+    },
+
+    /** Impact shake for emphasis */
+    impact: {
+        scale: 1.25,
+        easing: "ease-out" as EasingType,
+        shake: 8,
+        durationFrames: 15,
+    },
+
+    /** Smooth push for new messages */
+    message: {
+        scale: 1.2,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 25,
+    },
+
+    /** Reset/pullback to neutral */
+    reset: {
+        scale: 1.0,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 20,
+    },
+} as const;
+
+export type ShotPresetId = keyof typeof SHOT_PRESETS;
+
+// =============================================================================
+// ANCHOR FRAMING CONFIGURATION (Layer 3: Semantic Interpretation)
+// =============================================================================
+
+/**
+ * Framing instruction for how to position anchor in frame.
+ * 
+ * This is the PROPER PLACE for semantic interpretation ("lastMessage should
+ * be in lower-third"). Camera Math (Layer 4) should NOT know about semantics.
+ */
+export interface AnchorFraming {
+    /** Anchor point within frame: normalized 0-1 (x, y) */
+    anchorPoint: { x: number; y: number };
+
+    /** Padding around anchor in pixels */
+    paddingPx?: number;
+
+    /** Target fill: how much of frame the anchor should occupy (0-1) */
+    targetFill?: number;
+}
+
+/**
+ * Default framing by anchor type.
+ * 
+ * This defines WHERE in the frame each semantic anchor type should appear.
+ * Camera Math receives this as a target rect + framing config — it just does
+ * pure fit/clamp math without understanding "lastMessage" or "inputArea".
+ * 
+ * DESIGN: Semantic interpretation lives HERE (Layer 3), not in Camera Math (Layer 4).
+ */
+export const ANCHOR_FRAMING: Record<string, AnchorFraming> = {
+    // Chat anchors
+    lastMessage: {
+        anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third, slightly off-center
+        paddingPx: 24,
+        targetFill: 0.55,
+    },
+    inputArea: {
+        anchorPoint: { x: 0.5, y: 0.9 },   // Very bottom of frame
+        paddingPx: 16,
+        targetFill: 0.4,
+    },
+    typingIndicator: {
+        anchorPoint: { x: 0.5, y: 0.82 },  // Just above input
+        paddingPx: 20,
+        targetFill: 0.3,
+    },
+
+    // Call anchors
+    callPoster: {
+        anchorPoint: { x: 0.5, y: 0.4 },   // Upper portion for contact poster
+        paddingPx: 32,
+        targetFill: 0.65,
+    },
+    acceptButton: {
+        anchorPoint: { x: 0.7, y: 0.85 },  // Lower right
+        paddingPx: 40,
+        targetFill: 0.25,
+    },
+    declineButton: {
+        anchorPoint: { x: 0.3, y: 0.85 },  // Lower left
+        paddingPx: 40,
+        targetFill: 0.25,
+    },
+
+    // Notification anchors
+    headsUpNotification: {
+        anchorPoint: { x: 0.5, y: 0.1 },   // Top of frame
+        paddingPx: 16,
+        targetFill: 0.35,
+    },
+    dynamicIsland: {
+        anchorPoint: { x: 0.5, y: 0.05 },  // Very top
+        paddingPx: 8,
+        targetFill: 0.15,
+    },
+
+    // Default fallback
+    device: {
+        anchorPoint: { x: 0.5, y: 0.5 },   // Center
+        paddingPx: 0,
+        targetFill: 1.0,
+    },
+};
+
+/**
+ * Get framing config for an anchor.
+ * Falls back to device framing if anchor not found.
+ */
+export function getAnchorFraming(anchor: string): AnchorFraming {
+    return ANCHOR_FRAMING[anchor] || ANCHOR_FRAMING.device;
+}
+
+/**
+ * Get a shot preset by ID with optional overrides (deltas).
+ *
+ * @param id - Preset ID
+ * @param overrides - Optional delta overrides (partial)
+ * @returns Merged preset
+ */
+export function getShotPreset(
+    id: ShotPresetId,
+    overrides?: Partial<ShotPreset>
+): ShotPreset {
+    const base = SHOT_PRESETS[id];
+    if (!overrides) return { ...base };
+
+    return {
+        ...base,
+        ...overrides,
+    };
+}
+
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
+
+export default CAMERA_PRESETS;
 ````
 
 ## File: packages/devices/src/StatusBar.tsx
@@ -34587,6 +36951,448 @@ export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 ````
 
+## File: packages/renderer/src/engines/useCameraEngine.ts
+````typescript
+/**
+ * Camera Engine
+ *
+ * Pure computation layer that determines:
+ * - Base camera transform from world state
+ * - DirectorLite effects (if enabled)
+ * - Semantic Anchor integration (NEW)
+ * - Final CSS styles for camera wrapper
+ *
+ * ARCHITECTURE:
+ * 1. Get base transform from world state
+ * 2. Get anchors from registered anchor providers
+ * 3. Derive director effects using signals + anchors
+ * 4. Apply effects to produce final transform
+ * 5. Build CSS styles
+ */
+
+import { useMemo, useRef } from "react";
+import {
+    WorldState,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+    DirectorOutput,
+    AnchorSnapshot,
+    AnchorStabilityState,
+    DEFAULT_ANCHOR_STABILITY,
+    ANCHOR_STABILITY_FRAMES,
+    SemanticAnchorId,
+    resolveAnchorWithFallback,
+} from "@tokovo/core";
+import { LayoutEngineOutput } from "./useLayoutEngine";
+import { createDirectorLayoutModel } from "../layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "../camera-composer";
+import { getAnchorsForApp } from "../anchor-providers/registry";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface CameraEngineInput {
+    world: WorldState;
+    t: number;
+    layoutOutput: LayoutEngineOutput;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+    /** Enable semantic anchor system (NEW) */
+    anchorSystemEnabled?: boolean;
+}
+
+export interface CameraEngineOutput {
+    /** Final camera transform (after DirectorLite) */
+    transform: CameraTransform;
+    /** CSS style for camera wrapper */
+    cameraStyle: React.CSSProperties;
+    /** CSS style for device wrapper (legacy layout transforms) */
+    deviceStyle: React.CSSProperties;
+    /** DirectorLite output (for debugging) */
+    directorOutput?: DirectorOutput;
+    /** Current anchor snapshot (for debugging) */
+    anchorSnapshot?: AnchorSnapshot;
+    /** Anchor stability state (for debugging) */
+    anchorStability?: AnchorStabilityState;
+}
+
+// =============================================================================
+// ANCHOR STABILITY TRACKING
+// =============================================================================
+
+/**
+ * Track anchor stability across frames.
+ * Implements hysteresis: only switch anchors after N stable frames.
+ */
+function updateAnchorStability(
+    prevState: AnchorStabilityState,
+    candidateAnchor: SemanticAnchorId | null,
+    t: number
+): { state: AnchorStabilityState; effectiveAnchor: SemanticAnchorId | null } {
+    // Same anchor as candidate → increment stable frames
+    if (candidateAnchor === prevState.candidateAnchor) {
+        const newStableFrames = prevState.stableFrames + 1;
+
+        // Check if candidate has been stable long enough to become current
+        if (newStableFrames >= ANCHOR_STABILITY_FRAMES && candidateAnchor !== prevState.currentAnchor) {
+            return {
+                state: {
+                    currentAnchor: candidateAnchor,
+                    candidateAnchor,
+                    stableFrames: newStableFrames,
+                    lastSwitchFrame: t,
+                },
+                effectiveAnchor: candidateAnchor,
+            };
+        }
+
+        return {
+            state: {
+                ...prevState,
+                stableFrames: newStableFrames,
+            },
+            effectiveAnchor: prevState.currentAnchor,
+        };
+    }
+
+    // Different anchor → reset stability counter
+    return {
+        state: {
+            ...prevState,
+            candidateAnchor,
+            stableFrames: 1,
+        },
+        effectiveAnchor: prevState.currentAnchor,
+    };
+}
+
+// =============================================================================
+// CAMERA ENGINE HOOK
+// =============================================================================
+
+export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
+    const {
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled = true,
+        directorDebug = false,
+        anchorSystemEnabled = true,
+    } = input;
+
+    // Anchor stability state (persists across frames)
+    const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
+
+    return useMemo(() => {
+        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
+
+        // =====================================================================
+        // 1. BASE CAMERA TRANSFORM
+        // =====================================================================
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        let finalCameraTransform = baseCameraTransform;
+        let directorOutput: DirectorOutput | undefined;
+        let anchorSnapshot: AnchorSnapshot | undefined;
+        let anchorStability: AnchorStabilityState | undefined;
+
+        // =====================================================================
+        // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
+        // =====================================================================
+        if (anchorSystemEnabled && appId) {
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId) ?? undefined;
+
+            if (directorDebug && anchorSnapshot) {
+                const anchorCount = Object.keys(anchorSnapshot.anchors).length;
+                console.log(`[CameraEngine] t=${t} app=${appId} anchors=${anchorCount}`, Object.keys(anchorSnapshot.anchors));
+            }
+        }
+
+        // =====================================================================
+        // 3. DIRECTOR LITE INTEGRATION (with anchor support)
+        // =====================================================================
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                profile.dimensions.width,
+                effectiveViewportHeight
+            );
+
+            // =========================================================================
+            // ANCHOR STABILITY (Hysteresis)
+            // =========================================================================
+            // Determine candidate anchor from latest signal
+            let candidateAnchor: SemanticAnchorId | null = null;
+            if (signals.length > 0 && anchorSnapshot) {
+                const latestSignal = signals[signals.length - 1];
+                // Map signal type to target anchor
+                candidateAnchor = mapSignalToAnchor(latestSignal.type);
+
+                // Resolve with fallback if anchor not present
+                if (candidateAnchor) {
+                    const resolved = resolveAnchorWithFallback(candidateAnchor, anchorSnapshot.anchors);
+                    if (resolved) {
+                        candidateAnchor = resolved.anchor;
+                    }
+                }
+            }
+
+            // Update stability tracking
+            const stabilityResult = updateAnchorStability(
+                anchorStabilityRef.current,
+                candidateAnchor,
+                t
+            );
+            anchorStabilityRef.current = stabilityResult.state;
+            anchorStability = stabilityResult.state;
+
+            // Derive effects (PURE FUNCTION - no state)
+            const result = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            directorOutput = result;
+
+            // Log debug info if enabled
+            if (directorDebug && result.debug) {
+                console.log(`[CameraEngine] t=${t}`, result.debug, {
+                    currentAnchor: anchorStability?.currentAnchor,
+                    candidateAnchor: anchorStability?.candidateAnchor,
+                    stableFrames: anchorStability?.stableFrames,
+                });
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!result.skipped && result.effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
+            }
+        }
+
+        // =====================================================================
+        // 3.5. ANCHOR_FOCUS EFFECT RESOLUTION (THE MISSING LINK!)
+        // =====================================================================
+        // Process manual ANCHOR_FOCUS effects from timeline and resolve their
+        // anchor rects from the anchor snapshot. This is where semantic anchors
+        // finally become camera origins!
+        const activeEffects = world.camera?.activeEffects || [];
+        const anchorFocusEffects = activeEffects.filter(
+            (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
+        );
+
+        if (anchorFocusEffects.length > 0 && anchorSnapshot) {
+            for (const ae of anchorFocusEffects) {
+                const effect = ae.effect as any; // CameraAnchorFocusEffect
+                const anchorId = effect.anchor;
+
+                // Resolve anchor rect from snapshot (with fallback chain)
+                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+
+                if (resolved) {
+                    const rect = resolved.rect;
+                    const viewportWidth = profile.dimensions.width;
+                    const viewportHeight = profile.dimensions.height;
+
+                    // === THE KEY MATH: Convert rect → origin ===
+                    // Center of the rect becomes the transform origin
+                    const centerX = rect.x + rect.width / 2;
+                    const centerY = rect.y + rect.height / 2;
+
+                    // Normalize to 0-1 range
+                    const originX = centerX / viewportWidth;
+                    const originY = centerY / viewportHeight;
+
+                    // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
+                    const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
+                    const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
+
+                    // Calculate animation progress
+                    const duration = ae.endFrame - ae.startFrame;
+                    const progress = Math.min(1, (t - ae.startFrame) / duration);
+
+                    // Apply easing
+                    const easing = effect.easing || "ease-out";
+                    const easedProgress = applyEasingSimple(progress, easing);
+
+                    // Get scale from preset or effect
+                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+
+                    // Apply transform (blend from current to target)
+                    finalCameraTransform = {
+                        ...finalCameraTransform,
+                        scale: 1 + (targetScale - 1) * easedProgress,
+                        originX: clampedOriginX,
+                        originY: clampedOriginY,
+                    };
+
+                    // Apply shake if specified
+                    if (effect.shake && effect.shake > 0) {
+                        const frameInEffect = t - ae.startFrame;
+                        const shakeDecay = 1 - progress * 0.6;
+                        const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
+                        const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
+                        finalCameraTransform.shakeX = shakeX;
+                        finalCameraTransform.shakeY = shakeY;
+                    }
+
+                    if (directorDebug) {
+                        console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
+                    }
+                }
+            }
+        }
+
+        // =====================================================================
+        // 4. BUILD CAMERA CSS STYLE
+        // =====================================================================
+        const cameraTransformString = `
+            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+            scale(${finalCameraTransform.scale})
+            rotate(${finalCameraTransform.rotation}deg)
+        `.replace(/\s+/g, ' ').trim();
+
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            transition: 'none', // Frame-perfect sync
+        };
+
+        // =====================================================================
+        // 5. BUILD DEVICE CSS STYLE (legacy layout transforms)
+        // =====================================================================
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        return {
+            transform: finalCameraTransform,
+            cameraStyle,
+            deviceStyle,
+            directorOutput,
+            anchorSnapshot,
+            anchorStability,
+        };
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Map signal type to semantic anchor.
+ * This is the "intent" mapping.
+ */
+function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
+    switch (signalType) {
+        case "TypingStarted":
+        case "TypingEnded":
+            return "inputArea"; // Stable anchor for typing (not typingIndicator!)
+        case "NewMessage":
+            return "lastMessage";
+        case "MessageRead":
+            return "lastMessage";
+        case "CallIncoming":
+            return "callPoster";
+        default:
+            return null;
+    }
+}
+
+/**
+ * Simple easing function for ANCHOR_FOCUS effects.
+ */
+function applyEasingSimple(t: number, easing: string): number {
+    switch (easing) {
+        case "linear":
+            return t;
+        case "ease-in":
+            return t * t;
+        case "ease-out":
+            return 1 - (1 - t) * (1 - t);
+        case "ease-in-out":
+            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+        case "cinematic":
+            // S-curve for smooth cinematic motion
+            return t * t * (3 - 2 * t);
+        default:
+            return 1 - (1 - t) * (1 - t); // Default to ease-out
+    }
+}
+
+/**
+ * Get scale for a preset.
+ */
+function getPresetScaleSimple(preset?: string): number {
+    switch (preset) {
+        case "dramatic": return 1.3;
+        case "subtle": return 1.08;
+        case "snap": return 1.15;
+        case "impact": return 1.4;
+        case "message": return 1.1;
+        case "reset": return 1.0;
+        default: return 1.15;
+    }
+}
+
+/**
+ * Deterministic seeded random (mulberry32).
+ */
+function seededRandom(seed: number): number {
+    let t = seed + 0x6d2b79f5;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+````
+
 ## File: packages/renderer/src/engines/useLayoutEngine.ts
 ````typescript
 /**
@@ -34794,64 +37600,6 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         };
     }, [world, t, focusDeviceId]);
 }
-````
-
-## File: packages/renderer/src/layout/config.ts
-````typescript
-import { LayoutConfig } from "./types";
-
-export const defaultLayoutConfig: LayoutConfig = {
-    cinematicMode: "NONE",
-    chat: {
-        bubbleWidth: 0.78,              // 78% max width for bubbles
-        baseBubbleHeight: 120,          // Base height for message bubble (increased)
-        charsPerLine: 26,               // Characters per line before wrap
-        lineHeight: 66,                 // Line height for text (3x of 22px)
-        verticalGap: 36,                // Gap between messages (3x of 12px)
-        topPadding: 48,                 // Padding from top (reduced)
-        bottomPadding: 120,             // Padding at bottom
-        messageAppearDuration: 15,      // Animation duration (frames)
-        messageAppearOffset: 30,        // Slide-in offset
-        scrollEasingDuration: 20,       // Scroll animation duration
-        maxScrollCatchupSpeed: 50,      // Max scroll speed
-        lockToBottom: true              // Keep scrolled to bottom
-    },
-    feed: {
-        cardWidth: 1.0, // 100% width
-        baseCardHeight: 600,
-        verticalGap: 20,
-        topPadding: 150, // Header + Stories
-        bottomPadding: 150, // Bottom nav
-        charsPerLine: 40,
-        lineHeight: 30,
-        scrollEasingDuration: 20,
-        maxScrollCatchupSpeed: 50,
-        startAtTop: true,
-        autoScroll: false
-    },
-    story: {
-        defaultStoryDuration: 150, // 5 seconds at 30fps
-        progressBarHeight: 4,
-        storyGap: 0,
-        storyTransitionDuration: 15
-    },
-    lockscreen: {
-        topPadding: 150,
-        notificationGap: 10,
-        notificationWidth: 0.9,
-        baseNotificationHeight: 100,
-        charsPerLine: 40,
-        lineHeight: 30,
-        stackMaxNotifications: 5,
-        appearDuration: 15
-    },
-    transition: {
-        defaultScale: 1.0,
-        zoomedScale: 1.2,
-        panDuration: 30,
-        zoomDuration: 30
-    }
-};
 ````
 
 ## File: packages/renderer/src/CallOverlay.tsx
@@ -35137,373 +37885,6 @@ export const CallOverlay: React.FC<CallOverlayProps> = ({
                     />
                 </div>
             )}
-        </div>
-    );
-};
-````
-
-## File: packages/renderer/src/DeviceFrame.tsx
-````typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { DeviceState } from "@tokovo/core";
-
-interface DeviceFrameProps {
-    profileId: string;
-    isLocked?: boolean;
-    notifications?: any[];
-    children: React.ReactNode;
-    variant?: "ios" | "android";
-    /** Device state - used to read os for StatusBar */
-    device?: DeviceState;
-}
-
-export const DeviceFrame: React.FC<DeviceFrameProps> = ({
-    profileId,
-    isLocked,
-    notifications,
-    children,
-    variant,
-    device
-}) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
-
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
-    }
-
-    // StatusBar reads from device.os if available
-    const statusBar = (
-        <StatusBar
-            os={device?.os}
-            variant={variant}
-            theme={variant === "android" ? "dark" : "light"}
-        />
-    );
-
-    return (
-        <FrameComponent {...frameProps} statusBar={statusBar}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
-};
-````
-
-## File: packages/renderer/src/NotificationOverlay.tsx
-````typescript
-import React from "react";
-import { Notification, NotificationGroup } from "@tokovo/core";
-import { LayoutState, LockscreenLayoutState } from "./layout/types";
-
-// =============================================================================
-// APP BRANDING (for icons and colors)
-// =============================================================================
-
-const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
-    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
-    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
-    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
-    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
-    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
-    default: { color: "#8E8E93", icon: "⬤", name: "App" },
-};
-
-function getAppBranding(appId: string) {
-    return APP_BRANDING[appId] || APP_BRANDING.default;
-}
-
-// =============================================================================
-// GROUPING LOGIC
-// =============================================================================
-
-/**
- * Group notifications by app or threadId
- */
-function groupNotifications(notifications: Notification[]): NotificationGroup[] {
-    const groups = new Map<string, NotificationGroup>();
-
-    for (const notif of notifications) {
-        // Skip dismissed notifications
-        if (notif.dismissedAt) continue;
-
-        // Group key: use groupKey if provided, else threadId + appId, else just appId
-        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
-
-        if (!groups.has(key)) {
-            groups.set(key, {
-                key,
-                appId: notif.appId,
-                notifications: [],
-                collapsed: true,
-                count: 0,
-                latestAt: 0,
-            });
-        }
-
-        const group = groups.get(key)!;
-        group.notifications.push(notif);
-        group.count++;
-        group.latestAt = Math.max(group.latestAt, notif.at);
-    }
-
-    // Sort by latest notification time (most recent first)
-    return Array.from(groups.values()).sort((a, b) => b.latestAt - a.latestAt);
-}
-
-// =============================================================================
-// NOTIFICATION GROUP CARD
-// =============================================================================
-
-interface GroupCardProps {
-    group: NotificationGroup;
-    y: number;
-    opacity: number;
-    translateY: number;
-    variant: "ios" | "android";
-}
-
-const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
-    const isAndroid = variant === "android";
-    const branding = getAppBranding(group.appId);
-    const latestNotif = group.notifications[group.notifications.length - 1];
-    const hasMultiple = group.count > 1;
-
-    return (
-        <div
-            style={{
-                position: "absolute",
-                top: y,
-                left: "50%",
-                transform: `translateX(-50%) translateY(${translateY}px)`,
-                width: "92%",
-                opacity,
-            }}
-        >
-            {/* Stacked cards effect (show 2 cards behind if multiple) */}
-            {hasMultiple && (
-                <>
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: 6,
-                            left: "2%",
-                            right: "2%",
-                            height: 100,
-                            backgroundColor: isAndroid ? "#252525" : "rgba(255, 255, 255, 0.6)",
-                            borderRadius: isAndroid ? 24 : 36,
-                            zIndex: 1,
-                        }}
-                    />
-                    {group.count > 2 && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                top: 12,
-                                left: "4%",
-                                right: "4%",
-                                height: 100,
-                                backgroundColor: isAndroid ? "#1a1a1a" : "rgba(255, 255, 255, 0.3)",
-                                borderRadius: isAndroid ? 24 : 36,
-                                zIndex: 0,
-                            }}
-                        />
-                    )}
-                </>
-            )}
-
-            {/* Main notification card */}
-            <div
-                style={{
-                    position: "relative",
-                    zIndex: 2,
-                    backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(20px)",
-                    borderRadius: isAndroid ? 24 : 36,
-                    padding: "30px 40px",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 30,
-                    color: isAndroid ? "white" : "black",
-                }}
-            >
-                {/* App Icon */}
-                <div
-                    style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 20,
-                        backgroundColor: branding.color,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        fontSize: 50,
-                        color: "white",
-                        flexShrink: 0,
-                    }}
-                >
-                    {branding.icon}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, overflow: "hidden" }}>
-                    {/* Header: App name + count + time */}
-                    <div
-                        style={{
-                            fontSize: 30,
-                            fontWeight: 600,
-                            marginBottom: 6,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            color: isAndroid ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
-                        }}
-                    >
-                        <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
-                            {branding.name}
-                        </span>
-                        {hasMultiple && (
-                            <span
-                                style={{
-                                    fontSize: 24,
-                                    backgroundColor: branding.color,
-                                    color: "white",
-                                    borderRadius: 12,
-                                    padding: "2px 10px",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                {group.count}
-                            </span>
-                        )}
-                        <span style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}>
-                            now
-                        </span>
-                    </div>
-
-                    {/* Title */}
-                    <div
-                        style={{
-                            fontSize: 36,
-                            fontWeight: "bold",
-                            marginBottom: 8,
-                            color: isAndroid ? "white" : "black",
-                        }}
-                    >
-                        {latestNotif.title}
-                    </div>
-
-                    {/* Body */}
-                    <div
-                        style={{
-                            fontSize: 34,
-                            opacity: 0.8,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                        }}
-                    >
-                        {latestNotif.body}
-                    </div>
-
-                    {/* Summary for groups */}
-                    {hasMultiple && (
-                        <div
-                            style={{
-                                fontSize: 28,
-                                marginTop: 8,
-                                opacity: 0.5,
-                            }}
-                        >
-                            +{group.count - 1} more notification{group.count > 2 ? "s" : ""}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// NOTIFICATION OVERLAY
-// =============================================================================
-
-interface NotificationOverlayProps {
-    notifications?: Notification[];
-    variant?: "ios" | "android";
-    layout?: LayoutState;
-}
-
-export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
-    notifications = [],
-    variant = "ios",
-    layout,
-}) => {
-    // Only render on lockscreen with layout
-    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
-    if (!lockscreenLayout) return null;
-
-    // Group notifications
-    const groups = groupNotifications(notifications);
-
-    // Map groups to layout positions
-    // For simplicity, use first N layout positions for groups
-    const visibleGroups = groups.slice(0, lockscreenLayout.notificationLayouts.length);
-
-    return (
-        <div
-            style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                pointerEvents: "none",
-                zIndex: 100,
-            }}
-        >
-            {visibleGroups.map((group, index) => {
-                const layoutInfo = lockscreenLayout.notificationLayouts[index];
-                if (!layoutInfo) return null;
-
-                return (
-                    <GroupCard
-                        key={group.key}
-                        group={group}
-                        y={layoutInfo.y}
-                        opacity={layoutInfo.opacity}
-                        translateY={layoutInfo.translateY}
-                        variant={variant}
-                    />
-                );
-            })}
         </div>
     );
 };
@@ -35916,375 +38297,6 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
         "typescript": "^5.0.0"
     }
 }
-````
-
-## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
-
-// ============================================================================
-// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
-// ============================================================================
-
-const ChevronLeftIcon = () => (
-    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const VideoCallIcon = () => (
-    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
-        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
-        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-
-const InfoIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
-        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-const CameraCircleIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
-        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
-        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
-    </svg>
-);
-
-const MicrophoneIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
-        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-);
-
-const ImageIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
-        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
-        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const StickerIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
-        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="9" r="1" fill="white" />
-        <circle cx="14" cy="9" r="1" fill="white" />
-    </svg>
-);
-
-const HeartIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// HEADER COMPONENT - Authentic Instagram DM Navigation
-// ============================================================================
-
-interface HeaderProps {
-    contactName: string;
-    avatarUrl?: string;
-    isActive?: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
-    <div style={{
-        height: 180,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 42px",
-        marginTop: 144, // Below dynamic island
-        zIndex: 10
-    }}>
-        {/* Back button */}
-        <ChevronLeftIcon />
-
-        {/* Avatar + Name Group */}
-        <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            marginLeft: 36,
-            gap: 30
-        }}>
-            {/* Avatar with active indicator */}
-            <div style={{ position: "relative" }}>
-                <div style={{
-                    width: 102,
-                    height: 102,
-                    borderRadius: "50%",
-                    background: avatarUrl
-                        ? `url(${avatarUrl}) center/cover`
-                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: 42,
-                    fontWeight: "600"
-                }}>
-                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
-                </div>
-                {isActive && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 3,
-                        right: 3,
-                        width: 30,
-                        height: 30,
-                        borderRadius: "50%",
-                        backgroundColor: "#44D62D",
-                        border: "4px solid #000"
-                    }} />
-                )}
-            </div>
-
-            {/* Username + Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                    fontSize: 48,
-                    fontWeight: "600",
-                    color: "white",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-                }}>
-                    {contactName}
-                </span>
-                <span style={{
-                    fontSize: 36,
-                    color: "#A8A8A8",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {isActive ? "Active now" : "Active 2h ago"}
-                </span>
-            </div>
-        </div>
-
-        {/* Action icons */}
-        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
-            <VideoCallIcon />
-            <InfoIcon />
-        </div>
-    </div>
-);
-
-// ============================================================================
-// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
-// ============================================================================
-
-interface MessageBubbleProps {
-    msg: { id: string; from: string; text: string };
-    layout: ChatMessageLayout;
-}
-
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 42,
-            right: isMe ? 42 : "auto",
-            maxWidth: "70%",
-            opacity,
-            transform: `translateY(${translateY}px)`,
-        }}>
-            <div style={{
-                // Instagram gradient for sent messages
-                background: isMe
-                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
-                    : "#262626",
-                color: "white",
-                padding: "30px 42px",
-                borderRadius: 66, // Fully pill-shaped
-                fontSize: 48,
-                lineHeight: "60px",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                wordWrap: "break-word"
-            }}>
-                {msg.text}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// MESSAGE LIST
-// ============================================================================
-
-interface MessageListProps {
-    messages: any[];
-    layout?: ChatLayoutState;
-}
-
-const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
-    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
-    const scrollY = chatLayout?.scrollY || 0;
-    const contentHeight = chatLayout?.contentHeight || "100%";
-
-    return (
-        <div style={{
-            flex: 1,
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: contentHeight,
-                transform: `translateY(-${scrollY}px)`,
-                paddingTop: 30,
-                paddingBottom: 30
-            }}>
-                {messages.map((msg: any) => {
-                    const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) return null;
-                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// INPUT AREA - Authentic Instagram DM Composer
-// ============================================================================
-
-interface InputAreaProps {
-    text?: string;
-}
-
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 42px",
-        gap: 24
-    }}>
-        {/* Input container */}
-        <div style={{
-            flex: 1,
-            minHeight: 132,
-            backgroundColor: "#262626",
-            borderRadius: 66,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 24px",
-            gap: 18,
-            border: "1px solid #363636"
-        }}>
-            {/* Camera button */}
-            <CameraCircleIcon />
-
-            {/* Input text */}
-            <div style={{
-                flex: 1,
-                fontSize: 48,
-                color: text ? "white" : "#A8A8A8",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                padding: "0 12px"
-            }}>
-                {text || "Message..."}
-            </div>
-
-            {/* Right icons - hidden when typing */}
-            {!text && (
-                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-                    <MicrophoneIcon />
-                    <ImageIcon />
-                    <StickerIcon />
-                </div>
-            )}
-        </div>
-
-        {/* Heart or Send button */}
-        {text ? (
-            <span style={{
-                color: "#0095F6",
-                fontSize: 48,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                Send
-            </span>
-        ) : (
-            <HeartIcon />
-        )}
-    </div>
-);
-
-// ============================================================================
-// HOME INDICATOR
-// ============================================================================
-
-const HomeIndicator: React.FC = () => (
-    <div style={{
-        height: 102,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        paddingBottom: 24
-    }}>
-        <div style={{
-            width: 402,
-            height: 15,
-            backgroundColor: "white",
-            borderRadius: 9,
-            opacity: 0.4
-        }} />
-    </div>
-);
-
-// ============================================================================
-// MAIN VIEW EXPORT
-// ============================================================================
-
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
-    const conversationId = Object.keys(world.conversations)[0];
-    const conversation = world.conversations[conversationId];
-    const messages = conversation ? conversation.messages : [];
-
-    return (
-        <div style={{
-            backgroundColor: "#000000",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            color: "white",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            <Header contactName="sarah.design" isActive={true} />
-            <MessageList messages={messages} layout={layout} />
-            <InputArea />
-            <HomeIndicator />
-        </div>
-    );
-};
-````
-
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-export * from "./plugin";
-export * from "./components";
-export * from "./config";
-export * from "./camera";
-export * from "./notification-adapter";
 ````
 
 ## File: packages/compiler/src/passes/time-lowering.ts
@@ -38304,6 +40316,105 @@ const DevicePaneFit: React.FC<{
 };
 ````
 
+## File: packages/renderer/src/registry.ts
+````typescript
+/**
+ * AppRegistry - Maps app IDs to their React view components
+ * 
+ * Apps self-register their components here.
+ * The renderer uses this registry to display the correct app view.
+ */
+
+import React from "react";
+import { WorldState, APP_IDS } from "@tokovo/core";
+import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { InstagramApp } from "@tokovo/apps-instagram";
+import { TwitterUI } from "@tokovo/apps-twitter";
+
+import { LayoutState } from "./layout/types";
+
+/**
+ * Props that all app view components receive
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: LayoutState;
+    platform?: string;
+    deviceId?: string;
+}
+
+/**
+ * Type for app view components
+ */
+export type AppViewComponent = React.FC<AppViewProps>;
+
+/**
+ * AppRegistry class - manages app view components
+ */
+class AppRegistryClass {
+    private _views = new Map<string, AppViewComponent>();
+
+    constructor() {
+        // Register built-in apps
+        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
+        this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
+        this.register("app_twitter", TwitterUI as AppViewComponent);
+    }
+
+    /**
+     * Register an app view component
+     */
+    register(appId: string, component: AppViewComponent): void {
+        if (this._views.has(appId)) {
+            console.warn(`[AppRegistry] Overwriting view for ${appId}`);
+        }
+        this._views.set(appId, component);
+    }
+
+    /**
+     * Get an app view component by ID
+     */
+    getView(appId: string): AppViewComponent | undefined {
+        return this._views.get(appId);
+    }
+
+    /**
+     * Check if an app view is registered
+     */
+    hasView(appId: string): boolean {
+        return this._views.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._views.keys());
+    }
+
+    // Legacy compatibility - access views as object
+    get views(): Record<string, AppViewComponent> {
+        return Object.fromEntries(this._views);
+    }
+}
+
+export const AppRegistry = new AppRegistryClass();
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+export * from "./config";
+export * from "./camera";
+export * from "./notification-adapter";
+export * from "./behaviors";
+````
+
 ## File: packages/core/src/camera/index.ts
 ````typescript
 /**
@@ -38331,6 +40442,8 @@ import {
     CameraFocusEffect,
     CameraResetEffect,
 } from "../types";
+
+import { getAnchorFraming } from "./presets";
 
 // =============================================================================
 // EASING FUNCTIONS
@@ -38548,6 +40661,12 @@ export class CameraController {
             case "FOCUS":
                 this.applyFocus(transform, effect, localT);
                 break;
+            case "ANCHOR_FOCUS":
+                // Semantic anchor focus - applies zoom based on preset
+                // The anchor → origin resolution happens in renderer's useCameraEngine
+                // Here we just apply the scale and easing
+                this.applyAnchorFocus(transform, effect as any, localT, t, startFrame);
+                break;
             case "RESET":
                 this.applyReset(transform, effect, localT);
                 break;
@@ -38640,6 +40759,73 @@ export class CameraController {
     }
 
     /**
+     * ANCHOR_FOCUS effect - Semantic anchor-driven camera
+     * 
+     * This applies zoom and optional shake based on shot preset.
+     * The anchor → origin resolution happens in the renderer's useCameraEngine,
+     * which has access to layout state and anchor providers.
+     * 
+     * Here we apply:
+     * - Scale based on preset or explicit value
+     * - Shake if specified
+     * - Origin from ANCHOR_FRAMING config (Layer 3: Presets)
+     * 
+     * ARCHITECTURE: Camera Math (Layer 4) does NOT interpret anchor semantics.
+     * It receives framing config from presets.ts (Layer 3) via getAnchorFraming().
+     */
+    private applyAnchorFocus(
+        transform: CameraTransform,
+        effect: { anchor: string; preset?: string; scale?: number; duration: number; easing?: string; shake?: number },
+        progress: number,
+        absoluteFrame: number,
+        startFrame: number
+    ): void {
+        const easing = effect.easing as any || "ease-out";
+        const easedProgress = applyEasing(progress, easing);
+
+        // Get scale from effect or preset defaults
+        const presetScale = this.getPresetScale(effect.preset);
+        const targetScale = effect.scale ?? presetScale;
+
+        // Apply zoom
+        transform.scale = 1 + (targetScale - 1) * easedProgress;
+
+        // Apply shake if specified
+        if (effect.shake && effect.shake > 0) {
+            const frameInEffect = absoluteFrame - startFrame;
+            const seed = startFrame;
+            const frequency = 18;
+            const offset = getShakeOffset(frameInEffect, seed, frequency, this.fps);
+
+            // Apply shake with decay
+            const decayMultiplier = 1 - progress * 0.6;
+            transform.shakeX += offset.x * effect.shake * decayMultiplier;
+            transform.shakeY += offset.y * effect.shake * decayMultiplier;
+        }
+
+        // Get framing config from Layer 3 (Presets) - NOT hardcoded here!
+        // Semantic interpretation ("lastMessage should be lower-third") lives in presets.ts
+        const framing = getAnchorFraming(effect.anchor);
+        transform.originX = framing.anchorPoint.x;
+        transform.originY = framing.anchorPoint.y;
+    }
+
+    /**
+     * Get default scale for a shot preset
+     */
+    private getPresetScale(preset?: string): number {
+        switch (preset) {
+            case "dramatic": return 1.3;
+            case "subtle": return 1.08;
+            case "snap": return 1.15;
+            case "impact": return 1.4;
+            case "message": return 1.1;
+            case "reset": return 1.0;
+            default: return 1.15;
+        }
+    }
+
+    /**
      * RESET effect - return to default camera position
      */
     private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
@@ -38724,6 +40910,19 @@ export function createActiveEffect(
                 duration,
                 easing: params.easing,
             };
+            break;
+        case "ANCHOR_FOCUS":
+            // Semantic anchor focus - resolved at render time by useCameraEngine
+            // The anchor name is stored and later resolved to a LayoutRect
+            effect = {
+                type: "ANCHOR_FOCUS",
+                anchor: params.anchor ?? "device",
+                preset: params.preset,
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                shake: params.shake,
+            } as any;  // Cast to any since CameraAnchorFocusEffect is newly added
             break;
         default:
             return null;
@@ -39374,92 +41573,6 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 
 // Register itself with the core engine
 ReducerRegistry.registerDeviceReducer(deviceReducer);
-````
-
-## File: packages/renderer/src/registry.ts
-````typescript
-/**
- * AppRegistry - Maps app IDs to their React view components
- * 
- * Apps self-register their components here.
- * The renderer uses this registry to display the correct app view.
- */
-
-import React from "react";
-import { WorldState, APP_IDS } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
-import { InstagramApp } from "@tokovo/apps-instagram";
-import { TwitterUI } from "@tokovo/apps-twitter";
-
-import { LayoutState } from "./layout/types";
-
-/**
- * Props that all app view components receive
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: LayoutState;
-    platform?: string;
-    deviceId?: string;
-}
-
-/**
- * Type for app view components
- */
-export type AppViewComponent = React.FC<AppViewProps>;
-
-/**
- * AppRegistry class - manages app view components
- */
-class AppRegistryClass {
-    private _views = new Map<string, AppViewComponent>();
-
-    constructor() {
-        // Register built-in apps
-        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
-        this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
-        this.register("app_twitter", TwitterUI as AppViewComponent);
-    }
-
-    /**
-     * Register an app view component
-     */
-    register(appId: string, component: AppViewComponent): void {
-        if (this._views.has(appId)) {
-            console.warn(`[AppRegistry] Overwriting view for ${appId}`);
-        }
-        this._views.set(appId, component);
-    }
-
-    /**
-     * Get an app view component by ID
-     */
-    getView(appId: string): AppViewComponent | undefined {
-        return this._views.get(appId);
-    }
-
-    /**
-     * Check if an app view is registered
-     */
-    hasView(appId: string): boolean {
-        return this._views.has(appId);
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getRegisteredApps(): string[] {
-        return Array.from(this._views.keys());
-    }
-
-    // Legacy compatibility - access views as object
-    get views(): Record<string, AppViewComponent> {
-        return Object.fromEntries(this._views);
-    }
-}
-
-export const AppRegistry = new AppRegistryClass();
 ````
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -41625,6 +43738,7 @@ function processCameraEvent(
         case "PAN":
         case "SHAKE":
         case "FOCUS":
+        case "ANCHOR_FOCUS":  // NEW: Semantic anchor-driven camera
         case "RESET": {
             // Create active effect and add to list
             const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
@@ -42120,6 +44234,8 @@ export * from "./notification-dsl";
 export * from "./transitions";
 export * from "./director-lite";
 export * from "./audio";
+export * from "./anchors";
+export * from "./behavior-registry";
 ````
 
 ## File: packages/renderer/src/index.ts
@@ -42147,6 +44263,9 @@ export * from "./layout";
 export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
 export { NULL_LAYOUT_OUTPUT, NULL_AUDIO_OUTPUT } from "./engines";
 export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput, AudioEngineInput, AudioEngineOutput } from "./engines";
+
+// Anchor system exports
+export * from "./anchor-providers";
 ````
 
 ## File: packages/renderer/src/layout/strategies/chat.ts
@@ -44300,6 +46419,248 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
 };
 ````
 
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+/**
+ * TokovoRenderer
+ *
+ * Thin wiring layer that:
+ * 1. Calls Layout Engine to get layout blueprint
+ * 2. Calls Camera Engine to get camera transform
+ * 3. Paints JSX based on blueprints
+ *
+ * No compute logic — just orchestration and rendering.
+ */
+
+import React from "react";
+import {
+    WorldState,
+    Notification,
+    EventIndex,
+    PluginManager,
+    APP_IDS,
+} from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { HeadsUpNotification } from "./HeadsUpNotification";
+import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
+import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
+import { VisualDebugger } from "./VisualDebugger";
+import { DynamicIsland } from "./DynamicIsland";
+import { useLayoutEngine } from "./engines/useLayoutEngine";
+import { useCameraEngine } from "./engines/useCameraEngine";
+import { IOSKeyboard } from "@tokovo/devices";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface NotificationConfig {
+    headsUpDuration?: number;
+    showHeadsUpWhenAppOpen?: boolean;
+}
+
+interface TokovoRendererProps {
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}
+
+// =============================================================================
+// TOKOVO RENDERER
+// =============================================================================
+
+export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+}) => {
+    const {
+        headsUpDuration = 150,
+        showHeadsUpWhenAppOpen = true,
+    } = notificationConfig;
+
+    // ==========================================================================
+    // 1. LAYOUT ENGINE — Get layout blueprint
+    // ==========================================================================
+    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+
+    // Handle error state (device not found)
+    if (layoutOutput.isError) {
+        return (
+            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
+                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
+                    Device not found
+                </div>
+            </div>
+        );
+    }
+
+    const {
+        deviceId,
+        device,
+        appId,
+        viewKind,
+        layout,
+        profile,
+        variant,
+    } = layoutOutput;
+
+    // ==========================================================================
+    // 2. CAMERA ENGINE — Get camera transform
+    // ==========================================================================
+    const cameraOutput = useCameraEngine({
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled,
+        directorDebug,
+    });
+
+    const { cameraStyle, deviceStyle } = cameraOutput;
+
+    // ==========================================================================
+    // 3. HELPER: Find active heads-up notification
+    // ==========================================================================
+    const getActiveHeadsUpNotification = (): Notification | null => {
+        if (!device.notifications || device.isLocked) return null;
+        if (!showHeadsUpWhenAppOpen && appId) return null;
+
+        const headsUpNotifs = device.notifications.filter(n => {
+            const mode = n.mode || "both";
+            if (mode === "lockscreen") return false;
+            if (n.dismissedAt !== undefined) return false;
+
+            const timeSinceAppear = t - n.at;
+            if (timeSinceAppear < 0) return false;
+            if (timeSinceAppear > headsUpDuration + 30) return false;
+            if (n.appId === appId) return false;
+
+            return true;
+        });
+
+        return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
+    };
+
+    const activeHeadsUp = getActiveHeadsUpNotification();
+    const hasActiveCall = device.call && device.call.status !== "ended";
+
+    // ==========================================================================
+    // 4. SELECT APP VIEW
+    // ==========================================================================
+    let AppView = null;
+    if (appId && AppRegistry.views[appId]) {
+        AppView = AppRegistry.views[appId];
+    }
+
+    // ==========================================================================
+    // 5. RENDER — Paint the blueprints
+    // ==========================================================================
+    return (
+        <div style={{
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            position: "relative",
+            overflow: "hidden",
+        }}>
+            {/* Camera wrapper — applies cinematic transforms */}
+            <div style={cameraStyle}>
+                {/* Device wrapper — applies layout transforms */}
+                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                    <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
+                        {/* Call View - Plugin-based (or fallback to CallOverlay) */}
+                        {hasActiveCall && (() => {
+                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
+                            console.log('[TokovoRenderer] PhoneView lookup:', APP_IDS.PHONE, '→', PhoneView ? 'FOUND' : 'NOT FOUND');
+                            if (PhoneView) {
+                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
+                            }
+                            // Fallback to built-in CallOverlay if no plugin registered
+                            return (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            );
+                        })()}
+
+                        {/* App View / Lockscreen / Home Screen */}
+                        {!hasActiveCall && AppView && !device.isLocked ? (
+                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                        ) : !hasActiveCall && device.isLocked ? (
+                            <LockscreenView
+                                notifications={device.notifications}
+                                layout={layout}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && device.homeScreen ? (
+                            <HomeScreenView
+                                config={device.homeScreen}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && (
+                            <div style={{ flex: 1, backgroundColor: "black" }} />
+                        )}
+
+                        {/* Lockscreen Notification Overlay */}
+                        <NotificationOverlay
+                            notifications={device?.notifications}
+                            variant={variant}
+                            layout={layout}
+                        />
+
+                        {/* Heads-Up Notification */}
+                        {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
+                            <HeadsUpNotification
+                                notification={activeHeadsUp}
+                                currentTime={t}
+                                variant={variant}
+                                autoDismissAfter={headsUpDuration}
+                            />
+                        )}
+
+                        {/* Dynamic Island (iOS) */}
+                        {!device.isLocked && !hasActiveCall && (
+                            <DynamicIsland
+                                device={device}
+                                deviceProfile={profile}
+                                world={world}
+                                t={t}
+                            />
+                        )}
+
+                        {/* Virtual Keyboard (when visible) */}
+                        {device.keyboard?.visible && (
+                            <IOSKeyboard
+                                keyboard={device.keyboard}
+                                variant={variant === "ios" ? "light" : "light"}
+                                t={t}
+                            />
+                        )}
+                    </DeviceFrame>
+                </div>
+            </div>
+
+            {debug && <VisualDebugger world={world} t={t} />}
+        </div>
+    );
+};
+````
+
 ## File: packages/core/src/types.ts
 ````typescript
 export type DeviceId = string;
@@ -44873,11 +47234,50 @@ export interface CameraResetEffect {
     easing?: EasingType;
 }
 
+/**
+ * Semantic Anchor Focus Effect
+ * 
+ * NEW: Uses semantic anchors (lastMessage, inputArea, etc.) instead of
+ * hardcoded pixel coordinates. The anchor is resolved at runtime by
+ * looking up the rect from the registered AnchorProvider.
+ * 
+ * This is the key to "cinematic" camera — the camera follows semantic
+ * meaning, not arbitrary coordinates.
+ * 
+ * RUNTIME RESOLUTION:
+ * - `anchor` is the semantic ID (e.g., "lastMessage")
+ * - `resolvedRect` is populated at render time by useCameraEngine
+ * - `viewport` is needed to convert rect → normalized origin
+ */
+export interface CameraAnchorFocusEffect {
+    type: "ANCHOR_FOCUS";
+    /** Semantic anchor to focus on */
+    anchor: string;          // SemanticAnchorId (using string to avoid circular import)
+    /** Shot preset to apply (dramatic, subtle, snap, etc.) */
+    preset?: string;         // ShotPresetId
+    /** Override scale (if not using preset default) */
+    scale?: number;
+    /** Duration in frames */
+    duration: number;
+    /** Easing function */
+    easing?: EasingType;
+    /** Optional shake intensity */
+    shake?: number;
+
+    // === RUNTIME-RESOLVED FIELDS (populated by useCameraEngine) ===
+
+    /** The actual rect of the anchor (resolved at runtime) */
+    resolvedRect?: { x: number; y: number; width: number; height: number };
+    /** Viewport dimensions for normalizing rect → origin */
+    viewport?: { width: number; height: number };
+}
+
 export type CameraEffect =
     | CameraZoomEffect
     | CameraPanEffect
     | CameraShakeEffect
     | CameraFocusEffect
+    | CameraAnchorFocusEffect
     | CameraCutEffect
     | CameraResetEffect;
 
@@ -45257,6 +47657,8 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
     | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
     | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
+    // ANCHOR-DRIVEN CAMERA - Semantic anchor system
+    | { at: number; kind: "CAMERA"; type: "ANCHOR_FOCUS"; deviceId?: string; anchor: string; preset?: string; scale?: number; duration: number; easing?: EasingType; shake?: number }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
@@ -45590,11 +47992,20 @@ import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
 import { FullRealityShowcase } from "./FullRealityShowcase";
 import { PhoneCallShowcase } from "./PhoneCallShowcase";
 import { UltimateShowcase } from "./UltimateShowcase";
+import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
 
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="SemanticCameraShowcase"
+                component={SemanticCameraShowcase}
+                durationInFrames={660}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="UltimateShowcase2"
                 component={UltimateShowcase}
@@ -45772,248 +48183,6 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
         </>
-    );
-};
-````
-
-## File: packages/renderer/src/TokovoRenderer.tsx
-````typescript
-/**
- * TokovoRenderer
- *
- * Thin wiring layer that:
- * 1. Calls Layout Engine to get layout blueprint
- * 2. Calls Camera Engine to get camera transform
- * 3. Paints JSX based on blueprints
- *
- * No compute logic — just orchestration and rendering.
- */
-
-import React from "react";
-import {
-    WorldState,
-    Notification,
-    EventIndex,
-    PluginManager,
-    APP_IDS,
-} from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
-import { VisualDebugger } from "./VisualDebugger";
-import { DynamicIsland } from "./DynamicIsland";
-import { useLayoutEngine } from "./engines/useLayoutEngine";
-import { useCameraEngine } from "./engines/useCameraEngine";
-import { IOSKeyboard } from "@tokovo/devices";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-interface NotificationConfig {
-    headsUpDuration?: number;
-    showHeadsUpWhenAppOpen?: boolean;
-}
-
-interface TokovoRendererProps {
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-}
-
-// =============================================================================
-// TOKOVO RENDERER
-// =============================================================================
-
-export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
-    world,
-    t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
-    eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-}) => {
-    const {
-        headsUpDuration = 150,
-        showHeadsUpWhenAppOpen = true,
-    } = notificationConfig;
-
-    // ==========================================================================
-    // 1. LAYOUT ENGINE — Get layout blueprint
-    // ==========================================================================
-    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
-
-    // Handle error state (device not found)
-    if (layoutOutput.isError) {
-        return (
-            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
-                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
-                    Device not found
-                </div>
-            </div>
-        );
-    }
-
-    const {
-        deviceId,
-        device,
-        appId,
-        viewKind,
-        layout,
-        profile,
-        variant,
-    } = layoutOutput;
-
-    // ==========================================================================
-    // 2. CAMERA ENGINE — Get camera transform
-    // ==========================================================================
-    const cameraOutput = useCameraEngine({
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled,
-        directorDebug,
-    });
-
-    const { cameraStyle, deviceStyle } = cameraOutput;
-
-    // ==========================================================================
-    // 3. HELPER: Find active heads-up notification
-    // ==========================================================================
-    const getActiveHeadsUpNotification = (): Notification | null => {
-        if (!device.notifications || device.isLocked) return null;
-        if (!showHeadsUpWhenAppOpen && appId) return null;
-
-        const headsUpNotifs = device.notifications.filter(n => {
-            const mode = n.mode || "both";
-            if (mode === "lockscreen") return false;
-            if (n.dismissedAt !== undefined) return false;
-
-            const timeSinceAppear = t - n.at;
-            if (timeSinceAppear < 0) return false;
-            if (timeSinceAppear > headsUpDuration + 30) return false;
-            if (n.appId === appId) return false;
-
-            return true;
-        });
-
-        return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-    };
-
-    const activeHeadsUp = getActiveHeadsUpNotification();
-    const hasActiveCall = device.call && device.call.status !== "ended";
-
-    // ==========================================================================
-    // 4. SELECT APP VIEW
-    // ==========================================================================
-    let AppView = null;
-    if (appId && AppRegistry.views[appId]) {
-        AppView = AppRegistry.views[appId];
-    }
-
-    // ==========================================================================
-    // 5. RENDER — Paint the blueprints
-    // ==========================================================================
-    return (
-        <div style={{
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            position: "relative",
-            overflow: "hidden",
-        }}>
-            {/* Camera wrapper — applies cinematic transforms */}
-            <div style={cameraStyle}>
-                {/* Device wrapper — applies layout transforms */}
-                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
-                        {/* Call View - Plugin-based (or fallback to CallOverlay) */}
-                        {hasActiveCall && (() => {
-                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
-                            console.log('[TokovoRenderer] PhoneView lookup:', APP_IDS.PHONE, '→', PhoneView ? 'FOUND' : 'NOT FOUND');
-                            if (PhoneView) {
-                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
-                            }
-                            // Fallback to built-in CallOverlay if no plugin registered
-                            return (
-                                <CallOverlay
-                                    call={device.call!}
-                                    currentTime={t}
-                                    variant={variant}
-                                />
-                            );
-                        })()}
-
-                        {/* App View / Lockscreen / Home Screen */}
-                        {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
-                        ) : !hasActiveCall && device.isLocked ? (
-                            <LockscreenView
-                                notifications={device.notifications}
-                                layout={layout}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && device.homeScreen ? (
-                            <HomeScreenView
-                                config={device.homeScreen}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && (
-                            <div style={{ flex: 1, backgroundColor: "black" }} />
-                        )}
-
-                        {/* Lockscreen Notification Overlay */}
-                        <NotificationOverlay
-                            notifications={device?.notifications}
-                            variant={variant}
-                            layout={layout}
-                        />
-
-                        {/* Heads-Up Notification */}
-                        {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
-                            <HeadsUpNotification
-                                notification={activeHeadsUp}
-                                currentTime={t}
-                                variant={variant}
-                                autoDismissAfter={headsUpDuration}
-                            />
-                        )}
-
-                        {/* Dynamic Island (iOS) */}
-                        {!device.isLocked && !hasActiveCall && (
-                            <DynamicIsland
-                                device={device}
-                                deviceProfile={profile}
-                                world={world}
-                                t={t}
-                            />
-                        )}
-
-                        {/* Virtual Keyboard (when visible) */}
-                        {device.keyboard?.visible && (
-                            <IOSKeyboard
-                                keyboard={device.keyboard}
-                                variant={variant === "ios" ? "light" : "light"}
-                                t={t}
-                            />
-                        )}
-                    </DeviceFrame>
-                </div>
-            </div>
-
-            {debug && <VisualDebugger world={world} t={t} />}
-        </div>
     );
 };
 ````

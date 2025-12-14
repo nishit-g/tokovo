@@ -1,106 +1,269 @@
 ---
 title: Camera System
-description: Cinematic camera effects for professional video production
+description: Semantic Anchor-Driven Camera System for cinematic video production
 ---
 
-import { Callout, Tabs, Tab } from 'nextra/components'
+import { Callout, Tabs, Tab, Steps } from 'nextra/components'
 
 # Camera System
 
-The Camera System provides production-grade cinematic effects including zoom, pan, shake, focus, and more. All effects are deterministic and frame-accurate.
+<Callout type="info">
+**The camera follows meaning, not pixels.**
+</Callout>
+
+The Semantic Anchor-Driven Camera System (SACS) provides production-grade cinematic effects that target **semantic anchors** (like "lastMessage" or "inputArea") rather than hardcoded pixel coordinates.
+
+## The New Way
+
+**Before (hardcoded):**
+```typescript
+// ❌ What does originY: 0.8 mean?
+dsl.zoom(60, 1.25, 20, { originY: 0.8 })
+```
+
+**After (semantic):**
+```typescript
+// ✅ Camera follows the last message
+dsl.anchorFocus(60, "lastMessage", "dramatic")
+```
+
+---
 
 ## Architecture
 
 ```mermaid
-graph LR
-    Event[CAMERA Event] --> Engine[Engine]
-    Engine --> State[CameraState]
-    State --> Controller[CameraController]
-    Controller --> Transform[CameraTransform]
-    Transform --> Renderer[TokovoRenderer]
+graph TB
+    subgraph "Layer 1: Anchor Providers"
+        WA[WhatsApp Provider]
+        PH[Phone Provider]
+        TW[Twitter Provider]
+    end
+    
+    subgraph "Layer 2: Intent Resolution"
+        DIR[Director/DSL]
+        FB[Fallback Chains]
+        HY[Hysteresis]
+    end
+    
+    subgraph "Layer 3: Shot Presets"
+        PR[Presets]
+        FR[Anchor Framing]
+    end
+    
+    subgraph "Layer 4: Camera Math"
+        ENG[useCameraEngine]
+        CTL[CameraController]
+    end
+    
+    WA --> DIR
+    PH --> DIR
+    TW --> DIR
+    DIR --> FB --> HY --> PR
+    PR --> FR --> ENG
+    ENG --> CTL --> CSS[CSS Transform]
 ```
 
-## Camera Effects
+### Four Layers
 
-### ZOOM
+| Layer | Responsibility | Example |
+|-------|----------------|---------|
+| **Anchor Providers** | Define *what* can be focused | WhatsApp extracts `lastMessage` rect |
+| **Intent Resolution** | Decide *when* to focus | "On MESSAGE_RECEIVED → FOCUS lastMessage" |
+| **Shot Presets** | Define *how* to look | `dramatic` = scale 1.3, shake 4 |
+| **Camera Math** | Execute transforms | Convert rect center → CSS origin |
 
-Scale the view with configurable origin and easing.
+---
+
+## How It Works
+
+<Steps>
+
+### World State Update
 
 ```typescript
-{
-    at: 100,
-    kind: "CAMERA",
-    type: "ZOOM",
-    scale: 1.5,           // Target scale
-    duration: 30,         // Frames
-    originX: 0.5,         // Origin X (0-1, default center)
-    originY: 0.3,         // Origin Y (0-1)
-    easing: "ease-out",   // Easing curve
+dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉")
+// Result: message added to world.conversations
+```
+
+### Layout Computes Pixels
+
+```typescript
+// Layout engine produces:
+messageLayouts["m_42"] = {
+  rect: { x: 50, y: 650, width: 280, height: 45 }
 }
 ```
 
-### PAN
+### Anchor Provider Extracts Meaning
 
-Translate the camera position smoothly.
+```typescript
+// WhatsAppAnchorProvider.getAnchors()
+anchors.lastMessage = { x: 50, y: 650, width: 280, height: 45 }
+```
+
+### Camera Effect Triggers
+
+```typescript
+dsl.anchorFocus(60, "lastMessage", "dramatic", 5)
+```
+
+### Anchor Resolution (The Key Math)
+
+```typescript
+// In useCameraEngine:
+const rect = resolveAnchorWithFallback("lastMessage", anchors);
+
+// Convert rect center → normalized origin
+const centerX = rect.x + rect.width / 2;    // 190
+const centerY = rect.y + rect.height / 2;   // 672.5
+const originX = centerX / viewportWidth;    // 0.442
+const originY = centerY / viewportHeight;   // 0.721
+```
+
+### CSS Output
+
+```css
+.camera {
+  transform: scale(1.3);
+  transform-origin: 44.2% 72.1%;
+}
+```
+
+</Steps>
+
+---
+
+## Semantic Anchors
+
+### Core Anchors
+
+| Anchor | Description | Apps |
+|--------|-------------|------|
+| `lastMessage` | Most recent message bubble | WhatsApp, Instagram DM |
+| `inputArea` | Text input field | All chat apps |
+| `typingIndicator` | Typing dots (volatile) | WhatsApp |
+| `callPoster` | Contact poster image | Phone |
+| `device` | Full screen (fallback) | All |
+
+### Anchor Snapshot
+
+```typescript
+interface AnchorSnapshot {
+  appId: string;
+  deviceId: string;
+  anchors: Partial<Record<SemanticAnchorId, LayoutRect>>;
+}
+
+// Example:
+{
+  appId: "app_whatsapp",
+  anchors: {
+    lastMessage: { x: 50, y: 650, width: 280, height: 45 },
+    inputArea: { x: 0, y: 880, width: 430, height: 52 },
+    device: { x: 0, y: 0, width: 430, height: 932 },
+  }
+}
+```
+
+### Fallback Chains
+
+When an anchor isn't available:
+
+```typescript
+const FALLBACK_CHAINS = {
+  typingIndicator: ["inputArea", "lastMessage", "device"],
+  lastMessage: ["inputArea", "device"],
+  inputArea: ["device"],
+};
+```
+
+---
+
+## Shot Presets
+
+### Available Presets
+
+| Preset | Scale | Shake | Duration | Use Case |
+|--------|-------|-------|----------|----------|
+| `dramatic` | 1.3 | 4 | 25 frames | Big reveals |
+| `subtle` | 1.08 | 0 | 30 frames | Typing anticipation |
+| `snap` | 1.15 | 0 | 10 frames | Quick reactions |
+| `impact` | 1.4 | 8 | 15 frames | Maximum intensity |
+| `message` | 1.1 | 0 | 25 frames | Standard follow |
+| `reset` | 1.0 | 0 | 20 frames | Return to neutral |
+
+### Preset Definition
+
+```typescript
+const SHOT_PRESETS = {
+  dramatic: {
+    scale: 1.3,
+    durationFrames: 25,
+    easing: "ease-out",
+    shake: 4,
+  },
+  // ...
+};
+```
+
+---
+
+## Camera Effects
+
+### ANCHOR_FOCUS (Recommended)
 
 ```typescript
 {
-    at: 150,
-    kind: "CAMERA",
-    type: "PAN",
-    translateX: 100,      // Pixels to pan X
-    translateY: 50,       // Pixels to pan Y
-    duration: 45,
-    easing: "ease-in-out",
+  at: 100,
+  kind: "CAMERA",
+  type: "ANCHOR_FOCUS",
+  anchor: "lastMessage",   // Semantic anchor
+  preset: "dramatic",      // Shot preset
+  shake: 5,                // Optional override
+}
+```
+
+### ZOOM (Manual)
+
+```typescript
+{
+  at: 100,
+  kind: "CAMERA",
+  type: "ZOOM",
+  scale: 1.5,
+  duration: 30,
+  originX: 0.5,
+  originY: 0.8,
+  easing: "ease-out",
 }
 ```
 
 ### SHAKE
 
-Screen tremor with intensity and decay for dramatic moments.
-
 ```typescript
 {
-    at: 200,
-    kind: "CAMERA",
-    type: "SHAKE",
-    intensity: 20,        // Max pixels of shake
-    duration: 30,
-    decay: true,          // Intensity fades over duration
-    frequency: 3,         // Shakes per second
-    seed: 42,             // Seed for deterministic randomness
-}
-```
-
-### FOCUS
-
-Zoom to a specific target or element.
-
-```typescript
-{
-    at: 250,
-    kind: "CAMERA",
-    type: "FOCUS",
-    target: "message_3",  // Element ID to focus
-    zoom: 1.8,            // Zoom level
-    duration: 60,
-    easing: "cinematic",
+  at: 200,
+  kind: "CAMERA",
+  type: "SHAKE",
+  intensity: 20,
+  duration: 30,
+  decay: true,
+  frequency: 3,
 }
 ```
 
 ### RESET
 
-Return to default camera position.
-
 ```typescript
 {
-    at: 300,
-    kind: "CAMERA",
-    type: "RESET",
-    duration: 45,
-    easing: "ease-out",
+  at: 300,
+  kind: "CAMERA",
+  type: "RESET",
+  duration: 45,
 }
 ```
+
+---
 
 ## Easing Functions
 
@@ -110,36 +273,21 @@ Return to default camera position.
 | `ease-in` | Accelerate from start |
 | `ease-out` | Decelerate to end |
 | `ease-in-out` | Accelerate then decelerate |
-| `bounce` | Bouncy spring effect |
-| `cinematic` | Film-style smooth curve |
+| `cinematic` | Film-style S-curve |
+
+---
+
+## Hysteresis (Anti-Jitter)
+
+Anchors must be stable for 3 frames before the camera switches:
 
 ```typescript
-import { easingFunctions, applyEasing } from "@tokovo/core";
+const ANCHOR_STABILITY_FRAMES = 3;
 
-const progress = 0.5;
-const eased = applyEasing(progress, "cinematic");
-// eased ≈ 0.35 (slow start, fast middle, slow end)
+// Prevents: typing dots flicker → camera doesn't spaz
 ```
 
-## CameraController
-
-The `CameraController` class computes final transforms from active effects:
-
-```typescript
-import { CameraController } from "@tokovo/core";
-
-const controller = new CameraController(30); // 30 fps
-
-// Compute transform at frame 150
-const transform = controller.computeTransform(cameraState, 150);
-
-// Result: { scale: 1.3, translateX: 50, translateY: 20, ... }
-```
-
-**Features:**
-- Memoized for performance
-- Handles overlapping effects correctly
-- Deterministic (seeded randomness for shake)
+---
 
 ## CameraTransform
 
@@ -147,97 +295,40 @@ The output of camera calculations:
 
 ```typescript
 interface CameraTransform {
-    scale: number;      // 1.0 = no zoom
-    translateX: number; // Pixels
-    translateY: number;
-    rotation: number;   // Degrees
-    originX: number;    // Transform origin (0-1)
-    originY: number;
-    shakeX: number;     // Current shake offset
-    shakeY: number;
+  scale: number;      // 1.0 = no zoom
+  translateX: number;
+  translateY: number;
+  rotation: number;
+  originX: number;    // 0-1 normalized
+  originY: number;
+  shakeX: number;     // Shake offset
+  shakeY: number;
 }
 ```
 
-## Camera Presets
-
-Pre-built camera effects for common scenarios:
-
-```typescript
-import { cameraPresets } from "@tokovo/core";
-
-// Dramatic zoom-in
-const zoomIn = cameraPresets.dramaticZoomIn(100); // at frame 100
-
-// Subtle shake for tension
-const shake = cameraPresets.microShake(200, "low");
-
-// Smooth pan to follow action
-const pan = cameraPresets.followPan(300, { x: 100, y: 50 });
-```
-
-## DirectorLite Integration
-
-DirectorLite automatically adds camera effects based on content:
-
-```typescript
-// Cliffhanger message triggers zoom
-// Incoming message triggers shake
-// Long typing triggers push-in
-
-// Configure in your episode:
-{
-    directorEnabled: true,
-    directorRules: "ViralDramaV1", // Preset rules
-}
-```
-
-## Effect Layering
-
-When multiple effects are active:
-
-| Property | Behavior |
-|----------|----------|
-| `scale` | Multiplied together |
-| `translateX/Y` | Added together |
-| `rotation` | Added together |
-| `origin` | Uses most recent effect |
-| `shake` | Added together |
-
-```typescript
-// Two overlapping zooms:
-// Effect 1: scale 1.5
-// Effect 2: scale 1.2
-// Final: scale 1.8 (1.5 * 1.2)
-```
+---
 
 ## Usage Example
 
 ```typescript
-import { CameraController, CameraState } from "@tokovo/core";
-
-// Initial camera state
-const initialState: CameraState = {
-    baseView: "APP_VIEW",
-    activeDeviceId: "phone",
-    layout: { mode: "SINGLE", primaryDeviceId: "phone" },
-    activeEffects: [],
-    transform: {
-        scale: 1, translateX: 0, translateY: 0,
-        rotation: 0, originX: 0.5, originY: 0.5,
-        shakeX: 0, shakeY: 0,
-    },
-    deviceTransforms: {},
-};
-
-// Events trigger effect addition
 const events = [
-    { at: 100, kind: "CAMERA", type: "ZOOM", scale: 1.5, duration: 30 },
-    { at: 120, kind: "CAMERA", type: "SHAKE", intensity: 15, duration: 20 },
+  // Message arrives → camera follows
+  dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉"),
+  dsl.anchorFocus(60, "lastMessage", "dramatic", 5),
+  
+  // Reply → quick snap
+  dsl.send(120, "OMG CONGRATS!!!"),
+  dsl.anchorFocus(120, "lastMessage", "snap", 2),
+  
+  // Reset to neutral
+  dsl.reset(200, 40),
 ];
 ```
 
+---
+
 ## Related
 
+- [DSL Semantic](/dsl/semantic) - Semantic DSL helpers
 - [DirectorLite](/director) - Automatic camera effects
-- [Effects](/director/effects) - Effect types
-- [Signals](/director/signals) - Signal detection
+- [Anchor Providers](/architecture/plugins) - Creating custom anchors
