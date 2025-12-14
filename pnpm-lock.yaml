@@ -290,6 +290,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/dsl':
+        specifier: workspace:*
+        version: link:../dsl
       zod:
         specifier: ^3.0.0
         version: 3.25.76
