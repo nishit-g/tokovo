@@ -194,10 +194,12 @@ class PluginManagerClass {
 
         // Auto-register widgets with WidgetRegistry
         if (plugin.widgets && plugin.widgets.length > 0) {
-            // Import dynamically to avoid circular dependency
-            const { WidgetRegistry } = require("./widget-registry");
-            WidgetRegistry.register(plugin.id, plugin.widgets);
-            console.log(`[PluginManager] Registered ${plugin.widgets.length} widgets for: ${plugin.id}`);
+            // Import at top level or use type-only to avoid circular dependency
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            import("./widget-registry").then(({ WidgetRegistry }) => {
+                WidgetRegistry.register(plugin.id, plugin.widgets!);
+                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
+            });
         }
 
         console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);

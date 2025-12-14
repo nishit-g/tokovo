@@ -13,6 +13,8 @@
  *     ...generateTyping(50, "phone", "Hello!"),
  *     dsl.messages.send(140, "dm_friend", "Hello!"),
  *     dsl.keyboard.hide(200, "phone"),
+ *     dsl.os.setBattery(300, 75),
+ *     dsl.touch.tap(350, 500, 600),
  * ];
  * ```
  */
@@ -22,6 +24,8 @@ export { keyboard } from "./keyboard";
 export { messages } from "./messages";
 export { camera, ZoomOptions, PanOptions, ShakeOptions } from "./camera";
 export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
+export { os } from "./os";
+export { touch } from "./touch";
 
 // Typing simulation
 export {
@@ -37,6 +41,8 @@ import { keyboard } from "./keyboard";
 import { messages } from "./messages";
 import { camera } from "./camera";
 import { audio as audioEvents } from "./audio";
+import { os } from "./os";
+import { touch } from "./touch";
 
 /**
  * Bundled DSL object with all event factories
@@ -50,6 +56,8 @@ import { audio as audioEvents } from "./audio";
  *     dsl.messages.send(100, "dm", "Hi!"),
  *     dsl.camera.zoom(150, 1.2, 30),
  *     dsl.audio.play(200, "notification"),
+ *     dsl.os.setNetwork(250, "5G"),
+ *     dsl.touch.tap(300, 540, 960),
  * ];
  * ```
  */
@@ -58,4 +66,6 @@ export const dsl = {
     messages,
     camera,
     audio: audioEvents,
+    os,
+    touch,
 };

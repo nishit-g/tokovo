@@ -14,6 +14,7 @@ export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
 export { DynamicIsland } from "./DynamicIsland";
 export { NotificationShade } from "./NotificationShade";
+export { TouchOverlay } from "./TouchOverlay";
 export * from "./layout";
 
 // Engine split exports

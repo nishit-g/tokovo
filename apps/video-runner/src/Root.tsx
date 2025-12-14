@@ -19,10 +19,20 @@ import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
 import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
+import { FullRealityShowcase } from "./FullRealityShowcase";
+
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="FullRealityShowcase"
+                component={FullRealityShowcase}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="NotificationShowcase"
                 component={NotificationShowcaseVideo}

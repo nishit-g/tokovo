@@ -232,6 +232,56 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
 };
 
 // =============================================================================
+// DEVICE OS STATE (Clock, Battery, Network, DND)
+// =============================================================================
+
+/** Network connection type */
+export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
+
+/**
+ * DeviceOSState - Operating system level state
+ * 
+ * Controls the "reality simulation" layer:
+ * - Time progression (status bar, message timestamps)
+ * - Battery drain and low power mode
+ * - Network conditions affecting message delivery
+ * - Do Not Disturb mode
+ */
+export interface DeviceOSState {
+    /** Current device time (Unix timestamp ms) */
+    clock: number;
+    /** Battery percentage (0-100) */
+    battery: number;
+    /** Whether device is charging */
+    charging: boolean;
+    /** Network connection type */
+    network: NetworkType;
+    /** WiFi signal strength (0-3) */
+    wifiStrength: number;
+    /** Cellular signal strength (0-4) */
+    cellStrength: number;
+    /** Do Not Disturb mode (suppresses heads-up notifications) */
+    dnd: boolean;
+    /** Low power mode enabled */
+    lowPowerMode: boolean;
+    /** Airplane mode enabled */
+    airplaneMode: boolean;
+}
+
+/** Default OS state (normal day, full battery, good network) */
+export const DEFAULT_OS_STATE: DeviceOSState = {
+    clock: Date.now(),
+    battery: 85,
+    charging: false,
+    network: "wifi",
+    wifiStrength: 3,
+    cellStrength: 4,
+    dnd: false,
+    lowPowerMode: false,
+    airplaneMode: false,
+};
+
+// =============================================================================
 // DEVICE STATE
 // =============================================================================
 
@@ -257,6 +307,9 @@ export interface DeviceState {
 
     // === KEYBOARD (for typing simulation) ===
     keyboard?: KeyboardState;
+
+    // === OS LAYER (clock, battery, network, DND) ===
+    os?: DeviceOSState;
 }
 
 
@@ -753,6 +806,26 @@ export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
     },
 };
 
+// =============================================================================
+// TOUCH STATE (for gesture visualization)
+// =============================================================================
+
+export interface TouchState {
+    /** Unique touch identifier */
+    id: string;
+    /** X coordinate */
+    x: number;
+    /** Y coordinate */
+    y: number;
+    /** Frame when touch started */
+    startedAt: number;
+    /** Touch type */
+    type: "tap" | "long_press" | "drag";
+    /** For drag: end coordinates */
+    endX?: number;
+    endY?: number;
+}
+
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
@@ -760,6 +833,8 @@ export interface WorldState {
     camera: CameraState;
     audio: AudioState;
     config?: VideoConfig;                   // Global video configuration
+    /** Active touch points for visualization */
+    touches?: TouchState[];
 }
 
 // Event Union
@@ -831,6 +906,7 @@ export type TimelineEvent =
     // App events - messaging
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_STATUS"; conversationId: ConversationId; messageId: string; status: "sending" | "sent" | "delivered" | "read" | "failed" }
     // App events - voice message
     | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
     | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
@@ -869,7 +945,20 @@ export type TimelineEvent =
     // Highlight events - MESSAGE EMPHASIS
     | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
     | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string };
+    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string }
+    // OS events - DEVICE SIMULATION
+    | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
+    | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
+    | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
+    | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
+    | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_AIRPLANE"; deviceId?: string; enabled: boolean }
+    // Touch events - GESTURE VISUALIZATION
+    | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
+    | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
 
 // --- Layout System Types ---
 

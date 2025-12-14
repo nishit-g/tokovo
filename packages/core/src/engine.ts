@@ -160,7 +160,15 @@ function processAudioEvent(
 ): void {
     // Ensure audio state exists
     if (!draft.audio) {
-        draft.audio = { activeSounds: {} };
+        draft.audio = {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.5, maxConcurrent: 1 },
+                ui: { baseGain: 0.7, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 8 },
+                voice: { baseGain: 1, maxConcurrent: 2 },
+            },
+        };
     }
 
     switch (event.type) {
@@ -288,6 +296,135 @@ function processKeyboardEvent(
             break;
     }
 }
+
+/**
+ * Process OS event and update device OS state
+ */
+function processOSEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "OS" }
+): void {
+    // OS events target a specific device or all devices
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize OS state if needed
+    if (!device.os) {
+        device.os = {
+            clock: Date.now(),
+            battery: 85,
+            charging: false,
+            network: "wifi",
+            wifiStrength: 3,
+            cellStrength: 4,
+            dnd: false,
+            lowPowerMode: false,
+            airplaneMode: false,
+        };
+    }
+
+    switch (event.type) {
+        case "SET_TIME":
+            device.os.clock = event.time;
+            break;
+
+        case "SET_BATTERY":
+            device.os.battery = Math.max(0, Math.min(100, event.level));
+            if ((event as any).charging !== undefined) {
+                device.os.charging = (event as any).charging;
+            }
+            break;
+
+        case "DRAIN_BATTERY":
+            // Rate is % per second at 30fps
+            const drain = (event as any).rate / 30;
+            device.os.battery = Math.max(0, device.os.battery - drain);
+            break;
+
+        case "SET_NETWORK":
+            device.os.network = event.network;
+            if ((event as any).strength !== undefined) {
+                if (event.network === "wifi") {
+                    device.os.wifiStrength = (event as any).strength;
+                } else {
+                    device.os.cellStrength = (event as any).strength;
+                }
+            }
+            break;
+
+        case "SET_DND":
+            device.os.dnd = event.enabled;
+            break;
+
+        case "SET_LOW_POWER":
+            device.os.lowPowerMode = (event as any).enabled;
+            break;
+
+        case "SET_AIRPLANE":
+            device.os.airplaneMode = (event as any).enabled;
+            if ((event as any).enabled) {
+                device.os.network = "no-service";
+                device.os.wifiStrength = 0;
+                device.os.cellStrength = 0;
+            }
+            break;
+    }
+}
+
+/**
+ * Process touch event and update world touches state
+ */
+function processTouchEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "TOUCH" },
+    t: number
+): void {
+    // Initialize touches array if needed
+    if (!draft.touches) {
+        draft.touches = [];
+    }
+
+    // Remove expired touches (older than 15 frames)
+    draft.touches = draft.touches.filter(touch => t - touch.startedAt < 15);
+
+    const touchId = `touch_${event.at}_${Math.random().toString(36).slice(2, 6)}`;
+
+    switch (event.type) {
+        case "TAP":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "tap",
+            });
+            break;
+
+        case "LONG_PRESS":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "long_press",
+            });
+            break;
+
+        case "DRAG":
+            draft.touches.push({
+                id: touchId,
+                x: (event as any).startX,
+                y: (event as any).startY,
+                startedAt: event.at,
+                type: "drag",
+                endX: (event as any).endX,
+                endY: (event as any).endY,
+            });
+            break;
+    }
+}
+
 /**
  * Replay function - computes WorldState at time t by applying all events
  * 
@@ -341,6 +478,12 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 break;
             case "KEYBOARD":
                 processKeyboardEvent(draft, event as any, index);
+                break;
+            case "OS":
+                processOSEvent(draft, event as any);
+                break;
+            case "TOUCH":
+                processTouchEvent(draft, event as any, t);
                 break;
         }
     };
