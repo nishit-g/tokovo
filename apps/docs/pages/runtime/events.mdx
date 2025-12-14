@@ -19,9 +19,12 @@ interface TimelineEvent {
 | Kind | Description | Examples |
 |------|-------------|----------|
 | `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP, SHOW_NOTIFICATION |
-| `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START |
+| `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START, MESSAGE_STATUS |
 | `CAMERA` | Camera commands | ZOOM, PAN, SHAKE, FOCUS, RESET |
-| `AUDIO` | Audio events | PLAY_SOUND, STOP_SOUND, SET_BUS_VOLUME |
+| `AUDIO` | Audio events | PLAY_SOUND, STOP_SOUND, FADE_VOLUME |
+| `KEYBOARD` | Virtual keyboard | SHOW, HIDE, TYPE_CHAR, BACKSPACE, CLEAR |
+| `OS` | Device OS state | SET_TIME, SET_BATTERY, SET_NETWORK, SET_DND |
+| `TOUCH` | Touch gestures | TAP, LONG_PRESS, DRAG, SCROLL |
 
 ## Device Events
 
@@ -305,6 +308,150 @@ interface TimelineEvent {
   type: "SET_BUS_VOLUME",
   bus: "music",
   volume: 0.3
+}
+```
+
+## Keyboard Events
+
+### SHOW / HIDE
+
+```typescript
+{ at: 30, kind: "KEYBOARD", type: "SHOW", deviceId: "phone", layout: "qwerty" }
+{ at: 200, kind: "KEYBOARD", type: "HIDE", deviceId: "phone" }
+```
+
+### TYPE_CHAR
+
+```typescript
+{
+  at: 50,
+  kind: "KEYBOARD",
+  type: "TYPE_CHAR",
+  deviceId: "phone",
+  char: "H"
+}
+```
+
+### BACKSPACE
+
+```typescript
+{
+  at: 80,
+  kind: "KEYBOARD",
+  type: "BACKSPACE",
+  deviceId: "phone"
+}
+```
+
+### CLEAR
+
+```typescript
+{
+  at: 100,
+  kind: "KEYBOARD",
+  type: "CLEAR",
+  deviceId: "phone"
+}
+```
+
+## OS Events
+
+Device OS events control status bar and system state.
+
+### SET_TIME
+
+```typescript
+{
+  at: 0,
+  kind: "OS",
+  type: "SET_TIME",
+  deviceId: "phone",
+  time: 1702576800000  // Unix timestamp (ms)
+}
+```
+
+### SET_BATTERY
+
+```typescript
+{
+  at: 100,
+  kind: "OS",
+  type: "SET_BATTERY",
+  deviceId: "phone",
+  level: 85,
+  charging: false
+}
+```
+
+### SET_NETWORK
+
+```typescript
+{
+  at: 200,
+  kind: "OS",
+  type: "SET_NETWORK",
+  deviceId: "phone",
+  network: "5G",    // "wifi" | "5G" | "LTE" | "4G" | "3G" | "no-service"
+  strength: 4       // 0-4 for cell, 0-3 for wifi
+}
+```
+
+### SET_DND
+
+```typescript
+{
+  at: 300,
+  kind: "OS",
+  type: "SET_DND",
+  deviceId: "phone",
+  enabled: true
+}
+```
+
+## Touch Events
+
+Touch gestures for visual feedback.
+
+### TAP
+
+```typescript
+{
+  at: 100,
+  kind: "TOUCH",
+  type: "TAP",
+  deviceId: "phone",
+  x: 540,
+  y: 960
+}
+```
+
+### LONG_PRESS
+
+```typescript
+{
+  at: 150,
+  kind: "TOUCH",
+  type: "LONG_PRESS",
+  deviceId: "phone",
+  x: 540,
+  y: 960,
+  duration: 30
+}
+```
+
+### DRAG
+
+```typescript
+{
+  at: 200,
+  kind: "TOUCH",
+  type: "DRAG",
+  deviceId: "phone",
+  startX: 540,
+  startY: 500,
+  endX: 540,
+  endY: 1500,
+  duration: 20
 }
 ```
 

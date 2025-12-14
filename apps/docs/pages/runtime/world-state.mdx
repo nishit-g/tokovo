@@ -49,6 +49,12 @@ interface DeviceState {
   isLocked: boolean;                    // Show lockscreen?
   foregroundAppId?: string;             // "app_whatsapp"
   
+  // Device OS state (status bar)
+  os?: DeviceOSState;
+  
+  // Virtual keyboard state
+  keyboard?: KeyboardState;
+  
   // Notifications
   notifications: Notification[];         // All notifications
   notificationCenter?: NotificationCenterState;
@@ -63,6 +69,40 @@ interface DeviceState {
   homeScreen?: HomeScreenConfig;
   theme?: DeviceTheme;
   sound?: { activeSoundId?: string };
+}
+```
+
+### DeviceOSState
+
+Controls status bar display:
+
+```typescript
+interface DeviceOSState {
+  clock: number;              // Unix timestamp (ms)
+  battery: number;            // 0-100
+  charging: boolean;
+  network: NetworkType;       // "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service"
+  wifiStrength: number;       // 0-3
+  cellStrength: number;       // 0-4
+  dnd: boolean;               // Do Not Disturb
+  lowPowerMode: boolean;
+  airplaneMode: boolean;
+}
+```
+
+### KeyboardState
+
+Virtual keyboard state:
+
+```typescript
+interface KeyboardState {
+  visible: boolean;
+  layout: "qwerty" | "emoji" | "numeric";
+  currentKey: string | null;       // Currently pressed key
+  keyPressedAt: number | null;     // Frame when key was pressed
+  inputText: string;               // Text in input field
+  cursorPosition: number;
+  cursorVisible: boolean;
 }
 ```
 

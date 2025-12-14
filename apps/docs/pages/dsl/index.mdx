@@ -88,3 +88,67 @@ The DSL produces **Scene IR** — semantic truth with no frames:
 - [Beat Builder](/dsl/beat) — Actions reference
 - [Semantic Annotations](/dsl/semantic) — Story intelligence
 - [POV Control](/dsl/pov) — Camera grammar
+
+---
+
+## Event Factories (`@tokovo/dsl`)
+
+For low-level timeline control, use the centralized event factory:
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+const events = [
+  // Keyboard
+  dsl.keyboard.show(0, "phone"),
+  ...generateTyping(30, "phone", "Hello!", { speed: "casual" }),
+  dsl.keyboard.hide(200, "phone"),
+  
+  // Messages
+  dsl.messages.send(150, "dm_bob", "Hello!"),
+  dsl.messages.markDelivered(180, "dm_bob", "msg_1"),
+  dsl.messages.markRead(210, "dm_bob", "msg_1"),
+  
+  // Camera
+  dsl.camera.zoom(220, 1.2, 30, { originY: 0.7 }),
+  dsl.camera.shake(250, 3, 15),
+  dsl.camera.reset(300, 25),
+  
+  // Audio
+  dsl.audio.play(100, "whatsapp_received", 0.8),
+  
+  // Device OS
+  dsl.os.setTime(0, Date.now()),
+  dsl.os.setBattery(0, 87),
+  dsl.os.setNetwork(0, "wifi", 3),
+  dsl.os.setDND(300, true),
+  
+  // Touch gestures
+  dsl.touch.tap(400, 540, 960),
+  dsl.touch.drag(500, 540, 500, 540, 1500, 20),
+];
+```
+
+### Available Modules
+
+| Module | Events |
+|--------|--------|
+| `dsl.keyboard` | show, hide, typeChar, backspace, clear |
+| `dsl.messages` | send, receive, typingStart, typingEnd, markSent, markDelivered, markRead |
+| `dsl.camera` | zoom, pan, shake, focus, reset |
+| `dsl.audio` | play, stop, fade, backgroundMusic |
+| `dsl.os` | setTime, setBattery, setNetwork, setDND, setAirplane |
+| `dsl.touch` | tap, longPress, drag, scroll |
+
+### Typing Humanizer
+
+```typescript
+import { generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
+
+// Generate realistic typing with variable speed
+const events = generateTyping(0, "phone", "Hello world!", {
+  speed: "casual",        // "slow" | "normal" | "casual" | "fast" | "burst"
+  typoPositions: [5],     // Optional typo positions
+});
+```
+
