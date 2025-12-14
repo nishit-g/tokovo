@@ -569,11 +569,38 @@ export interface CameraResetEffect {
     easing?: EasingType;
 }
 
+/**
+ * Semantic Anchor Focus Effect
+ * 
+ * NEW: Uses semantic anchors (lastMessage, inputArea, etc.) instead of
+ * hardcoded pixel coordinates. The anchor is resolved at runtime by
+ * looking up the rect from the registered AnchorProvider.
+ * 
+ * This is the key to "cinematic" camera — the camera follows semantic
+ * meaning, not arbitrary coordinates.
+ */
+export interface CameraAnchorFocusEffect {
+    type: "ANCHOR_FOCUS";
+    /** Semantic anchor to focus on */
+    anchor: string;          // SemanticAnchorId (using string to avoid circular import)
+    /** Shot preset to apply (dramatic, subtle, snap, etc.) */
+    preset?: string;         // ShotPresetId
+    /** Override scale (if not using preset default) */
+    scale?: number;
+    /** Duration in frames */
+    duration: number;
+    /** Easing function */
+    easing?: EasingType;
+    /** Optional shake intensity */
+    shake?: number;
+}
+
 export type CameraEffect =
     | CameraZoomEffect
     | CameraPanEffect
     | CameraShakeEffect
     | CameraFocusEffect
+    | CameraAnchorFocusEffect
     | CameraCutEffect
     | CameraResetEffect;
 
@@ -953,6 +980,8 @@ export type TimelineEvent =
     | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
     | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
     | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
+    // ANCHOR-DRIVEN CAMERA - Semantic anchor system
+    | { at: number; kind: "CAMERA"; type: "ANCHOR_FOCUS"; deviceId?: string; anchor: string; preset?: string; scale?: number; duration: number; easing?: EasingType; shake?: number }
     | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
     // Camera events - MULTI-DEVICE / POV
     | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }

@@ -305,6 +305,99 @@ export const SHOT_PRESETS = {
 
 export type ShotPresetId = keyof typeof SHOT_PRESETS;
 
+// =============================================================================
+// ANCHOR FRAMING CONFIGURATION (Layer 3: Semantic Interpretation)
+// =============================================================================
+
+/**
+ * Framing instruction for how to position anchor in frame.
+ * 
+ * This is the PROPER PLACE for semantic interpretation ("lastMessage should
+ * be in lower-third"). Camera Math (Layer 4) should NOT know about semantics.
+ */
+export interface AnchorFraming {
+    /** Anchor point within frame: normalized 0-1 (x, y) */
+    anchorPoint: { x: number; y: number };
+
+    /** Padding around anchor in pixels */
+    paddingPx?: number;
+
+    /** Target fill: how much of frame the anchor should occupy (0-1) */
+    targetFill?: number;
+}
+
+/**
+ * Default framing by anchor type.
+ * 
+ * This defines WHERE in the frame each semantic anchor type should appear.
+ * Camera Math receives this as a target rect + framing config — it just does
+ * pure fit/clamp math without understanding "lastMessage" or "inputArea".
+ * 
+ * DESIGN: Semantic interpretation lives HERE (Layer 3), not in Camera Math (Layer 4).
+ */
+export const ANCHOR_FRAMING: Record<string, AnchorFraming> = {
+    // Chat anchors
+    lastMessage: {
+        anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third, slightly off-center
+        paddingPx: 24,
+        targetFill: 0.55,
+    },
+    inputArea: {
+        anchorPoint: { x: 0.5, y: 0.9 },   // Very bottom of frame
+        paddingPx: 16,
+        targetFill: 0.4,
+    },
+    typingIndicator: {
+        anchorPoint: { x: 0.5, y: 0.82 },  // Just above input
+        paddingPx: 20,
+        targetFill: 0.3,
+    },
+
+    // Call anchors
+    callPoster: {
+        anchorPoint: { x: 0.5, y: 0.4 },   // Upper portion for contact poster
+        paddingPx: 32,
+        targetFill: 0.65,
+    },
+    acceptButton: {
+        anchorPoint: { x: 0.7, y: 0.85 },  // Lower right
+        paddingPx: 40,
+        targetFill: 0.25,
+    },
+    declineButton: {
+        anchorPoint: { x: 0.3, y: 0.85 },  // Lower left
+        paddingPx: 40,
+        targetFill: 0.25,
+    },
+
+    // Notification anchors
+    headsUpNotification: {
+        anchorPoint: { x: 0.5, y: 0.1 },   // Top of frame
+        paddingPx: 16,
+        targetFill: 0.35,
+    },
+    dynamicIsland: {
+        anchorPoint: { x: 0.5, y: 0.05 },  // Very top
+        paddingPx: 8,
+        targetFill: 0.15,
+    },
+
+    // Default fallback
+    device: {
+        anchorPoint: { x: 0.5, y: 0.5 },   // Center
+        paddingPx: 0,
+        targetFill: 1.0,
+    },
+};
+
+/**
+ * Get framing config for an anchor.
+ * Falls back to device framing if anchor not found.
+ */
+export function getAnchorFraming(anchor: string): AnchorFraming {
+    return ANCHOR_FRAMING[anchor] || ANCHOR_FRAMING.device;
+}
+
 /**
  * Get a shot preset by ID with optional overrides (deltas).
  *

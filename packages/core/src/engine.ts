@@ -139,6 +139,7 @@ function processCameraEvent(
         case "PAN":
         case "SHAKE":
         case "FOCUS":
+        case "ANCHOR_FOCUS":  // NEW: Semantic anchor-driven camera
         case "RESET": {
             // Create active effect and add to list
             const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);

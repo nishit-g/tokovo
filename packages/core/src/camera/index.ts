@@ -24,6 +24,8 @@ import {
     CameraResetEffect,
 } from "../types";
 
+import { getAnchorFraming } from "./presets";
+
 // =============================================================================
 // EASING FUNCTIONS
 // =============================================================================
@@ -240,6 +242,12 @@ export class CameraController {
             case "FOCUS":
                 this.applyFocus(transform, effect, localT);
                 break;
+            case "ANCHOR_FOCUS":
+                // Semantic anchor focus - applies zoom based on preset
+                // The anchor → origin resolution happens in renderer's useCameraEngine
+                // Here we just apply the scale and easing
+                this.applyAnchorFocus(transform, effect as any, localT, t, startFrame);
+                break;
             case "RESET":
                 this.applyReset(transform, effect, localT);
                 break;
@@ -332,6 +340,73 @@ export class CameraController {
     }
 
     /**
+     * ANCHOR_FOCUS effect - Semantic anchor-driven camera
+     * 
+     * This applies zoom and optional shake based on shot preset.
+     * The anchor → origin resolution happens in the renderer's useCameraEngine,
+     * which has access to layout state and anchor providers.
+     * 
+     * Here we apply:
+     * - Scale based on preset or explicit value
+     * - Shake if specified
+     * - Origin from ANCHOR_FRAMING config (Layer 3: Presets)
+     * 
+     * ARCHITECTURE: Camera Math (Layer 4) does NOT interpret anchor semantics.
+     * It receives framing config from presets.ts (Layer 3) via getAnchorFraming().
+     */
+    private applyAnchorFocus(
+        transform: CameraTransform,
+        effect: { anchor: string; preset?: string; scale?: number; duration: number; easing?: string; shake?: number },
+        progress: number,
+        absoluteFrame: number,
+        startFrame: number
+    ): void {
+        const easing = effect.easing as any || "ease-out";
+        const easedProgress = applyEasing(progress, easing);
+
+        // Get scale from effect or preset defaults
+        const presetScale = this.getPresetScale(effect.preset);
+        const targetScale = effect.scale ?? presetScale;
+
+        // Apply zoom
+        transform.scale = 1 + (targetScale - 1) * easedProgress;
+
+        // Apply shake if specified
+        if (effect.shake && effect.shake > 0) {
+            const frameInEffect = absoluteFrame - startFrame;
+            const seed = startFrame;
+            const frequency = 18;
+            const offset = getShakeOffset(frameInEffect, seed, frequency, this.fps);
+
+            // Apply shake with decay
+            const decayMultiplier = 1 - progress * 0.6;
+            transform.shakeX += offset.x * effect.shake * decayMultiplier;
+            transform.shakeY += offset.y * effect.shake * decayMultiplier;
+        }
+
+        // Get framing config from Layer 3 (Presets) - NOT hardcoded here!
+        // Semantic interpretation ("lastMessage should be lower-third") lives in presets.ts
+        const framing = getAnchorFraming(effect.anchor);
+        transform.originX = framing.anchorPoint.x;
+        transform.originY = framing.anchorPoint.y;
+    }
+
+    /**
+     * Get default scale for a shot preset
+     */
+    private getPresetScale(preset?: string): number {
+        switch (preset) {
+            case "dramatic": return 1.3;
+            case "subtle": return 1.08;
+            case "snap": return 1.15;
+            case "impact": return 1.4;
+            case "message": return 1.1;
+            case "reset": return 1.0;
+            default: return 1.15;
+        }
+    }
+
+    /**
      * RESET effect - return to default camera position
      */
     private applyReset(transform: CameraTransform, effect: CameraResetEffect, progress: number): void {
@@ -416,6 +491,19 @@ export function createActiveEffect(
                 duration,
                 easing: params.easing,
             };
+            break;
+        case "ANCHOR_FOCUS":
+            // Semantic anchor focus - resolved at render time by useCameraEngine
+            // The anchor name is stored and later resolved to a LayoutRect
+            effect = {
+                type: "ANCHOR_FOCUS",
+                anchor: params.anchor ?? "device",
+                preset: params.preset,
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                shake: params.shake,
+            } as any;  // Cast to any since CameraAnchorFocusEffect is newly added
             break;
         default:
             return null;

@@ -15,6 +15,18 @@ import type { WorldState, Notification } from "@tokovo/core";
 
 const APP_ID = "app_notification";
 
+// Device profile lookup (shared pattern across providers)
+function getDeviceProfile(profileId?: string): { dimensions: { width: number; height: number } } {
+    const profiles: Record<string, { dimensions: { width: number; height: number } }> = {
+        iphone16: { dimensions: { width: 430, height: 932 } },
+        iphone15: { dimensions: { width: 430, height: 932 } },
+        iphone14: { dimensions: { width: 390, height: 844 } },
+        pixel8: { dimensions: { width: 412, height: 915 } },
+        pixel7: { dimensions: { width: 412, height: 915 } },
+    };
+    return profiles[profileId || "iphone16"] || profiles.iphone16;
+}
+
 /**
  * Notification Anchor Provider
  *
@@ -36,9 +48,10 @@ export const NotificationAnchorProvider: AnchorProvider = {
         const device = world.devices[deviceId];
         const notifications = device?.notifications || [];
 
-        // Device dimensions
-        const viewportWidth = 430;
-        const viewportHeight = 932;
+        // Get viewport dimensions from device profile (NOT hardcoded)
+        const profile = getDeviceProfile(device?.profileId);
+        const viewportWidth = profile.dimensions.width;
+        const viewportHeight = profile.dimensions.height;
 
         // =========================================================================
         // HEADS-UP NOTIFICATION
@@ -74,7 +87,7 @@ export const NotificationAnchorProvider: AnchorProvider = {
         }
 
         // =========================================================================
-        // DEVICE (full frame — final fallback)
+        // DEVICE (full frame — final fallback, from viewport)
         // =========================================================================
         anchors.device = {
             x: 0,

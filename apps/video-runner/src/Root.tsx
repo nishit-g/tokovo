@@ -22,11 +22,20 @@ import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
 import { FullRealityShowcase } from "./FullRealityShowcase";
 import { PhoneCallShowcase } from "./PhoneCallShowcase";
 import { UltimateShowcase } from "./UltimateShowcase";
+import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
 
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="SemanticCameraShowcase"
+                component={SemanticCameraShowcase}
+                durationInFrames={660}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="UltimateShowcase2"
                 component={UltimateShowcase}
