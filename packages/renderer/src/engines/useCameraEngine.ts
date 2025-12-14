@@ -239,6 +239,33 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                 });
             }
 
+            // =========================================================================
+            // RESOLVE FOCUSANCHOR EFFECTS FROM DIRECTOR
+            // =========================================================================
+            // Convert FocusAnchor effects (semantic) to resolved effects (with rects)
+            // This is where director's semantic output meets the anchor system!
+            if (!result.skipped && result.effects.length > 0 && anchorSnapshot) {
+                for (const effect of result.effects) {
+                    if (effect.type === "FocusAnchor" && effect.anchor) {
+                        // Resolve anchor to rect
+                        const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
+                        if (resolved) {
+                            // Inject the resolved rect into the effect
+                            effect.target = resolved.rect;
+
+                            // Get scale from preset if not explicitly set
+                            if (!effect.scale && effect.preset) {
+                                effect.scale = getPresetScaleSimple(effect.preset);
+                            }
+
+                            if (directorDebug) {
+                                console.log(`[CameraEngine] FocusAnchor resolved: ${effect.anchor} → rect`, resolved.rect);
+                            }
+                        }
+                    }
+                }
+            }
+
             // Apply director effects if not skipped and effects exist
             if (!result.skipped && result.effects.length > 0) {
                 const viewport: Viewport = {

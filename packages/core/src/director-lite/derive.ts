@@ -179,8 +179,23 @@ function generateEffect(
         "ease-out"
     );
 
-    // Resolve target
-    const target = resolveTarget(signal, layout, rule.targetType);
+    // === NEW: FocusAnchor effects use semantic anchors ===
+    if (rule.effect === "FocusAnchor" && rule.anchor) {
+        return {
+            type: "FocusAnchor",
+            category: rule.category,
+            priority: rule.priority,
+            progress,
+            anchor: rule.anchor,      // Semantic anchor ID
+            preset: rule.preset,      // Shot preset
+            scale: rule.scale,
+            seed: seed + signal.at,
+        };
+    }
+
+    // === Legacy: PushIn, ZoomToRect, PullBack use pixel rects ===
+    // Resolve target (only for legacy effects)
+    const target = resolveTarget(signal, layout, rule.targetType || "");
     if (!target && rule.category === "framing" && rule.effect !== "PullBack") {
         return null;
     }

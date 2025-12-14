@@ -54,14 +54,29 @@ export interface DirectorSignal {
 
 export type EffectCategory = "framing" | "shake";
 
+/**
+ * Effect types:
+ * - PushIn, ZoomToRect, PullBack: Legacy pixel-based (DEPRECATED)
+ * - FocusAnchor: NEW semantic anchor-based (PREFERRED)
+ * - MicroShake: Camera shake effect
+ */
 export interface DerivedCameraEffect {
-    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    type: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake" | "FocusAnchor";
     category: EffectCategory;
     priority: number;
     progress: number;
-    // Framing effects
+
+    // === NEW: Anchor-based framing (PREFERRED) ===
+    /** Semantic anchor to focus on */
+    anchor?: string;  // SemanticAnchorId
+    /** Shot preset (dramatic, subtle, snap, etc.) */
+    preset?: string;  // ShotPresetId
+
+    // === Legacy: Pixel-based framing (DEPRECATED) ===
+    /** Direct rect target — prefer using `anchor` instead */
     target?: LayoutRect;
     scale?: number;
+
     // Shake effects
     intensity?: number;
     seed?: number;

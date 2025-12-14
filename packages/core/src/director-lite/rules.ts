@@ -3,6 +3,8 @@
  *
  * ViralDramaV1 - The only style. Opinionated. Ships.
  * Pre-indexed by signal type for O(1) lookup.
+ * 
+ * UPDATE: Now uses semantic anchors (FocusAnchor) instead of pixel targets.
  */
 
 import { SignalType, EffectCategory } from "./types";
@@ -10,52 +12,68 @@ import { SignalType, EffectCategory } from "./types";
 export interface Rule {
     id: string;
     signal: SignalType;
-    effect: "PushIn" | "ZoomToRect" | "PullBack" | "MicroShake";
+    /** 
+     * Effect type:
+     * - FocusAnchor: NEW semantic anchor-based (PREFERRED)
+     * - PushIn, ZoomToRect, PullBack: Legacy pixel-based (DEPRECATED)
+     * - MicroShake: Camera shake effect
+     */
+    effect: "FocusAnchor" | "MicroShake" | "PushIn" | "ZoomToRect" | "PullBack";
     category: EffectCategory;
     priority: number;
     cooldownFrames: number;
     durationFrames: number;
-    targetType: "message" | "inputArea" | "lastMessage";
+
+    // === NEW: Anchor-based targeting (PREFERRED) ===
+    /** Semantic anchor to focus on */
+    anchor?: string;  // SemanticAnchorId
+    /** Shot preset (matches SHOT_PRESETS in camera/presets.ts) */
+    preset?: string;  // ShotPresetId
+
+    // === Legacy ===
+    targetType?: "message" | "inputArea" | "lastMessage";  // DEPRECATED
     scale?: number;
     intensity?: number;
 }
 
 /**
  * ViralDramaV1 - Baked rules for dramatic chat videos.
+ * 
+ * NOW USING SEMANTIC ANCHORS!
  */
 export const RULES: Rule[] = [
     {
         id: "typing-push",
         signal: "TypingStarted",
-        effect: "PushIn",
+        effect: "FocusAnchor",
         category: "framing",
         priority: 10,
         cooldownFrames: 90,
         durationFrames: 45,
-        targetType: "inputArea", // Always exists (not typing rect!)
-        scale: 1.12,
+        anchor: "inputArea",     // Stable anchor for typing
+        preset: "subtle",        // Subtle zoom during anticipation
     },
     {
         id: "message-zoom",
         signal: "NewMessage",
-        effect: "ZoomToRect",
+        effect: "FocusAnchor",
         category: "framing",
         priority: 30,
         cooldownFrames: 20,
         durationFrames: 25,
-        targetType: "message",
-        scale: 1.2,
+        anchor: "lastMessage",   // Follow the new message
+        preset: "message",       // Standard message follow preset
     },
     {
         id: "read-zoom",
         signal: "MessageRead",
-        effect: "ZoomToRect",
+        effect: "FocusAnchor",
         category: "framing",
         priority: 40,
         cooldownFrames: 45,
         durationFrames: 18,
-        targetType: "message",
-        scale: 1.08,
+        anchor: "lastMessage",   // Focus on read message
+        preset: "subtle",        // Subtle acknowledgment
     },
     {
         id: "deleted-shake",
@@ -65,19 +83,19 @@ export const RULES: Rule[] = [
         priority: 25,
         cooldownFrames: 60,
         durationFrames: 12,
-        targetType: "message",
+        anchor: "lastMessage",   // Shake near the deleted message
         intensity: 6,
     },
     {
         id: "call-pullback",
         signal: "CallIncoming",
-        effect: "PullBack",
+        effect: "FocusAnchor",
         category: "framing",
         priority: 50,
         cooldownFrames: 0,
         durationFrames: 40,
-        targetType: "inputArea",
-        scale: 0.88,
+        anchor: "callPoster",    // Focus on incoming call poster
+        preset: "dramatic",      // Dramatic for incoming calls
     },
 ];
 

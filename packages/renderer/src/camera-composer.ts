@@ -54,7 +54,9 @@ function applyFramingEffect(
 
     switch (effect.type) {
         case "PushIn":
-        case "ZoomToRect": {
+        case "ZoomToRect":
+        case "FocusAnchor": {
+            // FocusAnchor effects should have target injected by useCameraEngine
             if (!scale || !target) return;
 
             // Scale interpolation
@@ -64,8 +66,8 @@ function applyFramingEffect(
             const centerX = target.x + target.width / 2;
             const centerY = target.y + target.height / 2 - viewport.scrollY;
 
-            transform.originX = centerX / viewport.width;
-            transform.originY = centerY / viewport.height;
+            transform.originX = Math.max(0.1, Math.min(0.9, centerX / viewport.width));
+            transform.originY = Math.max(0.1, Math.min(0.9, centerY / viewport.height));
             break;
         }
 
