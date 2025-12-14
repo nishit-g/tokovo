@@ -39,16 +39,66 @@ interface WorldState {
 
 ## DeviceState
 
+The complete state of a single device:
+
 ```typescript
 interface DeviceState {
-  id: string;                    // "alice_phone"
-  profileId: string;             // "iphone16" | "pixel"
-  ownerName?: string;            // "Alice"
-  isLocked: boolean;             // Show lockscreen?
-  foregroundAppId?: string;      // "app_whatsapp"
-  notifications: Notification[]; // Pending notifications
-  call?: CallState;              // Incoming/active call
-  homeScreen?: HomeScreenConfig; // App grid
+  id: string;                           // "alice_phone"
+  profileId: string;                    // "iphone16" | "pixel"
+  ownerName?: string;                   // "Alice"
+  isLocked: boolean;                    // Show lockscreen?
+  foregroundAppId?: string;             // "app_whatsapp"
+  
+  // Notifications
+  notifications: Notification[];         // All notifications
+  notificationCenter?: NotificationCenterState;
+  dynamicIsland?: DynamicIslandState;   // iOS Dynamic Island state
+  statusBarIcons?: StatusBarIcon[];     // Android status bar
+  
+  // Background activity
+  backgroundApps?: BackgroundAppState[];
+  call?: CallState;                     // Incoming/active call
+  
+  // UI configuration
+  homeScreen?: HomeScreenConfig;
+  theme?: DeviceTheme;
+  sound?: { activeSoundId?: string };
+}
+```
+
+### NotificationCenterState
+
+```typescript
+interface NotificationCenterState {
+  items: Notification[];
+  headsUp: string | null;      // Currently displayed notification ID
+  headsUpQueue: string[];      // Pending notifications
+  groups: NotificationGroup[]; // Collapsed groups
+}
+```
+
+### BackgroundAppState
+
+```typescript
+interface BackgroundAppState {
+  appId: string;
+  startedAt: number;
+  indicator?: "music" | "call" | "recording" | "location";
+  label?: string;
+}
+```
+
+### CallState
+
+```typescript
+interface CallState {
+  status: "incoming" | "active" | "ended";
+  callerId: string;
+  callerName: string;
+  callerAvatar?: string;
+  isVideo?: boolean;
+  startedAt?: number;
+  endedAt?: number;
 }
 ```
 
@@ -58,7 +108,7 @@ interface DeviceState {
 interface ConversationState {
   id: string;
   type?: "dm" | "group";
-  name?: string;                  // Contact/group name
+  name?: string;
   avatar?: string;
   members?: GroupMember[];
   messages: Message[];
@@ -71,13 +121,26 @@ interface ConversationState {
 ```typescript
 interface Message {
   id: string;
-  from: string;                   // Sender or "me"
+  from: string;                 // Sender or "me"
   text?: string;
-  type?: "text" | "image" | "voice" | "system" | "deleted";
-  status?: "sent" | "delivered" | "read";
-  timestamp?: string;             // "10:42 AM"
+  type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
+  status?: "sending" | "sent" | "delivered" | "read";
+  timestamp?: string;           // "10:42 AM"
+  at?: number;                  // Frame timestamp
   
-  // Semantic metadata (from DSL)
+  // Media content
+  imageUrl?: string;
+  videoUrl?: string;
+  gifUrl?: string;
+  duration?: number;            // Voice message duration
+  caption?: string;             // Media caption
+  
+  // Future features
+  reactions?: Reaction[];
+  replyTo?: ReplyTo;
+  linkPreview?: LinkPreview;
+  
+  // Semantic metadata
   semantic?: SemanticMeta;
 }
 ```
@@ -86,26 +149,35 @@ interface Message {
 
 ```typescript
 interface CameraState {
-  // Zoom
-  scale: number;     // 1.0 = no zoom
-  originX: number;   // 0-1, zoom origin
-  originY: number;
+  baseView: "APP_VIEW" | "LOCKSCREEN" | "HOMESCREEN";
+  activeDeviceId: string;
   
-  // Pan
-  panX: number;
-  panY: number;
-  
-  // Effects
-  shake?: {
-    intensity: number;
-    frequency: number;
-    seed: number;
+  // Multi-device layout
+  layout: {
+    mode: "SINGLE" | "SPLIT" | "STACK";
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
   };
   
-  // Multi-device
-  layout?: LayoutMode;
-  primaryDeviceId?: string;
-  secondaryDeviceId?: string;
+  // Active effects (ZOOM, PAN, SHAKE, FOCUS, RESET)
+  activeEffects: ActiveCameraEffect[];
+  
+  // Computed transform
+  transform: CameraTransform;
+  
+  // Per-device transforms
+  deviceTransforms: Record<string, CameraTransform>;
+}
+
+interface CameraTransform {
+  scale: number;        // 1.0 = no zoom
+  translateX: number;
+  translateY: number;
+  rotation: number;
+  originX: number;      // 0-1
+  originY: number;
+  shakeX: number;
+  shakeY: number;
 }
 ```
 
@@ -113,122 +185,63 @@ interface CameraState {
 
 ```typescript
 interface AudioState {
-  playing: PlayingSound[];
-  backgroundMusic?: {
-    soundId: string;
-    volume: number;
-  };
+  activeSounds: Record<string, ActiveSound>;
+  buses: BusConfig;
 }
 
-interface PlayingSound {
-  soundId: string;
-  startedAt: number;  // Frame
+interface ActiveSound {
+  id: string;
+  src: string;
+  bus: "sfx" | "music" | "ambient" | "voice";
+  startFrame: number;
   volume: number;
+  loop?: boolean;
+}
+
+interface BusConfig {
+  sfx: { volume: number; muted: boolean };
+  music: { volume: number; muted: boolean };
+  ambient: { volume: number; muted: boolean };
+  voice: { volume: number; muted: boolean };
+  master: { volume: number; muted: boolean };
 }
 ```
 
 ## Building World at Frame
 
 ```typescript
-function buildWorldAtFrame(
-  initialWorld: WorldState,
-  events: RuntimeEvent[],
-  frame: number
-): WorldState {
-  let world = { ...initialWorld, _eventCursor: -1 };
-  
-  for (const event of events) {
-    if (event.at <= frame) {
-      world = reduceEvent(world, event);
-    }
-  }
-  
-  return { ...world, _eventCursor: frame };
-}
+import { replay } from "@tokovo/core";
+
+// Compute world state at frame 100
+const world = replay(initialWorld, events, 100);
 ```
-
-## Initial World
-
-Created from Scene IR:
-
-```typescript
-function createInitialWorld(sceneIR: SceneIR): WorldState {
-  const devices: Record<string, DeviceState> = {};
-  const conversations: Record<string, ConversationState> = {};
-  
-  for (const device of sceneIR.devices) {
-    // Create device
-    devices[device.deviceId] = {
-      id: device.deviceId,
-      profileId: device.profileId,
-      isLocked: true,  // Start locked
-      notifications: [],
-    };
-    
-    // Create conversations
-    for (const conv of device.conversations) {
-      conversations[conv.id] = {
-        id: conv.id,
-        name: conv.name,
-        type: conv.type,
-        messages: [],
-        typing: {},
-      };
-    }
-  }
-  
-  return {
-    devices,
-    conversations,
-    appState: {},
-    camera: createDefaultCamera(),
-    audio: { playing: [] },
-    _eventCursor: -1,
-  };
-}
-```
-
-## Scrubbing
-
-Because state is computed from events, scrubbing works:
-
-```typescript
-// Jump to frame 100
-const world100 = buildWorldAtFrame(init, events, 100);
-
-// Jump backward to frame 50
-const world50 = buildWorldAtFrame(init, events, 50);
-
-// Jump forward to frame 200
-const world200 = buildWorldAtFrame(init, events, 200);
-```
-
-No accumulated state. Any frame, any time.
 
 ## Accessing State
 
 ```typescript
 // Get device
-const device = world.devices["AlicePhone"];
+const device = world.devices["phone"];
 
 // Get foreground app
 const appId = device.foregroundAppId;
 
+// Get notification center
+const notifCenter = device.notificationCenter;
+const headsUp = notifCenter?.headsUp;
+
 // Get conversation
 const conv = world.conversations["dm_bob"];
 
-// Get messages
-const messages = conv.messages;
+// Get camera transform
+const { scale, translateX, translateY } = world.camera.transform;
 
-// Get typing status
-const isTyping = conv.typing?.["Bob"] ?? false;
-
-// Get camera scale
-const zoom = world.camera.scale;
+// Get active sounds
+const sounds = Object.values(world.audio.activeSounds);
 ```
 
 ## Determinism Notes
 
 - Is this pure? **Yes** — Computed from events
-- Is ordering stable? **Yes** — Events are sorted
+- Is ordering stable? **Yes** — Events are sorted by `at` field
 - Is randomness seeded? **Yes** — Camera shake uses seeds
+- Is scrubbing supported? **Yes** — Any frame, any time

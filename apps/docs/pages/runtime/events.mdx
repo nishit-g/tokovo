@@ -5,7 +5,7 @@ Events are the **execution contract** between the compiler and runtime.
 ## Event Structure
 
 ```typescript
-interface RuntimeEvent {
+interface TimelineEvent {
   at: number;      // Frame when this happens
   kind: EventKind; // Category
   type: string;    // Specific type
@@ -18,22 +18,18 @@ interface RuntimeEvent {
 
 | Kind | Description | Examples |
 |------|-------------|----------|
-| `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP |
+| `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP, SHOW_NOTIFICATION |
 | `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START |
-| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE |
-| `SOUND` | Audio events | PLAY_SOUND |
+| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE, FOCUS, RESET |
+| `AUDIO` | Audio events | PLAY_SOUND, STOP_SOUND, SET_BUS_VOLUME |
 
 ## Device Events
 
-### UNLOCK
+### UNLOCK / LOCK
 
 ```typescript
-{
-  at: 0,
-  kind: "DEVICE",
-  type: "UNLOCK",
-  deviceId: "AlicePhone"
-}
+{ at: 0, kind: "DEVICE", type: "UNLOCK", deviceId: "phone" }
+{ at: 300, kind: "DEVICE", type: "LOCK", deviceId: "phone" }
 ```
 
 ### OPEN_APP
@@ -43,8 +39,111 @@ interface RuntimeEvent {
   at: 0,
   kind: "DEVICE",
   type: "OPEN_APP",
-  deviceId: "AlicePhone",
+  deviceId: "phone",
   appId: "app_whatsapp"
+}
+```
+
+### ADD_BACKGROUND_APP
+
+```typescript
+{
+  at: 100,
+  kind: "DEVICE",
+  type: "ADD_BACKGROUND_APP",
+  deviceId: "phone",
+  appId: "app_spotify",
+  indicator: "music",
+  label: "Now Playing"
+}
+```
+
+## Notification Events
+
+### SHOW_NOTIFICATION
+
+```typescript
+{
+  at: 90,
+  kind: "DEVICE",
+  type: "SHOW_NOTIFICATION",
+  deviceId: "phone",
+  notification: {
+    id: "notif_1",
+    appId: "app_whatsapp",
+    title: "Sarah 💬",
+    body: "Hey! Are you coming tonight?",
+    priority: "active",
+    mode: "both",
+  }
+}
+```
+
+### TAP_NOTIFICATION
+
+```typescript
+{
+  at: 120,
+  kind: "DEVICE",
+  type: "TAP_NOTIFICATION",
+  deviceId: "phone",
+  notificationId: "notif_1",
+  actionId: "open"  // or button ID like "reply"
+}
+```
+
+### SWIPE_NOTIFICATION
+
+```typescript
+{
+  at: 150,
+  kind: "DEVICE",
+  type: "SWIPE_NOTIFICATION",
+  deviceId: "phone",
+  notificationId: "notif_1",
+  direction: "right",
+  action: "dismiss"
+}
+```
+
+### REPLY_NOTIFICATION
+
+```typescript
+{
+  at: 180,
+  kind: "DEVICE",
+  type: "REPLY_NOTIFICATION",
+  deviceId: "phone",
+  notificationId: "notif_1",
+  text: "On my way!"
+}
+```
+
+### DISMISS_NOTIFICATION
+
+```typescript
+{
+  at: 200,
+  kind: "DEVICE",
+  type: "DISMISS_NOTIFICATION",
+  deviceId: "phone",
+  notificationId: "notif_1"  // or groupKey, or all: true
+}
+```
+
+### UPDATE_NOTIFICATION
+
+```typescript
+{
+  at: 220,
+  kind: "DEVICE",
+  type: "UPDATE_NOTIFICATION",
+  deviceId: "phone",
+  notificationId: "notif_1",
+  patch: {
+    body: "3 new messages",
+    title: "Sarah (3)"
+  }
 }
 ```
 
@@ -63,30 +162,11 @@ interface RuntimeEvent {
 }
 ```
 
-### TYPING_START
+### TYPING_START / TYPING_END
 
 ```typescript
-{
-  at: 30,
-  kind: "APP",
-  type: "TYPING_START",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  from: "Bob"
-}
-```
-
-### TYPING_END
-
-```typescript
-{
-  at: 60,
-  kind: "APP",
-  type: "TYPING_END",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  from: "Bob"
-}
+{ at: 30, kind: "APP", type: "TYPING_START", ... }
+{ at: 60, kind: "APP", type: "TYPING_END", ... }
 ```
 
 ### MESSAGE_RECEIVED
@@ -100,7 +180,7 @@ interface RuntimeEvent {
   conversationId: "dm_bob",
   from: "Bob",
   message: {
-    id: "msg_AlicePhone_dm_bob_1",
+    id: "msg_1",
     type: "text",
     text: "We need to talk.",
     status: "delivered",
@@ -109,44 +189,26 @@ interface RuntimeEvent {
 }
 ```
 
-### MESSAGE_READ
+### MESSAGE_READ / MESSAGE_DELETED
 
 ```typescript
-{
-  at: 90,
-  kind: "APP",
-  type: "MESSAGE_READ",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  messageId: "msg_AlicePhone_dm_bob_1"
-}
+{ at: 90, kind: "APP", type: "MESSAGE_READ", messageId: "msg_1", ... }
+{ at: 120, kind: "APP", type: "MESSAGE_DELETED", messageId: "msg_1", ... }
 ```
 
-### MESSAGE_DELETED
-
-```typescript
-{
-  at: 120,
-  kind: "APP",
-  type: "MESSAGE_DELETED",
-  appId: "app_whatsapp",
-  conversationId: "dm_bob",
-  messageId: "msg_AlicePhone_dm_bob_1"
-}
-```
-
-## Camera Events (Manual)
+## Camera Events
 
 ### ZOOM
 
 ```typescript
 {
-  at: 45,
+  at: 100,
   kind: "CAMERA",
   type: "ZOOM",
-  target: { x: 20, y: 340, w: 280, h: 60 },
-  scale: 1.3,
-  durationFrames: 20,
+  scale: 1.5,
+  duration: 30,
+  originX: 0.5,
+  originY: 0.3,
   easing: "ease-out"
 }
 ```
@@ -155,12 +217,13 @@ interface RuntimeEvent {
 
 ```typescript
 {
-  at: 100,
+  at: 150,
   kind: "CAMERA",
   type: "PAN",
-  offsetX: 50,
-  offsetY: -30,
-  durationFrames: 15
+  translateX: 100,
+  translateY: 50,
+  duration: 45,
+  easing: "ease-in-out"
 }
 ```
 
@@ -168,27 +231,92 @@ interface RuntimeEvent {
 
 ```typescript
 {
-  at: 60,
+  at: 200,
   kind: "CAMERA",
   type: "SHAKE",
-  intensity: 8,
-  durationFrames: 12
+  intensity: 20,
+  duration: 30,
+  decay: true,
+  frequency: 3,
+  seed: 42
 }
 ```
 
-## Sound Events
+### FOCUS
+
+```typescript
+{
+  at: 250,
+  kind: "CAMERA",
+  type: "FOCUS",
+  target: "message_3",  // Element ID
+  zoom: 1.8,
+  duration: 60
+}
+```
+
+### RESET
+
+```typescript
+{
+  at: 300,
+  kind: "CAMERA",
+  type: "RESET",
+  duration: 45,
+  easing: "ease-out"
+}
+```
+
+## Audio Events
 
 ### PLAY_SOUND
 
 ```typescript
 {
   at: 60,
-  kind: "SOUND",
+  kind: "AUDIO",
   type: "PLAY_SOUND",
-  soundId: "notification",
-  volume: 1.0
+  soundId: "notif_1",
+  src: "/sounds/notification.mp3",
+  bus: "sfx",
+  volume: 1.0,
+  loop: false
 }
 ```
+
+### STOP_SOUND
+
+```typescript
+{
+  at: 120,
+  kind: "AUDIO",
+  type: "STOP_SOUND",
+  soundId: "notif_1",
+  fadeOut: 30
+}
+```
+
+### SET_BUS_VOLUME
+
+```typescript
+{
+  at: 100,
+  kind: "AUDIO",
+  type: "SET_BUS_VOLUME",
+  bus: "music",
+  volume: 0.3
+}
+```
+
+## Event Ordering
+
+Events are sorted by:
+
+1. `at` (frame)
+2. `phase` (DEVICE < NAV < APP < FX)
+3. `priority` (within phase)
+4. `trackId` (for concurrent operations)
+5. `opIndex` (stable tie-breaker)
 
 ## Event Traces
 
@@ -202,23 +330,5 @@ interface Trace {
   opIndex: number;
   phase: number;
   priority: number;
-  sceneOpIndex?: number;
-  deviceId?: string;
-  conversationId?: string;
 }
 ```
-
-This enables:
-- **Debugging** — Find which DSL line caused an issue
-- **Analytics** — Track what parts of the story engage
-- **AI feedback** — Learn what works
-
-## Event Ordering
-
-Events are sorted by:
-
-1. `at` (frame)
-2. `phase` (DEVICE < NAV < APP < FX)
-3. `priority` (within phase)
-4. `trackId` (for concurrent operations)
-5. `opIndex` (stable tie-breaker)

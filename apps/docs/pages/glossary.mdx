@@ -126,6 +126,17 @@ Human-readable duration string. Parsed by the compiler.
 "45frames"  // 45 frames
 ```
 
+### DynamicIsland
+iOS floating status indicator at the top of iPhone screens. Shows notifications, active widgets (music, calls, timers), and background activity indicators.
+
+```typescript
+interface DynamicIslandState {
+  visible: boolean;
+  mode: "idle" | "minimal" | "compact" | "expanded";
+  activeContent: "widget" | "notification" | null;
+}
+```
+
 ---
 
 ## E
@@ -240,6 +251,48 @@ interface MessageRef {
 Semantic classification of emotional state.
 
 Values: `calm`, `tense`, `angry`, `sad`, `anxious`, `excited`, `confused`, `neutral`
+
+---
+
+## N
+
+### NotificationAdapter
+App-specific adapter for formatting notifications. Each app registers an adapter to customize how its notifications appear.
+
+```typescript
+interface NotificationAdapter {
+  appId: string;
+  format(notification: Notification): FormattedNotification;
+  handleAction?(actionId: string, notification: Notification): TimelineEvent[];
+}
+```
+
+### NotificationCenter
+Device-level state for managing all notifications.
+
+```typescript
+interface NotificationCenterState {
+  items: Notification[];
+  headsUp: string | null;      // Currently displayed
+  headsUpQueue: string[];      // Pending
+  groups: NotificationGroup[]; // Collapsed groups
+}
+```
+
+### NotificationIR
+Production-grade notification representation with full lifecycle.
+
+```typescript
+interface NotificationIR {
+  id: string;
+  appId: string;
+  title: string;
+  body: string;
+  priority: "passive" | "active" | "timeSensitive" | "critical";
+  state: "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
+  // ... plus headsUp timing, actions, grouping
+}
+```
 
 ---
 
