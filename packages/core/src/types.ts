@@ -2,41 +2,184 @@ export type DeviceId = string;
 export type AppId = string;
 export type ConversationId = string;
 
+// =============================================================================
+// NOTIFICATION IR (Intermediate Representation)
+// =============================================================================
+
+/** Notification priority levels */
+export type NotificationPriority = "passive" | "active" | "timeSensitive" | "critical";
+
+/** Notification lifecycle state */
+export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
+
+/** Notification delivery conditions */
+export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
+
+/**
+ * NotificationIR - Production-grade notification representation
+ */
 export interface Notification {
     id: string;
+    deviceId?: string;                // Who receives it
     appId: string;
+
+    // Content
     title: string;
     body: string;
-    at: number;
-    dismissedAt?: number;         // When auto-dismissed or manually dismissed
-    mode?: "lockscreen" | "headsup" | "both";  // Display mode (default: both)
-    icon?: string;                // App icon URL (optional)
-    threadId?: string;            // For grouping (e.g., chat ID)
-    groupKey?: string;            // Grouping key (default: appId)
-    priority?: "passive" | "active" | "timeSensitive" | "critical";
+    icon?: string;
     preview?: {
-        kind: "text" | "image";
+        kind: "text" | "image" | "video";
         value: string;
+        aspectRatio?: number;
     };
+
+    // Action buttons (max 3)
+    actions?: Array<{
+        id: string;
+        label: string;
+        icon?: string;
+        destructive?: boolean;
+    }>;
+    replyable?: boolean;              // Quick reply input
+
+    // Grouping
+    groupKey?: string;
+    threadId?: string;
+
+    // Priority & Mode
+    priority?: NotificationPriority;
+    mode?: "lockscreen" | "headsup" | "both" | "silent";
+    deliverWhen?: NotificationDeliverWhen;
+
+    // === LIFECYCLE (state machine) ===
+    at: number;                       // DSL spawn time
+    deliveredAt?: number;             // When entered device state
+    state?: NotificationState;
+    updatedAt?: number;               // For updates (same id)
+    dismissedAt?: number;
+
+    // Heads-up lifecycle
+    headsUp?: {
+        shownAt?: number;
+        hideAt?: number;
+        duration?: number;            // OS default if not set
+    };
+
+    // Metadata
+    metadata?: Record<string, any>;
 }
 
-// Notification group for stacking multiple notifications
+// Alias for backward compatibility
+export type NotificationIR = Notification;
+
+/**
+ * Notification group for stacking multiple notifications
+ */
 export interface NotificationGroup {
-    key: string;                   // groupKey (appId or appId+threadId)
+    key: string;
     appId: string;
     notifications: Notification[];
-    collapsed: boolean;            // Show stacked or expanded
-    count: number;                 // Total in group
-    latestAt: number;              // Most recent notification time
+    collapsed: boolean;
+    count: number;
+    latestAt: number;
 }
 
-// Background app state (e.g., Spotify playing in background)
+// =============================================================================
+// NOTIFICATION POLICY (OS-level rules)
+// =============================================================================
+
+export interface NotificationPolicyIR {
+    maxHeadsUpVisible: number;
+    headsUpDurationByPriority: Record<NotificationPriority, number>;
+    replaceOnNewFromSameThread: boolean;
+    groupCollapseThreshold: number;
+    autoGroupByApp: boolean;
+    statusBarIconLimit: number;
+    expandDurationMs: number;
+}
+
+export const IOS_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 90, timeSensitive: 150, critical: 240 }, // frames
+    replaceOnNewFromSameThread: true,
+    groupCollapseThreshold: 3,
+    autoGroupByApp: true,
+    statusBarIconLimit: 0,
+    expandDurationMs: 300,
+};
+
+export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 120, timeSensitive: 180, critical: 9999 },
+    replaceOnNewFromSameThread: false,
+    groupCollapseThreshold: 4,
+    autoGroupByApp: true,
+    statusBarIconLimit: 5,
+    expandDurationMs: 200,
+};
+
+// =============================================================================
+// NOTIFICATION CENTER STATE
+// =============================================================================
+
+export interface NotificationCenterState {
+    items: Notification[];            // All notifications (persistent)
+    headsUp: string | null;           // Currently shown notification ID
+    headsUpQueue: string[];           // Pending heads-up if current is shown
+    groups: NotificationGroup[];      // Computed groups
+}
+
+export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
+    items: [],
+    headsUp: null,
+    headsUpQueue: [],
+    groups: [],
+};
+
+// =============================================================================
+// DYNAMIC ISLAND STATE
+// =============================================================================
+
+export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
+export type DynamicIslandContent = "notification" | "music" | "call" | "timer" | null;
+
+export interface DynamicIslandState {
+    visible: boolean;
+    mode: DynamicIslandMode;
+    activeContent: DynamicIslandContent;
+    lockedUntil?: number;             // Frame lock for animations
+}
+
+export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
+    visible: true,
+    mode: "idle",
+    activeContent: null,
+};
+
+// =============================================================================
+// STATUS BAR ICONS (Android)
+// =============================================================================
+
+export interface StatusBarIcon {
+    appId: string;
+    count: number;
+    iconUrl?: string;
+}
+
+// =============================================================================
+// BACKGROUND APP STATE
+// =============================================================================
+
 export interface BackgroundAppState {
     appId: string;
     startedAt: number;
     indicator?: "music" | "call" | "recording" | "location";
-    label?: string;                // e.g., "Now Playing: Song Name"
+    label?: string;
 }
+
+// =============================================================================
+// CALL STATE
+// =============================================================================
 
 export interface CallState {
     status: "incoming" | "active" | "ended";
@@ -48,20 +191,28 @@ export interface CallState {
     endedAt?: number;
 }
 
+// =============================================================================
+// DEVICE STATE
+// =============================================================================
+
 export interface DeviceState {
     id: string;
     profileId: string;
-    ownerName?: string;            // Who owns this device (for POV - their messages on right)
+    ownerName?: string;
     isLocked: boolean;
     foregroundAppId?: string;
-    notifications: Notification[];
-    backgroundApps?: BackgroundAppState[];  // Apps running in background
+
+    // === NOTIFICATIONS (enhanced) ===
+    notifications: Notification[];           // Legacy access
+    notificationCenter?: NotificationCenterState;
+    dynamicIsland?: DynamicIslandState;
+    statusBarIcons?: StatusBarIcon[];
+
+    // Background apps
+    backgroundApps?: BackgroundAppState[];
     call?: CallState;
     homeScreen?: HomeScreenConfig;
-    sound?: {
-        activeSoundId?: string;
-    };
-    // Theming & Configuration
+    sound?: { activeSoundId?: string };
     theme?: DeviceTheme;
 }
 
@@ -570,16 +721,68 @@ export interface WorldState {
 
 // Event Union
 export type TimelineEvent =
-    // Device events
+    // Device events - core
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION"; appId: string; title: string; body: string; mode?: "lockscreen" | "headsup" | "both"; icon?: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION"; notificationId: string }
+
+    // === NOTIFICATION EVENTS (IR-compliant) ===
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
+        appId: string; title: string; body: string;
+        mode?: "lockscreen" | "headsup" | "both" | "silent";
+        priority?: NotificationPriority;
+        deliverWhen?: NotificationDeliverWhen;
+        groupKey?: string; threadId?: string;
+        icon?: string;
+        preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
+        actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
+        replyable?: boolean;
+        metadata?: Record<string, any>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
+        notificationId: string;
+        patch: Partial<{ title: string; body: string; preview: Notification["preview"]; metadata: Record<string, any> }>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";
+        notificationId?: string;        // Specific notification
+        groupKey?: string;               // Entire group
+        all?: boolean;                   // All notifications
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TAP_NOTIFICATION";
+        notificationId: string;
+        actionId?: string;               // Button action ID or "open" (default)
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SWIPE_NOTIFICATION";
+        notificationId: string;
+        direction: "left" | "right";
+        action: "dismiss" | "archive" | "snooze" | "mark_read";
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "REPLY_NOTIFICATION";
+        notificationId: string;
+        text: string;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TOGGLE_NOTIFICATION_PANEL";
+        open: boolean;
+    }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CLEAR_ALL_NOTIFICATIONS" }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SET_DYNAMIC_ISLAND";
+        visible: boolean;
+        mode?: DynamicIslandMode;
+    }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
+
     // Call events
     | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
-    // Background app events (e.g., Spotify, VoIP calls)
+
+    // Background app events
     | { at: number; kind: "DEVICE"; deviceId: string; type: "START_BACKGROUND_APP"; appId: string; indicator?: "music" | "call" | "recording" | "location"; label?: string }
     | { at: number; kind: "DEVICE"; deviceId: string; type: "STOP_BACKGROUND_APP"; appId: string }
     // App events - messaging

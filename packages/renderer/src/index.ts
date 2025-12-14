@@ -13,4 +13,5 @@ export { AudioLayer } from "./AudioLayer";
 export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
 export { DynamicIsland } from "./DynamicIsland";
+export { NotificationShade } from "./NotificationShade";
 export * from "./layout";

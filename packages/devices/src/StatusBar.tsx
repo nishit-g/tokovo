@@ -49,13 +49,39 @@ interface StatusBarProps {
     variant?: "ios" | "android";
     theme?: "light" | "dark";
     batteryPercentage?: number;
+    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
 }
+
+// Notification icon component
+const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
+    <div style={{ position: "relative" }}>
+        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
+        {count > 1 && (
+            <div style={{
+                position: "absolute",
+                top: -6,
+                right: -8,
+                background: "#ff3b30",
+                borderRadius: 10,
+                padding: "2px 6px",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "white",
+                minWidth: 12,
+                textAlign: "center",
+            }}>
+                {count > 9 ? "9+" : count}
+            </div>
+        )}
+    </div>
+);
 
 export const StatusBar: React.FC<StatusBarProps> = ({
     time = "9:41",
     variant = "ios",
     theme = "light",
-    batteryPercentage = 100
+    batteryPercentage = 100,
+    notificationIcons = [],
 }) => {
     const isAndroid = variant === "android";
     const textColor = theme === "dark" ? "white" : "black";
@@ -79,7 +105,16 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 zIndex: 20,
                 fontFamily: "Roboto, sans-serif"
             }}>
-                <div>{time}</div>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <span>{time}</span>
+                    {/* Notification icons (Android shows them on left) */}
+                    {notificationIcons.slice(0, 5).map((n, i) => (
+                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
+                    ))}
+                    {notificationIcons.length > 5 && (
+                        <span style={{ fontSize: 28 }}>•</span>
+                    )}
+                </div>
                 <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
                     <SignalBarsIcon color="white" />
                     <WifiIcon color="white" />

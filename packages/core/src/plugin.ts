@@ -110,19 +110,10 @@ export interface WidgetSlot {
     expansionModes?: ("minimal" | "compact" | "expanded")[];
 }
 
-/**
- * Notification adapter - formats app notifications
- */
-export interface NotificationAdapter {
-    /** Format notification for display */
-    format(notification: Notification): {
-        title: string;
-        body: string;
-        icon?: string;
-        preview?: { kind: "text" | "image"; value: string };
-        accentColor?: string;
-    };
-}
+// Import NotificationAdapter from dedicated module
+import { NotificationAdapter } from "./notification-adapter";
+export { NotificationAdapter };
+
 
 /**
  * Plugin definition - everything an app needs to function
