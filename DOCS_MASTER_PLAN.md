@@ -134,21 +134,38 @@ Any page that introduces behavior must include:
 |---------|-------------|---------|
 | episode() | Author | @tokovo/dsl |
 | Beat | Author | @tokovo/dsl |
+| generateTyping() | Author | @tokovo/dsl |
+| dsl.keyboard | Author | @tokovo/dsl |
+| dsl.messages | Author | @tokovo/dsl |
+| dsl.camera | Author | @tokovo/dsl |
+| dsl.audio | Author | @tokovo/dsl |
+| dsl.os | Author | @tokovo/dsl |
+| dsl.touch | Author | @tokovo/dsl |
 | SemanticMeta | Semantic | @tokovo/ir |
 | SceneOp | Semantic | @tokovo/ir |
 | TimelineOp | Execution | @tokovo/ir |
 | compile() | Execution | @tokovo/compiler |
 | Adapter | Execution | @tokovo/adapters |
-| Engine | Execution | @tokovo/core |
+| Engine (replay) | Execution | @tokovo/core |
+| processOSEvent | Execution | @tokovo/core |
+| processKeyboardEvent | Execution | @tokovo/core |
+| DeviceOSState | Execution | @tokovo/core |
+| KeyboardState | Execution | @tokovo/core |
 | DirectorLite | Rendering | @tokovo/core |
 | TokovoRenderer | Rendering | @tokovo/renderer |
+| DeviceFrame | Rendering | @tokovo/renderer |
+| StatusBar | Rendering | @tokovo/devices |
+| IOSKeyboard | Rendering | @tokovo/devices |
+| AudioLayer | Rendering | @tokovo/renderer |
+| TouchOverlay | Rendering | @tokovo/renderer |
 | Plugin | Rendering | @tokovo/core |
+
 
 ---
 
 ## 6. Feature Status
 
-### ✅ Complete
+### ✅ Complete (Phase 1)
 
 - [x] DSL fluent API
 - [x] Scene IR
@@ -159,7 +176,25 @@ Any page that introduces behavior must include:
 - [x] Determinism guarantees
 - [x] Plugin system
 - [x] Trace model
-- [x] Nextra docs (35+ pages)
+
+### ✅ Complete (Phase 2 — Production Engine)
+
+- [x] Centralized DSL module (`@tokovo/dsl`)
+- [x] dsl.keyboard — Keyboard events
+- [x] dsl.messages — Message lifecycle (send/receive/markRead)
+- [x] dsl.camera — Camera effects (zoom/pan/shake/focus)
+- [x] dsl.audio — Audio events (play/stop/fade)
+- [x] dsl.os — Device OS events (time/battery/network/DND)
+- [x] dsl.touch — Touch gestures (tap/drag/longPress)
+- [x] generateTyping() — Typing humanizer
+- [x] Device OS Layer (DeviceOSState)
+- [x] StatusBar reads from device.os
+- [x] IOSKeyboard with key pop-ups
+- [x] KeyboardState management
+- [x] Camera effects engine
+- [x] AudioLayer component
+- [x] TouchOverlay component
+- [x] Documentation (docs/ folder)
 
 ### ✅ Implemented (Needs Docs Lock)
 
@@ -178,6 +213,7 @@ Any page that introduces behavior must include:
 - [ ] Voice notes adapter
 - [ ] Instagram adapter completion
 - [ ] Platform presets (TikTok/Shorts/Reels)
+- [ ] Nextra docs migration (35+ pages)
 
 ---
 

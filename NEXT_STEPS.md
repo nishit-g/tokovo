@@ -4,9 +4,9 @@
 
 ---
 
-## Current State (v1.0)
+## Current State (v2.0)
 
-### ✅ Foundation Complete
+### ✅ Foundation Complete (Phase 1)
 
 | Layer | Status | Components |
 |-------|--------|------------|
@@ -14,24 +14,44 @@
 | **Semantic** | ✅ Complete | Scene IR, constraints, traces, EpisodeConfig |
 | **Execution** | ✅ Complete | Compiler (6 passes), adapters, Timeline IR |
 | **Rendering** | ✅ Complete | DirectorLite, Engine, Renderer, Plugins |
-| **Documentation** | ✅ Complete | 37 Nextra pages, 3 root docs, verification |
+
+### ✅ Production Engine Complete (Phase 2)
+
+| Feature | Status | Package |
+|---------|--------|---------|
+| **Centralized DSL** | ✅ Complete | @tokovo/dsl |
+| **Keyboard System** | ✅ Complete | @tokovo/devices, @tokovo/dsl |
+| **Device OS Layer** | ✅ Complete | @tokovo/core, @tokovo/devices |
+| **Camera Effects** | ✅ Complete | @tokovo/core, @tokovo/dsl |
+| **Audio System** | ✅ Complete | @tokovo/core, @tokovo/renderer |
+| **Message Lifecycle** | ✅ Complete | @tokovo/dsl |
+| **Documentation** | ✅ Complete | /docs folder (5 files) |
 
 ### What Works Today
 
 ```typescript
-// You can write this
-episode("drama", ep => {
-  ep.config({ pacing: "slow-burn", director: "auto" });
-  ep.device("Phone", d => {
-    d.conversation("dm_bob", { name: "Bob" });
-    d.beat("tension", b => {
-      b.typing("Bob").for("2s");
-      b.receive("Bob", "We need to talk.", { mood: "tense", intensity: 0.8 });
-    });
-  });
-});
+import { dsl, generateTyping } from "@tokovo/dsl";
 
-// And get deterministic video output with automatic camera
+// Device OS
+dsl.os.setTime(0, Date.now())
+dsl.os.setBattery(0, 87)
+dsl.os.setNetwork(0, "wifi")
+
+// Keyboard + typing
+dsl.keyboard.show(30, "phone")
+...generateTyping(50, "phone", "Hello!", { speed: "casual" })
+
+// Messages
+dsl.messages.send(150, "dm", "Hello!")
+dsl.messages.markDelivered(180, "dm", "msg_1")
+dsl.messages.markRead(210, "dm", "msg_1")
+
+// Camera
+dsl.camera.zoom(220, 1.2, 30, { originY: 0.7 })
+dsl.camera.shake(250, 3, 15)
+
+// Audio
+dsl.audio.play(220, "message_sent", 0.8)
 ```
 
 ---
@@ -357,9 +377,13 @@ Views/Watch-time → Analytics → Adjust generation → Better content
 
 ## Priority Matrix
 
-| Item | Impact | Effort | Blocked By | Priority |
-|------|--------|--------|------------|----------|
-| README.md | High | Low | Nothing | 🔴 Now |
+| Item | Impact | Effort | Status | Priority |
+|------|--------|--------|--------|----------|
+| ~~README.md~~ | High | Low | ✅ Done | - |
+| ~~DSL Centralization~~ | Very High | High | ✅ Done | - |
+| ~~Device OS Layer~~ | High | Medium | ✅ Done | - |
+| ~~Keyboard System~~ | High | Medium | ✅ Done | - |
+| ~~Documentation~~ | High | Medium | ✅ Done | - |
 | Example gallery | High | Medium | Nothing | 🔴 Now |
 | Instagram adapter | Medium | Medium | Nothing | 🟡 Soon |
 | DirectorLite v2 | Very High | High | Nothing | 🟡 Soon |

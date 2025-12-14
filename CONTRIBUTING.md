@@ -22,18 +22,21 @@ Tokovo is **infrastructure-grade software**. Contributions must meet a high bar:
 
 Read these first:
 
-1. [Architecture Overview](apps/docs/pages/architecture/index.mdx)
-2. [Layer Boundaries](apps/docs/pages/architecture/boundaries.mdx)
-3. [Determinism](apps/docs/pages/architecture/determinism.mdx)
-4. [DOCS_MASTER_PLAN.md](DOCS_MASTER_PLAN.md)
+1. [Codebase Understanding](UNDERSTANDING.md)
+2. [Design Philosophy](DESIGN_PHILOSOPHY.md)
+3. [Documentation Master Plan](DOCS_MASTER_PLAN.md)
+4. [DSL Documentation](docs/DSL.md)
+5. [Device OS Documentation](docs/DEVICE_OS.md)
+6. [Keyboard Documentation](docs/KEYBOARD.md)
 
 ### 2. Respect the Layers
 
 ```
-Author (DSL)     → Never import Runtime
-Semantic (IR)    → No deps (pure types)
-Execution        → Transform IR, no rendering
-Rendering        → React, DirectorLite, Plugins
+DSL (@tokovo/dsl)    → Event factories (no runtime logic)
+Author (episode)     → Never import Runtime
+Semantic (IR)        → No deps (pure types)
+Execution (core)     → Engine, replay, event processing
+Rendering            → React, DirectorLite, Plugins
 ```
 
 **If your change violates layer boundaries, it will be rejected.**

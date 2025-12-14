@@ -54,9 +54,11 @@ apps/
       CameraShowcaseVideo.tsx
       CinematicCameraShowcaseVideo.tsx
       FullCinematicShowcaseVideo.tsx
+      FullRealityShowcase.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
       InstagramVideo.tsx
+      KeyboardTypingShowcase.tsx
       MultiAppShowcaseVideo.tsx
       MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
@@ -72,6 +74,12 @@ apps/
     package.json
     remotion.config.ts
     tsconfig.json
+docs/
+  CAMERA_AUDIO.md
+  DEVICE_OS.md
+  DSL.md
+  KEYBOARD.md
+  README.md
 packages/
   adapters/
     src/
@@ -237,6 +245,9 @@ packages/
       iphone16/
         Frame.tsx
         profile.ts
+      keyboards/
+        index.ts
+        IOSKeyboard.tsx
       pixel/
         Frame.tsx
         profile.ts
@@ -269,6 +280,15 @@ packages/
         index.ts
         scene-builder.ts
         spotify-builder.ts
+      events/
+        audio.ts
+        camera.ts
+        index.ts
+        keyboard.ts
+        messages.ts
+        os.ts
+        touch.ts
+        typing.ts
       index.ts
       types.ts
     package.json
@@ -306,6 +326,11 @@ packages/
     tsconfig.tsbuildinfo
   renderer/
     src/
+      engines/
+        index.ts
+        useAudioEngine.ts
+        useCameraEngine.ts
+        useLayoutEngine.ts
       layout/
         strategies/
           chat.ts
@@ -336,6 +361,7 @@ packages/
       NowPlayingBar.tsx
       registry.ts
       TokovoRenderer.tsx
+      TouchOverlay.tsx
       types.ts
       VisualDebugger.tsx
     package.json
@@ -351,6 +377,195 @@ turbo.json
 ```
 
 # Files
+
+## File: apps/video-runner/src/index.ts
+````typescript
+import { registerRoot } from "remotion";
+import { RemotionRoot } from "./Root";
+
+registerRoot(RemotionRoot);
+````
+
+## File: apps/video-runner/remotion.config.ts
+````typescript
+import { Config } from "@remotion/cli/config";
+
+Config.setVideoImageFormat("jpeg");
+Config.setOverwriteOutput(true);
+````
+
+## File: apps/video-runner/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": ".",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*",
+        "remotion.config.ts"
+    ]
+}
+````
+
+## File: packages/apps-whatsapp/src/types.ts
+````typescript
+export interface WhatsAppState {
+    // Add specific state if needed, for now using generic ConversationState from core
+}
+````
+
+## File: packages/apps-whatsapp/README.md
+````markdown
+# @tokovo/apps-whatsapp
+
+WhatsApp clone app for Tokovo.
+
+## Features
+- **Runtime**: Handles `MESSAGE_RECEIVED`, `TYPING_START`, `TYPING_END`.
+- **UI**: `WhatsappChatView` with high-fidelity styling, animations, and auto-scroll.
+````
+
+## File: packages/apps-whatsapp/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/core/package.json
+````json
+{
+    "name": "@tokovo/core",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "immer": "^10.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
+## File: packages/core/README.md
+````markdown
+# @tokovo/core
+
+Core logic for the Tokovo engine.
+
+## Features
+- **Engine**: `replay` function to compute world state from events.
+- **Types**: Core type definitions (`WorldState`, `TimelineEvent`, etc.).
+- **Registry**: `ReducerRegistry` for managing device and app reducers.
+````
+
+## File: packages/core/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/devices/README.md
+````markdown
+# @tokovo/devices
+
+Device profiles and reducers.
+
+## Features
+- **Profiles**: `iPhone16Profile` with high-res assets.
+- **Components**: `iPhone16Frame`, `StatusBar`.
+- **Reducer**: `deviceReducer` for handling device events (LOCK, UNLOCK, OPEN_APP).
+````
+
+## File: packages/devices/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/episodes/package.json
+````json
+{
+    "name": "@tokovo/episodes",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
+## File: packages/episodes/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "resolveJsonModule": true
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/renderer/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
 
 ## File: .gitignore
 ````
@@ -430,6 +645,25 @@ nodejs 25.2.0
 packages:
   - "apps/*"
   - "packages/*"
+````
+
+## File: tsconfig.base.json
+````json
+{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "ESNext",
+        "moduleResolution": "bundler",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "skipLibCheck": true,
+        "jsx": "react-jsx",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true
+    }
+}
 ````
 
 ## File: turbo.json
@@ -823,14 +1057,6 @@ export const HomeScreenGroupDemoVideo: React.FC = () => {
         </AbsoluteFill>
     );
 };
-````
-
-## File: apps/video-runner/src/index.ts
-````typescript
-import { registerRoot } from "remotion";
-import { RemotionRoot } from "./Root";
-
-registerRoot(RemotionRoot);
 ````
 
 ## File: apps/video-runner/src/MultiAppShowcaseVideo.tsx
@@ -1604,6 +1830,55 @@ export const TwitterShowcaseVideo: React.FC = () => {
 export default TwitterShowcaseVideo;
 ````
 
+## File: apps/video-runner/src/Video.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { exampleEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+
+export const Video: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} />
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: apps/video-runner/src/WhatsappMediaShowcaseVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -1992,28 +2267,1487 @@ export const WhatsappProductionDemoVideo: React.FC = () => {
 };
 ````
 
-## File: apps/video-runner/remotion.config.ts
-````typescript
-import { Config } from "@remotion/cli/config";
+## File: docs/CAMERA_AUDIO.md
+````markdown
+# Camera & Audio Systems
 
-Config.setVideoImageFormat("jpeg");
-Config.setOverwriteOutput(true);
+> **Location**: `@tokovo/core` (types), `@tokovo/dsl` (events)
+
+The Camera and Audio systems provide cinematic effects that make videos feel professional and immersive.
+
+---
+
+## Camera System
+
+### Overview
+
+The camera system supports:
+- **Zoom** - Scale in/out with customizable origin
+- **Pan** - Translate camera position
+- **Shake** - Screen shake for dramatic moments
+- **Focus** - Highlight specific areas
+- **Reset** - Return to default view
+
+### Camera State
+
+```typescript
+interface CameraState {
+    baseView: "APP_VIEW" | "LOCKSCREEN_VIEW" | "HOMESCREEN_VIEW";
+    activeDeviceId: string;
+    layout: CameraLayoutConfig;
+    activeEffects: ActiveEffect[];
+    transform: CameraTransform;
+    deviceTransforms: Record<string, CameraTransform>;
+}
+
+interface CameraTransform {
+    translateX: number;
+    translateY: number;
+    scale: number;
+    rotation: number;
+    originX: number;    // 0-1, center of zoom
+    originY: number;    // 0-1, center of zoom
+    shakeX: number;
+    shakeY: number;
+}
+```
+
+### DSL Events
+
+#### Zoom
+
+```typescript
+// Simple zoom
+dsl.camera.zoom(100, 1.3, 30)  // Zoom to 130% over 30 frames
+
+// Zoom with custom origin
+dsl.camera.zoom(100, 1.3, 30, { 
+    originX: 0.5,   // Center horizontally
+    originY: 0.7    // Focus on lower part of screen
+})
+```
+
+#### Pan
+
+```typescript
+// Pan right and up
+dsl.camera.pan(200, 100, -50, 20)
+
+// Parameters: at, x, y, duration
+```
+
+#### Shake
+
+```typescript
+// Basic shake
+dsl.camera.shake(300, 5, 15)
+
+// With options
+dsl.camera.shake(300, 5, 15, {
+    frequency: 20,  // Shake speed
+    decay: 0.8      // Fade out rate
+})
+```
+
+#### Focus
+
+```typescript
+// Focus on specific point
+dsl.camera.focus(400, 0.5, 0.3, 1.2, 25)
+
+// Parameters: at, x, y, scale, duration
+```
+
+#### Reset
+
+```typescript
+// Return to default view
+dsl.camera.reset(500, 25)
+```
+
+### Use Cases
+
+| Effect | When to Use |
+|--------|-------------|
+| **Zoom** | Reading important message |
+| **Pan** | Following action |
+| **Shake** | Dramatic moment, notification |
+| **Focus** | Highlighting specific UI |
+| **Reset** | Returning to normal view |
+
+### Example
+
+```typescript
+const events = [
+    // Conversation happening...
+    dsl.messages.receive(100, "dm", "Alex", "OMG!! You won't believe this!"),
+    
+    // Zoom in on dramatic message
+    dsl.camera.zoom(110, 1.25, 20, { originY: 0.7 }),
+    
+    // Small shake for impact
+    dsl.camera.shake(130, 3, 12, { decay: 0.9 }),
+    
+    // Hold for a beat, then reset
+    dsl.camera.reset(200, 25),
+];
+```
+
+---
+
+## Audio System
+
+### Overview
+
+The audio system manages:
+- **Sound Effects** - UI sounds, notifications
+- **Background Music** - Ambient music beds
+- **Volume Control** - Fade in/out
+- **Bus System** - Music, SFX, UI, Voice channels
+
+### Audio State
+
+```typescript
+interface AudioState {
+    activeSounds: Record<string, ActiveSound>;
+    buses: {
+        music: AudioBusConfig;
+        ui: AudioBusConfig;
+        sfx: AudioBusConfig;
+        voice: AudioBusConfig;
+    };
+    backgroundMusic?: {
+        soundId: string;
+        volume: number;
+        loop: boolean;
+        startFrame: number;
+    };
+}
+
+interface ActiveSound {
+    soundId: string;
+    instanceId: string;
+    volume: number;
+    startFrame: number;
+    bus: AudioBus;
+    envelope?: AudioEnvelope;
+}
+```
+
+### DSL Events
+
+#### Play Sound
+
+```typescript
+// Play notification sound
+dsl.audio.play(100, "whatsapp_received", 0.8)
+
+// Play with default volume
+dsl.audio.play(100, "message_sent")
+
+// Available sounds depend on your asset library
+```
+
+#### Stop Sound
+
+```typescript
+// Stop a specific sound instance
+dsl.audio.stop(200, "bgm_1")
+```
+
+#### Fade Volume
+
+```typescript
+// Fade background music to 30% over 1 second
+dsl.audio.fade(300, "bgm_1", 0.3, 30)
+```
+
+#### Background Music
+
+```typescript
+// Start looping background music
+dsl.audio.backgroundMusic(0, "ambient_tension", {
+    volume: 0.4,
+    loop: true,
+})
+```
+
+### Sound IDs
+
+Common sound effects in Tokovo:
+
+| Sound ID | Description |
+|----------|-------------|
+| `whatsapp_received` | Incoming WhatsApp message |
+| `whatsapp_sent` | Outgoing WhatsApp message |
+| `message_sent` | Generic send sound |
+| `notification` | System notification |
+| `key_click` | Keyboard key press |
+
+### Example
+
+```typescript
+const events = [
+    // Background music starts
+    dsl.audio.backgroundMusic(0, "chill_ambient", { volume: 0.3 }),
+    
+    // Message arrives
+    dsl.messages.receive(100, "dm", "Alex", "Hey!"),
+    dsl.audio.play(100, "whatsapp_received", 0.8),
+    
+    // User types and sends
+    dsl.messages.send(200, "dm", "What's up?"),
+    dsl.audio.play(200, "whatsapp_sent", 0.7),
+    
+    // Dramatic moment - music swells
+    dsl.audio.fade(300, "bgm_1", 0.6, 30),
+    
+    // Shocking revelation
+    dsl.messages.receive(400, "dm", "Alex", "I know what you did."),
+    dsl.audio.play(400, "notification", 1.0),
+    dsl.camera.shake(410, 5, 15),
+    
+    // Music fades out
+    dsl.audio.fade(500, "bgm_1", 0.0, 60),
+];
+```
+
+---
+
+## File Locations
+
+| System | Location |
+|--------|----------|
+| Camera Types | `packages/core/src/types.ts` |
+| Camera Engine | `packages/core/src/camera.ts` |
+| Camera DSL | `packages/dsl/src/events/camera.ts` |
+| Audio Types | `packages/core/src/types.ts` |
+| Audio Engine | `packages/core/src/engine.ts` |
+| Audio DSL | `packages/dsl/src/events/audio.ts` |
+| AudioLayer | `packages/renderer/src/AudioLayer.tsx` |
 ````
 
-## File: apps/video-runner/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": ".",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*",
-        "remotion.config.ts"
-    ]
+## File: docs/DEVICE_OS.md
+````markdown
+# Device OS Layer
+
+> **Location**: `@tokovo/core` (types), `@tokovo/devices` (StatusBar), `@tokovo/dsl` (events)
+
+The Device OS layer simulates operating system behaviors that make videos indistinguishable from real screen recordings.
+
+---
+
+## Overview
+
+The Device OS layer manages:
+- **Clock** - Status bar time display
+- **Battery** - Battery percentage and charging state
+- **Network** - WiFi, 5G, LTE, cellular signal strength
+- **DND** - Do Not Disturb mode (moon icon)
+- **Airplane Mode** - Disables all radios
+- **Low Power Mode** - Yellow battery indicator
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     FullRealityShowcase                     │
+│  initialWorld.devices.phone.os = { clock, battery, ... }   │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    dsl.os.setTime(30, ...)                  │
+│                    dsl.os.setBattery(100, 85)               │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Engine (replay)                        │
+│              processOSEvent() updates device.os             │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     TokovoRenderer                          │
+│         <DeviceFrame device={device}>                       │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                       StatusBar                             │
+│           <StatusBar os={device.os} />                      │
+│  ┌─────────┬─────────┬─────────┬─────────┐                 │
+│  │  Time   │ Network │  WiFi   │ Battery │                 │
+│  │  14:45  │   5G    │   |||   │   87%   │                 │
+│  └─────────┴─────────┴─────────┴─────────┘                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## DeviceOSState Interface
+
+```typescript
+interface DeviceOSState {
+    // Time
+    clock: number;           // Unix timestamp (ms)
+    
+    // Power
+    battery: number;         // 0-100
+    charging: boolean;
+    lowPowerMode: boolean;
+    
+    // Network
+    network: NetworkType;    // "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service"
+    wifiStrength: number;    // 0-3
+    cellStrength: number;    // 0-4
+    airplaneMode: boolean;
+    
+    // Status
+    dnd: boolean;            // Do Not Disturb
 }
+
+type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service";
+```
+
+---
+
+## Initial State
+
+Set device OS state in your episode's `initialWorld`:
+
+```typescript
+const initialWorld: WorldState = {
+    devices: {
+        phone: {
+            id: "phone",
+            profileId: "iphone16",
+            foregroundAppId: "app_whatsapp",
+            notifications: [],
+            
+            // Device OS state
+            os: {
+                clock: new Date().setHours(14, 45, 0, 0),
+                battery: 87,
+                charging: false,
+                network: "wifi",
+                wifiStrength: 3,
+                cellStrength: 4,
+                dnd: false,
+                lowPowerMode: false,
+                airplaneMode: false,
+            },
+        },
+    },
+    // ... rest of world state
+};
+```
+
+---
+
+## DSL Events
+
+### Set Time
+
+```typescript
+const startTime = new Date();
+startTime.setHours(14, 45, 0, 0);
+
+// Set initial time
+dsl.os.setTime(0, startTime.getTime())
+
+// Time advances during conversation
+dsl.os.setTime(300, startTime.getTime() + 10000)  // +10 seconds
+```
+
+### Set Battery
+
+```typescript
+// Initial battery
+dsl.os.setBattery(0, 87)
+
+// Battery drains during usage
+dsl.os.setBattery(200, 86)
+dsl.os.setBattery(400, 85)
+
+// Charging
+dsl.os.setBattery(500, 86, true)  // Shows charging bolt
+```
+
+### Set Network
+
+```typescript
+// WiFi with full signal
+dsl.os.setNetwork(0, "wifi", 3)
+
+// Switch to cellular
+dsl.os.setNetwork(100, "5G", 4)
+
+// Lose signal
+dsl.os.setNetwork(200, "no-service")
+```
+
+### Toggle DND
+
+```typescript
+// Enable Do Not Disturb (shows moon icon)
+dsl.os.setDND(0, true)
+
+// Disable
+dsl.os.setDND(100, false)
+```
+
+### Toggle Airplane Mode
+
+```typescript
+// Enable (disables all network)
+dsl.os.setAirplane(0, true)
+
+// Disable
+dsl.os.setAirplane(100, false)
+```
+
+---
+
+## StatusBar Component
+
+The StatusBar reads from `device.os` and displays:
+
+| Property | Display |
+|----------|---------|
+| `os.clock` | Formatted time (e.g., "14:45") |
+| `os.battery` | Battery icon with fill level |
+| `os.charging` | Lightning bolt on battery |
+| `os.network` | Network type label (5G, LTE) |
+| `os.wifiStrength` | WiFi signal arcs |
+| `os.cellStrength` | Cell signal bars |
+| `os.dnd` | Moon icon |
+
+### Signal Strength Icons
+
+**WiFi** (3 bars): Arcs opacity based on `wifiStrength` (0-3)
+**Cellular** (4 bars): Bar opacity based on `cellStrength` (0-4)
+
+---
+
+## Engine Processing
+
+Events are processed by `processOSEvent()` in the engine:
+
+```typescript
+function processOSEvent(draft: WorldState, event: OSEvent): void {
+    const device = draft.devices[event.deviceId];
+    
+    switch (event.type) {
+        case "SET_TIME":
+            device.os.clock = event.time;
+            break;
+            
+        case "SET_BATTERY":
+            device.os.battery = event.level;
+            device.os.charging = event.charging ?? false;
+            break;
+            
+        case "SET_NETWORK":
+            device.os.network = event.network;
+            break;
+            
+        case "SET_DND":
+            device.os.dnd = event.enabled;
+            break;
+            
+        case "SET_AIRPLANE":
+            device.os.airplaneMode = event.enabled;
+            if (event.enabled) {
+                device.os.network = "no-service";
+            }
+            break;
+    }
+}
+```
+
+---
+
+## Realism Tips
+
+### Time Progression
+```typescript
+// Natural time flow during a 40-second video
+dsl.os.setTime(0, TIME.getTime())
+dsl.os.setTime(300, TIME.getTime() + 10000)   // +10s
+dsl.os.setTime(600, TIME.getTime() + 20000)   // +20s
+dsl.os.setTime(900, TIME.getTime() + 33000)   // +33s
+```
+
+### Battery Drain
+```typescript
+// Realistic drain during phone usage
+// ~1% every 30 seconds of active use
+dsl.os.setBattery(0, 87)
+dsl.os.setBattery(300, 86)
+dsl.os.setBattery(600, 85)
+dsl.os.setBattery(900, 84)
+```
+
+### Network Transitions
+```typescript
+// Walk into subway (lose signal)
+dsl.os.setNetwork(0, "wifi", 3)
+dsl.os.setNetwork(200, "wifi", 2)
+dsl.os.setNetwork(400, "wifi", 1)
+dsl.os.setNetwork(500, "no-service")
+
+// Exit subway
+dsl.os.setNetwork(700, "4G", 2)
+dsl.os.setNetwork(800, "4G", 4)
+```
+
+---
+
+## Complete Example
+
+```typescript
+const START_TIME = new Date();
+START_TIME.setHours(14, 45, 0, 0);
+
+const events = [
+    // === SCENE START ===
+    // Full battery, WiFi, 2:45 PM
+    
+    // 5 seconds in: time advances
+    dsl.os.setTime(150, START_TIME.getTime() + 5000),
+    
+    // 10 seconds: battery drains
+    dsl.os.setBattery(300, 86),
+    dsl.os.setTime(300, START_TIME.getTime() + 10000),
+    
+    // 20 seconds: switch to data
+    dsl.os.setNetwork(600, "5G", 4),
+    dsl.os.setTime(600, START_TIME.getTime() + 20000),
+    
+    // 30 seconds: DND enabled
+    dsl.os.setDND(900, true),
+    dsl.os.setBattery(900, 85),
+    dsl.os.setTime(900, START_TIME.getTime() + 33000),
+    
+    // === SCENE END ===
+];
+```
+
+---
+
+## File Locations
+
+| Purpose | Location |
+|---------|----------|
+| Types | `packages/core/src/types.ts` - DeviceOSState, NetworkType |
+| Engine | `packages/core/src/engine.ts` - processOSEvent() |
+| DSL | `packages/dsl/src/events/os.ts` - Event factories |
+| Component | `packages/devices/src/StatusBar.tsx` - UI rendering |
+| Wiring | `packages/renderer/src/DeviceFrame.tsx` - Passes device to StatusBar |
+````
+
+## File: docs/DSL.md
+````markdown
+# DSL Events Module
+
+> **Location**: `@tokovo/dsl` (packages/dsl)
+
+The DSL module provides a centralized, type-safe API for creating timeline events. Instead of manually constructing event objects, use the DSL for cleaner, more maintainable code.
+
+---
+
+## Installation
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+```
+
+---
+
+## Quick Start
+
+```typescript
+const events = [
+    // Show keyboard
+    dsl.keyboard.show(0, "phone"),
+    
+    // Type with realistic humanization
+    ...generateTyping(30, "phone", "Hello world!", { speed: "casual" }),
+    
+    // Send message
+    dsl.messages.send(150, "dm_friend", "Hello world!"),
+    
+    // Camera zoom
+    dsl.camera.zoom(200, 1.2, 30),
+    
+    // Play sound
+    dsl.audio.play(200, "message_sent", 0.8),
+    
+    // Device OS updates
+    dsl.os.setBattery(300, 85),
+    dsl.os.setTime(300, Date.now()),
+];
+```
+
+---
+
+## Available Modules
+
+| Module | Purpose | Events |
+|--------|---------|--------|
+| `dsl.keyboard` | Virtual keyboard | show, hide, typeChar, backspace, clear |
+| `dsl.messages` | Messaging | send, receive, typingStart, typingEnd, markRead |
+| `dsl.camera` | Camera effects | zoom, pan, shake, focus, reset |
+| `dsl.audio` | Sound effects | play, stop, fade, backgroundMusic |
+| `dsl.os` | Device OS state | setTime, setBattery, setNetwork, setDND |
+| `dsl.touch` | Touch gestures | tap, longPress, drag, scroll |
+
+---
+
+## Keyboard Events
+
+### `dsl.keyboard.show(at, deviceId, layout?)`
+
+Shows the virtual keyboard.
+
+```typescript
+dsl.keyboard.show(0, "phone")           // Default qwerty
+dsl.keyboard.show(0, "phone", "emoji")  // Emoji keyboard
+```
+
+### `dsl.keyboard.hide(at, deviceId)`
+
+Hides the keyboard.
+
+```typescript
+dsl.keyboard.hide(300, "phone")
+```
+
+### `dsl.keyboard.typeChar(at, deviceId, char)`
+
+Types a single character (shows key highlight).
+
+```typescript
+dsl.keyboard.typeChar(50, "phone", "H")
+dsl.keyboard.typeChar(55, "phone", "i")
+```
+
+### `dsl.keyboard.backspace(at, deviceId)`
+
+Deletes last character.
+
+```typescript
+dsl.keyboard.backspace(100, "phone")
+```
+
+### `dsl.keyboard.clear(at, deviceId)`
+
+Clears all input text.
+
+```typescript
+dsl.keyboard.clear(200, "phone")
+```
+
+---
+
+## Typing Simulation
+
+The `generateTyping` function creates realistic typing sequences with:
+- Variable speed
+- Typos and corrections
+- Natural pauses
+
+### `generateTyping(startFrame, deviceId, text, options?)`
+
+```typescript
+import { generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
+
+// Basic usage
+const events = generateTyping(0, "phone", "Hello!");
+
+// With options
+const events = generateTyping(0, "phone", "Hello world!", {
+    speed: "casual",           // "slow" | "normal" | "casual" | "fast" | "burst"
+    typoPositions: [5, 12],    // Where to make typos
+});
+```
+
+### Typing Speeds
+
+| Speed | Frames/Char | Description |
+|-------|-------------|-------------|
+| `slow` | 12 | Careful, thoughtful typing |
+| `normal` | 8 | Standard typing |
+| `casual` | 6 | Comfortable pace |
+| `fast` | 4 | Quick typing |
+| `burst` | 2 | Very fast |
+
+---
+
+## Message Events
+
+### `dsl.messages.send(at, conversationId, text)`
+
+Sends message from device owner ("me").
+
+```typescript
+dsl.messages.send(100, "dm_alex", "Hey!")
+```
+
+### `dsl.messages.receive(at, conversationId, from, text)`
+
+Receives message from another person.
+
+```typescript
+dsl.messages.receive(150, "dm_alex", "Alex 💎", "What's up?")
+```
+
+### `dsl.messages.typingStart(at, conversationId, from)`
+
+Shows typing indicator.
+
+```typescript
+dsl.messages.typingStart(0, "dm_alex", "Alex 💎")
+```
+
+### `dsl.messages.typingEnd(at, conversationId, from)`
+
+Hides typing indicator.
+
+```typescript
+dsl.messages.typingEnd(60, "dm_alex", "Alex 💎")
+```
+
+### Message Status (Tick Progression)
+
+```typescript
+// Mark message as sent (single gray tick)
+dsl.messages.markSent(100, "dm_alex", "msg_1")
+
+// Mark message as delivered (double gray ticks)
+dsl.messages.markDelivered(130, "dm_alex", "msg_1")
+
+// Mark message as read (double blue ticks)
+dsl.messages.markRead(160, "dm_alex", "msg_1")
+```
+
+---
+
+## Camera Events
+
+### `dsl.camera.zoom(at, scale, duration, options?)`
+
+Zooms in/out.
+
+```typescript
+dsl.camera.zoom(100, 1.3, 30)                    // Zoom to 130%
+dsl.camera.zoom(100, 1.3, 30, { originY: 0.7 })  // Zoom toward bottom
+```
+
+### `dsl.camera.pan(at, x, y, duration)`
+
+Pans the camera.
+
+```typescript
+dsl.camera.pan(200, 100, -50, 20)  // Move right and up
+```
+
+### `dsl.camera.shake(at, intensity, duration, options?)`
+
+Camera shake effect.
+
+```typescript
+dsl.camera.shake(300, 5, 15)                            // Basic shake
+dsl.camera.shake(300, 5, 15, { frequency: 20, decay: 0.8 })
+```
+
+### `dsl.camera.reset(at, duration)`
+
+Resets camera to default.
+
+```typescript
+dsl.camera.reset(400, 25)
+```
+
+---
+
+## Audio Events
+
+### `dsl.audio.play(at, soundId, volume?)`
+
+Plays a sound effect.
+
+```typescript
+dsl.audio.play(100, "message_sent", 0.8)
+dsl.audio.play(150, "whatsapp_received")
+```
+
+### `dsl.audio.stop(at, instanceId)`
+
+Stops a playing sound.
+
+```typescript
+dsl.audio.stop(200, "bgm_1")
+```
+
+### `dsl.audio.fade(at, instanceId, targetVolume, duration)`
+
+Fades volume.
+
+```typescript
+dsl.audio.fade(300, "bgm_1", 0.3, 30)
+```
+
+---
+
+## Device OS Events
+
+The Device OS layer controls system-level UI elements like the status bar.
+
+### `dsl.os.setTime(at, timestamp, deviceId?)`
+
+Sets the clock display.
+
+```typescript
+const now = new Date();
+now.setHours(14, 45, 0, 0);
+dsl.os.setTime(0, now.getTime())
+```
+
+### `dsl.os.setBattery(at, level, charging?, deviceId?)`
+
+Sets battery percentage.
+
+```typescript
+dsl.os.setBattery(0, 87)              // 87%
+dsl.os.setBattery(100, 85, true)      // 85%, charging
+```
+
+### `dsl.os.setNetwork(at, network, strength?, deviceId?)`
+
+Sets network type.
+
+```typescript
+dsl.os.setNetwork(0, "wifi", 3)       // WiFi with 3 bars
+dsl.os.setNetwork(0, "5G", 4)         // 5G cellular
+dsl.os.setNetwork(0, "no-service")    // No signal
+```
+
+**Network Types**: `"wifi"` | `"5G"` | `"4G"` | `"LTE"` | `"3G"` | `"no-service"`
+
+### `dsl.os.setDND(at, enabled, deviceId?)`
+
+Toggles Do Not Disturb mode.
+
+```typescript
+dsl.os.setDND(0, true)   // Shows moon icon
+```
+
+### `dsl.os.setAirplane(at, enabled, deviceId?)`
+
+Toggles Airplane mode (disables network).
+
+```typescript
+dsl.os.setAirplane(0, true)  // Disables all radios
+```
+
+---
+
+## Touch Events (Gesture Visualization)
+
+### `dsl.touch.tap(at, x, y, deviceId?)`
+
+Shows tap circle at coordinates.
+
+```typescript
+dsl.touch.tap(100, 540, 960)  // Tap at x=540, y=960
+```
+
+### `dsl.touch.longPress(at, x, y, duration, deviceId?)`
+
+Long press gesture.
+
+```typescript
+dsl.touch.longPress(200, 540, 960, 30)  // 1 second hold
+```
+
+### `dsl.touch.drag(at, startX, startY, endX, endY, duration, deviceId?)`
+
+Drag gesture.
+
+```typescript
+dsl.touch.drag(300, 540, 500, 540, 1500, 20)  // Swipe down
+```
+
+---
+
+## Complete Example
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+// Starting at 2:45 PM
+const START_TIME = new Date();
+START_TIME.setHours(14, 45, 0, 0);
+
+const events = [
+    // Set initial device state
+    dsl.os.setTime(0, START_TIME.getTime()),
+    dsl.os.setBattery(0, 87),
+    
+    // Friend starts typing
+    dsl.messages.typingStart(0, "dm_alex", "Alex 💎"),
+    
+    // Time advances
+    dsl.os.setTime(60, START_TIME.getTime() + 2000),
+    
+    // Friend sends message
+    dsl.messages.typingEnd(60, "dm_alex", "Alex 💎"),
+    dsl.messages.receive(60, "dm_alex", "Alex 💎", "Hey! You free tonight?"),
+    dsl.audio.play(60, "whatsapp_received"),
+    
+    // User types response
+    dsl.keyboard.show(90, "phone"),
+    ...generateTyping(110, "phone", "Yeah! What's up?", { speed: "casual" }),
+    dsl.messages.send(200, "dm_alex", "Yeah! What's up?"),
+    dsl.audio.play(200, "whatsapp_sent"),
+    dsl.keyboard.hide(210, "phone"),
+    
+    // Camera focuses on chat
+    dsl.camera.zoom(220, 1.15, 20, { originY: 0.7 }),
+    
+    // Battery drain over time
+    dsl.os.setBattery(300, 86),
+];
+```
+
+---
+
+## Architecture
+
+```
+@tokovo/dsl
+├── events/
+│   ├── index.ts      # Barrel export + dsl object
+│   ├── keyboard.ts   # Keyboard event factories
+│   ├── messages.ts   # Message event factories
+│   ├── camera.ts     # Camera event factories
+│   ├── audio.ts      # Audio event factories
+│   ├── os.ts         # Device OS event factories
+│   ├── touch.ts      # Touch gesture event factories
+│   └── typing.ts     # Typing simulation (generateTyping)
+└── index.ts          # Package entry point
+```
+
+All event factories return properly-typed `TimelineEvent` objects.
+````
+
+## File: docs/KEYBOARD.md
+````markdown
+# Keyboard System
+
+> **Location**: `@tokovo/core` (types), `@tokovo/devices` (IOSKeyboard), `@tokovo/dsl` (events)
+
+The Keyboard system provides production-quality virtual keyboard simulation with realistic typing humanization.
+
+---
+
+## Features
+
+- **IOSKeyboard** - Pixel-perfect iOS keyboard UI
+- **Key Pop-ups** - Animated key highlights when typing
+- **Typing Humanizer** - Variable speed, typos, corrections
+- **Multiple Layouts** - QWERTY, emoji, numeric
+
+---
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       DSL Layer                             │
+│   generateTyping(0, "phone", "Hello!", { speed: "casual" }) │
+└──────────────────────────┬──────────────────────────────────┘
+                           │ generates
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    Timeline Events                          │
+│  KEY_DOWN @ 0, TYPE_CHAR @ 3, KEY_UP @ 5, KEY_DOWN @ 8...   │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      Engine (replay)                        │
+│         processKeyboardEvent() updates device.keyboard      │
+│  { visible, currentKey: "H", inputText: "Hello", ... }      │
+└──────────────────────────┬──────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      IOSKeyboard                            │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │  Q   W   E   R   T   Y   U   I   O   P             │   │
+│  │    A   S   D   F   G  [H]  J   K   L               │   │
+│  │  ⬆    Z   X   C   V   B   N   M    ⌫              │   │
+│  │  123    🌐   ────────────────   return             │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## KeyboardState Interface
+
+```typescript
+interface KeyboardState {
+    visible: boolean;
+    layout: "qwerty" | "emoji" | "numeric";
+    currentKey: string | null;      // Currently pressed key
+    keyPressedAt: number | null;    // Frame when key was pressed
+    inputText: string;              // Text in input field
+    cursorPosition: number;         // Cursor position in text
+    cursorVisible: boolean;
+}
+```
+
+---
+
+## DSL Events
+
+### Show/Hide Keyboard
+
+```typescript
+// Show keyboard
+dsl.keyboard.show(0, "phone")
+dsl.keyboard.show(0, "phone", "emoji")  // Emoji layout
+
+// Hide keyboard
+dsl.keyboard.hide(300, "phone")
+```
+
+### Typing Characters
+
+```typescript
+// Low-level: type individual characters
+dsl.keyboard.typeChar(50, "phone", "H")
+dsl.keyboard.typeChar(58, "phone", "e")
+dsl.keyboard.typeChar(66, "phone", "l")
+dsl.keyboard.typeChar(74, "phone", "l")
+dsl.keyboard.typeChar(82, "phone", "o")
+
+// Shows key highlight for each character
+```
+
+### Backspace
+
+```typescript
+// Delete one character
+dsl.keyboard.backspace(100, "phone")
+
+// Multiple backspaces (spacing matters for animation)
+dsl.keyboard.backspace(100, "phone")
+dsl.keyboard.backspace(103, "phone")
+dsl.keyboard.backspace(106, "phone")
+```
+
+### Clear All
+
+```typescript
+// Clear entire input
+dsl.keyboard.clear(200, "phone")
+```
+
+---
+
+## Typing Simulation
+
+The `generateTyping` function creates realistic typing sequences.
+
+### Basic Usage
+
+```typescript
+import { generateTyping } from "@tokovo/dsl";
+
+const events = generateTyping(0, "phone", "Hello world!");
+// Generates ~50 events: KEY_DOWN, TYPE_CHAR, KEY_UP for each letter
+```
+
+### With Options
+
+```typescript
+const events = generateTyping(0, "phone", "Hello world!", {
+    speed: "casual",           // Typing speed
+    typoPositions: [5, 12],    // Where to make typos
+});
+```
+
+### Typing Speeds
+
+| Speed | Frames/Letter | Real Time | Use Case |
+|-------|---------------|-----------|----------|
+| `slow` | 12 | 400ms | Thoughtful typing |
+| `normal` | 8 | 267ms | Standard |
+| `casual` | 6 | 200ms | Comfortable |
+| `fast` | 4 | 133ms | Quick response |
+| `burst` | 2 | 67ms | Excited/urgent |
+
+### Typo Simulation
+
+```typescript
+// Type "thinkng" then correct to "thinking"
+const events = generateTyping(0, "phone", "I was thinkng about it", {
+    typoPositions: [10],  // Typo at position 10
+});
+
+// Generates:
+// 1. Type "I was think" (correct)
+// 2. Type "n" (skip the 'i' - typo!)
+// 3. Type "g about it"
+// 4. User must manually add backspace events to "fix" the typo
+```
+
+---
+
+## IOSKeyboard Component
+
+Production-quality iOS keyboard with:
+
+- **3x scale** for crisp rendering at 1080x1920
+- **Key pop-ups** - Larger key preview when pressed
+- **Row offsets** - Authentic QWERTY layout staggering
+- **Special keys** - Shift, backspace, return, space, emoji, 123
+
+### Props
+
+```typescript
+interface IOSKeyboardProps {
+    layout?: "qwerty" | "emoji" | "numeric";
+    currentKey?: string | null;     // Key to highlight
+    onKeyPress?: (key: string) => void;
+    inputText?: string;             // For input field display
+    cursorVisible?: boolean;
+}
+```
+
+### Rendering
+
+```tsx
+import { IOSKeyboard } from "@tokovo/devices";
+
+<IOSKeyboard 
+    layout="qwerty"
+    currentKey={keyboard.currentKey}
+    inputText={keyboard.inputText}
+    cursorVisible={true}
+/>
+```
+
+---
+
+## Engine Processing
+
+```typescript
+function processKeyboardEvent(draft: WorldState, event: KeyboardEvent): void {
+    const device = draft.devices[event.deviceId];
+    
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+        };
+    }
+    
+    switch (event.type) {
+        case "SHOW":
+            device.keyboard.visible = true;
+            device.keyboard.layout = event.layout || "qwerty";
+            break;
+            
+        case "HIDE":
+            device.keyboard.visible = false;
+            device.keyboard.currentKey = null;
+            break;
+            
+        case "KEY_DOWN":
+            device.keyboard.currentKey = event.key;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+            
+        case "KEY_UP":
+            device.keyboard.currentKey = null;
+            break;
+            
+        case "TYPE_CHAR":
+            const pos = device.keyboard.cursorPosition;
+            const text = device.keyboard.inputText;
+            device.keyboard.inputText = 
+                text.slice(0, pos) + event.char + text.slice(pos);
+            device.keyboard.cursorPosition = pos + 1;
+            device.keyboard.currentKey = event.char;
+            break;
+            
+        case "BACKSPACE":
+            if (device.keyboard.cursorPosition > 0) {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                device.keyboard.inputText = 
+                    text.slice(0, pos - 1) + text.slice(pos);
+                device.keyboard.cursorPosition = pos - 1;
+            }
+            device.keyboard.currentKey = "⌫";
+            break;
+            
+        case "CLEAR":
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+    }
+}
+```
+
+---
+
+## Complete Example
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+const events = [
+    // Show keyboard
+    dsl.keyboard.show(0, "phone"),
+    
+    // Type a message with natural timing
+    ...generateTyping(30, "phone", "Hey! How are you doing?", {
+        speed: "casual",
+    }),
+    
+    // Pause, realize typo, backspace
+    dsl.keyboard.backspace(200, "phone"),
+    dsl.keyboard.backspace(203, "phone"),
+    dsl.keyboard.backspace(206, "phone"),
+    
+    // Retype correctly
+    ...generateTyping(220, "phone", "you?", { speed: "fast" }),
+    
+    // Send message (clear input after)
+    dsl.messages.send(300, "dm_friend", "Hey! How are you?"),
+    dsl.keyboard.clear(305, "phone"),
+    
+    // Hide keyboard
+    dsl.keyboard.hide(310, "phone"),
+];
+```
+
+---
+
+## File Locations
+
+| Purpose | Location |
+|---------|----------|
+| Types | `packages/core/src/types.ts` - KeyboardState |
+| Engine | `packages/core/src/engine.ts` - processKeyboardEvent() |
+| DSL | `packages/dsl/src/events/keyboard.ts` - Event factories |
+| Humanizer | `packages/dsl/src/events/typing.ts` - generateTyping() |
+| Component | `packages/devices/src/keyboards/IOSKeyboard.tsx` - UI |
+
+---
+
+## Tips
+
+1. **Always clear after send** - Use `dsl.keyboard.clear()` after sending a message
+2. **Hide when done** - Use `dsl.keyboard.hide()` when user is done typing
+3. **Match speed to emotion** - Use `fast` for excited, `slow` for thoughtful
+4. **Add backspaces for typos** - Manually add typos then corrections for realism
+````
+
+## File: docs/README.md
+````markdown
+# Tokovo Documentation
+
+Welcome to the Tokovo documentation. Tokovo is a programmable phone-simulation engine for cinematic storytelling.
+
+---
+
+## Quick Links
+
+| Document | Description |
+|----------|-------------|
+| [DSL](./DSL.md) | Centralized event factories for all timeline events |
+| [Keyboard](./KEYBOARD.md) | Virtual keyboard and typing simulation |
+| [Device OS](./DEVICE_OS.md) | Clock, battery, network, status bar |
+| [Camera & Audio](./CAMERA_AUDIO.md) | Cinematic effects and sound |
+
+---
+
+## What's New
+
+### Centralized DSL Module
+
+All event creation is now centralized in `@tokovo/dsl`:
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+const events = [
+    dsl.keyboard.show(0, "phone"),
+    ...generateTyping(30, "phone", "Hello world!"),
+    dsl.messages.send(150, "dm_friend", "Hello world!"),
+    dsl.camera.zoom(200, 1.2, 30),
+    dsl.audio.play(200, "message_sent"),
+    dsl.os.setBattery(300, 85),
+];
+```
+
+### Device OS Layer
+
+StatusBar now reads from device state:
+- **Clock** updates via `dsl.os.setTime()`
+- **Battery** drains via `dsl.os.setBattery()`
+- **Network** switches via `dsl.os.setNetwork()`
+- **DND** toggles via `dsl.os.setDND()`
+
+### Production Keyboard
+
+IOSKeyboard with authentic iOS styling:
+- Key pop-ups when pressed
+- Typing humanization (variable speed, typos)
+- QWERTY, emoji, and numeric layouts
+
+---
+
+## Package Overview
+
+```
+tokovo/
+├── packages/
+│   ├── core/           # Engine, types, replay()
+│   ├── dsl/            # DSL event factories
+│   ├── devices/        # Device profiles, StatusBar, Keyboard
+│   ├── renderer/       # TokovoRenderer, DeviceFrame
+│   ├── apps-whatsapp/  # WhatsApp chat UI
+│   └── apps-twitter/   # Twitter/X UI
+└── apps/
+    └── video-runner/   # Remotion video app
+```
+
+---
+
+## Getting Started
+
+```bash
+# Install dependencies
+pnpm install
+
+# Run development server
+pnpm turbo dev --filter=video-runner
+
+# Open http://localhost:3000
+```
+
+---
+
+## Creating an Episode
+
+```typescript
+import { WorldState, TimelineEvent } from "@tokovo/core";
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+function createEpisode() {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                os: {
+                    clock: Date.now(),
+                    battery: 87,
+                    network: "wifi",
+                    // ... see DEVICE_OS.md
+                },
+            },
+        },
+        conversations: {
+            dm_friend: {
+                id: "dm_friend",
+                type: "dm",
+                name: "Friend",
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_friend",
+            },
+        },
+        camera: { /* ... */ },
+        audio: { activeSounds: {} },
+    };
+    
+    const events: TimelineEvent[] = [
+        // Your story events here
+        dsl.keyboard.show(0, "phone"),
+        ...generateTyping(30, "phone", "Hey!", { speed: "casual" }),
+        dsl.messages.send(100, "dm_friend", "Hey!"),
+        dsl.keyboard.hide(110, "phone"),
+    ];
+    
+    return { initialWorld, events };
+}
+```
+
+---
+
+## Architecture
+
+```
+Episode JSON/TS
+      │
+      ▼
+┌─────────────────┐
+│   Core Engine   │
+│    replay()     │
+└────────┬────────┘
+         │ WorldState
+         ▼
+┌─────────────────┐
+│  Layout Engine  │
+│  (computed)     │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    Renderer     │
+│   (React/JSX)   │
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    Remotion     │
+│     Video       │
+└─────────────────┘
+```
+
+---
+
+## Principles
+
+1. **Deterministic** - At any frame `t`, world state is reproducible
+2. **Composable** - Add devices/apps without modifying core
+3. **Data-driven** - Episodes define everything; no hidden state
+4. **Cinematic** - Optimized for rendering, not interaction
 ````
 
 ## File: packages/adapters/src/whatsapp/index.ts
@@ -8195,13 +9929,6 @@ export function registerWhatsAppPlugin(): void {
 }
 ````
 
-## File: packages/apps-whatsapp/src/types.ts
-````typescript
-export interface WhatsAppState {
-    // Add specific state if needed, for now using generic ConversationState from core
-}
-````
-
 ## File: packages/apps-whatsapp/LAYOUT_LOGIC.md
 ````markdown
 # WhatsApp Layout Architecture: The "Visual Run" Model
@@ -8316,29 +10043,26 @@ Visual Consistency is not accidental. It is enforced by this dependency chain:
 Modify `src/config/layout-config.ts`. The rest of the system updates automatically.
 ````
 
-## File: packages/apps-whatsapp/README.md
-````markdown
-# @tokovo/apps-whatsapp
-
-WhatsApp clone app for Tokovo.
-
-## Features
-- **Runtime**: Handles `MESSAGE_RECEIVED`, `TYPING_START`, `TYPING_END`.
-- **UI**: `WhatsappChatView` with high-fidelity styling, animations, and auto-scroll.
-````
-
-## File: packages/apps-whatsapp/tsconfig.json
+## File: packages/apps-whatsapp/package.json
 ````json
 {
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
+    "name": "@tokovo/apps-whatsapp",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
     },
-    "include": [
-        "src/**/*"
-    ]
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
 }
 ````
 
@@ -12362,10 +14086,306 @@ export function getNotificationWidgets(
 }
 ````
 
-## File: packages/core/package.json
+## File: packages/devices/src/keyboards/index.ts
+````typescript
+/**
+ * Keyboards barrel export
+ */
+export { IOSKeyboard } from "./IOSKeyboard";
+````
+
+## File: packages/devices/src/keyboards/IOSKeyboard.tsx
+````typescript
+/**
+ * IOSKeyboard - Realistic iOS keyboard component
+ * 
+ * Features:
+ * - Full QWERTY layout
+ * - Key pop-up on press (3 frames)
+ * - Slide up/down animation
+ * - iOS light/dark themes
+ */
+
+import React from "react";
+import { useCurrentFrame, interpolate, Easing } from "remotion";
+import { KeyboardState, KeyboardLayout } from "@tokovo/core";
+
+// =============================================================================
+// KEYBOARD LAYOUTS
+// =============================================================================
+
+const QWERTY_ROWS = [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+    ["123", "🌐", "space", "return"]
+];
+
+const NUMBERS_ROWS = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
+    ["#+=", ".", ",", "?", "!", "'", "⌫"],
+    ["ABC", "🌐", "space", "return"]
+];
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface IOSKeyboardProps {
+    keyboard: KeyboardState;
+    variant?: "light" | "dark";
+    t: number;
+}
+
+interface KeyProps {
+    label: string;
+    isPressed: boolean;
+    width?: number;
+    isSpecial?: boolean;
+    variant: "light" | "dark";
+}
+
+// =============================================================================
+// KEY COMPONENT
+// =============================================================================
+
+const Key: React.FC<KeyProps> = ({
+    label,
+    isPressed,
+    width = 96,
+    isSpecial = false,
+    variant
+}) => {
+    const frame = useCurrentFrame();
+
+    // Colors based on variant
+    const colors = variant === "light"
+        ? {
+            keyBg: isSpecial ? "#AEB3BC" : "#FFFFFF",
+            keyText: "#000000",
+            popupBg: "#FFFFFF",
+            shadow: "rgba(0,0,0,0.3)",
+        }
+        : {
+            keyBg: isSpecial ? "#3D3D41" : "#5A5A5E",
+            keyText: "#FFFFFF",
+            popupBg: "#5A5A5E",
+            shadow: "rgba(0,0,0,0.5)",
+        };
+
+    // Key dimensions
+    const height = 132;
+    const borderRadius = 15;
+    const fontSize = label === "space" ? 48 : label.length > 1 ? 42 : 66;
+
+    // Pop-up animation (show enlarged key above when pressed)
+    const popupScale = isPressed ? 1.3 : 0;
+    const popupOpacity = isPressed ? 1 : 0;
+
+    return (
+        <div style={{
+            position: "relative",
+            width,
+            height,
+            margin: 6,
+        }}>
+            {/* Key pop-up (above key when pressed) */}
+            {isPressed && (
+                <div style={{
+                    position: "absolute",
+                    bottom: height + 12,
+                    left: "50%",
+                    transform: `translateX(-50%) scale(${popupScale})`,
+                    width: width * 1.4,
+                    height: height * 1.5,
+                    backgroundColor: colors.popupBg,
+                    borderRadius: 24,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: fontSize * 1.3,
+                    fontWeight: 400,
+                    color: colors.keyText,
+                    boxShadow: `0 12px 30px ${colors.shadow}`,
+                    opacity: popupOpacity,
+                    zIndex: 100,
+                }}>
+                    {label === "space" ? "" : label.toUpperCase()}
+                </div>
+            )}
+
+            {/* Main key */}
+            <div style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: isPressed ? colors.popupBg : colors.keyBg,
+                borderRadius,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize,
+                fontWeight: 400,
+                color: colors.keyText,
+                boxShadow: `0 3px 0 ${colors.shadow}`,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
+                textTransform: isSpecial ? "none" : "none",
+                transform: isPressed ? "scale(0.95)" : "scale(1)",
+                transition: "transform 0.05s",
+            }}>
+                {label === "space" ? "" :
+                    label === "⇧" ? "⇧" :
+                        label === "⌫" ? "⌫" :
+                            label === "return" ? "return" :
+                                label === "123" ? "123" :
+                                    label === "ABC" ? "ABC" :
+                                        label === "🌐" ? "🌐" :
+                                            label}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// KEYBOARD ROW
+// =============================================================================
+
+const KeyboardRow: React.FC<{
+    keys: string[];
+    currentKey: string | null;
+    variant: "light" | "dark";
+    rowIndex: number;
+}> = ({ keys, currentKey, variant, rowIndex }) => {
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: "center",
+            marginBottom: 12,
+        }}>
+            {keys.map((key, index) => {
+                const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
+                const isSpace = key === "space";
+                const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
+                    (key === "⌫" && currentKey === "⌫") ||
+                    (isSpace && currentKey === " ");
+
+                // Key widths
+                let width = 96;
+                if (isSpace) width = 500;
+                else if (key === "return") width = 240;
+                else if (key === "⇧" || key === "⌫") width = 126;
+                else if (key === "123" || key === "ABC") width = 126;
+
+                return (
+                    <Key
+                        key={`${key}-${index}`}
+                        label={key}
+                        isPressed={isPressed}
+                        width={width}
+                        isSpecial={isSpecial}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN KEYBOARD COMPONENT
+// =============================================================================
+
+export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
+    keyboard,
+    variant = "light",
+    t,
+}) => {
+    const frame = useCurrentFrame();
+
+    // Slide animation
+    const KEYBOARD_HEIGHT = 900; // At 3x scale
+    const slideProgress = keyboard.visible
+        ? interpolate(frame, [0, 10], [0, 1], {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.out(Easing.cubic),
+        })
+        : 0;
+
+    const translateY = interpolate(slideProgress, [0, 1], [KEYBOARD_HEIGHT, 0]);
+    const opacity = interpolate(slideProgress, [0, 1], [0, 1]);
+
+    // If not visible and no animation, don't render
+    if (!keyboard.visible && slideProgress === 0) {
+        return null;
+    }
+
+    // Select layout
+    const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
+
+    // Background colors
+    const bgColor = variant === "light" ? "#D1D3D9" : "#2C2C2E";
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: KEYBOARD_HEIGHT,
+            backgroundColor: bgColor,
+            transform: `translateY(${translateY}px)`,
+            opacity,
+            paddingTop: 24,
+            paddingBottom: 60,
+            zIndex: 1000,
+        }}>
+            {/* Predictive text bar */}
+            <div style={{
+                height: 120,
+                display: "flex",
+                justifyContent: "space-around",
+                alignItems: "center",
+                borderBottom: `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}`,
+                marginBottom: 12,
+                paddingHorizontal: 24,
+            }}>
+                {["The", "I", "a"].map((word, i) => (
+                    <div key={i} style={{
+                        flex: 1,
+                        textAlign: "center",
+                        fontSize: 48,
+                        color: variant === "light" ? "#000" : "#FFF",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
+                        borderRight: i < 2 ? `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}` : "none",
+                        paddingVertical: 12,
+                    }}>
+                        {word}
+                    </div>
+                ))}
+            </div>
+
+            {/* Keyboard rows */}
+            {rows.map((row, index) => (
+                <KeyboardRow
+                    key={index}
+                    keys={row}
+                    currentKey={keyboard.currentKey}
+                    variant={variant}
+                    rowIndex={index}
+                />
+            ))}
+        </div>
+    );
+};
+
+export default IOSKeyboard;
+````
+
+## File: packages/devices/package.json
 ````json
 {
-    "name": "@tokovo/core",
+    "name": "@tokovo/devices",
     "version": "0.0.0",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
@@ -12373,65 +14393,15 @@ export function getNotificationWidgets(
         "lint": "eslint . --ext .ts,.tsx"
     },
     "dependencies": {
-        "immer": "^10.0.0"
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
     },
     "devDependencies": {
         "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
     }
-}
-````
-
-## File: packages/core/README.md
-````markdown
-# @tokovo/core
-
-Core logic for the Tokovo engine.
-
-## Features
-- **Engine**: `replay` function to compute world state from events.
-- **Types**: Core type definitions (`WorldState`, `TimelineEvent`, etc.).
-- **Registry**: `ReducerRegistry` for managing device and app reducers.
-````
-
-## File: packages/core/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-````
-
-## File: packages/devices/README.md
-````markdown
-# @tokovo/devices
-
-Device profiles and reducers.
-
-## Features
-- **Profiles**: `iPhone16Profile` with high-res assets.
-- **Components**: `iPhone16Frame`, `StatusBar`.
-- **Reducer**: `deviceReducer` for handling device events (LOCK, UNLOCK, OPEN_APP).
-````
-
-## File: packages/devices/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
 }
 ````
 
@@ -13941,33 +15911,562 @@ export const DEMO_TRACKS: Record<string, SpotifyTrackInfo> = {
 };
 ````
 
-## File: packages/dsl/src/index.ts
+## File: packages/dsl/src/events/audio.ts
 ````typescript
 /**
- * @tokovo/dsl
+ * Audio Event Factories
  * 
- * Author DSL for writing cinematic chat stories.
- * 
- * Usage:
- * ```ts
- * import { episode } from "@tokovo/dsl";
- * 
- * const sceneIR = episode("my-story", ep => {
- *   ep.device("Phone", d => {
- *     d.conversation("dm_alice")
- *     d.beat("intro", b => {
- *       b.receive("Alice", "Hey!")
- *     })
- *   })
- * })
- * ```
+ * Low-level event creators for sound effects and music.
  */
 
-// Types
-export * from "./types";
+import { TimelineEvent } from "@tokovo/core";
 
-// Author API
-export * from "./author";
+export interface PlayOptions {
+    loop?: boolean;
+    duration?: number;
+    instanceId?: string;
+    deviceId?: string;
+}
+
+export interface FadeOptions {
+    easing?: string;
+}
+
+/**
+ * Audio event factories
+ */
+export const audio = {
+    /**
+     * Play a sound effect
+     */
+    play: (at: number, soundId: string, volume = 1.0, opts: PlayOptions = {}): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "PLAY_SOUND",
+        soundId,
+        volume,
+        loop: opts.loop,
+        duration: opts.duration,
+        instanceId: opts.instanceId,
+        deviceId: opts.deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Stop a sound
+     */
+    stop: (at: number, instanceId: string): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "STOP_SOUND",
+        instanceId,
+    } as TimelineEvent),
+
+    /**
+     * Fade volume
+     */
+    fade: (at: number, instanceId: string, toVolume: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "FADE_VOLUME",
+        instanceId,
+        toVolume,
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Play background music
+     */
+    backgroundMusic: (at: number, soundId: string, volume = 0.5, loop = true): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "BACKGROUND_MUSIC",
+        soundId,
+        volume,
+        loop,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/camera.ts
+````typescript
+/**
+ * Camera Event Factories
+ * 
+ * Low-level event creators for camera movements.
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+
+export interface ZoomOptions {
+    originX?: number;
+    originY?: number;
+    easing?: string;
+}
+
+export interface PanOptions {
+    easing?: string;
+}
+
+export interface ShakeOptions {
+    frequency?: number;
+    decay?: number;
+}
+
+/**
+ * Camera event factories
+ */
+export const camera = {
+    /**
+     * Zoom in/out
+     */
+    zoom: (at: number, scale: number, duration: number, opts: ZoomOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        scale,
+        duration,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as TimelineEvent),
+
+    /**
+     * Pan to position
+     */
+    pan: (at: number, translateX: number, translateY: number, duration: number, opts: PanOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "PAN",
+        translateX,
+        translateY,
+        duration,
+        easing: opts.easing ?? "ease-out",
+    } as TimelineEvent),
+
+    /**
+     * Camera shake effect
+     */
+    shake: (at: number, intensity: number, duration: number, opts: ShakeOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        intensity,
+        duration,
+        frequency: opts.frequency ?? 18,
+        decay: opts.decay ?? 0.5,
+    } as TimelineEvent),
+
+    /**
+     * Reset camera to default
+     */
+    reset: (at: number, duration: number, easing = "ease-out"): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        duration,
+        easing,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/keyboard.ts
+````typescript
+/**
+ * Keyboard Event Factories
+ * 
+ * Low-level event creators for keyboard simulation.
+ * Used by showcases and DSL builders.
+ */
+
+import { TimelineEvent, KeyboardLayout } from "@tokovo/core";
+
+/**
+ * Keyboard event factories
+ */
+export const keyboard = {
+    /**
+     * Show the virtual keyboard
+     */
+    show: (at: number, deviceId: string, layout: KeyboardLayout = "qwerty"): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SHOW",
+        deviceId,
+        layout,
+    } as TimelineEvent),
+
+    /**
+     * Hide the virtual keyboard
+     */
+    hide: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Type a single character
+     */
+    typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "TYPE_CHAR",
+        deviceId,
+        char,
+    } as TimelineEvent),
+
+    /**
+     * Delete last character (backspace)
+     */
+    backspace: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "BACKSPACE",
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Set text directly
+     */
+    setText: (at: number, deviceId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SET_TEXT",
+        deviceId,
+        text,
+    } as TimelineEvent),
+
+    /**
+     * Clear all text
+     */
+    clear: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "CLEAR",
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Key down (for visual highlight)
+     */
+    keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_DOWN",
+        deviceId,
+        key,
+    } as TimelineEvent),
+
+    /**
+     * Key up (end visual highlight)
+     */
+    keyUp: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_UP",
+        deviceId,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/os.ts
+````typescript
+/**
+ * OS Event Factories
+ * 
+ * Low-level event creators for device OS state changes.
+ * Controls clock, battery, network, DND mode.
+ */
+
+import { TimelineEvent, NetworkType } from "@tokovo/core";
+
+/**
+ * OS event factories
+ */
+export const os = {
+    /**
+     * Set device time (Unix timestamp ms)
+     */
+    setTime: (at: number, time: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_TIME",
+        deviceId,
+        time,
+    } as TimelineEvent),
+
+    /**
+     * Set battery level (0-100)
+     */
+    setBattery: (at: number, level: number, charging = false, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_BATTERY",
+        deviceId,
+        level,
+        charging,
+    } as TimelineEvent),
+
+    /**
+     * Drain battery at rate per second
+     */
+    drainBattery: (at: number, rate: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "DRAIN_BATTERY",
+        deviceId,
+        rate,
+    } as TimelineEvent),
+
+    /**
+     * Set network type and optional strength
+     */
+    setNetwork: (at: number, network: NetworkType, strength?: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_NETWORK",
+        deviceId,
+        network,
+        strength,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Do Not Disturb mode
+     */
+    setDND: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_DND",
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Low Power mode
+     */
+    setLowPower: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_LOW_POWER",
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Airplane mode (disables network)
+     */
+    setAirplane: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_AIRPLANE",
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/touch.ts
+````typescript
+/**
+ * Touch Event Factories
+ * 
+ * Low-level event creators for gesture visualization.
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+
+/**
+ * Touch event factories
+ */
+export const touch = {
+    /**
+     * Tap at coordinates (shows brief circle)
+     */
+    tap: (at: number, x: number, y: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "TAP",
+        deviceId,
+        x,
+        y,
+    } as TimelineEvent),
+
+    /**
+     * Long press at coordinates
+     */
+    longPress: (at: number, x: number, y: number, duration: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "LONG_PRESS",
+        deviceId,
+        x,
+        y,
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Drag from start to end coordinates
+     */
+    drag: (at: number, startX: number, startY: number, endX: number, endY: number, duration: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "DRAG",
+        deviceId,
+        startX,
+        startY,
+        endX,
+        endY,
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Scroll vertically
+     */
+    scroll: (at: number, y: number, velocity?: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "SCROLL",
+        deviceId,
+        y,
+        velocity,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/typing.ts
+````typescript
+/**
+ * Typing Simulation with Humanizer
+ * 
+ * Generates realistic typing sequences with:
+ * - Variable timing
+ * - Typo simulation using adjacent keys
+ * - Backspace correction
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { keyboard } from "./keyboard";
+
+/**
+ * Adjacent keys for typo simulation
+ */
+const ADJACENT_KEYS: Record<string, string[]> = {
+    a: ["q", "w", "s", "z"], b: ["v", "g", "h", "n"], c: ["x", "d", "f", "v"],
+    d: ["s", "e", "r", "f", "c", "x"], e: ["w", "r", "d", "s"], f: ["d", "r", "t", "g", "v", "c"],
+    g: ["f", "t", "y", "h", "b", "v"], h: ["g", "y", "u", "j", "n", "b"], i: ["u", "o", "k", "j"],
+    j: ["h", "u", "i", "k", "m", "n"], k: ["j", "i", "o", "l", "m"], l: ["k", "o", "p"],
+    m: ["n", "j", "k"], n: ["b", "h", "j", "m"], o: ["i", "p", "l", "k"],
+    p: ["o", "l"], q: ["w", "a"], r: ["e", "t", "f", "d"],
+    s: ["a", "w", "e", "d", "x", "z"], t: ["r", "y", "g", "f"], u: ["y", "i", "j", "h"],
+    v: ["c", "f", "g", "b"], w: ["q", "e", "s", "a"], x: ["z", "s", "d", "c"],
+    y: ["t", "u", "h", "g"], z: ["a", "s", "x"],
+};
+
+/**
+ * Typing speed presets (frames per character at 30fps)
+ */
+export const TYPING_SPEEDS = {
+    slow: 10,     // 3 chars/sec
+    casual: 5,    // 6 chars/sec
+    fast: 3,      // 10 chars/sec
+    angry: 2,     // 15 chars/sec
+};
+
+export type TypingSpeed = keyof typeof TYPING_SPEEDS;
+
+export interface TypingOptions {
+    /** Frames between characters */
+    framesPerChar?: number;
+    /** Speed preset (overrides framesPerChar) */
+    speed?: TypingSpeed;
+    /** Specific character positions to have typos */
+    typoPositions?: number[];
+    /** Random typo rate (0-1) */
+    typoRate?: number;
+    /** Seed for deterministic typos */
+    seed?: number;
+}
+
+/**
+ * Generate typing events with humanized timing and optional typos
+ * 
+ * @param startFrame - Frame to start typing
+ * @param deviceId - Target device
+ * @param text - Text to type
+ * @param options - Typing simulation options
+ * @returns Array of timeline events
+ */
+export function generateTyping(
+    startFrame: number,
+    deviceId: string,
+    text: string,
+    options: TypingOptions = {}
+): TimelineEvent[] {
+    const framesPerChar = options.speed
+        ? TYPING_SPEEDS[options.speed]
+        : (options.framesPerChar ?? 5);
+
+    const typoPositions = new Set(options.typoPositions ?? []);
+    const typoRate = options.typoRate ?? 0;
+
+    const events: TimelineEvent[] = [];
+    let frame = startFrame;
+
+    // Simple seeded random for deterministic typos
+    let seed = options.seed ?? 12345;
+    const seededRandom = () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+    };
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+        const lowerChar = char.toLowerCase();
+
+        // Check if this position should have a typo
+        const shouldTypo = typoPositions.has(i) ||
+            (typoRate > 0 && seededRandom() < typoRate && ADJACENT_KEYS[lowerChar]);
+
+        if (shouldTypo && ADJACENT_KEYS[lowerChar]) {
+            // Pick wrong key (deterministically)
+            const wrongKey = ADJACENT_KEYS[lowerChar][0];
+
+            // Type wrong key
+            events.push(keyboard.typeChar(frame, deviceId, wrongKey));
+            frame += framesPerChar;
+
+            // Quick pause then backspace
+            events.push(keyboard.backspace(frame, deviceId));
+            frame += 3;
+        }
+
+        // Type correct character
+        events.push(keyboard.typeChar(frame, deviceId, char));
+        frame += framesPerChar;
+    }
+
+    return events;
+}
+
+/**
+ * Get the frame where typing ends
+ */
+export function getTypingEndFrame(
+    startFrame: number,
+    text: string,
+    options: TypingOptions = {}
+): number {
+    const framesPerChar = options.speed
+        ? TYPING_SPEEDS[options.speed]
+        : (options.framesPerChar ?? 5);
+
+    const typoCount = options.typoPositions?.length ??
+        Math.floor(text.length * (options.typoRate ?? 0));
+
+    // Each typo adds extra frames for backspace
+    return startFrame + (text.length * framesPerChar) + (typoCount * (framesPerChar + 3));
+}
 ````
 
 ## File: packages/dsl/src/types.ts
@@ -14019,30 +16518,6 @@ export type TrackFn = (t: TrackBuilder) => void;
 export interface EpisodeConfig {
     fps?: number;
     title?: string;
-}
-````
-
-## File: packages/dsl/package.json
-````json
-{
-    "name": "@tokovo/dsl",
-    "version": "0.0.1",
-    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "@tokovo/ir": "workspace:*"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
 }
 ````
 
@@ -14624,42 +17099,6 @@ export const notificationShowcaseEpisode = {
 };
 
 export default notificationShowcaseEpisode;
-````
-
-## File: packages/episodes/package.json
-````json
-{
-    "name": "@tokovo/episodes",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
-    }
-}
-````
-
-## File: packages/episodes/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "resolveJsonModule": true
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
 ````
 
 ## File: packages/ir/src/constraints.ts
@@ -15574,6 +18013,294 @@ export function validateTimelineIRFull(ir: TimelineIR): ValidationError[] {
         "node_modules",
         "dist"
     ]
+}
+````
+
+## File: packages/renderer/src/engines/useAudioEngine.ts
+````typescript
+/**
+ * Audio Engine
+ *
+ * Pure computation layer that determines:
+ * - Bus states (ducking multipliers)
+ * - Active sounds filtered by device
+ * - Music bed crossfade state
+ *
+ * Input: world + time + focusDeviceId
+ * Output: pre-computed audio state (no JSX)
+ *
+ * NOTE: This runs every frame. Keep it fast.
+ */
+
+import { useMemo } from "react";
+import {
+    WorldState,
+    SoundCue,
+    ActiveSound,
+    MusicBed,
+    DEFAULT_BUS_CONFIG,
+    computeBusStates,
+    BusState,
+    computeCrossfade,
+} from "@tokovo/core";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface AudioEngineInput {
+    world: WorldState;
+    t: number;
+    focusDeviceId?: string;
+}
+
+export interface AudioEngineOutput {
+    /** Pre-computed bus states with ducking */
+    busStates: Record<string, BusState>;
+    /** Filtered active sounds (array of [id, sound]) */
+    activeSounds: Array<[string, SoundCue | ActiveSound]>;
+    /** Current music bed (if any) */
+    musicBed: MusicBed | null;
+    /** Crossfade volumes for music */
+    musicCrossfade: { outVolume: number; inVolume: number };
+    /** Legacy background music (if no musicBed) */
+    backgroundMusic: WorldState["audio"]["backgroundMusic"] | null;
+    /** Whether audio state exists */
+    hasAudio: boolean;
+}
+
+// =============================================================================
+// NULL OUTPUT (when no audio)
+// =============================================================================
+
+export const NULL_AUDIO_OUTPUT: AudioEngineOutput = {
+    busStates: {},
+    activeSounds: [],
+    musicBed: null,
+    musicCrossfade: { outVolume: 0, inVolume: 0 },
+    backgroundMusic: null,
+    hasAudio: false,
+};
+
+// =============================================================================
+// AUDIO ENGINE HOOK
+// =============================================================================
+
+export function useAudioEngine(input: AudioEngineInput): AudioEngineOutput {
+    const { world, t, focusDeviceId } = input;
+
+    return useMemo(() => {
+        // 1. Early exit if no audio
+        const rawAudio = world.audio;
+        if (!rawAudio) {
+            return NULL_AUDIO_OUTPUT;
+        }
+
+        // 2. Ensure buses exist (backward compatibility)
+        const audio = rawAudio.buses ? rawAudio : { ...rawAudio, buses: DEFAULT_BUS_CONFIG };
+
+        // 3. Compute bus states (with ducking)
+        const busStates = computeBusStates(audio, t);
+
+        // 4. Filter sounds by device
+        const activeSounds = Object.entries(audio.activeSounds || {}).filter(([_, sound]) => {
+            // Global sounds (no deviceId) always play
+            if (!sound.deviceId) return true;
+            // If no focusDeviceId specified, play all sounds
+            if (!focusDeviceId) return true;
+            // Only play if device matches
+            return sound.deviceId === focusDeviceId;
+        });
+
+        // 5. Music crossfade
+        const musicBed = audio.musicBed || null;
+        const musicCrossfade = musicBed
+            ? computeCrossfade(undefined, musicBed, t)
+            : { outVolume: 0, inVolume: 0 };
+
+        // 6. Legacy background music
+        const backgroundMusic = audio.backgroundMusic && !musicBed ? audio.backgroundMusic : null;
+
+        return {
+            busStates,
+            activeSounds,
+            musicBed,
+            musicCrossfade,
+            backgroundMusic,
+            hasAudio: true,
+        };
+    }, [world.audio, t, focusDeviceId]);
+}
+````
+
+## File: packages/renderer/src/engines/useCameraEngine.ts
+````typescript
+/**
+ * Camera Engine
+ *
+ * Pure computation layer that determines:
+ * - Base camera transform from world state
+ * - DirectorLite effects (if enabled)
+ * - Final CSS styles for camera wrapper
+ *
+ * Input: world + time + layout
+ * Output: camera transform (no JSX)
+ */
+
+import { useMemo } from "react";
+import {
+    WorldState,
+    CameraTransform,
+    DEFAULT_CAMERA_TRANSFORM,
+    EventIndex,
+    getEventsInRange,
+    deriveDirectorEffects,
+    extractSignals,
+    ChatLayoutState,
+    DirectorOutput,
+} from "@tokovo/core";
+import { LayoutEngineOutput } from "./useLayoutEngine";
+import { createDirectorLayoutModel } from "../layout/director-adapter";
+import { applyDirectorEffects, Viewport } from "../camera-composer";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface CameraEngineInput {
+    world: WorldState;
+    t: number;
+    layoutOutput: LayoutEngineOutput;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}
+
+export interface CameraEngineOutput {
+    /** Final camera transform (after DirectorLite) */
+    transform: CameraTransform;
+    /** CSS style for camera wrapper */
+    cameraStyle: React.CSSProperties;
+    /** CSS style for device wrapper (legacy layout transforms) */
+    deviceStyle: React.CSSProperties;
+    /** DirectorLite output (for debugging) */
+    directorOutput?: DirectorOutput;
+}
+
+// =============================================================================
+// CAMERA ENGINE HOOK
+// =============================================================================
+
+export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
+    const {
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled = true,
+        directorDebug = false,
+    } = input;
+
+    return useMemo(() => {
+        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
+
+        // 1. Get base camera transform from world state
+        const baseCameraTransform: CameraTransform =
+            (world.camera?.deviceTransforms?.[deviceId]) ||
+            world.camera?.transform ||
+            DEFAULT_CAMERA_TRANSFORM;
+
+        let finalCameraTransform = baseCameraTransform;
+        let directorOutput: DirectorOutput | undefined;
+
+        // 2. DirectorLite integration (only for CHAT views with layout)
+        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+            // Get manual camera effects (if any active, skip director)
+            const manualCameraEffects = world.camera?.activeEffects || [];
+
+            // Signal window: past 90 frames, future 15 frames
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+
+            // Extract signals scoped to this device/app
+            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+
+            // Create layout model from computed layout
+            const chatLayout = layout as ChatLayoutState;
+            const directorLayout = createDirectorLayoutModel(
+                chatLayout,
+                deviceId,
+                appId || "",
+                activeConversationId || "",
+                profile.dimensions.width,
+                effectiveViewportHeight
+            );
+
+            // Derive effects (PURE FUNCTION - no state)
+            const result = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: directorLayout,
+                seed: 42, // Deterministic seed
+                debug: directorDebug,
+                manualCameraEffects,
+            });
+
+            directorOutput = result;
+
+            // Log debug info if enabled
+            if (directorDebug && result.debug) {
+                console.log(`[CameraEngine] t=${t}`, result.debug);
+            }
+
+            // Apply director effects if not skipped and effects exist
+            if (!result.skipped && result.effects.length > 0) {
+                const viewport: Viewport = {
+                    width: profile.dimensions.width,
+                    height: profile.dimensions.height,
+                    scrollY: chatLayout.scrollY,
+                };
+                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
+            }
+        }
+
+        // 3. Build camera CSS style
+        const cameraTransformString = `
+            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
+            scale(${finalCameraTransform.scale})
+            rotate(${finalCameraTransform.rotation}deg)
+        `.replace(/\s+/g, ' ').trim();
+
+        const cameraStyle: React.CSSProperties = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transform: cameraTransformString,
+            transition: 'none', // Frame-perfect sync
+        };
+
+        // 4. Build device CSS style (legacy layout transforms)
+        let deviceStyle: React.CSSProperties = {};
+
+        if (layout.kind === "TRANSITION") {
+            const transLayout = layout as any;
+            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
+            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
+                deviceStyle = {
+                    transformOrigin: "center center",
+                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+                };
+            }
+        }
+
+        return {
+            transform: finalCameraTransform,
+            cameraStyle,
+            deviceStyle,
+            directorOutput,
+        };
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
 }
 ````
 
@@ -16879,6 +19606,143 @@ export const NotificationShade: React.FC<NotificationShadeProps> = ({
 export default NotificationShade;
 ````
 
+## File: packages/renderer/src/TouchOverlay.tsx
+````typescript
+/**
+ * TouchOverlay - Visual feedback for touch gestures
+ *
+ * Renders semi-transparent circles at touch points that fade out.
+ * This creates the "screen recording" feel where you see fingers tapping.
+ */
+
+import React from "react";
+import { interpolate } from "remotion";
+import { TouchState } from "@tokovo/core";
+
+interface TouchOverlayProps {
+    /** Active touch points */
+    touches: TouchState[];
+    /** Current frame */
+    t: number;
+}
+
+/**
+ * Single touch indicator
+ */
+const TouchIndicator: React.FC<{
+    touch: TouchState;
+    t: number;
+}> = ({ touch, t }) => {
+    const age = t - touch.startedAt;
+
+    // Fade out over 15 frames
+    const opacity = interpolate(age, [0, 15], [0.5, 0], {
+        extrapolateRight: "clamp",
+    });
+
+    // Scale in then out
+    const scale = interpolate(age, [0, 3, 15], [0.5, 1, 0.8], {
+        extrapolateRight: "clamp",
+    });
+
+    if (opacity <= 0) return null;
+
+    // For drag, show line from start to end
+    if (touch.type === "drag" && touch.endX !== undefined && touch.endY !== undefined) {
+        const progress = interpolate(age, [0, 30], [0, 1], {
+            extrapolateRight: "clamp",
+        });
+        const currentX = touch.x + (touch.endX - touch.x) * progress;
+        const currentY = touch.y + (touch.endY - touch.y) * progress;
+
+        return (
+            <>
+                {/* Start point */}
+                <div
+                    style={{
+                        position: "absolute",
+                        left: touch.x - 30,
+                        top: touch.y - 30,
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(128, 128, 128, 0.3)",
+                        border: "2px solid rgba(128, 128, 128, 0.5)",
+                        opacity: opacity * 0.5,
+                        transform: `scale(${scale * 0.8})`,
+                        pointerEvents: "none",
+                    }}
+                />
+                {/* Current position */}
+                <div
+                    style={{
+                        position: "absolute",
+                        left: currentX - 30,
+                        top: currentY - 30,
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(128, 128, 128, 0.4)",
+                        opacity,
+                        transform: `scale(${scale})`,
+                        pointerEvents: "none",
+                    }}
+                />
+            </>
+        );
+    }
+
+    // Size based on touch type
+    const size = touch.type === "long_press" ? 80 : 60;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                left: touch.x - size / 2,
+                top: touch.y - size / 2,
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                backgroundColor: "rgba(128, 128, 128, 0.4)",
+                border: touch.type === "long_press" ? "2px solid rgba(255, 255, 255, 0.5)" : "none",
+                opacity,
+                transform: `scale(${scale})`,
+                pointerEvents: "none",
+                boxShadow: "0 2px 10px rgba(0, 0, 0, 0.2)",
+            }}
+        />
+    );
+};
+
+/**
+ * TouchOverlay component - render above device content
+ */
+export const TouchOverlay: React.FC<TouchOverlayProps> = ({ touches, t }) => {
+    if (!touches || touches.length === 0) return null;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: "none",
+                zIndex: 9999,
+            }}
+        >
+            {touches.map((touch) => (
+                <TouchIndicator key={touch.id} touch={touch} t={t} />
+            ))}
+        </div>
+    );
+};
+
+export default TouchOverlay;
+````
+
 ## File: packages/renderer/src/types.ts
 ````typescript
 export * from "@tokovo/core";
@@ -17353,40 +20217,6 @@ const layout = computeLayout({
 3. Pass `layout` down to the specific App View, which will branch based on `layout.kind` and render accordingly.
 ````
 
-## File: packages/renderer/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-````
-
-## File: tsconfig.base.json
-````json
-{
-    "compilerOptions": {
-        "target": "ESNext",
-        "module": "ESNext",
-        "moduleResolution": "bundler",
-        "esModuleInterop": true,
-        "forceConsistentCasingInFileNames": true,
-        "strict": true,
-        "skipLibCheck": true,
-        "jsx": "react-jsx",
-        "declaration": true,
-        "declarationMap": true,
-        "sourceMap": true
-    }
-}
-````
-
 ## File: apps/video-runner/src/AndroidVideo.tsx
 ````typescript
 import React from "react";
@@ -17430,6 +20260,274 @@ export const AndroidVideo: React.FC = () => {
         </div>
     );
 };
+````
+
+## File: apps/video-runner/src/FullRealityShowcase.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer
+import "@tokovo/devices";
+
+// Import DSL event factories
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+/**
+ * Full Reality Showcase
+ *
+ * Demonstrates ALL the "Reality Simulation" features:
+ * - Device OS layer (clock, battery, network updates)
+ * - Message lifecycle
+ * - Typing with typos and corrections
+ * - Camera movements
+ *
+ * This is indistinguishable from a real screen recording.
+ */
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const DEVICE_ID = "phone";
+const CONVO_ID = "dm_alex";
+const FRIEND_NAME = "Alex 💎";
+
+// Starting time: 2:45 PM
+const START_TIME = new Date();
+START_TIME.setHours(14, 45, 0, 0);
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createFullRealityEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            [DEVICE_ID]: {
+                id: DEVICE_ID,
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                // Device OS state - StatusBar now reads from here!
+                os: {
+                    clock: START_TIME.getTime(),
+                    battery: 87,
+                    charging: false,
+                    network: "wifi" as const,
+                    wifiStrength: 3,
+                    cellStrength: 4,
+                    dnd: false,
+                    lowPowerMode: false,
+                    airplaneMode: false,
+                },
+            },
+        },
+        conversations: {
+            [CONVO_ID]: {
+                id: CONVO_ID,
+                type: "dm",
+                name: FRIEND_NAME,
+                messages: [
+                    {
+                        id: "msg_history_1",
+                        type: "text",
+                        from: FRIEND_NAME,
+                        text: "hey you free tonight?",
+                        status: "read",
+                    },
+                    {
+                        id: "msg_history_2",
+                        type: "text",
+                        from: "me",
+                        text: "yeah what's up?",
+                        status: "read",
+                    },
+                ],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: CONVO_ID,
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: DEVICE_ID,
+            layout: { mode: "SINGLE" as const, primaryDeviceId: DEVICE_ID },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    const events: TimelineEvent[] = [
+        // === SCENE 1: Friend is typing (0-2s) ===
+        dsl.messages.typingStart(0, CONVO_ID, FRIEND_NAME),
+
+        // Time advances naturally (1 second = 30 frames)
+        dsl.os.setTime(30, START_TIME.getTime() + 1000, DEVICE_ID),
+
+        // Friend sends message
+        dsl.messages.typingEnd(60, CONVO_ID, FRIEND_NAME),
+        dsl.messages.receive(60, CONVO_ID, FRIEND_NAME, "thinking we could grab dinner? 🍕"),
+        dsl.audio.play(60, "whatsapp_received", 0.8),
+
+        // === SCENE 2: User types response (3-6s) ===
+        dsl.keyboard.show(90, DEVICE_ID, "qwerty"),
+
+        // Type with realistic typos
+        ...generateTyping(110, DEVICE_ID, "sure! where were you thinkng?", {
+            speed: "casual",
+            typoPositions: [22], // Typo on "thinking" -> "thinkng"
+        }),
+
+        // Time advances
+        dsl.os.setTime(150, START_TIME.getTime() + 5000, DEVICE_ID),
+
+        // User pauses, notices typo, backspaces
+        dsl.keyboard.backspace(220, DEVICE_ID),
+        dsl.keyboard.backspace(223, DEVICE_ID),
+        dsl.keyboard.backspace(226, DEVICE_ID),
+        dsl.keyboard.backspace(229, DEVICE_ID),
+        dsl.keyboard.backspace(232, DEVICE_ID),
+        dsl.keyboard.backspace(235, DEVICE_ID),
+        dsl.keyboard.backspace(238, DEVICE_ID),
+
+        // Retype correctly
+        ...generateTyping(245, DEVICE_ID, "thinking?", { speed: "fast" }),
+
+        // === SCENE 3: Send message (8s) ===
+        dsl.messages.send(285, CONVO_ID, "sure! where were you thinking?"),
+        dsl.audio.play(285, "whatsapp_sent", 0.7),
+        dsl.keyboard.clear(290, DEVICE_ID),
+
+        // Time advances
+        dsl.os.setTime(300, START_TIME.getTime() + 10000, DEVICE_ID),
+
+        // Battery drains slightly during usage
+        dsl.os.setBattery(320, 86, false, DEVICE_ID),
+
+        // === SCENE 4: Friend types and responds (10-16s) ===
+        dsl.messages.typingStart(400, CONVO_ID, FRIEND_NAME),
+
+        // Time advances
+        dsl.os.setTime(420, START_TIME.getTime() + 14000, DEVICE_ID),
+
+        // Friend sends response
+        dsl.messages.typingEnd(480, CONVO_ID, FRIEND_NAME),
+        dsl.messages.receive(480, CONVO_ID, FRIEND_NAME, "that new italian place downtown? mario's i think"),
+        dsl.audio.play(480, "whatsapp_received", 0.8),
+
+        // Camera focuses on message
+        dsl.camera.zoom(490, 1.15, 20, { originY: 0.7 }),
+
+        // === SCENE 5: User reacts excitedly (17-22s) ===
+        ...generateTyping(540, DEVICE_ID, "omg yes!!! ive been wanting to try that", {
+            speed: "fast",
+            typoPositions: [],
+        }),
+
+        // Time advances
+        dsl.os.setTime(600, START_TIME.getTime() + 20000, DEVICE_ID),
+
+        dsl.messages.send(655, CONVO_ID, "omg yes!!! ive been wanting to try that"),
+        dsl.audio.play(655, "whatsapp_sent", 0.7),
+        dsl.keyboard.clear(660, DEVICE_ID),
+
+        // Battery drain
+        dsl.os.setBattery(680, 85, false, DEVICE_ID),
+
+        // === SCENE 6: Final exchange (23-28s) ===
+        dsl.messages.typingStart(750, CONVO_ID, FRIEND_NAME),
+
+        // Camera resets
+        dsl.camera.reset(760, 25),
+
+        // Time advances
+        dsl.os.setTime(800, START_TIME.getTime() + 27000, DEVICE_ID),
+
+        dsl.messages.typingEnd(810, CONVO_ID, FRIEND_NAME),
+        dsl.messages.receive(810, CONVO_ID, FRIEND_NAME, "perfect! 7pm? 🎉"),
+        dsl.audio.play(810, "whatsapp_received", 0.8),
+
+        // Type quick confirmation
+        ...generateTyping(840, DEVICE_ID, "see you there! ", { speed: "fast" }),
+
+        dsl.messages.send(905, CONVO_ID, "see you there! 🙌"),
+        dsl.audio.play(905, "whatsapp_sent", 0.7),
+        dsl.keyboard.clear(910, DEVICE_ID),
+        dsl.keyboard.hide(915, DEVICE_ID),
+
+        // Time advances to end
+        dsl.os.setTime(950, START_TIME.getTime() + 33000, DEVICE_ID),
+
+        // Friend sends reaction
+        dsl.messages.receive(1020, CONVO_ID, FRIEND_NAME, "❤️"),
+        dsl.audio.play(1020, "whatsapp_received", 0.6),
+
+        // Small camera shake on reaction
+        dsl.camera.shake(1025, 3, 15, { frequency: 20, decay: 0.8 }),
+
+        // Final battery/time
+        dsl.os.setBattery(1050, 12, false, DEVICE_ID),
+        dsl.os.setTime(1060, START_TIME.getTime() + 38000, DEVICE_ID),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const FullRealityShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    const episode = useMemo(() => createFullRealityEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center",
+        }}>
+            <AudioLayer world={world} t={t} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default FullRealityShowcase;
 ````
 
 ## File: apps/video-runner/src/InstagramVideo.tsx
@@ -17481,6 +20579,157 @@ export const InstagramVideo: React.FC = () => {
         </div>
     );
 };
+````
+
+## File: apps/video-runner/src/KeyboardTypingShowcase.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer
+import "@tokovo/devices";
+
+// Import DSL event factories
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+/**
+ * Keyboard Typing Showcase
+ *
+ * Demonstrates realistic typing simulation using centralized DSL events.
+ */
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createKeyboardShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_friend: {
+                id: "dm_friend",
+                type: "dm",
+                name: "Sarah ✨",
+                messages: [
+                    { id: "msg_0", type: "text", from: "Sarah ✨", text: "Hey! Are you coming to the party tonight?", timestamp: Date.now() - 60000 },
+                ],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_friend",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {} },
+    };
+
+    // Using centralized DSL event factories
+    const events: TimelineEvent[] = [
+        // ACT 1: KEYBOARD APPEARS (1s)
+        dsl.keyboard.show(30, "phone", "qwerty"),
+
+        // ACT 2: TYPE RESPONSE with typos
+        ...generateTyping(50, "phone", "Yeah definitely!", {
+            speed: "casual",
+            typoPositions: [5], // Typo on "d"
+        }),
+
+        // ACT 3: SEND MESSAGE (4.5s)
+        dsl.messages.send(140, "dm_friend", "Yeah definitely!"),
+        dsl.audio.play(140, "whatsapp_sent", 0.7),
+        dsl.keyboard.clear(145, "phone"),
+
+        // ACT 4: FRIEND TYPING (5-6s)
+        dsl.messages.typingStart(170, "dm_friend", "Sarah ✨"),
+
+        // ACT 5: FRIEND REPLIES (6s)
+        dsl.messages.typingEnd(200, "dm_friend", "Sarah ✨"),
+        dsl.messages.receive(200, "dm_friend", "Sarah ✨", "Awesome! See you at 8 😊"),
+        dsl.audio.play(200, "whatsapp_received", 0.8),
+
+        // ACT 6: TYPE SECOND REPLY
+        ...generateTyping(230, "phone", "Can't wait! ", {
+            speed: "casual",
+            typoPositions: [3, 8],
+        }),
+
+        // ACT 7: SEND SECOND MESSAGE (9.5s)
+        dsl.messages.send(320, "dm_friend", "Can't wait! 🎉"),
+        dsl.audio.play(320, "whatsapp_sent", 0.7),
+        dsl.keyboard.clear(325, "phone"),
+
+        // ACT 8: HIDE KEYBOARD (10s)
+        dsl.keyboard.hide(330, "phone"),
+
+        // ACT 9: FRIEND REACTS (11s)
+        dsl.messages.receive(370, "dm_friend", "Sarah ✨", "❤️"),
+        dsl.audio.play(370, "whatsapp_received", 0.6),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const KeyboardTypingShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    const episode = useMemo(() => createKeyboardShowcaseEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    return (
+        <AbsoluteFill style={{ backgroundColor: "#0a0a1a", justifyContent: "center", alignItems: "center" }}>
+            <AudioLayer world={world} t={t} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default KeyboardTypingShowcase;
 ````
 
 ## File: apps/video-runner/src/WhatsappCompleteShowcaseVideo.tsx
@@ -19815,29 +23064,6 @@ export function createTheme(
 }
 ````
 
-## File: packages/apps-whatsapp/package.json
-````json
-{
-    "name": "@tokovo/apps-whatsapp",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
-}
-````
-
 ## File: packages/core/src/notification-dsl.ts
 ````typescript
 /**
@@ -20045,26 +23271,236 @@ export const notificationDsl = {
 };
 ````
 
-## File: packages/devices/package.json
-````json
-{
-    "name": "@tokovo/devices",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
+## File: packages/devices/src/iphone16/Frame.tsx
+````typescript
+import React from "react";
+import { iPhone16Profile } from "./profile";
+
+export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = iPhone16Profile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 165, // Scaled radius (55 * 3)
+            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Dynamic Island Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150, // Enough space for status bar
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "40px 60px 0 60px"
+            }}>
+                {/* Status Bar Content (Time, Battery, etc.) */}
+                {statusBar}
+            </div>
+
+            {/* Dynamic Island Cutout */}
+            <div style={{
+                position: "absolute",
+                top: 33, // 11 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 378, // 126 * 3
+                height: 111, // 37 * 3
+                backgroundColor: "black",
+                borderRadius: 60, // 20 * 3
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative"
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/devices/src/iphone16/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * iPhone 16 camera configuration
+ * - Slow pan speed for cinematic feel on mobile
+ * - High follow lag for smooth, less reactive tracking
+ * - Tighter zoom range for portrait scrolling
+ */
+const iPhone16Camera: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "slow",
+    followLag: "high",
+    snapThreshold: 40,
+    safeAreaTop: 110,      // Dynamic Island + status bar
+    safeAreaBottom: 102,   // Home indicator
+    followLagFactor: 0.7,  // Cinematic lag
+    panSpeedMultiplier: 0.6,
+};
+
+/**
+ * iPhone 16 Device Profile
+ * 
+ * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
+ * Dynamic Island: Centered at top, pill shape
+ */
+export const iPhone16Profile: DeviceProfile = {
+    id: "iphone16",
+    platform: "ios",
+    dimensions: { width: 1290, height: 2796 },
+    statusBarHeight: 110,
+    camera: iPhone16Camera,
+
+    // Dynamic Island dimensions (measured from iPhone 16 specs)
+    dynamicIsland: {
+        centerX: 645,           // 1290 / 2 (centered)
+        topY: 36,               // Top padding
+        collapsedWidth: 370,    // Pill width
+        collapsedHeight: 110,   // Pill height
+        expandedWidth: 900,     // Expanded for Now Playing
+        expandedHeight: 220,    // Expanded height
+        cornerRadius: 55,       // Pill corners
     },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
+};
+````
+
+## File: packages/devices/src/types.ts
+````typescript
+/**
+ * Camera motion speed configuration
+ */
+export type CameraSpeed = "slow" | "medium" | "fast";
+
+/**
+ * Camera follow lag configuration
+ * - high: More cinematic, camera lags significantly behind target
+ * - medium: Balanced tracking
+ * - low: Camera closely follows target (reactive)
+ */
+export type CameraFollowLag = "high" | "medium" | "low";
+
+/**
+ * Camera configuration for a specific device profile.
+ * 
+ * DESIGN PRINCIPLE: Device profiles define camera physics.
+ * Apps do NOT override these values. Ever.
+ */
+export interface CameraDeviceConfig {
+    // === Zoom Constraints ===
+    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
+    minZoom: number;
+    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
+    maxZoom: number;
+
+    // === Motion Characteristics ===
+    /** Pan speed for camera movement */
+    panSpeed: CameraSpeed;
+    /** Lag when following a target (soft tracking delay) */
+    followLag: CameraFollowLag;
+    /** Snap threshold in pixels - below this, snap instantly vs animate */
+    snapThreshold: number;
+
+    // === Safe Areas for Framing ===
+    /** Top safe area in pixels (status bar, notch, etc.) */
+    safeAreaTop: number;
+    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
+    safeAreaBottom: number;
+
+    // === Follow Easing (numeric values for computation) ===
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLagFactor: number;
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeedMultiplier: number;
+}
+
+/**
+ * Default camera configuration for devices
+ */
+export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 50,
+    safeAreaTop: 0,
+    safeAreaBottom: 0,
+    followLagFactor: 0.5,
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Dynamic Island configuration (iOS 14+ iPhones)
+ */
+export interface DynamicIslandConfig {
+    /** Center X position in device pixels */
+    centerX: number;
+    /** Top Y position */
+    topY: number;
+    /** Collapsed pill width */
+    collapsedWidth: number;
+    /** Collapsed pill height */
+    collapsedHeight: number;
+    /** Expanded width */
+    expandedWidth: number;
+    /** Expanded height */
+    expandedHeight: number;
+    /** Corner radius for pill shape */
+    cornerRadius: number;
+}
+
+/**
+ * Status bar widget area (Android)
+ */
+export interface StatusBarWidgetConfig {
+    /** Right edge X position */
+    rightX: number;
+    /** Top Y position */
+    topY: number;
+    /** Maximum width for indicators */
+    maxWidth: number;
+    /** Height of indicator area */
+    height: number;
+}
+
+/**
+ * Device profile defining physical characteristics and camera behavior
+ */
+export interface DeviceProfile {
+    id: string;
+    dimensions: { width: number; height: number };
+    statusBarHeight: number;
+
+    /** Platform type */
+    platform: "ios" | "android";
+
+    /** Camera behavior configuration (uses defaults if not specified) */
+    camera?: CameraDeviceConfig;
+
+    /** Dynamic Island configuration (iOS only) */
+    dynamicIsland?: DynamicIslandConfig;
+
+    /** Status bar widget configuration (Android only) */
+    statusBarWidget?: StatusBarWidgetConfig;
 }
 ````
 
@@ -20438,6 +23874,309 @@ export class SceneDeviceBuilder {
      */
     getBeats(): Beat[] {
         return this.beats;
+    }
+}
+````
+
+## File: packages/dsl/src/events/index.ts
+````typescript
+/**
+ * DSL Events Module
+ * 
+ * Centralized event factories for all event types.
+ * Use these instead of duplicating helpers in showcases.
+ * 
+ * @example
+ * ```ts
+ * import { dsl, generateTyping } from "@tokovo/dsl";
+ * 
+ * const events = [
+ *     dsl.keyboard.show(30, "phone"),
+ *     ...generateTyping(50, "phone", "Hello!"),
+ *     dsl.messages.send(140, "dm_friend", "Hello!"),
+ *     dsl.keyboard.hide(200, "phone"),
+ *     dsl.os.setBattery(300, 75),
+ *     dsl.touch.tap(350, 500, 600),
+ * ];
+ * ```
+ */
+
+// Individual event factory modules
+export { keyboard } from "./keyboard";
+export { messages } from "./messages";
+export { camera, ZoomOptions, PanOptions, ShakeOptions } from "./camera";
+export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
+export { os } from "./os";
+export { touch } from "./touch";
+
+// Typing simulation
+export {
+    generateTyping,
+    getTypingEndFrame,
+    TYPING_SPEEDS,
+    type TypingSpeed,
+    type TypingOptions,
+} from "./typing";
+
+// Import for bundled object
+import { keyboard } from "./keyboard";
+import { messages } from "./messages";
+import { camera } from "./camera";
+import { audio as audioEvents } from "./audio";
+import { os } from "./os";
+import { touch } from "./touch";
+
+/**
+ * Bundled DSL object with all event factories
+ * 
+ * @example
+ * ```ts
+ * import { dsl } from "@tokovo/dsl";
+ * 
+ * const events = [
+ *     dsl.keyboard.show(30, "phone"),
+ *     dsl.messages.send(100, "dm", "Hi!"),
+ *     dsl.camera.zoom(150, 1.2, 30),
+ *     dsl.audio.play(200, "notification"),
+ *     dsl.os.setNetwork(250, "5G"),
+ *     dsl.touch.tap(300, 540, 960),
+ * ];
+ * ```
+ */
+export const dsl = {
+    keyboard,
+    messages,
+    camera,
+    audio: audioEvents,
+    os,
+    touch,
+};
+````
+
+## File: packages/dsl/src/events/messages.ts
+````typescript
+/**
+ * Message Event Factories
+ * 
+ * Low-level event creators for messaging (WhatsApp, etc).
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+
+/** Message status for tick progression */
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
+
+/**
+ * Message event factories
+ */
+export const messages = {
+    /**
+     * Send a message (from device owner)
+     */
+    send: (at: number, conversationId: string, text: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_RECEIVED",
+        conversationId,
+        from: "me",
+        text,
+    } as TimelineEvent),
+
+    /**
+     * Receive a message (from someone else)
+     */
+    receive: (at: number, conversationId: string, from: string, text: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_RECEIVED",
+        conversationId,
+        from,
+        text,
+    } as TimelineEvent),
+
+    /**
+     * Start typing indicator
+     */
+    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "TYPING_START",
+        conversationId,
+        from,
+    } as TimelineEvent),
+
+    /**
+     * Stop typing indicator
+     */
+    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "TYPING_END",
+        conversationId,
+        from,
+    } as TimelineEvent),
+
+    /**
+     * Send an image
+     */
+    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_RECEIVED",
+        conversationId,
+        from: "me",
+        imageUrl,
+        caption,
+    } as TimelineEvent),
+
+    /**
+     * Receive an image
+     */
+    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_RECEIVED",
+        conversationId,
+        from,
+        imageUrl,
+        caption,
+    } as TimelineEvent),
+
+    // === MESSAGE STATUS (Tick Progression) ===
+
+    /**
+     * Mark message as sent (single gray tick)
+     */
+    markSent: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_STATUS",
+        conversationId,
+        messageId,
+        status: "sent",
+    } as TimelineEvent),
+
+    /**
+     * Mark message as delivered (double gray ticks)
+     */
+    markDelivered: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_STATUS",
+        conversationId,
+        messageId,
+        status: "delivered",
+    } as TimelineEvent),
+
+    /**
+     * Mark message as read (double blue ticks)
+     */
+    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_STATUS",
+        conversationId,
+        messageId,
+        status: "read",
+    } as TimelineEvent),
+
+    /**
+     * Mark message as failed (red warning)
+     */
+    markFailed: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp"): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId,
+        type: "MESSAGE_STATUS",
+        conversationId,
+        messageId,
+        status: "failed",
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/index.ts
+````typescript
+/**
+ * @tokovo/dsl
+ * 
+ * Author DSL for writing cinematic chat stories.
+ * 
+ * Usage:
+ * ```ts
+ * import { episode } from "@tokovo/dsl";
+ * 
+ * const sceneIR = episode("my-story", ep => {
+ *   ep.device("Phone", d => {
+ *     d.conversation("dm_alice")
+ *     d.beat("intro", b => {
+ *       b.receive("Alice", "Hey!")
+ *     })
+ *   })
+ * })
+ * ```
+ */
+
+// Types
+export * from "./types";
+
+// Author API (high-level builders)
+export * from "./author";
+
+// Events API (low-level factories) - selective exports to avoid conflicts
+export {
+    keyboard,
+    messages,
+    camera,
+    audioEvents,
+    dsl,
+    generateTyping,
+    getTypingEndFrame,
+    TYPING_SPEEDS,
+    type TypingSpeed,
+    type TypingOptions,
+    type PlayOptions,
+    type FadeOptions,
+} from "./events";
+
+// Renamed camera options to avoid conflicts with author/camera-builder
+export type {
+    ZoomOptions as EventZoomOptions,
+    PanOptions as EventPanOptions,
+    ShakeOptions as EventShakeOptions
+} from "./events";
+````
+
+## File: packages/dsl/package.json
+````json
+{
+    "name": "@tokovo/dsl",
+    "version": "0.0.1",
+    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
     }
 }
 ````
@@ -21210,6 +24949,312 @@ export class SceneDeviceBuilder {
 }
 ````
 
+## File: packages/episodes/src/examples/whatsapp-breakup-01.json
+````json
+{
+    "meta": {
+        "title": "WhatsApp Breakup Story - The End",
+        "fps": 30,
+        "durationInFrames": 900
+    },
+    "initialWorld": {
+        "devices": {
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": true
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "type": "dm",
+                "name": "Alex ❤️",
+                "avatar": null,
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "me",
+                        "text": "Hey, are you free to talk?",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "There's something I need to tell you...",
+                        "type": "text",
+                        "status": "read"
+                    }
+                ],
+                "typing": {}
+            }
+        },
+        "appState": {},
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 15,
+            "kind": "DEVICE",
+            "deviceId": "main_phone",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 30,
+            "kind": "DEVICE",
+            "deviceId": "main_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Yeah I'm here, what's going on?"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "You're scaring me..."
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I've been thinking a lot lately"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "About us. About where this is going."
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "What do you mean? I thought everything was fine?"
+        },
+        {
+            "at": 330,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "It's not you. It's really not."
+        },
+        {
+            "at": 360,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I just don't think I can do this anymore"
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Are you breaking up with me??"
+        },
+        {
+            "at": 450,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Over TEXT?!"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I didn't know how else to say it"
+        },
+        {
+            "at": 510,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I'm sorry Alex. I really am."
+        },
+        {
+            "at": 540,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "After 2 years? You're doing this over WhatsApp?"
+        },
+        {
+            "at": 630,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "I gave you everything 😢"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I know. And I'm grateful for every moment we had."
+        },
+        {
+            "at": 690,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "But I need to focus on myself right now"
+        },
+        {
+            "at": 720,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "..."
+        },
+        {
+            "at": 810,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "I hope you find what you're looking for"
+        },
+        {
+            "at": 840,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Goodbye."
+        }
+    ]
+}
+````
+
 ## File: packages/episodes/src/examples/whatsapp-psychotic-demo.json
 ````json
 {
@@ -21363,6 +25408,23 @@ export * from "./constraints";
 ## File: packages/ir/tsconfig.tsbuildinfo
 ````
 {"root":["./src/constraints.ts","./src/index.ts","./src/ordering.ts","./src/scene.ts","./src/semantic.ts","./src/timeline.ts","./src/trace.ts","./src/validate.ts"],"version":"5.9.3"}
+````
+
+## File: packages/renderer/src/engines/index.ts
+````typescript
+/**
+ * Renderer Engines
+ *
+ * Split architecture for TokovoRenderer:
+ * - Layout Engine: world + t → layout blueprint
+ * - Camera Engine: layout + events → camera transform
+ * - Audio Engine: world + t → audio state
+ * - Renderer: all outputs → JSX pixels
+ */
+
+export { useLayoutEngine, type LayoutEngineInput, type LayoutEngineOutput, NULL_LAYOUT_OUTPUT } from "./useLayoutEngine";
+export { useCameraEngine, type CameraEngineInput, type CameraEngineOutput } from "./useCameraEngine";
+export { useAudioEngine, type AudioEngineInput, type AudioEngineOutput, NULL_AUDIO_OUTPUT } from "./useAudioEngine";
 ````
 
 ## File: packages/renderer/src/layout/strategies/lockscreen.ts
@@ -24712,119 +28774,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
 };
 ````
 
-## File: packages/devices/src/iphone16/Frame.tsx
-````typescript
-import React from "react";
-import { iPhone16Profile } from "./profile";
-
-export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = iPhone16Profile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 165, // Scaled radius (55 * 3)
-            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Dynamic Island Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150, // Enough space for status bar
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "40px 60px 0 60px"
-            }}>
-                {/* Status Bar Content (Time, Battery, etc.) */}
-                {statusBar}
-            </div>
-
-            {/* Dynamic Island Cutout */}
-            <div style={{
-                position: "absolute",
-                top: 33, // 11 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 378, // 126 * 3
-                height: 111, // 37 * 3
-                backgroundColor: "black",
-                borderRadius: 60, // 20 * 3
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/devices/src/iphone16/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * iPhone 16 camera configuration
- * - Slow pan speed for cinematic feel on mobile
- * - High follow lag for smooth, less reactive tracking
- * - Tighter zoom range for portrait scrolling
- */
-const iPhone16Camera: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "slow",
-    followLag: "high",
-    snapThreshold: 40,
-    safeAreaTop: 110,      // Dynamic Island + status bar
-    safeAreaBottom: 102,   // Home indicator
-    followLagFactor: 0.7,  // Cinematic lag
-    panSpeedMultiplier: 0.6,
-};
-
-/**
- * iPhone 16 Device Profile
- * 
- * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
- * Dynamic Island: Centered at top, pill shape
- */
-export const iPhone16Profile: DeviceProfile = {
-    id: "iphone16",
-    platform: "ios",
-    dimensions: { width: 1290, height: 2796 },
-    statusBarHeight: 110,
-    camera: iPhone16Camera,
-
-    // Dynamic Island dimensions (measured from iPhone 16 specs)
-    dynamicIsland: {
-        centerX: 645,           // 1290 / 2 (centered)
-        topY: 36,               // Top padding
-        collapsedWidth: 370,    // Pill width
-        collapsedHeight: 110,   // Pill height
-        expandedWidth: 900,     // Expanded for Now Playing
-        expandedHeight: 220,    // Expanded height
-        cornerRadius: 55,       // Pill corners
-    },
-};
-````
-
 ## File: packages/devices/src/pixel/Frame.tsx
 ````typescript
 import React from "react";
@@ -24935,126 +28884,6 @@ export const PixelProfile: DeviceProfile = {
         height: 66,
     },
 };
-````
-
-## File: packages/devices/src/types.ts
-````typescript
-/**
- * Camera motion speed configuration
- */
-export type CameraSpeed = "slow" | "medium" | "fast";
-
-/**
- * Camera follow lag configuration
- * - high: More cinematic, camera lags significantly behind target
- * - medium: Balanced tracking
- * - low: Camera closely follows target (reactive)
- */
-export type CameraFollowLag = "high" | "medium" | "low";
-
-/**
- * Camera configuration for a specific device profile.
- * 
- * DESIGN PRINCIPLE: Device profiles define camera physics.
- * Apps do NOT override these values. Ever.
- */
-export interface CameraDeviceConfig {
-    // === Zoom Constraints ===
-    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
-    minZoom: number;
-    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
-    maxZoom: number;
-
-    // === Motion Characteristics ===
-    /** Pan speed for camera movement */
-    panSpeed: CameraSpeed;
-    /** Lag when following a target (soft tracking delay) */
-    followLag: CameraFollowLag;
-    /** Snap threshold in pixels - below this, snap instantly vs animate */
-    snapThreshold: number;
-
-    // === Safe Areas for Framing ===
-    /** Top safe area in pixels (status bar, notch, etc.) */
-    safeAreaTop: number;
-    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
-    safeAreaBottom: number;
-
-    // === Follow Easing (numeric values for computation) ===
-    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
-    followLagFactor: number;
-    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
-    panSpeedMultiplier: number;
-}
-
-/**
- * Default camera configuration for devices
- */
-export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 50,
-    safeAreaTop: 0,
-    safeAreaBottom: 0,
-    followLagFactor: 0.5,
-    panSpeedMultiplier: 1.0,
-};
-
-/**
- * Dynamic Island configuration (iOS 14+ iPhones)
- */
-export interface DynamicIslandConfig {
-    /** Center X position in device pixels */
-    centerX: number;
-    /** Top Y position */
-    topY: number;
-    /** Collapsed pill width */
-    collapsedWidth: number;
-    /** Collapsed pill height */
-    collapsedHeight: number;
-    /** Expanded width */
-    expandedWidth: number;
-    /** Expanded height */
-    expandedHeight: number;
-    /** Corner radius for pill shape */
-    cornerRadius: number;
-}
-
-/**
- * Status bar widget area (Android)
- */
-export interface StatusBarWidgetConfig {
-    /** Right edge X position */
-    rightX: number;
-    /** Top Y position */
-    topY: number;
-    /** Maximum width for indicators */
-    maxWidth: number;
-    /** Height of indicator area */
-    height: number;
-}
-
-/**
- * Device profile defining physical characteristics and camera behavior
- */
-export interface DeviceProfile {
-    id: string;
-    dimensions: { width: number; height: number };
-    statusBarHeight: number;
-
-    /** Platform type */
-    platform: "ios" | "android";
-
-    /** Camera behavior configuration (uses defaults if not specified) */
-    camera?: CameraDeviceConfig;
-
-    /** Dynamic Island configuration (iOS only) */
-    dynamicIsland?: DynamicIslandConfig;
-
-    /** Status bar widget configuration (Android only) */
-    statusBarWidget?: StatusBarWidgetConfig;
-}
 ````
 
 ## File: packages/dsl/src/author/camera-builder.ts
@@ -25859,6 +29688,215 @@ export function episode(
 }
 ````
 
+## File: packages/renderer/src/engines/useLayoutEngine.ts
+````typescript
+/**
+ * Layout Engine
+ *
+ * Pure computation layer that determines:
+ * - Which device is active
+ * - What view kind to display (CHAT, FEED, LOCKSCREEN, etc.)
+ * - Layout positions and scroll state
+ *
+ * Input: world + time
+ * Output: layout blueprint (no JSX)
+ *
+ * NOTE ON MEMOIZATION:
+ * This runs every frame because `world` reference changes on each frame.
+ * This is intentional - it's the Update Loop. Keep computations fast,
+ * avoid object allocations in loops.
+ */
+
+import { useMemo } from "react";
+import {
+    WorldState,
+    DeviceState,
+    LAYOUT,
+    DEFAULT_CAMERA_STATE,
+} from "@tokovo/core";
+import { computeLayout, LayoutState, ViewKind, LayoutContext } from "../layout";
+import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface LayoutEngineInput {
+    world: WorldState;
+    t: number;
+    focusDeviceId?: string;
+}
+
+export interface LayoutEngineOutput {
+    /** Active device ID */
+    deviceId: string;
+    /** Active device state */
+    device: DeviceState;
+    /** Foreground app ID (if any) */
+    appId: string | undefined;
+    /** What type of view to render */
+    viewKind: ViewKind;
+    /** Computed layout state (discriminated union - use layout.kind to narrow) */
+    layout: LayoutState;
+    /** Device profile (iPhone16, Pixel, etc.) */
+    profile: DeviceProfile;
+    /** Platform variant */
+    variant: "ios" | "android";
+    /** Active conversation (for chat views) */
+    activeConversationId?: string;
+    /** Active story (for story views) */
+    activeStoryId?: string;
+    /** Viewport height after accounting for header/input */
+    effectiveViewportHeight: number;
+    /** Whether this is a fallback/error state */
+    isError: boolean;
+}
+
+// =============================================================================
+// NULL LAYOUT (safe fallback when device not found)
+// =============================================================================
+
+const NULL_DEVICE: DeviceState = {
+    id: "__null__",
+    profileId: "iphone16",
+    isLocked: true,
+    notifications: [],
+};
+
+const NULL_LAYOUT: LayoutState = {
+    kind: "TRANSITION",
+    deviceTranslateX: 0,
+    deviceTranslateY: 0,
+    deviceScale: 1,
+    deviceRotation: 0,
+    overlayOpacity: 0,
+    meta: {},
+};
+
+export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
+    deviceId: "__null__",
+    device: NULL_DEVICE,
+    appId: undefined,
+    viewKind: "TRANSITION",
+    layout: NULL_LAYOUT,
+    profile: iPhone16Profile,
+    variant: "ios",
+    effectiveViewportHeight: iPhone16Profile.dimensions.height,
+    isError: true,
+};
+
+// =============================================================================
+// LAYOUT ENGINE HOOK
+// =============================================================================
+
+export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
+    const { world, t, focusDeviceId } = input;
+
+    return useMemo(() => {
+        // 1. Determine active device
+        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+        const device = world.devices[deviceId];
+
+        // Return safe fallback instead of crashing
+        if (!device) {
+            console.error(`[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`);
+            return NULL_LAYOUT_OUTPUT;
+        }
+
+        const appId = device.foregroundAppId;
+
+        // 2. Determine ViewKind
+        let viewKind: ViewKind = "TRANSITION";
+        let activeConversationId: string | undefined;
+        let activeStoryId: string | undefined;
+
+        if (device.isLocked) {
+            viewKind = "LOCKSCREEN";
+        } else if (appId) {
+            if (appId === "app_whatsapp") {
+                viewKind = "CHAT";
+                activeConversationId = Object.keys(world.conversations)[0];
+            } else if (appId === "app_instagram") {
+                const appState = world.appState?.["app_instagram"];
+                const currentView = appState?.currentView || "feed";
+
+                switch (currentView) {
+                    case "dm":
+                        viewKind = "CHAT";
+                        activeConversationId = Object.keys(world.conversations)[0];
+                        break;
+                    case "stories":
+                        viewKind = "STORY";
+                        activeStoryId = appState?.stories?.activeStoryId;
+                        break;
+                    case "feed":
+                    case "explore":
+                    case "profile":
+                    case "notifications":
+                    case "reels":
+                    case "post":
+                        viewKind = "FEED";
+                        break;
+                    default:
+                        viewKind = "FEED";
+                }
+            } else if (appId === "app_twitter") {
+                viewKind = "FEED";
+            }
+        } else {
+            // No app open, show home screen
+            viewKind = "HOMESCREEN";
+        }
+
+        // 3. Get device profile
+        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+        const isPixel = device.profileId.includes("pixel");
+        const variant: "ios" | "android" = isPixel ? "android" : "ios";
+
+        // 4. Compute keyboard height (for viewport shrink when typing)
+        const KEYBOARD_HEIGHT_IOS = 900;   // At 3x scale
+        const KEYBOARD_HEIGHT_ANDROID = 750;
+        const keyboardHeight = device.keyboard?.visible
+            ? (variant === "ios" ? KEYBOARD_HEIGHT_IOS : KEYBOARD_HEIGHT_ANDROID)
+            : 0;
+
+        // 5. Compute effective viewport height (shrinks when keyboard visible)
+        const effectiveViewportHeight = viewKind === "CHAT"
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT - keyboardHeight
+            : profile.dimensions.height;
+
+        // 5. Build layout context and compute layout
+        const layoutContext: LayoutContext = {
+            world,
+            t,
+            activeDeviceId: deviceId,
+            activeAppId: appId || "",
+            viewKind,
+            activeConversationId,
+            activeStoryId,
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: effectiveViewportHeight,
+        };
+
+        const layout = computeLayout(layoutContext);
+
+        return {
+            deviceId,
+            device,
+            appId,
+            viewKind,
+            layout,
+            profile,
+            variant,
+            activeConversationId,
+            activeStoryId,
+            effectiveViewportHeight,
+            isError: false,
+        };
+    }, [world, t, focusDeviceId]);
+}
+````
+
 ## File: packages/renderer/src/layout/config.ts
 ````typescript
 import { LayoutConfig } from "./types";
@@ -25915,6 +29953,35 @@ export const defaultLayoutConfig: LayoutConfig = {
         zoomDuration: 30
     }
 };
+````
+
+## File: packages/renderer/package.json
+````json
+{
+    "name": "@tokovo/renderer",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.211"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "@types/react-dom": "18.2.0"
+    }
+}
 ````
 
 ## File: apps/video-runner/src/FullCinematicShowcaseVideo.tsx
@@ -26931,6 +30998,18 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
 
 // Re-export specific views if needed externally, but InstagramApp is the main entry
 export { InstagramChatView };
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+export * from "./types";
+export * from "./runtime";
+export * from "./ui";
+export * from "./plugin";
+export * from "./components";
+export * from "./config";
+export * from "./camera";
+export * from "./notification-adapter";
 ````
 
 ## File: packages/apps-whatsapp/src/TypingBubble.tsx
@@ -28106,6 +32185,7 @@ export * from "./pixel/profile";
 export * from "./pixel/Frame";
 export * from "./reducer";
 export * from "./StatusBar";
+export * from "./keyboards";
 
 // Device profile registry for dynamic lookup
 import { DeviceProfile } from "./types";
@@ -28131,34 +32211,54 @@ export function getDeviceProfile(profileId: string): DeviceProfile {
 ## File: packages/devices/src/StatusBar.tsx
 ````typescript
 import React from "react";
+import { DeviceOSState } from "@tokovo/core";
 
 /**
- * Authentic iOS Status Bar Component
- * Pixel-perfect SVG icons for signal, WiFi, and battery
+ * StatusBar - Authentic iOS/Android status bar
+ * 
+ * Reads from DeviceOSState for:
+ * - Time (formatted from clock timestamp)
+ * - Battery percentage and charging state
+ * - Network type and signal strength
+ * - DND mode (moon icon)
  */
 
-// iOS Signal Bars (4 bars, varying heights)
-const SignalBarsIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+// =============================================================================
+// ICONS
+// =============================================================================
+
+// iOS Signal Bars (4 bars, varying heights based on strength)
+const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 4 // 0-4
+}) => (
     <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
-        <rect x="0" y="8" width="3" height="3" rx="0.5" />
-        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" />
-        <rect x="9" y="3" width="3" height="8" rx="0.5" />
-        <rect x="13.5" y="0" width="3" height="11" rx="0.5" />
+        <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
+        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
+        <rect x="13.5" y="0" width="3" height="11" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
     </svg>
 );
 
-// iOS WiFi Icon (3 arcs)
-const WifiIcon: React.FC<{ color?: string }> = ({ color = "currentColor" }) => (
+// iOS WiFi Icon (3 arcs based on strength)
+const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 3 // 0-3
+}) => (
     <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M1 4C4 1 12 1 15 4" />
-        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" />
-        <path d="M6 9C7 8 9 8 10 9" />
+        <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
+        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
         <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
     </svg>
 );
 
 // iOS Battery Icon
-const BatteryIcon: React.FC<{ color?: string; percentage?: number }> = ({ color = "currentColor", percentage = 100 }) => (
+const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
+    color = "currentColor",
+    percentage = 100,
+    charging = false
+}) => (
     <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
         {/* Battery body */}
         <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
@@ -28169,22 +32269,78 @@ const BatteryIcon: React.FC<{ color?: string; percentage?: number }> = ({ color 
             width={Math.max(0, (percentage / 100) * 18)}
             height="8"
             rx="1"
-            fill={percentage > 20 ? color : "#FF3B30"}
+            fill={percentage > 20 ? (charging ? "#34C759" : color) : "#FF3B30"}
         />
         {/* Battery cap */}
         <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
+        {/* Charging bolt */}
+        {charging && (
+            <path d="M11 2L8 6H11L10 10L13 6H10L11 2Z" fill="white" />
+        )}
     </svg>
 );
 
+// Network type label for cellular
+const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
+    const label = network === "wifi" ? null : network.toUpperCase();
+    if (!label) return null;
+    return (
+        <span style={{
+            fontSize: 36,
+            fontWeight: 600,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            marginRight: 6,
+            color,
+        }}>
+            {label}
+        </span>
+    );
+};
+
+// DND Moon Icon
+const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
+        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
+    </svg>
+);
+
+// =============================================================================
+// PROPS
+// =============================================================================
+
 interface StatusBarProps {
+    /** Device OS state (preferred - reads time, battery, network from here) */
+    os?: DeviceOSState;
+    /** Fallback: manual time string */
     time?: string;
-    variant?: "ios" | "android";
-    theme?: "light" | "dark";
+    /** Fallback: manual battery percentage */
     batteryPercentage?: number;
+    /** Platform variant */
+    variant?: "ios" | "android";
+    /** Theme */
+    theme?: "light" | "dark";
+    /** Notification icons (Android left side) */
     notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
 }
 
-// Notification icon component
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/** Format timestamp to HH:MM */
+function formatTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: false,
+    });
+}
+
+// =============================================================================
+// NOTIFICATION ICON
+// =============================================================================
+
 const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
     <div style={{ position: "relative" }}>
         <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
@@ -28208,16 +32364,31 @@ const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, co
     </div>
 );
 
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
 export const StatusBar: React.FC<StatusBarProps> = ({
+    os,
     time = "9:41",
+    batteryPercentage = 100,
     variant = "ios",
     theme = "light",
-    batteryPercentage = 100,
     notificationIcons = [],
 }) => {
+    // Read from device.os if available, otherwise use props
+    const displayTime = os ? formatTime(os.clock) : time;
+    const displayBattery = os ? os.battery : batteryPercentage;
+    const isCharging = os?.charging ?? false;
+    const network = os?.network ?? "wifi";
+    const wifiStrength = os?.wifiStrength ?? 3;
+    const cellStrength = os?.cellStrength ?? 4;
+    const isDND = os?.dnd ?? false;
+
     const isAndroid = variant === "android";
     const textColor = theme === "dark" ? "white" : "black";
 
+    // Android Status Bar
     if (isAndroid) {
         return (
             <div style={{
@@ -28238,8 +32409,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 fontFamily: "Roboto, sans-serif"
             }}>
                 <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span>{time}</span>
-                    {/* Notification icons (Android shows them on left) */}
+                    <span>{displayTime}</span>
                     {notificationIcons.slice(0, 5).map((n, i) => (
                         <NotificationIcon key={i} icon={n.icon} count={n.count} />
                     ))}
@@ -28248,9 +32418,11 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                     )}
                 </div>
                 <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                    <SignalBarsIcon color="white" />
-                    <WifiIcon color="white" />
-                    <BatteryIcon color="white" percentage={batteryPercentage} />
+                    {isDND && <DNDIcon color="white" />}
+                    {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
+                    <SignalBarsIcon color="white" strength={cellStrength} />
+                    {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
+                    <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
                 </div>
             </div>
         );
@@ -28260,7 +32432,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
     return (
         <div style={{
             width: "100%",
-            height: 132, // 44pt * 3
+            height: 132,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "flex-start",
@@ -28279,7 +32451,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
                 letterSpacing: 0.5
             }}>
-                {time}
+                {displayTime}
             </div>
 
             {/* Right side - Status icons */}
@@ -28289,32 +32461,36 @@ export const StatusBar: React.FC<StatusBarProps> = ({
                 alignItems: "center",
                 marginTop: 6
             }}>
-                <SignalBarsIcon color={textColor} />
-                <WifiIcon color={textColor} />
-                <BatteryIcon color={textColor} percentage={batteryPercentage} />
+                {isDND && <DNDIcon color={textColor} />}
+                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
+                <SignalBarsIcon color={textColor} strength={cellStrength} />
+                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
+                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
             </div>
         </div>
     );
 };
 
 /**
- * iOS Status Bar specifically styled for dark backgrounds (Instagram, etc.)
+ * iOS Status Bar specifically styled for dark backgrounds
  */
-export const DarkStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+export const DarkStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
     time = "9:41",
     batteryPercentage = 100
 }) => (
-    <StatusBar time={time} theme="dark" batteryPercentage={batteryPercentage} />
+    <StatusBar os={os} time={time} theme="dark" batteryPercentage={batteryPercentage} />
 );
 
 /**
- * iOS Status Bar specifically styled for light backgrounds (WhatsApp, etc.)
+ * iOS Status Bar specifically styled for light backgrounds
  */
-export const LightStatusBar: React.FC<{ time?: string; batteryPercentage?: number }> = ({
+export const LightStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
     time = "9:41",
     batteryPercentage = 100
 }) => (
-    <StatusBar time={time} theme="light" batteryPercentage={batteryPercentage} />
+    <StatusBar os={os} time={time} theme="light" batteryPercentage={batteryPercentage} />
 );
 ````
 
@@ -28518,312 +32694,6 @@ export { spotify, SpotifyTrackInfo, DEMO_TRACKS } from "./spotify-builder";
             "conversationId": "conv_1",
             "from": "me",
             "text": "Wow, this app is huge!"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/whatsapp-breakup-01.json
-````json
-{
-    "meta": {
-        "title": "WhatsApp Breakup Story - The End",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": true
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "type": "dm",
-                "name": "Alex ❤️",
-                "avatar": null,
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "me",
-                        "text": "Hey, are you free to talk?",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "There's something I need to tell you...",
-                        "type": "text",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {},
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 15,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 30,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Yeah I'm here, what's going on?"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "You're scaring me..."
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I've been thinking a lot lately"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "About us. About where this is going."
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "What do you mean? I thought everything was fine?"
-        },
-        {
-            "at": 330,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "It's not you. It's really not."
-        },
-        {
-            "at": 360,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I just don't think I can do this anymore"
-        },
-        {
-            "at": 390,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Are you breaking up with me??"
-        },
-        {
-            "at": 450,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Over TEXT?!"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I didn't know how else to say it"
-        },
-        {
-            "at": 510,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I'm sorry Alex. I really am."
-        },
-        {
-            "at": 540,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "After 2 years? You're doing this over WhatsApp?"
-        },
-        {
-            "at": 630,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I gave you everything 😢"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I know. And I'm grateful for every moment we had."
-        },
-        {
-            "at": 690,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "But I need to focus on myself right now"
-        },
-        {
-            "at": 720,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "..."
-        },
-        {
-            "at": 810,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I hope you find what you're looking for"
-        },
-        {
-            "at": 840,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Goodbye."
         }
     ]
 }
@@ -30074,84 +33944,6 @@ export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
 };
 ````
 
-## File: packages/renderer/package.json
-````json
-{
-    "name": "@tokovo/renderer",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.211"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "@types/react-dom": "18.2.0"
-    }
-}
-````
-
-## File: apps/video-runner/src/Video.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { exampleEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-
-export const Video: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: apps/video-runner/package.json
 ````json
 {
@@ -30173,6 +33965,7 @@ export const Video: React.FC = () => {
         "@tokovo/apps-twitter": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
         "@tokovo/episodes": "workspace:*",
         "@tokovo/renderer": "workspace:*",
         "react": "18.2.0",
@@ -30545,18 +34338,6 @@ export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?
         </div>
     );
 };
-````
-
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-export * from "./types";
-export * from "./runtime";
-export * from "./ui";
-export * from "./plugin";
-export * from "./components";
-export * from "./config";
-export * from "./camera";
-export * from "./notification-adapter";
 ````
 
 ## File: packages/core/src/camera/index.ts
@@ -31009,296 +34790,6 @@ export * from "./timeline";
 export * from "./presets";
 ````
 
-## File: packages/core/src/plugin.ts
-````typescript
-/**
- * Plugin System - Self-contained app registration
- * 
- * Apps register themselves as plugins with all their dependencies:
- * - UI components
- * - State reducers  
- * - Sound effects
- * - Event types they handle
- * - Platform-specific widgets (Dynamic Island, status bar)
- */
-
-import { WorldState, Notification, BackgroundAppState } from "./types";
-import { AppReducer, ReducerRegistry } from "./engine";
-import { Platform } from "./tokens";
-import type { NotificationAdapter } from "./notification-adapter";
-export type { NotificationAdapter };
-
-// =============================================================================
-// PLUGIN TYPES
-// =============================================================================
-
-/**
- * Props passed to all app view components
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: any;
-    platform?: "ios" | "android";
-    deviceId?: string;
-}
-
-/**
- * App view component type (generic, will be React.FC in renderer)
- */
-export type AppViewComponent = (props: AppViewProps) => any;
-
-// =============================================================================
-// WIDGET TYPES
-// =============================================================================
-
-/** Widget display modes */
-export type WidgetMode =
-    | "dynamicIsland"    // iOS Dynamic Island
-    | "statusBar"        // Android status bar indicator
-    | "lockscreen"       // Lock screen widget
-    | "notification";    // Notification banner
-
-// Platform type is re-exported from tokens.ts
-
-/**
- * Props passed to widget components
- */
-export interface WidgetProps {
-    /** App-specific state from world.appState[appId] */
-    appState: any;
-
-    /** Background app state (e.g., playing track info) */
-    backgroundApp?: BackgroundAppState;
-
-    /** Device profile for dimensions */
-    deviceProfile: {
-        dynamicIsland?: {
-            centerX: number;
-            topY: number;
-            collapsedWidth: number;
-            collapsedHeight: number;
-            expandedWidth: number;
-            expandedHeight: number;
-            cornerRadius: number;
-        };
-        statusBarWidget?: {
-            rightX: number;
-            topY: number;
-            maxWidth: number;
-            height: number;
-        };
-    };
-
-    /** Current frame */
-    currentFrame: number;
-
-    /** Widget expansion mode */
-    expansionMode: "minimal" | "compact" | "expanded";
-
-    /** Platform */
-    platform: Platform;
-}
-
-/**
- * Widget component type
- */
-export type WidgetComponent = (props: WidgetProps) => any;
-
-/**
- * Widget slot definition - describes one widget an app provides
- */
-export interface WidgetSlot {
-    /** Widget rendering mode */
-    mode: WidgetMode;
-
-    /** Which platforms this widget supports */
-    platforms: Platform[];
-
-    /** Priority when multiple widgets compete (higher wins) */
-    priority: number;
-
-    /** React component to render */
-    component: WidgetComponent;
-
-    /** Optional: expansion modes this widget supports */
-    expansionModes?: ("minimal" | "compact" | "expanded")[];
-}
-
-
-
-
-/**
- * Plugin definition - everything an app needs to function
- */
-export interface TokovoPlugin {
-    /** Unique app ID (e.g., "app_whatsapp") */
-    id: string;
-
-    /** Display name */
-    name: string;
-
-    /** Plugin version */
-    version: string;
-
-    /** App icon for notifications/home screen */
-    icon?: string;
-
-    /** Primary color for theming */
-    primaryColor?: string;
-
-    /** React component to render the app view */
-    appView?: AppViewComponent;
-
-    /** State reducer for APP events */
-    reducer?: AppReducer;
-
-    /** Event types this plugin handles */
-    eventTypes?: string[];
-
-    /** Sound effect mappings */
-    sounds?: Record<string, string>;
-
-    /** Notification sound */
-    notificationSound?: string;
-
-    /** Default app state */
-    defaultState?: any;
-
-    // === NEW: Widget System ===
-
-    /** Platform-specific widgets this app provides */
-    widgets?: WidgetSlot[];
-
-    /** Notification adapter for formatting */
-    notificationAdapter?: NotificationAdapter;
-}
-
-// =============================================================================
-// PLUGIN MANAGER
-// =============================================================================
-
-/**
- * PluginManager - Central registry for all app plugins
- */
-class PluginManagerClass {
-    private plugins = new Map<string, TokovoPlugin>();
-    private viewRegistry = new Map<string, AppViewComponent>();
-
-    /**
-     * Register a plugin
-     */
-    register(plugin: TokovoPlugin): void {
-        if (this.plugins.has(plugin.id)) {
-            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
-        }
-
-        this.plugins.set(plugin.id, plugin);
-
-        // Auto-register reducer
-        if (plugin.reducer) {
-            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-        }
-
-        // Store view component
-        if (plugin.appView) {
-            this.viewRegistry.set(plugin.id, plugin.appView);
-        }
-
-        // Auto-register widgets with WidgetRegistry
-        if (plugin.widgets && plugin.widgets.length > 0) {
-            // Import dynamically to avoid circular dependency
-            const { WidgetRegistry } = require("./widget-registry");
-            WidgetRegistry.register(plugin.id, plugin.widgets);
-            console.log(`[PluginManager] Registered ${plugin.widgets.length} widgets for: ${plugin.id}`);
-        }
-
-        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
-    }
-
-    /**
-     * Get a plugin by ID
-     */
-    get(id: string): TokovoPlugin | undefined {
-        return this.plugins.get(id);
-    }
-
-    /**
-     * Get app view component
-     */
-    getView(id: string): AppViewComponent | undefined {
-        return this.viewRegistry.get(id);
-    }
-
-    /**
-     * Get all registered plugins
-     */
-    getAll(): TokovoPlugin[] {
-        return Array.from(this.plugins.values());
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getAppIds(): string[] {
-        return Array.from(this.plugins.keys());
-    }
-
-    /**
-     * Check if plugin is registered
-     */
-    has(id: string): boolean {
-        return this.plugins.has(id);
-    }
-
-    /**
-     * Get plugin metadata for display
-     */
-    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
-        const plugin = this.plugins.get(id);
-        if (!plugin) return undefined;
-        return {
-            name: plugin.name,
-            icon: plugin.icon,
-            color: plugin.primaryColor,
-        };
-    }
-
-    /**
-     * Get sound for an event from plugin
-     */
-    getSound(pluginId: string, soundKey: string): string | undefined {
-        const plugin = this.plugins.get(pluginId);
-        return plugin?.sounds?.[soundKey];
-    }
-}
-
-export const PluginManager = new PluginManagerClass();
-
-// =============================================================================
-// PLUGIN HELPERS
-// =============================================================================
-
-/**
- * Create a plugin definition with defaults
- */
-export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
-    return {
-        ...config,
-        version: config.version ?? "1.0.0",
-        eventTypes: config.eventTypes ?? [],
-        sounds: config.sounds ?? {},
-    } as TokovoPlugin;
-}
-
-/**
- * Register multiple plugins at once
- */
-export function registerPlugins(plugins: TokovoPlugin[]): void {
-    plugins.forEach(plugin => PluginManager.register(plugin));
-}
-````
-
 ## File: packages/episodes/src/schema.ts
 ````typescript
 import { z } from "zod";
@@ -31700,325 +35191,295 @@ export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
 ````
 
-## File: packages/core/src/engine.ts
+## File: packages/core/src/plugin.ts
 ````typescript
-import { produce } from "immer";
-import {
-    TimelineEvent,
-    WorldState,
-    DeviceState,
-    CameraState,
-    ActiveCameraEffect,
-    DEFAULT_CAMERA_STATE,
-    DEFAULT_CAMERA_TRANSFORM,
-    DEFAULT_AUDIO_STATE,
-} from "./types";
-import { CameraController, createActiveEffect } from "./camera";
-import { TIMING } from "./constants";
+/**
+ * Plugin System - Self-contained app registration
+ * 
+ * Apps register themselves as plugins with all their dependencies:
+ * - UI components
+ * - State reducers  
+ * - Sound effects
+ * - Event types they handle
+ * - Platform-specific widgets (Dynamic Island, status bar)
+ */
 
-export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
-export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+import { WorldState, Notification, BackgroundAppState } from "./types";
+import { AppReducer, ReducerRegistry } from "./engine";
+import { Platform } from "./tokens";
+import type { NotificationAdapter } from "./notification-adapter";
+export type { NotificationAdapter };
+
+// =============================================================================
+// PLUGIN TYPES
+// =============================================================================
 
 /**
- * ReducerRegistry - Manages app and device reducers
- * 
- * This registry allows apps to self-register their event handlers.
- * The engine dispatches events to the appropriate registered reducers.
+ * Props passed to all app view components
  */
-class ReducerRegistryClass {
-    private _deviceReducer: DeviceReducer | null = null;
-    private _appReducers = new Map<string, AppReducer>();
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: any;
+    platform?: "ios" | "android";
+    deviceId?: string;
+}
+
+/**
+ * App view component type (generic, will be React.FC in renderer)
+ */
+export type AppViewComponent = (props: AppViewProps) => any;
+
+// =============================================================================
+// WIDGET TYPES
+// =============================================================================
+
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+// Platform type is re-exported from tokens.ts
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: any;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => any;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+
+
+
+/**
+ * Plugin definition - everything an app needs to function
+ */
+export interface TokovoPlugin {
+    /** Unique app ID (e.g., "app_whatsapp") */
+    id: string;
+
+    /** Display name */
+    name: string;
+
+    /** Plugin version */
+    version: string;
+
+    /** App icon for notifications/home screen */
+    icon?: string;
+
+    /** Primary color for theming */
+    primaryColor?: string;
+
+    /** React component to render the app view */
+    appView?: AppViewComponent;
+
+    /** State reducer for APP events */
+    reducer?: AppReducer;
+
+    /** Event types this plugin handles */
+    eventTypes?: string[];
+
+    /** Sound effect mappings */
+    sounds?: Record<string, string>;
+
+    /** Notification sound */
+    notificationSound?: string;
+
+    /** Default app state */
+    defaultState?: any;
+
+    // === NEW: Widget System ===
+
+    /** Platform-specific widgets this app provides */
+    widgets?: WidgetSlot[];
+
+    /** Notification adapter for formatting */
+    notificationAdapter?: NotificationAdapter;
+}
+
+// =============================================================================
+// PLUGIN MANAGER
+// =============================================================================
+
+/**
+ * PluginManager - Central registry for all app plugins
+ */
+class PluginManagerClass {
+    private plugins = new Map<string, TokovoPlugin>();
+    private viewRegistry = new Map<string, AppViewComponent>();
 
     /**
-     * Register a device reducer (handles DEVICE events)
+     * Register a plugin
      */
-    registerDeviceReducer(reducer: DeviceReducer): void {
-        this._deviceReducer = reducer;
-    }
-
-    /**
-     * Register an app reducer (handles APP events for a specific appId)
-     */
-    registerAppReducer(appId: string, reducer: AppReducer): void {
-        if (this._appReducers.has(appId)) {
-            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
+    register(plugin: TokovoPlugin): void {
+        if (this.plugins.has(plugin.id)) {
+            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
         }
-        this._appReducers.set(appId, reducer);
+
+        this.plugins.set(plugin.id, plugin);
+
+        // Auto-register reducer
+        if (plugin.reducer) {
+            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+        }
+
+        // Store view component
+        if (plugin.appView) {
+            this.viewRegistry.set(plugin.id, plugin.appView);
+        }
+
+        // Auto-register widgets with WidgetRegistry
+        if (plugin.widgets && plugin.widgets.length > 0) {
+            // Import at top level or use type-only to avoid circular dependency
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            import("./widget-registry").then(({ WidgetRegistry }) => {
+                WidgetRegistry.register(plugin.id, plugin.widgets!);
+                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
+            });
+        }
+
+        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
     }
 
     /**
-     * Get the device reducer
+     * Get a plugin by ID
      */
-    get deviceReducer(): DeviceReducer | null {
-        return this._deviceReducer;
+    get(id: string): TokovoPlugin | undefined {
+        return this.plugins.get(id);
     }
 
     /**
-     * Get an app reducer by appId
+     * Get app view component
      */
-    getAppReducer(appId: string): AppReducer | undefined {
-        return this._appReducers.get(appId);
+    getView(id: string): AppViewComponent | undefined {
+        return this.viewRegistry.get(id);
     }
 
     /**
-     * Check if an app reducer is registered
+     * Get all registered plugins
      */
-    hasAppReducer(appId: string): boolean {
-        return this._appReducers.has(appId);
+    getAll(): TokovoPlugin[] {
+        return Array.from(this.plugins.values());
     }
 
     /**
      * Get all registered app IDs
      */
-    getRegisteredApps(): string[] {
-        return Array.from(this._appReducers.keys());
+    getAppIds(): string[] {
+        return Array.from(this.plugins.keys());
     }
 
-    // Legacy compatibility - access appReducers as object
-    get appReducers(): Record<string, AppReducer> {
-        return Object.fromEntries(this._appReducers);
-    }
-}
-
-export const ReducerRegistry = new ReducerRegistryClass();
-
-// Camera controller instance - uses FPS from constants
-const cameraController = new CameraController(TIMING.FPS_DEFAULT);
-
-/**
- * Process camera event and update camera state
- */
-function processCameraEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "CAMERA" },
-    eventIndex: number
-): void {
-    // Ensure camera state exists with all required properties
-    if (!draft.camera || !draft.camera.activeEffects) {
-        draft.camera = { ...DEFAULT_CAMERA_STATE };
-    }
-    // Ensure layout exists
-    if (!draft.camera.layout) {
-        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
+    /**
+     * Check if plugin is registered
+     */
+    has(id: string): boolean {
+        return this.plugins.has(id);
     }
 
-    switch (event.type) {
-        case "SET_VIEW":
-            // Legacy support - just update base view
-            draft.camera.baseView = event.view.type;
-            draft.camera.appId = event.view.appId;
-            break;
-
-        case "CUT":
-            // Hard cut - reset all effects
-            draft.camera.activeEffects = [];
-            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-            // Switch to new device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId;
-                draft.camera.layout.primaryDeviceId = event.toDeviceId;
-            }
-
-            // Update base view if specified
-            if (event.toView) {
-                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
-            }
-            break;
-
-        case "LAYOUT":
-            // Change view layout mode
-            draft.camera.layout = {
-                mode: event.mode,
-                primaryDeviceId: event.primaryDeviceId,
-                secondaryDeviceId: event.secondaryDeviceId,
-                pipPosition: event.pipPosition,
-                pipScale: event.pipScale,
-            };
-            // Update active device to match primary
-            draft.camera.activeDeviceId = event.primaryDeviceId;
-            break;
-
-        case "ZOOM":
-        case "PAN":
-        case "SHAKE":
-        case "FOCUS":
-        case "RESET": {
-            // Create active effect and add to list
-            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
-            if (activeEffect) {
-                draft.camera.activeEffects.push(activeEffect);
-            }
-            break;
-        }
-    }
-}
-
-/**
- * Process audio event and update audio state
- */
-function processAudioEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "AUDIO" },
-    eventIndex: number
-): void {
-    // Ensure audio state exists
-    if (!draft.audio) {
-        draft.audio = { activeSounds: {} };
-    }
-
-    switch (event.type) {
-        case "PLAY_SOUND": {
-            // Generate instance ID if not provided
-            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
-
-            draft.audio.activeSounds[instanceId] = {
-                soundId: event.soundId,
-                startFrame: event.at,
-                volume: event.volume ?? 1,
-                loop: event.loop ?? false,
-                deviceId: event.deviceId,
-                duration: event.duration,
-            };
-            break;
-        }
-
-        case "STOP_SOUND": {
-            delete draft.audio.activeSounds[event.instanceId];
-            break;
-        }
-
-        case "FADE_VOLUME": {
-            const sound = draft.audio.activeSounds[event.instanceId];
-            if (sound) {
-                // Store target volume - renderer will interpolate
-                (sound as any).fadeTarget = event.toVolume;
-                (sound as any).fadeDuration = event.duration;
-                (sound as any).fadeStartFrame = event.at;
-            }
-            break;
-        }
-
-        case "BACKGROUND_MUSIC": {
-            draft.audio.backgroundMusic = {
-                soundId: event.soundId,
-                volume: event.volume ?? 0.5,
-                loop: event.loop ?? true,
-                startFrame: event.at,
-            };
-            break;
-        }
-    }
-}
-/**
- * Replay function - computes WorldState at time t by applying all events
- * 
- * This is called every frame by Remotion. Performance is critical.
- */
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    if (!initial) {
-        console.warn("[Engine] Replay called with undefined initial state");
+    /**
+     * Get plugin metadata for display
+     */
+    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+        const plugin = this.plugins.get(id);
+        if (!plugin) return undefined;
         return {
-            devices: {},
-            conversations: {},
-            appState: {},
-            camera: { ...DEFAULT_CAMERA_STATE },
-            audio: { ...DEFAULT_AUDIO_STATE }
+            name: plugin.name,
+            icon: plugin.icon,
+            color: plugin.primaryColor,
         };
     }
 
-    // Ensure initial state has proper camera and audio state
-    const initialWithCamera: WorldState = {
-        ...initial,
-        camera: initial.camera && 'activeEffects' in initial.camera
-            ? initial.camera
-            : {
-                ...DEFAULT_CAMERA_STATE,
-                baseView: (initial.camera as any)?.type || "APP_VIEW",
-                appId: (initial.camera as any)?.appId,
-            },
-        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
-    };
+    /**
+     * Get sound for an event from plugin
+     */
+    getSound(pluginId: string, soundKey: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.sounds?.[soundKey];
+    }
+}
 
-    // Filter events up to current time
-    const relevant = events.filter(e => e.at <= t);
+export const PluginManager = new PluginManagerClass();
 
-    // Event handlers by kind (Strategy Pattern)
-    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
-        switch (event.kind) {
-            case "DEVICE":
-                if (ReducerRegistry.deviceReducer) {
-                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-                }
-                break;
-            case "APP":
-                const reducer = ReducerRegistry.getAppReducer(event.appId);
-                reducer?.(draft, event);
-                break;
-            case "CAMERA":
-                processCameraEvent(draft, event, index);
-                break;
-            case "AUDIO":
-                processAudioEvent(draft, event, index);
-                break;
-        }
-    };
+// =============================================================================
+// PLUGIN HELPERS
+// =============================================================================
 
-    // Apply events to build state
-    const stateAfterEvents = relevant.reduce((state, event, index) => {
-        return produce(state, draft => {
-            handleEvent(draft, event, index);
-        });
-    }, initialWithCamera);
-
-    // Compute camera transform at current time t
-    // This filters active effects and composes them, per-device
-    return produce(stateAfterEvents, draft => {
-        // Clean up expired effects (optimization) - use constant
-        draft.camera.activeEffects = draft.camera.activeEffects.filter(
-            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
-        );
-
-        // Ensure deviceTransforms exists
-        if (!draft.camera.deviceTransforms) {
-            draft.camera.deviceTransforms = {};
-        }
-
-        // Compute transform for each device
-        for (const deviceId of Object.keys(draft.devices)) {
-            // Filter effects for this device (global effects + device-specific)
-            const deviceEffects = draft.camera.activeEffects.filter(
-                ae => !ae.deviceId || ae.deviceId === deviceId
-            );
-
-            // Create a temporary camera state with only this device's effects
-            const deviceCameraState = {
-                ...draft.camera,
-                activeEffects: deviceEffects,
-            };
-
-            // Compute transform for this device
-            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
-        }
-
-        // Primary device transform (for backward compatibility)
-        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
-        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
-    });
+/**
+ * Create a plugin definition with defaults
+ */
+export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
+    return {
+        ...config,
+        version: config.version ?? "1.0.0",
+        eventTypes: config.eventTypes ?? [],
+        sounds: config.sounds ?? {},
+    } as TokovoPlugin;
 }
 
 /**
- * Get default initial world state with camera
+ * Register multiple plugins at once
  */
-export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
-    return {
-        devices: {},
-        conversations: {},
-        appState: {},
-        camera: { ...DEFAULT_CAMERA_STATE },
-        audio: { ...DEFAULT_AUDIO_STATE },
-        ...partial,
-    };
+export function registerPlugins(plugins: TokovoPlugin[]): void {
+    plugins.forEach(plugin => PluginManager.register(plugin));
 }
 ````
 
@@ -32348,6 +35809,952 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 
 // Register itself with the core engine
 ReducerRegistry.registerDeviceReducer(deviceReducer);
+````
+
+## File: packages/apps-whatsapp/src/runtime.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+    // React and reply
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        // Voice-specific fields
+        duration?: number;
+        // Read receipt fields
+        messageId?: string;
+        // Navigation fields
+        screen?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
+        // Ensure appState exists for WhatsApp
+        if (!draft.appState) {
+            draft.appState = {};
+        }
+        if (!draft.appState.app_whatsapp) {
+            draft.appState.app_whatsapp = {};
+        }
+
+        // Update the current screen
+        const screen = appEvent.screen || "chat";
+        draft.appState.app_whatsapp.screen = screen;
+
+        // If navigating to a specific conversation
+        if (appEvent.conversationId) {
+            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
+            const msgPayload = appEvent.message || {};
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
+            const newMessage: WhatsAppMessage = {
+                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
+                text: appEvent.text || msgPayload.text,
+                at: event.at,
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
+            break;
+        }
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            if (appEvent.from) {
+                conversation.typing[appEvent.from] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            if (conversation.typing && appEvent.from) {
+                delete conversation.typing[appEvent.from];
+            }
+            break;
+        }
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            (conversation.messages as any[]).push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            } as WhatsAppMessage);
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
+                }
+            }
+            break;
+        }
+    }
+}
+
+// Register the reducer with the core engine
+ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
+````
+
+## File: packages/renderer/src/DeviceFrame.tsx
+````typescript
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { DeviceState } from "@tokovo/core";
+
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
+}
+
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
+    // Strategy pattern: Select frame component based on profile ID
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
+
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
+
+    return (
+        <FrameComponent {...frameProps} statusBar={statusBar}>
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)",
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
+````
+
+## File: packages/core/src/engine.ts
+````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    WorldState,
+    DeviceState,
+    CameraState,
+    ActiveCameraEffect,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_CAMERA_TRANSFORM,
+    DEFAULT_AUDIO_STATE,
+} from "./types";
+import { CameraController, createActiveEffect } from "./camera";
+import { TIMING } from "./constants";
+
+export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
+export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+
+/**
+ * ReducerRegistry - Manages app and device reducers
+ * 
+ * This registry allows apps to self-register their event handlers.
+ * The engine dispatches events to the appropriate registered reducers.
+ */
+class ReducerRegistryClass {
+    private _deviceReducer: DeviceReducer | null = null;
+    private _appReducers = new Map<string, AppReducer>();
+
+    /**
+     * Register a device reducer (handles DEVICE events)
+     */
+    registerDeviceReducer(reducer: DeviceReducer): void {
+        this._deviceReducer = reducer;
+    }
+
+    /**
+     * Register an app reducer (handles APP events for a specific appId)
+     */
+    registerAppReducer(appId: string, reducer: AppReducer): void {
+        if (this._appReducers.has(appId)) {
+            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
+        }
+        this._appReducers.set(appId, reducer);
+    }
+
+    /**
+     * Get the device reducer
+     */
+    get deviceReducer(): DeviceReducer | null {
+        return this._deviceReducer;
+    }
+
+    /**
+     * Get an app reducer by appId
+     */
+    getAppReducer(appId: string): AppReducer | undefined {
+        return this._appReducers.get(appId);
+    }
+
+    /**
+     * Check if an app reducer is registered
+     */
+    hasAppReducer(appId: string): boolean {
+        return this._appReducers.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._appReducers.keys());
+    }
+
+    // Legacy compatibility - access appReducers as object
+    get appReducers(): Record<string, AppReducer> {
+        return Object.fromEntries(this._appReducers);
+    }
+}
+
+export const ReducerRegistry = new ReducerRegistryClass();
+
+// Camera controller instance - uses FPS from constants
+const cameraController = new CameraController(TIMING.FPS_DEFAULT);
+
+/**
+ * Process camera event and update camera state
+ */
+function processCameraEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "CAMERA" },
+    eventIndex: number
+): void {
+    // Ensure camera state exists with all required properties
+    if (!draft.camera || !draft.camera.activeEffects) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
+    }
+
+    switch (event.type) {
+        case "SET_VIEW":
+            // Legacy support - just update base view
+            draft.camera.baseView = event.view.type;
+            draft.camera.appId = event.view.appId;
+            break;
+
+        case "CUT":
+            // Hard cut - reset all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId;
+                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            }
+
+            // Update base view if specified
+            if (event.toView) {
+                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: event.mode,
+                primaryDeviceId: event.primaryDeviceId,
+                secondaryDeviceId: event.secondaryDeviceId,
+                pipPosition: event.pipPosition,
+                pipScale: event.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = event.primaryDeviceId;
+            break;
+
+        case "ZOOM":
+        case "PAN":
+        case "SHAKE":
+        case "FOCUS":
+        case "RESET": {
+            // Create active effect and add to list
+            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            if (activeEffect) {
+                draft.camera.activeEffects.push(activeEffect);
+            }
+            break;
+        }
+    }
+}
+
+/**
+ * Process audio event and update audio state
+ */
+function processAudioEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "AUDIO" },
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.5, maxConcurrent: 1 },
+                ui: { baseGain: 0.7, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 8 },
+                voice: { baseGain: 1, maxConcurrent: 2 },
+            },
+        };
+    }
+
+    switch (event.type) {
+        case "PLAY_SOUND": {
+            // Generate instance ID if not provided
+            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+
+            draft.audio.activeSounds[instanceId] = {
+                soundId: event.soundId,
+                startFrame: event.at,
+                volume: event.volume ?? 1,
+                loop: event.loop ?? false,
+                deviceId: event.deviceId,
+                duration: event.duration,
+            };
+            break;
+        }
+
+        case "STOP_SOUND": {
+            delete draft.audio.activeSounds[event.instanceId];
+            break;
+        }
+
+        case "FADE_VOLUME": {
+            const sound = draft.audio.activeSounds[event.instanceId];
+            if (sound) {
+                // Store target volume - renderer will interpolate
+                (sound as any).fadeTarget = event.toVolume;
+                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeStartFrame = event.at;
+            }
+            break;
+        }
+
+        case "BACKGROUND_MUSIC": {
+            draft.audio.backgroundMusic = {
+                soundId: event.soundId,
+                volume: event.volume ?? 0.5,
+                loop: event.loop ?? true,
+                startFrame: event.at,
+            };
+            break;
+        }
+    }
+}
+
+/**
+ * Process keyboard event and update device keyboard state
+ */
+function processKeyboardEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "KEYBOARD" },
+    eventIndex: number
+): void {
+    // Keyboard events target a specific device
+    const deviceId = event.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize keyboard state if needed
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+        };
+    }
+
+    switch (event.type) {
+        case "SHOW":
+            device.keyboard.visible = true;
+            device.keyboard.layout = event.layout || "qwerty";
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+
+        case "HIDE":
+            device.keyboard.visible = false;
+            device.keyboard.currentKey = null;
+            break;
+
+        case "KEY_DOWN":
+            device.keyboard.currentKey = event.key;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "KEY_UP":
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR":
+            // Add character to input
+            const pos = device.keyboard.cursorPosition;
+            const text = device.keyboard.inputText;
+            device.keyboard.inputText = text.slice(0, pos) + event.char + text.slice(pos);
+            device.keyboard.cursorPosition = pos + 1;
+            device.keyboard.currentKey = event.char;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "BACKSPACE":
+            if (device.keyboard.cursorPosition > 0) {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                device.keyboard.inputText = text.slice(0, pos - 1) + text.slice(pos);
+                device.keyboard.cursorPosition = pos - 1;
+            }
+            device.keyboard.currentKey = "⌫";
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "SET_TEXT":
+            device.keyboard.inputText = event.text;
+            device.keyboard.cursorPosition = event.text.length;
+            break;
+
+        case "CLEAR":
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+    }
+}
+
+/**
+ * Process OS event and update device OS state
+ */
+function processOSEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "OS" }
+): void {
+    // OS events target a specific device or all devices
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize OS state if needed
+    if (!device.os) {
+        device.os = {
+            clock: Date.now(),
+            battery: 85,
+            charging: false,
+            network: "wifi",
+            wifiStrength: 3,
+            cellStrength: 4,
+            dnd: false,
+            lowPowerMode: false,
+            airplaneMode: false,
+        };
+    }
+
+    switch (event.type) {
+        case "SET_TIME":
+            device.os.clock = event.time;
+            break;
+
+        case "SET_BATTERY":
+            device.os.battery = Math.max(0, Math.min(100, event.level));
+            if ((event as any).charging !== undefined) {
+                device.os.charging = (event as any).charging;
+            }
+            break;
+
+        case "DRAIN_BATTERY":
+            // Rate is % per second at 30fps
+            const drain = (event as any).rate / 30;
+            device.os.battery = Math.max(0, device.os.battery - drain);
+            break;
+
+        case "SET_NETWORK":
+            device.os.network = event.network;
+            if ((event as any).strength !== undefined) {
+                if (event.network === "wifi") {
+                    device.os.wifiStrength = (event as any).strength;
+                } else {
+                    device.os.cellStrength = (event as any).strength;
+                }
+            }
+            break;
+
+        case "SET_DND":
+            device.os.dnd = event.enabled;
+            break;
+
+        case "SET_LOW_POWER":
+            device.os.lowPowerMode = (event as any).enabled;
+            break;
+
+        case "SET_AIRPLANE":
+            device.os.airplaneMode = (event as any).enabled;
+            if ((event as any).enabled) {
+                device.os.network = "no-service";
+                device.os.wifiStrength = 0;
+                device.os.cellStrength = 0;
+            }
+            break;
+    }
+}
+
+/**
+ * Process touch event and update world touches state
+ */
+function processTouchEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "TOUCH" },
+    t: number
+): void {
+    // Initialize touches array if needed
+    if (!draft.touches) {
+        draft.touches = [];
+    }
+
+    // Remove expired touches (older than 15 frames)
+    draft.touches = draft.touches.filter(touch => t - touch.startedAt < 15);
+
+    const touchId = `touch_${event.at}_${Math.random().toString(36).slice(2, 6)}`;
+
+    switch (event.type) {
+        case "TAP":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "tap",
+            });
+            break;
+
+        case "LONG_PRESS":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "long_press",
+            });
+            break;
+
+        case "DRAG":
+            draft.touches.push({
+                id: touchId,
+                x: (event as any).startX,
+                y: (event as any).startY,
+                startedAt: event.at,
+                type: "drag",
+                endX: (event as any).endX,
+                endY: (event as any).endY,
+            });
+            break;
+    }
+}
+
+/**
+ * Replay function - computes WorldState at time t by applying all events
+ * 
+ * This is called every frame by Remotion. Performance is critical.
+ */
+export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    if (!initial) {
+        console.warn("[Engine] Replay called with undefined initial state");
+        return {
+            devices: {},
+            conversations: {},
+            appState: {},
+            camera: { ...DEFAULT_CAMERA_STATE },
+            audio: { ...DEFAULT_AUDIO_STATE }
+        };
+    }
+
+    // Ensure initial state has proper camera and audio state
+    const initialWithCamera: WorldState = {
+        ...initial,
+        camera: initial.camera && 'activeEffects' in initial.camera
+            ? initial.camera
+            : {
+                ...DEFAULT_CAMERA_STATE,
+                baseView: (initial.camera as any)?.type || "APP_VIEW",
+                appId: (initial.camera as any)?.appId,
+            },
+        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
+    };
+
+    // Filter events up to current time
+    const relevant = events.filter(e => e.at <= t);
+
+    // Event handlers by kind (Strategy Pattern)
+    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
+        switch (event.kind) {
+            case "DEVICE":
+                if (ReducerRegistry.deviceReducer) {
+                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+                break;
+            case "APP":
+                const reducer = ReducerRegistry.getAppReducer(event.appId);
+                reducer?.(draft, event);
+                break;
+            case "CAMERA":
+                processCameraEvent(draft, event, index);
+                break;
+            case "AUDIO":
+                processAudioEvent(draft, event, index);
+                break;
+            case "KEYBOARD":
+                processKeyboardEvent(draft, event as any, index);
+                break;
+            case "OS":
+                processOSEvent(draft, event as any);
+                break;
+            case "TOUCH":
+                processTouchEvent(draft, event as any, t);
+                break;
+        }
+    };
+
+    // Apply events to build state
+    const stateAfterEvents = relevant.reduce((state, event, index) => {
+        return produce(state, draft => {
+            handleEvent(draft, event, index);
+        });
+    }, initialWithCamera);
+
+    // Compute camera transform at current time t
+    // This filters active effects and composes them, per-device
+    return produce(stateAfterEvents, draft => {
+        // Clean up expired effects (optimization) - use constant
+        draft.camera.activeEffects = draft.camera.activeEffects.filter(
+            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
+        );
+
+        // Ensure deviceTransforms exists
+        if (!draft.camera.deviceTransforms) {
+            draft.camera.deviceTransforms = {};
+        }
+
+        // Compute transform for each device
+        for (const deviceId of Object.keys(draft.devices)) {
+            // Filter effects for this device (global effects + device-specific)
+            const deviceEffects = draft.camera.activeEffects.filter(
+                ae => !ae.deviceId || ae.deviceId === deviceId
+            );
+
+            // Create a temporary camera state with only this device's effects
+            const deviceCameraState = {
+                ...draft.camera,
+                activeEffects: deviceEffects,
+            };
+
+            // Compute transform for this device
+            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+        }
+
+        // Primary device transform (for backward compatibility)
+        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
+    });
+}
+
+/**
+ * Get default initial world state with camera
+ */
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
+    return {
+        devices: {},
+        conversations: {},
+        appState: {},
+        camera: { ...DEFAULT_CAMERA_STATE },
+        audio: { ...DEFAULT_AUDIO_STATE },
+        ...partial,
+    };
+}
 ````
 
 ## File: packages/dsl/src/author/beat-builder.ts
@@ -33163,6 +37570,157 @@ export class BeatBuilder {
         return this;
     }
 
+    // =========================================================================
+    // KEYBOARD / TYPING SIMULATION
+    // =========================================================================
+
+    /**
+     * Typing speed presets (chars per second)
+     */
+    private static readonly TYPING_SPEEDS = {
+        slow: 4,      // 4 chars/sec - careful typing
+        casual: 7,    // 7 chars/sec - normal conversation
+        fast: 11,     // 11 chars/sec - quick reply
+        angry: 15,    // 15 chars/sec - frustrated typing
+    };
+
+    /**
+     * Show the virtual keyboard.
+     * @param layout - Keyboard layout (default: qwerty)
+     */
+    showKeyboard(layout?: "qwerty" | "numbers" | "symbols" | "emoji"): this {
+        this.ops.push({
+            kind: "ShowKeyboard" as const,
+            deviceId: this.deviceId,
+            layout: layout || "qwerty",
+        } as any);
+        return this;
+    }
+
+    /**
+     * Hide the virtual keyboard.
+     */
+    hideKeyboard(): this {
+        this.ops.push({
+            kind: "HideKeyboard" as const,
+            deviceId: this.deviceId,
+        } as any);
+        return this;
+    }
+
+    /**
+     * Simulate realistic typing with character-by-character animation.
+     * Includes optional typos and humanized timing.
+     * 
+     * @param text - Text to type
+     * @param options - Typing simulation options
+     */
+    simulateTyping(
+        text: string,
+        options?: {
+            speed?: "slow" | "casual" | "fast" | "angry";
+            typos?: number;           // Number of random typos
+            framesPerChar?: number;   // Override chars/sec
+        }
+    ): this {
+        const speed = options?.speed || "casual";
+        const charsPerSecond = BeatBuilder.TYPING_SPEEDS[speed];
+        const framesPerChar = options?.framesPerChar || Math.round(60 / charsPerSecond);
+
+        // Generate typing sequence with optional typos
+        const sequence = this.generateTypingSequence(text, options?.typos || 0);
+
+        // Build the operation
+        this.ops.push({
+            kind: "SimulateTyping" as const,
+            deviceId: this.deviceId,
+            text,
+            sequence,
+            framesPerChar,
+            speed,
+        } as any);
+
+        return this;
+    }
+
+    /**
+     * Generate typing sequence with humanized timing and optional typos.
+     * Returns array of { char, delay } pairs.
+     */
+    private generateTypingSequence(
+        text: string,
+        typoCount: number
+    ): Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }> {
+        const sequence: Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }> = [];
+
+        // Adjacent keys for typo generation
+        const adjacentKeys: Record<string, string[]> = {
+            a: ["q", "w", "s", "z"],
+            b: ["v", "g", "h", "n"],
+            c: ["x", "d", "f", "v"],
+            d: ["s", "e", "r", "f", "c", "x"],
+            e: ["w", "r", "d", "s"],
+            f: ["d", "r", "t", "g", "v", "c"],
+            g: ["f", "t", "y", "h", "b", "v"],
+            h: ["g", "y", "u", "j", "n", "b"],
+            i: ["u", "o", "k", "j"],
+            j: ["h", "u", "i", "k", "m", "n"],
+            k: ["j", "i", "o", "l", "m"],
+            l: ["k", "o", "p"],
+            m: ["n", "j", "k"],
+            n: ["b", "h", "j", "m"],
+            o: ["i", "p", "l", "k"],
+            p: ["o", "l"],
+            q: ["w", "a"],
+            r: ["e", "t", "f", "d"],
+            s: ["a", "w", "e", "d", "x", "z"],
+            t: ["r", "y", "g", "f"],
+            u: ["y", "i", "j", "h"],
+            v: ["c", "f", "g", "b"],
+            w: ["q", "e", "s", "a"],
+            x: ["z", "s", "d", "c"],
+            y: ["t", "u", "h", "g"],
+            z: ["a", "s", "x"],
+        };
+
+        // Pick random typo positions
+        const typoPositions = new Set<number>();
+        while (typoPositions.size < Math.min(typoCount, Math.floor(text.length / 3))) {
+            typoPositions.add(Math.floor(Math.random() * text.length));
+        }
+
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+
+            if (typoPositions.has(i) && adjacentKeys[char.toLowerCase()]) {
+                // Insert typo
+                const wrongKey = adjacentKeys[char.toLowerCase()][
+                    Math.floor(Math.random() * adjacentKeys[char.toLowerCase()].length)
+                ];
+                sequence.push({ char: wrongKey, isTypo: true });
+                // Backspace
+                sequence.push({ char: "⌫", isBackspace: true });
+                // Correct character
+                sequence.push({ char });
+            } else {
+                sequence.push({ char });
+            }
+        }
+
+        return sequence;
+    }
+
+    /**
+     * Clear the keyboard input text.
+     */
+    clearKeyboardText(): this {
+        this.ops.push({
+            kind: "ClearKeyboardText" as const,
+            deviceId: this.deviceId,
+        } as any);
+        return this;
+    }
+
     /**
      * Get collected operations.
      */
@@ -33677,6 +38235,47 @@ export interface BlockedUserOp {
 }
 
 // =============================================================================
+// KEYBOARD OPERATIONS
+// =============================================================================
+
+/**
+ * Show the virtual keyboard.
+ */
+export interface ShowKeyboardOp {
+    readonly kind: "ShowKeyboard";
+    readonly deviceId: string;
+    readonly layout?: "qwerty" | "numbers" | "symbols" | "emoji";
+}
+
+/**
+ * Hide the virtual keyboard.
+ */
+export interface HideKeyboardOp {
+    readonly kind: "HideKeyboard";
+    readonly deviceId: string;
+}
+
+/**
+ * Simulate realistic typing with character-by-character animation.
+ */
+export interface SimulateTypingOp {
+    readonly kind: "SimulateTyping";
+    readonly deviceId: string;
+    readonly text: string;
+    readonly sequence: Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }>;
+    readonly framesPerChar: number;
+    readonly speed: "slow" | "casual" | "fast" | "angry";
+}
+
+/**
+ * Clear the keyboard input text.
+ */
+export interface ClearKeyboardTextOp {
+    readonly kind: "ClearKeyboardText";
+    readonly deviceId: string;
+}
+
+// =============================================================================
 // NAVIGATION OPERATIONS
 // =============================================================================
 
@@ -33751,7 +38350,12 @@ export type SceneOp =
     | MissedCallOp
     | OnlineStatusChangedOp
     | ScreenshotTakenOp
-    | BlockedUserOp;
+    | BlockedUserOp
+    // Keyboard operations
+    | ShowKeyboardOp
+    | HideKeyboardOp
+    | SimulateTypingOp
+    | ClearKeyboardTextOp;
 
 // =============================================================================
 // SCENE (TOP LEVEL)
@@ -33832,379 +38436,6 @@ export interface EpisodeMeta extends EpisodeConfig {
 }
 ````
 
-## File: packages/renderer/src/DeviceFrame.tsx
-````typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices"; // Import profiles to look them up
-
-export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; notifications?: any[]; children: React.ReactNode; variant?: "ios" | "android" }> = ({ profileId, isLocked, notifications, children, variant }) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
-
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
-    }
-
-    return (
-        <FrameComponent {...frameProps} statusBar={<StatusBar time="10:41" variant={variant} />}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)", // Dimmed lock screen
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-
-                    {/* Notifications are now handled by NotificationOverlay via layout system */}
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                        {/* Placeholder for future lock screen widgets if needed */}
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
-};
-````
-
-## File: packages/apps-whatsapp/src/runtime.ts
-````typescript
-/**
- * WhatsApp Runtime Reducer
- * 
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
- * 
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
- */
-
-import {
-    TimelineEvent,
-    WorldState,
-    ReducerRegistry,
-    APP_IDS
-} from "@tokovo/core";
-
-// Extended message type for WhatsApp-specific features
-type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
-
-interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
-}
-
-interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-interface WhatsAppMessage {
-    id: string;
-    from: string;
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-    // React and reply
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    // Timestamp display
-    timestamp?: string;
-}
-
-/**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
- */
-function generateTimestamp(frame: number, messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
-
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * WhatsApp reducer - handles all WhatsApp events
- */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-    // Only handle APP events for WhatsApp
-    if (event.kind !== "APP") return;
-
-    // Type assertion for APP events with extended payload
-    const appEvent = event as TimelineEvent & {
-        appId: string;
-        conversationId?: string;
-        from?: string;
-        text?: string;
-        message?: Partial<WhatsAppMessage>;
-        // Media-specific fields
-        imageUrl?: string;
-        thumbnailUrl?: string;
-        videoUrl?: string;
-        gifUrl?: string;
-        caption?: string;
-        // Group-specific fields
-        memberId?: string;
-        memberName?: string;
-        addedBy?: string;
-        removedBy?: string;
-        // Voice-specific fields
-        duration?: number;
-        // Read receipt fields
-        messageId?: string;
-        // Navigation fields
-        screen?: string;
-    };
-
-    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
-
-    // Use string type for event.type to allow extended event types
-    const eventType = event.type as string;
-
-    // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        // Ensure appState exists for WhatsApp
-        if (!draft.appState) {
-            draft.appState = {};
-        }
-        if (!draft.appState.app_whatsapp) {
-            draft.appState.app_whatsapp = {};
-        }
-
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
-        draft.appState.app_whatsapp.screen = screen;
-
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
-        }
-
-        return;
-    }
-
-    // Get conversation ID from event
-    const conversationId = appEvent.conversationId;
-    if (!conversationId) return;
-
-    // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
-
-    switch (eventType) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT": {
-            const msgPayload = appEvent.message || {};
-            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
-
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
-
-            const newMessage: WhatsAppMessage = {
-                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
-                type: msgType,
-                text: appEvent.text || msgPayload.text,
-                at: event.at,
-                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
-                edited: msgPayload.edited,
-                timestamp,  // Dynamic timestamp
-            };
-
-            // Handle media-specific fields based on type
-            switch (msgType) {
-                case "image":
-                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "video":
-                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "gif":
-                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
-                    break;
-            }
-
-            (conversation.messages as any[]).push(newMessage);
-            break;
-        }
-
-        case "TYPING_START": {
-            if (!conversation.typing) conversation.typing = {};
-            if (appEvent.from) {
-                conversation.typing[appEvent.from] = true;
-            }
-            break;
-        }
-
-        case "TYPING_END": {
-            if (conversation.typing && appEvent.from) {
-                delete conversation.typing[appEvent.from];
-            }
-            break;
-        }
-
-        case "GROUP_MEMBER_ADDED": {
-            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: addedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: appEvent.memberId || "",
-                name: appEvent.memberName || ""
-            });
-            break;
-        }
-
-        case "GROUP_MEMBER_REMOVED": {
-            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: removedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: { id: string }) => m.id !== appEvent.memberId
-                );
-            }
-            break;
-        }
-
-        case "VOICE_MESSAGE_RECEIVED": {
-            (conversation.messages as any[]).push({
-                id: `voice_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
-                type: "voice",
-                duration: appEvent.duration,
-                at: event.at,
-                status: "delivered"
-            } as WhatsAppMessage);
-            break;
-        }
-
-        case "MESSAGE_READ": {
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
-                if (msg) {
-                    msg.status = "read";
-                }
-            }
-            break;
-        }
-
-        case "REACTION_ADDED": {
-            // Find the message and add/update the reaction
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
-                if (msg) {
-                    // Initialize reactions array if needed
-                    if (!msg.reactions) {
-                        msg.reactions = [];
-                    }
-
-                    const emoji = (appEvent as any).emoji || "❤️";
-                    const fromMe = (appEvent as any).fromMe || false;
-
-                    // Check if this emoji already exists
-                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
-                    if (existing) {
-                        existing.count += 1;
-                        if (fromMe) existing.fromMe = true;
-                    } else {
-                        msg.reactions.push({
-                            emoji,
-                            count: 1,
-                            fromMe,
-                        });
-                    }
-                }
-            }
-            break;
-        }
-    }
-}
-
-// Register the reducer with the core engine
-ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
-````
-
 ## File: packages/episodes/src/index.ts
 ````typescript
 import exampleEpisode from "./examples/whatsapp-breakup-01.json";
@@ -34222,46 +38453,6 @@ export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
 
 export * from "./schema";
 export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
-````
-
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-export * from "./engine";
-export * from "./tokens";
-export * from "./camera";
-export * from "./sounds";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./widget-registry";
-export * from "./notification-adapter";
-export * from "./notification-dsl";
-export * from "./transitions";
-export * from "./director-lite";
-export * from "./audio";
-````
-
-## File: packages/renderer/src/index.ts
-````typescript
-export { TokovoRenderer } from "./TokovoRenderer";
-export { DeviceFrame } from "./DeviceFrame";
-export { computeLayout } from "./layout";
-export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
-export { VisualDebugger } from "./VisualDebugger";
-export { NotificationOverlay } from "./NotificationOverlay";
-export { HeadsUpNotification } from "./HeadsUpNotification";
-export { CallOverlay } from "./CallOverlay";
-export { LockscreenView } from "./LockscreenView";
-export { HomeScreenView } from "./HomeScreenView";
-export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
-export { AudioLayer } from "./AudioLayer";
-export { UnlockTransition } from "./AppTransition";
-export { AppRegistry } from "./registry";
-export { DynamicIsland } from "./DynamicIsland";
-export { NotificationShade } from "./NotificationShade";
-export * from "./layout";
 ````
 
 ## File: packages/renderer/src/registry.ts
@@ -34348,6 +38539,52 @@ class AppRegistryClass {
 }
 
 export const AppRegistry = new AppRegistryClass();
+````
+
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+export * from "./engine";
+export * from "./tokens";
+export * from "./camera";
+export * from "./sounds";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./widget-registry";
+export * from "./notification-adapter";
+export * from "./notification-dsl";
+export * from "./transitions";
+export * from "./director-lite";
+export * from "./audio";
+````
+
+## File: packages/renderer/src/index.ts
+````typescript
+export { TokovoRenderer } from "./TokovoRenderer";
+export { DeviceFrame } from "./DeviceFrame";
+export { computeLayout } from "./layout";
+export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export { VisualDebugger } from "./VisualDebugger";
+export { NotificationOverlay } from "./NotificationOverlay";
+export { HeadsUpNotification } from "./HeadsUpNotification";
+export { CallOverlay } from "./CallOverlay";
+export { LockscreenView } from "./LockscreenView";
+export { HomeScreenView } from "./HomeScreenView";
+export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
+export { AudioLayer } from "./AudioLayer";
+export { UnlockTransition } from "./AppTransition";
+export { AppRegistry } from "./registry";
+export { DynamicIsland } from "./DynamicIsland";
+export { NotificationShade } from "./NotificationShade";
+export { TouchOverlay } from "./TouchOverlay";
+export * from "./layout";
+
+// Engine split exports
+export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
+export { NULL_LAYOUT_OUTPUT, NULL_AUDIO_OUTPUT } from "./engines";
+export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput, AudioEngineInput, AudioEngineOutput } from "./engines";
 ````
 
 ## File: packages/renderer/src/layout/strategies/chat.ts
@@ -35216,10 +39453,21 @@ import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
+import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
+import { FullRealityShowcase } from "./FullRealityShowcase";
+
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="FullRealityShowcase"
+                component={FullRealityShowcase}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="NotificationShowcase"
                 component={NotificationShowcaseVideo}
@@ -35364,363 +39612,17 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            <Composition
+                id="KeyboardTypingShowcase"
+                component={KeyboardTypingShowcase}
+                durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
         </>
     );
 };
-````
-
-## File: packages/renderer/src/TokovoRenderer.tsx
-````typescript
-import React from "react";
-import {
-    WorldState,
-    Notification,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
-    LAYOUT,
-    EventIndex,
-    getEventsInRange,
-    deriveDirectorEffects,
-    extractSignals,
-    ChatLayoutState,
-} from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
-import { AppRegistry } from "./registry";
-import { computeLayout } from "./layout";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
-import { VisualDebugger } from "./VisualDebugger";
-import { DynamicIsland } from "./DynamicIsland";
-import { Audio, staticFile } from "remotion";
-import { ViewKind, LayoutContext } from "./layout/types";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
-import { createDirectorLayoutModel } from "./layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "./camera-composer";
-
-/**
- * Configuration for heads-up notification behavior
- */
-interface NotificationConfig {
-    headsUpDuration?: number;       // frames before auto-dismiss (default: 150 = 5s at 30fps)
-    showHeadsUpWhenAppOpen?: boolean; // show when app is open (default: true)
-}
-
-/**
- * TokovoRenderer
- * Main rendering component that orchestrates device frame, app views, and overlays
- */
-export const TokovoRenderer: React.FC<{
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;  // Which device to render (for multi-device POV)
-    // DirectorLite integration
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-}> = ({
-    world,
-    t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
-    eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-}) => {
-        const {
-            headsUpDuration = 150,
-            showHeadsUpWhenAppOpen = true
-        } = notificationConfig;
-
-        // 1. Determine active device & app
-        // Use focusDeviceId if provided, otherwise use camera.activeDeviceId, fallback to first device
-        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
-        const device = world.devices[deviceId];
-
-        if (!device) {
-            console.warn(`[TokovoRenderer] Device not found: ${deviceId}`);
-            return null;
-        }
-
-        const appId = device.foregroundAppId;
-
-        // 2. Determine ViewKind
-        let viewKind: ViewKind = "TRANSITION";
-        let activeConversationId: string | undefined;
-        let activeStoryId: string | undefined;
-
-        if (device.isLocked) {
-            viewKind = "LOCKSCREEN";
-        } else if (appId) {
-            if (appId === "app_whatsapp") {
-                viewKind = "CHAT";
-                activeConversationId = Object.keys(world.conversations)[0];
-            } else if (appId === "app_instagram") {
-                const appState = world.appState?.["app_instagram"];
-                const currentView = appState?.currentView || "feed";
-
-                switch (currentView) {
-                    case "dm":
-                        viewKind = "CHAT";
-                        activeConversationId = Object.keys(world.conversations)[0];
-                        break;
-                    case "stories":
-                        viewKind = "STORY";
-                        activeStoryId = appState?.stories?.activeStoryId;
-                        break;
-                    case "feed":
-                    case "explore":
-                    case "profile":
-                    case "notifications":
-                    case "reels":
-                    case "post":
-                        viewKind = "FEED";
-                        break;
-                    default:
-                        viewKind = "FEED";
-                }
-            }
-        } else {
-            // No app open, show home screen
-            viewKind = "HOMESCREEN";
-        }
-
-        // 3. Compute Layout
-        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-
-        // For chat views, reduce viewport height to account for header and input area
-        // Use constants instead of magic numbers
-        const effectiveViewportHeight = viewKind === "CHAT"
-            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
-            : profile.dimensions.height;
-
-        const layoutContext: LayoutContext = {
-            world,
-            t,
-            activeDeviceId: deviceId,
-            activeAppId: appId || "",
-            viewKind,
-            activeConversationId,
-            activeStoryId,
-            viewportWidth: profile.dimensions.width,
-            viewportHeight: effectiveViewportHeight
-        };
-
-        const layout = computeLayout(layoutContext);
-
-        // 4. Select App View
-        let AppView = null;
-        if (appId && AppRegistry.views[appId]) {
-            AppView = AppRegistry.views[appId];
-        }
-
-        // 5. Determine Device Variant
-        const isPixel = device.profileId.includes("pixel");
-        const variant = isPixel ? "android" : "ios";
-
-        // 6. Get Base Camera Transform (from timeline events)
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        // 6b. DirectorLite Integration
-        let finalCameraTransform = baseCameraTransform;
-
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
-
-            // Signal window: past 90 frames, future 15 frames
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
-
-            // Create layout model from computed layout
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,  // viewportWidth
-                effectiveViewportHeight
-            );
-
-            // Derive effects (PURE FUNCTION - no state)
-            const { effects, debug: directorDebugOutput, skipped } = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
-                debug: directorDebug,
-                manualCameraEffects,
-            });
-
-            // Log debug info if enabled
-            if (directorDebug && directorDebugOutput) {
-                console.log(`[DirectorLite] t=${t}`, directorDebugOutput);
-            }
-
-            // Apply director effects if not skipped and effects exist
-            if (!skipped && effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(effects, viewport);
-            }
-        }
-
-        // 7. Build camera transform style
-        // The transform-origin uses the originX/originY from camera to zoom toward specific point
-        // Origin is in 0-1 range where (0.5, 0.5) is center
-        const cameraTransformString = `
-        translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-        scale(${finalCameraTransform.scale})
-        rotate(${finalCameraTransform.rotation}deg)
-    `.replace(/\s+/g, ' ').trim();
-
-        // Camera wrapper needs explicit dimensions for transform-origin to work correctly
-        // Use device profile dimensions
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            // No CSS transition - we handle all animation in JS for frame-perfect sync
-            transition: 'none',
-        };
-
-        // 8. Device-specific transforms (legacy layout system)
-        let deviceStyle: React.CSSProperties = {};
-
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
-
-        // 9. Find active notifications for heads-up display
-        const getActiveHeadsUpNotification = (): Notification | null => {
-            if (!device.notifications || device.isLocked) return null;
-            if (!showHeadsUpWhenAppOpen && appId) return null;
-
-            // Find the most recent notification that should show as heads-up
-            const headsUpNotifs = device.notifications.filter(n => {
-                // Check mode
-                const mode = n.mode || "both";
-                if (mode === "lockscreen") return false;
-
-                // Check if not dismissed and within display window
-                if (n.dismissedAt !== undefined) return false;
-
-                const timeSinceAppear = t - n.at;
-                if (timeSinceAppear < 0) return false; // Not yet visible
-                if (timeSinceAppear > headsUpDuration + 30) return false; // Past dismiss animation
-
-                // Don't show notification from current app
-                if (n.appId === appId) return false;
-
-                return true;
-            });
-
-            // Return the most recent one
-            return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-        };
-
-        const activeHeadsUp = getActiveHeadsUpNotification();
-
-        // 10. Check for active call
-        const hasActiveCall = device.call && device.call.status !== "ended";
-
-        return (
-            <div style={{
-                width: profile.dimensions.width,
-                height: profile.dimensions.height,
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                {/* Camera wrapper - applies cinematic transforms */}
-                <div style={cameraStyle}>
-                    {/* Device wrapper - applies layout transforms */}
-                    <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                        <DeviceFrame profileId={device.profileId} variant={variant}>
-                            {/* Call Overlay (takes precedence over everything) */}
-                            {hasActiveCall && (
-                                <CallOverlay
-                                    call={device.call!}
-                                    currentTime={t}
-                                    variant={variant}
-                                />
-                            )}
-
-                            {/* App View / Lockscreen / Home Screen */}
-                            {!hasActiveCall && AppView && !device.isLocked ? (
-                                <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
-                            ) : !hasActiveCall && device.isLocked ? (
-                                <LockscreenView
-                                    notifications={device.notifications}
-                                    layout={layout}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && device.homeScreen ? (
-                                <HomeScreenView
-                                    config={device.homeScreen}
-                                    variant={variant}
-                                />
-                            ) : !hasActiveCall && (
-                                <div style={{ flex: 1, backgroundColor: "black" }} />
-                            )}
-
-                            {/* Lockscreen Notification Overlay */}
-                            <NotificationOverlay
-                                notifications={device?.notifications}
-                                variant={variant}
-                                layout={layout}
-                            />
-
-                            {/* Heads-Up Notification (when unlocked) - SKIP on iOS when Dynamic Island handles it */}
-                            {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
-                                <HeadsUpNotification
-                                    notification={activeHeadsUp}
-                                    currentTime={t}
-                                    variant={variant}
-                                    autoDismissAfter={headsUpDuration}
-                                />
-                            )}
-
-                            {/* Dynamic Island (iOS) / Status Bar Widget (Android) */}
-                            {!device.isLocked && !hasActiveCall && (
-                                <DynamicIsland
-                                    device={device}
-                                    deviceProfile={profile}
-                                    world={world}
-                                    t={t}
-                                />
-                            )}
-                        </DeviceFrame>
-                    </div>
-                </div>
-
-                {debug && <VisualDebugger world={world} t={t} />}
-            </div>
-        );
-    };
 ````
 
 ## File: packages/core/src/types.ts
@@ -35918,6 +39820,96 @@ export interface CallState {
     endedAt?: number;
 }
 
+// KEYBOARD STATE
+// =============================================================================
+
+/** Keyboard layout types */
+export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
+
+/**
+ * KeyboardState - Virtual keyboard for realistic typing simulation
+ * 
+ * This is DEVICE-level state, shared across all apps.
+ * Apps read keyboard.inputText to show what's being typed.
+ */
+export interface KeyboardState {
+    /** Whether keyboard is visible */
+    visible: boolean;
+    /** Current keyboard layout */
+    layout: KeyboardLayout;
+    /** Currently pressed key (for highlight) */
+    currentKey: string | null;
+    /** Frame when key was pressed (for pop-up timing) */
+    keyPressedAt: number | null;
+    /** Current text in input field (character-by-character) */
+    inputText: string;
+    /** Cursor position within inputText */
+    cursorPosition: number;
+    /** Whether cursor should blink */
+    cursorVisible: boolean;
+}
+
+/** Default keyboard state */
+export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
+    visible: false,
+    layout: "qwerty",
+    currentKey: null,
+    keyPressedAt: null,
+    inputText: "",
+    cursorPosition: 0,
+    cursorVisible: true,
+};
+
+// =============================================================================
+// DEVICE OS STATE (Clock, Battery, Network, DND)
+// =============================================================================
+
+/** Network connection type */
+export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
+
+/**
+ * DeviceOSState - Operating system level state
+ * 
+ * Controls the "reality simulation" layer:
+ * - Time progression (status bar, message timestamps)
+ * - Battery drain and low power mode
+ * - Network conditions affecting message delivery
+ * - Do Not Disturb mode
+ */
+export interface DeviceOSState {
+    /** Current device time (Unix timestamp ms) */
+    clock: number;
+    /** Battery percentage (0-100) */
+    battery: number;
+    /** Whether device is charging */
+    charging: boolean;
+    /** Network connection type */
+    network: NetworkType;
+    /** WiFi signal strength (0-3) */
+    wifiStrength: number;
+    /** Cellular signal strength (0-4) */
+    cellStrength: number;
+    /** Do Not Disturb mode (suppresses heads-up notifications) */
+    dnd: boolean;
+    /** Low power mode enabled */
+    lowPowerMode: boolean;
+    /** Airplane mode enabled */
+    airplaneMode: boolean;
+}
+
+/** Default OS state (normal day, full battery, good network) */
+export const DEFAULT_OS_STATE: DeviceOSState = {
+    clock: Date.now(),
+    battery: 85,
+    charging: false,
+    network: "wifi",
+    wifiStrength: 3,
+    cellStrength: 4,
+    dnd: false,
+    lowPowerMode: false,
+    airplaneMode: false,
+};
+
 // =============================================================================
 // DEVICE STATE
 // =============================================================================
@@ -35941,6 +39933,12 @@ export interface DeviceState {
     homeScreen?: HomeScreenConfig;
     sound?: { activeSoundId?: string };
     theme?: DeviceTheme;
+
+    // === KEYBOARD (for typing simulation) ===
+    keyboard?: KeyboardState;
+
+    // === OS LAYER (clock, battery, network, DND) ===
+    os?: DeviceOSState;
 }
 
 
@@ -36437,6 +40435,26 @@ export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
     },
 };
 
+// =============================================================================
+// TOUCH STATE (for gesture visualization)
+// =============================================================================
+
+export interface TouchState {
+    /** Unique touch identifier */
+    id: string;
+    /** X coordinate */
+    x: number;
+    /** Y coordinate */
+    y: number;
+    /** Frame when touch started */
+    startedAt: number;
+    /** Touch type */
+    type: "tap" | "long_press" | "drag";
+    /** For drag: end coordinates */
+    endX?: number;
+    endY?: number;
+}
+
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
     conversations: Record<ConversationId, ConversationState>;
@@ -36444,6 +40462,8 @@ export interface WorldState {
     camera: CameraState;
     audio: AudioState;
     config?: VideoConfig;                   // Global video configuration
+    /** Active touch points for visualization */
+    touches?: TouchState[];
 }
 
 // Event Union
@@ -36515,6 +40535,7 @@ export type TimelineEvent =
     // App events - messaging
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
     | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_STATUS"; conversationId: ConversationId; messageId: string; status: "sending" | "sent" | "delivered" | "read" | "failed" }
     // App events - voice message
     | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
     | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
@@ -36539,12 +40560,34 @@ export type TimelineEvent =
     | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
     | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
     | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
+    // Keyboard events - TYPING SIMULATION
+    | { at: number; kind: "KEYBOARD"; type: "SHOW"; deviceId?: string; layout?: KeyboardLayout }
+    | { at: number; kind: "KEYBOARD"; type: "HIDE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_DOWN"; deviceId?: string; key: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_UP"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "TYPE_CHAR"; deviceId?: string; char: string }
+    | { at: number; kind: "KEYBOARD"; type: "BACKSPACE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "SET_TEXT"; deviceId?: string; text: string }
+    | { at: number; kind: "KEYBOARD"; type: "CLEAR"; deviceId?: string }
     // Transition events - SCREEN ANIMATIONS
     | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
     // Highlight events - MESSAGE EMPHASIS
     | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
     | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string };
+    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string }
+    // OS events - DEVICE SIMULATION
+    | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
+    | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
+    | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
+    | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
+    | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_AIRPLANE"; deviceId?: string; enabled: boolean }
+    // Touch events - GESTURE VISUALIZATION
+    | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
+    | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
 
 // --- Layout System Types ---
 
@@ -37589,12 +41632,27 @@ const MessageList: React.FC<MessageListProps> = ({
 
 interface InputAreaProps {
     text?: string;
+    /** Text from device.keyboard.inputText (character-by-character) */
+    keyboardText?: string;
+    /** Show blinking cursor at end */
+    showCursor?: boolean;
 }
 
-const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, platform = "ios" }) => {
-    // ... implementation ...
+const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({
+    text,
+    keyboardText,
+    showCursor = false,
+    platform = "ios"
+}) => {
     const config = getAppConfig("whatsapp", platform) as any;
     const tokens = getTokens(platform);
+
+    // Priority: keyboardText > text > placeholder
+    const displayText = keyboardText !== undefined ? keyboardText : text;
+    const hasContent = displayText && displayText.length > 0;
+
+    // Cursor blinks every 30 frames (0.5s at 60fps)
+    const cursorOpacity = showCursor ? 1 : 0;
 
     return (
         <div style={{
@@ -37618,16 +41676,28 @@ const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, p
                 display: "flex",
                 alignItems: "center",
                 fontSize: 48,
-                color: text ? config.inputTextColor : config.inputPlaceholderColor,
+                color: hasContent ? config.inputTextColor : config.inputPlaceholderColor,
                 fontFamily: tokens.fontFamily,
                 border: "1px solid #E5E5EA",
                 boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
             }}>
-                {text || "Message"}
+                {hasContent ? displayText : "Message"}
+                {/* Blinking cursor */}
+                {showCursor && keyboardText !== undefined && (
+                    <span style={{
+                        display: "inline-block",
+                        width: 3,
+                        height: 42,
+                        backgroundColor: "#007AFF",
+                        marginLeft: 2,
+                        opacity: cursorOpacity,
+                        animation: "blink 1s step-end infinite",
+                    }} />
+                )}
             </div>
 
             {/* Right icons */}
-            {text ? (
+            {hasContent ? (
                 <div style={{
                     width: 105,
                     height: 105,
@@ -38084,6 +42154,238 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
             <WhatsApp.InputArea text={draftText} />
             <HomeIndicator />
         </WhatsApp.Root>
+    );
+};
+````
+
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+/**
+ * TokovoRenderer
+ *
+ * Thin wiring layer that:
+ * 1. Calls Layout Engine to get layout blueprint
+ * 2. Calls Camera Engine to get camera transform
+ * 3. Paints JSX based on blueprints
+ *
+ * No compute logic — just orchestration and rendering.
+ */
+
+import React from "react";
+import {
+    WorldState,
+    Notification,
+    EventIndex,
+} from "@tokovo/core";
+import { DeviceFrame } from "./DeviceFrame";
+import { AppRegistry } from "./registry";
+import { NotificationOverlay } from "./NotificationOverlay";
+import { HeadsUpNotification } from "./HeadsUpNotification";
+import { CallOverlay } from "./CallOverlay";
+import { LockscreenView } from "./LockscreenView";
+import { HomeScreenView } from "./HomeScreenView";
+import { VisualDebugger } from "./VisualDebugger";
+import { DynamicIsland } from "./DynamicIsland";
+import { useLayoutEngine } from "./engines/useLayoutEngine";
+import { useCameraEngine } from "./engines/useCameraEngine";
+import { IOSKeyboard } from "@tokovo/devices";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface NotificationConfig {
+    headsUpDuration?: number;
+    showHeadsUpWhenAppOpen?: boolean;
+}
+
+interface TokovoRendererProps {
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+}
+
+// =============================================================================
+// TOKOVO RENDERER
+// =============================================================================
+
+export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+}) => {
+    const {
+        headsUpDuration = 150,
+        showHeadsUpWhenAppOpen = true,
+    } = notificationConfig;
+
+    // ==========================================================================
+    // 1. LAYOUT ENGINE — Get layout blueprint
+    // ==========================================================================
+    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+
+    // Handle error state (device not found)
+    if (layoutOutput.isError) {
+        return (
+            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
+                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
+                    Device not found
+                </div>
+            </div>
+        );
+    }
+
+    const {
+        deviceId,
+        device,
+        appId,
+        viewKind,
+        layout,
+        profile,
+        variant,
+    } = layoutOutput;
+
+    // ==========================================================================
+    // 2. CAMERA ENGINE — Get camera transform
+    // ==========================================================================
+    const cameraOutput = useCameraEngine({
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled,
+        directorDebug,
+    });
+
+    const { cameraStyle, deviceStyle } = cameraOutput;
+
+    // ==========================================================================
+    // 3. HELPER: Find active heads-up notification
+    // ==========================================================================
+    const getActiveHeadsUpNotification = (): Notification | null => {
+        if (!device.notifications || device.isLocked) return null;
+        if (!showHeadsUpWhenAppOpen && appId) return null;
+
+        const headsUpNotifs = device.notifications.filter(n => {
+            const mode = n.mode || "both";
+            if (mode === "lockscreen") return false;
+            if (n.dismissedAt !== undefined) return false;
+
+            const timeSinceAppear = t - n.at;
+            if (timeSinceAppear < 0) return false;
+            if (timeSinceAppear > headsUpDuration + 30) return false;
+            if (n.appId === appId) return false;
+
+            return true;
+        });
+
+        return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
+    };
+
+    const activeHeadsUp = getActiveHeadsUpNotification();
+    const hasActiveCall = device.call && device.call.status !== "ended";
+
+    // ==========================================================================
+    // 4. SELECT APP VIEW
+    // ==========================================================================
+    let AppView = null;
+    if (appId && AppRegistry.views[appId]) {
+        AppView = AppRegistry.views[appId];
+    }
+
+    // ==========================================================================
+    // 5. RENDER — Paint the blueprints
+    // ==========================================================================
+    return (
+        <div style={{
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            position: "relative",
+            overflow: "hidden",
+        }}>
+            {/* Camera wrapper — applies cinematic transforms */}
+            <div style={cameraStyle}>
+                {/* Device wrapper — applies layout transforms */}
+                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                    <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
+                        {/* Call Overlay (takes precedence) */}
+                        {hasActiveCall && (
+                            <CallOverlay
+                                call={device.call!}
+                                currentTime={t}
+                                variant={variant}
+                            />
+                        )}
+
+                        {/* App View / Lockscreen / Home Screen */}
+                        {!hasActiveCall && AppView && !device.isLocked ? (
+                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                        ) : !hasActiveCall && device.isLocked ? (
+                            <LockscreenView
+                                notifications={device.notifications}
+                                layout={layout}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && device.homeScreen ? (
+                            <HomeScreenView
+                                config={device.homeScreen}
+                                variant={variant}
+                            />
+                        ) : !hasActiveCall && (
+                            <div style={{ flex: 1, backgroundColor: "black" }} />
+                        )}
+
+                        {/* Lockscreen Notification Overlay */}
+                        <NotificationOverlay
+                            notifications={device?.notifications}
+                            variant={variant}
+                            layout={layout}
+                        />
+
+                        {/* Heads-Up Notification */}
+                        {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
+                            <HeadsUpNotification
+                                notification={activeHeadsUp}
+                                currentTime={t}
+                                variant={variant}
+                                autoDismissAfter={headsUpDuration}
+                            />
+                        )}
+
+                        {/* Dynamic Island (iOS) */}
+                        {!device.isLocked && !hasActiveCall && (
+                            <DynamicIsland
+                                device={device}
+                                deviceProfile={profile}
+                                world={world}
+                                t={t}
+                            />
+                        )}
+
+                        {/* Virtual Keyboard (when visible) */}
+                        {device.keyboard?.visible && (
+                            <IOSKeyboard
+                                keyboard={device.keyboard}
+                                variant={variant === "ios" ? "light" : "light"}
+                                t={t}
+                            />
+                        )}
+                    </DeviceFrame>
+                </div>
+            </div>
+
+            {debug && <VisualDebugger world={world} t={t} />}
+        </div>
     );
 };
 ````
