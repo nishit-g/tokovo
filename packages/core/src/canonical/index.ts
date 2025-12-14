@@ -309,3 +309,21 @@ export {
     compareVersions,
     formatVersionInfo,
 } from "./version";
+
+// =============================================================================
+// ENGINE
+// =============================================================================
+
+export type {
+    EngineConfig,
+    TokovoEngine,
+    Checkpoint,
+    ReplayCache,
+    ValidationMode,
+} from "./engine";
+
+export {
+    createEngine,
+    createReplayCache,
+    buildWorldCached,
+} from "./engine";

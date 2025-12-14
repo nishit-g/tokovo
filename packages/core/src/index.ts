@@ -14,3 +14,5 @@ export * from "./transitions";
 export * from "./director-lite";
 export * from "./audio";
 
+// Canonical event system (v4 architecture)
+export * as canonical from "./canonical";
