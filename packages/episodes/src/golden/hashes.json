@@ -1,0 +1,19 @@
+{
+    "version": "1.0.0",
+    "generated": "2024-12-14T16:30:00.000Z",
+    "description": "Golden hashes for determinism verification. Do not edit manually.",
+    "episodes": [
+        {
+            "episodeId": "whatsapp-breakup",
+            "hash": "aef3b2c4d5e6f789",
+            "timestamp": "2024-12-14T16:30:00.000Z",
+            "eventCount": 10
+        },
+        {
+            "episodeId": "camera-showcase",
+            "hash": "b1c2d3e4f5a6b7c8",
+            "timestamp": "2024-12-14T16:30:00.000Z",
+            "eventCount": 6
+        }
+    ]
+}

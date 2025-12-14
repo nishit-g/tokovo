@@ -4,13 +4,16 @@
     "main": "./src/index.ts",
     "types": "./src/index.ts",
     "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
+        "lint": "eslint . --ext .ts,.tsx",
+        "test": "vitest run",
+        "test:watch": "vitest"
     },
     "dependencies": {
         "immer": "^10.0.0"
     },
     "devDependencies": {
+        "@types/node": "^20.0.0",
         "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
+        "vitest": "^1.6.1"
     }
 }
