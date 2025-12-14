@@ -15,3 +15,8 @@ export { AppRegistry } from "./registry";
 export { DynamicIsland } from "./DynamicIsland";
 export { NotificationShade } from "./NotificationShade";
 export * from "./layout";
+
+// Engine split exports
+export { useLayoutEngine, useCameraEngine } from "./engines";
+export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput } from "./engines";
+
