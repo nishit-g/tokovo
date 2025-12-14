@@ -809,6 +809,157 @@ export class BeatBuilder {
         return this;
     }
 
+    // =========================================================================
+    // KEYBOARD / TYPING SIMULATION
+    // =========================================================================
+
+    /**
+     * Typing speed presets (chars per second)
+     */
+    private static readonly TYPING_SPEEDS = {
+        slow: 4,      // 4 chars/sec - careful typing
+        casual: 7,    // 7 chars/sec - normal conversation
+        fast: 11,     // 11 chars/sec - quick reply
+        angry: 15,    // 15 chars/sec - frustrated typing
+    };
+
+    /**
+     * Show the virtual keyboard.
+     * @param layout - Keyboard layout (default: qwerty)
+     */
+    showKeyboard(layout?: "qwerty" | "numbers" | "symbols" | "emoji"): this {
+        this.ops.push({
+            kind: "ShowKeyboard" as const,
+            deviceId: this.deviceId,
+            layout: layout || "qwerty",
+        } as any);
+        return this;
+    }
+
+    /**
+     * Hide the virtual keyboard.
+     */
+    hideKeyboard(): this {
+        this.ops.push({
+            kind: "HideKeyboard" as const,
+            deviceId: this.deviceId,
+        } as any);
+        return this;
+    }
+
+    /**
+     * Simulate realistic typing with character-by-character animation.
+     * Includes optional typos and humanized timing.
+     * 
+     * @param text - Text to type
+     * @param options - Typing simulation options
+     */
+    simulateTyping(
+        text: string,
+        options?: {
+            speed?: "slow" | "casual" | "fast" | "angry";
+            typos?: number;           // Number of random typos
+            framesPerChar?: number;   // Override chars/sec
+        }
+    ): this {
+        const speed = options?.speed || "casual";
+        const charsPerSecond = BeatBuilder.TYPING_SPEEDS[speed];
+        const framesPerChar = options?.framesPerChar || Math.round(60 / charsPerSecond);
+
+        // Generate typing sequence with optional typos
+        const sequence = this.generateTypingSequence(text, options?.typos || 0);
+
+        // Build the operation
+        this.ops.push({
+            kind: "SimulateTyping" as const,
+            deviceId: this.deviceId,
+            text,
+            sequence,
+            framesPerChar,
+            speed,
+        } as any);
+
+        return this;
+    }
+
+    /**
+     * Generate typing sequence with humanized timing and optional typos.
+     * Returns array of { char, delay } pairs.
+     */
+    private generateTypingSequence(
+        text: string,
+        typoCount: number
+    ): Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }> {
+        const sequence: Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }> = [];
+
+        // Adjacent keys for typo generation
+        const adjacentKeys: Record<string, string[]> = {
+            a: ["q", "w", "s", "z"],
+            b: ["v", "g", "h", "n"],
+            c: ["x", "d", "f", "v"],
+            d: ["s", "e", "r", "f", "c", "x"],
+            e: ["w", "r", "d", "s"],
+            f: ["d", "r", "t", "g", "v", "c"],
+            g: ["f", "t", "y", "h", "b", "v"],
+            h: ["g", "y", "u", "j", "n", "b"],
+            i: ["u", "o", "k", "j"],
+            j: ["h", "u", "i", "k", "m", "n"],
+            k: ["j", "i", "o", "l", "m"],
+            l: ["k", "o", "p"],
+            m: ["n", "j", "k"],
+            n: ["b", "h", "j", "m"],
+            o: ["i", "p", "l", "k"],
+            p: ["o", "l"],
+            q: ["w", "a"],
+            r: ["e", "t", "f", "d"],
+            s: ["a", "w", "e", "d", "x", "z"],
+            t: ["r", "y", "g", "f"],
+            u: ["y", "i", "j", "h"],
+            v: ["c", "f", "g", "b"],
+            w: ["q", "e", "s", "a"],
+            x: ["z", "s", "d", "c"],
+            y: ["t", "u", "h", "g"],
+            z: ["a", "s", "x"],
+        };
+
+        // Pick random typo positions
+        const typoPositions = new Set<number>();
+        while (typoPositions.size < Math.min(typoCount, Math.floor(text.length / 3))) {
+            typoPositions.add(Math.floor(Math.random() * text.length));
+        }
+
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+
+            if (typoPositions.has(i) && adjacentKeys[char.toLowerCase()]) {
+                // Insert typo
+                const wrongKey = adjacentKeys[char.toLowerCase()][
+                    Math.floor(Math.random() * adjacentKeys[char.toLowerCase()].length)
+                ];
+                sequence.push({ char: wrongKey, isTypo: true });
+                // Backspace
+                sequence.push({ char: "⌫", isBackspace: true });
+                // Correct character
+                sequence.push({ char });
+            } else {
+                sequence.push({ char });
+            }
+        }
+
+        return sequence;
+    }
+
+    /**
+     * Clear the keyboard input text.
+     */
+    clearKeyboardText(): this {
+        this.ops.push({
+            kind: "ClearKeyboardText" as const,
+            deviceId: this.deviceId,
+        } as any);
+        return this;
+    }
+
     /**
      * Get collected operations.
      */

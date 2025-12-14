@@ -161,9 +161,16 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         const isPixel = device.profileId.includes("pixel");
         const variant: "ios" | "android" = isPixel ? "android" : "ios";
 
-        // 4. Compute effective viewport height
+        // 4. Compute keyboard height (for viewport shrink when typing)
+        const KEYBOARD_HEIGHT_IOS = 900;   // At 3x scale
+        const KEYBOARD_HEIGHT_ANDROID = 750;
+        const keyboardHeight = device.keyboard?.visible
+            ? (variant === "ios" ? KEYBOARD_HEIGHT_IOS : KEYBOARD_HEIGHT_ANDROID)
+            : 0;
+
+        // 5. Compute effective viewport height (shrinks when keyboard visible)
         const effectiveViewportHeight = viewKind === "CHAT"
-            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT - keyboardHeight
             : profile.dimensions.height;
 
         // 5. Build layout context and compute layout

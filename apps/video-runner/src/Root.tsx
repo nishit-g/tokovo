@@ -18,6 +18,7 @@ import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
+import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
 
 export const RemotionRoot: React.FC = () => {
     return (
@@ -161,6 +162,14 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="WhatsappPsychoticDemo"
                 component={WhatsappPsychoticDemoVideo}
+                durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="KeyboardTypingShowcase"
+                component={KeyboardTypingShowcase}
                 durationInFrames={600}
                 fps={30}
                 width={1080}

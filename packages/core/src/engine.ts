@@ -206,6 +206,88 @@ function processAudioEvent(
         }
     }
 }
+
+/**
+ * Process keyboard event and update device keyboard state
+ */
+function processKeyboardEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "KEYBOARD" },
+    eventIndex: number
+): void {
+    // Keyboard events target a specific device
+    const deviceId = event.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize keyboard state if needed
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+        };
+    }
+
+    switch (event.type) {
+        case "SHOW":
+            device.keyboard.visible = true;
+            device.keyboard.layout = event.layout || "qwerty";
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+
+        case "HIDE":
+            device.keyboard.visible = false;
+            device.keyboard.currentKey = null;
+            break;
+
+        case "KEY_DOWN":
+            device.keyboard.currentKey = event.key;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "KEY_UP":
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR":
+            // Add character to input
+            const pos = device.keyboard.cursorPosition;
+            const text = device.keyboard.inputText;
+            device.keyboard.inputText = text.slice(0, pos) + event.char + text.slice(pos);
+            device.keyboard.cursorPosition = pos + 1;
+            device.keyboard.currentKey = event.char;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "BACKSPACE":
+            if (device.keyboard.cursorPosition > 0) {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                device.keyboard.inputText = text.slice(0, pos - 1) + text.slice(pos);
+                device.keyboard.cursorPosition = pos - 1;
+            }
+            device.keyboard.currentKey = "⌫";
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "SET_TEXT":
+            device.keyboard.inputText = event.text;
+            device.keyboard.cursorPosition = event.text.length;
+            break;
+
+        case "CLEAR":
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+    }
+}
 /**
  * Replay function - computes WorldState at time t by applying all events
  * 
@@ -256,6 +338,9 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 break;
             case "AUDIO":
                 processAudioEvent(draft, event, index);
+                break;
+            case "KEYBOARD":
+                processKeyboardEvent(draft, event as any, index);
                 break;
         }
     };

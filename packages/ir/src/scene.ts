@@ -434,6 +434,47 @@ export interface BlockedUserOp {
 }
 
 // =============================================================================
+// KEYBOARD OPERATIONS
+// =============================================================================
+
+/**
+ * Show the virtual keyboard.
+ */
+export interface ShowKeyboardOp {
+    readonly kind: "ShowKeyboard";
+    readonly deviceId: string;
+    readonly layout?: "qwerty" | "numbers" | "symbols" | "emoji";
+}
+
+/**
+ * Hide the virtual keyboard.
+ */
+export interface HideKeyboardOp {
+    readonly kind: "HideKeyboard";
+    readonly deviceId: string;
+}
+
+/**
+ * Simulate realistic typing with character-by-character animation.
+ */
+export interface SimulateTypingOp {
+    readonly kind: "SimulateTyping";
+    readonly deviceId: string;
+    readonly text: string;
+    readonly sequence: Array<{ char: string; isTypo?: boolean; isBackspace?: boolean }>;
+    readonly framesPerChar: number;
+    readonly speed: "slow" | "casual" | "fast" | "angry";
+}
+
+/**
+ * Clear the keyboard input text.
+ */
+export interface ClearKeyboardTextOp {
+    readonly kind: "ClearKeyboardText";
+    readonly deviceId: string;
+}
+
+// =============================================================================
 // NAVIGATION OPERATIONS
 // =============================================================================
 
@@ -508,7 +549,12 @@ export type SceneOp =
     | MissedCallOp
     | OnlineStatusChangedOp
     | ScreenshotTakenOp
-    | BlockedUserOp;
+    | BlockedUserOp
+    // Keyboard operations
+    | ShowKeyboardOp
+    | HideKeyboardOp
+    | SimulateTypingOp
+    | ClearKeyboardTextOp;
 
 // =============================================================================
 // SCENE (TOP LEVEL)

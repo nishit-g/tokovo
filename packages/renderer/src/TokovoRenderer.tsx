@@ -26,6 +26,7 @@ import { VisualDebugger } from "./VisualDebugger";
 import { DynamicIsland } from "./DynamicIsland";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
+import { IOSKeyboard } from "@tokovo/devices";
 
 // =============================================================================
 // TYPES
@@ -205,6 +206,15 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                                 device={device}
                                 deviceProfile={profile}
                                 world={world}
+                                t={t}
+                            />
+                        )}
+
+                        {/* Virtual Keyboard (when visible) */}
+                        {device.keyboard?.visible && (
+                            <IOSKeyboard
+                                keyboard={device.keyboard}
+                                variant={variant === "ios" ? "light" : "light"}
                                 t={t}
                             />
                         )}

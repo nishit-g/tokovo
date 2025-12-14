@@ -5,6 +5,7 @@ export * from "./pixel/profile";
 export * from "./pixel/Frame";
 export * from "./reducer";
 export * from "./StatusBar";
+export * from "./keyboards";
 
 // Device profile registry for dynamic lookup
 import { DeviceProfile } from "./types";

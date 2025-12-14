@@ -191,6 +191,46 @@ export interface CallState {
     endedAt?: number;
 }
 
+// KEYBOARD STATE
+// =============================================================================
+
+/** Keyboard layout types */
+export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
+
+/**
+ * KeyboardState - Virtual keyboard for realistic typing simulation
+ * 
+ * This is DEVICE-level state, shared across all apps.
+ * Apps read keyboard.inputText to show what's being typed.
+ */
+export interface KeyboardState {
+    /** Whether keyboard is visible */
+    visible: boolean;
+    /** Current keyboard layout */
+    layout: KeyboardLayout;
+    /** Currently pressed key (for highlight) */
+    currentKey: string | null;
+    /** Frame when key was pressed (for pop-up timing) */
+    keyPressedAt: number | null;
+    /** Current text in input field (character-by-character) */
+    inputText: string;
+    /** Cursor position within inputText */
+    cursorPosition: number;
+    /** Whether cursor should blink */
+    cursorVisible: boolean;
+}
+
+/** Default keyboard state */
+export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
+    visible: false,
+    layout: "qwerty",
+    currentKey: null,
+    keyPressedAt: null,
+    inputText: "",
+    cursorPosition: 0,
+    cursorVisible: true,
+};
+
 // =============================================================================
 // DEVICE STATE
 // =============================================================================
@@ -214,6 +254,9 @@ export interface DeviceState {
     homeScreen?: HomeScreenConfig;
     sound?: { activeSoundId?: string };
     theme?: DeviceTheme;
+
+    // === KEYBOARD (for typing simulation) ===
+    keyboard?: KeyboardState;
 }
 
 
@@ -812,6 +855,15 @@ export type TimelineEvent =
     | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
     | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
     | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
+    // Keyboard events - TYPING SIMULATION
+    | { at: number; kind: "KEYBOARD"; type: "SHOW"; deviceId?: string; layout?: KeyboardLayout }
+    | { at: number; kind: "KEYBOARD"; type: "HIDE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_DOWN"; deviceId?: string; key: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_UP"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "TYPE_CHAR"; deviceId?: string; char: string }
+    | { at: number; kind: "KEYBOARD"; type: "BACKSPACE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "SET_TEXT"; deviceId?: string; text: string }
+    | { at: number; kind: "KEYBOARD"; type: "CLEAR"; deviceId?: string }
     // Transition events - SCREEN ANIMATIONS
     | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
     // Highlight events - MESSAGE EMPHASIS

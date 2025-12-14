@@ -777,12 +777,27 @@ const MessageList: React.FC<MessageListProps> = ({
 
 interface InputAreaProps {
     text?: string;
+    /** Text from device.keyboard.inputText (character-by-character) */
+    keyboardText?: string;
+    /** Show blinking cursor at end */
+    showCursor?: boolean;
 }
 
-const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, platform = "ios" }) => {
-    // ... implementation ...
+const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({
+    text,
+    keyboardText,
+    showCursor = false,
+    platform = "ios"
+}) => {
     const config = getAppConfig("whatsapp", platform) as any;
     const tokens = getTokens(platform);
+
+    // Priority: keyboardText > text > placeholder
+    const displayText = keyboardText !== undefined ? keyboardText : text;
+    const hasContent = displayText && displayText.length > 0;
+
+    // Cursor blinks every 30 frames (0.5s at 60fps)
+    const cursorOpacity = showCursor ? 1 : 0;
 
     return (
         <div style={{
@@ -806,16 +821,28 @@ const InputArea: React.FC<InputAreaProps & { platform?: Platform }> = ({ text, p
                 display: "flex",
                 alignItems: "center",
                 fontSize: 48,
-                color: text ? config.inputTextColor : config.inputPlaceholderColor,
+                color: hasContent ? config.inputTextColor : config.inputPlaceholderColor,
                 fontFamily: tokens.fontFamily,
                 border: "1px solid #E5E5EA",
                 boxShadow: "0 1px 1px rgba(0,0,0,0.04)"
             }}>
-                {text || "Message"}
+                {hasContent ? displayText : "Message"}
+                {/* Blinking cursor */}
+                {showCursor && keyboardText !== undefined && (
+                    <span style={{
+                        display: "inline-block",
+                        width: 3,
+                        height: 42,
+                        backgroundColor: "#007AFF",
+                        marginLeft: 2,
+                        opacity: cursorOpacity,
+                        animation: "blink 1s step-end infinite",
+                    }} />
+                )}
             </div>
 
             {/* Right icons */}
-            {text ? (
+            {hasContent ? (
                 <div style={{
                     width: 105,
                     height: 105,
