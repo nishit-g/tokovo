@@ -321,8 +321,8 @@ export const TokovoRenderer: React.FC<{
                                 layout={layout}
                             />
 
-                            {/* Heads-Up Notification (when unlocked) */}
-                            {activeHeadsUp && !hasActiveCall && (
+                            {/* Heads-Up Notification (when unlocked) - SKIP on iOS when Dynamic Island handles it */}
+                            {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
                                 <HeadsUpNotification
                                     notification={activeHeadsUp}
                                     currentTime={t}
