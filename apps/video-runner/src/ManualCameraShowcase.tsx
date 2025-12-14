@@ -17,7 +17,7 @@
 
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -68,6 +68,37 @@ const dsl = {
         type: "TYPING_END",
         conversationId: "dm_bff",
         from,
+    } as any),
+
+    // Keyboard events
+    keyboardShow: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SHOW",
+        deviceId: "phone",
+        layout: "qwerty",
+    } as any),
+
+    keyboardHide: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        deviceId: "phone",
+    } as any),
+
+    keyDown: (at: number, key: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_DOWN",
+        deviceId: "phone",
+        key,
+    } as any),
+
+    keyUp: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_UP",
+        deviceId: "phone",
     } as any),
 };
 
@@ -190,7 +221,7 @@ function createManualCameraEpisode(): { initialWorld: WorldState; events: Timeli
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: DEFAULT_AUDIO_STATE,
     };
 
     // =========================================================================
@@ -206,14 +237,26 @@ function createManualCameraEpisode(): { initialWorld: WorldState; events: Timeli
         dsl.receive(150, "BFF 💎", "guess what just happened! 🤩"),
         camera.anchorFocus(150, "lastMessage", "message"),
 
+        // User types with keyboard
+        dsl.keyboardShow(180),
+        dsl.keyDown(183, "w"), dsl.keyUp(185),
+        dsl.keyDown(187, "h"), dsl.keyUp(189),
+        dsl.keyDown(191, "a"), dsl.keyUp(193),
         dsl.send(195, "what?? tell me everything!!"),
         camera.anchorFocus(195, "lastMessage", "message"),
+        dsl.keyboardHide(197),
 
         dsl.receive(231, "BFF 💎", "remember that guy from the party?"),
         camera.anchorFocus(231, "lastMessage", "message"),
 
+        // User types
+        dsl.keyboardShow(245),
+        dsl.keyDown(248, "t"), dsl.keyUp(250),
+        dsl.keyDown(252, "h"), dsl.keyUp(254),
+        dsl.keyDown(256, "e"), dsl.keyUp(258),
         dsl.send(261, "the tall one with the glasses? 👀"),
         camera.anchorFocus(261, "lastMessage", "message"),
+        dsl.keyboardHide(263),
 
         dsl.receive(291, "BFF 💎", "YES!! him!!"),
         camera.anchorFocus(291, "lastMessage", "snap"),  // Quick snap for excitement
@@ -227,14 +270,24 @@ function createManualCameraEpisode(): { initialWorld: WorldState; events: Timeli
         camera.hold(406, 30),
 
         // SCENE 3: EXCITEMENT (15s - 25s)
+        dsl.keyboardShow(435),
+        dsl.keyDown(438, "n"), dsl.keyUp(440),
+        dsl.keyDown(442, "o"), dsl.keyUp(444),
+        dsl.keyDown(446, "!"), dsl.keyUp(448),
         dsl.send(450, "NO WAY!!! 🎉🎉🎉"),
         camera.anchorFocus(450, "lastMessage", "snap", 2),  // Snap with shake!
+        dsl.keyboardHide(452),
 
         dsl.receive(474, "BFF 💎", "I KNOW RIGHT"),
         camera.anchorFocus(474, "lastMessage", "snap"),
 
+        // More typing
+        dsl.keyboardShow(480),
+        dsl.keyDown(483, "d"), dsl.keyUp(485),
+        dsl.keyDown(487, "i"), dsl.keyUp(489),
         dsl.send(492, "did you give it to him?!"),
         camera.anchorFocus(492, "lastMessage", "message"),
+        dsl.keyboardHide(494),
 
         dsl.typingStart(522, "BFF 💎"),
         camera.anchorFocus(522, "inputArea", "subtle"),  // Dramatic pause
@@ -244,18 +297,31 @@ function createManualCameraEpisode(): { initialWorld: WorldState; events: Timeli
         camera.anchorFocus(600, "lastMessage", "impact", 5),  // THE REVEAL with impact!
         camera.hold(614, 45),
 
+        dsl.keyboardShow(645),
+        dsl.keyDown(648, "s"), dsl.keyUp(650),
+        dsl.keyDown(652, "c"), dsl.keyUp(654),
+        dsl.keyDown(656, "r"), dsl.keyUp(658),
         dsl.send(660, "SCREAMING"),
         camera.anchorFocus(660, "lastMessage", "snap"),
 
+        dsl.keyDown(668, "w"), dsl.keyUp(670),
+        dsl.keyDown(672, "h"), dsl.keyUp(674),
+        dsl.keyDown(675, "a"), dsl.keyUp(676),
         dsl.send(678, "what did he say??"),
         camera.anchorFocus(678, "lastMessage", "snap"),
+        dsl.keyboardHide(680),
 
         dsl.receive(702, "BFF 💎", "he wants to take me to dinner 🍝"),
         camera.anchorFocus(702, "lastMessage", "impact", 3),
 
         // SCENE 4: WEBSERIES MOMENT (25s - 35s)
+        dsl.keyboardShow(735),
+        dsl.keyDown(738, "o"), dsl.keyUp(740),
+        dsl.keyDown(742, "m"), dsl.keyUp(744),
+        dsl.keyDown(746, "g"), dsl.keyUp(748),
         dsl.send(750, "OMG WHEN??? WHERE???"),
         camera.anchorFocus(750, "lastMessage", "snap", 2),
+        dsl.keyboardHide(752),
 
         dsl.typingStart(780, "BFF 💎"),
         camera.anchorFocus(780, "inputArea", "subtle"),
@@ -266,36 +332,67 @@ function createManualCameraEpisode(): { initialWorld: WorldState; events: Timeli
         ...camera.punchGlide(828, "lastMessage"),
         camera.hold(872, 45),
 
+        dsl.keyboardShow(905),
+        dsl.keyDown(908, "y"), dsl.keyUp(910),
+        dsl.keyDown(912, "o"), dsl.keyUp(914),
+        dsl.keyDown(916, "u"), dsl.keyUp(918),
         dsl.send(921, "you're gonna look SO good"),
         camera.anchorFocus(921, "lastMessage", "message"),
+        dsl.keyboardHide(923),
 
         dsl.receive(951, "BFF 💎", "i have nothing to wear 😩"),
         camera.anchorFocus(951, "lastMessage", "message"),
 
+        dsl.keyboardShow(970),
+        dsl.keyDown(973, "s"), dsl.keyUp(975),
+        dsl.keyDown(977, "h"), dsl.keyUp(979),
+        dsl.keyDown(981, "o"), dsl.keyUp(983),
+        dsl.keyDown(984, "p"), dsl.keyUp(985),
         dsl.send(987, "shopping spree TONIGHT"),
         camera.anchorFocus(987, "lastMessage", "snap"),
 
+        dsl.keyDown(995, "i"), dsl.keyUp(997),
+        dsl.keyDown(1000, "k"), dsl.keyUp(1002),
+        dsl.keyDown(1005, "n"), dsl.keyUp(1007),
+        dsl.keyDown(1008, "o"), dsl.keyUp(1009),
         dsl.send(1011, "i know the perfect dress for you 💃"),
         camera.anchorTrack(1011, "lastMessage", 40, 0.18, "operatorFollow"),
+        dsl.keyboardHide(1013),
 
         // SCENE 5: RESOLUTION (35s - 45s)
         dsl.receive(1056, "BFF 💎", "you're the best friend ever 😭💕"),
         camera.anchorTrack(1056, "lastMessage", 35, 0.18, "operatorFollow"),
 
+        dsl.keyboardShow(1085),
+        dsl.keyDown(1088, "a"), dsl.keyUp(1090),
+        dsl.keyDown(1092, "l"), dsl.keyUp(1094),
+        dsl.keyDown(1096, "w"), dsl.keyUp(1098),
         dsl.send(1101, "always got your back babe ❤️"),
         camera.anchorFocus(1101, "lastMessage", "message"),
+        dsl.keyboardHide(1103),
 
         dsl.receive(1137, "BFF 💎", "mall at 6?"),
         camera.anchorFocus(1137, "lastMessage", "message"),
 
+        dsl.keyboardShow(1150),
+        dsl.keyDown(1153, "s"), dsl.keyUp(1155),
+        dsl.keyDown(1157, "e"), dsl.keyUp(1159),
+        dsl.keyDown(1161, "e"), dsl.keyUp(1163),
         dsl.send(1167, "see you then! 🛍️"),
         camera.anchorFocus(1167, "lastMessage", "snap"),
+        dsl.keyboardHide(1169),
 
         dsl.receive(1212, "BFF 💎", "love you!!! 💎"),
         camera.anchorFocus(1212, "lastMessage", "message"),
 
+        dsl.keyboardShow(1240),
+        dsl.keyDown(1243, "l"), dsl.keyUp(1245),
+        dsl.keyDown(1247, "o"), dsl.keyUp(1249),
+        dsl.keyDown(1251, "v"), dsl.keyUp(1253),
+        dsl.keyDown(1254, "e"), dsl.keyUp(1255),
         dsl.send(1257, "love you more!! 💕💕💕"),
         camera.anchorFocus(1257, "lastMessage", "message"),
+        dsl.keyboardHide(1259),
         camera.hold(1279, 45),
 
         // Final reset
