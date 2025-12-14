@@ -63,8 +63,10 @@ apps/
       MultiPovDemoVideo.tsx
       NotificationCallDemoVideo.tsx
       NotificationShowcaseVideo.tsx
+      PhoneCallShowcase.tsx
       Root.tsx
       TwitterShowcaseVideo.tsx
+      UltimateShowcase.tsx
       UltimateShowcaseVideo.tsx
       Video.tsx
       WhatsappCompleteShowcaseVideo.tsx
@@ -115,6 +117,40 @@ packages/
       notification-adapter.ts
       runtime.ts
       types.ts
+      ui.tsx
+    package.json
+    tsconfig.json
+  apps-phone/
+    src/
+      components/
+        android/
+          ActiveCallAndroid.tsx
+          IncomingAndroid.tsx
+          index.ts
+          SwipeBubble.tsx
+        ios/
+          ActiveCallIOS.tsx
+          ClassicIncoming.tsx
+          ContactPoster.tsx
+          IncomingIOS.tsx
+          index.ts
+          SlideToAnswer.tsx
+        screens/
+          index.ts
+          RecentsScreen.tsx
+        shared/
+          ActionButtons.tsx
+          AvatarRing.tsx
+          CallTimer.tsx
+          ControlGrid.tsx
+          index.ts
+      widgets/
+        IncomingCallBanner.tsx
+        index.ts
+        PhoneDynamicIsland.tsx
+      index.ts
+      plugin.ts
+      runtime.ts
       ui.tsx
     package.json
     tsconfig.json
@@ -282,6 +318,7 @@ packages/
         spotify-builder.ts
       events/
         audio.ts
+        call.ts
         camera.ts
         index.ts
         keyboard.ts
@@ -369,6 +406,7 @@ packages/
     tsconfig.json
 .gitignore
 .tool-versions
+llms.txt
 package.json
 pnpm-workspace.yaml
 repomix.config.json
@@ -378,12 +416,106 @@ turbo.json
 
 # Files
 
+## File: apps/video-runner/src/AndroidVideo.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { PixelProfile } from "@tokovo/devices";
+import { androidEpisode } from "@tokovo/episodes";
+
+export const AndroidVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / PixelProfile.dimensions.width;
+    const scaleY = availableHeight / PixelProfile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: PixelProfile.dimensions.width,
+                height: PixelProfile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} />
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: apps/video-runner/src/index.ts
 ````typescript
 import { registerRoot } from "remotion";
 import { RemotionRoot } from "./Root";
 
 registerRoot(RemotionRoot);
+````
+
+## File: apps/video-runner/src/Video.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { exampleEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+
+export const Video: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} />
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: apps/video-runner/remotion.config.ts
@@ -410,10 +542,209 @@ Config.setOverwriteOutput(true);
 }
 ````
 
+## File: packages/apps-instagram/src/runtime.ts
+````typescript
+import { WorldState, TimelineEvent } from "@tokovo/core";
+
+import { initialInstagramState, InstagramState } from "./types";
+
+export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
+    if (event.kind !== "APP" || event.appId !== "app_instagram") return;
+
+    // Initialize app state if missing
+    if (!draft.appState) {
+        draft.appState = {};
+    }
+    if (!draft.appState["app_instagram"]) {
+        draft.appState["app_instagram"] = initialInstagramState;
+    }
+
+    const appState = draft.appState["app_instagram"] as InstagramState;
+
+    // Handle generic custom events
+    if (event.type === "CUSTOM") {
+        console.log(`[InstagramRuntime] Processing CUSTOM event: ${event.name}`, event.payload);
+        switch (event.name) {
+            case "NAVIGATE":
+                appState.currentView = event.payload.view;
+                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView}`);
+                break;
+            // Add other custom events here
+        }
+        return;
+    }
+
+    // Legacy/Specific events (DM)
+    const { conversationId, type } = event as any; // Cast to access specific fields if needed
+
+    if (conversationId) {
+        // Ensure conversation exists
+        if (!draft.conversations[conversationId]) {
+            draft.conversations[conversationId] = {
+                id: conversationId,
+                messages: [],
+                typing: {}
+            };
+        }
+
+        const conversation = draft.conversations[conversationId];
+
+        switch (type) {
+            case "MESSAGE_RECEIVED":
+                conversation.messages.push({
+                    id: `msg_${Date.now()}_${Math.random()}`,
+                    from: event.from,
+                    text: event.text,
+                    at: event.at,
+                    liked: false // Instagram specific
+                });
+                break;
+
+            case "TYPING_START":
+                if (!conversation.typing) conversation.typing = {};
+                conversation.typing[event.from] = true;
+                break;
+
+            case "TYPING_END":
+                if (conversation.typing) {
+                    conversation.typing[event.from] = false;
+                }
+                break;
+        }
+    }
+};
+````
+
+## File: packages/apps-instagram/src/types.ts
+````typescript
+export type InstagramView = 'dm' | 'feed' | 'stories' | 'profile' | 'post' | 'explore' | 'notifications' | 'reels';
+
+export interface Post {
+    id: string;
+    username: string;
+    avatar: string;
+    image: string;
+    caption: string;
+    likes: number;
+    comments: number;
+    liked: boolean;
+    saved: boolean;
+}
+
+export interface Story {
+    id: string;
+    image: string;
+    seen: boolean;
+}
+
+export interface StoryUser {
+    username: string;
+    avatar: string;
+    stories: Story[];
+    hasUnseen: boolean;
+}
+
+export interface Notification {
+    id: string;
+    type: 'like' | 'follow' | 'comment' | 'mention';
+    username: string;
+    avatar: string;
+    text?: string;
+    time: string;
+}
+
+export interface InstagramState {
+    currentView: InstagramView;
+    feed: {
+        posts: Post[];
+        scrollPosition: number;
+    };
+    stories: {
+        users: StoryUser[];
+        activeStoryId?: string;
+    };
+    notifications: {
+        items: Notification[];
+    };
+    // Add other module states here
+}
+
+export const initialInstagramState: InstagramState = {
+    currentView: 'dm', // Default to DM for now as it's the most developed
+    feed: {
+        posts: [],
+        scrollPosition: 0
+    },
+    stories: {
+        users: [],
+    },
+    notifications: {
+        items: []
+    }
+};
+````
+
+## File: packages/apps-instagram/package.json
+````json
+{
+    "name": "@tokovo/apps-instagram",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "react": "^18.0.0",
+        "immer": "^10.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "^18.0.0",
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/apps-instagram/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "dist",
+        "rootDir": "src",
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
 ## File: packages/apps-whatsapp/src/types.ts
 ````typescript
 export interface WhatsAppState {
     // Add specific state if needed, for now using generic ConversationState from core
+}
+````
+
+## File: packages/apps-whatsapp/package.json
+````json
+{
+    "name": "@tokovo/apps-whatsapp",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
 }
 ````
 
@@ -486,6 +817,29 @@ Core logic for the Tokovo engine.
     "include": [
         "src/**/*"
     ]
+}
+````
+
+## File: packages/devices/package.json
+````json
+{
+    "name": "@tokovo/devices",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
+    }
 }
 ````
 
@@ -606,6 +960,40 @@ Device profiles and reducers.
         "src/**/*"
     ]
 }
+````
+
+## File: packages/renderer/src/VisualDebugger.tsx
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+
+export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 50,
+            right: 50,
+            backgroundColor: "rgba(0, 0, 0, 0.8)",
+            color: "#0f0",
+            fontFamily: "monospace",
+            fontSize: 24,
+            padding: 20,
+            borderRadius: 10,
+            zIndex: 9999,
+            pointerEvents: "none",
+            maxWidth: 600
+        }}>
+            <div><strong>Frame:</strong> {t.toFixed(0)}</div>
+            <div><strong>Active App:</strong> {Object.values(world.devices)[0]?.foregroundAppId || "Home"}</div>
+            <div><strong>Events:</strong></div>
+            {/* We would need access to events here, but world state doesn't store history. 
+                Just showing state for now. */}
+            <div style={{ marginTop: 10, fontSize: 18, opacity: 0.8 }}>
+                Camera: {world.camera.type}
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/renderer/tsconfig.json
@@ -1111,6 +1499,57 @@ export const HomeScreenGroupDemoVideo: React.FC = () => {
                 />
             </div>
         </AbsoluteFill>
+    );
+};
+````
+
+## File: apps/video-runner/src/InstagramVideo.tsx
+````typescript
+import React from "react";
+import { useCurrentFrame, useVideoConfig } from "remotion";
+import { replay, WorldState } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { instagramEpisode } from "@tokovo/episodes";
+
+// Ensure reducers are registered
+import "@tokovo/devices";
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-instagram";
+
+export const InstagramVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const { width, height } = useVideoConfig();
+
+    // Calculate scale to fit device in composition with some padding
+    const padding = 50;
+    const availableWidth = width - padding * 2;
+    const availableHeight = height - padding * 2;
+
+    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
+    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
+    const scale = Math.min(scaleX, scaleY);
+
+    // Calculate time t
+    const t = frame;
+
+    // Replay
+    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
+    const world = replay(instagramEpisode.initialWorld as unknown as WorldState, instagramEpisode.events as any, t);
+
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
+            <div style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: `translate(-50%, -50%) scale(${scale})`,
+                width: iPhone16Profile.dimensions.width,
+                height: iPhone16Profile.dimensions.height
+            }}>
+                <TokovoRenderer world={world} t={t} debug={true} />
+            </div>
+        </div>
     );
 };
 ````
@@ -1652,6 +2091,182 @@ function getFeatureLabel(frame: number): string {
 export default NotificationShowcaseVideo;
 ````
 
+## File: apps/video-runner/src/PhoneCallShowcase.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+
+// Import device reducer
+import "@tokovo/devices";
+
+// Import DSL event factories
+import { dsl } from "@tokovo/dsl";
+
+// Import phone plugin
+import "@tokovo/apps-phone";
+
+/**
+ * Phone Call Showcase
+ *
+ * Demonstrates the phone call simulation:
+ * - iOS Contact Poster (iOS 17+) incoming call
+ * - Call answer and active call screen
+ * - Call controls (mute, speaker)
+ * - Call end
+ */
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const DEVICE_ID = "phone";
+
+// Starting time: 3:30 PM
+const START_TIME = new Date();
+START_TIME.setHours(15, 30, 0, 0);
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            [DEVICE_ID]: {
+                id: DEVICE_ID,
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_phone",
+                notifications: [],
+                os: {
+                    clock: START_TIME.getTime(),
+                    battery: 92,
+                    charging: false,
+                    network: "wifi" as const,
+                    wifiStrength: 3,
+                    cellStrength: 4,
+                    dnd: false,
+                    lowPowerMode: false,
+                    airplaneMode: false,
+                },
+            },
+        },
+        conversations: {},
+        appState: {
+            app_phone: {
+                screen: "recents",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: DEVICE_ID,
+            activeEffects: [],
+            deviceTransforms: {},
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: DEVICE_ID,
+            },
+        },
+        audio: {
+            masterVolume: 1,
+            activeSounds: [],
+        },
+    };
+
+    // Timeline events - Phone call story (NO camera effects)
+    const events: TimelineEvent[] = [
+        // Set initial time
+        dsl.os.setTime(0, START_TIME.getTime()),
+
+        // Frame 60 (2 seconds) - Incoming call arrives
+        dsl.call.incoming(60, "alice_123", "Alice Johnson", {
+            displayMode: "fullscreen",
+            isVideo: false,
+            callType: "voice",
+            posterImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+        }),
+
+        // Answer after 4 seconds
+        dsl.call.answer(180),
+
+        // Toggle mute at 6 seconds
+        dsl.call.toggleMute(210),
+
+        // Toggle speaker at 7 seconds
+        dsl.call.toggleSpeaker(240),
+
+        // Unmute at 8 seconds
+        dsl.call.toggleMute(270),
+
+        // End call
+        dsl.call.end(330),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
+export const PhoneCallShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+
+    // Create episode
+    const episode = useMemo(() => createPhoneCallEpisode(), []);
+
+    // Compute world state at current frame
+    const worldState = useMemo(() => {
+        return replay(episode.initialWorld, episode.events, frame);
+    }, [episode, frame]);
+
+    return (
+        <AbsoluteFill
+            style={{
+                backgroundColor: "#0a0a1a",
+                justifyContent: "center",
+                alignItems: "center",
+            }}
+        >
+            {/* Audio Layer */}
+            <AudioLayer world={worldState} t={frame} />
+
+            {/* Renderer - centered like FullCinematicShowcase */}
+            <div
+                style={{
+                    transform: "scale(0.5)",
+                    transformOrigin: "center center",
+                }}
+            >
+                <TokovoRenderer
+                    world={worldState}
+                    deviceId={DEVICE_ID}
+                    deviceProfile={iPhone16Profile}
+                    currentFrame={frame}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+// Video config
+export const phoneCallShowcaseConfig = {
+    id: "PhoneCallShowcase",
+    component: PhoneCallShowcase,
+    durationInFrames: 390, // ~13 seconds at 30fps
+    fps: 30,
+    width: 1920,
+    height: 1080,
+};
+````
+
 ## File: apps/video-runner/src/TwitterShowcaseVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -1886,52 +2501,344 @@ export const TwitterShowcaseVideo: React.FC = () => {
 export default TwitterShowcaseVideo;
 ````
 
-## File: apps/video-runner/src/Video.tsx
+## File: apps/video-runner/src/UltimateShowcase.tsx
 ````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    DEFAULT_BUS_CONFIG,
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
-import { exampleEpisode } from "@tokovo/episodes";
 
-// Ensure reducers are registered
+// Import device reducer
 import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
 
-export const Video: React.FC = () => {
+// Import phone plugin
+import "@tokovo/apps-phone";
+
+// Import DSL event factories
+import { dsl, generateTyping } from "@tokovo/dsl";
+
+/**
+ * ULTIMATE SHOWCASE - "The Breakup"
+ *
+ * An emotionally intense story showcasing EVERY Tokovo capability:
+ *
+ * SCENE 1 (0-6s): Late night WhatsApp conversation
+ * - Clock shows 11:47 PM
+ * - Battery draining
+ * - Friend types... sends cryptic message
+ * - Zoom into message
+ *
+ * SCENE 2 (6-12s): User responds frantically
+ * - Types with errors
+ * - Backspaces to correct
+ * - Sends message
+ * - Read receipts turn blue
+ *
+ * SCENE 3 (12-20s): Phone call interruption
+ * - Incoming call from "Her 💔"
+ * - Full screen Contact Poster
+ * - Answer call
+ * - Mute mic, unmute
+ * - End call
+ *
+ * SCENE 4 (20-26s): The aftermath
+ * - Battery drops to 5%
+ * - Low power mode activates
+ * - Final dramatic message received
+ * - Camera shake
+ *
+ * Duration: 26 seconds at 30fps = 780 frames
+ */
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+const DEVICE_ID = "phone";
+const CONVO_ID = "dm_maya";
+const FRIEND_NAME = "Maya 🌙";
+const EX_NAME = "Her 💔";
+
+// Late night: 11:47 PM
+const START_TIME = new Date();
+START_TIME.setHours(23, 47, 0, 0);
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createUltimateEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            [DEVICE_ID]: {
+                id: DEVICE_ID,
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                os: {
+                    clock: START_TIME.getTime(),
+                    battery: 23,
+                    charging: false,
+                    network: "wifi" as const,
+                    wifiStrength: 2,
+                    cellStrength: 3,
+                    dnd: false,
+                    lowPowerMode: false,
+                    airplaneMode: false,
+                },
+            },
+        },
+        conversations: {
+            [CONVO_ID]: {
+                id: CONVO_ID,
+                type: "dm",
+                name: FRIEND_NAME,
+                messages: [
+                    {
+                        id: "msg_prev_1",
+                        type: "text",
+                        from: FRIEND_NAME,
+                        text: "you need to see this...",
+                        status: "read",
+                    },
+                    {
+                        id: "msg_prev_2",
+                        type: "text",
+                        from: "me",
+                        text: "what happened???",
+                        status: "read",
+                    },
+                ],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: CONVO_ID,
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: DEVICE_ID,
+            layout: { mode: "SINGLE" as const, primaryDeviceId: DEVICE_ID },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
+    };
+
+    // =========================================================================
+    // TIMELINE EVENTS
+    // =========================================================================
+    const events: TimelineEvent[] = [
+
+        // =====================================================================
+        // SCENE 1: Late Night Chat (0-6s, frames 0-180)
+        // =====================================================================
+
+        // Time advances every second
+        dsl.os.setTime(0, START_TIME.getTime()),
+        dsl.os.setTime(30, START_TIME.getTime() + 1000),
+        dsl.os.setTime(60, START_TIME.getTime() + 2000),
+
+        // Battery slowly draining
+        dsl.os.setBattery(0, 23, false),
+        dsl.os.setBattery(90, 22, false),
+
+        // Maya is typing...
+        dsl.messages.typingStart(30, CONVO_ID, FRIEND_NAME),
+
+        // Camera focuses in anticipation
+        dsl.camera.zoom(45, 1.08, 20, { originY: 0.7 }),
+
+        // Maya sends the bomb
+        dsl.messages.typingEnd(90, CONVO_ID, FRIEND_NAME),
+        dsl.messages.receive(90, CONVO_ID, FRIEND_NAME, "she's been seeing someone else this whole time..."),
+        dsl.audio.play(90, "whatsapp_received", 1.0),
+
+        // Dramatic zoom into the message
+        dsl.camera.zoom(100, 1.18, 30, { originY: 0.85 }),
+
+        // Time advances
+        dsl.os.setTime(120, START_TIME.getTime() + 4000),
+        dsl.os.setTime(150, START_TIME.getTime() + 5000),
+
+        // =====================================================================
+        // SCENE 2: Frantic Response (6-12s, frames 180-360)
+        // =====================================================================
+
+        // Camera pulls back for keyboard
+        dsl.camera.zoom(175, 1.0, 15),
+
+        // Show keyboard
+        dsl.keyboard.show(180, DEVICE_ID),
+
+        // Type frantically with a typo
+        ...generateTyping(195, DEVICE_ID, "wiat what", { speed: "fast" }),
+
+        // Pause, realize the typo (frame ~230)
+        // Backspace "wiat" (4 characters)
+        dsl.keyboard.backspace(240, DEVICE_ID),
+        dsl.keyboard.backspace(244, DEVICE_ID),
+        dsl.keyboard.backspace(248, DEVICE_ID),
+        dsl.keyboard.backspace(252, DEVICE_ID),
+        dsl.keyboard.backspace(256, DEVICE_ID),
+        dsl.keyboard.backspace(260, DEVICE_ID),
+        dsl.keyboard.backspace(264, DEVICE_ID),
+        dsl.keyboard.backspace(268, DEVICE_ID),
+        dsl.keyboard.backspace(272, DEVICE_ID),
+
+        // Retype correctly
+        ...generateTyping(280, DEVICE_ID, "wait WHAT", { speed: "fast" }),
+
+        // Send message
+        dsl.messages.send(320, CONVO_ID, "wait WHAT"),
+        dsl.audio.play(320, "whatsapp_sent", 0.8),
+        dsl.keyboard.clear(325, DEVICE_ID),
+
+        // Time advances
+        dsl.os.setTime(330, START_TIME.getTime() + 10000),
+
+        // Hide keyboard
+        dsl.keyboard.hide(340, DEVICE_ID),
+
+        // Camera focuses on response
+        dsl.camera.zoom(350, 1.1, 15, { originY: 0.8 }),
+
+        // =====================================================================
+        // SCENE 3: Phone Call Interruption (12-20s, frames 360-600)
+        // =====================================================================
+
+        // Battery drops more
+        dsl.os.setBattery(360, 18, false),
+
+        // Incoming call from "Her 💔"
+        dsl.call.incoming(380, "ex_caller", EX_NAME, {
+            displayMode: "fullscreen",
+            isVideo: false,
+            callType: "voice",
+            posterImage: "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=400",
+        }),
+
+        // Camera zoom on call screen
+        dsl.camera.zoom(390, 1.05, 20, { originY: 0.3 }),
+
+        // Wait briefly, then answer (at 16s)
+        dsl.call.answer(480),
+
+        // Camera resets
+        dsl.camera.reset(485, 15),
+
+        // Toggle mute during awkward silence
+        dsl.call.toggleMute(510),
+
+        // Unmute to respond
+        dsl.call.toggleMute(540),
+
+        // End call abruptly
+        dsl.call.end(580),
+
+        // Time advances
+        dsl.os.setTime(590, START_TIME.getTime() + 18000),
+
+        // =====================================================================
+        // SCENE 4: The Aftermath (20-26s, frames 600-780)
+        // =====================================================================
+
+        // Battery critically low
+        dsl.os.setBattery(600, 5, false),
+
+        // Low power mode activates
+        dsl.os.setLowPower(610, true),
+
+        // Maya types again
+        dsl.messages.typingStart(620, CONVO_ID, FRIEND_NAME),
+
+        // Tense zoom
+        dsl.camera.zoom(630, 1.12, 20, { originY: 0.8 }),
+
+        // Time advances - past midnight now
+        dsl.os.setTime(660, new Date(START_TIME.getFullYear(), START_TIME.getMonth(), START_TIME.getDate() + 1, 0, 2, 0, 0).getTime()),
+
+        // The final message
+        dsl.messages.typingEnd(680, CONVO_ID, FRIEND_NAME),
+        dsl.messages.receive(680, CONVO_ID, FRIEND_NAME, "I'm so sorry... I should have told you sooner"),
+        dsl.audio.play(680, "whatsapp_received", 1.0),
+
+        // SHAKE on impact
+        dsl.camera.shake(685, 10, 25, { frequency: 15, decay: 0.6 }),
+
+        // Final dramatic zoom
+        dsl.camera.zoom(700, 1.22, 40, { originY: 0.9 }),
+
+        // Slow reset to end
+        dsl.camera.reset(750, 30),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const UltimateShowcase: React.FC = () => {
     const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
 
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
+    const episode = useMemo(() => createUltimateEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, frame);
 
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
+    // Calculate scale to fit device in view
+    const scale = Math.min(
+        1080 / iPhone16Profile.dimensions.width,
+        1920 / iPhone16Profile.dimensions.height
+    ) * 0.95;
 
     return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
+        <AbsoluteFill
+            style={{
+                backgroundColor: "#0a0a0f",
+                justifyContent: "center",
+                alignItems: "center",
+            }}
+        >
+            <AudioLayer world={world} t={frame} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={frame}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
             </div>
-        </div>
+        </AbsoluteFill>
     );
+};
+
+// Video config
+export const ultimateShowcaseConfig = {
+    id: "UltimateShowcase",
+    component: UltimateShowcase,
+    durationInFrames: 780, // 26 seconds at 30fps
+    fps: 30,
+    width: 1920,
+    height: 1080,
 };
 ````
 
@@ -4482,6 +5389,174 @@ export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
 };
 ````
 
+## File: packages/apps-instagram/src/views/BottomNav.tsx
+````typescript
+import React from "react";
+import { InstagramView } from "../types";
+
+// ============================================================================
+// AUTHENTIC INSTAGRAM iOS BOTTOM NAV ICONS
+// ============================================================================
+
+// Home icon - Filled house shape (Instagram-specific)
+const HomeIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        {active ? (
+            // Filled version
+            <path
+                d="M12 2L3 9V22H9V15H15V22H21V9L12 2Z"
+                fill="white"
+            />
+        ) : (
+            // Outline version
+            <path
+                d="M12 3L4 10V21H10V15H14V21H20V10L12 3Z"
+                stroke="white"
+                strokeWidth="1.8"
+                strokeLinejoin="round"
+                fill="none"
+            />
+        )}
+    </svg>
+);
+
+// Search/Explore icon - Magnifying glass
+const SearchIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <circle
+            cx="10.5"
+            cy="10.5"
+            r="7"
+            stroke="white"
+            strokeWidth={active ? "2.5" : "1.8"}
+        />
+        <line
+            x1="15.5"
+            y1="15.5"
+            x2="21"
+            y2="21"
+            stroke="white"
+            strokeWidth={active ? "2.5" : "1.8"}
+            strokeLinecap="round"
+        />
+    </svg>
+);
+
+// Reels icon - Clapperboard style
+const ReelsIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        {active ? (
+            <>
+                <rect x="3" y="3" width="18" height="18" rx="3" fill="white" />
+                <polygon points="10,8 17,12 10,16" fill="black" />
+            </>
+        ) : (
+            <>
+                <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" fill="none" />
+                <polygon points="10,8 17,12 10,16" stroke="white" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
+            </>
+        )}
+    </svg>
+);
+
+// Create/Add icon - Plus in square
+const CreateIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <rect
+            x="3"
+            y="3"
+            width="18"
+            height="18"
+            rx="3"
+            stroke="white"
+            strokeWidth={active ? "2.2" : "1.8"}
+            fill="none"
+        />
+        <line
+            x1="12"
+            y1="8"
+            x2="12"
+            y2="16"
+            stroke="white"
+            strokeWidth={active ? "2.2" : "1.8"}
+            strokeLinecap="round"
+        />
+        <line
+            x1="8"
+            y1="12"
+            x2="16"
+            y2="12"
+            stroke="white"
+            strokeWidth={active ? "2.2" : "1.8"}
+            strokeLinecap="round"
+        />
+    </svg>
+);
+
+// Profile icon - Avatar with optional ring
+const ProfileIcon = ({ active, avatarUrl }: { active: boolean; avatarUrl?: string }) => (
+    <div style={{
+        width: 72,
+        height: 72,
+        borderRadius: "50%",
+        border: active ? "6px solid white" : "none",
+        padding: active ? 0 : 6,
+        boxSizing: "border-box",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center"
+    }}>
+        <div style={{
+            width: active ? 60 : 60,
+            height: active ? 60 : 60,
+            borderRadius: "50%",
+            backgroundColor: "#444",
+            backgroundImage: avatarUrl ? `url(${avatarUrl})` : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+        }} />
+    </div>
+);
+
+// ============================================================================
+// BOTTOM NAVIGATION COMPONENT
+// ============================================================================
+
+export const BottomNav: React.FC<{ currentView: InstagramView }> = ({ currentView }) => {
+    return (
+        <div style={{
+            height: 156, // 52pt * 3
+            backgroundColor: "#000",
+            borderTop: "1px solid #262626",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-around",
+            paddingBottom: 30, // Home indicator spacing
+            paddingTop: 12
+        }}>
+            <HomeIcon active={currentView === 'feed'} />
+            <SearchIcon active={currentView === 'explore'} />
+            <ReelsIcon active={currentView === 'reels'} />
+            <CreateIcon active={false} />
+            <ProfileIcon active={currentView === 'profile'} />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/index.ts
+````typescript
+import { ReducerRegistry } from "@tokovo/core";
+import { instagramRuntime } from "./runtime";
+
+ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
+
+export * from "./runtime";
+export * from "./ui";
+export * from "./types";
+export * from "./notification-adapter";
+````
+
 ## File: packages/apps-instagram/src/notification-adapter.ts
 ````typescript
 /**
@@ -4544,95 +5619,1409 @@ NotificationAdapterRegistry.register(instagramAdapter);
 export { instagramAdapter };
 ````
 
-## File: packages/apps-instagram/src/types.ts
+## File: packages/apps-phone/src/components/android/ActiveCallAndroid.tsx
 ````typescript
-export type InstagramView = 'dm' | 'feed' | 'stories' | 'profile' | 'post' | 'explore' | 'notifications' | 'reels';
+/**
+ * Android Active Call Screen
+ */
 
-export interface Post {
-    id: string;
-    username: string;
-    avatar: string;
-    image: string;
-    caption: string;
-    likes: number;
-    comments: number;
-    liked: boolean;
-    saved: boolean;
+import React from "react";
+import { CallState, AppViewProps } from "@tokovo/core";
+import { CallTimer } from "../shared/CallTimer";
+import { ControlGrid } from "../shared/ControlGrid";
+import { DeclineButton } from "../shared/ActionButtons";
+
+interface ActiveCallAndroidProps extends Partial<AppViewProps> {
+    call: CallState;
 }
 
-export interface Story {
-    id: string;
-    image: string;
-    seen: boolean;
+/**
+ * ActiveCallAndroid - Android in-call screen
+ * 
+ * Features:
+ * - Material Design styling
+ * - Caller name and timer
+ * - Control grid
+ * - Red end call button
+ */
+export const ActiveCallAndroid: React.FC<ActiveCallAndroidProps> = ({ call, t = 0 }) => {
+    return (
+        <div
+            style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: "#121212",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                paddingTop: 100,
+            }}
+        >
+            {/* Caller info */}
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: 32,
+                        fontWeight: 400,
+                        color: "#fff",
+                        fontFamily: "Roboto, sans-serif",
+                    }}
+                >
+                    {call.callerName}
+                </div>
+                <CallTimer startedAt={call.answeredAt} currentFrame={t} />
+            </div>
+
+            {/* Spacer */}
+            <div style={{ flex: 1 }} />
+
+            {/* Control grid */}
+            <ControlGrid call={call} platform="android" />
+
+            {/* End call button */}
+            <div style={{ marginTop: 40, marginBottom: 60 }}>
+                <DeclineButton size={70} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/android/IncomingAndroid.tsx
+````typescript
+/**
+ * Android Incoming Call - Material You Style
+ * With animations
+ */
+
+import React from "react";
+import { CallState } from "@tokovo/core";
+import { AvatarRing } from "../shared/AvatarRing";
+import { SwipeBubble } from "./SwipeBubble";
+
+interface IncomingAndroidProps {
+    call: CallState;
+    profile?: any;
+    currentFrame?: number;
 }
 
-export interface StoryUser {
-    username: string;
-    avatar: string;
-    stories: Story[];
-    hasUnseen: boolean;
+/**
+ * IncomingAndroid - Android Material You incoming call
+ * 
+ * Features:
+ * - Solid color background extracted from avatar
+ * - Centered avatar with ripple effect
+ * - Swipe up/down bubble to answer/decline
+ */
+export const IncomingAndroid: React.FC<IncomingAndroidProps> = ({ call, currentFrame = 0 }) => {
+    // Animation: fade in
+    const fadeIn = Math.min(1, currentFrame / 15);
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                height: "100%",
+                background: "linear-gradient(180deg, #1a237e 0%, #0d47a1 100%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                paddingTop: 180,
+                position: "relative",
+                opacity: fadeIn,
+            }}
+        >
+            {/* Avatar */}
+            <AvatarRing
+                image={call.callerAvatar}
+                name={call.callerName}
+                size={180}
+            />
+
+            {/* Caller info */}
+            <div
+                style={{
+                    marginTop: 40,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 8,
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: 36,
+                        fontWeight: 400,
+                        color: "#fff",
+                        fontFamily: "Roboto, sans-serif",
+                    }}
+                >
+                    {call.callerName}
+                </div>
+                <div
+                    style={{
+                        fontSize: 18,
+                        color: "rgba(255,255,255,0.7)",
+                        fontFamily: "Roboto, sans-serif",
+                    }}
+                >
+                    {call.isVideo ? "Incoming video call" : "Incoming voice call"}
+                </div>
+            </div>
+
+            {/* Swipe bubble at bottom */}
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 100,
+                    left: 0,
+                    right: 0,
+                    display: "flex",
+                    justifyContent: "center",
+                }}
+            >
+                <SwipeBubble currentFrame={currentFrame} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/android/index.ts
+````typescript
+/**
+ * Android Components Index
+ */
+
+export { IncomingAndroid } from "./IncomingAndroid";
+export { SwipeBubble } from "./SwipeBubble";
+export { ActiveCallAndroid } from "./ActiveCallAndroid";
+````
+
+## File: packages/apps-phone/src/components/android/SwipeBubble.tsx
+````typescript
+/**
+ * Android Swipe Bubble
+ * 
+ * Swipe up to answer, swipe down to decline bubble.
+ */
+
+import React from "react";
+
+interface SwipeBubbleProps {
+    currentFrame?: number;
 }
 
-export interface Notification {
-    id: string;
-    type: 'like' | 'follow' | 'comment' | 'mention';
-    username: string;
-    avatar: string;
-    text?: string;
-    time: string;
+/**
+ * SwipeBubble - Android swipe to answer/decline
+ * 
+ * Features:
+ * - Pill-shaped bubble with phone icon
+ * - Bobbing animation
+ * - Up/down arrows indicating swipe direction
+ */
+export const SwipeBubble: React.FC<SwipeBubbleProps> = ({ currentFrame = 0 }) => {
+    // Bobbing animation
+    const translateY = 8 * Math.sin(currentFrame * 0.15);
+
+    return (
+        <div
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 16,
+            }}
+        >
+            {/* Up arrow - answer */}
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 4,
+                }}
+            >
+                <span style={{ color: "#4CAF50", fontSize: 24 }}>▲</span>
+                <span
+                    style={{
+                        fontSize: 14,
+                        color: "#4CAF50",
+                        fontFamily: "Roboto, sans-serif",
+                    }}
+                >
+                    Swipe up to answer
+                </span>
+            </div>
+
+            {/* Bubble */}
+            <div
+                style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    backgroundColor: "#fff",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    boxShadow: "0 4px 20px rgba(0,0,0,0.3)",
+                    transform: `translateY(${translateY}px)`,
+                }}
+            >
+                <span style={{ fontSize: 36 }}>📞</span>
+            </div>
+
+            {/* Down arrow - decline */}
+            <div
+                style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 4,
+                }}
+            >
+                <span
+                    style={{
+                        fontSize: 14,
+                        color: "#f44336",
+                        fontFamily: "Roboto, sans-serif",
+                    }}
+                >
+                    Swipe down to decline
+                </span>
+                <span style={{ color: "#f44336", fontSize: 24 }}>▼</span>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/ios/index.ts
+````typescript
+/**
+ * iOS Components Index
+ */
+
+export { IncomingIOS } from "./IncomingIOS";
+export { ContactPoster } from "./ContactPoster";
+export { ClassicIncoming } from "./ClassicIncoming";
+export { SlideToAnswer } from "./SlideToAnswer";
+export { ActiveCallIOS } from "./ActiveCallIOS";
+````
+
+## File: packages/apps-phone/src/components/ios/SlideToAnswer.tsx
+````typescript
+/**
+ * iOS Slide to Answer
+ * 
+ * The iconic iOS slider with shimmer animation.
+ */
+
+import React from "react";
+
+interface SlideToAnswerProps {
+    currentFrame?: number;
 }
 
-export interface InstagramState {
-    currentView: InstagramView;
-    feed: {
-        posts: Post[];
-        scrollPosition: number;
-    };
-    stories: {
-        users: StoryUser[];
-        activeStoryId?: string;
-    };
-    notifications: {
-        items: Notification[];
-    };
-    // Add other module states here
+/**
+ * SlideToAnswer - iOS slide to answer slider
+ * 
+ * Features:
+ * - Pill-shaped track with glass effect
+ * - Green phone icon thumb
+ * - Shimmer animation text
+ */
+export const SlideToAnswer: React.FC<SlideToAnswerProps> = ({ currentFrame = 0 }) => {
+    // Shimmer animation - text opacity pulses
+    const shimmerOpacity = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(currentFrame * 0.1));
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                height: 80,
+                borderRadius: 40,
+                backgroundColor: "rgba(255, 255, 255, 0.15)",
+                backdropFilter: "blur(20px)",
+                display: "flex",
+                alignItems: "center",
+                padding: 6,
+                position: "relative",
+            }}
+        >
+            {/* Thumb - green phone icon */}
+            <div
+                style={{
+                    width: 68,
+                    height: 68,
+                    borderRadius: "50%",
+                    backgroundColor: "#34C759",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 28,
+                    boxShadow: "0 4px 20px rgba(52, 199, 89, 0.4)",
+                }}
+            >
+                📞
+            </div>
+
+            {/* Shimmer text */}
+            <div
+                style={{
+                    flex: 1,
+                    textAlign: "center",
+                    fontSize: 22,
+                    fontWeight: 400,
+                    color: "#fff",
+                    opacity: shimmerOpacity,
+                    fontFamily: "SF Pro Text, -apple-system, sans-serif",
+                }}
+            >
+                slide to answer
+            </div>
+
+            {/* Right arrow indicators */}
+            <div
+                style={{
+                    position: "absolute",
+                    right: 20,
+                    display: "flex",
+                    gap: 4,
+                    opacity: 0.5,
+                }}
+            >
+                <span style={{ color: "#fff", fontSize: 18 }}>›</span>
+                <span style={{ color: "#fff", fontSize: 18 }}>›</span>
+                <span style={{ color: "#fff", fontSize: 18 }}>›</span>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/screens/index.ts
+````typescript
+/**
+ * Screens Index
+ */
+
+export { RecentsScreen } from "./RecentsScreen";
+````
+
+## File: packages/apps-phone/src/components/screens/RecentsScreen.tsx
+````typescript
+/**
+ * Recents Screen - Call History
+ * 
+ * Displays list of recent calls.
+ */
+
+import React from "react";
+
+interface RecentsScreenProps {
+    platform?: "ios" | "android";
+    callLog?: any[];
 }
 
-export const initialInstagramState: InstagramState = {
-    currentView: 'dm', // Default to DM for now as it's the most developed
-    feed: {
-        posts: [],
-        scrollPosition: 0
+/**
+ * RecentsScreen - Call history list
+ */
+export const RecentsScreen: React.FC<RecentsScreenProps> = ({
+    platform = "ios",
+    callLog = []
+}) => {
+    // Sample call history for demo
+    const sampleCalls = [
+        { id: "1", name: "Alice", type: "outgoing", time: "2:34 PM" },
+        { id: "2", name: "Bob", type: "missed", time: "Yesterday" },
+        { id: "3", name: "Charlie", type: "incoming", time: "Yesterday" },
+    ];
+
+    const calls = callLog.length > 0 ? callLog : sampleCalls;
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: platform === "ios" ? "#000" : "#121212",
+                display: "flex",
+                flexDirection: "column",
+            }}
+        >
+            {/* Header */}
+            <div
+                style={{
+                    padding: "60px 20px 20px",
+                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: 34,
+                        fontWeight: 700,
+                        color: "#fff",
+                        fontFamily: platform === "ios"
+                            ? "SF Pro Display, -apple-system, sans-serif"
+                            : "Roboto, sans-serif",
+                    }}
+                >
+                    Recents
+                </div>
+            </div>
+
+            {/* Call list */}
+            <div style={{ flex: 1, overflow: "auto" }}>
+                {calls.map((call: any) => (
+                    <div
+                        key={call.id}
+                        style={{
+                            display: "flex",
+                            alignItems: "center",
+                            padding: "16px 20px",
+                            borderBottom: "1px solid rgba(255,255,255,0.05)",
+                        }}
+                    >
+                        {/* Avatar */}
+                        <div
+                            style={{
+                                width: 50,
+                                height: 50,
+                                borderRadius: "50%",
+                                backgroundColor: "#4a90d9",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                marginRight: 16,
+                            }}
+                        >
+                            <span style={{ color: "#fff", fontSize: 20 }}>
+                                {call.name[0]}
+                            </span>
+                        </div>
+
+                        {/* Info */}
+                        <div style={{ flex: 1 }}>
+                            <div
+                                style={{
+                                    fontSize: 17,
+                                    fontWeight: 500,
+                                    color: call.type === "missed" ? "#FF3B30" : "#fff",
+                                }}
+                            >
+                                {call.name}
+                            </div>
+                            <div
+                                style={{
+                                    fontSize: 14,
+                                    color: "rgba(255,255,255,0.5)",
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 4,
+                                }}
+                            >
+                                <span>
+                                    {call.type === "outgoing" ? "↗" : call.type === "incoming" ? "↙" : "✕"}
+                                </span>
+                                {call.type}
+                            </div>
+                        </div>
+
+                        {/* Time */}
+                        <div
+                            style={{
+                                fontSize: 15,
+                                color: "rgba(255,255,255,0.5)",
+                            }}
+                        >
+                            {call.time}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/shared/ActionButtons.tsx
+````typescript
+/**
+ * Shared Components - Action Buttons
+ * 
+ * Accept/Decline call buttons used in incoming call screens.
+ */
+
+import React from "react";
+
+interface ActionButtonProps {
+    variant: "accept" | "decline";
+    isVideo?: boolean;
+    size?: number;
+    onClick?: () => void;
+}
+
+/**
+ * ActionButton - Accept or Decline call button
+ */
+export const ActionButton: React.FC<ActionButtonProps> = ({
+    variant,
+    isVideo = false,
+    size = 70,
+}) => {
+    const isAccept = variant === "accept";
+
+    return (
+        <div
+            style={{
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                backgroundColor: isAccept ? "#34C759" : "#FF3B30",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 4px 20px ${isAccept ? "rgba(52, 199, 89, 0.4)" : "rgba(255, 59, 48, 0.4)"}`,
+            }}
+        >
+            <span style={{ fontSize: size * 0.4, color: "#fff" }}>
+                {isAccept ? (isVideo ? "📹" : "📞") : "📵"}
+            </span>
+        </div>
+    );
+};
+
+/**
+ * DeclineButton - Red decline button
+ */
+export const DeclineButton: React.FC<{ size?: number; compact?: boolean }> = ({
+    size = 70,
+    compact = false,
+}) => (
+    <div
+        style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: compact ? 4 : 8,
+        }}
+    >
+        <ActionButton variant="decline" size={size} />
+        {!compact && (
+            <span style={{ fontSize: 13, color: "#fff" }}>Decline</span>
+        )}
+    </div>
+);
+
+/**
+ * AcceptButton - Green accept button
+ */
+export const AcceptButton: React.FC<{
+    size?: number;
+    isVideo?: boolean;
+    compact?: boolean;
+}> = ({ size = 70, isVideo = false, compact = false }) => (
+    <div
+        style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: compact ? 4 : 8,
+        }}
+    >
+        <ActionButton variant="accept" isVideo={isVideo} size={size} />
+        {!compact && (
+            <span style={{ fontSize: 13, color: "#fff" }}>Accept</span>
+        )}
+    </div>
+);
+````
+
+## File: packages/apps-phone/src/components/shared/AvatarRing.tsx
+````typescript
+/**
+ * Shared Components - Avatar Ring
+ * 
+ * Pulsing avatar circle used in incoming call screens.
+ */
+
+import React from "react";
+
+interface AvatarRingProps {
+    image?: string;
+    name: string;
+    size?: number;
+}
+
+/**
+ * AvatarRing - Circular avatar with pulsing ring animation
+ */
+export const AvatarRing: React.FC<AvatarRingProps> = ({
+    image,
+    name,
+    size = 200
+}) => {
+    const initials = name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2);
+
+    return (
+        <div
+            style={{
+                position: "relative",
+                width: size,
+                height: size,
+            }}
+        >
+            {/* Pulsing rings */}
+            <div
+                style={{
+                    position: "absolute",
+                    inset: -20,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(255, 255, 255, 0.3)",
+                    animation: "pulse 2s ease-in-out infinite",
+                }}
+            />
+            <div
+                style={{
+                    position: "absolute",
+                    inset: -10,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(255, 255, 255, 0.5)",
+                    animation: "pulse 2s ease-in-out infinite 0.5s",
+                }}
+            />
+
+            {/* Avatar */}
+            <div
+                style={{
+                    width: size,
+                    height: size,
+                    borderRadius: "50%",
+                    overflow: "hidden",
+                    backgroundColor: "#4a90d9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    border: "4px solid rgba(255, 255, 255, 0.3)",
+                }}
+            >
+                {image ? (
+                    <img
+                        src={image}
+                        alt={name}
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                        }}
+                    />
+                ) : (
+                    <span
+                        style={{
+                            fontSize: size * 0.35,
+                            fontWeight: 500,
+                            color: "#fff",
+                        }}
+                    >
+                        {initials}
+                    </span>
+                )}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/shared/CallTimer.tsx
+````typescript
+/**
+ * Shared Components - Call Timer
+ * 
+ * Displays call duration in MM:SS format.
+ */
+
+import React from "react";
+
+interface CallTimerProps {
+    startedAt?: number;
+    currentFrame: number;
+    fps?: number;
+}
+
+/**
+ * CallTimer - Displays elapsed call time
+ */
+export const CallTimer: React.FC<CallTimerProps> = ({
+    startedAt,
+    currentFrame,
+    fps = 30
+}) => {
+    if (startedAt === undefined) {
+        return <span style={{ color: "rgba(255,255,255,0.7)" }}>Connecting...</span>;
+    }
+
+    const elapsedFrames = Math.max(0, currentFrame - startedAt);
+    const elapsedSeconds = Math.floor(elapsedFrames / fps);
+
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+
+    return (
+        <span
+            style={{
+                fontFamily: "SF Pro Display, -apple-system, sans-serif",
+                fontSize: 18,
+                fontVariantNumeric: "tabular-nums",
+                color: "rgba(255, 255, 255, 0.7)",
+            }}
+        >
+            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </span>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/shared/ControlGrid.tsx
+````typescript
+/**
+ * Shared Components - Control Grid
+ * 
+ * 3x2 grid of call controls (Mute, Keypad, Speaker, etc.)
+ */
+
+import React from "react";
+import { CallState } from "@tokovo/core";
+
+interface ControlGridProps {
+    call: CallState;
+    platform?: "ios" | "android";
+}
+
+interface ControlButtonProps {
+    icon: React.ReactNode;
+    label: string;
+    active?: boolean;
+    destructive?: boolean;
+    onClick?: () => void;
+}
+
+const ControlButton: React.FC<ControlButtonProps> = ({
+    icon,
+    label,
+    active = false,
+    destructive = false,
+}) => (
+    <div
+        style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 8,
+        }}
+    >
+        <div
+            style={{
+                width: 70,
+                height: 70,
+                borderRadius: "50%",
+                backgroundColor: destructive
+                    ? "#ff3b30"
+                    : active
+                        ? "#fff"
+                        : "rgba(255, 255, 255, 0.15)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+            }}
+        >
+            <span style={{ fontSize: 28, color: active ? "#000" : "#fff" }}>
+                {icon}
+            </span>
+        </div>
+        <span
+            style={{
+                fontSize: 13,
+                color: "#fff",
+            }}
+        >
+            {label}
+        </span>
+    </div>
+);
+
+/**
+ * ControlGrid - Call control buttons
+ */
+export const ControlGrid: React.FC<ControlGridProps> = ({ call }) => {
+    return (
+        <div
+            style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 30,
+                padding: 20,
+            }}
+        >
+            <ControlButton icon="🔇" label="mute" active={call.isMuted} />
+            <ControlButton icon="⌨️" label="keypad" />
+            <ControlButton icon="🔊" label="speaker" active={call.isSpeakerOn} />
+            <ControlButton icon="➕" label="add call" />
+            <ControlButton icon={call.isVideo ? "📹" : "🎥"} label="FaceTime" />
+            <ControlButton icon="👤" label="contacts" />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/shared/index.ts
+````typescript
+/**
+ * Shared Components Index
+ */
+
+export { AvatarRing } from "./AvatarRing";
+export { CallTimer } from "./CallTimer";
+export { ControlGrid } from "./ControlGrid";
+export { ActionButton, AcceptButton, DeclineButton } from "./ActionButtons";
+````
+
+## File: packages/apps-phone/src/widgets/IncomingCallBanner.tsx
+````typescript
+/**
+ * Incoming Call Banner Widget
+ * 
+ * Notification-style banner for incoming calls (overlay mode).
+ */
+
+import React from "react";
+import { WidgetProps, CallState } from "@tokovo/core";
+import { AcceptButton, DeclineButton } from "../components/shared/ActionButtons";
+
+/**
+ * IncomingCallBanner - Notification banner for incoming calls
+ * 
+ * Used when displayMode is "overlay" instead of "fullscreen".
+ */
+export const IncomingCallBanner: React.FC<WidgetProps> = ({
+    appState,
+    platform = "ios",
+}) => {
+    const call = appState as CallState;
+
+    if (!call || call.status !== "incoming") return null;
+
+    return (
+        <div
+            style={{
+                width: "100%",
+                padding: 16,
+                backgroundColor: platform === "ios"
+                    ? "rgba(28, 28, 30, 0.95)"
+                    : "rgba(30, 30, 30, 0.95)",
+                backdropFilter: "blur(20px)",
+                borderRadius: platform === "ios" ? 24 : 16,
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                boxShadow: "0 10px 40px rgba(0,0,0,0.3)",
+            }}
+        >
+            {/* Avatar */}
+            <div
+                style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: "50%",
+                    backgroundColor: "#4a90d9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                }}
+            >
+                {call.callerAvatar ? (
+                    <img
+                        src={call.callerAvatar}
+                        alt={call.callerName}
+                        style={{
+                            width: "100%",
+                            height: "100%",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                        }}
+                    />
+                ) : (
+                    <span style={{ color: "#fff", fontSize: 22 }}>
+                        {call.callerName?.[0] || "?"}
+                    </span>
+                )}
+            </div>
+
+            {/* Caller info */}
+            <div style={{ flex: 1 }}>
+                <div
+                    style={{
+                        fontSize: 17,
+                        fontWeight: 600,
+                        color: "#fff",
+                        fontFamily: platform === "ios"
+                            ? "SF Pro Display, -apple-system, sans-serif"
+                            : "Roboto, sans-serif",
+                    }}
+                >
+                    {call.callerName}
+                </div>
+                <div
+                    style={{
+                        fontSize: 14,
+                        color: "rgba(255,255,255,0.6)",
+                        marginTop: 2,
+                    }}
+                >
+                    {call.isVideo ? "Video Call" : "Incoming Call"}
+                </div>
+            </div>
+
+            {/* Action buttons */}
+            <div style={{ display: "flex", gap: 12 }}>
+                <DeclineButton size={44} compact />
+                <AcceptButton size={44} isVideo={call.isVideo} compact />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/widgets/index.ts
+````typescript
+/**
+ * Widgets Index
+ */
+
+export { PhoneDynamicIsland } from "./PhoneDynamicIsland";
+export { IncomingCallBanner } from "./IncomingCallBanner";
+````
+
+## File: packages/apps-phone/src/widgets/PhoneDynamicIsland.tsx
+````typescript
+/**
+ * Phone Dynamic Island Widget
+ * 
+ * iOS Dynamic Island for active calls.
+ */
+
+import React from "react";
+import { WidgetProps, CallState } from "@tokovo/core";
+import { CallTimer } from "../components/shared/CallTimer";
+
+/**
+ * PhoneDynamicIsland - iOS Dynamic Island widget for active calls
+ * 
+ * Expansion modes:
+ * - minimal: Just a pulsing green dot
+ * - compact: Pill with avatar + timer
+ * - expanded: Full controls
+ */
+export const PhoneDynamicIsland: React.FC<WidgetProps> = ({
+    appState,
+    expansionMode = "compact",
+    currentFrame,
+}) => {
+    const call = appState as CallState;
+
+    if (!call) return null;
+
+    // Minimal mode - just a green dot
+    if (expansionMode === "minimal") {
+        return (
+            <div
+                style={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: "50%",
+                    backgroundColor: "#34C759",
+                }}
+            />
+        );
+    }
+
+    // Compact mode - pill with avatar and timer
+    if (expansionMode === "compact") {
+        return (
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    padding: "8px 16px",
+                    backgroundColor: "#1c1c1e",
+                    borderRadius: 30,
+                }}
+            >
+                {/* Caller avatar */}
+                <div
+                    style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        backgroundColor: "#4a90d9",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 16,
+                        color: "#fff",
+                    }}
+                >
+                    {call.callerName?.[0] || "?"}
+                </div>
+
+                {/* Timer */}
+                <div style={{ color: "#fff", fontSize: 16 }}>
+                    <CallTimer startedAt={call.answeredAt} currentFrame={currentFrame} />
+                </div>
+
+                {/* Phone icon */}
+                <div
+                    style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        backgroundColor: "#34C759",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 14,
+                    }}
+                >
+                    📞
+                </div>
+            </div>
+        );
+    }
+
+    // Expanded mode - full controls
+    return (
+        <div
+            style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+                padding: "16px 24px",
+                backgroundColor: "#1c1c1e",
+                borderRadius: 40,
+            }}
+        >
+            {/* Caller info */}
+            <div
+                style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    backgroundColor: "#4a90d9",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 20,
+                    color: "#fff",
+                }}
+            >
+                {call.callerName?.[0] || "?"}
+            </div>
+
+            <div style={{ flex: 1 }}>
+                <div style={{ color: "#fff", fontSize: 16, fontWeight: 500 }}>
+                    {call.callerName}
+                </div>
+                <CallTimer startedAt={call.answeredAt} currentFrame={currentFrame} />
+            </div>
+
+            {/* Controls */}
+            <div style={{ display: "flex", gap: 12 }}>
+                <div
+                    style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        backgroundColor: call.isMuted ? "#fff" : "rgba(255,255,255,0.2)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    🔇
+                </div>
+                <div
+                    style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        backgroundColor: "#FF3B30",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}
+                >
+                    📵
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-phone
+ * 
+ * Phone Call Simulation Package
+ * 
+ * Features:
+ * - Incoming call screens (iOS/Android variants)
+ * - Active call screens with controls
+ * - Dynamic Island widget (iOS)
+ * - Notification banner (overlay mode)
+ * - Platform-specific UI (iOS 16, 17, Android Pixel, Samsung)
+ */
+
+// Export plugin
+export { PhonePlugin, registerPhonePlugin } from "./plugin";
+
+// Export UI
+export { PhoneApp } from "./ui";
+
+// Export runtime
+export { phoneReducer } from "./runtime";
+
+// Auto-register on import
+import { registerPhonePlugin } from "./plugin";
+registerPhonePlugin();
+````
+
+## File: packages/apps-phone/src/plugin.ts
+````typescript
+/**
+ * Phone App Plugin Definition
+ * 
+ * Self-contained plugin registration for the Phone app.
+ * Registers reducer, view, sounds, widgets, and metadata with the PluginManager.
+ */
+
+import {
+    definePlugin,
+    PluginManager,
+    APP_IDS,
+    TokovoPlugin,
+    AppViewComponent,
+    WidgetSlot,
+} from "@tokovo/core";
+import { phoneReducer } from "./runtime";
+import { PhoneApp } from "./ui";
+
+// Import widgets
+import { PhoneDynamicIsland } from "./widgets/PhoneDynamicIsland";
+import { IncomingCallBanner } from "./widgets/IncomingCallBanner";
+
+/**
+ * Phone App Widget Slots
+ */
+const phoneWidgets: WidgetSlot[] = [
+    // iOS Dynamic Island - Active Call
+    {
+        mode: "dynamicIsland",
+        platforms: ["ios"],
+        priority: 100, // Calls have highest priority
+        component: PhoneDynamicIsland,
+        expansionModes: ["minimal", "compact", "expanded"],
     },
-    stories: {
-        users: [],
+    // Notification Banner - Incoming Call (overlay mode)
+    {
+        mode: "notification",
+        platforms: ["ios", "android"],
+        priority: 100,
+        component: IncomingCallBanner,
     },
-    notifications: {
-        items: []
+];
+
+/**
+ * Phone App Plugin Configuration
+ */
+export const PhonePlugin: TokovoPlugin = definePlugin({
+    id: APP_IDS.PHONE,
+    name: "Phone",
+    version: "1.0.0",
+
+    // Branding
+    icon: "phone-icon.png",
+    primaryColor: "#34C759",
+
+    // Core functionality
+    appView: PhoneApp as unknown as AppViewComponent,
+    reducer: phoneReducer,
+
+    // Event types this plugin handles
+    eventTypes: [
+        "INCOMING",
+        "ANSWER",
+        "DECLINE",
+        "END",
+        "TOGGLE_MUTE",
+        "TOGGLE_SPEAKER",
+        "TOGGLE_HOLD",
+    ],
+
+    // Sound effects
+    sounds: {
+        "ringtone": "ringtone.mp3",
+        "call_end": "call-end.mp3",
+        "dial_tone": "dial-tone.mp3",
+    },
+
+    notificationSound: "ringtone.mp3",
+
+    // Widgets
+    widgets: phoneWidgets,
+});
+
+/**
+ * Register the Phone plugin
+ */
+export function registerPhonePlugin(): void {
+    PluginManager.register(PhonePlugin);
+}
+````
+
+## File: packages/apps-phone/src/runtime.ts
+````typescript
+/**
+ * Phone App Runtime - Event Reducer
+ * 
+ * Handles CALL events and updates device.call state.
+ */
+
+import { AppReducer, WorldState, TimelineEvent, CallState } from "@tokovo/core";
+
+/**
+ * Phone app reducer - processes CALL events
+ */
+export const phoneReducer: AppReducer = (
+    draft: WorldState,
+    event: TimelineEvent
+): void => {
+    // Only handle CALL kind events
+    if (event.kind !== "CALL") return;
+
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    switch (event.type) {
+        case "INCOMING": {
+            const e = event as any;
+            device.call = {
+                status: "incoming",
+                callerId: e.callerId,
+                callerName: e.callerName,
+                callerAvatar: e.callerAvatar,
+                isVideo: e.isVideo ?? false,
+                callType: e.callType ?? "voice",
+                displayMode: e.displayMode ?? "fullscreen",
+                callerMetadata: e.callerMetadata,
+                startedAt: event.at,
+            };
+            break;
+        }
+
+        case "ANSWER": {
+            if (device.call) {
+                device.call.status = "active";
+                device.call.answeredAt = event.at;
+            }
+            break;
+        }
+
+        case "DECLINE": {
+            if (device.call) {
+                device.call.status = "declined";
+                device.call.endedAt = event.at;
+            }
+            break;
+        }
+
+        case "END": {
+            if (device.call) {
+                device.call.status = "ended";
+                device.call.endedAt = event.at;
+            }
+            break;
+        }
+
+        case "TOGGLE_MUTE": {
+            if (device.call) {
+                device.call.isMuted = !device.call.isMuted;
+            }
+            break;
+        }
+
+        case "TOGGLE_SPEAKER": {
+            if (device.call) {
+                device.call.isSpeakerOn = !device.call.isSpeakerOn;
+            }
+            break;
+        }
+
+        case "TOGGLE_HOLD": {
+            if (device.call) {
+                device.call.isOnHold = !device.call.isOnHold;
+            }
+            break;
+        }
     }
 };
 ````
 
-## File: packages/apps-instagram/package.json
+## File: packages/apps-phone/package.json
 ````json
 {
-    "name": "@tokovo/apps-instagram",
+    "name": "@tokovo/apps-phone",
     "version": "0.0.0",
+    "type": "module",
     "main": "./src/index.ts",
     "types": "./src/index.ts",
+    "scripts": {
+        "build": "echo 'Build skipped - used at runtime only'",
+        "dev": "tsc --watch",
+        "lint": "eslint src"
+    },
     "dependencies": {
         "@tokovo/core": "workspace:*",
-        "react": "^18.0.0",
-        "immer": "^10.0.0"
+        "@tokovo/devices": "workspace:*"
     },
     "devDependencies": {
-        "@types/react": "^18.0.0",
+        "@types/react": "^18.2.0",
         "typescript": "^5.0.0"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0",
+        "remotion": "^4.0.0"
     }
 }
 ````
 
-## File: packages/apps-instagram/tsconfig.json
+## File: packages/apps-phone/tsconfig.json
 ````json
 {
     "extends": "../../tsconfig.base.json",
@@ -4642,7 +7031,7 @@ export const initialInstagramState: InstagramState = {
         "jsx": "react-jsx"
     },
     "include": [
-        "src/**/*"
+        "src"
     ]
 }
 ````
@@ -10099,29 +12488,6 @@ Visual Consistency is not accidental. It is enforced by this dependency chain:
 Modify `src/config/layout-config.ts`. The rest of the system updates automatically.
 ````
 
-## File: packages/apps-whatsapp/package.json
-````json
-{
-    "name": "@tokovo/apps-whatsapp",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
-}
-````
-
 ## File: packages/compiler/src/passes/index.ts
 ````typescript
 /**
@@ -12975,190 +15341,6 @@ export interface DirectorDebug {
 }
 ````
 
-## File: packages/core/src/constants.ts
-````typescript
-/**
- * Constants - Centralized configuration values
- * 
- * All magic numbers and default values should be defined here.
- * This makes the codebase more maintainable and configurable.
- */
-
-// =============================================================================
-// TIMING CONSTANTS
-// =============================================================================
-
-export const TIMING = {
-    /** Default frames per second */
-    FPS_DEFAULT: 30,
-
-    /** Duration of heads-up notification in frames (5 seconds at 30fps) */
-    HEADS_UP_DURATION: 150,
-
-    /** Buffer frames to keep effects after they end (for smooth transitions) */
-    EFFECT_CLEANUP_BUFFER: 30,
-
-    /** Default typing indicator animation duration in frames */
-    TYPING_ANIMATION_DURATION: 90,
-
-    /** Default message appear animation duration in frames */
-    MESSAGE_ANIMATION_DURATION: 15,
-} as const;
-
-// =============================================================================
-// LAYOUT CONSTANTS (in 3x scale for Remotion)
-// =============================================================================
-
-export const LAYOUT = {
-    /** Chat header height (status bar + nav bar) */
-    CHAT_HEADER_HEIGHT: 414,
-
-    /** Chat input area height (input field + home indicator) */
-    CHAT_INPUT_HEIGHT: 272,
-
-    /** Status bar height */
-    STATUS_BAR_HEIGHT: 144,
-
-    /** Navigation bar height */
-    NAV_BAR_HEIGHT: 270,
-
-    /** Home indicator height */
-    HOME_INDICATOR_HEIGHT: 102,
-
-    /** Split layout divider width */
-    SPLIT_DIVIDER_WIDTH: 2,
-
-    /** Message bubble max width ratio (0-1) */
-    MESSAGE_BUBBLE_MAX_WIDTH: 0.75,
-
-    /** Message bubble border radius */
-    MESSAGE_BUBBLE_RADIUS: 54,
-
-    /** Message spacing */
-    MESSAGE_GAP: 12,
-} as const;
-
-// =============================================================================
-// DEFAULT VALUES
-// =============================================================================
-
-export const DEFAULTS = {
-    /** Default audio volume (0-1) */
-    VOLUME: 1,
-
-    /** Default background music volume */
-    BACKGROUND_MUSIC_VOLUME: 0.5,
-
-    /** Default video background color */
-    BACKGROUND_COLOR: "#0a0a1a",
-
-    /** Default split layout divider color */
-    SPLIT_LINE_COLOR: "#333333",
-
-    /** Default zoom scale */
-    ZOOM_SCALE: 1.3,
-
-    /** Default shake intensity */
-    SHAKE_INTENSITY: 10,
-
-    /** Default shake frequency (shakes per second) */
-    SHAKE_FREQUENCY: 16,
-
-    /** Default shake decay */
-    SHAKE_DECAY: 0.3,
-
-    /** Default camera easing */
-    CAMERA_EASING: "ease-out" as const,
-
-    /** Default PIP scale */
-    PIP_SCALE: 0.3,
-
-    /** Default PIP position */
-    PIP_POSITION: "bottom-right" as const,
-} as const;
-
-// =============================================================================
-// APP IDENTIFIERS
-// =============================================================================
-
-export const APP_IDS = {
-    WHATSAPP: "app_whatsapp",
-    INSTAGRAM: "app_instagram",
-    IMESSAGE: "app_imessage",
-    TIKTOK: "app_tiktok",
-    TWITTER: "app_twitter",
-} as const;
-
-// =============================================================================
-// DEVICE IDENTIFIERS
-// =============================================================================
-
-export const DEVICE_PROFILES = {
-    IPHONE_16: "iphone16",
-    PIXEL: "pixel",
-} as const;
-
-// =============================================================================
-// EVENT KINDS
-// =============================================================================
-
-export const EVENT_KINDS = {
-    DEVICE: "DEVICE",
-    APP: "APP",
-    CAMERA: "CAMERA",
-    AUDIO: "AUDIO",
-} as const;
-
-// =============================================================================
-// SOUND IDENTIFIERS
-// =============================================================================
-
-export const SOUND_IDS = {
-    WHATSAPP_RECEIVED: "whatsapp_received",
-    WHATSAPP_SENT: "whatsapp_sent",
-    NOTIFICATION: "notification",
-    RINGTONE: "ringtone",
-    TYPING: "typing",
-    CAMERA_SHUTTER: "camera_shutter",
-} as const;
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Convert seconds to frames at given FPS
- */
-export function secondsToFrames(seconds: number, fps: number = TIMING.FPS_DEFAULT): number {
-    return Math.round(seconds * fps);
-}
-
-/**
- * Convert frames to seconds at given FPS
- */
-export function framesToSeconds(frames: number, fps: number = TIMING.FPS_DEFAULT): number {
-    return frames / fps;
-}
-
-/**
- * Get timing value in frames for common durations
- */
-export const DURATION_FRAMES = {
-    /** 0.5 seconds */
-    HALF_SECOND: secondsToFrames(0.5),
-    /** 1 second */
-    ONE_SECOND: secondsToFrames(1),
-    /** 2 seconds */
-    TWO_SECONDS: secondsToFrames(2),
-    /** 3 seconds */
-    THREE_SECONDS: secondsToFrames(3),
-    /** 5 seconds */
-    FIVE_SECONDS: secondsToFrames(5),
-    /** 10 seconds */
-    TEN_SECONDS: secondsToFrames(10),
-} as const;
-````
-
 ## File: packages/core/src/eventUtils.ts
 ````typescript
 /**
@@ -14503,27 +16685,68 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
 export default IOSKeyboard;
 ````
 
-## File: packages/devices/package.json
-````json
-{
-    "name": "@tokovo/devices",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
-}
+## File: packages/devices/src/pixel/Frame.tsx
+````typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Status Bar Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                zIndex: 1000,
+                pointerEvents: "none",
+                padding: "30px 40px 0 40px"
+            }}>
+                {statusBar}
+            </div>
+
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white"
+            }}>
+
+                {children}
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/dsl/examples/breakup-01.dsl.ts
@@ -16105,6 +18328,214 @@ export const audio = {
         volume,
         loop,
     } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/call.ts
+````typescript
+/**
+ * Phone Call DSL Events
+ * 
+ * Event factories for phone call simulation.
+ * Supports incoming, outgoing, answer, decline, end, and call controls.
+ */
+
+import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
+
+// =============================================================================
+// CALL EVENT TYPES
+// =============================================================================
+
+export interface CallIncomingEvent {
+    at: number;
+    kind: "CALL";
+    type: "INCOMING";
+    deviceId?: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    callerMetadata?: CallerMetadata;
+}
+
+export interface CallAnswerEvent {
+    at: number;
+    kind: "CALL";
+    type: "ANSWER";
+    deviceId?: string;
+}
+
+export interface CallDeclineEvent {
+    at: number;
+    kind: "CALL";
+    type: "DECLINE";
+    deviceId?: string;
+}
+
+export interface CallEndEvent {
+    at: number;
+    kind: "CALL";
+    type: "END";
+    deviceId?: string;
+}
+
+export interface CallToggleMuteEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_MUTE";
+    deviceId?: string;
+}
+
+export interface CallToggleSpeakerEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_SPEAKER";
+    deviceId?: string;
+}
+
+export interface CallToggleHoldEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_HOLD";
+    deviceId?: string;
+}
+
+export type CallEvent =
+    | CallIncomingEvent
+    | CallAnswerEvent
+    | CallDeclineEvent
+    | CallEndEvent
+    | CallToggleMuteEvent
+    | CallToggleSpeakerEvent
+    | CallToggleHoldEvent;
+
+// =============================================================================
+// CALL EVENT FACTORIES
+// =============================================================================
+
+export interface IncomingCallOptions {
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    posterImage?: string;
+    posterNameFont?: string;
+    deviceId?: string;
+}
+
+/**
+ * Phone Call DSL - Event factories for phone call simulation
+ */
+export const call = {
+    /**
+     * Trigger an incoming phone call
+     * 
+     * @example
+     * dsl.call.incoming(0, "alice", "Alice Smith", { displayMode: "fullscreen" })
+     * dsl.call.incoming(0, "bob", "Bob", { displayMode: "overlay", posterImage: "/bob.jpg" })
+     */
+    incoming: (
+        at: number,
+        callerId: string,
+        callerName: string,
+        opts?: IncomingCallOptions
+    ): CallIncomingEvent => ({
+        at,
+        kind: "CALL",
+        type: "INCOMING",
+        callerId,
+        callerName,
+        callerAvatar: opts?.callerAvatar,
+        isVideo: opts?.isVideo ?? false,
+        callType: opts?.callType ?? "voice",
+        displayMode: opts?.displayMode ?? "fullscreen",
+        deviceId: opts?.deviceId,
+        callerMetadata: opts?.posterImage ? {
+            posterImage: opts.posterImage,
+            posterStyle: "modern",
+            posterNameFont: opts.posterNameFont,
+        } : undefined,
+    }),
+
+    /**
+     * Answer an incoming call
+     * 
+     * @example
+     * dsl.call.answer(100)
+     */
+    answer: (at: number, deviceId?: string): CallAnswerEvent => ({
+        at,
+        kind: "CALL",
+        type: "ANSWER",
+        deviceId,
+    }),
+
+    /**
+     * Decline an incoming call
+     * 
+     * @example
+     * dsl.call.decline(50)
+     */
+    decline: (at: number, deviceId?: string): CallDeclineEvent => ({
+        at,
+        kind: "CALL",
+        type: "DECLINE",
+        deviceId,
+    }),
+
+    /**
+     * End an active call
+     * 
+     * @example
+     * dsl.call.end(300)
+     */
+    end: (at: number, deviceId?: string): CallEndEvent => ({
+        at,
+        kind: "CALL",
+        type: "END",
+        deviceId,
+    }),
+
+    /**
+     * Toggle mute on active call
+     * 
+     * @example
+     * dsl.call.toggleMute(150)
+     */
+    toggleMute: (at: number, deviceId?: string): CallToggleMuteEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_MUTE",
+        deviceId,
+    }),
+
+    /**
+     * Toggle speaker on active call
+     * 
+     * @example
+     * dsl.call.toggleSpeaker(160)
+     */
+    toggleSpeaker: (at: number, deviceId?: string): CallToggleSpeakerEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_SPEAKER",
+        deviceId,
+    }),
+
+    /**
+     * Toggle hold on active call
+     * 
+     * @example
+     * dsl.call.toggleHold(200)
+     */
+    toggleHold: (at: number, deviceId?: string): CallToggleHoldEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_HOLD",
+        deviceId,
+    }),
 };
 ````
 
@@ -20119,38 +22550,33 @@ export default TouchOverlay;
 export * from "@tokovo/core";
 ````
 
-## File: packages/renderer/src/VisualDebugger.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-
-export const VisualDebugger: React.FC<{ world: WorldState; t: number }> = ({ world, t }) => {
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 50,
-            right: 50,
-            backgroundColor: "rgba(0, 0, 0, 0.8)",
-            color: "#0f0",
-            fontFamily: "monospace",
-            fontSize: 24,
-            padding: 20,
-            borderRadius: 10,
-            zIndex: 9999,
-            pointerEvents: "none",
-            maxWidth: 600
-        }}>
-            <div><strong>Frame:</strong> {t.toFixed(0)}</div>
-            <div><strong>Active App:</strong> {Object.values(world.devices)[0]?.foregroundAppId || "Home"}</div>
-            <div><strong>Events:</strong></div>
-            {/* We would need access to events here, but world state doesn't store history. 
-                Just showing state for now. */}
-            <div style={{ marginTop: 10, fontSize: 18, opacity: 0.8 }}>
-                Camera: {world.camera.type}
-            </div>
-        </div>
-    );
-};
+## File: packages/renderer/package.json
+````json
+{
+    "name": "@tokovo/renderer",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.211"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "@types/react-dom": "18.2.0"
+    }
+}
 ````
 
 ## File: packages/renderer/README.md
@@ -20588,49 +23014,584 @@ const layout = computeLayout({
 3. Pass `layout` down to the specific App View, which will branch based on `layout.kind` and render accordingly.
 ````
 
-## File: apps/video-runner/src/AndroidVideo.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { PixelProfile } from "@tokovo/devices";
-import { androidEpisode } from "@tokovo/episodes";
+## File: llms.txt
+````
+# Tokovo - LLM Complete Reference
 
-export const AndroidVideo: React.FC = () => {
+> A programmable phone-simulation engine for cinematic video storytelling.
+> Version: 1.0.0
+> Last Updated: 2024-12-14
+
+---
+
+## QUICK START
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+import { replay, WorldState, TimelineEvent } from "@tokovo/core";
+
+// Create episode
+const episode = {
+    initialWorld: { /* WorldState */ },
+    events: [
+        dsl.messages.receive(60, "dm_alice", "Alice", "Hey!"),
+        dsl.keyboard.show(90, "phone"),
+        ...generateTyping(100, "phone", "Hi there!"),
+        dsl.messages.send(180, "dm_alice", "Hi there!"),
+        dsl.camera.zoom(200, 1.2, 30),
+    ]
+};
+
+// Render at frame N
+const worldAtFrame = replay(episode.initialWorld, episode.events, frameN);
+```
+
+---
+
+## ARCHITECTURE OVERVIEW
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        TOKOVO ENGINE                            │
+├─────────────────────────────────────────────────────────────────┤
+│  Episode (JSON/TS)                                               │
+│       │                                                          │
+│       ▼                                                          │
+│  ┌─────────────────┐                                             │
+│  │   Core Engine   │  replay(initialWorld, events, frame)       │
+│  │   @tokovo/core  │                                             │
+│  └────────┬────────┘                                             │
+│           │ WorldState at frame N                                │
+│           ▼                                                      │
+│  ┌─────────────────┐                                             │
+│  │    Renderer     │  TokovoRenderer                             │
+│  │ @tokovo/renderer│                                             │
+│  └────────┬────────┘                                             │
+│           │                                                      │
+│           ▼                                                      │
+│  ┌─────────────────┐                                             │
+│  │    Remotion     │  Video output                               │
+│  │                 │                                             │
+│  └─────────────────┘                                             │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Core Principles
+
+1. **Deterministic** - At any frame `t`, world state is reproducible
+2. **Composable** - Add devices/apps without modifying core
+3. **Data-driven** - Episodes define everything; no hidden state
+4. **Cinematic** - Optimized for rendering, not interaction
+
+---
+
+## PACKAGES
+
+| Package | Description | Key Exports |
+|---------|-------------|-------------|
+| `@tokovo/core` | Engine, types, state management | `replay()`, `WorldState`, `TimelineEvent`, `PluginManager` |
+| `@tokovo/dsl` | Event factories for authoring | `dsl`, `generateTyping` |
+| `@tokovo/renderer` | React rendering layer | `TokovoRenderer`, `AudioLayer`, `DeviceFrame` |
+| `@tokovo/devices` | Device profiles, StatusBar, Keyboard | `iPhone16Profile`, `IOSKeyboard`, `StatusBar` |
+| `@tokovo/apps-whatsapp` | WhatsApp chat UI | `WhatsAppApp` |
+| `@tokovo/apps-phone` | Phone call simulation | `PhoneApp` |
+| `@tokovo/apps-twitter` | Twitter/X UI | `TwitterApp` |
+| `@tokovo/apps-instagram` | Instagram UI | `InstagramApp` |
+| `@tokovo/apps-spotify` | Spotify UI | `SpotifyApp` |
+| `@tokovo/compiler` | Scene compilation | `compile()` |
+| `@tokovo/ir` | Intermediate representation | Scene IR types |
+
+---
+
+## DSL EVENTS REFERENCE
+
+### Import
+
+```typescript
+import { dsl, generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
+```
+
+### All Event Types
+
+| Module | Method | Signature |
+|--------|--------|-----------|
+| **keyboard** | `show` | `(at, deviceId, layout?)` |
+| | `hide` | `(at, deviceId)` |
+| | `typeChar` | `(at, deviceId, char)` |
+| | `backspace` | `(at, deviceId)` |
+| | `clear` | `(at, deviceId)` |
+| **messages** | `send` | `(at, conversationId, text)` |
+| | `receive` | `(at, conversationId, from, text)` |
+| | `typingStart` | `(at, conversationId, from)` |
+| | `typingEnd` | `(at, conversationId, from)` |
+| | `sendImage` | `(at, conversationId, imageUrl, caption?)` |
+| | `receiveImage` | `(at, conversationId, from, imageUrl, caption?)` |
+| | `markSent` | `(at, conversationId, messageId)` |
+| | `markDelivered` | `(at, conversationId, messageId)` |
+| | `markRead` | `(at, conversationId, messageId)` |
+| **camera** | `zoom` | `(at, scale, duration, opts?)` |
+| | `pan` | `(at, translateX, translateY, duration)` |
+| | `shake` | `(at, intensity, duration, opts?)` |
+| | `reset` | `(at, duration)` |
+| **audio** | `play` | `(at, soundId, volume?, opts?)` |
+| | `stop` | `(at, instanceId)` |
+| | `fade` | `(at, instanceId, toVolume, duration)` |
+| | `backgroundMusic` | `(at, soundId, volume?, loop?)` |
+| **os** | `setTime` | `(at, timestamp, deviceId?)` |
+| | `setBattery` | `(at, level, charging?, deviceId?)` |
+| | `setNetwork` | `(at, network, strength?, deviceId?)` |
+| | `setDND` | `(at, enabled, deviceId?)` |
+| | `setLowPower` | `(at, enabled, deviceId?)` |
+| | `setAirplane` | `(at, enabled, deviceId?)` |
+| **touch** | `tap` | `(at, x, y, deviceId?)` |
+| | `longPress` | `(at, x, y, duration, deviceId?)` |
+| | `drag` | `(at, startX, startY, endX, endY, duration)` |
+| | `scroll` | `(at, y, velocity?, deviceId?)` |
+| **call** | `incoming` | `(at, callerId, callerName, opts?)` |
+| | `answer` | `(at, deviceId?)` |
+| | `decline` | `(at, deviceId?)` |
+| | `end` | `(at, deviceId?)` |
+| | `toggleMute` | `(at, deviceId?)` |
+| | `toggleSpeaker` | `(at, deviceId?)` |
+| | `toggleHold` | `(at, deviceId?)` |
+
+### Typing Simulation
+
+```typescript
+generateTyping(startFrame, deviceId, text, options?)
+```
+
+**Options:**
+- `speed`: `"slow"` | `"normal"` | `"casual"` | `"fast"` | `"burst"`
+- `typoPositions`: `number[]` - indices where typos occur
+
+**Typing Speeds:**
+| Speed | Frames/Char |
+|-------|-------------|
+| slow | 12 |
+| normal | 8 |
+| casual | 6 |
+| fast | 4 |
+| burst | 2 |
+
+---
+
+## WORLD STATE STRUCTURE
+
+```typescript
+interface WorldState {
+    devices: Record<string, DeviceState>;
+    conversations: Record<string, ConversationState>;
+    appState: Record<string, any>;
+    camera: CameraState;
+    audio: AudioState;
+}
+
+interface DeviceState {
+    id: string;
+    profileId: string;                 // "iphone16", "pixel8", etc.
+    isLocked: boolean;
+    foregroundAppId: string;           // "app_whatsapp", "app_phone", etc.
+    notifications: Notification[];
+    os: DeviceOSState;
+    keyboard?: KeyboardState;
+    call?: CallState;
+}
+
+interface DeviceOSState {
+    clock: number;                     // Unix timestamp ms
+    battery: number;                   // 0-100
+    charging: boolean;
+    network: NetworkType;              // "wifi", "5G", "4G", "LTE", "3G", "no-service"
+    wifiStrength: number;              // 0-3
+    cellStrength: number;              // 0-4
+    dnd: boolean;                      // Do Not Disturb
+    lowPowerMode: boolean;
+    airplaneMode: boolean;
+}
+
+interface CallState {
+    status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo: boolean;
+    callType: "voice" | "video" | "facetime";
+    displayMode: "fullscreen" | "overlay" | "minimized";
+    startedAt?: number;               // Frame when call started
+    answeredAt?: number;              // Frame when answered
+    isMuted?: boolean;
+    isSpeakerOn?: boolean;
+    isOnHold?: boolean;
+    callerMetadata?: {
+        posterImage?: string;         // Full-screen contact poster (iOS 17+)
+        posterStyle?: string;
+        posterNameFont?: string;
+    };
+}
+
+interface ConversationState {
+    id: string;
+    type: "dm" | "group";
+    name: string;
+    messages: Message[];
+    typing: Record<string, boolean>;
+}
+```
+
+---
+
+## APPS (PLUGINS)
+
+### WhatsApp (`@tokovo/apps-whatsapp`)
+
+**App ID:** `app_whatsapp`
+
+**Screens:**
+- `chat` - Chat view with messages
+- `chatList` - List of conversations
+
+**Features:**
+- Message bubbles (text, image, voice)
+- Typing indicators
+- Read receipts (ticks)
+- Group chats
+- Emoji reactions
+
+**Usage:**
+```typescript
+foregroundAppId: "app_whatsapp"
+appState: {
+    app_whatsapp: {
+        screen: "chat",
+        conversationId: "dm_friend"
+    }
+}
+```
+
+### Phone (`@tokovo/apps-phone`)
+
+**App ID:** `app_phone`
+
+**Features:**
+- Incoming call screens (iOS 17 Contact Poster, Classic slide-to-answer)
+- Active call with controls (mute, speaker, keypad)
+- Dynamic Island widget
+- Notification banner mode
+- Platform variants (iOS/Android)
+
+**Usage:**
+```typescript
+dsl.call.incoming(0, "alice", "Alice Johnson", {
+    displayMode: "fullscreen",
+    posterImage: "https://example.com/alice.jpg"
+});
+dsl.call.answer(120);
+dsl.call.toggleMute(180);
+dsl.call.end(300);
+```
+
+### Twitter/X (`@tokovo/apps-twitter`)
+
+**App ID:** `app_twitter`
+
+**Features:**
+- Tweet composition
+- Timeline feed
+- Profile views
+- Like/Retweet animations
+
+### Instagram (`@tokovo/apps-instagram`)
+
+**App ID:** `app_instagram`
+
+**Features:**
+- Feed posts
+- Stories
+- DMs
+- Reels
+
+### Spotify (`@tokovo/apps-spotify`)
+
+**App ID:** `app_spotify`
+
+**Features:**
+- Now Playing
+- Playlists
+- Mini player
+
+---
+
+## DEVICES
+
+### Device Profiles
+
+| Profile ID | Device | Dimensions | Platform |
+|------------|--------|------------|----------|
+| `iphone16` | iPhone 16 Pro | 1290×2796 | iOS |
+| `iphone15` | iPhone 15 Pro | 1290×2796 | iOS |
+| `iphone14` | iPhone 14 | 1170×2532 | iOS |
+| `pixel8` | Pixel 8 | 1080×2400 | Android |
+| `pixel7` | Pixel 7 | 1080×2400 | Android |
+| `s24` | Samsung S24 | 1080×2340 | Android |
+
+### Status Bar Elements
+
+- Clock (dynamic via `dsl.os.setTime`)
+- Battery (level + charging indicator)
+- Network (WiFi bars / cellular signal)
+- DND indicator (moon icon)
+
+### Keyboard
+
+- QWERTY layout
+- Emoji keyboard
+- Numeric keypad
+- Key pop-ups on press
+- Realistic typing simulation
+
+---
+
+## CAMERA SYSTEM
+
+### Effects
+
+| Effect | Description | Parameters |
+|--------|-------------|------------|
+| `zoom` | Scale view | `scale`, `duration`, `originX`, `originY` |
+| `pan` | Translate view | `translateX`, `translateY`, `duration` |
+| `shake` | Handheld effect | `intensity`, `duration`, `frequency`, `decay` |
+| `reset` | Return to default | `duration` |
+
+### Example
+
+```typescript
+// Dramatic reveal
+dsl.camera.zoom(0, 1.3, 30, { originY: 0.8 }),    // Zoom into message
+dsl.camera.shake(100, 5, 15),                     // Impact shake
+dsl.camera.reset(150, 25),                        // Smooth reset
+```
+
+---
+
+## AUDIO SYSTEM
+
+### Sound IDs
+
+| Category | Sound IDs |
+|----------|-----------|
+| WhatsApp | `whatsapp_sent`, `whatsapp_received` |
+| Phone | `ringtone`, `call_end`, `dial_tone` |
+| System | `notification`, `keyboard_click` |
+
+### Buses
+
+- `music` - Background music
+- `sfx` - Sound effects
+- `voice` - Voice/calls
+- `ui` - UI sounds
+
+---
+
+## COMPLETE EXAMPLE
+
+```typescript
+import { dsl, generateTyping } from "@tokovo/dsl";
+import { WorldState, TimelineEvent, DEFAULT_BUS_CONFIG } from "@tokovo/core";
+
+const DEVICE_ID = "phone";
+const CONVO_ID = "dm_friend";
+
+function createEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const START_TIME = new Date();
+    START_TIME.setHours(14, 45, 0, 0);
+
+    const initialWorld: WorldState = {
+        devices: {
+            [DEVICE_ID]: {
+                id: DEVICE_ID,
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                os: {
+                    clock: START_TIME.getTime(),
+                    battery: 87,
+                    charging: false,
+                    network: "wifi",
+                    wifiStrength: 3,
+                    cellStrength: 4,
+                    dnd: false,
+                    lowPowerMode: false,
+                    airplaneMode: false,
+                },
+            },
+        },
+        conversations: {
+            [CONVO_ID]: {
+                id: CONVO_ID,
+                type: "dm",
+                name: "Friend",
+                messages: [
+                    { id: "msg_1", type: "text", from: "Friend", text: "Hey!", status: "read" },
+                ],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: { screen: "chat", conversationId: CONVO_ID },
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeDeviceId: DEVICE_ID,
+            layout: { mode: "SINGLE", primaryDeviceId: DEVICE_ID },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
+    };
+
+    const events: TimelineEvent[] = [
+        // Scene 1: Friend typing
+        dsl.messages.typingStart(0, CONVO_ID, "Friend"),
+        dsl.camera.zoom(20, 1.1, 20, { originY: 0.7 }),
+        
+        // Message arrives
+        dsl.messages.typingEnd(60, CONVO_ID, "Friend"),
+        dsl.messages.receive(60, CONVO_ID, "Friend", "What are you up to?"),
+        dsl.audio.play(60, "whatsapp_received"),
+        
+        // Scene 2: User responds
+        dsl.camera.reset(80, 15),
+        dsl.keyboard.show(90, DEVICE_ID),
+        ...generateTyping(110, DEVICE_ID, "Not much, just chilling", { speed: "casual" }),
+        dsl.messages.send(200, CONVO_ID, "Not much, just chilling"),
+        dsl.audio.play(200, "whatsapp_sent"),
+        dsl.keyboard.hide(210, DEVICE_ID),
+        
+        // Battery drains
+        dsl.os.setBattery(250, 86),
+        dsl.os.setTime(250, START_TIME.getTime() + 10000),
+    ];
+
+    return { initialWorld, events };
+}
+```
+
+---
+
+## VIDEO COMPONENT TEMPLATE
+
+```tsx
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, createEventIndex } from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+
+export const MyVideo: React.FC = () => {
     const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / PixelProfile.dimensions.width;
-    const scaleY = availableHeight / PixelProfile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
-
+    
+    const episode = useMemo(() => createEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, frame);
+    
     return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: PixelProfile.dimensions.width,
-                height: PixelProfile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
-            </div>
-        </div>
+        <AbsoluteFill style={{ backgroundColor: "#0a0a0f" }}>
+            <AudioLayer world={world} t={frame} />
+            <TokovoRenderer
+                world={world}
+                t={frame}
+                eventIndex={eventIndex}
+                directorEnabled={true}
+            />
+        </AbsoluteFill>
     );
 };
+```
+
+---
+
+## FILE STRUCTURE
+
+```
+tokovo/
+├── apps/
+│   ├── docs/              # Nextra documentation site
+│   └── video-runner/      # Remotion video app
+├── packages/
+│   ├── core/              # Engine, types, replay()
+│   ├── dsl/               # Event factories
+│   ├── renderer/          # TokovoRenderer, DeviceFrame
+│   ├── devices/           # Device profiles, StatusBar, Keyboard
+│   ├── apps-whatsapp/     # WhatsApp plugin
+│   ├── apps-phone/        # Phone call plugin
+│   ├── apps-twitter/      # Twitter plugin
+│   ├── apps-instagram/    # Instagram plugin
+│   ├── apps-spotify/      # Spotify plugin
+│   ├── compiler/          # Scene compiler
+│   ├── ir/                # Intermediate representation
+│   └── adapters/          # Platform adapters
+└── docs/                  # Markdown documentation
+```
+
+---
+
+## COMMON PATTERNS
+
+### Typo and Correction
+
+```typescript
+...generateTyping(0, "phone", "helo"),           // Type with typo
+dsl.keyboard.backspace(50, "phone"),              // Backspace
+...generateTyping(55, "phone", "Hello!"),         // Retype correctly
+```
+
+### Incoming Call Flow
+
+```typescript
+dsl.call.incoming(0, "caller_id", "Caller Name", { posterImage: "url" }),
+dsl.call.answer(120),
+dsl.call.toggleMute(180),
+dsl.call.toggleSpeaker(210),
+dsl.call.end(300),
+```
+
+### Message Exchange
+
+```typescript
+dsl.messages.typingStart(0, "dm_id", "Friend"),
+dsl.messages.typingEnd(60, "dm_id", "Friend"),
+dsl.messages.receive(60, "dm_id", "Friend", "Hey!"),
+dsl.keyboard.show(90, "phone"),
+...generateTyping(100, "phone", "Hi!"),
+dsl.messages.send(180, "dm_id", "Hi!"),
+```
+
+### Dramatic Camera Work
+
+```typescript
+dsl.camera.zoom(0, 1.2, 30, { originY: 0.8 }),    // Zoom in
+dsl.camera.shake(100, 8, 20),                     // Impact
+dsl.camera.pan(150, 50, 0, 25),                   // Pan right
+dsl.camera.reset(200, 30),                        // Reset
+```
+
+---
+
+## API REFERENCE LINKS
+
+- Core Types: `@tokovo/core/src/types.ts`
+- DSL Events: `@tokovo/dsl/src/events/`
+- Device Profiles: `@tokovo/devices/src/profiles/`
+- Renderer: `@tokovo/renderer/src/TokovoRenderer.tsx`
+
+---
+
+> Generated for LLM consumption. Use this document to understand Tokovo capabilities.
 ````
 
 ## File: apps/video-runner/src/FullRealityShowcase.tsx
@@ -20899,57 +23860,6 @@ export const FullRealityShowcase: React.FC = () => {
 };
 
 export default FullRealityShowcase;
-````
-
-## File: apps/video-runner/src/InstagramVideo.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { instagramEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-instagram";
-
-export const InstagramVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
-    const world = replay(instagramEpisode.initialWorld as unknown as WorldState, instagramEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} debug={true} />
-            </div>
-        </div>
-    );
-};
 ````
 
 ## File: apps/video-runner/src/KeyboardTypingShowcase.tsx
@@ -21426,231 +24336,1094 @@ export const WhatsappPsychoticDemoVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/BottomNav.tsx
+## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
 ````typescript
 import React from "react";
-import { InstagramView } from "../types";
+import { InstagramState } from "../../types";
+import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
 // ============================================================================
-// AUTHENTIC INSTAGRAM iOS BOTTOM NAV ICONS
+// ICONS
 // ============================================================================
 
-// Home icon - Filled house shape (Instagram-specific)
-const HomeIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        {active ? (
-            // Filled version
-            <path
-                d="M12 2L3 9V22H9V15H15V22H21V9L12 2Z"
-                fill="white"
-            />
-        ) : (
-            // Outline version
-            <path
-                d="M12 3L4 10V21H10V15H14V21H20V10L12 3Z"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-                fill="none"
-            />
-        )}
+const GridIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <rect x="3" y="3" width="7" height="7" />
+        <rect x="14" y="3" width="7" height="7" />
+        <rect x="14" y="14" width="7" height="7" />
+        <rect x="3" y="14" width="7" height="7" />
     </svg>
 );
 
-// Search/Explore icon - Magnifying glass
-const SearchIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <circle
-            cx="10.5"
-            cy="10.5"
-            r="7"
-            stroke="white"
-            strokeWidth={active ? "2.5" : "1.8"}
-        />
-        <line
-            x1="15.5"
-            y1="15.5"
-            x2="21"
-            y2="21"
-            stroke="white"
-            strokeWidth={active ? "2.5" : "1.8"}
-            strokeLinecap="round"
-        />
-    </svg>
-);
-
-// Reels icon - Clapperboard style
 const ReelsIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        {active ? (
-            <>
-                <rect x="3" y="3" width="18" height="18" rx="3" fill="white" />
-                <polygon points="10,8 17,12 10,16" fill="black" />
-            </>
-        ) : (
-            <>
-                <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" fill="none" />
-                <polygon points="10,8 17,12 10,16" stroke="white" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
-            </>
-        )}
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <polygon points="10,8 16,12 10,16" />
     </svg>
 );
 
-// Create/Add icon - Plus in square
-const CreateIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <rect
-            x="3"
-            y="3"
-            width="18"
-            height="18"
-            rx="3"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            fill="none"
-        />
-        <line
-            x1="12"
-            y1="8"
-            x2="12"
-            y2="16"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            strokeLinecap="round"
-        />
-        <line
-            x1="8"
-            y1="12"
-            x2="16"
-            y2="12"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            strokeLinecap="round"
-        />
+const TaggedIcon = ({ active }: { active: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
     </svg>
 );
 
-// Profile icon - Avatar with optional ring
-const ProfileIcon = ({ active, avatarUrl }: { active: boolean; avatarUrl?: string }) => (
-    <div style={{
-        width: 72,
-        height: 72,
-        borderRadius: "50%",
-        border: active ? "6px solid white" : "none",
-        padding: active ? 0 : 6,
-        boxSizing: "border-box",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-    }}>
+const SettingsIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <line x1="3" y1="12" x2="21" y2="12" />
+        <line x1="3" y1="18" x2="21" y2="18" />
+    </svg>
+);
+
+const AddIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+        <rect x="3" y="3" width="18" height="18" rx="3" />
+        <line x1="12" y1="8" x2="12" y2="16" />
+        <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+);
+
+const ChevronDownIcon = () => (
+    <svg width="42" height="42" viewBox="0 0 12 12" fill="none">
+        <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ============================================================================
+// STAT ITEM
+// ============================================================================
+
+const StatItem: React.FC<{ value: string | number; label: string }> = ({ value, label }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{
-            width: active ? 60 : 60,
-            height: active ? 60 : 60,
-            borderRadius: "50%",
-            backgroundColor: "#444",
-            backgroundImage: avatarUrl ? `url(${avatarUrl})` : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }} />
+            fontSize: 48,
+            fontWeight: 700,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+        }}>
+            {value}
+        </div>
+        <div style={{ fontSize: 36, opacity: 0.9 }}>{label}</div>
     </div>
 );
 
 // ============================================================================
-// BOTTOM NAVIGATION COMPONENT
+// HIGHLIGHT BUBBLE
 // ============================================================================
 
-export const BottomNav: React.FC<{ currentView: InstagramView }> = ({ currentView }) => {
-    return (
+const HighlightBubble: React.FC<{ title: string; imageUrl?: string; isNew?: boolean }> = ({ title, imageUrl, isNew }) => (
+    <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        marginRight: 36,
+        width: 192
+    }}>
         <div style={{
-            height: 156, // 52pt * 3
-            backgroundColor: "#000",
-            borderTop: "1px solid #262626",
+            width: 192,
+            height: 192,
+            borderRadius: "50%",
+            border: isNew ? "none" : "3px solid #444",
+            backgroundColor: "#1a1a1a",
+            backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
+            backgroundSize: "cover",
             display: "flex",
             alignItems: "center",
-            justifyContent: "space-around",
-            paddingBottom: 30, // Home indicator spacing
-            paddingTop: 12
+            justifyContent: "center"
         }}>
-            <HomeIcon active={currentView === 'feed'} />
-            <SearchIcon active={currentView === 'explore'} />
-            <ReelsIcon active={currentView === 'reels'} />
-            <CreateIcon active={false} />
-            <ProfileIcon active={currentView === 'profile'} />
+            {isNew && (
+                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+            )}
+        </div>
+        <div style={{
+            marginTop: 15,
+            fontSize: 30,
+            textAlign: "center",
+            maxWidth: 192,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap"
+        }}>
+            {title}
+        </div>
+    </div>
+);
+
+// ============================================================================
+// PROFILE VIEW - Main export
+// ============================================================================
+
+export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
+    const scrollY = feedLayout?.scrollY || 0;
+
+    // Mock user data
+    const user = {
+        username: "instagram_user",
+        name: "Instagram User",
+        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
+        posts: 42,
+        followers: "1.2M",
+        following: 250,
+        avatar: "https://i.pravatar.cc/300?u=profile"
+    };
+
+    const highlights = [
+        { title: "New", isNew: true },
+        { title: "Travel ✈️", imageUrl: "https://picsum.photos/seed/h1/200" },
+        { title: "Food 🍕", imageUrl: "https://picsum.photos/seed/h2/200" },
+        { title: "Pets 🐕", imageUrl: "https://picsum.photos/seed/h3/200" },
+    ];
+
+    return (
+        <div style={{
+            backgroundColor: "#000",
+            height: "100%",
+            color: "white",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
+        }}>
+            {/* Scrollable Content */}
+            <div style={{
+                transform: `translateY(-${scrollY}px)`,
+                width: "100%"
+            }}>
+                {/* Header */}
+                <div style={{
+                    height: 150,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "0 36px",
+                    marginTop: 120
+                }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span style={{ fontSize: 54, fontWeight: 700 }}>{user.username}</span>
+                        <ChevronDownIcon />
+                    </div>
+                    <div style={{ display: "flex", gap: 48 }}>
+                        <AddIcon />
+                        <SettingsIcon />
+                    </div>
+                </div>
+
+                {/* Profile Info Section */}
+                <div style={{ padding: "24px 36px" }}>
+                    {/* Avatar + Stats Row */}
+                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
+                        {/* Avatar */}
+                        <div style={{
+                            width: 240,
+                            height: 240,
+                            borderRadius: "50%",
+                            backgroundImage: `url(${user.avatar})`,
+                            backgroundSize: "cover",
+                            backgroundColor: "#333",
+                            marginRight: 60
+                        }} />
+
+                        {/* Stats */}
+                        <div style={{
+                            flex: 1,
+                            display: "flex",
+                            justifyContent: "space-around"
+                        }}>
+                            <StatItem value={user.posts} label="Posts" />
+                            <StatItem value={user.followers} label="Followers" />
+                            <StatItem value={user.following} label="Following" />
+                        </div>
+                    </div>
+
+                    {/* Name & Bio */}
+                    <div style={{ marginBottom: 27 }}>
+                        <div style={{ fontSize: 39, fontWeight: 600, marginBottom: 6 }}>
+                            {user.name}
+                        </div>
+                        <div style={{ fontSize: 39, whiteSpace: "pre-wrap", lineHeight: 1.35, opacity: 0.95 }}>
+                            {user.bio}
+                        </div>
+                    </div>
+
+                    {/* Edit & Share Buttons */}
+                    <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
+                        <div style={{
+                            flex: 1,
+                            height: 102,
+                            backgroundColor: "#262626",
+                            borderRadius: 24,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 39,
+                            fontWeight: 600
+                        }}>
+                            Edit profile
+                        </div>
+                        <div style={{
+                            flex: 1,
+                            height: 102,
+                            backgroundColor: "#262626",
+                            borderRadius: 24,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 39,
+                            fontWeight: 600
+                        }}>
+                            Share profile
+                        </div>
+                    </div>
+                </div>
+
+                {/* Highlights Row */}
+                <div style={{
+                    display: "flex",
+                    padding: "12px 36px 30px",
+                    overflowX: "hidden"
+                }}>
+                    {highlights.map((h, i) => (
+                        <HighlightBubble key={i} {...h} />
+                    ))}
+                </div>
+
+                {/* Tabs */}
+                <div style={{
+                    display: "flex",
+                    borderTop: "1px solid #262626",
+                    borderBottom: "1px solid #262626"
+                }}>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderBottom: "3px solid white"
+                    }}>
+                        <GridIcon active={true} />
+                    </div>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <ReelsIcon active={false} />
+                    </div>
+                    <div style={{
+                        flex: 1,
+                        height: 132,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <TaggedIcon active={false} />
+                    </div>
+                </div>
+
+                {/* Grid */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {state.feed.posts.map(post => (
+                        <div key={post.id} style={{
+                            width: "calc(33.33% - 2px)",
+                            aspectRatio: "1/1",
+                            backgroundColor: "#1a1a1a",
+                            backgroundImage: `url(${post.image})`,
+                            backgroundSize: "cover",
+                            backgroundPosition: "center"
+                        }} />
+                    ))}
+                </div>
+            </div>
         </div>
     );
 };
 ````
 
-## File: packages/apps-instagram/src/runtime.ts
+## File: packages/apps-instagram/src/ui.tsx
 ````typescript
-import { WorldState, TimelineEvent } from "@tokovo/core";
+import React from "react";
+import { WorldState, LayoutState } from "@tokovo/core";
+import { InstagramState } from "./types";
+import { InstagramChatView } from "./views/dm/InstagramChatView";
+import { FeedView } from "./views/feed/FeedView";
+import { StoriesView } from "./views/stories/StoriesView";
+import { ProfileView } from "./views/profile/ProfileView";
+import { ExploreView } from "./views/explore/ExploreView";
+import { NotificationsView } from "./views/notifications/NotificationsView";
+import { ReelsView } from "./views/reels/ReelsView";
+import { PostView } from "./views/post/PostView";
+import { BottomNav } from "./views/BottomNav";
 
-import { initialInstagramState, InstagramState } from "./types";
+export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
+    const appState = world.appState?.["app_instagram"] as InstagramState;
+    const currentView = appState?.currentView || "dm";
 
-export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
-    if (event.kind !== "APP" || event.appId !== "app_instagram") return;
+    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
 
-    // Initialize app state if missing
-    if (!draft.appState) {
-        draft.appState = {};
-    }
-    if (!draft.appState["app_instagram"]) {
-        draft.appState["app_instagram"] = initialInstagramState;
-    }
+    // Views that show the bottom navigation
+    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
 
-    const appState = draft.appState["app_instagram"] as InstagramState;
-
-    // Handle generic custom events
-    if (event.type === "CUSTOM") {
-        console.log(`[InstagramRuntime] Processing CUSTOM event: ${event.name}`, event.payload);
-        switch (event.name) {
-            case "NAVIGATE":
-                appState.currentView = event.payload.view;
-                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView}`);
-                break;
-            // Add other custom events here
+    const renderView = () => {
+        switch (currentView) {
+            case "dm":
+                return <InstagramChatView world={world} t={t} layout={layout} />;
+            case "feed":
+                return <FeedView state={appState} layout={layout} />;
+            case "stories":
+                return <StoriesView state={appState} t={t} layout={layout} />;
+            case "profile":
+                return <ProfileView state={appState} />;
+            case "post":
+                return <PostView state={appState} />;
+            case "explore":
+                return <ExploreView state={appState} />;
+            case "notifications":
+                return <NotificationsView state={appState} />;
+            case "reels":
+                return <ReelsView state={appState} />;
+            default:
+                return <InstagramChatView world={world} t={t} layout={layout} />;
         }
-        return;
+    };
+
+    return (
+        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+                {renderView()}
+            </div>
+            {showBottomNav && <BottomNav currentView={currentView} />}
+        </div>
+    );
+};
+
+// Re-export specific views if needed externally, but InstagramApp is the main entry
+export { InstagramChatView };
+````
+
+## File: packages/apps-phone/src/components/ios/ActiveCallIOS.tsx
+````typescript
+/**
+ * iOS Active Call Screen
+ * 
+ * In-call screen with timer and control grid.
+ * Sizes are scaled for device frame (1290x2796 iPhone 16 Pro).
+ */
+
+import React from "react";
+import { CallState, AppViewProps } from "@tokovo/core";
+
+interface ActiveCallIOSProps extends Partial<AppViewProps> {
+    call: CallState;
+}
+
+// SVG Icons (sized for device frame)
+const MuteIcon = ({ active }: { active?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={active ? "#000" : "#fff"}>
+        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z" />
+        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z" />
+    </svg>
+);
+
+const KeypadIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="#fff">
+        <circle cx="6" cy="6" r="2" />
+        <circle cx="12" cy="6" r="2" />
+        <circle cx="18" cy="6" r="2" />
+        <circle cx="6" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="18" cy="12" r="2" />
+        <circle cx="6" cy="18" r="2" />
+        <circle cx="12" cy="18" r="2" />
+        <circle cx="18" cy="18" r="2" />
+    </svg>
+);
+
+const SpeakerIcon = ({ active }: { active?: boolean }) => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill={active ? "#000" : "#fff"}>
+        <path d="M3 9v6h4l5 5V4L7 9H3z" />
+        <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+        <path d="M14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z" />
+    </svg>
+);
+
+const PhoneIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="#fff">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+);
+
+// Control Button
+const ControlButton: React.FC<{
+    icon: React.ReactNode;
+    label: string;
+    isActive?: boolean;
+    variant?: "default" | "destructive";
+    size?: number;
+}> = ({ icon, label, isActive = false, variant = "default", size = 150 }) => {
+    let bgColor = "rgba(255, 255, 255, 0.2)";
+    if (isActive) bgColor = "white";
+    if (variant === "destructive") bgColor = "#FF3B30";
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 18,
+        }}>
+            <div style={{
+                width: size,
+                height: size,
+                borderRadius: "50%",
+                backgroundColor: bgColor,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+            }}>
+                {icon}
+            </div>
+            <span style={{
+                fontSize: 33,
+                color: "#fff",
+                opacity: 0.9,
+                fontFamily: "SF Pro Text, -apple-system, sans-serif",
+            }}>
+                {label}
+            </span>
+        </div>
+    );
+};
+
+// Call Timer
+const CallTimer: React.FC<{ startedAt?: number; currentFrame: number; fps?: number }> = ({
+    startedAt,
+    currentFrame,
+    fps = 30,
+}) => {
+    if (startedAt === undefined) {
+        return <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 42 }}>Connecting...</span>;
     }
 
-    // Legacy/Specific events (DM)
-    const { conversationId, type } = event as any; // Cast to access specific fields if needed
+    const elapsedFrames = Math.max(0, currentFrame - startedAt);
+    const elapsedSeconds = Math.floor(elapsedFrames / fps);
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
 
-    if (conversationId) {
-        // Ensure conversation exists
-        if (!draft.conversations[conversationId]) {
-            draft.conversations[conversationId] = {
-                id: conversationId,
-                messages: [],
-                typing: {}
-            };
-        }
+    return (
+        <span style={{
+            fontSize: 42,
+            fontVariantNumeric: "tabular-nums",
+            color: "rgba(255, 255, 255, 0.6)",
+            fontFamily: "SF Pro Display, -apple-system, sans-serif",
+        }}>
+            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </span>
+    );
+};
 
-        const conversation = draft.conversations[conversationId];
+/**
+ * ActiveCallIOS - iOS in-call screen (properly sized for device frame)
+ */
+export const ActiveCallIOS: React.FC<ActiveCallIOSProps> = ({ call, t = 0 }) => {
+    // Pulse animation for avatar
+    const pulsePhase = Math.sin((t * 0.1) % (Math.PI * 2));
+    const avatarScale = 1 + (pulsePhase * 0.02);
 
-        switch (type) {
-            case "MESSAGE_RECEIVED":
-                conversation.messages.push({
-                    id: `msg_${Date.now()}_${Math.random()}`,
-                    from: event.from,
-                    text: event.text,
-                    at: event.at,
-                    liked: false // Instagram specific
-                });
-                break;
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: call.isVideo
+                    ? "linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)"
+                    : "linear-gradient(180deg, #2C2C2E 0%, #1C1C1E 100%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "180px 45px 120px",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+            }}
+        >
+            {/* Top Section: Avatar & Name */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 30,
+            }}>
+                {/* Avatar */}
+                <div style={{
+                    width: 270,
+                    height: 270,
+                    borderRadius: "50%",
+                    backgroundColor: "#8E8E93",
+                    backgroundImage: call.callerAvatar
+                        ? `url(${call.callerAvatar})`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 90,
+                    color: "white",
+                    fontWeight: "300",
+                    transform: `scale(${avatarScale})`,
+                }}>
+                    {!call.callerAvatar && call.callerName.charAt(0).toUpperCase()}
+                </div>
 
-            case "TYPING_START":
-                if (!conversation.typing) conversation.typing = {};
-                conversation.typing[event.from] = true;
-                break;
+                {/* Caller Name */}
+                <div style={{
+                    fontSize: 60,
+                    fontWeight: "300",
+                    color: "white",
+                    textAlign: "center",
+                }}>
+                    {call.callerName}
+                </div>
 
-            case "TYPING_END":
-                if (conversation.typing) {
-                    conversation.typing[event.from] = false;
-                }
-                break;
-        }
+                {/* Timer */}
+                <CallTimer startedAt={call.answeredAt} currentFrame={t} />
+            </div>
+
+            {/* Control Grid */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 60,
+                width: "100%",
+            }}>
+                {/* 2x3 Grid */}
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: "45px 60px",
+                    width: "100%",
+                    maxWidth: 600,
+                    justifyItems: "center",
+                }}>
+                    <ControlButton icon={<MuteIcon active={call.isMuted} />} label="mute" isActive={call.isMuted} />
+                    <ControlButton icon={<KeypadIcon />} label="keypad" />
+                    <ControlButton icon={<SpeakerIcon active={call.isSpeakerOn} />} label="speaker" isActive={call.isSpeakerOn} />
+                    <ControlButton icon={<PhoneIcon />} label="add call" />
+                    <ControlButton icon={<PhoneIcon />} label="FaceTime" />
+                    <ControlButton icon={<PhoneIcon />} label="contacts" />
+                </div>
+
+                {/* End Call Button */}
+                <ControlButton
+                    icon={<PhoneIcon />}
+                    label="End"
+                    variant="destructive"
+                    size={210}
+                />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/ios/ClassicIncoming.tsx
+````typescript
+/**
+ * iOS 15/16 Classic Incoming Call
+ * 
+ * Blurred background with centered avatar and slide to answer.
+ * Properly sized for device frame.
+ */
+
+import React from "react";
+import { CallState } from "@tokovo/core";
+
+interface ClassicIncomingProps {
+    call: CallState;
+    currentFrame?: number;
+}
+
+// Phone Icon
+const PhoneIcon = ({ size = 72 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+);
+
+/**
+ * ClassicIncoming - iOS 15/16 style incoming call with slide to answer
+ */
+export const ClassicIncoming: React.FC<ClassicIncomingProps> = ({ call, currentFrame = 0 }) => {
+    // Animations
+    const fadeIn = Math.min(1, currentFrame / 15);
+    const pulsePhase = Math.sin(currentFrame * 0.08);
+    const ringScale1 = 1 + 0.08 * pulsePhase;
+    const ringScale2 = 1 + 0.08 * Math.sin(currentFrame * 0.08 + 1);
+    const ringOpacity = 0.25 + 0.15 * pulsePhase;
+    const shimmerOpacity = 0.3 + 0.5 * (0.5 + 0.5 * Math.sin(currentFrame * 0.1));
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                background: "linear-gradient(180deg, #2C2C2E 0%, #1C1C1E 100%)",
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "200px 60px 180px",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+                opacity: fadeIn,
+            }}
+        >
+            {/* Pulsing rings behind avatar */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: 180,
+                    left: "50%",
+                    width: 400,
+                    height: 400,
+                    borderRadius: "50%",
+                    border: `4px solid rgba(255, 255, 255, ${ringOpacity})`,
+                    transform: `translateX(-50%) scale(${ringScale1})`,
+                    pointerEvents: "none",
+                }}
+            />
+            <div
+                style={{
+                    position: "absolute",
+                    top: 155,
+                    left: "50%",
+                    width: 450,
+                    height: 450,
+                    borderRadius: "50%",
+                    border: `3px solid rgba(255, 255, 255, ${ringOpacity * 0.6})`,
+                    transform: `translateX(-50%) scale(${ringScale2})`,
+                    pointerEvents: "none",
+                }}
+            />
+
+            {/* Top Content: Avatar + Name */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 40,
+                zIndex: 1,
+            }}>
+                {/* Avatar */}
+                <div style={{
+                    width: 360,
+                    height: 360,
+                    borderRadius: "50%",
+                    backgroundColor: "#8E8E93",
+                    backgroundImage: call.callerAvatar
+                        ? `url(${call.callerAvatar})`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 120,
+                    color: "white",
+                    fontWeight: "300",
+                    boxShadow: "0 0 80px rgba(50, 215, 75, 0.4)",
+                }}>
+                    {!call.callerAvatar && call.callerName.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Caller Name */}
+                <div style={{
+                    fontSize: 78,
+                    fontWeight: "300",
+                    color: "#fff",
+                    textAlign: "center",
+                }}>
+                    {call.callerName}
+                </div>
+
+                {/* Call Type Label */}
+                <div style={{
+                    fontSize: 42,
+                    color: "rgba(255,255,255,0.6)",
+                }}>
+                    {call.isVideo ? "FaceTime Video..." : "Incoming call..."}
+                </div>
+            </div>
+
+            {/* Slide to Answer */}
+            <div style={{
+                width: "100%",
+                maxWidth: 900,
+            }}>
+                <div
+                    style={{
+                        width: "100%",
+                        height: 180,
+                        borderRadius: 90,
+                        backgroundColor: "rgba(255, 255, 255, 0.15)",
+                        backdropFilter: "blur(20px)",
+                        display: "flex",
+                        alignItems: "center",
+                        padding: 12,
+                        position: "relative",
+                    }}
+                >
+                    {/* Green phone icon thumb */}
+                    <div
+                        style={{
+                            width: 156,
+                            height: 156,
+                            borderRadius: "50%",
+                            backgroundColor: "#34C759",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            boxShadow: "0 8px 40px rgba(52, 199, 89, 0.5)",
+                        }}
+                    >
+                        <PhoneIcon size={72} />
+                    </div>
+
+                    {/* Shimmer text */}
+                    <div
+                        style={{
+                            flex: 1,
+                            textAlign: "center",
+                            fontSize: 48,
+                            fontWeight: 400,
+                            color: "#fff",
+                            opacity: shimmerOpacity,
+                        }}
+                    >
+                        slide to answer
+                    </div>
+
+                    {/* Right arrows */}
+                    <div
+                        style={{
+                            position: "absolute",
+                            right: 48,
+                            display: "flex",
+                            gap: 12,
+                            opacity: 0.5,
+                        }}
+                    >
+                        <span style={{ color: "#fff", fontSize: 42 }}>›</span>
+                        <span style={{ color: "#fff", fontSize: 42 }}>›</span>
+                        <span style={{ color: "#fff", fontSize: 42 }}>›</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/ios/ContactPoster.tsx
+````typescript
+/**
+ * iOS 17+ Contact Poster - Incoming Call
+ * 
+ * Full-screen poster image with depth effect name and bottom action buttons.
+ * Properly sized for device frame (1290x2796 iPhone 16 Pro).
+ */
+
+import React from "react";
+import { CallState } from "@tokovo/core";
+
+interface ContactPosterProps {
+    call: CallState;
+    profile?: any;
+    currentFrame?: number;
+}
+
+// Phone Icon
+const PhoneIcon = ({ size = 72 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="#fff">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z" />
+    </svg>
+);
+
+// Action Button for incoming call
+const ActionButton: React.FC<{
+    variant: "accept" | "decline";
+    isVideo?: boolean;
+}> = ({ variant }) => {
+    const bgColor = variant === "accept" ? "#34C759" : "#FF3B30";
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 24,
+        }}>
+            <div style={{
+                width: 210,
+                height: 210,
+                borderRadius: "50%",
+                backgroundColor: bgColor,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                boxShadow: `0 0 60px ${bgColor}40`,
+            }}>
+                <PhoneIcon size={90} />
+            </div>
+            <span style={{
+                fontSize: 36,
+                color: "#fff",
+                fontFamily: "SF Pro Text, -apple-system, sans-serif",
+            }}>
+                {variant === "accept" ? "Accept" : "Decline"}
+            </span>
+        </div>
+    );
+};
+
+/**
+ * ContactPoster - iOS 17+ incoming call with full-screen poster
+ */
+export const ContactPoster: React.FC<ContactPosterProps> = ({ call, currentFrame = 0 }) => {
+    // Calculate relative frame from when call started
+    const relativeFrame = Math.max(0, currentFrame - (call.startedAt || 0));
+
+    // Animations - start at 0.5 opacity, full opacity after 8 frames (quick fade)
+    const fadeIn = Math.min(1, 0.5 + (relativeFrame / 16));
+    const pulsePhase = Math.sin(relativeFrame * 0.1);
+    const glowOpacity = 0.4 + 0.2 * pulsePhase;
+    const buttonPulse = 1 + 0.03 * pulsePhase;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: "#1a1a1a",
+                overflow: "hidden",
+                opacity: fadeIn,
+            }}
+        >
+            {/* Full-screen poster image */}
+            {call.callerMetadata?.posterImage && (
+                <img
+                    src={call.callerMetadata.posterImage}
+                    alt={call.callerName}
+                    style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                    }}
+                    onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                    }}
+                />
+            )}
+
+            {/* Gradient overlay */}
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: "60%",
+                    background: "linear-gradient(transparent, rgba(0,0,0,0.9))",
+                    pointerEvents: "none",
+                }}
+            />
+
+            {/* Status label at top */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: 150,
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                }}
+            >
+                <span
+                    style={{
+                        fontSize: 48,
+                        color: "rgba(255,255,255,0.8)",
+                        fontFamily: "SF Pro Text, -apple-system, sans-serif",
+                    }}
+                >
+                    {call.isVideo ? "FaceTime Video..." : "incoming call..."}
+                </span>
+            </div>
+
+            {/* Caller name with glow */}
+            <div
+                style={{
+                    position: "absolute",
+                    top: 280,
+                    left: 0,
+                    right: 0,
+                    textAlign: "center",
+                }}
+            >
+                <div
+                    style={{
+                        fontSize: 120,
+                        fontWeight: 300,
+                        color: "#fff",
+                        fontFamily: call.callerMetadata?.posterNameFont || "SF Pro Display, -apple-system, sans-serif",
+                        textShadow: `0 0 60px rgba(255,255,255,${glowOpacity}), 0 4px 20px rgba(0,0,0,0.5)`,
+                    }}
+                >
+                    {call.callerName}
+                </div>
+            </div>
+
+            {/* Bottom action buttons */}
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: 200,
+                    left: 0,
+                    right: 0,
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 180,
+                    transform: `scale(${buttonPulse})`,
+                }}
+            >
+                <ActionButton variant="decline" />
+                <ActionButton variant="accept" isVideo={call.isVideo} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-phone/src/components/ios/IncomingIOS.tsx
+````typescript
+/**
+ * iOS Incoming Call - Main Router
+ * 
+ * Decides between Contact Poster (iOS 17+) and Classic (iOS 16) style.
+ */
+
+import React from "react";
+import { CallState } from "@tokovo/core";
+import { ContactPoster } from "./ContactPoster";
+import { ClassicIncoming } from "./ClassicIncoming";
+
+interface IncomingIOSProps {
+    call: CallState;
+    profile?: any;
+    currentFrame?: number;
+}
+
+/**
+ * IncomingIOS - Routes to the appropriate iOS incoming call UI
+ * 
+ * - iOS 17+: Contact Poster (full-screen image)
+ * - iOS 16 and below: Classic blur with slide to answer
+ */
+export const IncomingIOS: React.FC<IncomingIOSProps> = ({ call, profile, currentFrame = 0 }) => {
+    // Check if caller has a poster image (iOS 17+ style)
+    const hasPoster = !!call.callerMetadata?.posterImage;
+
+    console.log('[IncomingIOS] hasPoster:', hasPoster, 'routing to:', hasPoster ? 'ContactPoster' : 'ClassicIncoming');
+
+    if (hasPoster) {
+        return <ContactPoster call={call} profile={profile} currentFrame={currentFrame} />;
     }
+
+    return <ClassicIncoming call={call} currentFrame={currentFrame} />;
+};
+````
+
+## File: packages/apps-phone/src/ui.tsx
+````typescript
+/**
+ * Phone App - Main UI Component
+ * 
+ * Strategy pattern: Selects iOS or Android UI based on device profile.
+ * Within each platform, selects version-specific components.
+ */
+
+import React from "react";
+import { AppViewProps, CallState } from "@tokovo/core";
+import { getDeviceProfile } from "@tokovo/devices";
+
+// iOS Components
+import { IncomingIOS } from "./components/ios/IncomingIOS";
+import { ActiveCallIOS } from "./components/ios/ActiveCallIOS";
+
+// Android Components
+import { IncomingAndroid } from "./components/android/IncomingAndroid";
+import { ActiveCallAndroid } from "./components/android/ActiveCallAndroid";
+
+// Screens
+import { RecentsScreen } from "./components/screens/RecentsScreen";
+
+/**
+ * PhoneApp - Main entry point for phone call simulation
+ * 
+ * Renders different UI based on:
+ * 1. Platform (iOS vs Android)
+ * 2. Call status (incoming, active, ended)
+ * 3. Device profile (iOS version, Android variant)
+ */
+export const PhoneApp: React.FC<AppViewProps> = ({ world, deviceId, platform, t = 0 }) => {
+    const device = world.devices[deviceId || Object.keys(world.devices)[0]];
+    if (!device) return null;
+
+    const profile = getDeviceProfile(device.profileId);
+    const detectedPlatform = platform || profile?.platform || "ios";
+    const call = device.call;
+
+    // DEBUG
+    console.log('[PhoneApp] call:', call?.status, 'callerMetadata:', call?.callerMetadata);
+
+    // No active call - show recents screen
+    if (!call || call.status === "ended" || call.status === "declined") {
+        return <RecentsScreen platform={detectedPlatform} />;
+    }
+
+    // Incoming call
+    if (call.status === "incoming" || call.status === "ringing") {
+        return detectedPlatform === "ios"
+            ? <IncomingIOS call={call} profile={profile} currentFrame={t} />
+            : <IncomingAndroid call={call} profile={profile} currentFrame={t} />;
+    }
+
+    // Active call (connecting or active)
+    if (call.status === "connecting" || call.status === "active") {
+        return detectedPlatform === "ios"
+            ? <ActiveCallIOS call={call} t={t} />
+            : <ActiveCallAndroid call={call} t={t} />;
+    }
+
+    return null;
 };
 ````
 
@@ -23435,6 +27208,195 @@ export function createTheme(
 }
 ````
 
+## File: packages/core/src/constants.ts
+````typescript
+/**
+ * Constants - Centralized configuration values
+ * 
+ * All magic numbers and default values should be defined here.
+ * This makes the codebase more maintainable and configurable.
+ */
+
+// =============================================================================
+// TIMING CONSTANTS
+// =============================================================================
+
+export const TIMING = {
+    /** Default frames per second */
+    FPS_DEFAULT: 30,
+
+    /** Duration of heads-up notification in frames (5 seconds at 30fps) */
+    HEADS_UP_DURATION: 150,
+
+    /** Buffer frames to keep effects after they end (for smooth transitions) */
+    EFFECT_CLEANUP_BUFFER: 30,
+
+    /** Default typing indicator animation duration in frames */
+    TYPING_ANIMATION_DURATION: 90,
+
+    /** Default message appear animation duration in frames */
+    MESSAGE_ANIMATION_DURATION: 15,
+} as const;
+
+// =============================================================================
+// LAYOUT CONSTANTS (in 3x scale for Remotion)
+// =============================================================================
+
+export const LAYOUT = {
+    /** Chat header height (status bar + nav bar) */
+    CHAT_HEADER_HEIGHT: 414,
+
+    /** Chat input area height (input field + home indicator) */
+    CHAT_INPUT_HEIGHT: 272,
+
+    /** Status bar height */
+    STATUS_BAR_HEIGHT: 144,
+
+    /** Navigation bar height */
+    NAV_BAR_HEIGHT: 270,
+
+    /** Home indicator height */
+    HOME_INDICATOR_HEIGHT: 102,
+
+    /** Split layout divider width */
+    SPLIT_DIVIDER_WIDTH: 2,
+
+    /** Message bubble max width ratio (0-1) */
+    MESSAGE_BUBBLE_MAX_WIDTH: 0.75,
+
+    /** Message bubble border radius */
+    MESSAGE_BUBBLE_RADIUS: 54,
+
+    /** Message spacing */
+    MESSAGE_GAP: 12,
+} as const;
+
+// =============================================================================
+// DEFAULT VALUES
+// =============================================================================
+
+export const DEFAULTS = {
+    /** Default audio volume (0-1) */
+    VOLUME: 1,
+
+    /** Default background music volume */
+    BACKGROUND_MUSIC_VOLUME: 0.5,
+
+    /** Default video background color */
+    BACKGROUND_COLOR: "#0a0a1a",
+
+    /** Default split layout divider color */
+    SPLIT_LINE_COLOR: "#333333",
+
+    /** Default zoom scale */
+    ZOOM_SCALE: 1.3,
+
+    /** Default shake intensity */
+    SHAKE_INTENSITY: 10,
+
+    /** Default shake frequency (shakes per second) */
+    SHAKE_FREQUENCY: 16,
+
+    /** Default shake decay */
+    SHAKE_DECAY: 0.3,
+
+    /** Default camera easing */
+    CAMERA_EASING: "ease-out" as const,
+
+    /** Default PIP scale */
+    PIP_SCALE: 0.3,
+
+    /** Default PIP position */
+    PIP_POSITION: "bottom-right" as const,
+} as const;
+
+// =============================================================================
+// APP IDENTIFIERS
+// =============================================================================
+
+export const APP_IDS = {
+    WHATSAPP: "app_whatsapp",
+    INSTAGRAM: "app_instagram",
+    IMESSAGE: "app_imessage",
+    TIKTOK: "app_tiktok",
+    TWITTER: "app_twitter",
+    PHONE: "app_phone",
+} as const;
+
+// =============================================================================
+// DEVICE IDENTIFIERS
+// =============================================================================
+
+export const DEVICE_PROFILES = {
+    IPHONE_16: "iphone16",
+    PIXEL: "pixel",
+} as const;
+
+// =============================================================================
+// EVENT KINDS
+// =============================================================================
+
+export const EVENT_KINDS = {
+    DEVICE: "DEVICE",
+    APP: "APP",
+    CAMERA: "CAMERA",
+    AUDIO: "AUDIO",
+    KEYBOARD: "KEYBOARD",
+    OS: "OS",
+    TOUCH: "TOUCH",
+    CALL: "CALL",
+} as const;
+
+// =============================================================================
+// SOUND IDENTIFIERS
+// =============================================================================
+
+export const SOUND_IDS = {
+    WHATSAPP_RECEIVED: "whatsapp_received",
+    WHATSAPP_SENT: "whatsapp_sent",
+    NOTIFICATION: "notification",
+    RINGTONE: "ringtone",
+    TYPING: "typing",
+    CAMERA_SHUTTER: "camera_shutter",
+} as const;
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Convert seconds to frames at given FPS
+ */
+export function secondsToFrames(seconds: number, fps: number = TIMING.FPS_DEFAULT): number {
+    return Math.round(seconds * fps);
+}
+
+/**
+ * Convert frames to seconds at given FPS
+ */
+export function framesToSeconds(frames: number, fps: number = TIMING.FPS_DEFAULT): number {
+    return frames / fps;
+}
+
+/**
+ * Get timing value in frames for common durations
+ */
+export const DURATION_FRAMES = {
+    /** 0.5 seconds */
+    HALF_SECOND: secondsToFrames(0.5),
+    /** 1 second */
+    ONE_SECOND: secondsToFrames(1),
+    /** 2 seconds */
+    TWO_SECONDS: secondsToFrames(2),
+    /** 3 seconds */
+    THREE_SECONDS: secondsToFrames(3),
+    /** 5 seconds */
+    FIVE_SECONDS: secondsToFrames(5),
+    /** 10 seconds */
+    TEN_SECONDS: secondsToFrames(10),
+} as const;
+````
+
 ## File: packages/core/src/notification-dsl.ts
 ````typescript
 /**
@@ -23687,70 +27649,6 @@ export const iPhone16Profile: DeviceProfile = {
         expandedHeight: 220,    // Expanded height
         cornerRadius: 55,       // Pill corners
     },
-};
-````
-
-## File: packages/devices/src/pixel/Frame.tsx
-````typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Status Bar Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                zIndex: 1000,
-                pointerEvents: "none",
-                padding: "30px 40px 0 40px"
-            }}>
-                {statusBar}
-            </div>
-
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#121212", // Dark mode default for Android
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                color: "white"
-            }}>
-
-                {children}
-            </div>
-        </div>
-    );
 };
 ````
 
@@ -24326,81 +28224,6 @@ export class SceneDeviceBuilder {
         return this.beats;
     }
 }
-````
-
-## File: packages/dsl/src/events/index.ts
-````typescript
-/**
- * DSL Events Module
- * 
- * Centralized event factories for all event types.
- * Use these instead of duplicating helpers in showcases.
- * 
- * @example
- * ```ts
- * import { dsl, generateTyping } from "@tokovo/dsl";
- * 
- * const events = [
- *     dsl.keyboard.show(30, "phone"),
- *     ...generateTyping(50, "phone", "Hello!"),
- *     dsl.messages.send(140, "dm_friend", "Hello!"),
- *     dsl.keyboard.hide(200, "phone"),
- *     dsl.os.setBattery(300, 75),
- *     dsl.touch.tap(350, 500, 600),
- * ];
- * ```
- */
-
-// Individual event factory modules
-export { keyboard } from "./keyboard";
-export { messages } from "./messages";
-export { camera, ZoomOptions, PanOptions, ShakeOptions } from "./camera";
-export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
-export { os } from "./os";
-export { touch } from "./touch";
-
-// Typing simulation
-export {
-    generateTyping,
-    getTypingEndFrame,
-    TYPING_SPEEDS,
-    type TypingSpeed,
-    type TypingOptions,
-} from "./typing";
-
-// Import for bundled object
-import { keyboard } from "./keyboard";
-import { messages } from "./messages";
-import { camera } from "./camera";
-import { audio as audioEvents } from "./audio";
-import { os } from "./os";
-import { touch } from "./touch";
-
-/**
- * Bundled DSL object with all event factories
- * 
- * @example
- * ```ts
- * import { dsl } from "@tokovo/dsl";
- * 
- * const events = [
- *     dsl.keyboard.show(30, "phone"),
- *     dsl.messages.send(100, "dm", "Hi!"),
- *     dsl.camera.zoom(150, 1.2, 30),
- *     dsl.audio.play(200, "notification"),
- *     dsl.os.setNetwork(250, "5G"),
- *     dsl.touch.tap(300, 540, 960),
- * ];
- * ```
- */
-export const dsl = {
-    keyboard,
-    messages,
-    camera,
-    audio: audioEvents,
-    os,
-    touch,
-};
 ````
 
 ## File: packages/dsl/src/events/messages.ts
@@ -25263,6 +29086,194 @@ export type {
 }
 ````
 
+## File: packages/episodes/src/examples/instagram-test.json
+````json
+{
+    "initialWorld": {
+        "devices": {
+            "alice_phone": {
+                "id": "alice_phone",
+                "profileId": "iphone16",
+                "isLocked": false,
+                "foregroundAppId": "app_instagram",
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "instagram_user",
+                        "text": "Hey! Did you see my new post?",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "appState": {
+            "app_instagram": {
+                "currentView": "feed",
+                "feed": {
+                    "posts": [
+                        {
+                            "id": "p1",
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "image": "https://picsum.photos/seed/insta1/1080/1080",
+                            "caption": "Living my best life! 🌟 #blessed",
+                            "likes": 1234,
+                            "comments": 42,
+                            "liked": false,
+                            "saved": false
+                        },
+                        {
+                            "id": "p2",
+                            "username": "travel_blogger",
+                            "avatar": "https://i.pravatar.cc/150?u=travel",
+                            "image": "https://picsum.photos/seed/insta2/1080/1080",
+                            "caption": "Sunset vibes 🌅",
+                            "likes": 890,
+                            "comments": 12,
+                            "liked": true,
+                            "saved": true
+                        }
+                    ],
+                    "scrollPosition": 0
+                },
+                "stories": {
+                    "users": [
+                        {
+                            "username": "instagram_user",
+                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s1",
+                                    "image": "https://picsum.photos/seed/story1/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        },
+                        {
+                            "username": "friend_1",
+                            "avatar": "https://i.pravatar.cc/150?u=friend1",
+                            "hasUnseen": true,
+                            "stories": [
+                                {
+                                    "id": "s2",
+                                    "image": "https://picsum.photos/seed/story2/1080/1920",
+                                    "seen": false
+                                }
+                            ]
+                        }
+                    ]
+                },
+                "notifications": {
+                    "items": []
+                }
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW",
+            "appId": "app_instagram"
+        }
+    },
+    "events": [
+        {
+            "at": 30,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "stories"
+            }
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "feed"
+            }
+        },
+        {
+            "at": 90,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "explore"
+            }
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "reels"
+            }
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "notifications"
+            }
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "profile"
+            }
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "post"
+            }
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "CUSTOM",
+            "name": "NAVIGATE",
+            "payload": {
+                "view": "dm"
+            }
+        },
+        {
+            "at": 260,
+            "kind": "APP",
+            "appId": "app_instagram",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "Wow, this app is huge!"
+        }
+    ]
+}
+````
+
 ## File: packages/episodes/src/examples/notification-call-demo.json
 ````json
 {
@@ -26003,294 +30014,6 @@ export const AudioLayer: React.FC<AudioLayerProps> = ({
 };
 
 export default AudioLayer;
-````
-
-## File: packages/renderer/src/CallOverlay.tsx
-````typescript
-import React from "react";
-import { CallState } from "@tokovo/core";
-
-// ============================================================================
-// CALL CONTROL ICONS (SVG)
-// ============================================================================
-
-const MuteIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-        <path d="M1 14.75a6.75 6.75 0 0 1 6.75-6.75h8.5A6.75 6.75 0 0 1 23 14.75v6.5a.75.75 0 0 1-.75.75h-8.5v-3.5a1.75 1.75 0 0 0-3.5 0v3.5h-8.5a.75.75 0 0 1-.75-.75v-6.5zM12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
-    </svg>
-);
-
-const SpeakerIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
-        <path d="M11 5L6 9H2v6h4l5 4V5z" fill="white" />
-        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="white" strokeWidth="2" fill="none" />
-        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="white" strokeWidth="2" fill="none" />
-    </svg>
-);
-
-const KeypadIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-        <circle cx="6" cy="6" r="2" />
-        <circle cx="12" cy="6" r="2" />
-        <circle cx="18" cy="6" r="2" />
-        <circle cx="6" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="18" cy="12" r="2" />
-        <circle cx="6" cy="18" r="2" />
-        <circle cx="12" cy="18" r="2" />
-        <circle cx="18" cy="18" r="2" />
-    </svg>
-);
-
-const VideoIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-        <path d="M23 7l-7 5 7 5V7zM16 5H2a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2z" />
-    </svg>
-);
-
-const AddCallIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
-        <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
-    </svg>
-);
-
-const PhoneIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="white">
-        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-    </svg>
-);
-
-// ============================================================================
-// CONTROL BUTTON COMPONENT
-// ============================================================================
-
-interface ControlButtonProps {
-    icon: React.ReactNode;
-    label: string;
-    isActive?: boolean;
-    size?: "small" | "large";
-    variant?: "default" | "destructive";
-}
-
-const ControlButton: React.FC<ControlButtonProps> = ({
-    icon,
-    label,
-    isActive = false,
-    size = "small",
-    variant = "default"
-}) => {
-    const buttonSize = size === "large" ? 210 : 150;
-
-    let bgColor = "rgba(255, 255, 255, 0.2)";
-    if (isActive) bgColor = "white";
-    if (variant === "destructive") bgColor = "#FF3B30";
-
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 18
-        }}>
-            <div style={{
-                width: buttonSize,
-                height: buttonSize,
-                borderRadius: "50%",
-                backgroundColor: bgColor,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center"
-            }}>
-                <div style={{ color: isActive ? "#000" : "#fff" }}>
-                    {icon}
-                </div>
-            </div>
-            <span style={{
-                fontSize: 33,
-                color: "white",
-                opacity: 0.9
-            }}>
-                {label}
-            </span>
-        </div>
-    );
-};
-
-// ============================================================================
-// CALL TIMER
-// ============================================================================
-
-const CallTimer: React.FC<{ startedAt: number; currentTime: number; fps?: number }> = ({
-    startedAt,
-    currentTime,
-    fps = 30
-}) => {
-    const elapsedFrames = currentTime - startedAt;
-    const elapsedSeconds = Math.floor(elapsedFrames / fps);
-    const minutes = Math.floor(elapsedSeconds / 60);
-    const seconds = elapsedSeconds % 60;
-
-    return (
-        <span style={{ fontVariantNumeric: "tabular-nums" }}>
-            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-        </span>
-    );
-};
-
-// ============================================================================
-// CALL OVERLAY COMPONENT
-// ============================================================================
-
-interface CallOverlayProps {
-    call: CallState;
-    currentTime: number;
-    variant?: "ios" | "android";
-}
-
-export const CallOverlay: React.FC<CallOverlayProps> = ({
-    call,
-    currentTime,
-    variant = "ios"
-}) => {
-    if (call.status === "ended") return null;
-
-    const isIncoming = call.status === "incoming";
-    const isActive = call.status === "active";
-
-    // Pulse animation for incoming call avatar
-    const pulsePhase = Math.sin((currentTime * 0.1) % (Math.PI * 2));
-    const avatarScale = isIncoming ? 1 + (pulsePhase * 0.03) : 1;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: call.isVideo
-                ? "linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)"
-                : "linear-gradient(180deg, #2C2C2E 0%, #1C1C1E 100%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "180px 45px 120px",
-            zIndex: 500,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-        }}>
-            {/* Top Section: Avatar & Name */}
-            <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 30
-            }}>
-                {/* Avatar */}
-                <div style={{
-                    width: isActive ? 270 : 360,
-                    height: isActive ? 270 : 360,
-                    borderRadius: "50%",
-                    backgroundColor: "#8E8E93",
-                    backgroundImage: call.callerAvatar
-                        ? `url(${call.callerAvatar})`
-                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: isActive ? 90 : 120,
-                    color: "white",
-                    fontWeight: "300",
-                    transform: `scale(${avatarScale})`,
-                    boxShadow: isIncoming ? "0 0 60px rgba(50, 215, 75, 0.3)" : "none"
-                }}>
-                    {!call.callerAvatar && call.callerName.charAt(0).toUpperCase()}
-                </div>
-
-                {/* Caller Name */}
-                <div style={{
-                    fontSize: isActive ? 60 : 78,
-                    fontWeight: "300",
-                    color: "white",
-                    textAlign: "center"
-                }}>
-                    {call.callerName}
-                </div>
-
-                {/* Call Status */}
-                <div style={{
-                    fontSize: 42,
-                    color: "rgba(255, 255, 255, 0.6)"
-                }}>
-                    {isIncoming && (call.isVideo ? "FaceTime Video..." : "Incoming call...")}
-                    {isActive && call.startedAt && (
-                        <CallTimer startedAt={call.startedAt} currentTime={currentTime} />
-                    )}
-                </div>
-            </div>
-
-            {/* Bottom Section: Controls */}
-            {isIncoming ? (
-                // Incoming Call: Accept/Decline
-                <div style={{
-                    display: "flex",
-                    justifyContent: "center",
-                    gap: 180,
-                    width: "100%"
-                }}>
-                    <ControlButton
-                        icon={<PhoneIcon />}
-                        label="Decline"
-                        variant="destructive"
-                        size="large"
-                    />
-                    <ControlButton
-                        icon={call.isVideo ? <VideoIcon /> : <PhoneIcon />}
-                        label="Accept"
-                        size="large"
-                    />
-                </div>
-            ) : (
-                // Active Call: Control Grid + End Button
-                <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 60,
-                    width: "100%"
-                }}>
-                    {/* Control Grid (2 rows x 3 columns) */}
-                    <div style={{
-                        display: "grid",
-                        gridTemplateColumns: "repeat(3, 1fr)",
-                        gap: "45px 60px",
-                        width: "100%",
-                        maxWidth: 600,
-                        justifyItems: "center"
-                    }}>
-                        <ControlButton icon={<MuteIcon />} label="mute" />
-                        <ControlButton icon={<KeypadIcon />} label="keypad" />
-                        <ControlButton icon={<SpeakerIcon />} label="speaker" />
-                        <ControlButton icon={<AddCallIcon />} label="add call" />
-                        <ControlButton icon={<VideoIcon />} label="FaceTime" />
-                        <div style={{ width: 150 }} /> {/* Spacer */}
-                    </div>
-
-                    {/* End Call Button */}
-                    <ControlButton
-                        icon={<PhoneIcon />}
-                        label="End"
-                        variant="destructive"
-                        size="large"
-                    />
-                </div>
-            )}
-        </div>
-    );
-};
 ````
 
 ## File: packages/renderer/src/HomeScreenView.tsx
@@ -27676,148 +31399,297 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
+## File: packages/apps-instagram/src/views/feed/FeedView.tsx
 ````typescript
 import React from "react";
-import { InstagramState } from "../../types";
+import { InstagramState, Post, StoryUser } from "../../types";
 import { LayoutState, FeedLayoutState } from "@tokovo/core";
 
 // ============================================================================
-// ICONS
+// HEADER ICONS - Authentic Instagram iOS
 // ============================================================================
 
-const GridIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
+const CameraIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8" />
     </svg>
 );
 
-const ReelsIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <polygon points="10,8 16,12 10,16" />
+const MessengerIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const TaggedIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "#FF3040" : "none"} stroke={filled ? "#FF3040" : "white"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
     </svg>
 );
 
-const SettingsIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
+const CommentIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const AddIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <line x1="12" y1="8" x2="12" y2="16" />
-        <line x1="8" y1="12" x2="16" y2="12" />
+const ShareIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const ChevronDownIcon = () => (
-    <svg width="42" height="42" viewBox="0 0 12 12" fill="none">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
+        <circle cx="12" cy="5" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="12" cy="19" r="1.5" />
     </svg>
 );
 
 // ============================================================================
-// STAT ITEM
+// INSTAGRAM LOGO - Script font with dropdown
 // ============================================================================
 
-const StatItem: React.FC<{ value: string | number; label: string }> = ({ value, label }) => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{
-            fontSize: 48,
-            fontWeight: 700,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+const InstagramLogo = () => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12
+    }}>
+        <span style={{
+            fontFamily: "'Billabong', 'Grand Hotel', cursive, -apple-system",
+            fontSize: 90,
+            color: "white",
+            letterSpacing: 1,
+            fontWeight: 400
         }}>
-            {value}
-        </div>
-        <div style={{ fontSize: 36, opacity: 0.9 }}>{label}</div>
+            Instagram
+        </span>
+        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
     </div>
 );
 
 // ============================================================================
-// HIGHLIGHT BUBBLE
+// STORY BUBBLE - Larger authentic Instagram style
 // ============================================================================
 
-const HighlightBubble: React.FC<{ title: string; imageUrl?: string; isNew?: boolean }> = ({ title, imageUrl, isNew }) => (
+const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
     <div style={{
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         marginRight: 36,
-        width: 192
+        width: 210
     }}>
+        {/* Story Ring */}
         <div style={{
-            width: 192,
-            height: 192,
+            width: 210,
+            height: 210,
             borderRadius: "50%",
-            border: isNew ? "none" : "3px solid #444",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
-            backgroundSize: "cover",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
+            padding: 9,
+            background: isYourStory
+                ? "transparent"
+                : user.hasUnseen
+                    ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
+                    : "#444"
         }}>
-            {isNew && (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            )}
+            <div style={{
+                width: "100%",
+                height: "100%",
+                borderRadius: "50%",
+                border: "6px solid #000",
+                position: "relative",
+                overflow: "hidden"
+            }}>
+                <div style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    backgroundSize: "cover",
+                    backgroundColor: "#333"
+                }} />
+
+                {/* Your Story + icon */}
+                {isYourStory && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        right: 0,
+                        width: 60,
+                        height: 60,
+                        borderRadius: "50%",
+                        backgroundColor: "#0095F6",
+                        border: "4px solid #000",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
+                            <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="3" strokeLinecap="round" />
+                        </svg>
+                    </div>
+                )}
+            </div>
         </div>
+
+        {/* Username */}
         <div style={{
-            marginTop: 15,
+            color: "white",
             fontSize: 30,
-            textAlign: "center",
-            maxWidth: 192,
+            marginTop: 15,
+            maxWidth: 210,
             overflow: "hidden",
             textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
+            whiteSpace: "nowrap",
+            textAlign: "center"
         }}>
-            {title}
+            {isYourStory ? "Your story" : user.username}
         </div>
     </div>
 );
 
 // ============================================================================
-// PROFILE VIEW - Main export
+// POST ITEM - Authentic Instagram post
 // ============================================================================
 
-export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
+const PostItem: React.FC<{ post: Post }> = ({ post }) => (
+    <div style={{ marginBottom: 48 }}>
+        {/* Header */}
+        <div style={{
+            display: "flex",
+            alignItems: "center",
+            padding: "24px 36px",
+            gap: 24
+        }}>
+            {/* Avatar with story ring if applicable */}
+            <div style={{
+                width: 102,
+                height: 102,
+                borderRadius: "50%",
+                padding: 6,
+                background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
+            }}>
+                <div style={{
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: "50%",
+                    border: "4px solid #000",
+                    backgroundImage: `url(${post.avatar})`,
+                    backgroundSize: "cover",
+                    backgroundColor: "#333"
+                }} />
+            </div>
+
+            {/* Username + Location */}
+            <div style={{ flex: 1 }}>
+                <div style={{
+                    color: "white",
+                    fontSize: 39,
+                    fontWeight: 600,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {post.username}
+                </div>
+            </div>
+
+            <MoreIcon />
+        </div>
+
+        {/* Image */}
+        <div style={{
+            width: "100%",
+            aspectRatio: "1/1",
+            backgroundColor: "#1a1a1a",
+            backgroundImage: `url(${post.image})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center"
+        }} />
+
+        {/* Actions */}
+        <div style={{
+            display: "flex",
+            justifyContent: "space-between",
+            padding: "30px 36px 18px",
+            alignItems: "center"
+        }}>
+            <div style={{ display: "flex", gap: 48 }}>
+                <HeartIcon filled={post.liked} />
+                <CommentIcon />
+                <ShareIcon />
+            </div>
+            <BookmarkIcon filled={post.saved} />
+        </div>
+
+        {/* Likes */}
+        <div style={{ padding: "0 36px", marginBottom: 12 }}>
+            <div style={{
+                color: "white",
+                fontSize: 39,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                {post.likes.toLocaleString()} likes
+            </div>
+        </div>
+
+        {/* Caption */}
+        <div style={{ padding: "0 36px", marginBottom: 12 }}>
+            <span style={{
+                color: "white",
+                fontSize: 39,
+                fontWeight: 600,
+                marginRight: 12,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                {post.username}
+            </span>
+            <span style={{ color: "white", fontSize: 39 }}>
+                {post.caption}
+            </span>
+        </div>
+
+        {/* Comments link */}
+        <div style={{ padding: "0 36px", marginBottom: 6 }}>
+            <span style={{ color: "#A8A8A8", fontSize: 36 }}>
+                View all {post.comments} comments
+            </span>
+        </div>
+
+        {/* Timestamp */}
+        <div style={{ padding: "0 36px" }}>
+            <span style={{ color: "#A8A8A8", fontSize: 30, textTransform: "uppercase" }}>
+                2 hours ago
+            </span>
+        </div>
+    </div>
+);
+
+// ============================================================================
+// FEED VIEW - Main export
+// ============================================================================
+
+export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
     const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
     const scrollY = feedLayout?.scrollY || 0;
 
-    // Mock user data
-    const user = {
-        username: "instagram_user",
-        name: "Instagram User",
-        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
-        posts: 42,
-        followers: "1.2M",
-        following: 250,
-        avatar: "https://i.pravatar.cc/300?u=profile"
+    // Create "Your Story" user for first position
+    const yourStory: StoryUser = {
+        username: "Your story",
+        avatar: "",
+        hasUnseen: false,
+        stories: []
     };
-
-    const highlights = [
-        { title: "New", isNew: true },
-        { title: "Travel ✈️", imageUrl: "https://picsum.photos/seed/h1/200" },
-        { title: "Food 🍕", imageUrl: "https://picsum.photos/seed/h2/200" },
-        { title: "Pets 🐕", imageUrl: "https://picsum.photos/seed/h3/200" },
-    ];
 
     return (
         <div style={{
@@ -27826,159 +31698,53 @@ export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState
             color: "white",
             display: "flex",
             flexDirection: "column",
-            overflow: "hidden",
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
         }}>
+            {/* Header */}
+            <div style={{
+                height: 156,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0 36px",
+                marginTop: 120,
+                backgroundColor: "#000",
+                zIndex: 10
+            }}>
+                <CameraIcon />
+                <InstagramLogo />
+                <div style={{ display: "flex", gap: 60 }}>
+                    <HeartIcon />
+                    <MessengerIcon />
+                </div>
+            </div>
+
             {/* Scrollable Content */}
             <div style={{
-                transform: `translateY(-${scrollY}px)`,
-                width: "100%"
+                flex: 1,
+                overflow: "hidden",
+                position: "relative"
             }}>
-                {/* Header */}
                 <div style={{
-                    height: 150,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0 36px",
-                    marginTop: 120
+                    transform: `translateY(-${scrollY}px)`
                 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: 54, fontWeight: 700 }}>{user.username}</span>
-                        <ChevronDownIcon />
-                    </div>
-                    <div style={{ display: "flex", gap: 48 }}>
-                        <AddIcon />
-                        <SettingsIcon />
-                    </div>
-                </div>
-
-                {/* Profile Info Section */}
-                <div style={{ padding: "24px 36px" }}>
-                    {/* Avatar + Stats Row */}
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
-                        {/* Avatar */}
-                        <div style={{
-                            width: 240,
-                            height: 240,
-                            borderRadius: "50%",
-                            backgroundImage: `url(${user.avatar})`,
-                            backgroundSize: "cover",
-                            backgroundColor: "#333",
-                            marginRight: 60
-                        }} />
-
-                        {/* Stats */}
-                        <div style={{
-                            flex: 1,
-                            display: "flex",
-                            justifyContent: "space-around"
-                        }}>
-                            <StatItem value={user.posts} label="Posts" />
-                            <StatItem value={user.followers} label="Followers" />
-                            <StatItem value={user.following} label="Following" />
-                        </div>
-                    </div>
-
-                    {/* Name & Bio */}
-                    <div style={{ marginBottom: 27 }}>
-                        <div style={{ fontSize: 39, fontWeight: 600, marginBottom: 6 }}>
-                            {user.name}
-                        </div>
-                        <div style={{ fontSize: 39, whiteSpace: "pre-wrap", lineHeight: 1.35, opacity: 0.95 }}>
-                            {user.bio}
-                        </div>
-                    </div>
-
-                    {/* Edit & Share Buttons */}
-                    <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Edit profile
-                        </div>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Share profile
-                        </div>
-                    </div>
-                </div>
-
-                {/* Highlights Row */}
-                <div style={{
-                    display: "flex",
-                    padding: "12px 36px 30px",
-                    overflowX: "hidden"
-                }}>
-                    {highlights.map((h, i) => (
-                        <HighlightBubble key={i} {...h} />
-                    ))}
-                </div>
-
-                {/* Tabs */}
-                <div style={{
-                    display: "flex",
-                    borderTop: "1px solid #262626",
-                    borderBottom: "1px solid #262626"
-                }}>
+                    {/* Stories Row */}
                     <div style={{
-                        flex: 1,
-                        height: 132,
                         display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderBottom: "3px solid white"
+                        padding: "24px 36px",
+                        borderBottom: "1px solid #262626",
+                        marginBottom: 6,
+                        overflowX: "hidden"
                     }}>
-                        <GridIcon active={true} />
+                        <StoryBubble user={yourStory} isYourStory />
+                        {state.stories.users.map(user => (
+                            <StoryBubble key={user.username} user={user} />
+                        ))}
                     </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <ReelsIcon active={false} />
-                    </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <TaggedIcon active={false} />
-                    </div>
-                </div>
 
-                {/* Grid */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
+                    {/* Posts */}
                     {state.feed.posts.map(post => (
-                        <div key={post.id} style={{
-                            width: "calc(33.33% - 2px)",
-                            aspectRatio: "1/1",
-                            backgroundColor: "#1a1a1a",
-                            backgroundImage: `url(${post.image})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center"
-                        }} />
+                        <PostItem key={post.id} post={post} />
                     ))}
                 </div>
             </div>
@@ -28255,17 +32021,236 @@ export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
 };
 ````
 
-## File: packages/apps-instagram/src/index.ts
+## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
 ````typescript
-import { ReducerRegistry } from "@tokovo/core";
-import { instagramRuntime } from "./runtime";
+import React from "react";
+import { InstagramState, StoryUser } from "../../types";
+import { LayoutState, StoryLayoutState } from "@tokovo/core";
 
-ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
+// ============================================================================
+// ICONS
+// ============================================================================
 
-export * from "./runtime";
-export * from "./ui";
-export * from "./types";
-export * from "./notification-adapter";
+const CloseIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+);
+
+const MoreIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 24 24" fill="white">
+        <circle cx="5" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="19" cy="12" r="2" />
+    </svg>
+);
+
+const HeartIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
+        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+    </svg>
+);
+
+// ============================================================================
+// PROGRESS BAR
+// ============================================================================
+
+const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
+    <div style={{ display: "flex", gap: 9, padding: "30px 24px" }}>
+        {Array.from({ length: count }).map((_, i) => (
+            <div key={i} style={{
+                flex: 1,
+                height: 9,
+                backgroundColor: "rgba(255,255,255,0.3)",
+                borderRadius: 6,
+                overflow: "hidden"
+            }}>
+                <div style={{
+                    height: "100%",
+                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
+                    backgroundColor: "white",
+                    borderRadius: 6,
+                    transition: "width 0.1s linear"
+                }} />
+            </div>
+        ))}
+    </div>
+);
+
+// ============================================================================
+// EMOJI SHORTCUTS
+// ============================================================================
+
+const EmojiShortcuts = () => (
+    <div style={{ display: "flex", gap: 30 }}>
+        {["❤️", "🔥", "👏", "😂", "😮", "😢"].map(emoji => (
+            <span key={emoji} style={{ fontSize: 66 }}>{emoji}</span>
+        ))}
+    </div>
+);
+
+// ============================================================================
+// STORIES VIEW - Main export
+// ============================================================================
+
+export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
+    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
+
+    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
+    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    const activeIndex = storyLayout.activeStoryIndex;
+    const progress = storyLayout.storyProgress;
+    const activeStory = activeUser.stories[activeIndex];
+
+    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+
+    return (
+        <div style={{
+            backgroundColor: "#000",
+            height: "100%",
+            color: "white",
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+        }}>
+            {/* Story Images (with transitions) */}
+            {storyLayout.storyLayouts.map(sl => {
+                const story = activeUser.stories[sl.index];
+                if (!story) return null;
+
+                return (
+                    <div key={story.id} style={{
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        backgroundImage: `url(${story.image})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        opacity: sl.opacity,
+                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`
+                    }} />
+                );
+            })}
+
+            {/* Top Gradient */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 450,
+                background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
+                pointerEvents: "none",
+                zIndex: 5
+            }} />
+
+            {/* Bottom Gradient */}
+            <div style={{
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                height: 450,
+                background: "linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
+                pointerEvents: "none",
+                zIndex: 5
+            }} />
+
+            {/* Top UI */}
+            <div style={{ position: "relative", zIndex: 10, paddingTop: 120 }}>
+                {/* Progress bars */}
+                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
+
+                {/* User info */}
+                <div style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 24px",
+                    marginTop: 12
+                }}>
+                    {/* Avatar */}
+                    <div style={{
+                        width: 96,
+                        height: 96,
+                        borderRadius: "50%",
+                        backgroundImage: `url(${activeUser.avatar})`,
+                        backgroundSize: "cover",
+                        backgroundColor: "#333",
+                        marginRight: 24
+                    }} />
+
+                    {/* Username + Time */}
+                    <span style={{
+                        fontSize: 42,
+                        fontWeight: 600,
+                        marginRight: 18
+                    }}>
+                        {activeUser.username}
+                    </span>
+                    <span style={{
+                        fontSize: 36,
+                        opacity: 0.7
+                    }}>
+                        12h
+                    </span>
+
+                    <div style={{ flex: 1 }} />
+
+                    {/* Actions */}
+                    <MoreIcon />
+                    <div style={{ width: 30 }} />
+                    <CloseIcon />
+                </div>
+            </div>
+
+            {/* Bottom UI */}
+            <div style={{
+                position: "absolute",
+                bottom: 60,
+                left: 0,
+                right: 0,
+                padding: "0 36px",
+                display: "flex",
+                alignItems: "center",
+                gap: 30,
+                zIndex: 10
+            }}>
+                {/* Message Input */}
+                <div style={{
+                    flex: 1,
+                    height: 132,
+                    borderRadius: 66,
+                    border: "3px solid rgba(255,255,255,0.5)",
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 42px",
+                    fontSize: 42,
+                    color: "rgba(255,255,255,0.8)"
+                }}>
+                    Send message
+                </div>
+
+                {/* Quick reactions */}
+                <HeartIcon />
+                <ShareIcon />
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/apps-whatsapp/src/components/index.ts
@@ -28918,6 +32903,408 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
 };
 ````
 
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
+````typescript
+import React from "react";
+
+/**
+ * WhatsApp iOS Typing Indicator
+ * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
+ * Uses frame-based animation for proper rendering in video output
+ * 
+ * @param frame - Current frame from Remotion (passed in from renderer)
+ * @param fps - Frames per second (default 30)
+ */
+
+export interface TypingBubbleProps {
+    platform?: string;
+    frame?: number;
+    fps?: number;
+}
+
+import { LAYOUT_CONSTANTS } from "./config/layout-config";
+
+export const TypingBubble: React.FC<TypingBubbleProps> = ({
+    platform = "ios",
+    frame = 0,
+    fps = 30
+}) => {
+    return (
+        <div style={{
+            backgroundColor: "#FFFFFF",
+            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
+            borderRadius: 24,
+            borderTopLeftRadius: 6,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+            display: "flex",
+            alignItems: "center",
+            gap: 15,
+            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
+        }}>
+            <TypingDot frame={frame} fps={fps} delayFrames={0} />
+            <TypingDot frame={frame} fps={fps} delayFrames={5} />
+            <TypingDot frame={frame} fps={fps} delayFrames={10} />
+        </div>
+    );
+};
+
+interface TypingDotProps {
+    frame: number;
+    fps: number;
+    delayFrames: number;
+}
+
+/**
+ * Simple interpolation function (avoiding remotion dependency)
+ */
+function interpolate(
+    value: number,
+    inputRange: number[],
+    outputRange: number[],
+): number {
+    // Find the segment
+    let i = 0;
+    for (i = 0; i < inputRange.length - 1; i++) {
+        if (value <= inputRange[i + 1]) break;
+    }
+
+    // Clamp to range
+    if (value <= inputRange[0]) return outputRange[0];
+    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
+
+    // Linear interpolation between points
+    const inputStart = inputRange[i];
+    const inputEnd = inputRange[i + 1];
+    const outputStart = outputRange[i];
+    const outputEnd = outputRange[i + 1];
+
+    const t = (value - inputStart) / (inputEnd - inputStart);
+    return outputStart + (outputEnd - outputStart) * t;
+}
+
+const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
+    // Animation cycle: 36 frames at 30fps = 1.2 seconds
+    const cycleLength = Math.round(1.2 * fps);
+    const adjustedFrame = (frame + delayFrames) % cycleLength;
+
+    // Bounce animation: up for first quarter, down for second quarter
+    const quarterCycle = cycleLength / 4;
+    const translateY = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0, -9, 0, 0]
+    );
+
+    // Opacity: brighten when bouncing up
+    const opacity = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0.4, 1, 0.4, 0.4]
+    );
+
+    return (
+        <div style={{
+            width: 24,
+            height: 24,
+            backgroundColor: "#8696A0",
+            borderRadius: "50%",
+            transform: `translateY(${translateY}px)`,
+            opacity
+        }} />
+    );
+};
+
+export default TypingBubble;
+````
+
+## File: packages/devices/src/StatusBar.tsx
+````typescript
+import React from "react";
+import { DeviceOSState } from "@tokovo/core";
+
+/**
+ * StatusBar - Authentic iOS/Android status bar
+ * 
+ * Reads from DeviceOSState for:
+ * - Time (formatted from clock timestamp)
+ * - Battery percentage and charging state
+ * - Network type and signal strength
+ * - DND mode (moon icon)
+ */
+
+// =============================================================================
+// ICONS
+// =============================================================================
+
+// iOS Signal Bars (4 bars, varying heights based on strength)
+const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 4 // 0-4
+}) => (
+    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
+        <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
+        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
+        <rect x="13.5" y="0" width="3" height="11" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
+    </svg>
+);
+
+// iOS WiFi Icon (3 arcs based on strength)
+const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
+    color = "currentColor",
+    strength = 3 // 0-3
+}) => (
+    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
+        <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
+        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
+        <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
+        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
+    </svg>
+);
+
+// iOS Battery Icon
+const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
+    color = "currentColor",
+    percentage = 100,
+    charging = false
+}) => (
+    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
+        {/* Battery body */}
+        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
+        {/* Battery fill */}
+        <rect
+            x="2"
+            y="2"
+            width={Math.max(0, (percentage / 100) * 18)}
+            height="8"
+            rx="1"
+            fill={percentage > 20 ? (charging ? "#34C759" : color) : "#FF3B30"}
+        />
+        {/* Battery cap */}
+        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
+        {/* Charging bolt */}
+        {charging && (
+            <path d="M11 2L8 6H11L10 10L13 6H10L11 2Z" fill="white" />
+        )}
+    </svg>
+);
+
+// Network type label for cellular
+const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
+    const label = network === "wifi" ? null : network.toUpperCase();
+    if (!label) return null;
+    return (
+        <span style={{
+            fontSize: 36,
+            fontWeight: 600,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            marginRight: 6,
+            color,
+        }}>
+            {label}
+        </span>
+    );
+};
+
+// DND Moon Icon
+const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
+    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
+        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
+    </svg>
+);
+
+// =============================================================================
+// PROPS
+// =============================================================================
+
+interface StatusBarProps {
+    /** Device OS state (preferred - reads time, battery, network from here) */
+    os?: DeviceOSState;
+    /** Fallback: manual time string */
+    time?: string;
+    /** Fallback: manual battery percentage */
+    batteryPercentage?: number;
+    /** Platform variant */
+    variant?: "ios" | "android";
+    /** Theme */
+    theme?: "light" | "dark";
+    /** Notification icons (Android left side) */
+    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/** Format timestamp to HH:MM */
+function formatTime(timestamp: number): string {
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: false,
+    });
+}
+
+// =============================================================================
+// NOTIFICATION ICON
+// =============================================================================
+
+const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
+    <div style={{ position: "relative" }}>
+        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
+        {count > 1 && (
+            <div style={{
+                position: "absolute",
+                top: -6,
+                right: -8,
+                background: "#ff3b30",
+                borderRadius: 10,
+                padding: "2px 6px",
+                fontSize: 18,
+                fontWeight: 600,
+                color: "white",
+                minWidth: 12,
+                textAlign: "center",
+            }}>
+                {count > 9 ? "9+" : count}
+            </div>
+        )}
+    </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const StatusBar: React.FC<StatusBarProps> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100,
+    variant = "ios",
+    theme = "light",
+    notificationIcons = [],
+}) => {
+    // Read from device.os if available, otherwise use props
+    const displayTime = os ? formatTime(os.clock) : time;
+    const displayBattery = os ? os.battery : batteryPercentage;
+    const isCharging = os?.charging ?? false;
+    const network = os?.network ?? "wifi";
+    const wifiStrength = os?.wifiStrength ?? 3;
+    const cellStrength = os?.cellStrength ?? 4;
+    const isDND = os?.dnd ?? false;
+
+    const isAndroid = variant === "android";
+    const textColor = theme === "dark" ? "white" : "black";
+
+    // Android Status Bar
+    if (isAndroid) {
+        return (
+            <div style={{
+                width: "100%",
+                height: 90,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: "0 45px",
+                boxSizing: "border-box",
+                fontSize: 36,
+                fontWeight: "500",
+                color: "white",
+                position: "absolute",
+                top: 15,
+                left: 0,
+                zIndex: 20,
+                fontFamily: "Roboto, sans-serif"
+            }}>
+                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+                    <span>{displayTime}</span>
+                    {notificationIcons.slice(0, 5).map((n, i) => (
+                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
+                    ))}
+                    {notificationIcons.length > 5 && (
+                        <span style={{ fontSize: 28 }}>•</span>
+                    )}
+                </div>
+                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
+                    {isDND && <DNDIcon color="white" />}
+                    {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
+                    <SignalBarsIcon color="white" strength={cellStrength} />
+                    {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
+                    <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
+                </div>
+            </div>
+        );
+    }
+
+    // iOS Status Bar
+    return (
+        <div style={{
+            width: "100%",
+            height: 132,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "45px 72px 0 72px",
+            boxSizing: "border-box",
+            color: textColor,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 20
+        }}>
+            {/* Left side - Time */}
+            <div style={{
+                fontSize: 51,
+                fontWeight: "600",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                letterSpacing: 0.5
+            }}>
+                {displayTime}
+            </div>
+
+            {/* Right side - Status icons */}
+            <div style={{
+                display: "flex",
+                gap: 15,
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                {isDND && <DNDIcon color={textColor} />}
+                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
+                <SignalBarsIcon color={textColor} strength={cellStrength} />
+                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
+                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
+            </div>
+        </div>
+    );
+};
+
+/**
+ * iOS Status Bar specifically styled for dark backgrounds
+ */
+export const DarkStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar os={os} time={time} theme="dark" batteryPercentage={batteryPercentage} />
+);
+
+/**
+ * iOS Status Bar specifically styled for light backgrounds
+ */
+export const LightStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
+    os,
+    time = "9:41",
+    batteryPercentage = 100
+}) => (
+    <StatusBar os={os} time={time} theme="light" batteryPercentage={batteryPercentage} />
+);
+````
+
 ## File: packages/dsl/src/author/camera-builder.ts
 ````typescript
 /**
@@ -29461,6 +33848,85 @@ export function episode(
 }
 ````
 
+## File: packages/dsl/src/events/index.ts
+````typescript
+/**
+ * DSL Events Module
+ * 
+ * Centralized event factories for all event types.
+ * Use these instead of duplicating helpers in showcases.
+ * 
+ * @example
+ * ```ts
+ * import { dsl, generateTyping } from "@tokovo/dsl";
+ * 
+ * const events = [
+ *     dsl.keyboard.show(30, "phone"),
+ *     ...generateTyping(50, "phone", "Hello!"),
+ *     dsl.messages.send(140, "dm_friend", "Hello!"),
+ *     dsl.keyboard.hide(200, "phone"),
+ *     dsl.os.setBattery(300, 75),
+ *     dsl.touch.tap(350, 500, 600),
+ * ];
+ * ```
+ */
+
+// Individual event factory modules
+export { keyboard } from "./keyboard";
+export { messages } from "./messages";
+export { camera, ZoomOptions, PanOptions, ShakeOptions } from "./camera";
+export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
+export { os } from "./os";
+export { touch } from "./touch";
+export { call, CallEvent, IncomingCallOptions } from "./call";
+
+// Typing simulation
+export {
+    generateTyping,
+    getTypingEndFrame,
+    TYPING_SPEEDS,
+    type TypingSpeed,
+    type TypingOptions,
+} from "./typing";
+
+// Import for bundled object
+import { keyboard } from "./keyboard";
+import { messages } from "./messages";
+import { camera } from "./camera";
+import { audio as audioEvents } from "./audio";
+import { os } from "./os";
+import { touch } from "./touch";
+import { call } from "./call";
+
+/**
+ * Bundled DSL object with all event factories
+ * 
+ * @example
+ * ```ts
+ * import { dsl } from "@tokovo/dsl";
+ * 
+ * const events = [
+ *     dsl.keyboard.show(30, "phone"),
+ *     dsl.messages.send(100, "dm", "Hi!"),
+ *     dsl.camera.zoom(150, 1.2, 30),
+ *     dsl.audio.play(200, "notification"),
+ *     dsl.os.setNetwork(250, "5G"),
+ *     dsl.touch.tap(300, 540, 960),
+ *     dsl.call.incoming(0, "alice", "Alice"),
+ * ];
+ * ```
+ */
+export const dsl = {
+    keyboard,
+    messages,
+    camera,
+    audio: audioEvents,
+    os,
+    touch,
+    call,
+};
+````
+
 ## File: packages/episodes/src/examples/multi-pov-demo.json
 ````json
 {
@@ -29718,6 +34184,407 @@ export function episode(
         }
     ]
 }
+````
+
+## File: packages/episodes/src/schema.ts
+````typescript
+import { z } from "zod";
+
+// --- App Icon & Home Screen ---
+export const AppIconSchema = z.object({
+    appId: z.string(),
+    label: z.string(),
+    icon: z.string(),
+    badge: z.number().optional()
+});
+
+export const AppFolderSchema = z.object({
+    type: z.literal("folder"),
+    name: z.string(),
+    apps: z.array(AppIconSchema)
+});
+
+export const HomeScreenPageSchema = z.object({
+    apps: z.array(z.union([AppIconSchema, AppFolderSchema]))
+});
+
+export const HomeScreenConfigSchema = z.object({
+    wallpaper: z.string().optional(),
+    pages: z.array(HomeScreenPageSchema),
+    dock: z.array(AppIconSchema)
+});
+
+// --- Device Events ---
+export const DeviceEventSchema = z.discriminatedUnion("type", [
+    // Lock/Unlock
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["LOCK", "UNLOCK"])
+    }),
+    // Open/Close App
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["OPEN_APP", "CLOSE_APP"]),
+        appId: z.string()
+    }),
+    // Go Home
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("GO_HOME")
+    }),
+    // Set Badge
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SET_BADGE"),
+        appId: z.string(),
+        count: z.number()
+    }),
+    // Show notification
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SHOW_NOTIFICATION"),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string(),
+        mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
+        icon: z.string().optional()
+    }),
+    // Dismiss notification
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("DISMISS_NOTIFICATION"),
+        notificationId: z.string()
+    }),
+    // Incoming call
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("INCOMING_CALL"),
+        callerId: z.string(),
+        callerName: z.string(),
+        callerAvatar: z.string().optional(),
+        isVideo: z.boolean().optional()
+    }),
+    // Call answered
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("CALL_ANSWERED")
+    }),
+    // Call ended
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("CALL_ENDED")
+    })
+]);
+
+// --- App Events ---
+export const AppEventSchema = z.discriminatedUnion("type", [
+    // Message events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        text: z.string().optional(),
+        messageType: z.enum(["text", "system", "call_missed", "screenshot_alert"]).optional(),
+        metadata: z.record(z.any()).optional()
+    }),
+    // Media Message events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("IMAGE_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        imageUrl: z.string(),
+        caption: z.string().optional(),
+        text: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("VIDEO_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        videoUrl: z.string(),
+        thumbnailUrl: z.string().optional(),
+        duration: z.number(),
+        caption: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GIF_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        gifUrl: z.string(),
+        caption: z.string().optional()
+    }),
+    // Typing
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.enum(["TYPING_START", "TYPING_END"]),
+        conversationId: z.string(),
+        from: z.string()
+    }),
+    // Voice message
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("VOICE_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        duration: z.number()
+    }),
+    // Message interactions
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_READ"),
+        conversationId: z.string(),
+        messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_DELETED"),
+        conversationId: z.string(),
+        messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("REACTION_ADDED"),
+        conversationId: z.string(),
+        messageId: z.string(),
+        reaction: z.object({
+            emoji: z.string(),
+            count: z.number(),
+            fromMe: z.boolean().optional()
+        })
+    }),
+    // Group events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GROUP_MEMBER_ADDED"),
+        conversationId: z.string(),
+        memberId: z.string(),
+        memberName: z.string(),
+        addedBy: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GROUP_MEMBER_REMOVED"),
+        conversationId: z.string(),
+        memberId: z.string(),
+        memberName: z.string(),
+        removedBy: z.string()
+    }),
+    // Custom event
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("CUSTOM"),
+        name: z.string(),
+        payload: z.any().optional()
+    })
+]);
+
+// --- Camera Events ---
+export const CameraEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("CAMERA"),
+    type: z.literal("SET_VIEW"),
+    view: z.object({
+        type: z.enum(["APP_VIEW", "TRANSITION"]),
+        appId: z.string().optional()
+    })
+});
+
+// --- Audio Events ---
+export const AudioEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("AUDIO"),
+    type: z.literal("PLAY_SOUND"),
+    soundId: z.string(),
+    volume: z.number().optional()
+});
+
+// --- Combined Timeline Event ---
+export const TimelineEventSchema = z.union([
+    DeviceEventSchema,
+    AppEventSchema,
+    CameraEventSchema,
+    AudioEventSchema
+]);
+
+// --- Message Schema ---
+export const MessageSchema = z.object({
+    id: z.string(),
+    from: z.string(),
+    text: z.string().optional(),
+    type: z.enum([
+        "text", "image", "video", "gif", "voice", "system",
+        "deleted", "screenshot_alert", "call_missed"
+    ]).optional(),
+    at: z.number().optional(),
+    status: z.enum(["sending", "sent", "delivered", "read"]).optional(),
+
+    // Media fields
+    imageUrl: z.string().optional(),
+    videoUrl: z.string().optional(),
+    thumbnailUrl: z.string().optional(),
+    gifUrl: z.string().optional(),
+    caption: z.string().optional(),
+
+    // Voice/Video specific
+    duration: z.number().optional(),
+    isPlaying: z.boolean().optional(),
+    playProgress: z.number().optional(),
+
+    // Interactions
+    reactions: z.array(z.object({
+        emoji: z.string(),
+        count: z.number(),
+        fromMe: z.boolean().optional()
+    })).optional(),
+
+    replyTo: z.object({
+        messageId: z.string(),
+        text: z.string(),
+        from: z.string(),
+        type: z.string().optional()
+    }).optional(),
+
+    edited: z.boolean().optional(),
+
+    // System message fields
+    systemType: z.enum(["member_added", "member_removed", "admin_change", "group_created"]).optional(),
+    targetMember: z.string().optional(),
+    actorName: z.string().optional(),
+
+    // Flexible metadata
+    metadata: z.record(z.any()).optional()
+});
+
+// --- Group Member Schema ---
+export const GroupMemberSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    avatar: z.string().optional(),
+    phone: z.string().optional()
+});
+
+// --- Conversation Schema ---
+export const ConversationStateSchema = z.object({
+    id: z.string(),
+    type: z.enum(["dm", "group"]).optional(),
+    name: z.string().optional(),
+    avatar: z.string().optional(),
+    members: z.array(GroupMemberSchema).optional(),
+    admins: z.array(z.string()).optional(),
+    messages: z.array(MessageSchema),
+    typing: z.record(z.boolean()).optional()
+});
+
+// --- Notification Schema ---
+export const NotificationSchema = z.object({
+    id: z.string(),
+    appId: z.string(),
+    title: z.string(),
+    body: z.string(),
+    at: z.number(),
+    dismissedAt: z.number().optional(),
+    mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
+    icon: z.string().optional()
+});
+
+// --- Call State Schema ---
+export const CallStateSchema = z.object({
+    status: z.enum(["incoming", "active", "ended"]),
+    callerId: z.string(),
+    callerName: z.string(),
+    callerAvatar: z.string().optional(),
+    isVideo: z.boolean().optional(),
+    startedAt: z.number().optional(),
+    endedAt: z.number().optional()
+});
+
+// --- Device State Schema ---
+export const DeviceStateSchema = z.object({
+    id: z.string(),
+    profileId: z.string(),
+    isLocked: z.boolean(),
+    foregroundAppId: z.string().optional(),
+    notifications: z.array(NotificationSchema).optional(),
+    call: CallStateSchema.optional(),
+    homeScreen: HomeScreenConfigSchema.optional()
+});
+
+// --- Camera View Schema ---
+export const CameraViewSchema = z.object({
+    type: z.enum(["APP_VIEW", "TRANSITION"]),
+    appId: z.string().optional()
+});
+
+// --- Episode Meta Schema ---
+export const EpisodeMetaSchema = z.object({
+    title: z.string().optional(),
+    fps: z.number().optional(),
+    durationInFrames: z.number().optional()
+}).optional();
+
+// --- Episode Schema ---
+export const EpisodeSchema = z.object({
+    meta: EpisodeMetaSchema,
+    initialWorld: z.object({
+        devices: z.record(DeviceStateSchema),
+        conversations: z.record(ConversationStateSchema),
+        appState: z.record(z.any()).optional(),
+        camera: CameraViewSchema
+    }),
+    events: z.array(TimelineEventSchema)
+});
+
+// Type exports
+export type Episode = z.infer<typeof EpisodeSchema>;
+export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
+export type DeviceState = z.infer<typeof DeviceStateSchema>;
+export type ConversationState = z.infer<typeof ConversationStateSchema>;
+export type Message = z.infer<typeof MessageSchema>;
 ````
 
 ## File: packages/renderer/src/engines/useLayoutEngine.ts
@@ -29987,33 +34854,659 @@ export const defaultLayoutConfig: LayoutConfig = {
 };
 ````
 
-## File: packages/renderer/package.json
-````json
-{
-    "name": "@tokovo/renderer",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.211"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "@types/react-dom": "18.2.0"
-    }
+## File: packages/renderer/src/CallOverlay.tsx
+````typescript
+import React from "react";
+import { CallState } from "@tokovo/core";
+
+// ============================================================================
+// CALL CONTROL ICONS (SVG)
+// ============================================================================
+
+const MuteIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+        <path d="M1 14.75a6.75 6.75 0 0 1 6.75-6.75h8.5A6.75 6.75 0 0 1 23 14.75v6.5a.75.75 0 0 1-.75.75h-8.5v-3.5a1.75 1.75 0 0 0-3.5 0v3.5h-8.5a.75.75 0 0 1-.75-.75v-6.5zM12 2a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z" />
+    </svg>
+);
+
+const SpeakerIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+        <path d="M11 5L6 9H2v6h4l5 4V5zM15.54 8.46a5 5 0 0 1 0 7.07M19.07 4.93a10 10 0 0 1 0 14.14" />
+        <path d="M11 5L6 9H2v6h4l5 4V5z" fill="white" />
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" stroke="white" strokeWidth="2" fill="none" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" stroke="white" strokeWidth="2" fill="none" />
+    </svg>
+);
+
+const KeypadIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+        <circle cx="6" cy="6" r="2" />
+        <circle cx="12" cy="6" r="2" />
+        <circle cx="18" cy="6" r="2" />
+        <circle cx="6" cy="12" r="2" />
+        <circle cx="12" cy="12" r="2" />
+        <circle cx="18" cy="12" r="2" />
+        <circle cx="6" cy="18" r="2" />
+        <circle cx="12" cy="18" r="2" />
+        <circle cx="18" cy="18" r="2" />
+    </svg>
+);
+
+const VideoIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+        <path d="M23 7l-7 5 7 5V7zM16 5H2a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2z" />
+    </svg>
+);
+
+const AddCallIcon = () => (
+    <svg width="60" height="60" viewBox="0 0 24 24" fill="white">
+        <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="2" fill="none" strokeLinecap="round" />
+    </svg>
+);
+
+const PhoneIcon = () => (
+    <svg width="72" height="72" viewBox="0 0 24 24" fill="white">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+    </svg>
+);
+
+// ============================================================================
+// CONTROL BUTTON COMPONENT
+// ============================================================================
+
+interface ControlButtonProps {
+    icon: React.ReactNode;
+    label: string;
+    isActive?: boolean;
+    size?: "small" | "large";
+    variant?: "default" | "destructive";
 }
+
+const ControlButton: React.FC<ControlButtonProps> = ({
+    icon,
+    label,
+    isActive = false,
+    size = "small",
+    variant = "default"
+}) => {
+    const buttonSize = size === "large" ? 210 : 150;
+
+    let bgColor = "rgba(255, 255, 255, 0.2)";
+    if (isActive) bgColor = "white";
+    if (variant === "destructive") bgColor = "#FF3B30";
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 18
+        }}>
+            <div style={{
+                width: buttonSize,
+                height: buttonSize,
+                borderRadius: "50%",
+                backgroundColor: bgColor,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center"
+            }}>
+                <div style={{ color: isActive ? "#000" : "#fff" }}>
+                    {icon}
+                </div>
+            </div>
+            <span style={{
+                fontSize: 33,
+                color: "white",
+                opacity: 0.9
+            }}>
+                {label}
+            </span>
+        </div>
+    );
+};
+
+// ============================================================================
+// CALL TIMER
+// ============================================================================
+
+const CallTimer: React.FC<{ startedAt: number; currentTime: number; fps?: number }> = ({
+    startedAt,
+    currentTime,
+    fps = 30
+}) => {
+    const elapsedFrames = currentTime - startedAt;
+    const elapsedSeconds = Math.floor(elapsedFrames / fps);
+    const minutes = Math.floor(elapsedSeconds / 60);
+    const seconds = elapsedSeconds % 60;
+
+    return (
+        <span style={{ fontVariantNumeric: "tabular-nums" }}>
+            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+        </span>
+    );
+};
+
+// ============================================================================
+// CALL OVERLAY COMPONENT
+// ============================================================================
+
+interface CallOverlayProps {
+    call: CallState;
+    currentTime: number;
+    variant?: "ios" | "android";
+}
+
+export const CallOverlay: React.FC<CallOverlayProps> = ({
+    call,
+    currentTime,
+    variant = "ios"
+}) => {
+    if (call.status === "ended") return null;
+
+    const isIncoming = call.status === "incoming";
+    const isActive = call.status === "active";
+
+    // Pulse animation for incoming call avatar
+    const pulsePhase = Math.sin((currentTime * 0.1) % (Math.PI * 2));
+    const avatarScale = isIncoming ? 1 + (pulsePhase * 0.03) : 1;
+
+    return (
+        <div style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: call.isVideo
+                ? "linear-gradient(180deg, #1a1a1a 0%, #0a0a0a 100%)"
+                : "linear-gradient(180deg, #2C2C2E 0%, #1C1C1E 100%)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "180px 45px 120px",
+            zIndex: 500,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+        }}>
+            {/* Top Section: Avatar & Name */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 30
+            }}>
+                {/* Avatar */}
+                <div style={{
+                    width: isActive ? 270 : 360,
+                    height: isActive ? 270 : 360,
+                    borderRadius: "50%",
+                    backgroundColor: "#8E8E93",
+                    backgroundImage: call.callerAvatar
+                        ? `url(${call.callerAvatar})`
+                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: isActive ? 90 : 120,
+                    color: "white",
+                    fontWeight: "300",
+                    transform: `scale(${avatarScale})`,
+                    boxShadow: isIncoming ? "0 0 60px rgba(50, 215, 75, 0.3)" : "none"
+                }}>
+                    {!call.callerAvatar && call.callerName.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Caller Name */}
+                <div style={{
+                    fontSize: isActive ? 60 : 78,
+                    fontWeight: "300",
+                    color: "white",
+                    textAlign: "center"
+                }}>
+                    {call.callerName}
+                </div>
+
+                {/* Call Status */}
+                <div style={{
+                    fontSize: 42,
+                    color: "rgba(255, 255, 255, 0.6)"
+                }}>
+                    {isIncoming && (call.isVideo ? "FaceTime Video..." : "Incoming call...")}
+                    {isActive && call.answeredAt && (
+                        <CallTimer startedAt={call.answeredAt} currentTime={currentTime} />
+                    )}
+                </div>
+            </div>
+
+            {/* Bottom Section: Controls */}
+            {isIncoming ? (
+                // Incoming Call: Accept/Decline
+                <div style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 180,
+                    width: "100%"
+                }}>
+                    <ControlButton
+                        icon={<PhoneIcon />}
+                        label="Decline"
+                        variant="destructive"
+                        size="large"
+                    />
+                    <ControlButton
+                        icon={call.isVideo ? <VideoIcon /> : <PhoneIcon />}
+                        label="Accept"
+                        size="large"
+                    />
+                </div>
+            ) : (
+                // Active Call: Control Grid + End Button
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 60,
+                    width: "100%"
+                }}>
+                    {/* Control Grid (2 rows x 3 columns) */}
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(3, 1fr)",
+                        gap: "45px 60px",
+                        width: "100%",
+                        maxWidth: 600,
+                        justifyItems: "center"
+                    }}>
+                        <ControlButton icon={<MuteIcon />} label="mute" isActive={call.isMuted} />
+                        <ControlButton icon={<KeypadIcon />} label="keypad" />
+                        <ControlButton icon={<SpeakerIcon />} label="speaker" isActive={call.isSpeakerOn} />
+                        <ControlButton icon={<AddCallIcon />} label="add call" />
+                        <ControlButton icon={<VideoIcon />} label="FaceTime" />
+                        <div style={{ width: 150 }} /> {/* Spacer */}
+                    </div>
+
+                    {/* End Call Button */}
+                    <ControlButton
+                        icon={<PhoneIcon />}
+                        label="End"
+                        variant="destructive"
+                        size="large"
+                    />
+                </div>
+            )}
+        </div>
+    );
+};
+````
+
+## File: packages/renderer/src/DeviceFrame.tsx
+````typescript
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { DeviceState } from "@tokovo/core";
+
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
+}
+
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
+    // Strategy pattern: Select frame component based on profile ID
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
+
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
+
+    return (
+        <FrameComponent {...frameProps} statusBar={statusBar}>
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)",
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
+````
+
+## File: packages/renderer/src/NotificationOverlay.tsx
+````typescript
+import React from "react";
+import { Notification, NotificationGroup } from "@tokovo/core";
+import { LayoutState, LockscreenLayoutState } from "./layout/types";
+
+// =============================================================================
+// APP BRANDING (for icons and colors)
+// =============================================================================
+
+const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
+    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
+    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
+    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
+    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
+    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
+    default: { color: "#8E8E93", icon: "⬤", name: "App" },
+};
+
+function getAppBranding(appId: string) {
+    return APP_BRANDING[appId] || APP_BRANDING.default;
+}
+
+// =============================================================================
+// GROUPING LOGIC
+// =============================================================================
+
+/**
+ * Group notifications by app or threadId
+ */
+function groupNotifications(notifications: Notification[]): NotificationGroup[] {
+    const groups = new Map<string, NotificationGroup>();
+
+    for (const notif of notifications) {
+        // Skip dismissed notifications
+        if (notif.dismissedAt) continue;
+
+        // Group key: use groupKey if provided, else threadId + appId, else just appId
+        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
+
+        if (!groups.has(key)) {
+            groups.set(key, {
+                key,
+                appId: notif.appId,
+                notifications: [],
+                collapsed: true,
+                count: 0,
+                latestAt: 0,
+            });
+        }
+
+        const group = groups.get(key)!;
+        group.notifications.push(notif);
+        group.count++;
+        group.latestAt = Math.max(group.latestAt, notif.at);
+    }
+
+    // Sort by latest notification time (most recent first)
+    return Array.from(groups.values()).sort((a, b) => b.latestAt - a.latestAt);
+}
+
+// =============================================================================
+// NOTIFICATION GROUP CARD
+// =============================================================================
+
+interface GroupCardProps {
+    group: NotificationGroup;
+    y: number;
+    opacity: number;
+    translateY: number;
+    variant: "ios" | "android";
+}
+
+const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
+    const isAndroid = variant === "android";
+    const branding = getAppBranding(group.appId);
+    const latestNotif = group.notifications[group.notifications.length - 1];
+    const hasMultiple = group.count > 1;
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: y,
+                left: "50%",
+                transform: `translateX(-50%) translateY(${translateY}px)`,
+                width: "92%",
+                opacity,
+            }}
+        >
+            {/* Stacked cards effect (show 2 cards behind if multiple) */}
+            {hasMultiple && (
+                <>
+                    <div
+                        style={{
+                            position: "absolute",
+                            top: 6,
+                            left: "2%",
+                            right: "2%",
+                            height: 100,
+                            backgroundColor: isAndroid ? "#252525" : "rgba(255, 255, 255, 0.6)",
+                            borderRadius: isAndroid ? 24 : 36,
+                            zIndex: 1,
+                        }}
+                    />
+                    {group.count > 2 && (
+                        <div
+                            style={{
+                                position: "absolute",
+                                top: 12,
+                                left: "4%",
+                                right: "4%",
+                                height: 100,
+                                backgroundColor: isAndroid ? "#1a1a1a" : "rgba(255, 255, 255, 0.3)",
+                                borderRadius: isAndroid ? 24 : 36,
+                                zIndex: 0,
+                            }}
+                        />
+                    )}
+                </>
+            )}
+
+            {/* Main notification card */}
+            <div
+                style={{
+                    position: "relative",
+                    zIndex: 2,
+                    backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.95)",
+                    backdropFilter: "blur(20px)",
+                    borderRadius: isAndroid ? 24 : 36,
+                    padding: "30px 40px",
+                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 30,
+                    color: isAndroid ? "white" : "black",
+                }}
+            >
+                {/* App Icon */}
+                <div
+                    style={{
+                        width: 100,
+                        height: 100,
+                        borderRadius: 20,
+                        backgroundColor: branding.color,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        fontSize: 50,
+                        color: "white",
+                        flexShrink: 0,
+                    }}
+                >
+                    {branding.icon}
+                </div>
+
+                {/* Content */}
+                <div style={{ flex: 1, overflow: "hidden" }}>
+                    {/* Header: App name + count + time */}
+                    <div
+                        style={{
+                            fontSize: 30,
+                            fontWeight: 600,
+                            marginBottom: 6,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            color: isAndroid ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
+                        }}
+                    >
+                        <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
+                            {branding.name}
+                        </span>
+                        {hasMultiple && (
+                            <span
+                                style={{
+                                    fontSize: 24,
+                                    backgroundColor: branding.color,
+                                    color: "white",
+                                    borderRadius: 12,
+                                    padding: "2px 10px",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                {group.count}
+                            </span>
+                        )}
+                        <span style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}>
+                            now
+                        </span>
+                    </div>
+
+                    {/* Title */}
+                    <div
+                        style={{
+                            fontSize: 36,
+                            fontWeight: "bold",
+                            marginBottom: 8,
+                            color: isAndroid ? "white" : "black",
+                        }}
+                    >
+                        {latestNotif.title}
+                    </div>
+
+                    {/* Body */}
+                    <div
+                        style={{
+                            fontSize: 34,
+                            opacity: 0.8,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}
+                    >
+                        {latestNotif.body}
+                    </div>
+
+                    {/* Summary for groups */}
+                    {hasMultiple && (
+                        <div
+                            style={{
+                                fontSize: 28,
+                                marginTop: 8,
+                                opacity: 0.5,
+                            }}
+                        >
+                            +{group.count - 1} more notification{group.count > 2 ? "s" : ""}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// NOTIFICATION OVERLAY
+// =============================================================================
+
+interface NotificationOverlayProps {
+    notifications?: Notification[];
+    variant?: "ios" | "android";
+    layout?: LayoutState;
+}
+
+export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
+    notifications = [],
+    variant = "ios",
+    layout,
+}) => {
+    // Only render on lockscreen with layout
+    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
+    if (!lockscreenLayout) return null;
+
+    // Group notifications
+    const groups = groupNotifications(notifications);
+
+    // Map groups to layout positions
+    // For simplicity, use first N layout positions for groups
+    const visibleGroups = groups.slice(0, lockscreenLayout.notificationLayouts.length);
+
+    return (
+        <div
+            style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                pointerEvents: "none",
+                zIndex: 100,
+            }}
+        >
+            {visibleGroups.map((group, index) => {
+                const layoutInfo = lockscreenLayout.notificationLayouts[index];
+                if (!layoutInfo) return null;
+
+                return (
+                    <GroupCard
+                        key={group.key}
+                        group={group}
+                        y={layoutInfo.y}
+                        opacity={layoutInfo.opacity}
+                        translateY={layoutInfo.translateY}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
 ````
 
 ## File: apps/video-runner/src/FullCinematicShowcaseVideo.tsx
@@ -30385,651 +35878,401 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-instagram/src/views/feed/FeedView.tsx
-````typescript
-import React from "react";
-import { InstagramState, Post, StoryUser } from "../../types";
-import { LayoutState, FeedLayoutState } from "@tokovo/core";
-
-// ============================================================================
-// HEADER ICONS - Authentic Instagram iOS
-// ============================================================================
-
-const CameraIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8" />
-    </svg>
-);
-
-const MessengerIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const HeartIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "#FF3040" : "none"} stroke={filled ? "#FF3040" : "white"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
-        <circle cx="12" cy="5" r="1.5" />
-        <circle cx="12" cy="12" r="1.5" />
-        <circle cx="12" cy="19" r="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// INSTAGRAM LOGO - Script font with dropdown
-// ============================================================================
-
-const InstagramLogo = () => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12
-    }}>
-        <span style={{
-            fontFamily: "'Billabong', 'Grand Hotel', cursive, -apple-system",
-            fontSize: 90,
-            color: "white",
-            letterSpacing: 1,
-            fontWeight: 400
-        }}>
-            Instagram
-        </span>
-        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    </div>
-);
-
-// ============================================================================
-// STORY BUBBLE - Larger authentic Instagram style
-// ============================================================================
-
-const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginRight: 36,
-        width: 210
-    }}>
-        {/* Story Ring */}
-        <div style={{
-            width: 210,
-            height: 210,
-            borderRadius: "50%",
-            padding: 9,
-            background: isYourStory
-                ? "transparent"
-                : user.hasUnseen
-                    ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-                    : "#444"
-        }}>
-            <div style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "50%",
-                border: "6px solid #000",
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-
-                {/* Your Story + icon */}
-                {isYourStory && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: 0,
-                        width: 60,
-                        height: 60,
-                        borderRadius: "50%",
-                        backgroundColor: "#0095F6",
-                        border: "4px solid #000",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="3" strokeLinecap="round" />
-                        </svg>
-                    </div>
-                )}
-            </div>
-        </div>
-
-        {/* Username */}
-        <div style={{
-            color: "white",
-            fontSize: 30,
-            marginTop: 15,
-            maxWidth: 210,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            textAlign: "center"
-        }}>
-            {isYourStory ? "Your story" : user.username}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// POST ITEM - Authentic Instagram post
-// ============================================================================
-
-const PostItem: React.FC<{ post: Post }> = ({ post }) => (
-    <div style={{ marginBottom: 48 }}>
-        {/* Header */}
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "24px 36px",
-            gap: 24
-        }}>
-            {/* Avatar with story ring if applicable */}
-            <div style={{
-                width: 102,
-                height: 102,
-                borderRadius: "50%",
-                padding: 6,
-                background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    border: "4px solid #000",
-                    backgroundImage: `url(${post.avatar})`,
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-            </div>
-
-            {/* Username + Location */}
-            <div style={{ flex: 1 }}>
-                <div style={{
-                    color: "white",
-                    fontSize: 39,
-                    fontWeight: 600,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {post.username}
-                </div>
-            </div>
-
-            <MoreIcon />
-        </div>
-
-        {/* Image */}
-        <div style={{
-            width: "100%",
-            aspectRatio: "1/1",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: `url(${post.image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }} />
-
-        {/* Actions */}
-        <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "30px 36px 18px",
-            alignItems: "center"
-        }}>
-            <div style={{ display: "flex", gap: 48 }}>
-                <HeartIcon filled={post.liked} />
-                <CommentIcon />
-                <ShareIcon />
-            </div>
-            <BookmarkIcon filled={post.saved} />
-        </div>
-
-        {/* Likes */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <div style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.likes.toLocaleString()} likes
-            </div>
-        </div>
-
-        {/* Caption */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <span style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                marginRight: 12,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.username}
-            </span>
-            <span style={{ color: "white", fontSize: 39 }}>
-                {post.caption}
-            </span>
-        </div>
-
-        {/* Comments link */}
-        <div style={{ padding: "0 36px", marginBottom: 6 }}>
-            <span style={{ color: "#A8A8A8", fontSize: 36 }}>
-                View all {post.comments} comments
-            </span>
-        </div>
-
-        {/* Timestamp */}
-        <div style={{ padding: "0 36px" }}>
-            <span style={{ color: "#A8A8A8", fontSize: 30, textTransform: "uppercase" }}>
-                2 hours ago
-            </span>
-        </div>
-    </div>
-);
-
-// ============================================================================
-// FEED VIEW - Main export
-// ============================================================================
-
-export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
-    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
-    const scrollY = feedLayout?.scrollY || 0;
-
-    // Create "Your Story" user for first position
-    const yourStory: StoryUser = {
-        username: "Your story",
-        avatar: "",
-        hasUnseen: false,
-        stories: []
-    };
-
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            {/* Header */}
-            <div style={{
-                height: 156,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 36px",
-                marginTop: 120,
-                backgroundColor: "#000",
-                zIndex: 10
-            }}>
-                <CameraIcon />
-                <InstagramLogo />
-                <div style={{ display: "flex", gap: 60 }}>
-                    <HeartIcon />
-                    <MessengerIcon />
-                </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div style={{
-                flex: 1,
-                overflow: "hidden",
-                position: "relative"
-            }}>
-                <div style={{
-                    transform: `translateY(-${scrollY}px)`
-                }}>
-                    {/* Stories Row */}
-                    <div style={{
-                        display: "flex",
-                        padding: "24px 36px",
-                        borderBottom: "1px solid #262626",
-                        marginBottom: 6,
-                        overflowX: "hidden"
-                    }}>
-                        <StoryBubble user={yourStory} isYourStory />
-                        {state.stories.users.map(user => (
-                            <StoryBubble key={user.username} user={user} />
-                        ))}
-                    </div>
-
-                    {/* Posts */}
-                    {state.feed.posts.map(post => (
-                        <PostItem key={post.id} post={post} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
+## File: apps/video-runner/package.json
+````json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/apps-phone": "workspace:*",
+        "@tokovo/apps-spotify": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
-## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
+## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
 ````typescript
 import React from "react";
-import { InstagramState, StoryUser } from "../../types";
-import { LayoutState, StoryLayoutState } from "@tokovo/core";
+import { WorldState } from "@tokovo/core";
+import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 
 // ============================================================================
-// ICONS
+// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
 // ============================================================================
 
-const CloseIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
+const ChevronLeftIcon = () => (
+    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
 
-const MoreIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="white">
-        <circle cx="5" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="19" cy="12" r="2" />
+const VideoCallIcon = () => (
+    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
+        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
+        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+
+const InfoIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
+        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+const CameraCircleIcon = () => (
+    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
+        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
+        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
+        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
+    </svg>
+);
+
+const MicrophoneIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
+        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+);
+
+const ImageIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
+        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
+        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+const StickerIcon = () => (
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
+        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
+        <circle cx="8" cy="9" r="1" fill="white" />
+        <circle cx="14" cy="9" r="1" fill="white" />
     </svg>
 );
 
 const HeartIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
+        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
     </svg>
 );
 
 // ============================================================================
-// PROGRESS BAR
+// HEADER COMPONENT - Authentic Instagram DM Navigation
 // ============================================================================
 
-const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
-    <div style={{ display: "flex", gap: 9, padding: "30px 24px" }}>
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} style={{
-                flex: 1,
-                height: 9,
-                backgroundColor: "rgba(255,255,255,0.3)",
-                borderRadius: 6,
-                overflow: "hidden"
-            }}>
+interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    isActive?: boolean;
+}
+
+const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
+    <div style={{
+        height: 180,
+        display: "flex",
+        alignItems: "center",
+        padding: "0 42px",
+        marginTop: 144, // Below dynamic island
+        zIndex: 10
+    }}>
+        {/* Back button */}
+        <ChevronLeftIcon />
+
+        {/* Avatar + Name Group */}
+        <div style={{
+            flex: 1,
+            display: "flex",
+            alignItems: "center",
+            marginLeft: 36,
+            gap: 30
+        }}>
+            {/* Avatar with active indicator */}
+            <div style={{ position: "relative" }}>
                 <div style={{
-                    height: "100%",
-                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
-                    backgroundColor: "white",
-                    borderRadius: 6,
-                    transition: "width 0.1s linear"
-                }} />
+                    width: 102,
+                    height: 102,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                    fontSize: 42,
+                    fontWeight: "600"
+                }}>
+                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
+                </div>
+                {isActive && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 3,
+                        right: 3,
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        backgroundColor: "#44D62D",
+                        border: "4px solid #000"
+                    }} />
+                )}
             </div>
-        ))}
+
+            {/* Username + Status */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                <span style={{
+                    fontSize: 48,
+                    fontWeight: "600",
+                    color: "white",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
+                }}>
+                    {contactName}
+                </span>
+                <span style={{
+                    fontSize: 36,
+                    color: "#A8A8A8",
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+                }}>
+                    {isActive ? "Active now" : "Active 2h ago"}
+                </span>
+            </div>
+        </div>
+
+        {/* Action icons */}
+        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
+            <VideoCallIcon />
+            <InfoIcon />
+        </div>
     </div>
 );
 
 // ============================================================================
-// EMOJI SHORTCUTS
+// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
 // ============================================================================
 
-const EmojiShortcuts = () => (
-    <div style={{ display: "flex", gap: 30 }}>
-        {["❤️", "🔥", "👏", "😂", "😮", "😢"].map(emoji => (
-            <span key={emoji} style={{ fontSize: 66 }}>{emoji}</span>
-        ))}
-    </div>
-);
+interface MessageBubbleProps {
+    msg: { id: string; from: string; text: string };
+    layout: ChatMessageLayout;
+}
 
-// ============================================================================
-// STORIES VIEW - Main export
-// ============================================================================
-
-export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
-    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
-
-    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
-    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeIndex = storyLayout.activeStoryIndex;
-    const progress = storyLayout.storyProgress;
-    const activeStory = activeUser.stories[activeIndex];
-
-    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
+const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateY, y } = layout;
 
     return (
         <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            position: "absolute",
+            top: y,
+            left: isMe ? "auto" : 42,
+            right: isMe ? 42 : "auto",
+            maxWidth: "70%",
+            opacity,
+            transform: `translateY(${translateY}px)`,
         }}>
-            {/* Story Images (with transitions) */}
-            {storyLayout.storyLayouts.map(sl => {
-                const story = activeUser.stories[sl.index];
-                if (!story) return null;
+            <div style={{
+                // Instagram gradient for sent messages
+                background: isMe
+                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
+                    : "#262626",
+                color: "white",
+                padding: "30px 42px",
+                borderRadius: 66, // Fully pill-shaped
+                fontSize: 48,
+                lineHeight: "60px",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                wordWrap: "break-word"
+            }}>
+                {msg.text}
+            </div>
+        </div>
+    );
+};
 
-                return (
-                    <div key={story.id} style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundImage: `url(${story.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        opacity: sl.opacity,
-                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`
-                    }} />
-                );
-            })}
+// ============================================================================
+// MESSAGE LIST
+// ============================================================================
 
-            {/* Top Gradient */}
+interface MessageListProps {
+    messages: any[];
+    layout?: ChatLayoutState;
+}
+
+const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
+    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
+    const scrollY = chatLayout?.scrollY || 0;
+    const contentHeight = chatLayout?.contentHeight || "100%";
+
+    return (
+        <div style={{
+            flex: 1,
+            position: "relative",
+            overflow: "hidden"
+        }}>
             <div style={{
                 position: "absolute",
                 top: 0,
                 left: 0,
                 right: 0,
-                height: 450,
-                background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Bottom Gradient */}
-            <div style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 450,
-                background: "linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Top UI */}
-            <div style={{ position: "relative", zIndex: 10, paddingTop: 120 }}>
-                {/* Progress bars */}
-                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
-
-                {/* User info */}
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 24px",
-                    marginTop: 12
-                }}>
-                    {/* Avatar */}
-                    <div style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: "50%",
-                        backgroundImage: `url(${activeUser.avatar})`,
-                        backgroundSize: "cover",
-                        backgroundColor: "#333",
-                        marginRight: 24
-                    }} />
-
-                    {/* Username + Time */}
-                    <span style={{
-                        fontSize: 42,
-                        fontWeight: 600,
-                        marginRight: 18
-                    }}>
-                        {activeUser.username}
-                    </span>
-                    <span style={{
-                        fontSize: 36,
-                        opacity: 0.7
-                    }}>
-                        12h
-                    </span>
-
-                    <div style={{ flex: 1 }} />
-
-                    {/* Actions */}
-                    <MoreIcon />
-                    <div style={{ width: 30 }} />
-                    <CloseIcon />
-                </div>
-            </div>
-
-            {/* Bottom UI */}
-            <div style={{
-                position: "absolute",
-                bottom: 60,
-                left: 0,
-                right: 0,
-                padding: "0 36px",
-                display: "flex",
-                alignItems: "center",
-                gap: 30,
-                zIndex: 10
+                height: contentHeight,
+                transform: `translateY(-${scrollY}px)`,
+                paddingTop: 30,
+                paddingBottom: 30
             }}>
-                {/* Message Input */}
-                <div style={{
-                    flex: 1,
-                    height: 132,
-                    borderRadius: 66,
-                    border: "3px solid rgba(255,255,255,0.5)",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 42px",
-                    fontSize: 42,
-                    color: "rgba(255,255,255,0.8)"
-                }}>
-                    Send message
-                </div>
-
-                {/* Quick reactions */}
-                <HeartIcon />
-                <ShareIcon />
+                {messages.map((msg: any) => {
+                    const msgLayout = chatLayout?.messageLayouts[msg.id];
+                    if (!msgLayout) return null;
+                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
+                })}
             </div>
         </div>
     );
 };
-````
 
-## File: packages/apps-instagram/src/ui.tsx
-````typescript
-import React from "react";
-import { WorldState, LayoutState } from "@tokovo/core";
-import { InstagramState } from "./types";
-import { InstagramChatView } from "./views/dm/InstagramChatView";
-import { FeedView } from "./views/feed/FeedView";
-import { StoriesView } from "./views/stories/StoriesView";
-import { ProfileView } from "./views/profile/ProfileView";
-import { ExploreView } from "./views/explore/ExploreView";
-import { NotificationsView } from "./views/notifications/NotificationsView";
-import { ReelsView } from "./views/reels/ReelsView";
-import { PostView } from "./views/post/PostView";
-import { BottomNav } from "./views/BottomNav";
+// ============================================================================
+// INPUT AREA - Authentic Instagram DM Composer
+// ============================================================================
 
-export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
-    const appState = world.appState?.["app_instagram"] as InstagramState;
-    const currentView = appState?.currentView || "dm";
+interface InputAreaProps {
+    text?: string;
+}
 
-    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
+const InputArea: React.FC<InputAreaProps> = ({ text }) => (
+    <div style={{
+        display: "flex",
+        alignItems: "center",
+        padding: "24px 42px",
+        gap: 24
+    }}>
+        {/* Input container */}
+        <div style={{
+            flex: 1,
+            minHeight: 132,
+            backgroundColor: "#262626",
+            borderRadius: 66,
+            display: "flex",
+            alignItems: "center",
+            padding: "0 24px",
+            gap: 18,
+            border: "1px solid #363636"
+        }}>
+            {/* Camera button */}
+            <CameraCircleIcon />
 
-    // Views that show the bottom navigation
-    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
+            {/* Input text */}
+            <div style={{
+                flex: 1,
+                fontSize: 48,
+                color: text ? "white" : "#A8A8A8",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                padding: "0 12px"
+            }}>
+                {text || "Message..."}
+            </div>
 
-    const renderView = () => {
-        switch (currentView) {
-            case "dm":
-                return <InstagramChatView world={world} t={t} layout={layout} />;
-            case "feed":
-                return <FeedView state={appState} layout={layout} />;
-            case "stories":
-                return <StoriesView state={appState} t={t} layout={layout} />;
-            case "profile":
-                return <ProfileView state={appState} />;
-            case "post":
-                return <PostView state={appState} />;
-            case "explore":
-                return <ExploreView state={appState} />;
-            case "notifications":
-                return <NotificationsView state={appState} />;
-            case "reels":
-                return <ReelsView state={appState} />;
-            default:
-                return <InstagramChatView world={world} t={t} layout={layout} />;
-        }
-    };
+            {/* Right icons - hidden when typing */}
+            {!text && (
+                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
+                    <MicrophoneIcon />
+                    <ImageIcon />
+                    <StickerIcon />
+                </div>
+            )}
+        </div>
+
+        {/* Heart or Send button */}
+        {text ? (
+            <span style={{
+                color: "#0095F6",
+                fontSize: 48,
+                fontWeight: 600,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+            }}>
+                Send
+            </span>
+        ) : (
+            <HeartIcon />
+        )}
+    </div>
+);
+
+// ============================================================================
+// HOME INDICATOR
+// ============================================================================
+
+const HomeIndicator: React.FC = () => (
+    <div style={{
+        height: 102,
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "flex-end",
+        paddingBottom: 24
+    }}>
+        <div style={{
+            width: 402,
+            height: 15,
+            backgroundColor: "white",
+            borderRadius: 9,
+            opacity: 0.4
+        }} />
+    </div>
+);
+
+// ============================================================================
+// MAIN VIEW EXPORT
+// ============================================================================
+
+export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
+    const conversationId = Object.keys(world.conversations)[0];
+    const conversation = world.conversations[conversationId];
+    const messages = conversation ? conversation.messages : [];
 
     return (
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                {renderView()}
-            </div>
-            {showBottomNav && <BottomNav currentView={currentView} />}
+        <div style={{
+            backgroundColor: "#000000",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            color: "white",
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
+        }}>
+            <Header contactName="sarah.design" isActive={true} />
+            <MessageList messages={messages} layout={layout} />
+            <InputArea />
+            <HomeIndicator />
         </div>
     );
 };
-
-// Re-export specific views if needed externally, but InstagramApp is the main entry
-export { InstagramChatView };
 ````
 
 ## File: packages/apps-whatsapp/src/index.ts
@@ -31042,122 +36285,6 @@ export * from "./components";
 export * from "./config";
 export * from "./camera";
 export * from "./notification-adapter";
-````
-
-## File: packages/apps-whatsapp/src/TypingBubble.tsx
-````typescript
-import React from "react";
-
-/**
- * WhatsApp iOS Typing Indicator
- * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
- * Uses frame-based animation for proper rendering in video output
- * 
- * @param frame - Current frame from Remotion (passed in from renderer)
- * @param fps - Frames per second (default 30)
- */
-
-export interface TypingBubbleProps {
-    platform?: string;
-    frame?: number;
-    fps?: number;
-}
-
-import { LAYOUT_CONSTANTS } from "./config/layout-config";
-
-export const TypingBubble: React.FC<TypingBubbleProps> = ({
-    platform = "ios",
-    frame = 0,
-    fps = 30
-}) => {
-    return (
-        <div style={{
-            backgroundColor: "#FFFFFF",
-            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
-            borderRadius: 24,
-            borderTopLeftRadius: 6,
-            alignSelf: "flex-start",
-            width: "fit-content",
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-            display: "flex",
-            alignItems: "center",
-            gap: 15,
-            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
-        }}>
-            <TypingDot frame={frame} fps={fps} delayFrames={0} />
-            <TypingDot frame={frame} fps={fps} delayFrames={5} />
-            <TypingDot frame={frame} fps={fps} delayFrames={10} />
-        </div>
-    );
-};
-
-interface TypingDotProps {
-    frame: number;
-    fps: number;
-    delayFrames: number;
-}
-
-/**
- * Simple interpolation function (avoiding remotion dependency)
- */
-function interpolate(
-    value: number,
-    inputRange: number[],
-    outputRange: number[],
-): number {
-    // Find the segment
-    let i = 0;
-    for (i = 0; i < inputRange.length - 1; i++) {
-        if (value <= inputRange[i + 1]) break;
-    }
-
-    // Clamp to range
-    if (value <= inputRange[0]) return outputRange[0];
-    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
-
-    // Linear interpolation between points
-    const inputStart = inputRange[i];
-    const inputEnd = inputRange[i + 1];
-    const outputStart = outputRange[i];
-    const outputEnd = outputRange[i + 1];
-
-    const t = (value - inputStart) / (inputEnd - inputStart);
-    return outputStart + (outputEnd - outputStart) * t;
-}
-
-const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
-    // Animation cycle: 36 frames at 30fps = 1.2 seconds
-    const cycleLength = Math.round(1.2 * fps);
-    const adjustedFrame = (frame + delayFrames) % cycleLength;
-
-    // Bounce animation: up for first quarter, down for second quarter
-    const quarterCycle = cycleLength / 4;
-    const translateY = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0, -9, 0, 0]
-    );
-
-    // Opacity: brighten when bouncing up
-    const opacity = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0.4, 1, 0.4, 0.4]
-    );
-
-    return (
-        <div style={{
-            width: 24,
-            height: 24,
-            backgroundColor: "#8696A0",
-            borderRadius: "50%",
-            transform: `translateY(${translateY}px)`,
-            opacity
-        }} />
-    );
-};
-
-export default TypingBubble;
 ````
 
 ## File: packages/compiler/src/passes/time-lowering.ts
@@ -32208,292 +37335,6 @@ export function getAppConfig<T extends keyof typeof appConfigs>(
 }
 ````
 
-## File: packages/devices/src/StatusBar.tsx
-````typescript
-import React from "react";
-import { DeviceOSState } from "@tokovo/core";
-
-/**
- * StatusBar - Authentic iOS/Android status bar
- * 
- * Reads from DeviceOSState for:
- * - Time (formatted from clock timestamp)
- * - Battery percentage and charging state
- * - Network type and signal strength
- * - DND mode (moon icon)
- */
-
-// =============================================================================
-// ICONS
-// =============================================================================
-
-// iOS Signal Bars (4 bars, varying heights based on strength)
-const SignalBarsIcon: React.FC<{ color?: string; strength?: number }> = ({
-    color = "currentColor",
-    strength = 4 // 0-4
-}) => (
-    <svg width="51" height="33" viewBox="0 0 17 11" fill={color}>
-        <rect x="0" y="8" width="3" height="3" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
-        <rect x="4.5" y="5.5" width="3" height="5.5" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
-        <rect x="9" y="3" width="3" height="8" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
-        <rect x="13.5" y="0" width="3" height="11" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
-    </svg>
-);
-
-// iOS WiFi Icon (3 arcs based on strength)
-const WifiIcon: React.FC<{ color?: string; strength?: number }> = ({
-    color = "currentColor",
-    strength = 3 // 0-3
-}) => (
-    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round">
-        <path d="M1 4C4 1 12 1 15 4" opacity={strength >= 3 ? 1 : 0.3} />
-        <path d="M3.5 6.5C5.5 4.5 10.5 4.5 12.5 6.5" opacity={strength >= 2 ? 1 : 0.3} />
-        <path d="M6 9C7 8 9 8 10 9" opacity={strength >= 1 ? 1 : 0.3} />
-        <circle cx="8" cy="11" r="1" fill={color} stroke="none" />
-    </svg>
-);
-
-// iOS Battery Icon
-const BatteryIcon: React.FC<{ color?: string; percentage?: number; charging?: boolean }> = ({
-    color = "currentColor",
-    percentage = 100,
-    charging = false
-}) => (
-    <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
-        {/* Battery body */}
-        <rect x="0.5" y="0.5" width="21" height="11" rx="2.5" stroke={color} strokeWidth="1" />
-        {/* Battery fill */}
-        <rect
-            x="2"
-            y="2"
-            width={Math.max(0, (percentage / 100) * 18)}
-            height="8"
-            rx="1"
-            fill={percentage > 20 ? (charging ? "#34C759" : color) : "#FF3B30"}
-        />
-        {/* Battery cap */}
-        <path d="M23 4V8C24 8 25 7 25 6C25 5 24 4 23 4Z" fill={color} opacity="0.4" />
-        {/* Charging bolt */}
-        {charging && (
-            <path d="M11 2L8 6H11L10 10L13 6H10L11 2Z" fill="white" />
-        )}
-    </svg>
-);
-
-// Network type label for cellular
-const NetworkTypeLabel: React.FC<{ network: string; color: string }> = ({ network, color }) => {
-    const label = network === "wifi" ? null : network.toUpperCase();
-    if (!label) return null;
-    return (
-        <span style={{
-            fontSize: 36,
-            fontWeight: 600,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            marginRight: 6,
-            color,
-        }}>
-            {label}
-        </span>
-    );
-};
-
-// DND Moon Icon
-const DNDIcon: React.FC<{ color: string }> = ({ color }) => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill={color}>
-        <path d="M12 3C7.03 3 3 7.03 3 12C3 16.97 7.03 21 12 21C16.97 21 21 16.97 21 12C21 11.54 20.96 11.09 20.89 10.65C20.16 12.36 18.46 13.52 16.5 13.52C13.74 13.52 11.5 11.28 11.5 8.52C11.5 6.56 12.66 4.86 14.37 4.13C13.93 4.05 13.47 4 13 4C12.34 4 12 3.66 12 3Z" />
-    </svg>
-);
-
-// =============================================================================
-// PROPS
-// =============================================================================
-
-interface StatusBarProps {
-    /** Device OS state (preferred - reads time, battery, network from here) */
-    os?: DeviceOSState;
-    /** Fallback: manual time string */
-    time?: string;
-    /** Fallback: manual battery percentage */
-    batteryPercentage?: number;
-    /** Platform variant */
-    variant?: "ios" | "android";
-    /** Theme */
-    theme?: "light" | "dark";
-    /** Notification icons (Android left side) */
-    notificationIcons?: Array<{ appId: string; count: number; icon?: string }>;
-}
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-/** Format timestamp to HH:MM */
-function formatTime(timestamp: number): string {
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: false,
-    });
-}
-
-// =============================================================================
-// NOTIFICATION ICON
-// =============================================================================
-
-const NotificationIcon: React.FC<{ icon?: string; count: number }> = ({ icon, count }) => (
-    <div style={{ position: "relative" }}>
-        <span style={{ fontSize: 28 }}>{icon || "📱"}</span>
-        {count > 1 && (
-            <div style={{
-                position: "absolute",
-                top: -6,
-                right: -8,
-                background: "#ff3b30",
-                borderRadius: 10,
-                padding: "2px 6px",
-                fontSize: 18,
-                fontWeight: 600,
-                color: "white",
-                minWidth: 12,
-                textAlign: "center",
-            }}>
-                {count > 9 ? "9+" : count}
-            </div>
-        )}
-    </div>
-);
-
-// =============================================================================
-// MAIN COMPONENT
-// =============================================================================
-
-export const StatusBar: React.FC<StatusBarProps> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100,
-    variant = "ios",
-    theme = "light",
-    notificationIcons = [],
-}) => {
-    // Read from device.os if available, otherwise use props
-    const displayTime = os ? formatTime(os.clock) : time;
-    const displayBattery = os ? os.battery : batteryPercentage;
-    const isCharging = os?.charging ?? false;
-    const network = os?.network ?? "wifi";
-    const wifiStrength = os?.wifiStrength ?? 3;
-    const cellStrength = os?.cellStrength ?? 4;
-    const isDND = os?.dnd ?? false;
-
-    const isAndroid = variant === "android";
-    const textColor = theme === "dark" ? "white" : "black";
-
-    // Android Status Bar
-    if (isAndroid) {
-        return (
-            <div style={{
-                width: "100%",
-                height: 90,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                padding: "0 45px",
-                boxSizing: "border-box",
-                fontSize: 36,
-                fontWeight: "500",
-                color: "white",
-                position: "absolute",
-                top: 15,
-                left: 0,
-                zIndex: 20,
-                fontFamily: "Roboto, sans-serif"
-            }}>
-                <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                    <span>{displayTime}</span>
-                    {notificationIcons.slice(0, 5).map((n, i) => (
-                        <NotificationIcon key={i} icon={n.icon} count={n.count} />
-                    ))}
-                    {notificationIcons.length > 5 && (
-                        <span style={{ fontSize: 28 }}>•</span>
-                    )}
-                </div>
-                <div style={{ display: "flex", gap: 18, alignItems: "center" }}>
-                    {isDND && <DNDIcon color="white" />}
-                    {network !== "wifi" && <NetworkTypeLabel network={network} color="white" />}
-                    <SignalBarsIcon color="white" strength={cellStrength} />
-                    {network === "wifi" && <WifiIcon color="white" strength={wifiStrength} />}
-                    <BatteryIcon color="white" percentage={displayBattery} charging={isCharging} />
-                </div>
-            </div>
-        );
-    }
-
-    // iOS Status Bar
-    return (
-        <div style={{
-            width: "100%",
-            height: 132,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "45px 72px 0 72px",
-            boxSizing: "border-box",
-            color: textColor,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 20
-        }}>
-            {/* Left side - Time */}
-            <div style={{
-                fontSize: 51,
-                fontWeight: "600",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                letterSpacing: 0.5
-            }}>
-                {displayTime}
-            </div>
-
-            {/* Right side - Status icons */}
-            <div style={{
-                display: "flex",
-                gap: 15,
-                alignItems: "center",
-                marginTop: 6
-            }}>
-                {isDND && <DNDIcon color={textColor} />}
-                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
-                <SignalBarsIcon color={textColor} strength={cellStrength} />
-                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
-                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
-            </div>
-        </div>
-    );
-};
-
-/**
- * iOS Status Bar specifically styled for dark backgrounds
- */
-export const DarkStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar os={os} time={time} theme="dark" batteryPercentage={batteryPercentage} />
-);
-
-/**
- * iOS Status Bar specifically styled for light backgrounds
- */
-export const LightStatusBar: React.FC<{ os?: DeviceOSState; time?: string; batteryPercentage?: number }> = ({
-    os,
-    time = "9:41",
-    batteryPercentage = 100
-}) => (
-    <StatusBar os={os} time={time} theme="light" batteryPercentage={batteryPercentage} />
-);
-````
-
 ## File: packages/dsl/src/author/index.ts
 ````typescript
 /**
@@ -32509,595 +37350,6 @@ export { CameraBuilder, CameraEvent, ZoomOptions, ShakeOptions, PIPOptions } fro
 export { SceneBuilder, SceneDeviceBuilder, SceneDeviceAction } from "./scene-builder";
 export { audio, PlaySoundOptions, BackgroundMusicOptions, FadeVolumeOptions } from "./audio-builder";
 export { spotify, SpotifyTrackInfo, DEMO_TRACKS } from "./spotify-builder";
-````
-
-## File: packages/episodes/src/examples/instagram-test.json
-````json
-{
-    "initialWorld": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_instagram",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "instagram_user",
-                        "text": "Hey! Did you see my new post?",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "appState": {
-            "app_instagram": {
-                "currentView": "feed",
-                "feed": {
-                    "posts": [
-                        {
-                            "id": "p1",
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "image": "https://picsum.photos/seed/insta1/1080/1080",
-                            "caption": "Living my best life! 🌟 #blessed",
-                            "likes": 1234,
-                            "comments": 42,
-                            "liked": false,
-                            "saved": false
-                        },
-                        {
-                            "id": "p2",
-                            "username": "travel_blogger",
-                            "avatar": "https://i.pravatar.cc/150?u=travel",
-                            "image": "https://picsum.photos/seed/insta2/1080/1080",
-                            "caption": "Sunset vibes 🌅",
-                            "likes": 890,
-                            "comments": 12,
-                            "liked": true,
-                            "saved": true
-                        }
-                    ],
-                    "scrollPosition": 0
-                },
-                "stories": {
-                    "users": [
-                        {
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s1",
-                                    "image": "https://picsum.photos/seed/story1/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        },
-                        {
-                            "username": "friend_1",
-                            "avatar": "https://i.pravatar.cc/150?u=friend1",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s2",
-                                    "image": "https://picsum.photos/seed/story2/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "notifications": {
-                    "items": []
-                }
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_instagram"
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "stories"
-            }
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "feed"
-            }
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "explore"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "reels"
-            }
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "notifications"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "profile"
-            }
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "post"
-            }
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "dm"
-            }
-        },
-        {
-            "at": 260,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "Wow, this app is huge!"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/schema.ts
-````typescript
-import { z } from "zod";
-
-// --- App Icon & Home Screen ---
-export const AppIconSchema = z.object({
-    appId: z.string(),
-    label: z.string(),
-    icon: z.string(),
-    badge: z.number().optional()
-});
-
-export const AppFolderSchema = z.object({
-    type: z.literal("folder"),
-    name: z.string(),
-    apps: z.array(AppIconSchema)
-});
-
-export const HomeScreenPageSchema = z.object({
-    apps: z.array(z.union([AppIconSchema, AppFolderSchema]))
-});
-
-export const HomeScreenConfigSchema = z.object({
-    wallpaper: z.string().optional(),
-    pages: z.array(HomeScreenPageSchema),
-    dock: z.array(AppIconSchema)
-});
-
-// --- Device Events ---
-export const DeviceEventSchema = z.discriminatedUnion("type", [
-    // Lock/Unlock
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.enum(["LOCK", "UNLOCK"])
-    }),
-    // Open/Close App
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.enum(["OPEN_APP", "CLOSE_APP"]),
-        appId: z.string()
-    }),
-    // Go Home
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("GO_HOME")
-    }),
-    // Set Badge
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("SET_BADGE"),
-        appId: z.string(),
-        count: z.number()
-    }),
-    // Show notification
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("SHOW_NOTIFICATION"),
-        appId: z.string(),
-        title: z.string(),
-        body: z.string(),
-        mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-        icon: z.string().optional()
-    }),
-    // Dismiss notification
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("DISMISS_NOTIFICATION"),
-        notificationId: z.string()
-    }),
-    // Incoming call
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("INCOMING_CALL"),
-        callerId: z.string(),
-        callerName: z.string(),
-        callerAvatar: z.string().optional(),
-        isVideo: z.boolean().optional()
-    }),
-    // Call answered
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("CALL_ANSWERED")
-    }),
-    // Call ended
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("CALL_ENDED")
-    })
-]);
-
-// --- App Events ---
-export const AppEventSchema = z.discriminatedUnion("type", [
-    // Message events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        text: z.string().optional(),
-        messageType: z.enum(["text", "system", "call_missed", "screenshot_alert"]).optional(),
-        metadata: z.record(z.any()).optional()
-    }),
-    // Media Message events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("IMAGE_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        imageUrl: z.string(),
-        caption: z.string().optional(),
-        text: z.string().optional()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("VIDEO_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        videoUrl: z.string(),
-        thumbnailUrl: z.string().optional(),
-        duration: z.number(),
-        caption: z.string().optional()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GIF_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        gifUrl: z.string(),
-        caption: z.string().optional()
-    }),
-    // Typing
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.enum(["TYPING_START", "TYPING_END"]),
-        conversationId: z.string(),
-        from: z.string()
-    }),
-    // Voice message
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("VOICE_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        duration: z.number()
-    }),
-    // Message interactions
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_READ"),
-        conversationId: z.string(),
-        messageId: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_DELETED"),
-        conversationId: z.string(),
-        messageId: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("REACTION_ADDED"),
-        conversationId: z.string(),
-        messageId: z.string(),
-        reaction: z.object({
-            emoji: z.string(),
-            count: z.number(),
-            fromMe: z.boolean().optional()
-        })
-    }),
-    // Group events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GROUP_MEMBER_ADDED"),
-        conversationId: z.string(),
-        memberId: z.string(),
-        memberName: z.string(),
-        addedBy: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GROUP_MEMBER_REMOVED"),
-        conversationId: z.string(),
-        memberId: z.string(),
-        memberName: z.string(),
-        removedBy: z.string()
-    }),
-    // Custom event
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("CUSTOM"),
-        name: z.string(),
-        payload: z.any().optional()
-    })
-]);
-
-// --- Camera Events ---
-export const CameraEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("CAMERA"),
-    type: z.literal("SET_VIEW"),
-    view: z.object({
-        type: z.enum(["APP_VIEW", "TRANSITION"]),
-        appId: z.string().optional()
-    })
-});
-
-// --- Audio Events ---
-export const AudioEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("AUDIO"),
-    type: z.literal("PLAY_SOUND"),
-    soundId: z.string(),
-    volume: z.number().optional()
-});
-
-// --- Combined Timeline Event ---
-export const TimelineEventSchema = z.union([
-    DeviceEventSchema,
-    AppEventSchema,
-    CameraEventSchema,
-    AudioEventSchema
-]);
-
-// --- Message Schema ---
-export const MessageSchema = z.object({
-    id: z.string(),
-    from: z.string(),
-    text: z.string().optional(),
-    type: z.enum([
-        "text", "image", "video", "gif", "voice", "system",
-        "deleted", "screenshot_alert", "call_missed"
-    ]).optional(),
-    at: z.number().optional(),
-    status: z.enum(["sending", "sent", "delivered", "read"]).optional(),
-
-    // Media fields
-    imageUrl: z.string().optional(),
-    videoUrl: z.string().optional(),
-    thumbnailUrl: z.string().optional(),
-    gifUrl: z.string().optional(),
-    caption: z.string().optional(),
-
-    // Voice/Video specific
-    duration: z.number().optional(),
-    isPlaying: z.boolean().optional(),
-    playProgress: z.number().optional(),
-
-    // Interactions
-    reactions: z.array(z.object({
-        emoji: z.string(),
-        count: z.number(),
-        fromMe: z.boolean().optional()
-    })).optional(),
-
-    replyTo: z.object({
-        messageId: z.string(),
-        text: z.string(),
-        from: z.string(),
-        type: z.string().optional()
-    }).optional(),
-
-    edited: z.boolean().optional(),
-
-    // System message fields
-    systemType: z.enum(["member_added", "member_removed", "admin_change", "group_created"]).optional(),
-    targetMember: z.string().optional(),
-    actorName: z.string().optional(),
-
-    // Flexible metadata
-    metadata: z.record(z.any()).optional()
-});
-
-// --- Group Member Schema ---
-export const GroupMemberSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    avatar: z.string().optional(),
-    phone: z.string().optional()
-});
-
-// --- Conversation Schema ---
-export const ConversationStateSchema = z.object({
-    id: z.string(),
-    type: z.enum(["dm", "group"]).optional(),
-    name: z.string().optional(),
-    avatar: z.string().optional(),
-    members: z.array(GroupMemberSchema).optional(),
-    admins: z.array(z.string()).optional(),
-    messages: z.array(MessageSchema),
-    typing: z.record(z.boolean()).optional()
-});
-
-// --- Notification Schema ---
-export const NotificationSchema = z.object({
-    id: z.string(),
-    appId: z.string(),
-    title: z.string(),
-    body: z.string(),
-    at: z.number(),
-    dismissedAt: z.number().optional(),
-    mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-    icon: z.string().optional()
-});
-
-// --- Call State Schema ---
-export const CallStateSchema = z.object({
-    status: z.enum(["incoming", "active", "ended"]),
-    callerId: z.string(),
-    callerName: z.string(),
-    callerAvatar: z.string().optional(),
-    isVideo: z.boolean().optional(),
-    startedAt: z.number().optional(),
-    endedAt: z.number().optional()
-});
-
-// --- Device State Schema ---
-export const DeviceStateSchema = z.object({
-    id: z.string(),
-    profileId: z.string(),
-    isLocked: z.boolean(),
-    foregroundAppId: z.string().optional(),
-    notifications: z.array(NotificationSchema).optional(),
-    call: CallStateSchema.optional(),
-    homeScreen: HomeScreenConfigSchema.optional()
-});
-
-// --- Camera View Schema ---
-export const CameraViewSchema = z.object({
-    type: z.enum(["APP_VIEW", "TRANSITION"]),
-    appId: z.string().optional()
-});
-
-// --- Episode Meta Schema ---
-export const EpisodeMetaSchema = z.object({
-    title: z.string().optional(),
-    fps: z.number().optional(),
-    durationInFrames: z.number().optional()
-}).optional();
-
-// --- Episode Schema ---
-export const EpisodeSchema = z.object({
-    meta: EpisodeMetaSchema,
-    initialWorld: z.object({
-        devices: z.record(DeviceStateSchema),
-        conversations: z.record(ConversationStateSchema),
-        appState: z.record(z.any()).optional(),
-        camera: CameraViewSchema
-    }),
-    events: z.array(TimelineEventSchema)
-});
-
-// Type exports
-export type Episode = z.infer<typeof EpisodeSchema>;
-export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
-export type DeviceState = z.infer<typeof DeviceStateSchema>;
-export type ConversationState = z.infer<typeof ConversationStateSchema>;
-export type Message = z.infer<typeof MessageSchema>;
 ````
 
 ## File: packages/ir/src/timeline.ts
@@ -34052,695 +38304,6 @@ const DevicePaneFit: React.FC<{
 };
 ````
 
-## File: packages/renderer/src/NotificationOverlay.tsx
-````typescript
-import React from "react";
-import { Notification, NotificationGroup } from "@tokovo/core";
-import { LayoutState, LockscreenLayoutState } from "./layout/types";
-
-// =============================================================================
-// APP BRANDING (for icons and colors)
-// =============================================================================
-
-const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
-    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
-    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
-    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
-    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
-    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
-    default: { color: "#8E8E93", icon: "⬤", name: "App" },
-};
-
-function getAppBranding(appId: string) {
-    return APP_BRANDING[appId] || APP_BRANDING.default;
-}
-
-// =============================================================================
-// GROUPING LOGIC
-// =============================================================================
-
-/**
- * Group notifications by app or threadId
- */
-function groupNotifications(notifications: Notification[]): NotificationGroup[] {
-    const groups = new Map<string, NotificationGroup>();
-
-    for (const notif of notifications) {
-        // Skip dismissed notifications
-        if (notif.dismissedAt) continue;
-
-        // Group key: use groupKey if provided, else threadId + appId, else just appId
-        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
-
-        if (!groups.has(key)) {
-            groups.set(key, {
-                key,
-                appId: notif.appId,
-                notifications: [],
-                collapsed: true,
-                count: 0,
-                latestAt: 0,
-            });
-        }
-
-        const group = groups.get(key)!;
-        group.notifications.push(notif);
-        group.count++;
-        group.latestAt = Math.max(group.latestAt, notif.at);
-    }
-
-    // Sort by latest notification time (most recent first)
-    return Array.from(groups.values()).sort((a, b) => b.latestAt - a.latestAt);
-}
-
-// =============================================================================
-// NOTIFICATION GROUP CARD
-// =============================================================================
-
-interface GroupCardProps {
-    group: NotificationGroup;
-    y: number;
-    opacity: number;
-    translateY: number;
-    variant: "ios" | "android";
-}
-
-const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
-    const isAndroid = variant === "android";
-    const branding = getAppBranding(group.appId);
-    const latestNotif = group.notifications[group.notifications.length - 1];
-    const hasMultiple = group.count > 1;
-
-    return (
-        <div
-            style={{
-                position: "absolute",
-                top: y,
-                left: "50%",
-                transform: `translateX(-50%) translateY(${translateY}px)`,
-                width: "92%",
-                opacity,
-            }}
-        >
-            {/* Stacked cards effect (show 2 cards behind if multiple) */}
-            {hasMultiple && (
-                <>
-                    <div
-                        style={{
-                            position: "absolute",
-                            top: 6,
-                            left: "2%",
-                            right: "2%",
-                            height: 100,
-                            backgroundColor: isAndroid ? "#252525" : "rgba(255, 255, 255, 0.6)",
-                            borderRadius: isAndroid ? 24 : 36,
-                            zIndex: 1,
-                        }}
-                    />
-                    {group.count > 2 && (
-                        <div
-                            style={{
-                                position: "absolute",
-                                top: 12,
-                                left: "4%",
-                                right: "4%",
-                                height: 100,
-                                backgroundColor: isAndroid ? "#1a1a1a" : "rgba(255, 255, 255, 0.3)",
-                                borderRadius: isAndroid ? 24 : 36,
-                                zIndex: 0,
-                            }}
-                        />
-                    )}
-                </>
-            )}
-
-            {/* Main notification card */}
-            <div
-                style={{
-                    position: "relative",
-                    zIndex: 2,
-                    backgroundColor: isAndroid ? "#303030" : "rgba(255, 255, 255, 0.95)",
-                    backdropFilter: "blur(20px)",
-                    borderRadius: isAndroid ? 24 : 36,
-                    padding: "30px 40px",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 30,
-                    color: isAndroid ? "white" : "black",
-                }}
-            >
-                {/* App Icon */}
-                <div
-                    style={{
-                        width: 100,
-                        height: 100,
-                        borderRadius: 20,
-                        backgroundColor: branding.color,
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        fontSize: 50,
-                        color: "white",
-                        flexShrink: 0,
-                    }}
-                >
-                    {branding.icon}
-                </div>
-
-                {/* Content */}
-                <div style={{ flex: 1, overflow: "hidden" }}>
-                    {/* Header: App name + count + time */}
-                    <div
-                        style={{
-                            fontSize: 30,
-                            fontWeight: 600,
-                            marginBottom: 6,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 12,
-                            color: isAndroid ? "rgba(255,255,255,0.7)" : "rgba(0,0,0,0.5)",
-                        }}
-                    >
-                        <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
-                            {branding.name}
-                        </span>
-                        {hasMultiple && (
-                            <span
-                                style={{
-                                    fontSize: 24,
-                                    backgroundColor: branding.color,
-                                    color: "white",
-                                    borderRadius: 12,
-                                    padding: "2px 10px",
-                                    fontWeight: 700,
-                                }}
-                            >
-                                {group.count}
-                            </span>
-                        )}
-                        <span style={{ marginLeft: "auto", fontSize: 28, fontWeight: "normal" }}>
-                            now
-                        </span>
-                    </div>
-
-                    {/* Title */}
-                    <div
-                        style={{
-                            fontSize: 36,
-                            fontWeight: "bold",
-                            marginBottom: 8,
-                            color: isAndroid ? "white" : "black",
-                        }}
-                    >
-                        {latestNotif.title}
-                    </div>
-
-                    {/* Body */}
-                    <div
-                        style={{
-                            fontSize: 34,
-                            opacity: 0.8,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                        }}
-                    >
-                        {latestNotif.body}
-                    </div>
-
-                    {/* Summary for groups */}
-                    {hasMultiple && (
-                        <div
-                            style={{
-                                fontSize: 28,
-                                marginTop: 8,
-                                opacity: 0.5,
-                            }}
-                        >
-                            +{group.count - 1} more notification{group.count > 2 ? "s" : ""}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// NOTIFICATION OVERLAY
-// =============================================================================
-
-interface NotificationOverlayProps {
-    notifications?: Notification[];
-    variant?: "ios" | "android";
-    layout?: LayoutState;
-}
-
-export const NotificationOverlay: React.FC<NotificationOverlayProps> = ({
-    notifications = [],
-    variant = "ios",
-    layout,
-}) => {
-    // Only render on lockscreen with layout
-    const lockscreenLayout = layout?.kind === "LOCKSCREEN" ? (layout as LockscreenLayoutState) : null;
-    if (!lockscreenLayout) return null;
-
-    // Group notifications
-    const groups = groupNotifications(notifications);
-
-    // Map groups to layout positions
-    // For simplicity, use first N layout positions for groups
-    const visibleGroups = groups.slice(0, lockscreenLayout.notificationLayouts.length);
-
-    return (
-        <div
-            style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                pointerEvents: "none",
-                zIndex: 100,
-            }}
-        >
-            {visibleGroups.map((group, index) => {
-                const layoutInfo = lockscreenLayout.notificationLayouts[index];
-                if (!layoutInfo) return null;
-
-                return (
-                    <GroupCard
-                        key={group.key}
-                        group={group}
-                        y={layoutInfo.y}
-                        opacity={layoutInfo.opacity}
-                        translateY={layoutInfo.translateY}
-                        variant={variant}
-                    />
-                );
-            })}
-        </div>
-    );
-};
-````
-
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/apps-spotify": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
-## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
-
-// ============================================================================
-// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
-// ============================================================================
-
-const ChevronLeftIcon = () => (
-    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const VideoCallIcon = () => (
-    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
-        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
-        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-
-const InfoIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
-        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-const CameraCircleIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
-        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
-        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
-    </svg>
-);
-
-const MicrophoneIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
-        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-);
-
-const ImageIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
-        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
-        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const StickerIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
-        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="9" r="1" fill="white" />
-        <circle cx="14" cy="9" r="1" fill="white" />
-    </svg>
-);
-
-const HeartIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// HEADER COMPONENT - Authentic Instagram DM Navigation
-// ============================================================================
-
-interface HeaderProps {
-    contactName: string;
-    avatarUrl?: string;
-    isActive?: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
-    <div style={{
-        height: 180,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 42px",
-        marginTop: 144, // Below dynamic island
-        zIndex: 10
-    }}>
-        {/* Back button */}
-        <ChevronLeftIcon />
-
-        {/* Avatar + Name Group */}
-        <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            marginLeft: 36,
-            gap: 30
-        }}>
-            {/* Avatar with active indicator */}
-            <div style={{ position: "relative" }}>
-                <div style={{
-                    width: 102,
-                    height: 102,
-                    borderRadius: "50%",
-                    background: avatarUrl
-                        ? `url(${avatarUrl}) center/cover`
-                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: 42,
-                    fontWeight: "600"
-                }}>
-                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
-                </div>
-                {isActive && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 3,
-                        right: 3,
-                        width: 30,
-                        height: 30,
-                        borderRadius: "50%",
-                        backgroundColor: "#44D62D",
-                        border: "4px solid #000"
-                    }} />
-                )}
-            </div>
-
-            {/* Username + Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                    fontSize: 48,
-                    fontWeight: "600",
-                    color: "white",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-                }}>
-                    {contactName}
-                </span>
-                <span style={{
-                    fontSize: 36,
-                    color: "#A8A8A8",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {isActive ? "Active now" : "Active 2h ago"}
-                </span>
-            </div>
-        </div>
-
-        {/* Action icons */}
-        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
-            <VideoCallIcon />
-            <InfoIcon />
-        </div>
-    </div>
-);
-
-// ============================================================================
-// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
-// ============================================================================
-
-interface MessageBubbleProps {
-    msg: { id: string; from: string; text: string };
-    layout: ChatMessageLayout;
-}
-
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 42,
-            right: isMe ? 42 : "auto",
-            maxWidth: "70%",
-            opacity,
-            transform: `translateY(${translateY}px)`,
-        }}>
-            <div style={{
-                // Instagram gradient for sent messages
-                background: isMe
-                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
-                    : "#262626",
-                color: "white",
-                padding: "30px 42px",
-                borderRadius: 66, // Fully pill-shaped
-                fontSize: 48,
-                lineHeight: "60px",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                wordWrap: "break-word"
-            }}>
-                {msg.text}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// MESSAGE LIST
-// ============================================================================
-
-interface MessageListProps {
-    messages: any[];
-    layout?: ChatLayoutState;
-}
-
-const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
-    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
-    const scrollY = chatLayout?.scrollY || 0;
-    const contentHeight = chatLayout?.contentHeight || "100%";
-
-    return (
-        <div style={{
-            flex: 1,
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: contentHeight,
-                transform: `translateY(-${scrollY}px)`,
-                paddingTop: 30,
-                paddingBottom: 30
-            }}>
-                {messages.map((msg: any) => {
-                    const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) return null;
-                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// INPUT AREA - Authentic Instagram DM Composer
-// ============================================================================
-
-interface InputAreaProps {
-    text?: string;
-}
-
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 42px",
-        gap: 24
-    }}>
-        {/* Input container */}
-        <div style={{
-            flex: 1,
-            minHeight: 132,
-            backgroundColor: "#262626",
-            borderRadius: 66,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 24px",
-            gap: 18,
-            border: "1px solid #363636"
-        }}>
-            {/* Camera button */}
-            <CameraCircleIcon />
-
-            {/* Input text */}
-            <div style={{
-                flex: 1,
-                fontSize: 48,
-                color: text ? "white" : "#A8A8A8",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                padding: "0 12px"
-            }}>
-                {text || "Message..."}
-            </div>
-
-            {/* Right icons - hidden when typing */}
-            {!text && (
-                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-                    <MicrophoneIcon />
-                    <ImageIcon />
-                    <StickerIcon />
-                </div>
-            )}
-        </div>
-
-        {/* Heart or Send button */}
-        {text ? (
-            <span style={{
-                color: "#0095F6",
-                fontSize: 48,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                Send
-            </span>
-        ) : (
-            <HeartIcon />
-        )}
-    </div>
-);
-
-// ============================================================================
-// HOME INDICATOR
-// ============================================================================
-
-const HomeIndicator: React.FC = () => (
-    <div style={{
-        height: 102,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        paddingBottom: 24
-    }}>
-        <div style={{
-            width: 402,
-            height: 15,
-            backgroundColor: "white",
-            borderRadius: 9,
-            opacity: 0.4
-        }} />
-    </div>
-);
-
-// ============================================================================
-// MAIN VIEW EXPORT
-// ============================================================================
-
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
-    const conversationId = Object.keys(world.conversations)[0];
-    const conversation = world.conversations[conversationId];
-    const messages = conversation ? conversation.messages : [];
-
-    return (
-        <div style={{
-            backgroundColor: "#000000",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            color: "white",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            <Header contactName="sarah.design" isActive={true} />
-            <MessageList messages={messages} layout={layout} />
-            <InputArea />
-            <HomeIndicator />
-        </div>
-    );
-};
-````
-
 ## File: packages/core/src/camera/index.ts
 ````typescript
 /**
@@ -35191,408 +38754,6 @@ export * from "./timeline";
 export * from "./presets";
 ````
 
-## File: packages/devices/src/reducer.ts
-````typescript
-import { produce } from "immer";
-import {
-    TimelineEvent,
-    DeviceState,
-    Notification,
-    NotificationPriority,
-    NotificationCenterState,
-    DEFAULT_NOTIFICATION_CENTER,
-    DEFAULT_DYNAMIC_ISLAND,
-    IOS_NOTIFICATION_POLICY,
-} from "@tokovo/core";
-import { ReducerRegistry } from "@tokovo/core";
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-function generateNotificationId(event: any): string {
-    return `notif_${event.at}_${event.appId}_${Math.random().toString(36).substr(2, 5)}`;
-}
-
-function computeGroups(items: Notification[]): NotificationCenterState["groups"] {
-    const groupMap = new Map<string, Notification[]>();
-
-    items.filter(n => n.state !== "dismissed").forEach(n => {
-        const key = n.groupKey || n.appId;
-        if (!groupMap.has(key)) groupMap.set(key, []);
-        groupMap.get(key)!.push(n);
-    });
-
-    return Array.from(groupMap.entries()).map(([key, notifs]) => ({
-        key,
-        appId: notifs[0].appId,
-        notifications: notifs,
-        collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
-        count: notifs.length,
-        latestAt: Math.max(...notifs.map(n => n.at)),
-    }));
-}
-
-// =============================================================================
-// DEVICE REDUCER
-// =============================================================================
-
-/**
- * Device Reducer
- * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls
- */
-export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
-    return produce(devices, draft => {
-        if (event.kind !== "DEVICE") return;
-
-        const device = draft[event.deviceId];
-        if (!device) return;
-
-        // Initialize notification center if needed
-        if (!device.notificationCenter) {
-            device.notificationCenter = { ...DEFAULT_NOTIFICATION_CENTER };
-        }
-
-        switch (event.type) {
-            // --- Lock/Unlock ---
-            case "LOCK":
-                device.isLocked = true;
-                break;
-            case "UNLOCK":
-                device.isLocked = false;
-                break;
-
-            // --- App Management ---
-            case "OPEN_APP":
-                device.foregroundAppId = event.appId;
-                break;
-            case "CLOSE_APP":
-                device.foregroundAppId = undefined;
-                break;
-            case "GO_HOME":
-                device.foregroundAppId = undefined;
-                break;
-
-            // --- Badge ---
-            case "SET_BADGE":
-                if (device.homeScreen) {
-                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
-                    if (dockIcon) dockIcon.badge = event.count > 0 ? event.count : undefined;
-                    device.homeScreen.pages.forEach(page => {
-                        page.apps.forEach(item => {
-                            if ('appId' in item && item.appId === event.appId) {
-                                item.badge = event.count > 0 ? event.count : undefined;
-                            }
-                        });
-                    });
-                }
-                break;
-
-            // =================================================================
-            // NOTIFICATION EVENTS (IR-compliant)
-            // =================================================================
-
-            case "SHOW_NOTIFICATION": {
-                const e = event as any;
-                const notification: Notification = {
-                    id: generateNotificationId(e),
-                    deviceId: e.deviceId,
-                    appId: e.appId,
-                    title: e.title,
-                    body: e.body,
-                    at: e.at,
-                    deliveredAt: e.at,
-                    state: e.mode === "silent" ? "inShade" : "headsUp",
-                    mode: e.mode || "both",
-                    priority: e.priority || "active",
-                    deliverWhen: e.deliverWhen || "always",
-                    groupKey: e.groupKey,
-                    threadId: e.threadId,
-                    icon: e.icon,
-                    preview: e.preview,
-                    actions: e.actions,
-                    replyable: e.replyable,
-                    metadata: e.metadata,
-                    headsUp: e.mode !== "silent" ? {
-                        shownAt: e.at,
-                        duration: IOS_NOTIFICATION_POLICY.headsUpDurationByPriority[(e.priority || "active") as NotificationPriority],
-                    } : undefined,
-                };
-
-                // Add to items
-                device.notificationCenter!.items.push(notification);
-
-                // Legacy array
-                if (!device.notifications) device.notifications = [];
-                device.notifications.push(notification);
-
-                // Set as headsUp if not silent
-                if (notification.state === "headsUp") {
-                    const currentHeadsUp = device.notificationCenter!.headsUp;
-                    if (!currentHeadsUp) {
-                        device.notificationCenter!.headsUp = notification.id;
-                    } else {
-                        // Queue it
-                        device.notificationCenter!.headsUpQueue.push(notification.id);
-                    }
-                }
-
-                // Update groups
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "UPDATE_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    Object.assign(item, e.patch);
-                    item.updatedAt = e.at;
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "DISMISS_NOTIFICATION": {
-                const e = event as any;
-                if (e.all) {
-                    device.notificationCenter!.items.forEach(n => {
-                        n.state = "dismissed";
-                        n.dismissedAt = e.at;
-                    });
-                    device.notificationCenter!.headsUp = null;
-                    device.notificationCenter!.headsUpQueue = [];
-                } else if (e.groupKey) {
-                    device.notificationCenter!.items.filter(n => n.groupKey === e.groupKey).forEach(n => {
-                        n.state = "dismissed";
-                        n.dismissedAt = e.at;
-                    });
-                } else if (e.notificationId) {
-                    const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                    if (item) {
-                        item.state = "dismissed";
-                        item.dismissedAt = e.at;
-                    }
-                    // Clear headsUp if dismissed
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-
-                // Legacy
-                if (device.notifications && e.notificationId) {
-                    const notif = device.notifications.find(n => n.id === e.notificationId);
-                    if (notif) notif.dismissedAt = e.at;
-                }
-                break;
-            }
-
-            case "TAP_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    // Transition: headsUp → inShade (or dismissed)
-                    item.state = "inShade";
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                    // Open the app
-                    device.foregroundAppId = item.appId;
-                }
-                break;
-            }
-
-            case "SWIPE_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item && (e.action === "dismiss" || e.direction === "right")) {
-                    item.state = "dismissed";
-                    item.dismissedAt = e.at;
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "REPLY_NOTIFICATION": {
-                // App-level handling - reducer just marks as replied
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    item.metadata = { ...item.metadata, replied: true, replyText: e.text };
-                    item.state = "inShade";
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                break;
-            }
-
-            case "TOGGLE_NOTIFICATION_PANEL": {
-                // Will be used by renderer to show/hide panel
-                // State managed in renderer, but we could add panelOpen to DeviceState if needed
-                break;
-            }
-
-            case "CLEAR_ALL_NOTIFICATIONS": {
-                device.notificationCenter!.items.forEach(n => {
-                    n.state = "dismissed";
-                    n.dismissedAt = event.at;
-                });
-                device.notificationCenter!.headsUp = null;
-                device.notificationCenter!.headsUpQueue = [];
-                device.notificationCenter!.groups = [];
-                break;
-            }
-
-            case "SET_DYNAMIC_ISLAND": {
-                const e = event as any;
-                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
-                device.dynamicIsland.visible = e.visible;
-                if (e.mode) device.dynamicIsland.mode = e.mode;
-                break;
-            }
-
-            // --- Call Events ---
-            case "INCOMING_CALL":
-                device.call = {
-                    status: "incoming",
-                    callerId: event.callerId,
-                    callerName: event.callerName,
-                    callerAvatar: event.callerAvatar,
-                    isVideo: event.isVideo || false,
-                    startedAt: event.at
-                };
-                break;
-
-            case "CALL_ANSWERED":
-                if (device.call && device.call.status === "incoming") {
-                    device.call.status = "active";
-                }
-                break;
-
-            case "CALL_ENDED":
-                if (device.call) {
-                    device.call.status = "ended";
-                    device.call.endedAt = event.at;
-                }
-                break;
-
-            // --- Background Apps ---
-            case "START_BACKGROUND_APP": {
-                const e = event as any;
-                if (!device.backgroundApps) device.backgroundApps = [];
-                device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
-                device.backgroundApps.push({
-                    appId: e.appId,
-                    startedAt: e.at,
-                    indicator: e.indicator || "music",
-                    label: e.label,
-                });
-                // Update Dynamic Island to show music
-                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
-                device.dynamicIsland.activeContent = e.indicator || "music";
-                device.dynamicIsland.mode = "compact";
-                break;
-            }
-
-            case "STOP_BACKGROUND_APP": {
-                const e = event as any;
-                if (device.backgroundApps) {
-                    device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
-                }
-                // Reset Dynamic Island if no more background apps
-                if (device.dynamicIsland && device.backgroundApps?.length === 0) {
-                    device.dynamicIsland.activeContent = null;
-                    device.dynamicIsland.mode = "idle";
-                }
-                break;
-            }
-        }
-    });
-}
-
-// Register itself with the core engine
-ReducerRegistry.registerDeviceReducer(deviceReducer);
-````
-
-## File: packages/renderer/src/DeviceFrame.tsx
-````typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { DeviceState } from "@tokovo/core";
-
-interface DeviceFrameProps {
-    profileId: string;
-    isLocked?: boolean;
-    notifications?: any[];
-    children: React.ReactNode;
-    variant?: "ios" | "android";
-    /** Device state - used to read os for StatusBar */
-    device?: DeviceState;
-}
-
-export const DeviceFrame: React.FC<DeviceFrameProps> = ({
-    profileId,
-    isLocked,
-    notifications,
-    children,
-    variant,
-    device
-}) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
-
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
-    }
-
-    // StatusBar reads from device.os if available
-    const statusBar = (
-        <StatusBar
-            os={device?.os}
-            variant={variant}
-            theme={variant === "android" ? "dark" : "light"}
-        />
-    );
-
-    return (
-        <FrameComponent {...frameProps} statusBar={statusBar}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
-};
-````
-
 ## File: packages/core/src/plugin.ts
 ````typescript
 /**
@@ -35883,6 +39044,422 @@ export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name:
 export function registerPlugins(plugins: TokovoPlugin[]): void {
     plugins.forEach(plugin => PluginManager.register(plugin));
 }
+````
+
+## File: packages/devices/src/reducer.ts
+````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    DeviceState,
+    Notification,
+    NotificationPriority,
+    NotificationCenterState,
+    DEFAULT_NOTIFICATION_CENTER,
+    DEFAULT_DYNAMIC_ISLAND,
+    IOS_NOTIFICATION_POLICY,
+} from "@tokovo/core";
+import { ReducerRegistry } from "@tokovo/core";
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+function generateNotificationId(event: any): string {
+    return `notif_${event.at}_${event.appId}_${Math.random().toString(36).substr(2, 5)}`;
+}
+
+function computeGroups(items: Notification[]): NotificationCenterState["groups"] {
+    const groupMap = new Map<string, Notification[]>();
+
+    items.filter(n => n.state !== "dismissed").forEach(n => {
+        const key = n.groupKey || n.appId;
+        if (!groupMap.has(key)) groupMap.set(key, []);
+        groupMap.get(key)!.push(n);
+    });
+
+    return Array.from(groupMap.entries()).map(([key, notifs]) => ({
+        key,
+        appId: notifs[0].appId,
+        notifications: notifs,
+        collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
+        count: notifs.length,
+        latestAt: Math.max(...notifs.map(n => n.at)),
+    }));
+}
+
+// =============================================================================
+// DEVICE REDUCER
+// =============================================================================
+
+/**
+ * Device Reducer
+ * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls
+ */
+export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
+    return produce(devices, draft => {
+        if (event.kind !== "DEVICE") return;
+
+        const device = draft[event.deviceId];
+        if (!device) return;
+
+        // Initialize notification center if needed
+        if (!device.notificationCenter) {
+            device.notificationCenter = { ...DEFAULT_NOTIFICATION_CENTER };
+        }
+
+        switch (event.type) {
+            // --- Lock/Unlock ---
+            case "LOCK":
+                device.isLocked = true;
+                break;
+            case "UNLOCK":
+                device.isLocked = false;
+                break;
+
+            // --- App Management ---
+            case "OPEN_APP":
+                device.foregroundAppId = event.appId;
+                break;
+            case "CLOSE_APP":
+                device.foregroundAppId = undefined;
+                break;
+            case "GO_HOME":
+                device.foregroundAppId = undefined;
+                break;
+
+            // --- Badge ---
+            case "SET_BADGE":
+                if (device.homeScreen) {
+                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
+                    if (dockIcon) dockIcon.badge = event.count > 0 ? event.count : undefined;
+                    device.homeScreen.pages.forEach(page => {
+                        page.apps.forEach(item => {
+                            if ('appId' in item && item.appId === event.appId) {
+                                item.badge = event.count > 0 ? event.count : undefined;
+                            }
+                        });
+                    });
+                }
+                break;
+
+            // =================================================================
+            // NOTIFICATION EVENTS (IR-compliant)
+            // =================================================================
+
+            case "SHOW_NOTIFICATION": {
+                const e = event as any;
+                const notification: Notification = {
+                    id: generateNotificationId(e),
+                    deviceId: e.deviceId,
+                    appId: e.appId,
+                    title: e.title,
+                    body: e.body,
+                    at: e.at,
+                    deliveredAt: e.at,
+                    state: e.mode === "silent" ? "inShade" : "headsUp",
+                    mode: e.mode || "both",
+                    priority: e.priority || "active",
+                    deliverWhen: e.deliverWhen || "always",
+                    groupKey: e.groupKey,
+                    threadId: e.threadId,
+                    icon: e.icon,
+                    preview: e.preview,
+                    actions: e.actions,
+                    replyable: e.replyable,
+                    metadata: e.metadata,
+                    headsUp: e.mode !== "silent" ? {
+                        shownAt: e.at,
+                        duration: IOS_NOTIFICATION_POLICY.headsUpDurationByPriority[(e.priority || "active") as NotificationPriority],
+                    } : undefined,
+                };
+
+                // Add to items
+                device.notificationCenter!.items.push(notification);
+
+                // Legacy array
+                if (!device.notifications) device.notifications = [];
+                device.notifications.push(notification);
+
+                // Set as headsUp if not silent
+                if (notification.state === "headsUp") {
+                    const currentHeadsUp = device.notificationCenter!.headsUp;
+                    if (!currentHeadsUp) {
+                        device.notificationCenter!.headsUp = notification.id;
+                    } else {
+                        // Queue it
+                        device.notificationCenter!.headsUpQueue.push(notification.id);
+                    }
+                }
+
+                // Update groups
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "UPDATE_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    Object.assign(item, e.patch);
+                    item.updatedAt = e.at;
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "DISMISS_NOTIFICATION": {
+                const e = event as any;
+                if (e.all) {
+                    device.notificationCenter!.items.forEach(n => {
+                        n.state = "dismissed";
+                        n.dismissedAt = e.at;
+                    });
+                    device.notificationCenter!.headsUp = null;
+                    device.notificationCenter!.headsUpQueue = [];
+                } else if (e.groupKey) {
+                    device.notificationCenter!.items.filter(n => n.groupKey === e.groupKey).forEach(n => {
+                        n.state = "dismissed";
+                        n.dismissedAt = e.at;
+                    });
+                } else if (e.notificationId) {
+                    const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                    if (item) {
+                        item.state = "dismissed";
+                        item.dismissedAt = e.at;
+                    }
+                    // Clear headsUp if dismissed
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+
+                // Legacy
+                if (device.notifications && e.notificationId) {
+                    const notif = device.notifications.find(n => n.id === e.notificationId);
+                    if (notif) notif.dismissedAt = e.at;
+                }
+                break;
+            }
+
+            case "TAP_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    // Transition: headsUp → inShade (or dismissed)
+                    item.state = "inShade";
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                    // Open the app
+                    device.foregroundAppId = item.appId;
+                }
+                break;
+            }
+
+            case "SWIPE_NOTIFICATION": {
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item && (e.action === "dismiss" || e.direction === "right")) {
+                    item.state = "dismissed";
+                    item.dismissedAt = e.at;
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
+                break;
+            }
+
+            case "REPLY_NOTIFICATION": {
+                // App-level handling - reducer just marks as replied
+                const e = event as any;
+                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
+                if (item) {
+                    item.metadata = { ...item.metadata, replied: true, replyText: e.text };
+                    item.state = "inShade";
+                    if (device.notificationCenter!.headsUp === e.notificationId) {
+                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
+                    }
+                }
+                break;
+            }
+
+            case "TOGGLE_NOTIFICATION_PANEL": {
+                // Will be used by renderer to show/hide panel
+                // State managed in renderer, but we could add panelOpen to DeviceState if needed
+                break;
+            }
+
+            case "CLEAR_ALL_NOTIFICATIONS": {
+                device.notificationCenter!.items.forEach(n => {
+                    n.state = "dismissed";
+                    n.dismissedAt = event.at;
+                });
+                device.notificationCenter!.headsUp = null;
+                device.notificationCenter!.headsUpQueue = [];
+                device.notificationCenter!.groups = [];
+                break;
+            }
+
+            case "SET_DYNAMIC_ISLAND": {
+                const e = event as any;
+                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+                device.dynamicIsland.visible = e.visible;
+                if (e.mode) device.dynamicIsland.mode = e.mode;
+                break;
+            }
+
+            // --- Call Events ---
+            case "INCOMING_CALL":
+                device.call = {
+                    status: "incoming",
+                    callerId: event.callerId,
+                    callerName: event.callerName,
+                    callerAvatar: event.callerAvatar,
+                    isVideo: event.isVideo || false,
+                    callType: "voice",
+                    displayMode: "fullscreen",
+                    startedAt: event.at
+                };
+                break;
+
+            case "CALL_ANSWERED":
+                if (device.call && device.call.status === "incoming") {
+                    device.call.status = "active";
+                }
+                break;
+
+            case "CALL_ENDED":
+                if (device.call) {
+                    device.call.status = "ended";
+                    device.call.endedAt = event.at;
+                }
+                break;
+
+            // --- Background Apps ---
+            case "START_BACKGROUND_APP": {
+                const e = event as any;
+                if (!device.backgroundApps) device.backgroundApps = [];
+                device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
+                device.backgroundApps.push({
+                    appId: e.appId,
+                    startedAt: e.at,
+                    indicator: e.indicator || "music",
+                    label: e.label,
+                });
+                // Update Dynamic Island to show music
+                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+                device.dynamicIsland.activeContent = e.indicator || "music";
+                device.dynamicIsland.mode = "compact";
+                break;
+            }
+
+            case "STOP_BACKGROUND_APP": {
+                const e = event as any;
+                if (device.backgroundApps) {
+                    device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
+                }
+                // Reset Dynamic Island if no more background apps
+                if (device.dynamicIsland && device.backgroundApps?.length === 0) {
+                    device.dynamicIsland.activeContent = null;
+                    device.dynamicIsland.mode = "idle";
+                }
+                break;
+            }
+        }
+    });
+}
+
+// Register itself with the core engine
+ReducerRegistry.registerDeviceReducer(deviceReducer);
+````
+
+## File: packages/renderer/src/registry.ts
+````typescript
+/**
+ * AppRegistry - Maps app IDs to their React view components
+ * 
+ * Apps self-register their components here.
+ * The renderer uses this registry to display the correct app view.
+ */
+
+import React from "react";
+import { WorldState, APP_IDS } from "@tokovo/core";
+import { WhatsappChatView } from "@tokovo/apps-whatsapp";
+import { InstagramApp } from "@tokovo/apps-instagram";
+import { TwitterUI } from "@tokovo/apps-twitter";
+
+import { LayoutState } from "./layout/types";
+
+/**
+ * Props that all app view components receive
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: LayoutState;
+    platform?: string;
+    deviceId?: string;
+}
+
+/**
+ * Type for app view components
+ */
+export type AppViewComponent = React.FC<AppViewProps>;
+
+/**
+ * AppRegistry class - manages app view components
+ */
+class AppRegistryClass {
+    private _views = new Map<string, AppViewComponent>();
+
+    constructor() {
+        // Register built-in apps
+        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
+        this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
+        this.register("app_twitter", TwitterUI as AppViewComponent);
+    }
+
+    /**
+     * Register an app view component
+     */
+    register(appId: string, component: AppViewComponent): void {
+        if (this._views.has(appId)) {
+            console.warn(`[AppRegistry] Overwriting view for ${appId}`);
+        }
+        this._views.set(appId, component);
+    }
+
+    /**
+     * Get an app view component by ID
+     */
+    getView(appId: string): AppViewComponent | undefined {
+        return this._views.get(appId);
+    }
+
+    /**
+     * Check if an app view is registered
+     */
+    hasView(appId: string): boolean {
+        return this._views.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this._views.keys());
+    }
+
+    // Legacy compatibility - access views as object
+    get views(): Record<string, AppViewComponent> {
+        return Object.fromEntries(this._views);
+    }
+}
+
+export const AppRegistry = new AppRegistryClass();
 ````
 
 ## File: packages/apps-whatsapp/src/runtime.ts
@@ -36207,554 +39784,23 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
 ````
 
-## File: packages/core/src/engine.ts
+## File: packages/episodes/src/index.ts
 ````typescript
-import { produce } from "immer";
-import {
-    TimelineEvent,
-    WorldState,
-    DeviceState,
-    CameraState,
-    ActiveCameraEffect,
-    DEFAULT_CAMERA_STATE,
-    DEFAULT_CAMERA_TRANSFORM,
-    DEFAULT_AUDIO_STATE,
-} from "./types";
-import { CameraController, createActiveEffect } from "./camera";
-import { TIMING } from "./constants";
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+import androidEpisode from "./examples/android-test.json";
+import instagramEpisode from "./examples/instagram-test.json";
+import notificationCallDemo from "./examples/notification-call-demo.json";
+import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
+import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
+import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
 
-export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
-export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+// DSL-based episodes
+export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
 
-/**
- * ReducerRegistry - Manages app and device reducers
- * 
- * This registry allows apps to self-register their event handlers.
- * The engine dispatches events to the appropriate registered reducers.
- */
-class ReducerRegistryClass {
-    private _deviceReducer: DeviceReducer | null = null;
-    private _appReducers = new Map<string, AppReducer>();
-
-    /**
-     * Register a device reducer (handles DEVICE events)
-     */
-    registerDeviceReducer(reducer: DeviceReducer): void {
-        this._deviceReducer = reducer;
-    }
-
-    /**
-     * Register an app reducer (handles APP events for a specific appId)
-     */
-    registerAppReducer(appId: string, reducer: AppReducer): void {
-        if (this._appReducers.has(appId)) {
-            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
-        }
-        this._appReducers.set(appId, reducer);
-    }
-
-    /**
-     * Get the device reducer
-     */
-    get deviceReducer(): DeviceReducer | null {
-        return this._deviceReducer;
-    }
-
-    /**
-     * Get an app reducer by appId
-     */
-    getAppReducer(appId: string): AppReducer | undefined {
-        return this._appReducers.get(appId);
-    }
-
-    /**
-     * Check if an app reducer is registered
-     */
-    hasAppReducer(appId: string): boolean {
-        return this._appReducers.has(appId);
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getRegisteredApps(): string[] {
-        return Array.from(this._appReducers.keys());
-    }
-
-    // Legacy compatibility - access appReducers as object
-    get appReducers(): Record<string, AppReducer> {
-        return Object.fromEntries(this._appReducers);
-    }
-}
-
-export const ReducerRegistry = new ReducerRegistryClass();
-
-// Camera controller instance - uses FPS from constants
-const cameraController = new CameraController(TIMING.FPS_DEFAULT);
-
-/**
- * Process camera event and update camera state
- */
-function processCameraEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "CAMERA" },
-    eventIndex: number
-): void {
-    // Ensure camera state exists with all required properties
-    if (!draft.camera || !draft.camera.activeEffects) {
-        draft.camera = { ...DEFAULT_CAMERA_STATE };
-    }
-    // Ensure layout exists
-    if (!draft.camera.layout) {
-        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
-    }
-
-    switch (event.type) {
-        case "SET_VIEW":
-            // Legacy support - just update base view
-            draft.camera.baseView = event.view.type;
-            draft.camera.appId = event.view.appId;
-            break;
-
-        case "CUT":
-            // Hard cut - reset all effects
-            draft.camera.activeEffects = [];
-            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-            // Switch to new device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId;
-                draft.camera.layout.primaryDeviceId = event.toDeviceId;
-            }
-
-            // Update base view if specified
-            if (event.toView) {
-                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
-            }
-            break;
-
-        case "LAYOUT":
-            // Change view layout mode
-            draft.camera.layout = {
-                mode: event.mode,
-                primaryDeviceId: event.primaryDeviceId,
-                secondaryDeviceId: event.secondaryDeviceId,
-                pipPosition: event.pipPosition,
-                pipScale: event.pipScale,
-            };
-            // Update active device to match primary
-            draft.camera.activeDeviceId = event.primaryDeviceId;
-            break;
-
-        case "ZOOM":
-        case "PAN":
-        case "SHAKE":
-        case "FOCUS":
-        case "RESET": {
-            // Create active effect and add to list
-            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
-            if (activeEffect) {
-                draft.camera.activeEffects.push(activeEffect);
-            }
-            break;
-        }
-    }
-}
-
-/**
- * Process audio event and update audio state
- */
-function processAudioEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "AUDIO" },
-    eventIndex: number
-): void {
-    // Ensure audio state exists
-    if (!draft.audio) {
-        draft.audio = {
-            activeSounds: {},
-            buses: {
-                music: { baseGain: 0.5, maxConcurrent: 1 },
-                ui: { baseGain: 0.7, maxConcurrent: 5 },
-                sfx: { baseGain: 1, maxConcurrent: 8 },
-                voice: { baseGain: 1, maxConcurrent: 2 },
-            },
-        };
-    }
-
-    switch (event.type) {
-        case "PLAY_SOUND": {
-            // Generate instance ID if not provided
-            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
-
-            draft.audio.activeSounds[instanceId] = {
-                soundId: event.soundId,
-                startFrame: event.at,
-                volume: event.volume ?? 1,
-                loop: event.loop ?? false,
-                deviceId: event.deviceId,
-                duration: event.duration,
-            };
-            break;
-        }
-
-        case "STOP_SOUND": {
-            delete draft.audio.activeSounds[event.instanceId];
-            break;
-        }
-
-        case "FADE_VOLUME": {
-            const sound = draft.audio.activeSounds[event.instanceId];
-            if (sound) {
-                // Store target volume - renderer will interpolate
-                (sound as any).fadeTarget = event.toVolume;
-                (sound as any).fadeDuration = event.duration;
-                (sound as any).fadeStartFrame = event.at;
-            }
-            break;
-        }
-
-        case "BACKGROUND_MUSIC": {
-            draft.audio.backgroundMusic = {
-                soundId: event.soundId,
-                volume: event.volume ?? 0.5,
-                loop: event.loop ?? true,
-                startFrame: event.at,
-            };
-            break;
-        }
-    }
-}
-
-/**
- * Process keyboard event and update device keyboard state
- */
-function processKeyboardEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "KEYBOARD" },
-    eventIndex: number
-): void {
-    // Keyboard events target a specific device
-    const deviceId = event.deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
-
-    // Initialize keyboard state if needed
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-        };
-    }
-
-    switch (event.type) {
-        case "SHOW":
-            device.keyboard.visible = true;
-            device.keyboard.layout = event.layout || "qwerty";
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            break;
-
-        case "HIDE":
-            device.keyboard.visible = false;
-            device.keyboard.currentKey = null;
-            break;
-
-        case "KEY_DOWN":
-            device.keyboard.currentKey = event.key;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "KEY_UP":
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
-            break;
-
-        case "TYPE_CHAR":
-            // Add character to input
-            const pos = device.keyboard.cursorPosition;
-            const text = device.keyboard.inputText;
-            device.keyboard.inputText = text.slice(0, pos) + event.char + text.slice(pos);
-            device.keyboard.cursorPosition = pos + 1;
-            device.keyboard.currentKey = event.char;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "BACKSPACE":
-            if (device.keyboard.cursorPosition > 0) {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
-                device.keyboard.inputText = text.slice(0, pos - 1) + text.slice(pos);
-                device.keyboard.cursorPosition = pos - 1;
-            }
-            device.keyboard.currentKey = "⌫";
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "SET_TEXT":
-            device.keyboard.inputText = event.text;
-            device.keyboard.cursorPosition = event.text.length;
-            break;
-
-        case "CLEAR":
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            break;
-    }
-}
-
-/**
- * Process OS event and update device OS state
- */
-function processOSEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "OS" }
-): void {
-    // OS events target a specific device or all devices
-    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
-
-    // Initialize OS state if needed
-    if (!device.os) {
-        device.os = {
-            clock: Date.now(),
-            battery: 85,
-            charging: false,
-            network: "wifi",
-            wifiStrength: 3,
-            cellStrength: 4,
-            dnd: false,
-            lowPowerMode: false,
-            airplaneMode: false,
-        };
-    }
-
-    switch (event.type) {
-        case "SET_TIME":
-            device.os.clock = event.time;
-            break;
-
-        case "SET_BATTERY":
-            device.os.battery = Math.max(0, Math.min(100, event.level));
-            if ((event as any).charging !== undefined) {
-                device.os.charging = (event as any).charging;
-            }
-            break;
-
-        case "DRAIN_BATTERY":
-            // Rate is % per second at 30fps
-            const drain = (event as any).rate / 30;
-            device.os.battery = Math.max(0, device.os.battery - drain);
-            break;
-
-        case "SET_NETWORK":
-            device.os.network = event.network;
-            if ((event as any).strength !== undefined) {
-                if (event.network === "wifi") {
-                    device.os.wifiStrength = (event as any).strength;
-                } else {
-                    device.os.cellStrength = (event as any).strength;
-                }
-            }
-            break;
-
-        case "SET_DND":
-            device.os.dnd = event.enabled;
-            break;
-
-        case "SET_LOW_POWER":
-            device.os.lowPowerMode = (event as any).enabled;
-            break;
-
-        case "SET_AIRPLANE":
-            device.os.airplaneMode = (event as any).enabled;
-            if ((event as any).enabled) {
-                device.os.network = "no-service";
-                device.os.wifiStrength = 0;
-                device.os.cellStrength = 0;
-            }
-            break;
-    }
-}
-
-/**
- * Process touch event and update world touches state
- */
-function processTouchEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "TOUCH" },
-    t: number
-): void {
-    // Initialize touches array if needed
-    if (!draft.touches) {
-        draft.touches = [];
-    }
-
-    // Remove expired touches (older than 15 frames)
-    draft.touches = draft.touches.filter(touch => t - touch.startedAt < 15);
-
-    const touchId = `touch_${event.at}_${Math.random().toString(36).slice(2, 6)}`;
-
-    switch (event.type) {
-        case "TAP":
-            draft.touches.push({
-                id: touchId,
-                x: event.x,
-                y: event.y,
-                startedAt: event.at,
-                type: "tap",
-            });
-            break;
-
-        case "LONG_PRESS":
-            draft.touches.push({
-                id: touchId,
-                x: event.x,
-                y: event.y,
-                startedAt: event.at,
-                type: "long_press",
-            });
-            break;
-
-        case "DRAG":
-            draft.touches.push({
-                id: touchId,
-                x: (event as any).startX,
-                y: (event as any).startY,
-                startedAt: event.at,
-                type: "drag",
-                endX: (event as any).endX,
-                endY: (event as any).endY,
-            });
-            break;
-    }
-}
-
-/**
- * Replay function - computes WorldState at time t by applying all events
- * 
- * This is called every frame by Remotion. Performance is critical.
- */
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
-    if (!initial) {
-        console.warn("[Engine] Replay called with undefined initial state");
-        return {
-            devices: {},
-            conversations: {},
-            appState: {},
-            camera: { ...DEFAULT_CAMERA_STATE },
-            audio: { ...DEFAULT_AUDIO_STATE }
-        };
-    }
-
-    // Ensure initial state has proper camera and audio state
-    const initialWithCamera: WorldState = {
-        ...initial,
-        camera: initial.camera && 'activeEffects' in initial.camera
-            ? initial.camera
-            : {
-                ...DEFAULT_CAMERA_STATE,
-                baseView: (initial.camera as any)?.type || "APP_VIEW",
-                appId: (initial.camera as any)?.appId,
-            },
-        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
-    };
-
-    // Filter events up to current time
-    const relevant = events.filter(e => e.at <= t);
-
-    // Event handlers by kind (Strategy Pattern)
-    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
-        switch (event.kind) {
-            case "DEVICE":
-                if (ReducerRegistry.deviceReducer) {
-                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-                }
-                break;
-            case "APP":
-                const reducer = ReducerRegistry.getAppReducer(event.appId);
-                reducer?.(draft, event);
-                break;
-            case "CAMERA":
-                processCameraEvent(draft, event, index);
-                break;
-            case "AUDIO":
-                processAudioEvent(draft, event, index);
-                break;
-            case "KEYBOARD":
-                processKeyboardEvent(draft, event as any, index);
-                break;
-            case "OS":
-                processOSEvent(draft, event as any);
-                break;
-            case "TOUCH":
-                processTouchEvent(draft, event as any, t);
-                break;
-        }
-    };
-
-    // Apply events to build state
-    const stateAfterEvents = relevant.reduce((state, event, index) => {
-        return produce(state, draft => {
-            handleEvent(draft, event, index);
-        });
-    }, initialWithCamera);
-
-    // Compute camera transform at current time t
-    // This filters active effects and composes them, per-device
-    return produce(stateAfterEvents, draft => {
-        // Clean up expired effects (optimization) - use constant
-        draft.camera.activeEffects = draft.camera.activeEffects.filter(
-            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
-        );
-
-        // Ensure deviceTransforms exists
-        if (!draft.camera.deviceTransforms) {
-            draft.camera.deviceTransforms = {};
-        }
-
-        // Compute transform for each device
-        for (const deviceId of Object.keys(draft.devices)) {
-            // Filter effects for this device (global effects + device-specific)
-            const deviceEffects = draft.camera.activeEffects.filter(
-                ae => !ae.deviceId || ae.deviceId === deviceId
-            );
-
-            // Create a temporary camera state with only this device's effects
-            const deviceCameraState = {
-                ...draft.camera,
-                activeEffects: deviceEffects,
-            };
-
-            // Compute transform for this device
-            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
-        }
-
-        // Primary device transform (for backward compatibility)
-        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
-        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
-    });
-}
-
-/**
- * Get default initial world state with camera
- */
-export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
-    return {
-        devices: {},
-        conversations: {},
-        appState: {},
-        camera: { ...DEFAULT_CAMERA_STATE },
-        audio: { ...DEFAULT_AUDIO_STATE },
-        ...partial,
-    };
-}
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
 ````
 
 ## File: packages/dsl/src/author/beat-builder.ts
@@ -38436,109 +41482,625 @@ export interface EpisodeMeta extends EpisodeConfig {
 }
 ````
 
-## File: packages/renderer/src/registry.ts
+## File: packages/core/src/engine.ts
 ````typescript
+import { produce } from "immer";
+import {
+    TimelineEvent,
+    WorldState,
+    DeviceState,
+    CameraState,
+    ActiveCameraEffect,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_CAMERA_TRANSFORM,
+    DEFAULT_AUDIO_STATE,
+} from "./types";
+import { CameraController, createActiveEffect } from "./camera";
+import { TIMING } from "./constants";
+
+export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
+export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+
 /**
- * AppRegistry - Maps app IDs to their React view components
+ * ReducerRegistry - Manages app and device reducers
  * 
- * Apps self-register their components here.
- * The renderer uses this registry to display the correct app view.
+ * This registry allows apps to self-register their event handlers.
+ * The engine dispatches events to the appropriate registered reducers.
  */
+class ReducerRegistryClass {
+    private _deviceReducer: DeviceReducer | null = null;
+    private _appReducers = new Map<string, AppReducer>();
 
-import React from "react";
-import { WorldState, APP_IDS } from "@tokovo/core";
-import { WhatsappChatView } from "@tokovo/apps-whatsapp";
-import { InstagramApp } from "@tokovo/apps-instagram";
-import { TwitterUI } from "@tokovo/apps-twitter";
-
-import { LayoutState } from "./layout/types";
-
-/**
- * Props that all app view components receive
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: LayoutState;
-    platform?: string;
-    deviceId?: string;
-}
-
-/**
- * Type for app view components
- */
-export type AppViewComponent = React.FC<AppViewProps>;
-
-/**
- * AppRegistry class - manages app view components
- */
-class AppRegistryClass {
-    private _views = new Map<string, AppViewComponent>();
-
-    constructor() {
-        // Register built-in apps
-        this.register(APP_IDS.WHATSAPP, WhatsappChatView as AppViewComponent);
-        this.register(APP_IDS.INSTAGRAM, InstagramApp as AppViewComponent);
-        this.register("app_twitter", TwitterUI as AppViewComponent);
+    /**
+     * Register a device reducer (handles DEVICE events)
+     */
+    registerDeviceReducer(reducer: DeviceReducer): void {
+        this._deviceReducer = reducer;
     }
 
     /**
-     * Register an app view component
+     * Register an app reducer (handles APP events for a specific appId)
      */
-    register(appId: string, component: AppViewComponent): void {
-        if (this._views.has(appId)) {
-            console.warn(`[AppRegistry] Overwriting view for ${appId}`);
+    registerAppReducer(appId: string, reducer: AppReducer): void {
+        if (this._appReducers.has(appId)) {
+            console.warn(`[ReducerRegistry] Overwriting reducer for ${appId}`);
         }
-        this._views.set(appId, component);
+        this._appReducers.set(appId, reducer);
     }
 
     /**
-     * Get an app view component by ID
+     * Get the device reducer
      */
-    getView(appId: string): AppViewComponent | undefined {
-        return this._views.get(appId);
+    get deviceReducer(): DeviceReducer | null {
+        return this._deviceReducer;
     }
 
     /**
-     * Check if an app view is registered
+     * Get an app reducer by appId
      */
-    hasView(appId: string): boolean {
-        return this._views.has(appId);
+    getAppReducer(appId: string): AppReducer | undefined {
+        return this._appReducers.get(appId);
+    }
+
+    /**
+     * Check if an app reducer is registered
+     */
+    hasAppReducer(appId: string): boolean {
+        return this._appReducers.has(appId);
     }
 
     /**
      * Get all registered app IDs
      */
     getRegisteredApps(): string[] {
-        return Array.from(this._views.keys());
+        return Array.from(this._appReducers.keys());
     }
 
-    // Legacy compatibility - access views as object
-    get views(): Record<string, AppViewComponent> {
-        return Object.fromEntries(this._views);
+    // Legacy compatibility - access appReducers as object
+    get appReducers(): Record<string, AppReducer> {
+        return Object.fromEntries(this._appReducers);
     }
 }
 
-export const AppRegistry = new AppRegistryClass();
-````
+export const ReducerRegistry = new ReducerRegistryClass();
 
-## File: packages/episodes/src/index.ts
-````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
-import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
-import cameraShowcase from "./examples/camera-showcase.json";
-import multiPovDemo from "./examples/multi-pov-demo.json";
-import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
+// Camera controller instance - uses FPS from constants
+const cameraController = new CameraController(TIMING.FPS_DEFAULT);
 
-// DSL-based episodes
-export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+/**
+ * Process camera event and update camera state
+ */
+function processCameraEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "CAMERA" },
+    eventIndex: number
+): void {
+    // Ensure camera state exists with all required properties
+    if (!draft.camera || !draft.camera.activeEffects) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = { mode: "SINGLE", primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone" };
+    }
 
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
+    switch (event.type) {
+        case "SET_VIEW":
+            // Legacy support - just update base view
+            draft.camera.baseView = event.view.type;
+            draft.camera.appId = event.view.appId;
+            break;
+
+        case "CUT":
+            // Hard cut - reset all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId;
+                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            }
+
+            // Update base view if specified
+            if (event.toView) {
+                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: event.mode,
+                primaryDeviceId: event.primaryDeviceId,
+                secondaryDeviceId: event.secondaryDeviceId,
+                pipPosition: event.pipPosition,
+                pipScale: event.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = event.primaryDeviceId;
+            break;
+
+        case "ZOOM":
+        case "PAN":
+        case "SHAKE":
+        case "FOCUS":
+        case "RESET": {
+            // Create active effect and add to list
+            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            if (activeEffect) {
+                draft.camera.activeEffects.push(activeEffect);
+            }
+            break;
+        }
+    }
+}
+
+/**
+ * Process audio event and update audio state
+ */
+function processAudioEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "AUDIO" },
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.5, maxConcurrent: 1 },
+                ui: { baseGain: 0.7, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 8 },
+                voice: { baseGain: 1, maxConcurrent: 2 },
+            },
+        };
+    }
+
+    switch (event.type) {
+        case "PLAY_SOUND": {
+            // Generate instance ID if not provided
+            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+
+            draft.audio.activeSounds[instanceId] = {
+                soundId: event.soundId,
+                startFrame: event.at,
+                volume: event.volume ?? 1,
+                loop: event.loop ?? false,
+                deviceId: event.deviceId,
+                duration: event.duration,
+            };
+            break;
+        }
+
+        case "STOP_SOUND": {
+            delete draft.audio.activeSounds[event.instanceId];
+            break;
+        }
+
+        case "FADE_VOLUME": {
+            const sound = draft.audio.activeSounds[event.instanceId];
+            if (sound) {
+                // Store target volume - renderer will interpolate
+                (sound as any).fadeTarget = event.toVolume;
+                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeStartFrame = event.at;
+            }
+            break;
+        }
+
+        case "BACKGROUND_MUSIC": {
+            draft.audio.backgroundMusic = {
+                soundId: event.soundId,
+                volume: event.volume ?? 0.5,
+                loop: event.loop ?? true,
+                startFrame: event.at,
+            };
+            break;
+        }
+    }
+}
+
+/**
+ * Process keyboard event and update device keyboard state
+ */
+function processKeyboardEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "KEYBOARD" },
+    eventIndex: number
+): void {
+    // Keyboard events target a specific device
+    const deviceId = event.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize keyboard state if needed
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+        };
+    }
+
+    switch (event.type) {
+        case "SHOW":
+            device.keyboard.visible = true;
+            device.keyboard.layout = event.layout || "qwerty";
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+
+        case "HIDE":
+            device.keyboard.visible = false;
+            device.keyboard.currentKey = null;
+            break;
+
+        case "KEY_DOWN":
+            device.keyboard.currentKey = event.key;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "KEY_UP":
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR":
+            // Add character to input
+            const pos = device.keyboard.cursorPosition;
+            const text = device.keyboard.inputText;
+            device.keyboard.inputText = text.slice(0, pos) + event.char + text.slice(pos);
+            device.keyboard.cursorPosition = pos + 1;
+            device.keyboard.currentKey = event.char;
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "BACKSPACE":
+            if (device.keyboard.cursorPosition > 0) {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                device.keyboard.inputText = text.slice(0, pos - 1) + text.slice(pos);
+                device.keyboard.cursorPosition = pos - 1;
+            }
+            device.keyboard.currentKey = "⌫";
+            device.keyboard.keyPressedAt = event.at;
+            break;
+
+        case "SET_TEXT":
+            device.keyboard.inputText = event.text;
+            device.keyboard.cursorPosition = event.text.length;
+            break;
+
+        case "CLEAR":
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            break;
+    }
+}
+
+/**
+ * Process OS event and update device OS state
+ */
+function processOSEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "OS" }
+): void {
+    // OS events target a specific device or all devices
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize OS state if needed
+    if (!device.os) {
+        device.os = {
+            clock: Date.now(),
+            battery: 85,
+            charging: false,
+            network: "wifi",
+            wifiStrength: 3,
+            cellStrength: 4,
+            dnd: false,
+            lowPowerMode: false,
+            airplaneMode: false,
+        };
+    }
+
+    switch (event.type) {
+        case "SET_TIME":
+            device.os.clock = event.time;
+            break;
+
+        case "SET_BATTERY":
+            device.os.battery = Math.max(0, Math.min(100, event.level));
+            if ((event as any).charging !== undefined) {
+                device.os.charging = (event as any).charging;
+            }
+            break;
+
+        case "DRAIN_BATTERY":
+            // Rate is % per second at 30fps
+            const drain = (event as any).rate / 30;
+            device.os.battery = Math.max(0, device.os.battery - drain);
+            break;
+
+        case "SET_NETWORK":
+            device.os.network = event.network;
+            if ((event as any).strength !== undefined) {
+                if (event.network === "wifi") {
+                    device.os.wifiStrength = (event as any).strength;
+                } else {
+                    device.os.cellStrength = (event as any).strength;
+                }
+            }
+            break;
+
+        case "SET_DND":
+            device.os.dnd = event.enabled;
+            break;
+
+        case "SET_LOW_POWER":
+            device.os.lowPowerMode = (event as any).enabled;
+            break;
+
+        case "SET_AIRPLANE":
+            device.os.airplaneMode = (event as any).enabled;
+            if ((event as any).enabled) {
+                device.os.network = "no-service";
+                device.os.wifiStrength = 0;
+                device.os.cellStrength = 0;
+            }
+            break;
+    }
+}
+
+/**
+ * Process call event and update device call state
+ */
+function processCallEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "CALL" }
+): void {
+    const e = event as any;
+    const deviceId = e.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    switch (event.type) {
+        case "INCOMING":
+            device.call = {
+                status: "incoming",
+                callerId: e.callerId,
+                callerName: e.callerName,
+                callerAvatar: e.callerAvatar,
+                isVideo: e.isVideo ?? false,
+                callType: e.callType ?? "voice",
+                displayMode: e.displayMode ?? "fullscreen",
+                callerMetadata: e.callerMetadata,
+                startedAt: event.at,
+            };
+            break;
+
+        case "ANSWER":
+            if (device.call) {
+                device.call.status = "active";
+                device.call.answeredAt = event.at;
+            }
+            break;
+
+        case "DECLINE":
+            if (device.call) {
+                device.call.status = "declined";
+                device.call.endedAt = event.at;
+            }
+            break;
+
+        case "END":
+            if (device.call) {
+                device.call.status = "ended";
+                device.call.endedAt = event.at;
+            }
+            break;
+
+        case "TOGGLE_MUTE":
+            if (device.call) {
+                device.call.isMuted = !device.call.isMuted;
+            }
+            break;
+
+        case "TOGGLE_SPEAKER":
+            if (device.call) {
+                device.call.isSpeakerOn = !device.call.isSpeakerOn;
+            }
+            break;
+
+        case "TOGGLE_HOLD":
+            if (device.call) {
+                device.call.isOnHold = !device.call.isOnHold;
+            }
+            break;
+    }
+}
+
+/**
+ * Process touch event and update world touches state
+ */
+function processTouchEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "TOUCH" },
+    t: number
+): void {
+    // Initialize touches array if needed
+    if (!draft.touches) {
+        draft.touches = [];
+    }
+
+    // Remove expired touches (older than 15 frames)
+    draft.touches = draft.touches.filter(touch => t - touch.startedAt < 15);
+
+    const touchId = `touch_${event.at}_${Math.random().toString(36).slice(2, 6)}`;
+
+    switch (event.type) {
+        case "TAP":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "tap",
+            });
+            break;
+
+        case "LONG_PRESS":
+            draft.touches.push({
+                id: touchId,
+                x: event.x,
+                y: event.y,
+                startedAt: event.at,
+                type: "long_press",
+            });
+            break;
+
+        case "DRAG":
+            draft.touches.push({
+                id: touchId,
+                x: (event as any).startX,
+                y: (event as any).startY,
+                startedAt: event.at,
+                type: "drag",
+                endX: (event as any).endX,
+                endY: (event as any).endY,
+            });
+            break;
+    }
+}
+
+/**
+ * Replay function - computes WorldState at time t by applying all events
+ * 
+ * This is called every frame by Remotion. Performance is critical.
+ */
+export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+    if (!initial) {
+        console.warn("[Engine] Replay called with undefined initial state");
+        return {
+            devices: {},
+            conversations: {},
+            appState: {},
+            camera: { ...DEFAULT_CAMERA_STATE },
+            audio: { ...DEFAULT_AUDIO_STATE }
+        };
+    }
+
+    // Ensure initial state has proper camera and audio state
+    const initialWithCamera: WorldState = {
+        ...initial,
+        camera: initial.camera && 'activeEffects' in initial.camera
+            ? initial.camera
+            : {
+                ...DEFAULT_CAMERA_STATE,
+                baseView: (initial.camera as any)?.type || "APP_VIEW",
+                appId: (initial.camera as any)?.appId,
+            },
+        audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
+    };
+
+    // Filter events up to current time
+    const relevant = events.filter(e => e.at <= t);
+
+    // Event handlers by kind (Strategy Pattern)
+    const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
+        switch (event.kind) {
+            case "DEVICE":
+                if (ReducerRegistry.deviceReducer) {
+                    draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+                break;
+            case "APP":
+                const reducer = ReducerRegistry.getAppReducer(event.appId);
+                reducer?.(draft, event);
+                break;
+            case "CAMERA":
+                processCameraEvent(draft, event, index);
+                break;
+            case "AUDIO":
+                processAudioEvent(draft, event, index);
+                break;
+            case "KEYBOARD":
+                processKeyboardEvent(draft, event as any, index);
+                break;
+            case "OS":
+                processOSEvent(draft, event as any);
+                break;
+            case "TOUCH":
+                processTouchEvent(draft, event as any, t);
+                break;
+            case "CALL":
+                processCallEvent(draft, event as any);
+                break;
+        }
+    };
+
+    // Apply events to build state
+    const stateAfterEvents = relevant.reduce((state, event, index) => {
+        return produce(state, draft => {
+            handleEvent(draft, event, index);
+        });
+    }, initialWithCamera);
+
+    // Compute camera transform at current time t
+    // This filters active effects and composes them, per-device
+    return produce(stateAfterEvents, draft => {
+        // Clean up expired effects (optimization) - use constant
+        draft.camera.activeEffects = draft.camera.activeEffects.filter(
+            ae => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER
+        );
+
+        // Ensure deviceTransforms exists
+        if (!draft.camera.deviceTransforms) {
+            draft.camera.deviceTransforms = {};
+        }
+
+        // Compute transform for each device
+        for (const deviceId of Object.keys(draft.devices)) {
+            // Filter effects for this device (global effects + device-specific)
+            const deviceEffects = draft.camera.activeEffects.filter(
+                ae => !ae.deviceId || ae.deviceId === deviceId
+            );
+
+            // Create a temporary camera state with only this device's effects
+            const deviceCameraState = {
+                ...draft.camera,
+                activeEffects: deviceEffects,
+            };
+
+            // Compute transform for this device
+            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+        }
+
+        // Primary device transform (for backward compatibility)
+        const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+        draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId] || cameraController.computeTransform(draft.camera, t);
+    });
+}
+
+/**
+ * Get default initial world state with camera
+ */
+export function createInitialWorld(partial: Partial<WorldState> = {}): WorldState {
+    return {
+        devices: {},
+        conversations: {},
+        appState: {},
+        camera: { ...DEFAULT_CAMERA_STATE },
+        audio: { ...DEFAULT_AUDIO_STATE },
+        ...partial,
+    };
+}
 ````
 
 ## File: packages/core/src/index.ts
@@ -39429,200 +42991,6 @@ export function shouldShowSenderName(ctx: SenderNameContext): boolean {
     // Show if previous sender was different (or no previous sender, or generic BREAK token)
     return ctx.from !== ctx.prevFrom;
 }
-````
-
-## File: apps/video-runner/src/Root.tsx
-````typescript
-import React from "react";
-import { Composition } from "remotion";
-import { Video } from "./Video";
-import { AndroidVideo } from "./AndroidVideo";
-import { InstagramVideo } from "./InstagramVideo";
-import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
-import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
-import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
-import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
-import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
-import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
-import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
-import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
-import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
-import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
-import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
-import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
-import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
-import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
-import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
-import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
-import { FullRealityShowcase } from "./FullRealityShowcase";
-
-
-export const RemotionRoot: React.FC = () => {
-    return (
-        <>
-            <Composition
-                id="FullRealityShowcase"
-                component={FullRealityShowcase}
-                durationInFrames={1200}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="NotificationShowcase"
-                component={NotificationShowcaseVideo}
-                durationInFrames={1200}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="FullCinematicShowcase"
-                component={FullCinematicShowcaseVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="CinematicCameraShowcase"
-                component={CinematicCameraShowcaseVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="WhatsappCompleteShowcase"
-                component={WhatsappCompleteShowcaseVideo}
-                durationInFrames={1200}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="MultiAppShowcase"
-                component={MultiAppShowcaseVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="TwitterShowcase"
-                component={TwitterShowcaseVideo}
-                durationInFrames={450}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="UltimateShowcase"
-                component={UltimateShowcaseVideo}
-                durationInFrames={750}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="WhatsappMediaShowcase"
-                component={WhatsappMediaShowcaseVideo}
-                durationInFrames={700}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="WhatsappProductionDemo"
-                component={WhatsappProductionDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="BreakupDramaDSL"
-                component={BreakupDramaDSLVideo}
-                durationInFrames={420}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="MultiPovDemo"
-                component={MultiPovDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="CameraShowcase"
-                component={CameraShowcaseVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="TokovoExample"
-                component={Video}
-                durationInFrames={300}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="AndroidNotificationTest"
-                component={AndroidVideo}
-                durationInFrames={150}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="InstagramDMTest"
-                component={InstagramVideo}
-                durationInFrames={300}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="NotificationCallDemo"
-                component={NotificationCallDemoVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="HomeScreenGroupDemo"
-                component={HomeScreenGroupDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="WhatsappPsychoticDemo"
-                component={WhatsappPsychoticDemoVideo}
-                durationInFrames={600}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="KeyboardTypingShowcase"
-                component={KeyboardTypingShowcase}
-                durationInFrames={600}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-        </>
-    );
-};
 ````
 
 ## File: packages/apps-whatsapp/src/ui.tsx
@@ -41117,13 +44485,43 @@ export interface BackgroundAppState {
 // CALL STATE
 // =============================================================================
 
+/** Call display mode - controlled via DSL */
+export type CallDisplayMode = "overlay" | "fullscreen";
+
+/** Call type */
+export type CallType = "voice" | "video" | "facetime" | "whatsapp";
+
+/** iOS Contact Poster metadata (iOS 17+) */
+export interface CallerMetadata {
+    posterImage?: string;
+    posterStyle?: "modern" | "classic";
+    posterNameFont?: string;
+}
+
 export interface CallState {
-    status: "incoming" | "active" | "ended";
+    status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
     callerId: string;
     callerName: string;
     callerAvatar?: string;
     isVideo?: boolean;
+
+    /** Call type (voice, FaceTime, WhatsApp, etc.) */
+    callType: CallType;
+
+    /** Display mode - overlay (banner) or fullscreen */
+    displayMode: CallDisplayMode;
+
+    /** iOS Contact Poster metadata (iOS 17+) */
+    callerMetadata?: CallerMetadata;
+
+    /** Call controls */
+    isMuted?: boolean;
+    isSpeakerOn?: boolean;
+    isOnHold?: boolean;
+
+    /** Timestamps */
     startedAt?: number;
+    answeredAt?: number;
     endedAt?: number;
 }
 
@@ -41894,7 +45292,15 @@ export type TimelineEvent =
     | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
     | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
     | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
+    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number }
+    // Call events - PHONE CALL SIMULATION
+    | { at: number; kind: "CALL"; type: "INCOMING"; deviceId?: string; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean; callType?: CallType; displayMode?: CallDisplayMode; callerMetadata?: CallerMetadata }
+    | { at: number; kind: "CALL"; type: "ANSWER"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "DECLINE"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "END"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_MUTE"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_SPEAKER"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_HOLD"; deviceId?: string };
 
 // --- Layout System Types ---
 
@@ -42158,6 +45564,218 @@ export interface TransitionLayoutMeta {
 }
 ````
 
+## File: apps/video-runner/src/Root.tsx
+````typescript
+import React from "react";
+import { Composition } from "remotion";
+import { Video } from "./Video";
+import { AndroidVideo } from "./AndroidVideo";
+import { InstagramVideo } from "./InstagramVideo";
+import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
+import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
+import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
+import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
+import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
+import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
+import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
+import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
+import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
+import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
+import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
+import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
+import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
+import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
+import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
+import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
+import { FullRealityShowcase } from "./FullRealityShowcase";
+import { PhoneCallShowcase } from "./PhoneCallShowcase";
+import { UltimateShowcase } from "./UltimateShowcase";
+
+
+export const RemotionRoot: React.FC = () => {
+    return (
+        <>
+            <Composition
+                id="UltimateShowcase2"
+                component={UltimateShowcase}
+                durationInFrames={780}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="PhoneCallShowcase"
+                component={PhoneCallShowcase}
+                durationInFrames={390}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="FullRealityShowcase"
+                component={FullRealityShowcase}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="NotificationShowcase"
+                component={NotificationShowcaseVideo}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="FullCinematicShowcase"
+                component={FullCinematicShowcaseVideo}
+                durationInFrames={720}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="CinematicCameraShowcase"
+                component={CinematicCameraShowcaseVideo}
+                durationInFrames={720}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappCompleteShowcase"
+                component={WhatsappCompleteShowcaseVideo}
+                durationInFrames={1200}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="MultiAppShowcase"
+                component={MultiAppShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="TwitterShowcase"
+                component={TwitterShowcaseVideo}
+                durationInFrames={450}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="UltimateShowcase"
+                component={UltimateShowcaseVideo}
+                durationInFrames={750}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappMediaShowcase"
+                component={WhatsappMediaShowcaseVideo}
+                durationInFrames={700}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappProductionDemo"
+                component={WhatsappProductionDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="BreakupDramaDSL"
+                component={BreakupDramaDSLVideo}
+                durationInFrames={420}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="MultiPovDemo"
+                component={MultiPovDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="CameraShowcase"
+                component={CameraShowcaseVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="TokovoExample"
+                component={Video}
+                durationInFrames={300}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="AndroidNotificationTest"
+                component={AndroidVideo}
+                durationInFrames={150}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="InstagramDMTest"
+                component={InstagramVideo}
+                durationInFrames={300}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="NotificationCallDemo"
+                component={NotificationCallDemoVideo}
+                durationInFrames={720}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="HomeScreenGroupDemo"
+                component={HomeScreenGroupDemoVideo}
+                durationInFrames={900}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="WhatsappPsychoticDemo"
+                component={WhatsappPsychoticDemoVideo}
+                durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="KeyboardTypingShowcase"
+                component={KeyboardTypingShowcase}
+                durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+        </>
+    );
+};
+````
+
 ## File: packages/renderer/src/TokovoRenderer.tsx
 ````typescript
 /**
@@ -42176,12 +45794,14 @@ import {
     WorldState,
     Notification,
     EventIndex,
+    PluginManager,
+    APP_IDS,
 } from "@tokovo/core";
 import { DeviceFrame } from "./DeviceFrame";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";
+import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
@@ -42318,14 +45938,22 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
                     <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
-                        {/* Call Overlay (takes precedence) */}
-                        {hasActiveCall && (
-                            <CallOverlay
-                                call={device.call!}
-                                currentTime={t}
-                                variant={variant}
-                            />
-                        )}
+                        {/* Call View - Plugin-based (or fallback to CallOverlay) */}
+                        {hasActiveCall && (() => {
+                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
+                            console.log('[TokovoRenderer] PhoneView lookup:', APP_IDS.PHONE, '→', PhoneView ? 'FOUND' : 'NOT FOUND');
+                            if (PhoneView) {
+                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
+                            }
+                            // Fallback to built-in CallOverlay if no plugin registered
+                            return (
+                                <CallOverlay
+                                    call={device.call!}
+                                    currentTime={t}
+                                    variant={variant}
+                                />
+                            );
+                        })()}
 
                         {/* App View / Lockscreen / Home Screen */}
                         {!hasActiveCall && AppView && !device.isLocked ? (

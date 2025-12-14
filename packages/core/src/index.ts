@@ -13,4 +13,8 @@ export * from "./notification-dsl";
 export * from "./transitions";
 export * from "./director-lite";
 export * from "./audio";
+export * from "./anchors";
+export * from "./behavior-registry";
+
+
 

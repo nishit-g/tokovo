@@ -20,6 +20,9 @@ export { PhoneApp } from "./ui";
 // Export runtime
 export { phoneReducer } from "./runtime";
 
+// Export behaviors (Semantic Camera System)
+export * from "./behaviors";
+
 // Auto-register on import
 import { registerPhonePlugin } from "./plugin";
 registerPhonePlugin();

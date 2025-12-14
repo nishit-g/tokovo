@@ -4,13 +4,18 @@
  * Pure computation layer that determines:
  * - Base camera transform from world state
  * - DirectorLite effects (if enabled)
+ * - Semantic Anchor integration (NEW)
  * - Final CSS styles for camera wrapper
  *
- * Input: world + time + layout
- * Output: camera transform (no JSX)
+ * ARCHITECTURE:
+ * 1. Get base transform from world state
+ * 2. Get anchors from registered anchor providers
+ * 3. Derive director effects using signals + anchors
+ * 4. Apply effects to produce final transform
+ * 5. Build CSS styles
  */
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import {
     WorldState,
     CameraTransform,
@@ -21,10 +26,17 @@ import {
     extractSignals,
     ChatLayoutState,
     DirectorOutput,
+    AnchorSnapshot,
+    AnchorStabilityState,
+    DEFAULT_ANCHOR_STABILITY,
+    ANCHOR_STABILITY_FRAMES,
+    SemanticAnchorId,
+    resolveAnchorWithFallback,
 } from "@tokovo/core";
 import { LayoutEngineOutput } from "./useLayoutEngine";
 import { createDirectorLayoutModel } from "../layout/director-adapter";
 import { applyDirectorEffects, Viewport } from "../camera-composer";
+import { getAnchorsForApp } from "../anchor-providers/registry";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -37,6 +49,8 @@ export interface CameraEngineInput {
     eventIndex?: EventIndex;
     directorEnabled?: boolean;
     directorDebug?: boolean;
+    /** Enable semantic anchor system (NEW) */
+    anchorSystemEnabled?: boolean;
 }
 
 export interface CameraEngineOutput {
@@ -48,6 +62,60 @@ export interface CameraEngineOutput {
     deviceStyle: React.CSSProperties;
     /** DirectorLite output (for debugging) */
     directorOutput?: DirectorOutput;
+    /** Current anchor snapshot (for debugging) */
+    anchorSnapshot?: AnchorSnapshot;
+    /** Anchor stability state (for debugging) */
+    anchorStability?: AnchorStabilityState;
+}
+
+// =============================================================================
+// ANCHOR STABILITY TRACKING
+// =============================================================================
+
+/**
+ * Track anchor stability across frames.
+ * Implements hysteresis: only switch anchors after N stable frames.
+ */
+function updateAnchorStability(
+    prevState: AnchorStabilityState,
+    candidateAnchor: SemanticAnchorId | null,
+    t: number
+): { state: AnchorStabilityState; effectiveAnchor: SemanticAnchorId | null } {
+    // Same anchor as candidate → increment stable frames
+    if (candidateAnchor === prevState.candidateAnchor) {
+        const newStableFrames = prevState.stableFrames + 1;
+
+        // Check if candidate has been stable long enough to become current
+        if (newStableFrames >= ANCHOR_STABILITY_FRAMES && candidateAnchor !== prevState.currentAnchor) {
+            return {
+                state: {
+                    currentAnchor: candidateAnchor,
+                    candidateAnchor,
+                    stableFrames: newStableFrames,
+                    lastSwitchFrame: t,
+                },
+                effectiveAnchor: candidateAnchor,
+            };
+        }
+
+        return {
+            state: {
+                ...prevState,
+                stableFrames: newStableFrames,
+            },
+            effectiveAnchor: prevState.currentAnchor,
+        };
+    }
+
+    // Different anchor → reset stability counter
+    return {
+        state: {
+            ...prevState,
+            candidateAnchor,
+            stableFrames: 1,
+        },
+        effectiveAnchor: prevState.currentAnchor,
+    };
 }
 
 // =============================================================================
@@ -62,12 +130,18 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         eventIndex,
         directorEnabled = true,
         directorDebug = false,
+        anchorSystemEnabled = true,
     } = input;
+
+    // Anchor stability state (persists across frames)
+    const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
 
     return useMemo(() => {
         const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
 
-        // 1. Get base camera transform from world state
+        // =====================================================================
+        // 1. BASE CAMERA TRANSFORM
+        // =====================================================================
         const baseCameraTransform: CameraTransform =
             (world.camera?.deviceTransforms?.[deviceId]) ||
             world.camera?.transform ||
@@ -75,8 +149,24 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
         let finalCameraTransform = baseCameraTransform;
         let directorOutput: DirectorOutput | undefined;
+        let anchorSnapshot: AnchorSnapshot | undefined;
+        let anchorStability: AnchorStabilityState | undefined;
 
-        // 2. DirectorLite integration (only for CHAT views with layout)
+        // =====================================================================
+        // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
+        // =====================================================================
+        if (anchorSystemEnabled && appId) {
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
+
+            if (directorDebug && anchorSnapshot) {
+                const anchorCount = Object.keys(anchorSnapshot.anchors).length;
+                console.log(`[CameraEngine] t=${t} app=${appId} anchors=${anchorCount}`, Object.keys(anchorSnapshot.anchors));
+            }
+        }
+
+        // =====================================================================
+        // 3. DIRECTOR LITE INTEGRATION (with anchor support)
+        // =====================================================================
         if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
             // Get manual camera effects (if any active, skip director)
             const manualCameraEffects = world.camera?.activeEffects || [];
@@ -100,6 +190,34 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                 effectiveViewportHeight
             );
 
+            // =========================================================================
+            // ANCHOR STABILITY (Hysteresis)
+            // =========================================================================
+            // Determine candidate anchor from latest signal
+            let candidateAnchor: SemanticAnchorId | null = null;
+            if (signals.length > 0 && anchorSnapshot) {
+                const latestSignal = signals[signals.length - 1];
+                // Map signal type to target anchor
+                candidateAnchor = mapSignalToAnchor(latestSignal.type);
+
+                // Resolve with fallback if anchor not present
+                if (candidateAnchor) {
+                    const resolved = resolveAnchorWithFallback(candidateAnchor, anchorSnapshot.anchors);
+                    if (resolved) {
+                        candidateAnchor = resolved.anchor;
+                    }
+                }
+            }
+
+            // Update stability tracking
+            const stabilityResult = updateAnchorStability(
+                anchorStabilityRef.current,
+                candidateAnchor,
+                t
+            );
+            anchorStabilityRef.current = stabilityResult.state;
+            anchorStability = stabilityResult.state;
+
             // Derive effects (PURE FUNCTION - no state)
             const result = deriveDirectorEffects({
                 t,
@@ -114,7 +232,11 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
             // Log debug info if enabled
             if (directorDebug && result.debug) {
-                console.log(`[CameraEngine] t=${t}`, result.debug);
+                console.log(`[CameraEngine] t=${t}`, result.debug, {
+                    currentAnchor: anchorStability?.currentAnchor,
+                    candidateAnchor: anchorStability?.candidateAnchor,
+                    stableFrames: anchorStability?.stableFrames,
+                });
             }
 
             // Apply director effects if not skipped and effects exist
@@ -128,7 +250,9 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
             }
         }
 
-        // 3. Build camera CSS style
+        // =====================================================================
+        // 4. BUILD CAMERA CSS STYLE
+        // =====================================================================
         const cameraTransformString = `
             translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
             scale(${finalCameraTransform.scale})
@@ -143,7 +267,9 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
             transition: 'none', // Frame-perfect sync
         };
 
-        // 4. Build device CSS style (legacy layout transforms)
+        // =====================================================================
+        // 5. BUILD DEVICE CSS STYLE (legacy layout transforms)
+        // =====================================================================
         let deviceStyle: React.CSSProperties = {};
 
         if (layout.kind === "TRANSITION") {
@@ -162,6 +288,32 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
             cameraStyle,
             deviceStyle,
             directorOutput,
+            anchorSnapshot,
+            anchorStability,
         };
-    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Map signal type to semantic anchor.
+ * This is the "intent" mapping.
+ */
+function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
+    switch (signalType) {
+        case "TypingStarted":
+        case "TypingEnded":
+            return "inputArea"; // Stable anchor for typing (not typingIndicator!)
+        case "NewMessage":
+            return "lastMessage";
+        case "MessageRead":
+            return "lastMessage";
+        case "CallIncoming":
+            return "callPoster";
+        default:
+            return null;
+    }
 }

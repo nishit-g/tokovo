@@ -83,3 +83,14 @@ export interface DirectorDebug {
     winningFraming?: string;
     skippedCooldown: number;
 }
+
+// =============================================================================
+// CAMERA INTENTS (re-exported from behavior-registry)
+// =============================================================================
+
+// CameraIntent and AppBehavior are defined in behavior-registry.ts
+// to avoid circular dependencies and duplicate exports.
+// Re-export for backwards compatibility:
+export type { CameraIntent, AppBehavior } from "../behavior-registry";
+
+

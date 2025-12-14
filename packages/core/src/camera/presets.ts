@@ -211,6 +211,121 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 // =============================================================================
+// SHOT PRESETS (for Semantic Anchor System)
+// =============================================================================
+
+import type { EasingType } from "../types";
+
+/**
+ * Shot preset for semantic anchor-driven camera.
+ * These are simpler than full CameraPresets — just the core motion parameters.
+ *
+ * USAGE: Apps reference by name, optionally override with deltas.
+ */
+export interface ShotPreset {
+    /** Zoom scale (1.0 = no zoom) */
+    scale: number;
+
+    /** Easing function */
+    easing: EasingType;
+
+    /** Optional shake intensity */
+    shake?: number;
+
+    /** Duration in frames */
+    durationFrames: number;
+
+    /** Hold at peak before returning (frames) */
+    holdFrames?: number;
+}
+
+/**
+ * Global shot presets — shared across all apps.
+ * Apps reference these by name. This is the "Tokovo look".
+ *
+ * If an app needs customization, use presetOverrides (deltas, not new presets).
+ */
+export const SHOT_PRESETS = {
+    /** Dramatic push-in for emotional moments */
+    dramatic: {
+        scale: 1.3,
+        easing: "ease-out" as EasingType,
+        shake: 4,
+        durationFrames: 25,
+    },
+
+    /** Subtle zoom for typing/anticipation */
+    subtle: {
+        scale: 1.08,
+        easing: "cinematic" as EasingType,
+        shake: 0,
+        durationFrames: 30,
+    },
+
+    /** Quick snap for reactions/likes */
+    snap: {
+        scale: 1.15,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 10,
+    },
+
+    /** Documentary style — minimal movement */
+    documentary: {
+        scale: 1.0,
+        easing: "linear" as EasingType,
+        shake: 2,
+        durationFrames: 45,
+    },
+
+    /** Impact shake for emphasis */
+    impact: {
+        scale: 1.25,
+        easing: "ease-out" as EasingType,
+        shake: 8,
+        durationFrames: 15,
+    },
+
+    /** Smooth push for new messages */
+    message: {
+        scale: 1.2,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 25,
+    },
+
+    /** Reset/pullback to neutral */
+    reset: {
+        scale: 1.0,
+        easing: "ease-out" as EasingType,
+        shake: 0,
+        durationFrames: 20,
+    },
+} as const;
+
+export type ShotPresetId = keyof typeof SHOT_PRESETS;
+
+/**
+ * Get a shot preset by ID with optional overrides (deltas).
+ *
+ * @param id - Preset ID
+ * @param overrides - Optional delta overrides (partial)
+ * @returns Merged preset
+ */
+export function getShotPreset(
+    id: ShotPresetId,
+    overrides?: Partial<ShotPreset>
+): ShotPreset {
+    const base = SHOT_PRESETS[id];
+    if (!overrides) return { ...base };
+
+    return {
+        ...base,
+        ...overrides,
+    };
+}
+
+// =============================================================================
 // DEFAULT EXPORT
 // =============================================================================
 

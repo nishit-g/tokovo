@@ -13,3 +13,6 @@ export * from "./components";
 export * from "./runtime";
 export * from "./ui";
 export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
+
+// Export behaviors (Semantic Camera System)
+export * from "./behaviors";
