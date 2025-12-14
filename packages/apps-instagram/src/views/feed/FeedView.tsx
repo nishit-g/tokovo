@@ -80,7 +80,7 @@ const InstagramLogo = () => (
 // STORY BUBBLE - Larger authentic Instagram style
 // ============================================================================
 
-const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
+const StoryBubble = React.memo(({ user, isYourStory }: { user: StoryUser; isYourStory?: boolean }) => (
     <div style={{
         display: "flex",
         flexDirection: "column",
@@ -154,13 +154,13 @@ const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ use
             {isYourStory ? "Your story" : user.username}
         </div>
     </div>
-);
+));
 
 // ============================================================================
 // POST ITEM - Authentic Instagram post
 // ============================================================================
 
-const PostItem: React.FC<{ post: Post }> = ({ post }) => (
+const PostItem = React.memo(({ post }: { post: Post }) => (
     <div style={{ marginBottom: 48 }}>
         {/* Header */}
         <div style={{
@@ -270,23 +270,23 @@ const PostItem: React.FC<{ post: Post }> = ({ post }) => (
             </span>
         </div>
     </div>
-);
+));
 
 // ============================================================================
 // FEED VIEW - Main export
 // ============================================================================
 
+// Create "Your Story" user for first position - moved outside for referential stability
+const yourStory: StoryUser = {
+    username: "Your story",
+    avatar: "",
+    hasUnseen: false,
+    stories: []
+};
+
 export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
     const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
     const scrollY = feedLayout?.scrollY || 0;
-
-    // Create "Your Story" user for first position
-    const yourStory: StoryUser = {
-        username: "Your story",
-        avatar: "",
-        hasUnseen: false,
-        stories: []
-    };
 
     return (
         <div style={{
