@@ -81,6 +81,12 @@ export const easingFunctions: Record<EasingType, (t: number) => number> = {
             return 0.1 + (t - 0.2) * (0.7 / 0.6);
         }
     },
+
+    // ExpoOut - Fast deceleration (for impact/emotional hits)
+    // Used by v1 "impact" preset
+    "expoOut": (t) => {
+        return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
+    },
 };
 
 /**

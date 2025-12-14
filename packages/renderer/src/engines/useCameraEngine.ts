@@ -136,12 +136,14 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // Anchor stability state (persists across frames)
     const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
 
-    // Tracking state for ANCHOR_TRACK smoothing (persists across frames)
+    // Tracking state for smooth camera transitions (persists across frames)
+    // Used by both ANCHOR_TRACK and for smooth fallback when effects end
     const trackingStateRef = useRef<{
         prevOriginX: number;
         prevOriginY: number;
         prevScale: number;
-    }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0 });
+        hasActiveEffect: boolean;  // Whether an effect was active last frame
+    }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0, hasActiveEffect: false });
 
     return useMemo(() => {
         const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
@@ -350,6 +352,14 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                         finalCameraTransform.shakeY = shakeY;
                     }
 
+                    // Update tracking state for smooth decay fallback
+                    trackingStateRef.current = {
+                        prevOriginX: clampedOriginX,
+                        prevOriginY: clampedOriginY,
+                        prevScale: finalCameraTransform.scale,
+                        hasActiveEffect: true,
+                    };
+
                     if (directorDebug) {
                         console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
                     }
@@ -427,12 +437,62 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                         prevOriginX: smoothedOriginX,
                         prevOriginY: smoothedOriginY,
                         prevScale: scale,
+                        hasActiveEffect: true,
                     };
 
                     if (directorDebug) {
                         console.log(`[CameraEngine] ANCHOR_TRACK: anchor=${anchorId} target=(${targetOriginX.toFixed(2)}, ${targetOriginY.toFixed(2)}) smoothed=(${smoothedOriginX.toFixed(2)}, ${smoothedOriginY.toFixed(2)})`);
                     }
                 }
+            }
+        }
+
+        // =====================================================================
+        // 3.7. SMOOTH DECAY FALLBACK (Prevents Jerk)
+        // =====================================================================
+        // When no anchor effects are active, smoothly decay towards neutral
+        // instead of snapping. This prevents the jerk when effects end.
+        const hasAnchorEffects = anchorFocusEffects.length > 0 || anchorTrackEffects.length > 0;
+
+        if (!hasAnchorEffects && trackingStateRef.current.hasActiveEffect) {
+            // Effect just ended - smoothly decay towards neutral
+            const DECAY_SMOOTHING = 0.12;  // Smooth decay rate
+            const prev = trackingStateRef.current;
+
+            // Lerp towards neutral (origin: 0.5, scale: 1.0)
+            const decayedOriginX = lerp(prev.prevOriginX, 0.5, DECAY_SMOOTHING);
+            const decayedOriginY = lerp(prev.prevOriginY, 0.5, DECAY_SMOOTHING);
+            const decayedScale = lerp(prev.prevScale, 1.0, DECAY_SMOOTHING);
+
+            // Check if we've essentially reached neutral
+            const isAtNeutral =
+                Math.abs(decayedOriginX - 0.5) < 0.01 &&
+                Math.abs(decayedOriginY - 0.5) < 0.01 &&
+                Math.abs(decayedScale - 1.0) < 0.01;
+
+            if (isAtNeutral) {
+                // Snap to neutral and clear tracking state
+                trackingStateRef.current = {
+                    prevOriginX: 0.5,
+                    prevOriginY: 0.5,
+                    prevScale: 1.0,
+                    hasActiveEffect: false,
+                };
+            } else {
+                // Continue decaying
+                finalCameraTransform = {
+                    ...finalCameraTransform,
+                    scale: decayedScale,
+                    originX: decayedOriginX,
+                    originY: decayedOriginY,
+                };
+
+                trackingStateRef.current = {
+                    prevOriginX: decayedOriginX,
+                    prevOriginY: decayedOriginY,
+                    prevScale: decayedScale,
+                    hasActiveEffect: true,  // Keep decaying
+                };
             }
         }
 

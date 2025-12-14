@@ -477,7 +477,8 @@ export type EasingType =
     | "ease-in-out"
     | "bounce"
     | "elastic"
-    | "cinematic";  // Custom S-curve for film-like motion
+    | "cinematic"   // Custom S-curve for film-like motion
+    | "expoOut";    // Fast deceleration for impact/emotional hits
 
 // =============================================================================
 // TRANSITION SYSTEM TYPES
