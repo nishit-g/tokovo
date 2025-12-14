@@ -8,11 +8,17 @@ import { AppReducer, WorldState, TimelineEvent, CallState } from "@tokovo/core";
 
 /**
  * Phone app reducer - processes CALL events
+ * 
+ * Canonical 3-arg signature: (world, event, ctx?)
+ * ctx is optional for backward compatibility with legacy replay()
  */
 export const phoneReducer: AppReducer = (
-    draft: WorldState,
-    event: TimelineEvent
+    world: WorldState,
+    event: TimelineEvent,
+    _ctx?: { frame?: number; fps?: number }
 ): void => {
+    // Alias for mutation (backward compat with draft naming)
+    const draft = world;
     // Only handle CALL kind events
     if (event.kind !== "CALL") return;
 

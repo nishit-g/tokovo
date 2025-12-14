@@ -322,5 +322,27 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
     });
 }
 
-// Register itself with the core engine
+// =============================================================================
+// CANONICAL WRAPPER
+// =============================================================================
+
+/**
+ * Device reducer wrapper for canonical 3-arg signature.
+ * Wraps the existing deviceReducer to work with (world, event, ctx).
+ */
+export function worldDeviceReducer(
+    world: any,
+    event: TimelineEvent,
+    _ctx?: { frame?: number; fps?: number }
+): void {
+    if (event.kind !== "DEVICE") return;
+
+    // The existing deviceReducer returns new devices, so we assign back
+    const newDevices = deviceReducer(world.devices, event);
+    // Mutate world.devices with new state
+    Object.assign(world.devices, newDevices);
+}
+
+// Register itself with the core engine (legacy)
 ReducerRegistry.registerDeviceReducer(deviceReducer);
+

@@ -124,8 +124,11 @@ export function createEngine(config: EngineConfig): TokovoEngine {
     } = config;
 
     // Build app reducers from plugins
+    // COMPAT: Also check legacy ReducerRegistry for reducers not in plugins
     const getReducers = (): ReducerSet => {
         const appReducers: Record<string, any> = {};
+
+        // First, get reducers from canonical plugins
         for (const plugin of plugins.all()) {
             appReducers[plugin.id] = plugin.reducer;
         }

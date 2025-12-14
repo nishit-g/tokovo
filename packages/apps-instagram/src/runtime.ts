@@ -12,12 +12,21 @@ import { initialInstagramState, InstagramState } from "./types";
 /**
  * Instagram event reducer.
  *
+ * Canonical 3-arg signature: (world, event, ctx?)
+ * ctx is optional for backward compatibility with legacy replay()
+ *
  * Handles:
  * - CUSTOM events for navigation
  * - MESSAGE_RECEIVED for DMs
  * - TYPING_START/END for typing indicators
  */
-export const instagramRuntime = (draft: WorldState, event: TimelineEvent): void => {
+export const instagramRuntime = (
+    world: WorldState,
+    event: TimelineEvent,
+    _ctx?: { frame?: number; fps?: number }
+): void => {
+    // Alias for mutation (backward compat with draft naming)
+    const draft = world;
     if (event.kind !== "APP" || event.appId !== "app_instagram") return;
 
     // Initialize app state if missing

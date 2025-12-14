@@ -95,8 +95,17 @@ function generateTimestamp(frame: number, messageIndex: number): string {
 
 /**
  * WhatsApp reducer - handles all WhatsApp events
+ * 
+ * Canonical 3-arg signature: (world, event, ctx?)
+ * ctx is optional for backward compatibility with legacy replay()
  */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+export function whatsappReducer(
+    world: WorldState,
+    event: TimelineEvent,
+    _ctx?: { frame?: number; fps?: number }
+): void {
+    // Alias for mutation (backward compat with draft naming)
+    const draft = world;
     // Only handle APP events for WhatsApp
     if (event.kind !== "APP") return;
 

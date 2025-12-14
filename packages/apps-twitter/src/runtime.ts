@@ -57,7 +57,19 @@ function generateTimestamp(frame: number, tweetIndex: number): string {
 // REDUCER
 // =============================================================================
 
-export function twitterReducer(draft: WorldState, event: TimelineEvent): void {
+/**
+ * Twitter reducer - handles all Twitter/X events
+ * 
+ * Canonical 3-arg signature: (world, event, ctx?)
+ * ctx is optional for backward compatibility with legacy replay()
+ */
+export function twitterReducer(
+    world: WorldState,
+    event: TimelineEvent,
+    _ctx?: { frame?: number; fps?: number }
+): void {
+    // Alias for mutation (backward compat with draft naming)
+    const draft = world;
     // Only handle APP events
     if (event.kind !== "APP") return;
 

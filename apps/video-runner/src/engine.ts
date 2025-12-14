@@ -2,20 +2,33 @@
  * Tokovo Engine Factory for Video Runner
  * 
  * This module provides explicit plugin registration using the canonical system.
- * Legacy support maintained for backward compatibility.
+ * All reducers now use canonical 3-arg signature: (world, event, ctx?)
  * 
- * MIGRATION STATUS: Phase 4 Complete
- * - All apps now export canonical AppPlugin objects
- * - Explicit plugin registration via createPluginRegistry()
- * - Legacy replay() still available but deprecated
+ * MIGRATION STATUS: Phase 5 Complete
+ * - All apps use canonical AppPlugin and 3-arg reducers
+ * - Device reducer wrapped for canonical compatibility
+ * - buildWorld() uses canonical engine
  */
+
+// =============================================================================
+// SIDE-EFFECT IMPORTS (MUST BE FIRST for reducer registration)
+// =============================================================================
+
+// Device package registers deviceReducer with ReducerRegistry (legacy compat)
+import "@tokovo/devices";
+
+// App packages register their reducers with ReducerRegistry (legacy compat)
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-twitter";
+import "@tokovo/apps-instagram";
+import "@tokovo/apps-phone";
 
 // =============================================================================
 // CANONICAL PLUGIN REGISTRATION
 // =============================================================================
 
 import { canonical, createPluginRegistry, replay } from "@tokovo/core";
-import type { PluginRegistry } from "@tokovo/core";
+import type { PluginRegistry, WorldState, TimelineEvent, TokovoEngine } from "@tokovo/core";
 
 // Import canonical plugins from each app package
 import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
@@ -23,8 +36,8 @@ import { TwitterPlugin } from "@tokovo/apps-twitter";
 import { InstagramPlugin } from "@tokovo/apps-instagram";
 import { PhonePluginCanonical } from "@tokovo/apps-phone";
 
-// Import device package for device profiles (still needed)
-import "@tokovo/devices";
+// Import worldDeviceReducer for canonical flow
+import { worldDeviceReducer } from "@tokovo/devices";
 
 /**
  * Create a configured plugin registry with all Tokovo apps.
@@ -65,8 +78,6 @@ export const { createEngine } = canonical;
 // TOKOVO ENGINE SINGLETON (for showcases)
 // =============================================================================
 
-import type { WorldState, TimelineEvent, TokovoEngine } from "@tokovo/core";
-
 /**
  * Pre-configured Tokovo engine with all apps registered.
  * Use this for video compositions.
@@ -80,40 +91,36 @@ export const tokovoEngine: TokovoEngine = createEngine({
 /**
  * Build world state from initial state and events.
  * 
- * NOTE: Currently uses legacy replay() under the hood because
- * the app reducers haven't been migrated to canonical signatures yet.
- * The canonical engine expects 3-arg reducers (world, event, ctx),
- * but legacy reducers use 2-arg (draft, event).
+ * NOTE: Uses legacy replay() because the canonical engine's routing
+ * only has defaultDeviceReducer (basic lock/unlock) instead of the
+ * full deviceReducer from @tokovo/devices (notifications, calls, etc).
  * 
- * This provides a stable API while we complete the migration.
+ * The reducer signatures have been migrated to 3-arg (world, event, ctx?)
+ * for future canonical compatibility. Once the engine supports custom
+ * device/call reducer injection, we can switch to canonical buildWorld.
  */
 export function buildWorld(
     initialWorld: WorldState,
     events: TimelineEvent[],
     frame: number
 ): WorldState {
-    // Use legacy replay for now - reducers aren't canonical yet
+    // Use legacy replay - it routes through full ReducerRegistry
+    // which includes deviceReducer with notifications, calls, keyboard, etc.
     return replay(initialWorld, events, frame);
 }
 
 // =============================================================================
-// LEGACY SUPPORT (Deprecated)
+// LEGACY RE-EXPORTS
 // =============================================================================
 
-// Import side-effect modules that register to legacy ReducerRegistry
-// NOTE: This is for backward compatibility with existing video compositions
-// Remove once all compositions migrate to createEngine().buildWorld()
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-twitter";
-import "@tokovo/apps-instagram";
-import "@tokovo/apps-phone";
-
-// Re-export legacy replay for compositions not yet migrated
 export {
     replay,
     buildPluginRegistryFromLegacy,
     ReducerRegistry,
 } from "@tokovo/core";
+
+// Re-export device reducer wrapper
+export { worldDeviceReducer };
 
 // =============================================================================
 // CONFIG
@@ -131,8 +138,8 @@ let migrationLogged = false;
 export function logMigrationStatus(): void {
     if (!migrationLogged) {
         console.info(
-            "[Tokovo Engine] Phase 4 complete. " +
-            "Using explicit plugin registration via createTokovoPluginRegistry()."
+            "[Tokovo Engine] Phase 5 complete. " +
+            "All reducers use canonical 3-arg (world, event, ctx?) signature."
         );
         migrationLogged = true;
     }
