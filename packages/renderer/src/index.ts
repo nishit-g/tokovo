@@ -17,6 +17,7 @@ export { NotificationShade } from "./NotificationShade";
 export * from "./layout";
 
 // Engine split exports
-export { useLayoutEngine, useCameraEngine } from "./engines";
-export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput } from "./engines";
+export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
+export { NULL_LAYOUT_OUTPUT, NULL_AUDIO_OUTPUT } from "./engines";
+export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput, AudioEngineInput, AudioEngineOutput } from "./engines";
 

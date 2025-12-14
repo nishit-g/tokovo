@@ -71,8 +71,15 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
 
-    if (!layoutOutput) {
-        return null; // Device not found
+    // Handle error state (device not found)
+    if (layoutOutput.isError) {
+        return (
+            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
+                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
+                    Device not found
+                </div>
+            </div>
+        );
     }
 
     const {

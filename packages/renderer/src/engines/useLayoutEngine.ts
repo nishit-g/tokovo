@@ -8,6 +8,11 @@
  *
  * Input: world + time
  * Output: layout blueprint (no JSX)
+ *
+ * NOTE ON MEMOIZATION:
+ * This runs every frame because `world` reference changes on each frame.
+ * This is intentional - it's the Update Loop. Keep computations fast,
+ * avoid object allocations in loops.
  */
 
 import { useMemo } from "react";
@@ -15,6 +20,7 @@ import {
     WorldState,
     DeviceState,
     LAYOUT,
+    DEFAULT_CAMERA_STATE,
 } from "@tokovo/core";
 import { computeLayout, LayoutState, ViewKind, LayoutContext } from "../layout";
 import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
@@ -38,7 +44,7 @@ export interface LayoutEngineOutput {
     appId: string | undefined;
     /** What type of view to render */
     viewKind: ViewKind;
-    /** Computed layout state */
+    /** Computed layout state (discriminated union - use layout.kind to narrow) */
     layout: LayoutState;
     /** Device profile (iPhone16, Pixel, etc.) */
     profile: DeviceProfile;
@@ -50,13 +56,48 @@ export interface LayoutEngineOutput {
     activeStoryId?: string;
     /** Viewport height after accounting for header/input */
     effectiveViewportHeight: number;
+    /** Whether this is a fallback/error state */
+    isError: boolean;
 }
+
+// =============================================================================
+// NULL LAYOUT (safe fallback when device not found)
+// =============================================================================
+
+const NULL_DEVICE: DeviceState = {
+    id: "__null__",
+    profileId: "iphone16",
+    isLocked: true,
+    notifications: [],
+};
+
+const NULL_LAYOUT: LayoutState = {
+    kind: "TRANSITION",
+    deviceTranslateX: 0,
+    deviceTranslateY: 0,
+    deviceScale: 1,
+    deviceRotation: 0,
+    overlayOpacity: 0,
+    meta: {},
+};
+
+export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
+    deviceId: "__null__",
+    device: NULL_DEVICE,
+    appId: undefined,
+    viewKind: "TRANSITION",
+    layout: NULL_LAYOUT,
+    profile: iPhone16Profile,
+    variant: "ios",
+    effectiveViewportHeight: iPhone16Profile.dimensions.height,
+    isError: true,
+};
 
 // =============================================================================
 // LAYOUT ENGINE HOOK
 // =============================================================================
 
-export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput | null {
+export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     const { world, t, focusDeviceId } = input;
 
     return useMemo(() => {
@@ -64,9 +105,10 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput | 
         const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
         const device = world.devices[deviceId];
 
+        // Return safe fallback instead of crashing
         if (!device) {
-            console.warn(`[LayoutEngine] Device not found: ${deviceId}`);
-            return null;
+            console.error(`[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`);
+            return NULL_LAYOUT_OUTPUT;
         }
 
         const appId = device.foregroundAppId;
@@ -150,6 +192,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput | 
             activeConversationId,
             activeStoryId,
             effectiveViewportHeight,
+            isError: false,
         };
     }, [world, t, focusDeviceId]);
 }
