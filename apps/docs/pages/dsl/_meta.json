@@ -1,6 +1,7 @@
 {
     "index": "Overview",
     "reference": "Complete Reference",
+    "notification-dsl": "Notification DSL",
     "episode": "episode()",
     "device": "Device Builder",
     "beat": "Beat Builder",

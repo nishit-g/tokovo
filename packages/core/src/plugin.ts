@@ -12,6 +12,8 @@
 import { WorldState, Notification, BackgroundAppState } from "./types";
 import { AppReducer, ReducerRegistry } from "./engine";
 import { Platform } from "./tokens";
+import type { NotificationAdapter } from "./notification-adapter";
+export type { NotificationAdapter };
 
 // =============================================================================
 // PLUGIN TYPES
@@ -110,9 +112,7 @@ export interface WidgetSlot {
     expansionModes?: ("minimal" | "compact" | "expanded")[];
 }
 
-// Import NotificationAdapter from dedicated module
-import { NotificationAdapter } from "./notification-adapter";
-export { NotificationAdapter };
+
 
 
 /**

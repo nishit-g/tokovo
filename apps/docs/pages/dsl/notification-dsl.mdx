@@ -1,0 +1,192 @@
+---
+title: Notification DSL
+description: Fluent API for creating notification events
+---
+
+import { Callout, Tabs, Tab } from 'nextra/components'
+
+# Notification DSL
+
+The Notification DSL provides a fluent, type-safe API for creating notification timeline events. Import from `@tokovo/core`:
+
+```typescript
+import { notificationDsl } from "@tokovo/core";
+```
+
+## Quick Start
+
+```typescript
+// Show a notification
+notificationDsl.show(90, "phone", {
+    appId: "app_whatsapp",
+    title: "Sarah 💬",
+    body: "Hey! Are you coming tonight?",
+    priority: "active",
+});
+
+// User taps to dismiss
+notificationDsl.tap(120, "phone", "notif_90_app_whatsapp");
+```
+
+## Available Functions
+
+### `show(at, deviceId, options)`
+
+Creates a `SHOW_NOTIFICATION` event.
+
+```typescript
+notificationDsl.show(frame, "phone", {
+    // Required
+    appId: string,
+    title: string,
+    body: string,
+    
+    // Optional
+    priority?: "passive" | "active" | "timeSensitive" | "critical",
+    mode?: "lockscreen" | "headsup" | "both" | "silent",
+    icon?: string,
+    
+    // Rich content
+    preview?: { 
+        kind: "text" | "image" | "video",
+        value: string,
+        aspectRatio?: number 
+    },
+    
+    // Actions
+    actions?: Array<{ id: string, label: string, icon?: string, destructive?: boolean }>,
+    replyable?: boolean,
+    
+    // Grouping
+    groupKey?: string,
+    threadId?: string,
+    
+    // Metadata
+    metadata?: Record<string, any>,
+});
+```
+
+<Callout type="info">
+Notification IDs are auto-generated as `notif_{at}_{appId}_{random}` for deterministic replay.
+</Callout>
+
+### `update(at, deviceId, notificationId, patch)`
+
+Updates an existing notification in-place.
+
+```typescript
+notificationDsl.update(180, "phone", "notif_90_app_whatsapp", {
+    body: "3 new messages",
+    title: "Sarah 💬 (3)",
+});
+```
+
+### `dismiss(at, deviceId, options)`
+
+Dismisses notifications.
+
+```typescript
+// Dismiss single
+notificationDsl.dismiss(150, "phone", { notificationId: "notif_90_app_whatsapp" });
+
+// Dismiss by group
+notificationDsl.dismiss(150, "phone", { groupKey: "emails" });
+
+// Dismiss all
+notificationDsl.dismiss(150, "phone", { all: true });
+```
+
+### `tap(at, deviceId, notificationId, actionId?)`
+
+User taps a notification or action button.
+
+```typescript
+// Tap notification (opens app)
+notificationDsl.tap(120, "phone", "notif_90_app_whatsapp");
+
+// Tap specific action button
+notificationDsl.tap(120, "phone", "notif_90_app_whatsapp", "reply");
+```
+
+### `swipe(at, deviceId, notificationId, direction, action)`
+
+User swipes on a notification.
+
+```typescript
+notificationDsl.swipe(120, "phone", "notif_90_app_whatsapp", "right", "dismiss");
+notificationDsl.swipe(120, "phone", "notif_90_app_instagram", "left", "archive");
+```
+
+**Actions:** `"dismiss"` | `"archive"` | `"snooze"` | `"mark_read"`
+
+### `reply(at, deviceId, notificationId, text)`
+
+User sends inline reply.
+
+```typescript
+notificationDsl.reply(150, "phone", "notif_90_app_whatsapp", "On my way!");
+```
+
+### `togglePanel(at, deviceId, open)`
+
+Opens or closes the notification panel.
+
+```typescript
+notificationDsl.togglePanel(200, "phone", true);  // Open
+notificationDsl.togglePanel(300, "phone", false); // Close
+```
+
+### `clearAll(at, deviceId)`
+
+Clears all notifications.
+
+```typescript
+notificationDsl.clearAll(500, "phone");
+```
+
+### `setDynamicIsland(at, deviceId, visible, mode?)`
+
+Controls Dynamic Island visibility.
+
+```typescript
+notificationDsl.setDynamicIsland(100, "phone", true, "expanded");
+notificationDsl.setDynamicIsland(150, "phone", false);
+```
+
+## Complete Example
+
+```typescript
+import { notificationDsl, TimelineEvent } from "@tokovo/core";
+
+const events: TimelineEvent[] = [
+    // WhatsApp message arrives
+    notificationDsl.show(0, "phone", {
+        appId: "app_whatsapp",
+        title: "Sarah",
+        body: "Check out this photo!",
+        priority: "active",
+        preview: { kind: "image", value: "https://..." },
+        replyable: true,
+    }),
+    
+    // Instagram like (stacks)
+    notificationDsl.show(60, "phone", {
+        appId: "app_instagram", 
+        title: "mike_photos",
+        body: "Liked your post ❤️",
+        priority: "active",
+        threadId: "ig_likes",
+    }),
+    
+    // User replies to WhatsApp
+    notificationDsl.reply(120, "phone", "notif_0_app_whatsapp", "Wow! Where is this?"),
+    
+    // Dismiss Instagram notification
+    notificationDsl.swipe(150, "phone", "notif_60_app_instagram", "right", "dismiss"),
+];
+```
+
+## Related
+
+- [Notification IR](/ir/notification-ir) - Data model
+- [Notification Adapters](/guides/notification-adapters) - App formatting

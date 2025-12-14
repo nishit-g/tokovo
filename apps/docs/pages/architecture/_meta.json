@@ -3,6 +3,7 @@
     "boundaries": "Layer Boundaries",
     "determinism": "Determinism",
     "data-flow": "Data Flow",
+    "dynamic-island": "Dynamic Island",
     "monorepo": "Monorepo (Turbo)",
     "plugins": "Plugin System"
 }
