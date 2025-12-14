@@ -5,6 +5,7 @@ import {
     WorldState,
     TimelineEvent,
     createEventIndex,
+    DEFAULT_BUS_CONFIG,
 } from "@tokovo/core";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
@@ -42,7 +43,7 @@ function createKeyboardShowcaseEpisode(): { initialWorld: WorldState; events: Ti
                 type: "dm",
                 name: "Sarah ✨",
                 messages: [
-                    { id: "msg_0", type: "text", from: "Sarah ✨", text: "Hey! Are you coming to the party tonight?", timestamp: Date.now() - 60000 },
+                    { id: "msg_0", type: "text", from: "Sarah ✨", text: "Hey! Are you coming to the party tonight?", at: Date.now() - 60000 },
                 ],
                 typing: {},
             },
@@ -64,7 +65,7 @@ function createKeyboardShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
     };
 
     // Using centralized DSL event factories

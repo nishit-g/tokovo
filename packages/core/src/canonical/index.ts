@@ -283,6 +283,11 @@ export type {
     AppPlugin,
     PluginRegistry,
     PluginConfig,
+    // Widget types
+    WidgetMode,
+    WidgetProps,
+    WidgetComponent,
+    WidgetSlot,
 } from "./plugin-registry";
 
 export {

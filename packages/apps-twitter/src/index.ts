@@ -12,4 +12,4 @@ export * from "./config";
 export * from "./components";
 export * from "./runtime";
 export * from "./ui";
-export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
+export { TWITTER_APP_ID, registerTwitterApp, TwitterPlugin, TwitterPluginLegacy } from "./plugin";

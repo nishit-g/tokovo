@@ -5,6 +5,7 @@ import {
     WorldState,
     TimelineEvent,
     createEventIndex,
+    DEFAULT_BUS_CONFIG,
 } from "@tokovo/core";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
@@ -107,7 +108,7 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
     };
 
     const events: TimelineEvent[] = [

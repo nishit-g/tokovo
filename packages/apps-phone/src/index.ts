@@ -12,7 +12,7 @@
  */
 
 // Export plugin
-export { PhonePlugin, registerPhonePlugin } from "./plugin";
+export { PhonePlugin, PhonePluginCanonical, registerPhonePlugin, PHONE_APP_ID } from "./plugin";
 
 // Export UI
 export { PhoneApp } from "./ui";

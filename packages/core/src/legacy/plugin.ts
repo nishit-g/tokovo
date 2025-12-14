@@ -9,10 +9,10 @@
  * - Platform-specific widgets (Dynamic Island, status bar)
  */
 
-import { WorldState, Notification, BackgroundAppState } from "./types";
+import { WorldState, Notification, BackgroundAppState } from "../types";
 import { AppReducer, ReducerRegistry } from "./engine";
-import { Platform } from "./tokens";
-import type { NotificationAdapter } from "./notification-adapter";
+import { Platform } from "../tokens";
+import type { NotificationAdapter } from "../notification-adapter";
 export type { NotificationAdapter };
 
 // =============================================================================
@@ -196,7 +196,7 @@ class PluginManagerClass {
         if (plugin.widgets && plugin.widgets.length > 0) {
             // Import at top level or use type-only to avoid circular dependency
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            import("./widget-registry").then(({ WidgetRegistry }) => {
+            import("../widget-registry").then(({ WidgetRegistry }) => {
                 WidgetRegistry.register(plugin.id, plugin.widgets!);
                 console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
             });

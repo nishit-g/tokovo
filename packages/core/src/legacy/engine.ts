@@ -8,9 +8,9 @@ import {
     DEFAULT_CAMERA_STATE,
     DEFAULT_CAMERA_TRANSFORM,
     DEFAULT_AUDIO_STATE,
-} from "./types";
-import { CameraController, createActiveEffect } from "./camera";
-import { TIMING } from "./constants";
+} from "../types";
+import { CameraController, createActiveEffect } from "../camera";
+import { TIMING } from "../constants";
 
 export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
@@ -76,9 +76,64 @@ class ReducerRegistryClass {
     }
 }
 
+/**
+ * @deprecated Use `createEngine()` from `@tokovo/core/canonical` instead.
+ * This singleton registry will be removed in a future version.
+ */
 export const ReducerRegistry = new ReducerRegistryClass();
 
+// =============================================================================
+// COMPAT BRIDGE: Legacy -> Plugin Registry
+// =============================================================================
+
+import { createPluginRegistry, PluginRegistry, DEFAULT_PLUGIN_SCHEMA } from "../canonical/plugin-registry";
+
+/**
+ * Build a PluginRegistry from legacy ReducerRegistry registrations.
+ * 
+ * This is a TEMPORARY bridge for migration. Use this to convert your
+ * video-runner to createEngine() without rewriting all app packages.
+ * 
+ * @deprecated This function exists only for migration. Apps should export
+ * proper AppPlugin objects instead of using module-level registration.
+ * 
+ * @example
+ * ```ts
+ * // In video-runner:
+ * import "@tokovo/devices";
+ * import "@tokovo/apps-whatsapp";
+ * 
+ * const plugins = buildPluginRegistryFromLegacy();
+ * const engine = createEngine({ plugins, fps: 30 });
+ * ```
+ */
+export function buildPluginRegistryFromLegacy(): PluginRegistry {
+    console.warn(
+        "[Tokovo] buildPluginRegistryFromLegacy() is deprecated. " +
+        "Migrate app packages to export AppPlugin objects instead of using ReducerRegistry."
+    );
+
+    const registry = createPluginRegistry();
+    const appReducers = ReducerRegistry.appReducers;
+
+    for (const [appId, reducer] of Object.entries(appReducers)) {
+        // Create minimal plugin from reducer
+        registry.register({
+            id: appId,
+            name: appId.replace("app_", "").replace(/_/g, " "),
+            version: "1.0.0-legacy",
+            capabilities: ["messaging"], // Assume messaging by default
+            schema: DEFAULT_PLUGIN_SCHEMA,
+            reducer: reducer as any, // Type cast: legacy reducers have different signature
+            view: () => null, // No view registered via legacy path
+        });
+    }
+
+    return registry;
+}
+
 // Camera controller instance - uses FPS from constants
+
 const cameraController = new CameraController(TIMING.FPS_DEFAULT);
 
 /**
@@ -498,6 +553,21 @@ function processTouchEvent(
  * Replay function - computes WorldState at time t by applying all events
  * 
  * This is called every frame by Remotion. Performance is critical.
+ * 
+ * @deprecated Use `createEngine().buildWorld()` from `@tokovo/core/canonical` instead.
+ * This function uses the global ReducerRegistry singleton which will be removed.
+ * 
+ * Migration:
+ * ```ts
+ * // Before:
+ * import { replay } from "@tokovo/core";
+ * const world = replay(initial, events, frame);
+ * 
+ * // After:
+ * import { canonical } from "@tokovo/core";
+ * const engine = canonical.createEngine({ plugins, fps: 30 });
+ * const world = engine.buildWorld(initial, events, frame);
+ * ```
  */
 export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
     if (!initial) {

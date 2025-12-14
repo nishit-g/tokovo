@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -65,7 +65,7 @@ function createBreakupDramaEpisode(): { initialWorld: WorldState; events: Timeli
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
     };
 
     // Timeline events (what DSL compiler would generate)

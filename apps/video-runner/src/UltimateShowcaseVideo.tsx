@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_BUS_CONFIG } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
@@ -59,7 +59,7 @@ function createUltimateShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
     };
 
     // MINIMAL timeline - just 2 messages + 1 reaction

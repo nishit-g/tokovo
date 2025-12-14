@@ -5,7 +5,7 @@
  * resolves which widget to render based on priority and platform.
  */
 
-import { WidgetSlot, WidgetMode, WidgetComponent } from "./plugin";
+import { WidgetSlot, WidgetMode, WidgetComponent } from "./canonical/plugin-registry";
 import { Platform } from "./tokens";
 
 // =============================================================================

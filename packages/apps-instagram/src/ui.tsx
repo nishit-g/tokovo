@@ -23,11 +23,11 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
     const renderView = () => {
         switch (currentView) {
             case "dm":
-                return <InstagramChatView world={world} t={t} layout={layout} />;
+                return <InstagramChatView world={world} t={t} layout={layout as any} />;
             case "feed":
-                return <FeedView state={appState} layout={layout} />;
+                return <FeedView state={appState} layout={layout as any} />;
             case "stories":
-                return <StoriesView state={appState} t={t} layout={layout} />;
+                return <StoriesView state={appState} t={t} layout={layout as any} />;
             case "profile":
                 return <ProfileView state={appState} />;
             case "post":
@@ -39,7 +39,7 @@ export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: Lay
             case "reels":
                 return <ReelsView state={appState} />;
             default:
-                return <InstagramChatView world={world} t={t} layout={layout} />;
+                return <InstagramChatView world={world} t={t} layout={layout as any} />;
         }
     };
 

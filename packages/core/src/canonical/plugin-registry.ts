@@ -93,6 +93,84 @@ export const DEFAULT_PLUGIN_SCHEMA: PluginSchema = {
 };
 
 // =============================================================================
+// WIDGET TYPES
+// =============================================================================
+
+import { Platform } from "../tokens";
+import { BackgroundAppState } from "../types";
+
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: unknown;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => unknown;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+// =============================================================================
 // APP PLUGIN
 // =============================================================================
 
