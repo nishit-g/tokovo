@@ -155,7 +155,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             <div style={cameraStyle}>
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <DeviceFrame profileId={device.profileId} variant={variant}>
+                    <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
                         {/* Call Overlay (takes precedence) */}
                         {hasActiveCall && (
                             <CallOverlay

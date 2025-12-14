@@ -1,8 +1,25 @@
 import React from "react";
 import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { iPhone16Profile, PixelProfile } from "@tokovo/devices"; // Import profiles to look them up
+import { DeviceState } from "@tokovo/core";
 
-export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; notifications?: any[]; children: React.ReactNode; variant?: "ios" | "android" }> = ({ profileId, isLocked, notifications, children, variant }) => {
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
+}
+
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
     // Strategy pattern: Select frame component based on profile ID
     const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
         profileId === "pixel" ? PixelFrame : React.Fragment;
@@ -15,8 +32,17 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
         }
     }
 
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
+
     return (
-        <FrameComponent {...frameProps} statusBar={<StatusBar time="10:41" variant={variant} />}>
+        <FrameComponent {...frameProps} statusBar={statusBar}>
             {children}
             {isLocked && (
                 <div style={{
@@ -25,7 +51,7 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)", // Dimmed lock screen
+                    backgroundColor: "rgba(0,0,0,0.8)",
                     backdropFilter: "blur(20px)",
                     display: "flex",
                     flexDirection: "column",
@@ -35,10 +61,7 @@ export const DeviceFrame: React.FC<{ profileId: string; isLocked?: boolean; noti
                     zIndex: 2000
                 }}>
                     <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-
-                    {/* Notifications are now handled by NotificationOverlay via layout system */}
                     <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                        {/* Placeholder for future lock screen widgets if needed */}
                     </div>
                 </div>
             )}

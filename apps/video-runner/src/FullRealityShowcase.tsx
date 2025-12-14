@@ -6,7 +6,7 @@ import {
     TimelineEvent,
     createEventIndex,
 } from "@tokovo/core";
-import { TokovoRenderer, AudioLayer, TouchOverlay } from "@tokovo/renderer";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 
 // Import device reducer
@@ -18,11 +18,10 @@ import { dsl, generateTyping } from "@tokovo/dsl";
 /**
  * Full Reality Showcase
  *
- * Demonstrates ALL the new "Reality Simulation" features:
- * - Device OS layer (clock, battery, network, DND)
- * - Touch gestures (tap circles)
- * - Message lifecycle (tick progression)
- * - Typing with typos
+ * Demonstrates ALL the "Reality Simulation" features:
+ * - Device OS layer (clock, battery, network updates)
+ * - Message lifecycle
+ * - Typing with typos and corrections
  * - Camera movements
  *
  * This is indistinguishable from a real screen recording.
@@ -32,7 +31,6 @@ import { dsl, generateTyping } from "@tokovo/dsl";
 // CONSTANTS
 // =============================================================================
 
-const FPS = 30;
 const DEVICE_ID = "phone";
 const CONVO_ID = "dm_alex";
 const FRIEND_NAME = "Alex 💎";
@@ -54,10 +52,10 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
                 isLocked: false,
                 foregroundAppId: "app_whatsapp",
                 notifications: [],
-                // Device OS state
+                // Device OS state - StatusBar now reads from here!
                 os: {
                     clock: START_TIME.getTime(),
-                    battery: 73,
+                    battery: 87,
                     charging: false,
                     network: "wifi" as const,
                     wifiStrength: 3,
@@ -110,7 +108,6 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
             deviceTransforms: {},
         },
         audio: { activeSounds: {} },
-        touches: [],
     };
 
     const events: TimelineEvent[] = [
@@ -125,19 +122,17 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
         dsl.messages.receive(60, CONVO_ID, FRIEND_NAME, "thinking we could grab dinner? 🍕"),
         dsl.audio.play(60, "whatsapp_received", 0.8),
 
-        // User taps notification area (touch feedback)
-        dsl.touch.tap(75, 540, 400),
-
-        // === SCENE 2: User types response (2.5-5s) ===
-        // Slight pause (reading), then show keyboard
+        // === SCENE 2: User types response (3-6s) ===
         dsl.keyboard.show(90, DEVICE_ID, "qwerty"),
-        dsl.touch.tap(95, 540, 1600), // Tap input field
 
         // Type with realistic typos
         ...generateTyping(110, DEVICE_ID, "sure! where were you thinkng?", {
             speed: "casual",
             typoPositions: [22], // Typo on "thinking" -> "thinkng"
         }),
+
+        // Time advances
+        dsl.os.setTime(150, START_TIME.getTime() + 5000, DEVICE_ID),
 
         // User pauses, notices typo, backspaces
         dsl.keyboard.backspace(220, DEVICE_ID),
@@ -151,23 +146,18 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
         // Retype correctly
         ...generateTyping(245, DEVICE_ID, "thinking?", { speed: "fast" }),
 
-        // === SCENE 3: Send message (6s) ===
-        dsl.touch.tap(280, 1000, 1650), // Tap send button
+        // === SCENE 3: Send message (8s) ===
         dsl.messages.send(285, CONVO_ID, "sure! where were you thinking?"),
         dsl.audio.play(285, "whatsapp_sent", 0.7),
         dsl.keyboard.clear(290, DEVICE_ID),
 
-        // Message lifecycle: sending -> sent -> delivered
-        dsl.messages.markSent(295, CONVO_ID, "msg_sent_1"),
-        dsl.messages.markDelivered(330, CONVO_ID, "msg_sent_1"), // 1 second later
+        // Time advances
+        dsl.os.setTime(300, START_TIME.getTime() + 10000, DEVICE_ID),
 
-        // === SCENE 4: Friend reads and types (7-9s) ===
-        dsl.messages.markRead(360, CONVO_ID, "msg_sent_1"), // Blue ticks!
+        // Battery drains slightly during usage
+        dsl.os.setBattery(320, 86, false, DEVICE_ID),
 
-        // Battery drains slightly
-        dsl.os.setBattery(390, 72, false, DEVICE_ID),
-
-        // Friend typing response
+        // === SCENE 4: Friend types and responds (10-16s) ===
         dsl.messages.typingStart(400, CONVO_ID, FRIEND_NAME),
 
         // Time advances
@@ -181,30 +171,30 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
         // Camera focuses on message
         dsl.camera.zoom(490, 1.15, 20, { originY: 0.7 }),
 
-        // === SCENE 5: User reacts excitedly (10-12s) ===
-        dsl.touch.tap(520, 540, 1100), // Tap message
-
-        // Type enthusiastic response
+        // === SCENE 5: User reacts excitedly (17-22s) ===
         ...generateTyping(540, DEVICE_ID, "omg yes!!! ive been wanting to try that", {
             speed: "fast",
             typoPositions: [],
         }),
 
-        dsl.touch.tap(650, 1000, 1650), // Send
+        // Time advances
+        dsl.os.setTime(600, START_TIME.getTime() + 20000, DEVICE_ID),
+
         dsl.messages.send(655, CONVO_ID, "omg yes!!! ive been wanting to try that"),
         dsl.audio.play(655, "whatsapp_sent", 0.7),
         dsl.keyboard.clear(660, DEVICE_ID),
 
-        // Message status progression
-        dsl.messages.markSent(665, CONVO_ID, "msg_sent_2"),
-        dsl.messages.markDelivered(700, CONVO_ID, "msg_sent_2"),
-        dsl.messages.markRead(730, CONVO_ID, "msg_sent_2"),
+        // Battery drain
+        dsl.os.setBattery(680, 85, false, DEVICE_ID),
 
-        // === SCENE 6: Final exchange (12-14s) ===
+        // === SCENE 6: Final exchange (23-28s) ===
         dsl.messages.typingStart(750, CONVO_ID, FRIEND_NAME),
 
         // Camera resets
         dsl.camera.reset(760, 25),
+
+        // Time advances
+        dsl.os.setTime(800, START_TIME.getTime() + 27000, DEVICE_ID),
 
         dsl.messages.typingEnd(810, CONVO_ID, FRIEND_NAME),
         dsl.messages.receive(810, CONVO_ID, FRIEND_NAME, "perfect! 7pm? 🎉"),
@@ -213,16 +203,13 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
         // Type quick confirmation
         ...generateTyping(840, DEVICE_ID, "see you there! ", { speed: "fast" }),
 
-        dsl.touch.tap(900, 1000, 1650),
         dsl.messages.send(905, CONVO_ID, "see you there! 🙌"),
         dsl.audio.play(905, "whatsapp_sent", 0.7),
         dsl.keyboard.clear(910, DEVICE_ID),
         dsl.keyboard.hide(915, DEVICE_ID),
 
-        // Final message status
-        dsl.messages.markSent(920, CONVO_ID, "msg_sent_3"),
-        dsl.messages.markDelivered(950, CONVO_ID, "msg_sent_3"),
-        dsl.messages.markRead(980, CONVO_ID, "msg_sent_3"),
+        // Time advances to end
+        dsl.os.setTime(950, START_TIME.getTime() + 33000, DEVICE_ID),
 
         // Friend sends reaction
         dsl.messages.receive(1020, CONVO_ID, FRIEND_NAME, "❤️"),
@@ -231,11 +218,9 @@ function createFullRealityEpisode(): { initialWorld: WorldState; events: Timelin
         // Small camera shake on reaction
         dsl.camera.shake(1025, 3, 15, { frequency: 20, decay: 0.8 }),
 
-        // Battery update
-        dsl.os.setBattery(1050, 71, false, DEVICE_ID),
-
-        // Time advances
-        dsl.os.setTime(1060, START_TIME.getTime() + 35000, DEVICE_ID),
+        // Final battery/time
+        dsl.os.setBattery(1050, 12, false, DEVICE_ID),
+        dsl.os.setTime(1060, START_TIME.getTime() + 38000, DEVICE_ID),
     ];
 
     return { initialWorld, events };
@@ -255,14 +240,6 @@ export const FullRealityShowcase: React.FC = () => {
 
     const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
 
-    // Format clock from device OS state
-    const deviceOS = world.devices[DEVICE_ID]?.os;
-    const clockTime = deviceOS ? new Date(deviceOS.clock).toLocaleTimeString("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: false,
-    }) : "14:45";
-
     return (
         <AbsoluteFill style={{
             backgroundColor: "#0a0a1a",
@@ -279,10 +256,6 @@ export const FullRealityShowcase: React.FC = () => {
                     directorEnabled={true}
                     directorDebug={false}
                 />
-                {/* Touch overlay for tap visualization */}
-                {world.touches && world.touches.length > 0 && (
-                    <TouchOverlay touches={world.touches} t={t} />
-                )}
             </div>
         </AbsoluteFill>
     );
