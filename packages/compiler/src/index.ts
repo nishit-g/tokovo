@@ -29,3 +29,7 @@ export type { ValidationMode, Diagnostic, ValidationResult, PluginRegistry, AppC
 // ID Generator
 export { createIdGenerator, shortHash, createShortId } from "./id-generator";
 export type { IdGenerator } from "./id-generator";
+
+// Transforms (downgrade, etc.)
+export * as transforms from "./transforms";
+

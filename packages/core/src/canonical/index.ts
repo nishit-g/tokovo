@@ -327,3 +327,66 @@ export {
     createReplayCache,
     buildWorldCached,
 } from "./engine";
+
+// =============================================================================
+// STATE PRIMITIVES
+// =============================================================================
+
+export type {
+    CanonicalMessage,
+    CanonicalConversationBase,
+    FeedItemAuthor,
+    CanonicalFeedItem,
+    CanonicalFeedBase,
+    CanonicalStoryItem,
+    CanonicalStoryRing,
+    CanonicalStoryBase,
+} from "./state";
+
+export {
+    createEmptyConversation,
+    createEmptyFeed,
+    createEmptyStoryState,
+    addMessageToConversation,
+    addItemToFeed,
+    markMessageAsRead,
+} from "./state";
+
+// =============================================================================
+// BOOTSTRAP CONTRACT
+// =============================================================================
+
+export type {
+    BootstrapRules,
+    BootstrapValidationResult,
+} from "./bootstrap";
+
+export {
+    BOOTSTRAP_RULES,
+    BOOTSTRAP_DOCS,
+    validatePluginBootstrap,
+    safeId,
+    getTimeFromContext,
+    isBrowser,
+    safeWindow,
+} from "./bootstrap";
+
+// =============================================================================
+// ADAPTER (for gradual migration)
+// =============================================================================
+
+export {
+    legacyEventToCanonical,
+    legacyMessageToContent,
+    canonicalToLegacyEvent,
+    canonicalContentToLegacy,
+    legacyMessageToCanonical,
+    canonicalMessageToLegacy,
+    legacyConversationToCanonical,
+    isCanonicalEvent,
+    ensureTrace,
+    withCanonicalAdapter,
+    WHATSAPP_SCHEMA,
+    INSTAGRAM_SCHEMA,
+    TWITTER_SCHEMA,
+} from "./adapter";

@@ -1,0 +1,189 @@
+---
+title: Mental Model
+description: The complete Tokovo pipeline - from DSL to rendered video
+---
+
+# Mental Model
+
+This page explains how Tokovo transforms a DSL script into a rendered video frame-by-frame.
+
+## The Pipeline
+
+```
+DSL → SceneIR → TimelineIR → Events → WorldState → Render
+```
+
+Each stage has a specific purpose:
+
+| Stage | Purpose | Package |
+|-------|---------|---------|
+| **DSL** | Human-readable script | `@tokovo/dsl` |
+| **SceneIR** | Scene operations (what happens) | `@tokovo/ir` |
+| **TimelineIR** | Timed events (when it happens) | `@tokovo/ir` |
+| **Events** | Canonical runtime events | `@tokovo/core` |
+| **WorldState** | Stateful representation | `@tokovo/core` |
+| **Render** | Visual output | App-specific |
+
+## Stage 1: DSL
+
+The DSL is the **source of truth**. Everything starts here.
+
+```typescript
+export const myEpisode = episode("my-episode")
+  .device("phone_a", iPhone)
+  .app("whatsapp", { conversation: "main-chat" })
+  .beat("opening", (b) => {
+    b.receive("Alice", "Hey, you there?");
+    b.wait("1s");
+    b.typing("me").for("2s");
+    b.send("Yeah, what's up?");
+  })
+  .build();
+```
+
+**Key principles:**
+- Fluent API for readability
+- Actors are named, not IDs
+- Time is relative ("1s", "2s")
+
+## Stage 2: SceneIR
+
+The DSL compiles to **Scene Intermediate Representation** - a list of operations.
+
+```typescript
+const sceneIR: SceneOp[] = [
+  { kind: "ReceiveMessage", actor: "Alice", text: "Hey, you there?", conversationId: "main-chat" },
+  { kind: "Wait", duration: "1s" },
+  { kind: "TypingStart", actor: "me", conversationId: "main-chat" },
+  { kind: "Wait", duration: "2s" },
+  { kind: "TypingEnd", actor: "me", conversationId: "main-chat" },
+  { kind: "SendMessage", actor: "me", text: "Yeah, what's up?", conversationId: "main-chat" },
+];
+```
+
+**Key principles:**
+- Still declarative
+- No timing yet (durations are strings)
+- Operations are sequential
+
+## Stage 3: TimelineIR
+
+The compiler flattens SceneIR to **Timeline Intermediate Representation** - events with absolute frame numbers.
+
+```typescript
+const timelineIR: TimelineEvent[] = [
+  { kind: "APP", type: "MESSAGE_RECEIVED", at: 0, ... },
+  { kind: "APP", type: "TYPING_START", at: 60, ... },
+  { kind: "APP", type: "TYPING_END", at: 180, ... },
+  { kind: "APP", type: "MESSAGE_SENT", at: 180, ... },
+];
+```
+
+**Key principles:**
+- `at` is a frame number (absolute)
+- All events are flat (no nesting)
+- Deterministic ordering
+
+## Stage 4: Canonical Events
+
+TimelineIR events are normalized to **Canonical Events** with trace metadata.
+
+```typescript
+const event: MessageEvent = {
+  kind: "APP",
+  type: "MESSAGE",
+  at: 0,
+  trace: {
+    episodeId: "my-episode",
+    deviceId: "phone_a",
+    beatName: "opening",
+    opIndex: 0,
+  },
+  conversationId: "main-chat",
+  fromId: "actor_alice",
+  content: { kind: "text", text: "Hey, you there?" },
+};
+```
+
+**Key principles:**
+- `trace` enables debugging and replay
+- `fromId` is an ActorId, not full object
+- `content` is a discriminated union (no optional soup)
+
+## Stage 5: WorldState
+
+Events are **reduced** into WorldState using app-specific reducers.
+
+```typescript
+// Before event
+const world: WorldState = {
+  conversations: {
+    "main-chat": { messages: [] }
+  }
+};
+
+// After MESSAGE event
+const world: WorldState = {
+  conversations: {
+    "main-chat": {
+      messages: [
+        { id: "msg_1", from: "Alice", text: "Hey, you there?", ... }
+      ]
+    }
+  }
+};
+```
+
+**Key principles:**
+- Reducers are pure functions
+- State is immutable (use Immer)
+- Each app controls its own appState
+
+## Stage 6: Render
+
+The renderer reads WorldState and produces visual output.
+
+```tsx
+function WhatsAppView({ world }: { world: WorldState }) {
+  const conversation = world.conversations["main-chat"];
+  
+  return (
+    <ChatScreen>
+      {conversation.messages.map(msg => (
+        <MessageBubble key={msg.id} message={msg} />
+      ))}
+    </ChatScreen>
+  );
+}
+```
+
+## Determinism Guarantee
+
+The entire pipeline is **deterministic**:
+
+- Same DSL → Same SceneIR
+- Same SceneIR → Same TimelineIR  
+- Same TimelineIR → Same Events
+- Same Events → Same WorldState
+- Same WorldState → Same Render
+
+This is enforced by:
+1. No `Math.random()` in engine
+2. No `Date.now()` in engine
+3. Stable event ordering
+4. Deterministic ID generation
+
+## Verification
+
+Run determinism check:
+```bash
+pnpm verify-determinism
+```
+
+This compiles all DSL episodes and compares hashes against golden values.
+
+## See Also
+
+- [Canonical Events](/architecture/canonical-events) - Event type reference
+- [Identity Model](/architecture/identity-model) - Actor IDs and registry
+- [Determinism](/architecture/determinism) - Hash verification

@@ -1,0 +1,260 @@
+---
+title: Canonical Events
+description: The unified event system for all Tokovo apps
+---
+
+# Canonical Events
+
+Canonical events are the **unified event language** that all Tokovo apps speak. They ensure consistency across WhatsApp, Instagram, Twitter, and any future app.
+
+## Event Structure
+
+Every canonical event has this base structure:
+
+```typescript
+interface CanonicalEventBase {
+  readonly kind: EventKind;     // "APP" | "DEVICE" | "OS" | ...
+  readonly type: string;        // Event-specific type
+  readonly at: number;          // Frame number (absolute)
+  readonly trace: CanonicalTrace;  // Debug/replay metadata
+}
+
+interface CanonicalTrace {
+  readonly episodeId: string;
+  readonly deviceId: string;
+  readonly beatName: string;
+  readonly opIndex: number;
+}
+```
+
+## Event Kinds
+
+Events are grouped by **kind**:
+
+| Kind | Description | Examples |
+|------|-------------|----------|
+| `APP` | App-specific events | MESSAGE, TYPING, READ |
+| `DEVICE` | Device-level events | LOCK, UNLOCK, BRIGHTNESS |
+| `OS` | Operating system events | NOTIFICATION, SETTINGS |
+| `CAMERA` | Camera controls | ZOOM, PAN, SHAKE |
+| `AUDIO` | Audio events | PLAY, PAUSE, VOLUME |
+| `CALL` | Phone calls | INCOMING, ANSWER, END |
+| `TOUCH` | Touch interactions | TAP, SWIPE, SCROLL |
+
+## APP Events (Messaging)
+
+### MESSAGE
+
+A message sent or received.
+
+```typescript
+interface MessageEvent {
+  kind: "APP";
+  type: "MESSAGE";
+  at: number;
+  trace: CanonicalTrace;
+  conversationId: string;
+  fromId: ActorId;       // Who sent it
+  content: CanonicalContent;  // What was sent
+  replyToId?: string;    // If replying to another message
+  status?: "sending" | "sent" | "delivered" | "read";
+}
+```
+
+### TYPING
+
+Typing indicator.
+
+```typescript
+interface TypingEvent {
+  kind: "APP";
+  type: "TYPING";
+  at: number;
+  trace: CanonicalTrace;
+  conversationId: string;
+  fromId: ActorId;
+  isTyping: boolean;
+}
+```
+
+### READ
+
+Message read receipt.
+
+```typescript
+interface ReadEvent {
+  kind: "APP";
+  type: "READ";
+  at: number;
+  trace: CanonicalTrace;
+  conversationId: string;
+  byId: ActorId;
+  messageId?: string;  // Specific message, or all
+}
+```
+
+### REACTION
+
+Emoji reaction.
+
+```typescript
+interface ReactionEvent {
+  kind: "APP";
+  type: "REACTION";
+  at: number;
+  trace: CanonicalTrace;
+  conversationId: string;
+  messageId: string;
+  emoji: string;
+  fromId: ActorId;
+}
+```
+
+## APP Events (Feed)
+
+### FEED_ITEM
+
+A new item in a feed (tweet, post, etc.).
+
+```typescript
+interface FeedItemEvent {
+  kind: "APP";
+  type: "FEED_ITEM";
+  at: number;
+  trace: CanonicalTrace;
+  feedId: string;  // "__main_feed__", "__explore__", etc.
+  item: {
+    id: string;
+    author: { id: string; name: string; handle: string; avatarUrl?: string; verified?: string };
+    content: CanonicalContent;
+    stats?: { likes: number; reposts: number; replies: number; views?: number };
+  };
+}
+```
+
+### FEED_ACTION
+
+An action on a feed item.
+
+```typescript
+interface FeedActionEvent {
+  kind: "APP";
+  type: "FEED_ACTION";
+  at: number;
+  trace: CanonicalTrace;
+  feedId: string;
+  itemId: string;
+  action: "like" | "unlike" | "repost" | "unrepost" | "bookmark" | "unbookmark";
+  fromId: ActorId;
+}
+```
+
+### FEED_SCROLL
+
+Feed scroll position.
+
+```typescript
+interface FeedScrollEvent {
+  kind: "APP";
+  type: "FEED_SCROLL";
+  at: number;
+  trace: CanonicalTrace;
+  feedId: string;
+  position: number;
+}
+```
+
+## APP Events (Stories)
+
+### STORY_ITEM
+
+A story posted.
+
+```typescript
+interface StoryItemEvent {
+  kind: "APP";
+  type: "STORY_ITEM";
+  at: number;
+  trace: CanonicalTrace;
+  userId: ActorId;
+  item: {
+    id: string;
+    media: { url: string; type: "image" | "video" };
+    caption?: string;
+    duration: number;
+  };
+}
+```
+
+### STORY_VIEW
+
+A story viewed.
+
+```typescript
+interface StoryViewEvent {
+  kind: "APP";
+  type: "STORY_VIEW";
+  at: number;
+  trace: CanonicalTrace;
+  userId: ActorId;
+  itemId: string;
+}
+```
+
+## APP Events (Navigation)
+
+### NAVIGATE
+
+Screen navigation.
+
+```typescript
+interface NavigateEvent {
+  kind: "APP";
+  type: "NAVIGATE";
+  at: number;
+  trace: CanonicalTrace;
+  target: {
+    screen: string;
+    id?: string;  // conversation ID, profile ID, etc.
+  };
+}
+```
+
+## Content Types
+
+Message content uses discriminated unions:
+
+```typescript
+type CanonicalContent =
+  | { kind: "text"; text: string }
+  | { kind: "image"; url: string; caption?: string }
+  | { kind: "video"; url: string; thumbnailUrl: string; duration: number; caption?: string }
+  | { kind: "voice"; duration: number; url?: string }
+  | { kind: "gif"; url: string }
+  | { kind: "sticker"; url: string; alt?: string }
+  | { kind: "location"; lat: number; lng: number; name?: string }
+  | { kind: "contact"; name: string; phone?: string }
+  | { kind: "file"; url: string; name: string; mimeType?: string; size?: number }
+  | { kind: "link"; url: string; title?: string; description?: string; imageUrl?: string }
+  | { kind: "system"; systemType: SystemMessageType; text?: string }
+  | { kind: "deleted" };
+```
+
+## Ordering Contract
+
+Events are sorted deterministically:
+
+1. **by KIND_PRIORITY** (CAMERA before APP)
+2. **by APP_TYPE_PRIORITY** (MESSAGE before REACTION)
+3. **by at** (frame number)
+4. **by deviceId** (stable tie-breaker)
+
+```typescript
+const sorted = sortEventsDeterministic(events);
+```
+
+## See Also
+
+- [Mental Model](/architecture/mental-model) - The full pipeline
+- [Identity Model](/architecture/identity-model) - Actor IDs
+- [Plugin Schema](/plugins/schema) - Event support per app

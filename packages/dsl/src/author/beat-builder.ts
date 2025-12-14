@@ -810,6 +810,128 @@ export class BeatBuilder {
     }
 
     // =========================================================================
+    // STORY OPERATIONS (Instagram, Snapchat, WhatsApp Status)
+    // =========================================================================
+
+    private storyCounter = 0;
+
+    /**
+     * Add a story item (post to stories).
+     * @param userId - Who posted the story
+     * @param options - Story content options
+     */
+    addStory(
+        userId: string,
+        options: {
+            media: { url: string; type: "image" | "video" };
+            caption?: string;
+            duration?: number; // seconds
+        }
+    ): this {
+        const id = `story_${this.deviceId}_${userId}_${++this.storyCounter}`;
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "STORY_ITEM",
+            payload: {
+                id,
+                userId,
+                media: options.media,
+                caption: options.caption,
+                duration: options.duration ?? 5,
+                at: 0, // Will be set by compiler
+            },
+        } as any);
+        return this;
+    }
+
+    /**
+     * View a story.
+     * @param userId - Whose story to view
+     * @param itemIndex - Optional specific story item index
+     */
+    viewStory(userId: string, itemIndex?: number): this {
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "STORY_VIEW",
+            payload: {
+                userId,
+                itemIndex: itemIndex ?? 0,
+            },
+        } as any);
+        return this;
+    }
+
+    /**
+     * React to a story with emoji.
+     * @param userId - Whose story to react to
+     * @param emoji - Reaction emoji
+     */
+    reactToStory(userId: string, emoji: string): this {
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "STORY_REACTION",
+            payload: {
+                userId,
+                emoji,
+            },
+        } as any);
+        return this;
+    }
+
+    /**
+     * Reply to a story with message.
+     * @param userId - Whose story to reply to
+     * @param text - Reply message
+     */
+    replyToStory(userId: string, text: string): this {
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "STORY_REPLY",
+            payload: {
+                userId,
+                text,
+            },
+        } as any);
+        return this;
+    }
+
+    // =========================================================================
+    // FEED OPERATIONS (generic for Instagram Explore, Twitter, etc.)
+    // =========================================================================
+
+    /**
+     * Scroll the feed.
+     * @param position - Scroll position (0 = top)
+     * @param feedId - Which feed to scroll (default: current)
+     */
+    scrollFeed(position: number, feedId?: string): this {
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "FEED_SCROLL",
+            payload: {
+                feedId: feedId ?? "__main_feed__",
+                position,
+            },
+        } as any);
+        return this;
+    }
+
+    /**
+     * Refresh the feed.
+     * @param feedId - Which feed to refresh
+     */
+    refreshFeed(feedId?: string): this {
+        this.ops.push({
+            kind: "Custom" as const,
+            name: "FEED_REFRESH",
+            payload: {
+                feedId: feedId ?? "__main_feed__",
+            },
+        } as any);
+        return this;
+    }
+
+    // =========================================================================
     // KEYBOARD / TYPING SIMULATION
     // =========================================================================
 
