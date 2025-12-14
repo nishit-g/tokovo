@@ -108,6 +108,7 @@ export const APP_IDS = {
     IMESSAGE: "app_imessage",
     TIKTOK: "app_tiktok",
     TWITTER: "app_twitter",
+    PHONE: "app_phone",
 } as const;
 
 // =============================================================================
@@ -128,6 +129,10 @@ export const EVENT_KINDS = {
     APP: "APP",
     CAMERA: "CAMERA",
     AUDIO: "AUDIO",
+    KEYBOARD: "KEYBOARD",
+    OS: "OS",
+    TOUCH: "TOUCH",
+    CALL: "CALL",
 } as const;
 
 // =============================================================================

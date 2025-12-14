@@ -26,6 +26,7 @@ export { camera, ZoomOptions, PanOptions, ShakeOptions } from "./camera";
 export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
 export { os } from "./os";
 export { touch } from "./touch";
+export { call, CallEvent, IncomingCallOptions } from "./call";
 
 // Typing simulation
 export {
@@ -43,6 +44,7 @@ import { camera } from "./camera";
 import { audio as audioEvents } from "./audio";
 import { os } from "./os";
 import { touch } from "./touch";
+import { call } from "./call";
 
 /**
  * Bundled DSL object with all event factories
@@ -58,6 +60,7 @@ import { touch } from "./touch";
  *     dsl.audio.play(200, "notification"),
  *     dsl.os.setNetwork(250, "5G"),
  *     dsl.touch.tap(300, 540, 960),
+ *     dsl.call.incoming(0, "alice", "Alice"),
  * ];
  * ```
  */
@@ -68,4 +71,5 @@ export const dsl = {
     audio: audioEvents,
     os,
     touch,
+    call,
 };

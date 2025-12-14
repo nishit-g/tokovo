@@ -516,6 +516,62 @@ Device profiles and reducers.
 }
 ````
 
+## File: packages/episodes/src/examples/android-test.json
+````json
+{
+    "initialWorld": {
+        "devices": {
+            "bob_phone": {
+                "id": "bob_phone",
+                "profileId": "pixel",
+                "isLocked": true,
+                "notifications": []
+            }
+        },
+        "conversations": {
+            "conv_1": {
+                "id": "conv_1",
+                "messages": [
+                    {
+                        "id": "m1",
+                        "from": "other",
+                        "text": "Hey Bob!",
+                        "at": 0
+                    }
+                ]
+            }
+        },
+        "camera": {
+            "type": "APP_VIEW"
+        }
+    },
+    "events": [
+        {
+            "at": 10,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "SHOW_NOTIFICATION",
+            "appId": "app_whatsapp",
+            "title": "Alice",
+            "body": "Hey Bob!"
+        },
+        {
+            "at": 60,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "UNLOCK"
+        },
+        {
+            "at": 70,
+            "kind": "DEVICE",
+            "deviceId": "bob_phone",
+            "type": "OPEN_APP",
+            "appId": "app_whatsapp"
+        }
+    ]
+}
+````
+
 ## File: packages/episodes/package.json
 ````json
 {
@@ -14086,6 +14142,71 @@ export function getNotificationWidgets(
 }
 ````
 
+## File: packages/devices/src/iphone16/Frame.tsx
+````typescript
+import React from "react";
+import { iPhone16Profile } from "./profile";
+
+export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = iPhone16Profile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 165, // Scaled radius (55 * 3)
+            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Dynamic Island Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150, // Enough space for status bar
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "40px 60px 0 60px"
+            }}>
+                {/* Status Bar Content (Time, Battery, etc.) */}
+                {statusBar}
+            </div>
+
+            {/* Dynamic Island Cutout */}
+            <div style={{
+                position: "absolute",
+                top: 33, // 11 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 378, // 126 * 3
+                height: 111, // 37 * 3
+                backgroundColor: "black",
+                borderRadius: 60, // 20 * 3
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative"
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/devices/src/keyboards/index.ts
 ````typescript
 /**
@@ -16546,57 +16667,307 @@ export interface EpisodeConfig {
 {"root":["./src/index.ts","./src/types.ts","./src/author/beat-builder.ts","./src/author/device-builder.ts","./src/author/episode-builder.ts","./src/author/index.ts"],"version":"5.9.3"}
 ````
 
-## File: packages/episodes/src/examples/android-test.json
+## File: packages/episodes/src/examples/whatsapp-breakup-01.json
 ````json
 {
+    "meta": {
+        "title": "WhatsApp Breakup Story - The End",
+        "fps": 30,
+        "durationInFrames": 900
+    },
     "initialWorld": {
         "devices": {
-            "bob_phone": {
-                "id": "bob_phone",
-                "profileId": "pixel",
-                "isLocked": true,
-                "notifications": []
+            "main_phone": {
+                "id": "main_phone",
+                "profileId": "iphone16",
+                "isLocked": true
             }
         },
         "conversations": {
             "conv_1": {
                 "id": "conv_1",
+                "type": "dm",
+                "name": "Alex ❤️",
+                "avatar": null,
                 "messages": [
                     {
                         "id": "m1",
-                        "from": "other",
-                        "text": "Hey Bob!",
-                        "at": 0
+                        "from": "me",
+                        "text": "Hey, are you free to talk?",
+                        "type": "text",
+                        "status": "read"
+                    },
+                    {
+                        "id": "m2",
+                        "from": "me",
+                        "text": "There's something I need to tell you...",
+                        "type": "text",
+                        "status": "read"
                     }
-                ]
+                ],
+                "typing": {}
             }
         },
+        "appState": {},
         "camera": {
             "type": "APP_VIEW"
         }
     },
     "events": [
         {
-            "at": 10,
+            "at": 15,
             "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Alice",
-            "body": "Hey Bob!"
-        },
-        {
-            "at": 60,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
+            "deviceId": "main_phone",
             "type": "UNLOCK"
         },
         {
-            "at": 70,
+            "at": 30,
             "kind": "DEVICE",
-            "deviceId": "bob_phone",
+            "deviceId": "main_phone",
             "type": "OPEN_APP",
             "appId": "app_whatsapp"
+        },
+        {
+            "at": 60,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 120,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Yeah I'm here, what's going on?"
+        },
+        {
+            "at": 150,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "You're scaring me..."
+        },
+        {
+            "at": 180,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I've been thinking a lot lately"
+        },
+        {
+            "at": 210,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "About us. About where this is going."
+        },
+        {
+            "at": 240,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 300,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "What do you mean? I thought everything was fine?"
+        },
+        {
+            "at": 330,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "It's not you. It's really not."
+        },
+        {
+            "at": 360,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I just don't think I can do this anymore"
+        },
+        {
+            "at": 390,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 420,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Are you breaking up with me??"
+        },
+        {
+            "at": 450,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Over TEXT?!"
+        },
+        {
+            "at": 480,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I didn't know how else to say it"
+        },
+        {
+            "at": 510,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I'm sorry Alex. I really am."
+        },
+        {
+            "at": 540,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 600,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "After 2 years? You're doing this over WhatsApp?"
+        },
+        {
+            "at": 630,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "I gave you everything 😢"
+        },
+        {
+            "at": 660,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "I know. And I'm grateful for every moment we had."
+        },
+        {
+            "at": 690,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "me",
+            "text": "But I need to focus on myself right now"
+        },
+        {
+            "at": 720,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_START",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "TYPING_END",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️"
+        },
+        {
+            "at": 780,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "..."
+        },
+        {
+            "at": 810,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "I hope you find what you're looking for"
+        },
+        {
+            "at": 840,
+            "kind": "APP",
+            "appId": "app_whatsapp",
+            "type": "MESSAGE_RECEIVED",
+            "conversationId": "conv_1",
+            "from": "Alex ❤️",
+            "text": "Goodbye."
         }
     ]
 }
@@ -23271,71 +23642,6 @@ export const notificationDsl = {
 };
 ````
 
-## File: packages/devices/src/iphone16/Frame.tsx
-````typescript
-import React from "react";
-import { iPhone16Profile } from "./profile";
-
-export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = iPhone16Profile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 165, // Scaled radius (55 * 3)
-            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Dynamic Island Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150, // Enough space for status bar
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "40px 60px 0 60px"
-            }}>
-                {/* Status Bar Content (Time, Battery, etc.) */}
-                {statusBar}
-            </div>
-
-            {/* Dynamic Island Cutout */}
-            <div style={{
-                position: "absolute",
-                top: 33, // 11 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 378, // 126 * 3
-                height: 111, // 37 * 3
-                backgroundColor: "black",
-                borderRadius: 60, // 20 * 3
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: packages/devices/src/iphone16/profile.ts
 ````typescript
 import { DeviceProfile, CameraDeviceConfig } from "../types";
@@ -23382,6 +23688,150 @@ export const iPhone16Profile: DeviceProfile = {
         cornerRadius: 55,       // Pill corners
     },
 };
+````
+
+## File: packages/devices/src/pixel/Frame.tsx
+````typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column"
+        }}>
+            {/* Status Bar Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                zIndex: 1000,
+                pointerEvents: "none",
+                padding: "30px 40px 0 40px"
+            }}>
+                {statusBar}
+            </div>
+
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white"
+            }}>
+
+                {children}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/devices/src/pixel/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * Pixel camera configuration
+ * - Medium pan speed for balanced feel
+ * - Medium follow lag for responsive tracking
+ * - Slightly wider zoom range for Android
+ */
+const PixelCamera: CameraDeviceConfig = {
+    minZoom: 0.85,
+    maxZoom: 1.2,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 45,
+    safeAreaTop: 90,       // Status bar
+    safeAreaBottom: 48,    // Navigation bar/gesture area
+    followLagFactor: 0.5,  // Balanced lag
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Pixel 7 Pro Device Profile
+ * 
+ * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
+ * No Dynamic Island - uses status bar indicators
+ */
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    platform: "android",
+    dimensions: {
+        width: 1080,
+        height: 2400,
+    },
+    statusBarHeight: 90,
+    camera: PixelCamera,
+
+    // Android uses status bar for background app indicators
+    statusBarWidget: {
+        rightX: 1000,      // Near right edge
+        topY: 24,
+        maxWidth: 200,
+        height: 66,
+    },
+};
+````
+
+## File: packages/devices/src/index.ts
+````typescript
+export * from "./types";
+export * from "./iphone16/profile";
+export * from "./iphone16/Frame";
+export * from "./pixel/profile";
+export * from "./pixel/Frame";
+export * from "./reducer";
+export * from "./StatusBar";
+export * from "./keyboards";
+
+// Device profile registry for dynamic lookup
+import { DeviceProfile } from "./types";
+import { iPhone16Profile } from "./iphone16/profile";
+import { PixelProfile } from "./pixel/profile";
+
+const deviceProfileRegistry: Record<string, DeviceProfile> = {
+    "iphone16": iPhone16Profile,
+    "pixel": PixelProfile,
+    "pixel9": PixelProfile,
+};
+
+/**
+ * Get device profile by ID
+ * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
+ * @returns DeviceProfile or default iPhone16Profile if not found
+ */
+export function getDeviceProfile(profileId: string): DeviceProfile {
+    return deviceProfileRegistry[profileId] || iPhone16Profile;
+}
 ````
 
 ## File: packages/devices/src/types.ts
@@ -24944,312 +25394,6 @@ export type {
             "kind": "DEVICE",
             "deviceId": "user_phone",
             "type": "CALL_ENDED"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/whatsapp-breakup-01.json
-````json
-{
-    "meta": {
-        "title": "WhatsApp Breakup Story - The End",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": true
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "type": "dm",
-                "name": "Alex ❤️",
-                "avatar": null,
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "me",
-                        "text": "Hey, are you free to talk?",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "There's something I need to tell you...",
-                        "type": "text",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {},
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 15,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 30,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Yeah I'm here, what's going on?"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "You're scaring me..."
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I've been thinking a lot lately"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "About us. About where this is going."
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "What do you mean? I thought everything was fine?"
-        },
-        {
-            "at": 330,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "It's not you. It's really not."
-        },
-        {
-            "at": 360,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I just don't think I can do this anymore"
-        },
-        {
-            "at": 390,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Are you breaking up with me??"
-        },
-        {
-            "at": 450,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Over TEXT?!"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I didn't know how else to say it"
-        },
-        {
-            "at": 510,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I'm sorry Alex. I really am."
-        },
-        {
-            "at": 540,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "After 2 years? You're doing this over WhatsApp?"
-        },
-        {
-            "at": 630,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I gave you everything 😢"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I know. And I'm grateful for every moment we had."
-        },
-        {
-            "at": 690,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "But I need to focus on myself right now"
-        },
-        {
-            "at": 720,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "..."
-        },
-        {
-            "at": 810,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I hope you find what you're looking for"
-        },
-        {
-            "at": 840,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Goodbye."
         }
     ]
 }
@@ -28774,118 +28918,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
 };
 ````
 
-## File: packages/devices/src/pixel/Frame.tsx
-````typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Status Bar Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                zIndex: 1000,
-                pointerEvents: "none",
-                padding: "30px 40px 0 40px"
-            }}>
-                {statusBar}
-            </div>
-
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#121212", // Dark mode default for Android
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                color: "white"
-            }}>
-
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/devices/src/pixel/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * Pixel camera configuration
- * - Medium pan speed for balanced feel
- * - Medium follow lag for responsive tracking
- * - Slightly wider zoom range for Android
- */
-const PixelCamera: CameraDeviceConfig = {
-    minZoom: 0.85,
-    maxZoom: 1.2,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 45,
-    safeAreaTop: 90,       // Status bar
-    safeAreaBottom: 48,    // Navigation bar/gesture area
-    followLagFactor: 0.5,  // Balanced lag
-    panSpeedMultiplier: 1.0,
-};
-
-/**
- * Pixel 7 Pro Device Profile
- * 
- * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
- * No Dynamic Island - uses status bar indicators
- */
-export const PixelProfile: DeviceProfile = {
-    id: "pixel",
-    platform: "android",
-    dimensions: {
-        width: 1080,
-        height: 2400,
-    },
-    statusBarHeight: 90,
-    camera: PixelCamera,
-
-    // Android uses status bar for background app indicators
-    statusBarWidget: {
-        rightX: 1000,      // Near right edge
-        topY: 24,
-        maxWidth: 200,
-        height: 66,
-    },
-};
-````
-
 ## File: packages/dsl/src/author/camera-builder.ts
 ````typescript
 /**
@@ -32176,38 +32208,6 @@ export function getAppConfig<T extends keyof typeof appConfigs>(
 }
 ````
 
-## File: packages/devices/src/index.ts
-````typescript
-export * from "./types";
-export * from "./iphone16/profile";
-export * from "./iphone16/Frame";
-export * from "./pixel/profile";
-export * from "./pixel/Frame";
-export * from "./reducer";
-export * from "./StatusBar";
-export * from "./keyboards";
-
-// Device profile registry for dynamic lookup
-import { DeviceProfile } from "./types";
-import { iPhone16Profile } from "./iphone16/profile";
-import { PixelProfile } from "./pixel/profile";
-
-const deviceProfileRegistry: Record<string, DeviceProfile> = {
-    "iphone16": iPhone16Profile,
-    "pixel": PixelProfile,
-    "pixel9": PixelProfile,
-};
-
-/**
- * Get device profile by ID
- * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
- * @returns DeviceProfile or default iPhone16Profile if not found
- */
-export function getDeviceProfile(profileId: string): DeviceProfile {
-    return deviceProfileRegistry[profileId] || iPhone16Profile;
-}
-````
-
 ## File: packages/devices/src/StatusBar.tsx
 ````typescript
 import React from "react";
@@ -32697,6 +32697,407 @@ export { spotify, SpotifyTrackInfo, DEMO_TRACKS } from "./spotify-builder";
         }
     ]
 }
+````
+
+## File: packages/episodes/src/schema.ts
+````typescript
+import { z } from "zod";
+
+// --- App Icon & Home Screen ---
+export const AppIconSchema = z.object({
+    appId: z.string(),
+    label: z.string(),
+    icon: z.string(),
+    badge: z.number().optional()
+});
+
+export const AppFolderSchema = z.object({
+    type: z.literal("folder"),
+    name: z.string(),
+    apps: z.array(AppIconSchema)
+});
+
+export const HomeScreenPageSchema = z.object({
+    apps: z.array(z.union([AppIconSchema, AppFolderSchema]))
+});
+
+export const HomeScreenConfigSchema = z.object({
+    wallpaper: z.string().optional(),
+    pages: z.array(HomeScreenPageSchema),
+    dock: z.array(AppIconSchema)
+});
+
+// --- Device Events ---
+export const DeviceEventSchema = z.discriminatedUnion("type", [
+    // Lock/Unlock
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["LOCK", "UNLOCK"])
+    }),
+    // Open/Close App
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.enum(["OPEN_APP", "CLOSE_APP"]),
+        appId: z.string()
+    }),
+    // Go Home
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("GO_HOME")
+    }),
+    // Set Badge
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SET_BADGE"),
+        appId: z.string(),
+        count: z.number()
+    }),
+    // Show notification
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("SHOW_NOTIFICATION"),
+        appId: z.string(),
+        title: z.string(),
+        body: z.string(),
+        mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
+        icon: z.string().optional()
+    }),
+    // Dismiss notification
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("DISMISS_NOTIFICATION"),
+        notificationId: z.string()
+    }),
+    // Incoming call
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("INCOMING_CALL"),
+        callerId: z.string(),
+        callerName: z.string(),
+        callerAvatar: z.string().optional(),
+        isVideo: z.boolean().optional()
+    }),
+    // Call answered
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("CALL_ANSWERED")
+    }),
+    // Call ended
+    z.object({
+        at: z.number(),
+        kind: z.literal("DEVICE"),
+        deviceId: z.string(),
+        type: z.literal("CALL_ENDED")
+    })
+]);
+
+// --- App Events ---
+export const AppEventSchema = z.discriminatedUnion("type", [
+    // Message events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        text: z.string().optional(),
+        messageType: z.enum(["text", "system", "call_missed", "screenshot_alert"]).optional(),
+        metadata: z.record(z.any()).optional()
+    }),
+    // Media Message events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("IMAGE_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        imageUrl: z.string(),
+        caption: z.string().optional(),
+        text: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("VIDEO_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        videoUrl: z.string(),
+        thumbnailUrl: z.string().optional(),
+        duration: z.number(),
+        caption: z.string().optional()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GIF_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        gifUrl: z.string(),
+        caption: z.string().optional()
+    }),
+    // Typing
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.enum(["TYPING_START", "TYPING_END"]),
+        conversationId: z.string(),
+        from: z.string()
+    }),
+    // Voice message
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("VOICE_MESSAGE_RECEIVED"),
+        conversationId: z.string(),
+        from: z.string(),
+        duration: z.number()
+    }),
+    // Message interactions
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_READ"),
+        conversationId: z.string(),
+        messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("MESSAGE_DELETED"),
+        conversationId: z.string(),
+        messageId: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("REACTION_ADDED"),
+        conversationId: z.string(),
+        messageId: z.string(),
+        reaction: z.object({
+            emoji: z.string(),
+            count: z.number(),
+            fromMe: z.boolean().optional()
+        })
+    }),
+    // Group events
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GROUP_MEMBER_ADDED"),
+        conversationId: z.string(),
+        memberId: z.string(),
+        memberName: z.string(),
+        addedBy: z.string()
+    }),
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("GROUP_MEMBER_REMOVED"),
+        conversationId: z.string(),
+        memberId: z.string(),
+        memberName: z.string(),
+        removedBy: z.string()
+    }),
+    // Custom event
+    z.object({
+        at: z.number(),
+        kind: z.literal("APP"),
+        appId: z.string(),
+        type: z.literal("CUSTOM"),
+        name: z.string(),
+        payload: z.any().optional()
+    })
+]);
+
+// --- Camera Events ---
+export const CameraEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("CAMERA"),
+    type: z.literal("SET_VIEW"),
+    view: z.object({
+        type: z.enum(["APP_VIEW", "TRANSITION"]),
+        appId: z.string().optional()
+    })
+});
+
+// --- Audio Events ---
+export const AudioEventSchema = z.object({
+    at: z.number(),
+    kind: z.literal("AUDIO"),
+    type: z.literal("PLAY_SOUND"),
+    soundId: z.string(),
+    volume: z.number().optional()
+});
+
+// --- Combined Timeline Event ---
+export const TimelineEventSchema = z.union([
+    DeviceEventSchema,
+    AppEventSchema,
+    CameraEventSchema,
+    AudioEventSchema
+]);
+
+// --- Message Schema ---
+export const MessageSchema = z.object({
+    id: z.string(),
+    from: z.string(),
+    text: z.string().optional(),
+    type: z.enum([
+        "text", "image", "video", "gif", "voice", "system",
+        "deleted", "screenshot_alert", "call_missed"
+    ]).optional(),
+    at: z.number().optional(),
+    status: z.enum(["sending", "sent", "delivered", "read"]).optional(),
+
+    // Media fields
+    imageUrl: z.string().optional(),
+    videoUrl: z.string().optional(),
+    thumbnailUrl: z.string().optional(),
+    gifUrl: z.string().optional(),
+    caption: z.string().optional(),
+
+    // Voice/Video specific
+    duration: z.number().optional(),
+    isPlaying: z.boolean().optional(),
+    playProgress: z.number().optional(),
+
+    // Interactions
+    reactions: z.array(z.object({
+        emoji: z.string(),
+        count: z.number(),
+        fromMe: z.boolean().optional()
+    })).optional(),
+
+    replyTo: z.object({
+        messageId: z.string(),
+        text: z.string(),
+        from: z.string(),
+        type: z.string().optional()
+    }).optional(),
+
+    edited: z.boolean().optional(),
+
+    // System message fields
+    systemType: z.enum(["member_added", "member_removed", "admin_change", "group_created"]).optional(),
+    targetMember: z.string().optional(),
+    actorName: z.string().optional(),
+
+    // Flexible metadata
+    metadata: z.record(z.any()).optional()
+});
+
+// --- Group Member Schema ---
+export const GroupMemberSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    avatar: z.string().optional(),
+    phone: z.string().optional()
+});
+
+// --- Conversation Schema ---
+export const ConversationStateSchema = z.object({
+    id: z.string(),
+    type: z.enum(["dm", "group"]).optional(),
+    name: z.string().optional(),
+    avatar: z.string().optional(),
+    members: z.array(GroupMemberSchema).optional(),
+    admins: z.array(z.string()).optional(),
+    messages: z.array(MessageSchema),
+    typing: z.record(z.boolean()).optional()
+});
+
+// --- Notification Schema ---
+export const NotificationSchema = z.object({
+    id: z.string(),
+    appId: z.string(),
+    title: z.string(),
+    body: z.string(),
+    at: z.number(),
+    dismissedAt: z.number().optional(),
+    mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
+    icon: z.string().optional()
+});
+
+// --- Call State Schema ---
+export const CallStateSchema = z.object({
+    status: z.enum(["incoming", "active", "ended"]),
+    callerId: z.string(),
+    callerName: z.string(),
+    callerAvatar: z.string().optional(),
+    isVideo: z.boolean().optional(),
+    startedAt: z.number().optional(),
+    endedAt: z.number().optional()
+});
+
+// --- Device State Schema ---
+export const DeviceStateSchema = z.object({
+    id: z.string(),
+    profileId: z.string(),
+    isLocked: z.boolean(),
+    foregroundAppId: z.string().optional(),
+    notifications: z.array(NotificationSchema).optional(),
+    call: CallStateSchema.optional(),
+    homeScreen: HomeScreenConfigSchema.optional()
+});
+
+// --- Camera View Schema ---
+export const CameraViewSchema = z.object({
+    type: z.enum(["APP_VIEW", "TRANSITION"]),
+    appId: z.string().optional()
+});
+
+// --- Episode Meta Schema ---
+export const EpisodeMetaSchema = z.object({
+    title: z.string().optional(),
+    fps: z.number().optional(),
+    durationInFrames: z.number().optional()
+}).optional();
+
+// --- Episode Schema ---
+export const EpisodeSchema = z.object({
+    meta: EpisodeMetaSchema,
+    initialWorld: z.object({
+        devices: z.record(DeviceStateSchema),
+        conversations: z.record(ConversationStateSchema),
+        appState: z.record(z.any()).optional(),
+        camera: CameraViewSchema
+    }),
+    events: z.array(TimelineEventSchema)
+});
+
+// Type exports
+export type Episode = z.infer<typeof EpisodeSchema>;
+export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
+export type DeviceState = z.infer<typeof DeviceStateSchema>;
+export type ConversationState = z.infer<typeof ConversationStateSchema>;
+export type Message = z.infer<typeof MessageSchema>;
 ````
 
 ## File: packages/ir/src/timeline.ts
@@ -34790,699 +35191,6 @@ export * from "./timeline";
 export * from "./presets";
 ````
 
-## File: packages/episodes/src/schema.ts
-````typescript
-import { z } from "zod";
-
-// --- App Icon & Home Screen ---
-export const AppIconSchema = z.object({
-    appId: z.string(),
-    label: z.string(),
-    icon: z.string(),
-    badge: z.number().optional()
-});
-
-export const AppFolderSchema = z.object({
-    type: z.literal("folder"),
-    name: z.string(),
-    apps: z.array(AppIconSchema)
-});
-
-export const HomeScreenPageSchema = z.object({
-    apps: z.array(z.union([AppIconSchema, AppFolderSchema]))
-});
-
-export const HomeScreenConfigSchema = z.object({
-    wallpaper: z.string().optional(),
-    pages: z.array(HomeScreenPageSchema),
-    dock: z.array(AppIconSchema)
-});
-
-// --- Device Events ---
-export const DeviceEventSchema = z.discriminatedUnion("type", [
-    // Lock/Unlock
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.enum(["LOCK", "UNLOCK"])
-    }),
-    // Open/Close App
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.enum(["OPEN_APP", "CLOSE_APP"]),
-        appId: z.string()
-    }),
-    // Go Home
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("GO_HOME")
-    }),
-    // Set Badge
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("SET_BADGE"),
-        appId: z.string(),
-        count: z.number()
-    }),
-    // Show notification
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("SHOW_NOTIFICATION"),
-        appId: z.string(),
-        title: z.string(),
-        body: z.string(),
-        mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-        icon: z.string().optional()
-    }),
-    // Dismiss notification
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("DISMISS_NOTIFICATION"),
-        notificationId: z.string()
-    }),
-    // Incoming call
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("INCOMING_CALL"),
-        callerId: z.string(),
-        callerName: z.string(),
-        callerAvatar: z.string().optional(),
-        isVideo: z.boolean().optional()
-    }),
-    // Call answered
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("CALL_ANSWERED")
-    }),
-    // Call ended
-    z.object({
-        at: z.number(),
-        kind: z.literal("DEVICE"),
-        deviceId: z.string(),
-        type: z.literal("CALL_ENDED")
-    })
-]);
-
-// --- App Events ---
-export const AppEventSchema = z.discriminatedUnion("type", [
-    // Message events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        text: z.string().optional(),
-        messageType: z.enum(["text", "system", "call_missed", "screenshot_alert"]).optional(),
-        metadata: z.record(z.any()).optional()
-    }),
-    // Media Message events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("IMAGE_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        imageUrl: z.string(),
-        caption: z.string().optional(),
-        text: z.string().optional()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("VIDEO_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        videoUrl: z.string(),
-        thumbnailUrl: z.string().optional(),
-        duration: z.number(),
-        caption: z.string().optional()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GIF_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        gifUrl: z.string(),
-        caption: z.string().optional()
-    }),
-    // Typing
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.enum(["TYPING_START", "TYPING_END"]),
-        conversationId: z.string(),
-        from: z.string()
-    }),
-    // Voice message
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("VOICE_MESSAGE_RECEIVED"),
-        conversationId: z.string(),
-        from: z.string(),
-        duration: z.number()
-    }),
-    // Message interactions
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_READ"),
-        conversationId: z.string(),
-        messageId: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("MESSAGE_DELETED"),
-        conversationId: z.string(),
-        messageId: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("REACTION_ADDED"),
-        conversationId: z.string(),
-        messageId: z.string(),
-        reaction: z.object({
-            emoji: z.string(),
-            count: z.number(),
-            fromMe: z.boolean().optional()
-        })
-    }),
-    // Group events
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GROUP_MEMBER_ADDED"),
-        conversationId: z.string(),
-        memberId: z.string(),
-        memberName: z.string(),
-        addedBy: z.string()
-    }),
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("GROUP_MEMBER_REMOVED"),
-        conversationId: z.string(),
-        memberId: z.string(),
-        memberName: z.string(),
-        removedBy: z.string()
-    }),
-    // Custom event
-    z.object({
-        at: z.number(),
-        kind: z.literal("APP"),
-        appId: z.string(),
-        type: z.literal("CUSTOM"),
-        name: z.string(),
-        payload: z.any().optional()
-    })
-]);
-
-// --- Camera Events ---
-export const CameraEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("CAMERA"),
-    type: z.literal("SET_VIEW"),
-    view: z.object({
-        type: z.enum(["APP_VIEW", "TRANSITION"]),
-        appId: z.string().optional()
-    })
-});
-
-// --- Audio Events ---
-export const AudioEventSchema = z.object({
-    at: z.number(),
-    kind: z.literal("AUDIO"),
-    type: z.literal("PLAY_SOUND"),
-    soundId: z.string(),
-    volume: z.number().optional()
-});
-
-// --- Combined Timeline Event ---
-export const TimelineEventSchema = z.union([
-    DeviceEventSchema,
-    AppEventSchema,
-    CameraEventSchema,
-    AudioEventSchema
-]);
-
-// --- Message Schema ---
-export const MessageSchema = z.object({
-    id: z.string(),
-    from: z.string(),
-    text: z.string().optional(),
-    type: z.enum([
-        "text", "image", "video", "gif", "voice", "system",
-        "deleted", "screenshot_alert", "call_missed"
-    ]).optional(),
-    at: z.number().optional(),
-    status: z.enum(["sending", "sent", "delivered", "read"]).optional(),
-
-    // Media fields
-    imageUrl: z.string().optional(),
-    videoUrl: z.string().optional(),
-    thumbnailUrl: z.string().optional(),
-    gifUrl: z.string().optional(),
-    caption: z.string().optional(),
-
-    // Voice/Video specific
-    duration: z.number().optional(),
-    isPlaying: z.boolean().optional(),
-    playProgress: z.number().optional(),
-
-    // Interactions
-    reactions: z.array(z.object({
-        emoji: z.string(),
-        count: z.number(),
-        fromMe: z.boolean().optional()
-    })).optional(),
-
-    replyTo: z.object({
-        messageId: z.string(),
-        text: z.string(),
-        from: z.string(),
-        type: z.string().optional()
-    }).optional(),
-
-    edited: z.boolean().optional(),
-
-    // System message fields
-    systemType: z.enum(["member_added", "member_removed", "admin_change", "group_created"]).optional(),
-    targetMember: z.string().optional(),
-    actorName: z.string().optional(),
-
-    // Flexible metadata
-    metadata: z.record(z.any()).optional()
-});
-
-// --- Group Member Schema ---
-export const GroupMemberSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    avatar: z.string().optional(),
-    phone: z.string().optional()
-});
-
-// --- Conversation Schema ---
-export const ConversationStateSchema = z.object({
-    id: z.string(),
-    type: z.enum(["dm", "group"]).optional(),
-    name: z.string().optional(),
-    avatar: z.string().optional(),
-    members: z.array(GroupMemberSchema).optional(),
-    admins: z.array(z.string()).optional(),
-    messages: z.array(MessageSchema),
-    typing: z.record(z.boolean()).optional()
-});
-
-// --- Notification Schema ---
-export const NotificationSchema = z.object({
-    id: z.string(),
-    appId: z.string(),
-    title: z.string(),
-    body: z.string(),
-    at: z.number(),
-    dismissedAt: z.number().optional(),
-    mode: z.enum(["lockscreen", "headsup", "both"]).optional(),
-    icon: z.string().optional()
-});
-
-// --- Call State Schema ---
-export const CallStateSchema = z.object({
-    status: z.enum(["incoming", "active", "ended"]),
-    callerId: z.string(),
-    callerName: z.string(),
-    callerAvatar: z.string().optional(),
-    isVideo: z.boolean().optional(),
-    startedAt: z.number().optional(),
-    endedAt: z.number().optional()
-});
-
-// --- Device State Schema ---
-export const DeviceStateSchema = z.object({
-    id: z.string(),
-    profileId: z.string(),
-    isLocked: z.boolean(),
-    foregroundAppId: z.string().optional(),
-    notifications: z.array(NotificationSchema).optional(),
-    call: CallStateSchema.optional(),
-    homeScreen: HomeScreenConfigSchema.optional()
-});
-
-// --- Camera View Schema ---
-export const CameraViewSchema = z.object({
-    type: z.enum(["APP_VIEW", "TRANSITION"]),
-    appId: z.string().optional()
-});
-
-// --- Episode Meta Schema ---
-export const EpisodeMetaSchema = z.object({
-    title: z.string().optional(),
-    fps: z.number().optional(),
-    durationInFrames: z.number().optional()
-}).optional();
-
-// --- Episode Schema ---
-export const EpisodeSchema = z.object({
-    meta: EpisodeMetaSchema,
-    initialWorld: z.object({
-        devices: z.record(DeviceStateSchema),
-        conversations: z.record(ConversationStateSchema),
-        appState: z.record(z.any()).optional(),
-        camera: CameraViewSchema
-    }),
-    events: z.array(TimelineEventSchema)
-});
-
-// Type exports
-export type Episode = z.infer<typeof EpisodeSchema>;
-export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
-export type DeviceState = z.infer<typeof DeviceStateSchema>;
-export type ConversationState = z.infer<typeof ConversationStateSchema>;
-export type Message = z.infer<typeof MessageSchema>;
-````
-
-## File: packages/core/src/plugin.ts
-````typescript
-/**
- * Plugin System - Self-contained app registration
- * 
- * Apps register themselves as plugins with all their dependencies:
- * - UI components
- * - State reducers  
- * - Sound effects
- * - Event types they handle
- * - Platform-specific widgets (Dynamic Island, status bar)
- */
-
-import { WorldState, Notification, BackgroundAppState } from "./types";
-import { AppReducer, ReducerRegistry } from "./engine";
-import { Platform } from "./tokens";
-import type { NotificationAdapter } from "./notification-adapter";
-export type { NotificationAdapter };
-
-// =============================================================================
-// PLUGIN TYPES
-// =============================================================================
-
-/**
- * Props passed to all app view components
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: any;
-    platform?: "ios" | "android";
-    deviceId?: string;
-}
-
-/**
- * App view component type (generic, will be React.FC in renderer)
- */
-export type AppViewComponent = (props: AppViewProps) => any;
-
-// =============================================================================
-// WIDGET TYPES
-// =============================================================================
-
-/** Widget display modes */
-export type WidgetMode =
-    | "dynamicIsland"    // iOS Dynamic Island
-    | "statusBar"        // Android status bar indicator
-    | "lockscreen"       // Lock screen widget
-    | "notification";    // Notification banner
-
-// Platform type is re-exported from tokens.ts
-
-/**
- * Props passed to widget components
- */
-export interface WidgetProps {
-    /** App-specific state from world.appState[appId] */
-    appState: any;
-
-    /** Background app state (e.g., playing track info) */
-    backgroundApp?: BackgroundAppState;
-
-    /** Device profile for dimensions */
-    deviceProfile: {
-        dynamicIsland?: {
-            centerX: number;
-            topY: number;
-            collapsedWidth: number;
-            collapsedHeight: number;
-            expandedWidth: number;
-            expandedHeight: number;
-            cornerRadius: number;
-        };
-        statusBarWidget?: {
-            rightX: number;
-            topY: number;
-            maxWidth: number;
-            height: number;
-        };
-    };
-
-    /** Current frame */
-    currentFrame: number;
-
-    /** Widget expansion mode */
-    expansionMode: "minimal" | "compact" | "expanded";
-
-    /** Platform */
-    platform: Platform;
-}
-
-/**
- * Widget component type
- */
-export type WidgetComponent = (props: WidgetProps) => any;
-
-/**
- * Widget slot definition - describes one widget an app provides
- */
-export interface WidgetSlot {
-    /** Widget rendering mode */
-    mode: WidgetMode;
-
-    /** Which platforms this widget supports */
-    platforms: Platform[];
-
-    /** Priority when multiple widgets compete (higher wins) */
-    priority: number;
-
-    /** React component to render */
-    component: WidgetComponent;
-
-    /** Optional: expansion modes this widget supports */
-    expansionModes?: ("minimal" | "compact" | "expanded")[];
-}
-
-
-
-
-/**
- * Plugin definition - everything an app needs to function
- */
-export interface TokovoPlugin {
-    /** Unique app ID (e.g., "app_whatsapp") */
-    id: string;
-
-    /** Display name */
-    name: string;
-
-    /** Plugin version */
-    version: string;
-
-    /** App icon for notifications/home screen */
-    icon?: string;
-
-    /** Primary color for theming */
-    primaryColor?: string;
-
-    /** React component to render the app view */
-    appView?: AppViewComponent;
-
-    /** State reducer for APP events */
-    reducer?: AppReducer;
-
-    /** Event types this plugin handles */
-    eventTypes?: string[];
-
-    /** Sound effect mappings */
-    sounds?: Record<string, string>;
-
-    /** Notification sound */
-    notificationSound?: string;
-
-    /** Default app state */
-    defaultState?: any;
-
-    // === NEW: Widget System ===
-
-    /** Platform-specific widgets this app provides */
-    widgets?: WidgetSlot[];
-
-    /** Notification adapter for formatting */
-    notificationAdapter?: NotificationAdapter;
-}
-
-// =============================================================================
-// PLUGIN MANAGER
-// =============================================================================
-
-/**
- * PluginManager - Central registry for all app plugins
- */
-class PluginManagerClass {
-    private plugins = new Map<string, TokovoPlugin>();
-    private viewRegistry = new Map<string, AppViewComponent>();
-
-    /**
-     * Register a plugin
-     */
-    register(plugin: TokovoPlugin): void {
-        if (this.plugins.has(plugin.id)) {
-            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
-        }
-
-        this.plugins.set(plugin.id, plugin);
-
-        // Auto-register reducer
-        if (plugin.reducer) {
-            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-        }
-
-        // Store view component
-        if (plugin.appView) {
-            this.viewRegistry.set(plugin.id, plugin.appView);
-        }
-
-        // Auto-register widgets with WidgetRegistry
-        if (plugin.widgets && plugin.widgets.length > 0) {
-            // Import at top level or use type-only to avoid circular dependency
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            import("./widget-registry").then(({ WidgetRegistry }) => {
-                WidgetRegistry.register(plugin.id, plugin.widgets!);
-                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
-            });
-        }
-
-        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
-    }
-
-    /**
-     * Get a plugin by ID
-     */
-    get(id: string): TokovoPlugin | undefined {
-        return this.plugins.get(id);
-    }
-
-    /**
-     * Get app view component
-     */
-    getView(id: string): AppViewComponent | undefined {
-        return this.viewRegistry.get(id);
-    }
-
-    /**
-     * Get all registered plugins
-     */
-    getAll(): TokovoPlugin[] {
-        return Array.from(this.plugins.values());
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getAppIds(): string[] {
-        return Array.from(this.plugins.keys());
-    }
-
-    /**
-     * Check if plugin is registered
-     */
-    has(id: string): boolean {
-        return this.plugins.has(id);
-    }
-
-    /**
-     * Get plugin metadata for display
-     */
-    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
-        const plugin = this.plugins.get(id);
-        if (!plugin) return undefined;
-        return {
-            name: plugin.name,
-            icon: plugin.icon,
-            color: plugin.primaryColor,
-        };
-    }
-
-    /**
-     * Get sound for an event from plugin
-     */
-    getSound(pluginId: string, soundKey: string): string | undefined {
-        const plugin = this.plugins.get(pluginId);
-        return plugin?.sounds?.[soundKey];
-    }
-}
-
-export const PluginManager = new PluginManagerClass();
-
-// =============================================================================
-// PLUGIN HELPERS
-// =============================================================================
-
-/**
- * Create a plugin definition with defaults
- */
-export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
-    return {
-        ...config,
-        version: config.version ?? "1.0.0",
-        eventTypes: config.eventTypes ?? [],
-        sounds: config.sounds ?? {},
-    } as TokovoPlugin;
-}
-
-/**
- * Register multiple plugins at once
- */
-export function registerPlugins(plugins: TokovoPlugin[]): void {
-    plugins.forEach(plugin => PluginManager.register(plugin));
-}
-````
-
 ## File: packages/devices/src/reducer.ts
 ````typescript
 import { produce } from "immer";
@@ -35811,6 +35519,372 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
+## File: packages/renderer/src/DeviceFrame.tsx
+````typescript
+import React from "react";
+import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
+import { DeviceState } from "@tokovo/core";
+
+interface DeviceFrameProps {
+    profileId: string;
+    isLocked?: boolean;
+    notifications?: any[];
+    children: React.ReactNode;
+    variant?: "ios" | "android";
+    /** Device state - used to read os for StatusBar */
+    device?: DeviceState;
+}
+
+export const DeviceFrame: React.FC<DeviceFrameProps> = ({
+    profileId,
+    isLocked,
+    notifications,
+    children,
+    variant,
+    device
+}) => {
+    // Strategy pattern: Select frame component based on profile ID
+    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
+        profileId === "pixel" ? PixelFrame : React.Fragment;
+
+    // Determine props to pass to the FrameComponent
+    const frameProps = {};
+    if (profileId === "iphone16" || profileId === "pixel") {
+        if (variant) {
+            Object.assign(frameProps, { variant });
+        }
+    }
+
+    // StatusBar reads from device.os if available
+    const statusBar = (
+        <StatusBar
+            os={device?.os}
+            variant={variant}
+            theme={variant === "android" ? "dark" : "light"}
+        />
+    );
+
+    return (
+        <FrameComponent {...frameProps} statusBar={statusBar}>
+            {children}
+            {isLocked && (
+                <div style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(0,0,0,0.8)",
+                    backdropFilter: "blur(20px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    paddingTop: 300,
+                    color: "white",
+                    zIndex: 2000
+                }}>
+                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
+                    </div>
+                </div>
+            )}
+        </FrameComponent>
+    );
+};
+````
+
+## File: packages/core/src/plugin.ts
+````typescript
+/**
+ * Plugin System - Self-contained app registration
+ * 
+ * Apps register themselves as plugins with all their dependencies:
+ * - UI components
+ * - State reducers  
+ * - Sound effects
+ * - Event types they handle
+ * - Platform-specific widgets (Dynamic Island, status bar)
+ */
+
+import { WorldState, Notification, BackgroundAppState } from "./types";
+import { AppReducer, ReducerRegistry } from "./engine";
+import { Platform } from "./tokens";
+import type { NotificationAdapter } from "./notification-adapter";
+export type { NotificationAdapter };
+
+// =============================================================================
+// PLUGIN TYPES
+// =============================================================================
+
+/**
+ * Props passed to all app view components
+ */
+export interface AppViewProps {
+    world: WorldState;
+    t?: number;
+    layout?: any;
+    platform?: "ios" | "android";
+    deviceId?: string;
+}
+
+/**
+ * App view component type (generic, will be React.FC in renderer)
+ */
+export type AppViewComponent = (props: AppViewProps) => any;
+
+// =============================================================================
+// WIDGET TYPES
+// =============================================================================
+
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+// Platform type is re-exported from tokens.ts
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: any;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => any;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+
+
+
+/**
+ * Plugin definition - everything an app needs to function
+ */
+export interface TokovoPlugin {
+    /** Unique app ID (e.g., "app_whatsapp") */
+    id: string;
+
+    /** Display name */
+    name: string;
+
+    /** Plugin version */
+    version: string;
+
+    /** App icon for notifications/home screen */
+    icon?: string;
+
+    /** Primary color for theming */
+    primaryColor?: string;
+
+    /** React component to render the app view */
+    appView?: AppViewComponent;
+
+    /** State reducer for APP events */
+    reducer?: AppReducer;
+
+    /** Event types this plugin handles */
+    eventTypes?: string[];
+
+    /** Sound effect mappings */
+    sounds?: Record<string, string>;
+
+    /** Notification sound */
+    notificationSound?: string;
+
+    /** Default app state */
+    defaultState?: any;
+
+    // === NEW: Widget System ===
+
+    /** Platform-specific widgets this app provides */
+    widgets?: WidgetSlot[];
+
+    /** Notification adapter for formatting */
+    notificationAdapter?: NotificationAdapter;
+}
+
+// =============================================================================
+// PLUGIN MANAGER
+// =============================================================================
+
+/**
+ * PluginManager - Central registry for all app plugins
+ */
+class PluginManagerClass {
+    private plugins = new Map<string, TokovoPlugin>();
+    private viewRegistry = new Map<string, AppViewComponent>();
+
+    /**
+     * Register a plugin
+     */
+    register(plugin: TokovoPlugin): void {
+        if (this.plugins.has(plugin.id)) {
+            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+        }
+
+        this.plugins.set(plugin.id, plugin);
+
+        // Auto-register reducer
+        if (plugin.reducer) {
+            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+        }
+
+        // Store view component
+        if (plugin.appView) {
+            this.viewRegistry.set(plugin.id, plugin.appView);
+        }
+
+        // Auto-register widgets with WidgetRegistry
+        if (plugin.widgets && plugin.widgets.length > 0) {
+            // Import at top level or use type-only to avoid circular dependency
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            import("./widget-registry").then(({ WidgetRegistry }) => {
+                WidgetRegistry.register(plugin.id, plugin.widgets!);
+                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
+            });
+        }
+
+        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
+    }
+
+    /**
+     * Get a plugin by ID
+     */
+    get(id: string): TokovoPlugin | undefined {
+        return this.plugins.get(id);
+    }
+
+    /**
+     * Get app view component
+     */
+    getView(id: string): AppViewComponent | undefined {
+        return this.viewRegistry.get(id);
+    }
+
+    /**
+     * Get all registered plugins
+     */
+    getAll(): TokovoPlugin[] {
+        return Array.from(this.plugins.values());
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getAppIds(): string[] {
+        return Array.from(this.plugins.keys());
+    }
+
+    /**
+     * Check if plugin is registered
+     */
+    has(id: string): boolean {
+        return this.plugins.has(id);
+    }
+
+    /**
+     * Get plugin metadata for display
+     */
+    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+        const plugin = this.plugins.get(id);
+        if (!plugin) return undefined;
+        return {
+            name: plugin.name,
+            icon: plugin.icon,
+            color: plugin.primaryColor,
+        };
+    }
+
+    /**
+     * Get sound for an event from plugin
+     */
+    getSound(pluginId: string, soundKey: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.sounds?.[soundKey];
+    }
+}
+
+export const PluginManager = new PluginManagerClass();
+
+// =============================================================================
+// PLUGIN HELPERS
+// =============================================================================
+
+/**
+ * Create a plugin definition with defaults
+ */
+export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
+    return {
+        ...config,
+        version: config.version ?? "1.0.0",
+        eventTypes: config.eventTypes ?? [],
+        sounds: config.sounds ?? {},
+    } as TokovoPlugin;
+}
+
+/**
+ * Register multiple plugins at once
+ */
+export function registerPlugins(plugins: TokovoPlugin[]): void {
+    plugins.forEach(plugin => PluginManager.register(plugin));
+}
+````
+
 ## File: packages/apps-whatsapp/src/runtime.ts
 ````typescript
 /**
@@ -36131,80 +36205,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
 // Register the reducer with the core engine
 ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
-````
-
-## File: packages/renderer/src/DeviceFrame.tsx
-````typescript
-import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { DeviceState } from "@tokovo/core";
-
-interface DeviceFrameProps {
-    profileId: string;
-    isLocked?: boolean;
-    notifications?: any[];
-    children: React.ReactNode;
-    variant?: "ios" | "android";
-    /** Device state - used to read os for StatusBar */
-    device?: DeviceState;
-}
-
-export const DeviceFrame: React.FC<DeviceFrameProps> = ({
-    profileId,
-    isLocked,
-    notifications,
-    children,
-    variant,
-    device
-}) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
-
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
-    }
-
-    // StatusBar reads from device.os if available
-    const statusBar = (
-        <StatusBar
-            os={device?.os}
-            variant={variant}
-            theme={variant === "android" ? "dark" : "light"}
-        />
-    );
-
-    return (
-        <FrameComponent {...frameProps} statusBar={statusBar}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
-};
 ````
 
 ## File: packages/core/src/engine.ts
@@ -38436,25 +38436,6 @@ export interface EpisodeMeta extends EpisodeConfig {
 }
 ````
 
-## File: packages/episodes/src/index.ts
-````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
-import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
-import cameraShowcase from "./examples/camera-showcase.json";
-import multiPovDemo from "./examples/multi-pov-demo.json";
-import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
-
-// DSL-based episodes
-export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
-
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
-````
-
 ## File: packages/renderer/src/registry.ts
 ````typescript
 /**
@@ -38539,6 +38520,25 @@ class AppRegistryClass {
 }
 
 export const AppRegistry = new AppRegistryClass();
+````
+
+## File: packages/episodes/src/index.ts
+````typescript
+import exampleEpisode from "./examples/whatsapp-breakup-01.json";
+import androidEpisode from "./examples/android-test.json";
+import instagramEpisode from "./examples/instagram-test.json";
+import notificationCallDemo from "./examples/notification-call-demo.json";
+import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
+import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
+import cameraShowcase from "./examples/camera-showcase.json";
+import multiPovDemo from "./examples/multi-pov-demo.json";
+import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
+
+// DSL-based episodes
+export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+
+export * from "./schema";
+export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
 ````
 
 ## File: packages/core/src/index.ts
@@ -39623,1232 +39623,6 @@ export const RemotionRoot: React.FC = () => {
         </>
     );
 };
-````
-
-## File: packages/core/src/types.ts
-````typescript
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-
-// =============================================================================
-// NOTIFICATION IR (Intermediate Representation)
-// =============================================================================
-
-/** Notification priority levels */
-export type NotificationPriority = "passive" | "active" | "timeSensitive" | "critical";
-
-/** Notification lifecycle state */
-export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
-
-/** Notification delivery conditions */
-export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
-
-/**
- * NotificationIR - Production-grade notification representation
- */
-export interface Notification {
-    id: string;
-    deviceId?: string;                // Who receives it
-    appId: string;
-
-    // Content
-    title: string;
-    body: string;
-    icon?: string;
-    preview?: {
-        kind: "text" | "image" | "video";
-        value: string;
-        aspectRatio?: number;
-    };
-
-    // Action buttons (max 3)
-    actions?: Array<{
-        id: string;
-        label: string;
-        icon?: string;
-        destructive?: boolean;
-    }>;
-    replyable?: boolean;              // Quick reply input
-
-    // Grouping
-    groupKey?: string;
-    threadId?: string;
-
-    // Priority & Mode
-    priority?: NotificationPriority;
-    mode?: "lockscreen" | "headsup" | "both" | "silent";
-    deliverWhen?: NotificationDeliverWhen;
-
-    // === LIFECYCLE (state machine) ===
-    at: number;                       // DSL spawn time
-    deliveredAt?: number;             // When entered device state
-    state?: NotificationState;
-    updatedAt?: number;               // For updates (same id)
-    dismissedAt?: number;
-
-    // Heads-up lifecycle
-    headsUp?: {
-        shownAt?: number;
-        hideAt?: number;
-        duration?: number;            // OS default if not set
-    };
-
-    // Metadata
-    metadata?: Record<string, any>;
-}
-
-// Alias for backward compatibility
-export type NotificationIR = Notification;
-
-/**
- * Notification group for stacking multiple notifications
- */
-export interface NotificationGroup {
-    key: string;
-    appId: string;
-    notifications: Notification[];
-    collapsed: boolean;
-    count: number;
-    latestAt: number;
-}
-
-// =============================================================================
-// NOTIFICATION POLICY (OS-level rules)
-// =============================================================================
-
-export interface NotificationPolicyIR {
-    maxHeadsUpVisible: number;
-    headsUpDurationByPriority: Record<NotificationPriority, number>;
-    replaceOnNewFromSameThread: boolean;
-    groupCollapseThreshold: number;
-    autoGroupByApp: boolean;
-    statusBarIconLimit: number;
-    expandDurationMs: number;
-}
-
-export const IOS_NOTIFICATION_POLICY: NotificationPolicyIR = {
-    maxHeadsUpVisible: 1,
-    headsUpDurationByPriority: { passive: 0, active: 90, timeSensitive: 150, critical: 240 }, // frames
-    replaceOnNewFromSameThread: true,
-    groupCollapseThreshold: 3,
-    autoGroupByApp: true,
-    statusBarIconLimit: 0,
-    expandDurationMs: 300,
-};
-
-export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
-    maxHeadsUpVisible: 1,
-    headsUpDurationByPriority: { passive: 0, active: 120, timeSensitive: 180, critical: 9999 },
-    replaceOnNewFromSameThread: false,
-    groupCollapseThreshold: 4,
-    autoGroupByApp: true,
-    statusBarIconLimit: 5,
-    expandDurationMs: 200,
-};
-
-// =============================================================================
-// NOTIFICATION CENTER STATE
-// =============================================================================
-
-export interface NotificationCenterState {
-    items: Notification[];            // All notifications (persistent)
-    headsUp: string | null;           // Currently shown notification ID
-    headsUpQueue: string[];           // Pending heads-up if current is shown
-    groups: NotificationGroup[];      // Computed groups
-}
-
-export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
-    items: [],
-    headsUp: null,
-    headsUpQueue: [],
-    groups: [],
-};
-
-// =============================================================================
-// DYNAMIC ISLAND STATE
-// =============================================================================
-
-export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
-export type DynamicIslandContent = "notification" | "music" | "call" | "timer" | null;
-
-export interface DynamicIslandState {
-    visible: boolean;
-    mode: DynamicIslandMode;
-    activeContent: DynamicIslandContent;
-    lockedUntil?: number;             // Frame lock for animations
-}
-
-export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
-    visible: true,
-    mode: "idle",
-    activeContent: null,
-};
-
-// =============================================================================
-// STATUS BAR ICONS (Android)
-// =============================================================================
-
-export interface StatusBarIcon {
-    appId: string;
-    count: number;
-    iconUrl?: string;
-}
-
-// =============================================================================
-// BACKGROUND APP STATE
-// =============================================================================
-
-export interface BackgroundAppState {
-    appId: string;
-    startedAt: number;
-    indicator?: "music" | "call" | "recording" | "location";
-    label?: string;
-}
-
-// =============================================================================
-// CALL STATE
-// =============================================================================
-
-export interface CallState {
-    status: "incoming" | "active" | "ended";
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo?: boolean;
-    startedAt?: number;
-    endedAt?: number;
-}
-
-// KEYBOARD STATE
-// =============================================================================
-
-/** Keyboard layout types */
-export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
-
-/**
- * KeyboardState - Virtual keyboard for realistic typing simulation
- * 
- * This is DEVICE-level state, shared across all apps.
- * Apps read keyboard.inputText to show what's being typed.
- */
-export interface KeyboardState {
-    /** Whether keyboard is visible */
-    visible: boolean;
-    /** Current keyboard layout */
-    layout: KeyboardLayout;
-    /** Currently pressed key (for highlight) */
-    currentKey: string | null;
-    /** Frame when key was pressed (for pop-up timing) */
-    keyPressedAt: number | null;
-    /** Current text in input field (character-by-character) */
-    inputText: string;
-    /** Cursor position within inputText */
-    cursorPosition: number;
-    /** Whether cursor should blink */
-    cursorVisible: boolean;
-}
-
-/** Default keyboard state */
-export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
-    visible: false,
-    layout: "qwerty",
-    currentKey: null,
-    keyPressedAt: null,
-    inputText: "",
-    cursorPosition: 0,
-    cursorVisible: true,
-};
-
-// =============================================================================
-// DEVICE OS STATE (Clock, Battery, Network, DND)
-// =============================================================================
-
-/** Network connection type */
-export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
-
-/**
- * DeviceOSState - Operating system level state
- * 
- * Controls the "reality simulation" layer:
- * - Time progression (status bar, message timestamps)
- * - Battery drain and low power mode
- * - Network conditions affecting message delivery
- * - Do Not Disturb mode
- */
-export interface DeviceOSState {
-    /** Current device time (Unix timestamp ms) */
-    clock: number;
-    /** Battery percentage (0-100) */
-    battery: number;
-    /** Whether device is charging */
-    charging: boolean;
-    /** Network connection type */
-    network: NetworkType;
-    /** WiFi signal strength (0-3) */
-    wifiStrength: number;
-    /** Cellular signal strength (0-4) */
-    cellStrength: number;
-    /** Do Not Disturb mode (suppresses heads-up notifications) */
-    dnd: boolean;
-    /** Low power mode enabled */
-    lowPowerMode: boolean;
-    /** Airplane mode enabled */
-    airplaneMode: boolean;
-}
-
-/** Default OS state (normal day, full battery, good network) */
-export const DEFAULT_OS_STATE: DeviceOSState = {
-    clock: Date.now(),
-    battery: 85,
-    charging: false,
-    network: "wifi",
-    wifiStrength: 3,
-    cellStrength: 4,
-    dnd: false,
-    lowPowerMode: false,
-    airplaneMode: false,
-};
-
-// =============================================================================
-// DEVICE STATE
-// =============================================================================
-
-export interface DeviceState {
-    id: string;
-    profileId: string;
-    ownerName?: string;
-    isLocked: boolean;
-    foregroundAppId?: string;
-
-    // === NOTIFICATIONS (enhanced) ===
-    notifications: Notification[];           // Legacy access
-    notificationCenter?: NotificationCenterState;
-    dynamicIsland?: DynamicIslandState;
-    statusBarIcons?: StatusBarIcon[];
-
-    // Background apps
-    backgroundApps?: BackgroundAppState[];
-    call?: CallState;
-    homeScreen?: HomeScreenConfig;
-    sound?: { activeSoundId?: string };
-    theme?: DeviceTheme;
-
-    // === KEYBOARD (for typing simulation) ===
-    keyboard?: KeyboardState;
-
-    // === OS LAYER (clock, battery, network, DND) ===
-    os?: DeviceOSState;
-}
-
-
-// Device-level theme configuration
-export interface DeviceTheme {
-    platform?: "ios" | "android";          // UI style (default: ios)
-    frameColor?: string;                    // Device bezel color (default: black)
-    wallpaper?: string;                     // Lock/home screen wallpaper (URL or CSS gradient)
-    statusBarStyle?: "light" | "dark";     // Status bar text color
-    accentColor?: string;                   // App tint color override
-}
-
-// --- Home Screen Types ---
-
-export interface HomeScreenConfig {
-    wallpaper?: string;              // URL or CSS gradient
-    pages: HomeScreenPage[];
-    dock: AppIcon[];
-}
-
-export interface HomeScreenPage {
-    apps: (AppIcon | AppFolder)[];
-}
-
-export interface AppIcon {
-    appId: string;
-    label: string;
-    icon: string;                    // URL or emoji
-    badge?: number;
-}
-
-export interface AppFolder {
-    type: "folder";
-    name: string;
-    apps: AppIcon[];
-}
-
-export interface ConversationState {
-    id: ConversationId;
-    type?: "dm" | "group";
-    name?: string;                   // Contact or group name
-    avatar?: string;
-
-    // Group-specific
-    members?: GroupMember[];
-    admins?: string[];               // Member IDs who are admins
-
-    messages: Message[];
-    typing?: Record<string, boolean>;
-}
-
-export interface GroupMember {
-    id: string;
-    name: string;
-    avatar?: string;
-    phone?: string;
-}
-
-export interface Message {
-    id: string;
-    from: string;                    // "me" or member ID
-    text?: string;
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
-    at?: number;                     // Timestamp frame
-
-    // System message
-    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
-    targetMember?: string;
-    actorName?: string;
-
-    // Voice message
-    duration?: number;
-    isPlaying?: boolean;
-    playProgress?: number;
-
-    // Image message
-    imageUrl?: string;
-
-    // Video message
-    videoUrl?: string;
-    thumbnailUrl?: string;
-
-    // GIF message
-    gifUrl?: string;
-
-    // Caption for media messages
-    caption?: string;
-
-    // Layout hints
-    height?: number;
-
-    // Future features
-    reactions?: Reaction[];
-    replyTo?: ReplyTo;
-    linkPreview?: LinkPreview;
-
-    // Read status
-    status?: "sending" | "sent" | "delivered" | "read";
-}
-
-// =============================================================================
-// FUTURE FEATURES - Message Extensions
-// =============================================================================
-
-export interface Reaction {
-    emoji: string;
-    from: string;
-    at?: number;
-}
-
-export interface ReplyTo {
-    messageId: string;
-    text?: string;
-    from: string;
-    type?: "text" | "image" | "video" | "gif" | "voice";
-}
-
-export interface LinkPreview {
-    url: string;
-    title?: string;
-    description?: string;
-    image?: string;
-    siteName?: string;
-}
-
-// =============================================================================
-// CAMERA SYSTEM TYPES
-// =============================================================================
-
-// Easing types for smooth cinematic motion
-export type EasingType =
-    | "linear"
-    | "ease-in"
-    | "ease-out"
-    | "ease-in-out"
-    | "bounce"
-    | "elastic"
-    | "cinematic";  // Custom S-curve for film-like motion
-
-// =============================================================================
-// TRANSITION SYSTEM TYPES
-// =============================================================================
-
-// Transition types for screen animations
-export type TransitionType =
-    | "FADE"
-    | "SLIDE_LEFT"
-    | "SLIDE_RIGHT"
-    | "SLIDE_UP"
-    | "SLIDE_DOWN"
-    | "ZOOM_IN"
-    | "ZOOM_OUT"
-    | "CROSS_DISSOLVE";
-
-// =============================================================================
-// HIGHLIGHT SYSTEM TYPES
-// =============================================================================
-
-// Highlight styles for message emphasis
-export type HighlightStyle =
-    | "pulse"
-    | "glow"
-    | "shake"
-    | "bounce"
-    | "spotlight"
-    | "scale";
-
-// Camera effect types
-export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
-
-// Targets for FOCUS effect - general purpose, not app-specific
-export type FocusTarget =
-    | { type: "app"; appId?: string }                                    // Focus on app viewport
-    | { type: "notification"; notificationId?: string }                  // Focus on notification
-    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
-    | { type: "device"; deviceId?: string }                              // Focus on device
-    | { type: "element"; selector: string }                              // Focus on CSS selector
-    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
-
-// Individual camera effect definitions
-export interface CameraZoomEffect {
-    type: "ZOOM";
-    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
-    originX?: number;        // 0-1, default 0.5 (center)
-    originY?: number;        // 0-1, default 0.5 (center)
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraPanEffect {
-    type: "PAN";
-    translateX: number;      // pixels (or normalized 0-1 if relative)
-    translateY: number;      // pixels
-    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraShakeEffect {
-    type: "SHAKE";
-    intensity: number;       // amplitude in pixels
-    frequency: number;       // shakes per second
-    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
-    duration: number;        // frames
-    seed?: number;           // for deterministic randomness
-}
-
-export interface CameraFocusEffect {
-    type: "FOCUS";
-    target: FocusTarget;
-    scale?: number;          // zoom level when focused, default 1.5
-    duration: number;        // frames
-    easing?: EasingType;
-    holdDuration?: number;   // frames to hold at focus before returning
-}
-
-export interface CameraCutEffect {
-    type: "CUT";
-    toDeviceId?: string;     // switch to different device
-    toView?: "app" | "lockscreen" | "homescreen";
-    fadeMs?: number;         // optional fade transition (0 = hard cut)
-}
-
-export interface CameraResetEffect {
-    type: "RESET";
-    duration: number;        // frames to animate back to default
-    easing?: EasingType;
-}
-
-export type CameraEffect =
-    | CameraZoomEffect
-    | CameraPanEffect
-    | CameraShakeEffect
-    | CameraFocusEffect
-    | CameraCutEffect
-    | CameraResetEffect;
-
-// Active camera effect (with timing info)
-export interface ActiveCameraEffect {
-    id: string;              // unique ID for this effect instance
-    effect: CameraEffect;
-    startFrame: number;
-    endFrame: number;
-    deviceId?: string;       // Target device (undefined = primary/active device)
-}
-
-// Computed camera transform (result of all active effects at time t)
-export interface CameraTransform {
-    translateX: number;
-    translateY: number;
-    scale: number;
-    rotation: number;        // degrees
-    originX: number;         // 0-1
-    originY: number;         // 0-1
-
-    // Shake offsets (added on top of main transform)
-    shakeX: number;
-    shakeY: number;
-}
-
-// =============================================================================
-// MULTI-DEVICE / POV TYPES
-// =============================================================================
-
-// View layout modes for multi-device rendering
-export type ViewLayoutMode =
-    | "SINGLE"              // One device fills the frame
-    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
-    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
-    | "PIP";                // Picture-in-Picture (main + small overlay)
-
-// PIP position options
-export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-
-// Layout configuration for multi-device views
-export interface ViewLayout {
-    mode: ViewLayoutMode;
-    primaryDeviceId: string;
-    secondaryDeviceId?: string;
-    pipPosition?: PIPPosition;
-    pipScale?: number;
-}
-
-// Default view layout
-export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
-    mode: "SINGLE",
-    primaryDeviceId: "main_phone",
-};
-
-// Full camera state (stored in WorldState)
-export interface CameraState {
-    // Base view (for backward compatibility)
-    baseView: "APP_VIEW" | "TRANSITION";
-    appId?: AppId;
-
-    // Multi-device support
-    activeDeviceId: string;
-    layout: ViewLayout;
-
-    // Active effects (from timeline) - global + per-device
-    activeEffects: ActiveCameraEffect[];
-
-    // Computed transform for primary device
-    transform: CameraTransform;
-
-    // Per-device transforms (computed by engine)
-    deviceTransforms: Record<DeviceId, CameraTransform>;
-}
-
-// Default camera transform
-export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
-    translateX: 0,
-    translateY: 0,
-    scale: 1,
-    rotation: 0,
-    originX: 0.5,
-    originY: 0.5,
-    shakeX: 0,
-    shakeY: 0,
-};
-
-// Default camera state
-export const DEFAULT_CAMERA_STATE: CameraState = {
-    baseView: "APP_VIEW",
-    activeDeviceId: "main_phone",
-    layout: { ...DEFAULT_VIEW_LAYOUT },
-    activeEffects: [],
-    transform: { ...DEFAULT_CAMERA_TRANSFORM },
-    deviceTransforms: {},
-};
-
-// Legacy type for backward compatibility
-export interface CameraViewConfig {
-    type: "APP_VIEW" | "TRANSITION";
-    appId?: AppId;
-}
-
-// =============================================================================
-// AUDIO SYSTEM TYPES (Production-Grade)
-// =============================================================================
-
-// Audio bus types - routes audio through mixer
-export type AudioBus = "music" | "ui" | "sfx" | "voice" | "master";
-
-// Sound origin - where the sound comes from
-export type SoundOrigin = "device" | "app" | "world";
-
-// Bus configuration
-export interface AudioBusConfig {
-    baseGain: number;          // 0-1, default volume for this bus
-    maxConcurrent: number;     // Max simultaneous sounds on this bus
-}
-
-// Envelope for attack/release (avoid clicks, add cinema feel)
-export interface AudioEnvelope {
-    attack: number;            // Frames to fade in
-    release: number;           // Frames to fade out
-    curve?: "linear" | "easeOut" | "easeIn";
-}
-
-// Ducking rule - temporarily lower another bus
-export interface DuckRule {
-    targetBus: AudioBus;       // Bus to duck (usually "music")
-    amount: number;            // 0-1 multiplier (0.25 = duck to 25%)
-    attack: number;            // Frames to duck down
-    release: number;           // Frames to recover
-}
-
-// Sound cue - enhanced active sound with mixing metadata
-export interface SoundCue {
-    // Core fields (from ActiveSound)
-    soundId: string;
-    startFrame: number;
-    volume: number;
-    loop?: boolean;
-    deviceId?: string;
-    duration?: number;
-
-    // Mixing fields
-    bus: AudioBus;
-    priority: number;          // Higher = more important (voice=100, music=10)
-    origin?: SoundOrigin;
-    envelope?: AudioEnvelope;
-    duck?: DuckRule;           // If this sound should duck others
-
-    // Fade tracking (set by engine)
-    fadeTarget?: number;
-    fadeDuration?: number;
-    fadeStartFrame?: number;
-}
-
-// Legacy ActiveSound (backward compatible)
-export interface ActiveSound {
-    soundId: string;
-    startFrame: number;
-    volume: number;
-    loop?: boolean;
-    deviceId?: string;
-    duration?: number;
-}
-
-// Music bed - persistent background music with mood
-export interface MusicBed {
-    id: string;
-    soundId: string;
-    startFrame: number;
-    loop: boolean;
-    baseGain: number;
-    moodTag?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
-    crossfadeFrames?: number;  // Frames to crossfade when changing
-}
-
-// Full audio state with bus system
-export interface AudioState {
-    // Active sounds (key = unique instance ID)
-    activeSounds: Record<string, SoundCue | ActiveSound>;
-
-    // Bus configuration
-    buses: {
-        music: AudioBusConfig;
-        ui: AudioBusConfig;
-        sfx: AudioBusConfig;
-        voice: AudioBusConfig;
-    };
-
-    // Music bed (special handling for background music)
-    musicBed?: MusicBed;
-
-    // Legacy background music (backward compatible)
-    backgroundMusic?: {
-        soundId: string;
-        volume: number;
-        loop: boolean;
-        startFrame: number;
-    };
-}
-
-// Default bus configuration
-export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
-    music: { baseGain: 0.35, maxConcurrent: 1 },
-    ui: { baseGain: 0.9, maxConcurrent: 3 },
-    sfx: { baseGain: 0.8, maxConcurrent: 4 },
-    voice: { baseGain: 1.0, maxConcurrent: 1 },
-};
-
-// Default audio state
-export const DEFAULT_AUDIO_STATE: AudioState = {
-    activeSounds: {},
-    buses: DEFAULT_BUS_CONFIG,
-};
-
-// =============================================================================
-// VIDEO CONFIGURATION
-// =============================================================================
-
-// Global video configuration (applies to entire composition)
-export interface VideoConfig {
-    // Canvas
-    backgroundColor?: string;               // Video background (default: #0a0a1a)
-    width?: number;                         // Composition width (default: 1080)
-    height?: number;                        // Composition height (default: 1920)
-    fps?: number;                           // Frames per second (default: 30)
-
-    // Multi-device layout theming
-    layout?: {
-        splitLineColor?: string;            // Divider color in split views
-        splitLineWidth?: number;            // Divider thickness
-        pipBorderColor?: string;            // PIP overlay border
-        pipBorderWidth?: number;            // PIP border thickness
-        pipShadow?: string;                 // PIP drop shadow
-    };
-
-    // Watermark (optional)
-    watermark?: {
-        text?: string;
-        image?: string;
-        position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-        opacity?: number;
-    };
-}
-
-// Default video config
-export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
-    backgroundColor: "#0a0a1a",
-    width: 1080,
-    height: 1920,
-    fps: 30,
-    layout: {
-        splitLineColor: "#333333",
-        splitLineWidth: 2,
-        pipBorderColor: "#333333",
-        pipBorderWidth: 2,
-        pipShadow: "0 10px 40px rgba(0,0,0,0.5)",
-    },
-};
-
-// =============================================================================
-// TOUCH STATE (for gesture visualization)
-// =============================================================================
-
-export interface TouchState {
-    /** Unique touch identifier */
-    id: string;
-    /** X coordinate */
-    x: number;
-    /** Y coordinate */
-    y: number;
-    /** Frame when touch started */
-    startedAt: number;
-    /** Touch type */
-    type: "tap" | "long_press" | "drag";
-    /** For drag: end coordinates */
-    endX?: number;
-    endY?: number;
-}
-
-export interface WorldState {
-    devices: Record<DeviceId, DeviceState>;
-    conversations: Record<ConversationId, ConversationState>;
-    appState: Record<AppId, any>;
-    camera: CameraState;
-    audio: AudioState;
-    config?: VideoConfig;                   // Global video configuration
-    /** Active touch points for visualization */
-    touches?: TouchState[];
-}
-
-// Event Union
-export type TimelineEvent =
-    // Device events - core
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
-
-    // === NOTIFICATION EVENTS (IR-compliant) ===
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
-        appId: string; title: string; body: string;
-        mode?: "lockscreen" | "headsup" | "both" | "silent";
-        priority?: NotificationPriority;
-        deliverWhen?: NotificationDeliverWhen;
-        groupKey?: string; threadId?: string;
-        icon?: string;
-        preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
-        actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
-        replyable?: boolean;
-        metadata?: Record<string, any>;
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
-        notificationId: string;
-        patch: Partial<{ title: string; body: string; preview: Notification["preview"]; metadata: Record<string, any> }>;
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";
-        notificationId?: string;        // Specific notification
-        groupKey?: string;               // Entire group
-        all?: boolean;                   // All notifications
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "TAP_NOTIFICATION";
-        notificationId: string;
-        actionId?: string;               // Button action ID or "open" (default)
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SWIPE_NOTIFICATION";
-        notificationId: string;
-        direction: "left" | "right";
-        action: "dismiss" | "archive" | "snooze" | "mark_read";
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "REPLY_NOTIFICATION";
-        notificationId: string;
-        text: string;
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "TOGGLE_NOTIFICATION_PANEL";
-        open: boolean;
-    }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CLEAR_ALL_NOTIFICATIONS" }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SET_DYNAMIC_ISLAND";
-        visible: boolean;
-        mode?: DynamicIslandMode;
-    }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
-
-    // Call events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
-
-    // Background app events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "START_BACKGROUND_APP"; appId: string; indicator?: "music" | "call" | "recording" | "location"; label?: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "STOP_BACKGROUND_APP"; appId: string }
-    // App events - messaging
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_STATUS"; conversationId: ConversationId; messageId: string; status: "sending" | "sent" | "delivered" | "read" | "failed" }
-    // App events - voice message
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
-    // App events - group
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
-    // App events - custom
-    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
-    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
-    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
-    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
-    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
-    // Camera events - MULTI-DEVICE / POV
-    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
-    // Audio events - SOUND SYSTEM
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
-    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
-    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
-    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
-    // Keyboard events - TYPING SIMULATION
-    | { at: number; kind: "KEYBOARD"; type: "SHOW"; deviceId?: string; layout?: KeyboardLayout }
-    | { at: number; kind: "KEYBOARD"; type: "HIDE"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "KEY_DOWN"; deviceId?: string; key: string }
-    | { at: number; kind: "KEYBOARD"; type: "KEY_UP"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "TYPE_CHAR"; deviceId?: string; char: string }
-    | { at: number; kind: "KEYBOARD"; type: "BACKSPACE"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "SET_TEXT"; deviceId?: string; text: string }
-    | { at: number; kind: "KEYBOARD"; type: "CLEAR"; deviceId?: string }
-    // Transition events - SCREEN ANIMATIONS
-    | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
-    // Highlight events - MESSAGE EMPHASIS
-    | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string }
-    // OS events - DEVICE SIMULATION
-    | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
-    | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
-    | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
-    | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
-    | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
-    | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }
-    | { at: number; kind: "OS"; type: "SET_AIRPLANE"; deviceId?: string; enabled: boolean }
-    // Touch events - GESTURE VISUALIZATION
-    | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
-    | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
-
-// --- Layout System Types ---
-
-export type ViewKind =
-    | "CHAT"
-    | "FEED"
-    | "STORY"
-    | "LOCKSCREEN"
-    | "HOMESCREEN"
-    | "TRANSITION";
-
-export interface LayoutContext {
-    world: WorldState;
-    t: number; // current frame
-    activeDeviceId: string;
-    activeAppId: string;
-    viewKind: ViewKind;
-
-    // View-specific selectors
-    activeConversationId?: string;   // CHAT
-    activeFeedId?: string;           // FEED (e.g. timeline id)
-    activeStoryId?: string;          // STORY (e.g. story reel id)
-
-    viewportWidth: number;
-    viewportHeight: number;
-
-    // Optional configuration overrides
-    config?: Partial<LayoutConfig>;
-}
-
-// --- LayoutConfig ---
-
-export interface LayoutConfig {
-    // Global-ish things
-    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
-
-    // Chat-specific
-    chat: ChatLayoutConfig;
-
-    // Feed-specific
-    feed: FeedLayoutConfig;
-
-    // Story-specific
-    story: StoryLayoutConfig;
-
-    // Lock screen
-    lockscreen: LockscreenLayoutConfig;
-
-    // Transitions
-    transition: TransitionLayoutConfig;
-}
-
-export interface ChatLayoutConfig {
-    bubbleWidth: number;
-    baseBubbleHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    lockToBottom: boolean;
-}
-
-export interface FeedLayoutConfig {
-    cardWidth: number;
-    baseCardHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    // For variable-height posts, same trick as chat:
-    charsPerLine: number;
-    lineHeight: number;
-
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    startAtTop: boolean;      // typical feed behaviour
-    autoScroll?: boolean;     // for cinematic auto-scroll episodes
-}
-
-export interface StoryLayoutConfig {
-    // Each story = full-screen page
-    defaultStoryDuration: number; // in frames
-    progressBarHeight: number;
-    storyGap: number;             // for 3D-ish page stack if needed
-
-    // Animation
-    storyTransitionDuration: number; // frames between stories
-}
-
-export interface LockscreenLayoutConfig {
-    topPadding: number;
-    notificationGap: number;
-    notificationWidth: number;
-    baseNotificationHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-
-    stackMaxNotifications: number; // older ones collapsed/hidden
-    appearDuration: number;
-}
-
-export interface TransitionLayoutConfig {
-    // Device position in composition
-    defaultScale: number;
-    zoomedScale: number;
-    panDuration: number;
-    zoomDuration: number;
-
-    // Optionally, per-transition presets (open app, unlock, etc.)
-}
-
-// --- LayoutState ---
-
-export type LayoutState =
-    | ChatLayoutState
-    | FeedLayoutState
-    | StoryLayoutState
-    | LockscreenLayoutState
-    | TransitionLayoutState;
-
-export interface BaseLayoutState {
-    kind: ViewKind;
-}
-
-// ChatLayoutState
-
-export interface ChatLayoutState extends BaseLayoutState {
-    kind: "CHAT";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    messageLayouts: Record<string, ChatMessageLayout>;
-    typingLayout?: TypingLayout | null;
-    meta: ChatLayoutMeta;
-}
-
-export interface ChatMessageLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    translateX: number;
-    // Rect for director targeting (x, y relative to content, not viewport)
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
-
-export interface TypingLayout {
-    y: number;
-    height: number;
-    opacity: number;
-    // Rect for director targeting
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
-
-export interface ChatLayoutMeta {
-    lastMessageId?: string;
-    /** Whether this is a group chat (more than 2 unique senders) */
-    isGroupChat?: boolean;
-}
-
-// FeedLayoutState
-
-export interface FeedLayoutState extends BaseLayoutState {
-    kind: "FEED";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    itemLayouts: Record<string, FeedItemLayout>;
-    meta: FeedLayoutMeta;
-}
-
-export interface FeedItemLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    scale: number;   // for subtle parallax / entry
-}
-
-export interface FeedLayoutMeta {
-    firstVisibleItemId?: string;
-    lastVisibleItemId?: string;
-    focusedItemId?: string; // for cinematic highlight
-}
-
-// StoryLayoutState
-
-export interface StoryLayoutState extends BaseLayoutState {
-    kind: "STORY";
-    activeStoryIndex: number;
-    storyCount: number;
-    storyProgress: number; // 0..1 within current story
-    storyLayouts: StoryItemLayout[];
-}
-
-export interface StoryItemLayout {
-    id: string;
-    index: number;
-    // For 3D card stack / page-motion effects:
-    translateX: number;
-    translateY: number;
-    scale: number;
-    opacity: number;
-}
-
-// LockscreenLayoutState
-
-export interface LockscreenLayoutState extends BaseLayoutState {
-    kind: "LOCKSCREEN";
-    notificationLayouts: NotificationLayout[];
-    meta: LockscreenLayoutMeta;
-}
-
-export interface NotificationLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-}
-
-export interface LockscreenLayoutMeta {
-    // Add any meta fields if needed
-}
-
-// TransitionLayoutState
-
-export interface TransitionLayoutState extends BaseLayoutState {
-    kind: "TRANSITION";
-    // These values are for the outer DeviceFrame / TokovoRenderer
-    deviceTranslateX: number;
-    deviceTranslateY: number;
-    deviceScale: number;
-    deviceRotation: number;
-    overlayOpacity: number;
-    meta: TransitionLayoutMeta;
-}
-
-export interface TransitionLayoutMeta {
-    // Add any meta fields if needed
-}
 ````
 
 ## File: packages/apps-whatsapp/src/ui.tsx
@@ -42156,6 +40930,1232 @@ export const WhatsappChatView: React.FC<{ world: WorldState; t: number; layout?:
         </WhatsApp.Root>
     );
 };
+````
+
+## File: packages/core/src/types.ts
+````typescript
+export type DeviceId = string;
+export type AppId = string;
+export type ConversationId = string;
+
+// =============================================================================
+// NOTIFICATION IR (Intermediate Representation)
+// =============================================================================
+
+/** Notification priority levels */
+export type NotificationPriority = "passive" | "active" | "timeSensitive" | "critical";
+
+/** Notification lifecycle state */
+export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
+
+/** Notification delivery conditions */
+export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
+
+/**
+ * NotificationIR - Production-grade notification representation
+ */
+export interface Notification {
+    id: string;
+    deviceId?: string;                // Who receives it
+    appId: string;
+
+    // Content
+    title: string;
+    body: string;
+    icon?: string;
+    preview?: {
+        kind: "text" | "image" | "video";
+        value: string;
+        aspectRatio?: number;
+    };
+
+    // Action buttons (max 3)
+    actions?: Array<{
+        id: string;
+        label: string;
+        icon?: string;
+        destructive?: boolean;
+    }>;
+    replyable?: boolean;              // Quick reply input
+
+    // Grouping
+    groupKey?: string;
+    threadId?: string;
+
+    // Priority & Mode
+    priority?: NotificationPriority;
+    mode?: "lockscreen" | "headsup" | "both" | "silent";
+    deliverWhen?: NotificationDeliverWhen;
+
+    // === LIFECYCLE (state machine) ===
+    at: number;                       // DSL spawn time
+    deliveredAt?: number;             // When entered device state
+    state?: NotificationState;
+    updatedAt?: number;               // For updates (same id)
+    dismissedAt?: number;
+
+    // Heads-up lifecycle
+    headsUp?: {
+        shownAt?: number;
+        hideAt?: number;
+        duration?: number;            // OS default if not set
+    };
+
+    // Metadata
+    metadata?: Record<string, any>;
+}
+
+// Alias for backward compatibility
+export type NotificationIR = Notification;
+
+/**
+ * Notification group for stacking multiple notifications
+ */
+export interface NotificationGroup {
+    key: string;
+    appId: string;
+    notifications: Notification[];
+    collapsed: boolean;
+    count: number;
+    latestAt: number;
+}
+
+// =============================================================================
+// NOTIFICATION POLICY (OS-level rules)
+// =============================================================================
+
+export interface NotificationPolicyIR {
+    maxHeadsUpVisible: number;
+    headsUpDurationByPriority: Record<NotificationPriority, number>;
+    replaceOnNewFromSameThread: boolean;
+    groupCollapseThreshold: number;
+    autoGroupByApp: boolean;
+    statusBarIconLimit: number;
+    expandDurationMs: number;
+}
+
+export const IOS_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 90, timeSensitive: 150, critical: 240 }, // frames
+    replaceOnNewFromSameThread: true,
+    groupCollapseThreshold: 3,
+    autoGroupByApp: true,
+    statusBarIconLimit: 0,
+    expandDurationMs: 300,
+};
+
+export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
+    maxHeadsUpVisible: 1,
+    headsUpDurationByPriority: { passive: 0, active: 120, timeSensitive: 180, critical: 9999 },
+    replaceOnNewFromSameThread: false,
+    groupCollapseThreshold: 4,
+    autoGroupByApp: true,
+    statusBarIconLimit: 5,
+    expandDurationMs: 200,
+};
+
+// =============================================================================
+// NOTIFICATION CENTER STATE
+// =============================================================================
+
+export interface NotificationCenterState {
+    items: Notification[];            // All notifications (persistent)
+    headsUp: string | null;           // Currently shown notification ID
+    headsUpQueue: string[];           // Pending heads-up if current is shown
+    groups: NotificationGroup[];      // Computed groups
+}
+
+export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
+    items: [],
+    headsUp: null,
+    headsUpQueue: [],
+    groups: [],
+};
+
+// =============================================================================
+// DYNAMIC ISLAND STATE
+// =============================================================================
+
+export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
+export type DynamicIslandContent = "notification" | "music" | "call" | "timer" | null;
+
+export interface DynamicIslandState {
+    visible: boolean;
+    mode: DynamicIslandMode;
+    activeContent: DynamicIslandContent;
+    lockedUntil?: number;             // Frame lock for animations
+}
+
+export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
+    visible: true,
+    mode: "idle",
+    activeContent: null,
+};
+
+// =============================================================================
+// STATUS BAR ICONS (Android)
+// =============================================================================
+
+export interface StatusBarIcon {
+    appId: string;
+    count: number;
+    iconUrl?: string;
+}
+
+// =============================================================================
+// BACKGROUND APP STATE
+// =============================================================================
+
+export interface BackgroundAppState {
+    appId: string;
+    startedAt: number;
+    indicator?: "music" | "call" | "recording" | "location";
+    label?: string;
+}
+
+// =============================================================================
+// CALL STATE
+// =============================================================================
+
+export interface CallState {
+    status: "incoming" | "active" | "ended";
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    startedAt?: number;
+    endedAt?: number;
+}
+
+// KEYBOARD STATE
+// =============================================================================
+
+/** Keyboard layout types */
+export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
+
+/**
+ * KeyboardState - Virtual keyboard for realistic typing simulation
+ * 
+ * This is DEVICE-level state, shared across all apps.
+ * Apps read keyboard.inputText to show what's being typed.
+ */
+export interface KeyboardState {
+    /** Whether keyboard is visible */
+    visible: boolean;
+    /** Current keyboard layout */
+    layout: KeyboardLayout;
+    /** Currently pressed key (for highlight) */
+    currentKey: string | null;
+    /** Frame when key was pressed (for pop-up timing) */
+    keyPressedAt: number | null;
+    /** Current text in input field (character-by-character) */
+    inputText: string;
+    /** Cursor position within inputText */
+    cursorPosition: number;
+    /** Whether cursor should blink */
+    cursorVisible: boolean;
+}
+
+/** Default keyboard state */
+export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
+    visible: false,
+    layout: "qwerty",
+    currentKey: null,
+    keyPressedAt: null,
+    inputText: "",
+    cursorPosition: 0,
+    cursorVisible: true,
+};
+
+// =============================================================================
+// DEVICE OS STATE (Clock, Battery, Network, DND)
+// =============================================================================
+
+/** Network connection type */
+export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
+
+/**
+ * DeviceOSState - Operating system level state
+ * 
+ * Controls the "reality simulation" layer:
+ * - Time progression (status bar, message timestamps)
+ * - Battery drain and low power mode
+ * - Network conditions affecting message delivery
+ * - Do Not Disturb mode
+ */
+export interface DeviceOSState {
+    /** Current device time (Unix timestamp ms) */
+    clock: number;
+    /** Battery percentage (0-100) */
+    battery: number;
+    /** Whether device is charging */
+    charging: boolean;
+    /** Network connection type */
+    network: NetworkType;
+    /** WiFi signal strength (0-3) */
+    wifiStrength: number;
+    /** Cellular signal strength (0-4) */
+    cellStrength: number;
+    /** Do Not Disturb mode (suppresses heads-up notifications) */
+    dnd: boolean;
+    /** Low power mode enabled */
+    lowPowerMode: boolean;
+    /** Airplane mode enabled */
+    airplaneMode: boolean;
+}
+
+/** Default OS state (normal day, full battery, good network) */
+export const DEFAULT_OS_STATE: DeviceOSState = {
+    clock: Date.now(),
+    battery: 85,
+    charging: false,
+    network: "wifi",
+    wifiStrength: 3,
+    cellStrength: 4,
+    dnd: false,
+    lowPowerMode: false,
+    airplaneMode: false,
+};
+
+// =============================================================================
+// DEVICE STATE
+// =============================================================================
+
+export interface DeviceState {
+    id: string;
+    profileId: string;
+    ownerName?: string;
+    isLocked: boolean;
+    foregroundAppId?: string;
+
+    // === NOTIFICATIONS (enhanced) ===
+    notifications: Notification[];           // Legacy access
+    notificationCenter?: NotificationCenterState;
+    dynamicIsland?: DynamicIslandState;
+    statusBarIcons?: StatusBarIcon[];
+
+    // Background apps
+    backgroundApps?: BackgroundAppState[];
+    call?: CallState;
+    homeScreen?: HomeScreenConfig;
+    sound?: { activeSoundId?: string };
+    theme?: DeviceTheme;
+
+    // === KEYBOARD (for typing simulation) ===
+    keyboard?: KeyboardState;
+
+    // === OS LAYER (clock, battery, network, DND) ===
+    os?: DeviceOSState;
+}
+
+
+// Device-level theme configuration
+export interface DeviceTheme {
+    platform?: "ios" | "android";          // UI style (default: ios)
+    frameColor?: string;                    // Device bezel color (default: black)
+    wallpaper?: string;                     // Lock/home screen wallpaper (URL or CSS gradient)
+    statusBarStyle?: "light" | "dark";     // Status bar text color
+    accentColor?: string;                   // App tint color override
+}
+
+// --- Home Screen Types ---
+
+export interface HomeScreenConfig {
+    wallpaper?: string;              // URL or CSS gradient
+    pages: HomeScreenPage[];
+    dock: AppIcon[];
+}
+
+export interface HomeScreenPage {
+    apps: (AppIcon | AppFolder)[];
+}
+
+export interface AppIcon {
+    appId: string;
+    label: string;
+    icon: string;                    // URL or emoji
+    badge?: number;
+}
+
+export interface AppFolder {
+    type: "folder";
+    name: string;
+    apps: AppIcon[];
+}
+
+export interface ConversationState {
+    id: ConversationId;
+    type?: "dm" | "group";
+    name?: string;                   // Contact or group name
+    avatar?: string;
+
+    // Group-specific
+    members?: GroupMember[];
+    admins?: string[];               // Member IDs who are admins
+
+    messages: Message[];
+    typing?: Record<string, boolean>;
+}
+
+export interface GroupMember {
+    id: string;
+    name: string;
+    avatar?: string;
+    phone?: string;
+}
+
+export interface Message {
+    id: string;
+    from: string;                    // "me" or member ID
+    text?: string;
+    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
+    at?: number;                     // Timestamp frame
+
+    // System message
+    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
+    targetMember?: string;
+    actorName?: string;
+
+    // Voice message
+    duration?: number;
+    isPlaying?: boolean;
+    playProgress?: number;
+
+    // Image message
+    imageUrl?: string;
+
+    // Video message
+    videoUrl?: string;
+    thumbnailUrl?: string;
+
+    // GIF message
+    gifUrl?: string;
+
+    // Caption for media messages
+    caption?: string;
+
+    // Layout hints
+    height?: number;
+
+    // Future features
+    reactions?: Reaction[];
+    replyTo?: ReplyTo;
+    linkPreview?: LinkPreview;
+
+    // Read status
+    status?: "sending" | "sent" | "delivered" | "read";
+}
+
+// =============================================================================
+// FUTURE FEATURES - Message Extensions
+// =============================================================================
+
+export interface Reaction {
+    emoji: string;
+    from: string;
+    at?: number;
+}
+
+export interface ReplyTo {
+    messageId: string;
+    text?: string;
+    from: string;
+    type?: "text" | "image" | "video" | "gif" | "voice";
+}
+
+export interface LinkPreview {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+}
+
+// =============================================================================
+// CAMERA SYSTEM TYPES
+// =============================================================================
+
+// Easing types for smooth cinematic motion
+export type EasingType =
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "bounce"
+    | "elastic"
+    | "cinematic";  // Custom S-curve for film-like motion
+
+// =============================================================================
+// TRANSITION SYSTEM TYPES
+// =============================================================================
+
+// Transition types for screen animations
+export type TransitionType =
+    | "FADE"
+    | "SLIDE_LEFT"
+    | "SLIDE_RIGHT"
+    | "SLIDE_UP"
+    | "SLIDE_DOWN"
+    | "ZOOM_IN"
+    | "ZOOM_OUT"
+    | "CROSS_DISSOLVE";
+
+// =============================================================================
+// HIGHLIGHT SYSTEM TYPES
+// =============================================================================
+
+// Highlight styles for message emphasis
+export type HighlightStyle =
+    | "pulse"
+    | "glow"
+    | "shake"
+    | "bounce"
+    | "spotlight"
+    | "scale";
+
+// Camera effect types
+export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
+
+// Targets for FOCUS effect - general purpose, not app-specific
+export type FocusTarget =
+    | { type: "app"; appId?: string }                                    // Focus on app viewport
+    | { type: "notification"; notificationId?: string }                  // Focus on notification
+    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
+    | { type: "device"; deviceId?: string }                              // Focus on device
+    | { type: "element"; selector: string }                              // Focus on CSS selector
+    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
+
+// Individual camera effect definitions
+export interface CameraZoomEffect {
+    type: "ZOOM";
+    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
+    originX?: number;        // 0-1, default 0.5 (center)
+    originY?: number;        // 0-1, default 0.5 (center)
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraPanEffect {
+    type: "PAN";
+    translateX: number;      // pixels (or normalized 0-1 if relative)
+    translateY: number;      // pixels
+    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
+    duration: number;        // frames
+    easing?: EasingType;
+}
+
+export interface CameraShakeEffect {
+    type: "SHAKE";
+    intensity: number;       // amplitude in pixels
+    frequency: number;       // shakes per second
+    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
+    duration: number;        // frames
+    seed?: number;           // for deterministic randomness
+}
+
+export interface CameraFocusEffect {
+    type: "FOCUS";
+    target: FocusTarget;
+    scale?: number;          // zoom level when focused, default 1.5
+    duration: number;        // frames
+    easing?: EasingType;
+    holdDuration?: number;   // frames to hold at focus before returning
+}
+
+export interface CameraCutEffect {
+    type: "CUT";
+    toDeviceId?: string;     // switch to different device
+    toView?: "app" | "lockscreen" | "homescreen";
+    fadeMs?: number;         // optional fade transition (0 = hard cut)
+}
+
+export interface CameraResetEffect {
+    type: "RESET";
+    duration: number;        // frames to animate back to default
+    easing?: EasingType;
+}
+
+export type CameraEffect =
+    | CameraZoomEffect
+    | CameraPanEffect
+    | CameraShakeEffect
+    | CameraFocusEffect
+    | CameraCutEffect
+    | CameraResetEffect;
+
+// Active camera effect (with timing info)
+export interface ActiveCameraEffect {
+    id: string;              // unique ID for this effect instance
+    effect: CameraEffect;
+    startFrame: number;
+    endFrame: number;
+    deviceId?: string;       // Target device (undefined = primary/active device)
+}
+
+// Computed camera transform (result of all active effects at time t)
+export interface CameraTransform {
+    translateX: number;
+    translateY: number;
+    scale: number;
+    rotation: number;        // degrees
+    originX: number;         // 0-1
+    originY: number;         // 0-1
+
+    // Shake offsets (added on top of main transform)
+    shakeX: number;
+    shakeY: number;
+}
+
+// =============================================================================
+// MULTI-DEVICE / POV TYPES
+// =============================================================================
+
+// View layout modes for multi-device rendering
+export type ViewLayoutMode =
+    | "SINGLE"              // One device fills the frame
+    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
+    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
+    | "PIP";                // Picture-in-Picture (main + small overlay)
+
+// PIP position options
+export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+// Layout configuration for multi-device views
+export interface ViewLayout {
+    mode: ViewLayoutMode;
+    primaryDeviceId: string;
+    secondaryDeviceId?: string;
+    pipPosition?: PIPPosition;
+    pipScale?: number;
+}
+
+// Default view layout
+export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
+    mode: "SINGLE",
+    primaryDeviceId: "main_phone",
+};
+
+// Full camera state (stored in WorldState)
+export interface CameraState {
+    // Base view (for backward compatibility)
+    baseView: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+
+    // Multi-device support
+    activeDeviceId: string;
+    layout: ViewLayout;
+
+    // Active effects (from timeline) - global + per-device
+    activeEffects: ActiveCameraEffect[];
+
+    // Computed transform for primary device
+    transform: CameraTransform;
+
+    // Per-device transforms (computed by engine)
+    deviceTransforms: Record<DeviceId, CameraTransform>;
+}
+
+// Default camera transform
+export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
+    translateX: 0,
+    translateY: 0,
+    scale: 1,
+    rotation: 0,
+    originX: 0.5,
+    originY: 0.5,
+    shakeX: 0,
+    shakeY: 0,
+};
+
+// Default camera state
+export const DEFAULT_CAMERA_STATE: CameraState = {
+    baseView: "APP_VIEW",
+    activeDeviceId: "main_phone",
+    layout: { ...DEFAULT_VIEW_LAYOUT },
+    activeEffects: [],
+    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    deviceTransforms: {},
+};
+
+// Legacy type for backward compatibility
+export interface CameraViewConfig {
+    type: "APP_VIEW" | "TRANSITION";
+    appId?: AppId;
+}
+
+// =============================================================================
+// AUDIO SYSTEM TYPES (Production-Grade)
+// =============================================================================
+
+// Audio bus types - routes audio through mixer
+export type AudioBus = "music" | "ui" | "sfx" | "voice" | "master";
+
+// Sound origin - where the sound comes from
+export type SoundOrigin = "device" | "app" | "world";
+
+// Bus configuration
+export interface AudioBusConfig {
+    baseGain: number;          // 0-1, default volume for this bus
+    maxConcurrent: number;     // Max simultaneous sounds on this bus
+}
+
+// Envelope for attack/release (avoid clicks, add cinema feel)
+export interface AudioEnvelope {
+    attack: number;            // Frames to fade in
+    release: number;           // Frames to fade out
+    curve?: "linear" | "easeOut" | "easeIn";
+}
+
+// Ducking rule - temporarily lower another bus
+export interface DuckRule {
+    targetBus: AudioBus;       // Bus to duck (usually "music")
+    amount: number;            // 0-1 multiplier (0.25 = duck to 25%)
+    attack: number;            // Frames to duck down
+    release: number;           // Frames to recover
+}
+
+// Sound cue - enhanced active sound with mixing metadata
+export interface SoundCue {
+    // Core fields (from ActiveSound)
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;
+    duration?: number;
+
+    // Mixing fields
+    bus: AudioBus;
+    priority: number;          // Higher = more important (voice=100, music=10)
+    origin?: SoundOrigin;
+    envelope?: AudioEnvelope;
+    duck?: DuckRule;           // If this sound should duck others
+
+    // Fade tracking (set by engine)
+    fadeTarget?: number;
+    fadeDuration?: number;
+    fadeStartFrame?: number;
+}
+
+// Legacy ActiveSound (backward compatible)
+export interface ActiveSound {
+    soundId: string;
+    startFrame: number;
+    volume: number;
+    loop?: boolean;
+    deviceId?: string;
+    duration?: number;
+}
+
+// Music bed - persistent background music with mood
+export interface MusicBed {
+    id: string;
+    soundId: string;
+    startFrame: number;
+    loop: boolean;
+    baseGain: number;
+    moodTag?: "tense" | "romantic" | "chaotic" | "calm" | "dramatic";
+    crossfadeFrames?: number;  // Frames to crossfade when changing
+}
+
+// Full audio state with bus system
+export interface AudioState {
+    // Active sounds (key = unique instance ID)
+    activeSounds: Record<string, SoundCue | ActiveSound>;
+
+    // Bus configuration
+    buses: {
+        music: AudioBusConfig;
+        ui: AudioBusConfig;
+        sfx: AudioBusConfig;
+        voice: AudioBusConfig;
+    };
+
+    // Music bed (special handling for background music)
+    musicBed?: MusicBed;
+
+    // Legacy background music (backward compatible)
+    backgroundMusic?: {
+        soundId: string;
+        volume: number;
+        loop: boolean;
+        startFrame: number;
+    };
+}
+
+// Default bus configuration
+export const DEFAULT_BUS_CONFIG: AudioState["buses"] = {
+    music: { baseGain: 0.35, maxConcurrent: 1 },
+    ui: { baseGain: 0.9, maxConcurrent: 3 },
+    sfx: { baseGain: 0.8, maxConcurrent: 4 },
+    voice: { baseGain: 1.0, maxConcurrent: 1 },
+};
+
+// Default audio state
+export const DEFAULT_AUDIO_STATE: AudioState = {
+    activeSounds: {},
+    buses: DEFAULT_BUS_CONFIG,
+};
+
+// =============================================================================
+// VIDEO CONFIGURATION
+// =============================================================================
+
+// Global video configuration (applies to entire composition)
+export interface VideoConfig {
+    // Canvas
+    backgroundColor?: string;               // Video background (default: #0a0a1a)
+    width?: number;                         // Composition width (default: 1080)
+    height?: number;                        // Composition height (default: 1920)
+    fps?: number;                           // Frames per second (default: 30)
+
+    // Multi-device layout theming
+    layout?: {
+        splitLineColor?: string;            // Divider color in split views
+        splitLineWidth?: number;            // Divider thickness
+        pipBorderColor?: string;            // PIP overlay border
+        pipBorderWidth?: number;            // PIP border thickness
+        pipShadow?: string;                 // PIP drop shadow
+    };
+
+    // Watermark (optional)
+    watermark?: {
+        text?: string;
+        image?: string;
+        position?: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+        opacity?: number;
+    };
+}
+
+// Default video config
+export const DEFAULT_VIDEO_CONFIG: VideoConfig = {
+    backgroundColor: "#0a0a1a",
+    width: 1080,
+    height: 1920,
+    fps: 30,
+    layout: {
+        splitLineColor: "#333333",
+        splitLineWidth: 2,
+        pipBorderColor: "#333333",
+        pipBorderWidth: 2,
+        pipShadow: "0 10px 40px rgba(0,0,0,0.5)",
+    },
+};
+
+// =============================================================================
+// TOUCH STATE (for gesture visualization)
+// =============================================================================
+
+export interface TouchState {
+    /** Unique touch identifier */
+    id: string;
+    /** X coordinate */
+    x: number;
+    /** Y coordinate */
+    y: number;
+    /** Frame when touch started */
+    startedAt: number;
+    /** Touch type */
+    type: "tap" | "long_press" | "drag";
+    /** For drag: end coordinates */
+    endX?: number;
+    endY?: number;
+}
+
+export interface WorldState {
+    devices: Record<DeviceId, DeviceState>;
+    conversations: Record<ConversationId, ConversationState>;
+    appState: Record<AppId, any>;
+    camera: CameraState;
+    audio: AudioState;
+    config?: VideoConfig;                   // Global video configuration
+    /** Active touch points for visualization */
+    touches?: TouchState[];
+}
+
+// Event Union
+export type TimelineEvent =
+    // Device events - core
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
+
+    // === NOTIFICATION EVENTS (IR-compliant) ===
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
+        appId: string; title: string; body: string;
+        mode?: "lockscreen" | "headsup" | "both" | "silent";
+        priority?: NotificationPriority;
+        deliverWhen?: NotificationDeliverWhen;
+        groupKey?: string; threadId?: string;
+        icon?: string;
+        preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
+        actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
+        replyable?: boolean;
+        metadata?: Record<string, any>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
+        notificationId: string;
+        patch: Partial<{ title: string; body: string; preview: Notification["preview"]; metadata: Record<string, any> }>;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";
+        notificationId?: string;        // Specific notification
+        groupKey?: string;               // Entire group
+        all?: boolean;                   // All notifications
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TAP_NOTIFICATION";
+        notificationId: string;
+        actionId?: string;               // Button action ID or "open" (default)
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SWIPE_NOTIFICATION";
+        notificationId: string;
+        direction: "left" | "right";
+        action: "dismiss" | "archive" | "snooze" | "mark_read";
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "REPLY_NOTIFICATION";
+        notificationId: string;
+        text: string;
+    }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "TOGGLE_NOTIFICATION_PANEL";
+        open: boolean;
+    }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CLEAR_ALL_NOTIFICATIONS" }
+    | {
+        at: number; kind: "DEVICE"; deviceId: string; type: "SET_DYNAMIC_ISLAND";
+        visible: boolean;
+        mode?: DynamicIslandMode;
+    }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
+
+    // Call events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
+
+    // Background app events
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "START_BACKGROUND_APP"; appId: string; indicator?: "music" | "call" | "recording" | "location"; label?: string }
+    | { at: number; kind: "DEVICE"; deviceId: string; type: "STOP_BACKGROUND_APP"; appId: string }
+    // App events - messaging
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_STATUS"; conversationId: ConversationId; messageId: string; status: "sending" | "sent" | "delivered" | "read" | "failed" }
+    // App events - voice message
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
+    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
+    // App events - group
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
+    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
+    // App events - custom
+    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
+    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
+    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
+    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
+    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
+    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
+    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
+    // Camera events - MULTI-DEVICE / POV
+    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
+    // Audio events - SOUND SYSTEM
+    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
+    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
+    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
+    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
+    // Keyboard events - TYPING SIMULATION
+    | { at: number; kind: "KEYBOARD"; type: "SHOW"; deviceId?: string; layout?: KeyboardLayout }
+    | { at: number; kind: "KEYBOARD"; type: "HIDE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_DOWN"; deviceId?: string; key: string }
+    | { at: number; kind: "KEYBOARD"; type: "KEY_UP"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "TYPE_CHAR"; deviceId?: string; char: string }
+    | { at: number; kind: "KEYBOARD"; type: "BACKSPACE"; deviceId?: string }
+    | { at: number; kind: "KEYBOARD"; type: "SET_TEXT"; deviceId?: string; text: string }
+    | { at: number; kind: "KEYBOARD"; type: "CLEAR"; deviceId?: string }
+    // Transition events - SCREEN ANIMATIONS
+    | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
+    // Highlight events - MESSAGE EMPHASIS
+    | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
+    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string }
+    // OS events - DEVICE SIMULATION
+    | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
+    | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
+    | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
+    | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
+    | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }
+    | { at: number; kind: "OS"; type: "SET_AIRPLANE"; deviceId?: string; enabled: boolean }
+    // Touch events - GESTURE VISUALIZATION
+    | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
+    | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
+    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
+
+// --- Layout System Types ---
+
+export type ViewKind =
+    | "CHAT"
+    | "FEED"
+    | "STORY"
+    | "LOCKSCREEN"
+    | "HOMESCREEN"
+    | "TRANSITION";
+
+export interface LayoutContext {
+    world: WorldState;
+    t: number; // current frame
+    activeDeviceId: string;
+    activeAppId: string;
+    viewKind: ViewKind;
+
+    // View-specific selectors
+    activeConversationId?: string;   // CHAT
+    activeFeedId?: string;           // FEED (e.g. timeline id)
+    activeStoryId?: string;          // STORY (e.g. story reel id)
+
+    viewportWidth: number;
+    viewportHeight: number;
+
+    // Optional configuration overrides
+    config?: Partial<LayoutConfig>;
+}
+
+// --- LayoutConfig ---
+
+export interface LayoutConfig {
+    // Global-ish things
+    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
+
+    // Chat-specific
+    chat: ChatLayoutConfig;
+
+    // Feed-specific
+    feed: FeedLayoutConfig;
+
+    // Story-specific
+    story: StoryLayoutConfig;
+
+    // Lock screen
+    lockscreen: LockscreenLayoutConfig;
+
+    // Transitions
+    transition: TransitionLayoutConfig;
+}
+
+export interface ChatLayoutConfig {
+    bubbleWidth: number;
+    baseBubbleHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    lockToBottom: boolean;
+}
+
+export interface FeedLayoutConfig {
+    cardWidth: number;
+    baseCardHeight: number;
+    verticalGap: number;
+    topPadding: number;
+    bottomPadding: number;
+
+    // For variable-height posts, same trick as chat:
+    charsPerLine: number;
+    lineHeight: number;
+
+    scrollEasingDuration: number;
+    maxScrollCatchupSpeed: number;
+
+    startAtTop: boolean;      // typical feed behaviour
+    autoScroll?: boolean;     // for cinematic auto-scroll episodes
+}
+
+export interface StoryLayoutConfig {
+    // Each story = full-screen page
+    defaultStoryDuration: number; // in frames
+    progressBarHeight: number;
+    storyGap: number;             // for 3D-ish page stack if needed
+
+    // Animation
+    storyTransitionDuration: number; // frames between stories
+}
+
+export interface LockscreenLayoutConfig {
+    topPadding: number;
+    notificationGap: number;
+    notificationWidth: number;
+    baseNotificationHeight: number;
+    charsPerLine: number;
+    lineHeight: number;
+
+    stackMaxNotifications: number; // older ones collapsed/hidden
+    appearDuration: number;
+}
+
+export interface TransitionLayoutConfig {
+    // Device position in composition
+    defaultScale: number;
+    zoomedScale: number;
+    panDuration: number;
+    zoomDuration: number;
+
+    // Optionally, per-transition presets (open app, unlock, etc.)
+}
+
+// --- LayoutState ---
+
+export type LayoutState =
+    | ChatLayoutState
+    | FeedLayoutState
+    | StoryLayoutState
+    | LockscreenLayoutState
+    | TransitionLayoutState;
+
+export interface BaseLayoutState {
+    kind: ViewKind;
+}
+
+// ChatLayoutState
+
+export interface ChatLayoutState extends BaseLayoutState {
+    kind: "CHAT";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    messageLayouts: Record<string, ChatMessageLayout>;
+    typingLayout?: TypingLayout | null;
+    meta: ChatLayoutMeta;
+}
+
+export interface ChatMessageLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+    translateX: number;
+    // Rect for director targeting (x, y relative to content, not viewport)
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+export interface TypingLayout {
+    y: number;
+    height: number;
+    opacity: number;
+    // Rect for director targeting
+    rect?: {
+        x: number;
+        y: number;
+        width: number;
+        height: number;
+    };
+}
+
+export interface ChatLayoutMeta {
+    lastMessageId?: string;
+    /** Whether this is a group chat (more than 2 unique senders) */
+    isGroupChat?: boolean;
+}
+
+// FeedLayoutState
+
+export interface FeedLayoutState extends BaseLayoutState {
+    kind: "FEED";
+    scrollY: number;
+    contentHeight: number;
+    isAtBottom: boolean;
+    itemLayouts: Record<string, FeedItemLayout>;
+    meta: FeedLayoutMeta;
+}
+
+export interface FeedItemLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+    scale: number;   // for subtle parallax / entry
+}
+
+export interface FeedLayoutMeta {
+    firstVisibleItemId?: string;
+    lastVisibleItemId?: string;
+    focusedItemId?: string; // for cinematic highlight
+}
+
+// StoryLayoutState
+
+export interface StoryLayoutState extends BaseLayoutState {
+    kind: "STORY";
+    activeStoryIndex: number;
+    storyCount: number;
+    storyProgress: number; // 0..1 within current story
+    storyLayouts: StoryItemLayout[];
+}
+
+export interface StoryItemLayout {
+    id: string;
+    index: number;
+    // For 3D card stack / page-motion effects:
+    translateX: number;
+    translateY: number;
+    scale: number;
+    opacity: number;
+}
+
+// LockscreenLayoutState
+
+export interface LockscreenLayoutState extends BaseLayoutState {
+    kind: "LOCKSCREEN";
+    notificationLayouts: NotificationLayout[];
+    meta: LockscreenLayoutMeta;
+}
+
+export interface NotificationLayout {
+    id: string;
+    y: number;
+    height: number;
+    opacity: number;
+    translateY: number;
+}
+
+export interface LockscreenLayoutMeta {
+    // Add any meta fields if needed
+}
+
+// TransitionLayoutState
+
+export interface TransitionLayoutState extends BaseLayoutState {
+    kind: "TRANSITION";
+    // These values are for the outer DeviceFrame / TokovoRenderer
+    deviceTranslateX: number;
+    deviceTranslateY: number;
+    deviceScale: number;
+    deviceRotation: number;
+    overlayOpacity: number;
+    meta: TransitionLayoutMeta;
+}
+
+export interface TransitionLayoutMeta {
+    // Add any meta fields if needed
+}
 ````
 
 ## File: packages/renderer/src/TokovoRenderer.tsx

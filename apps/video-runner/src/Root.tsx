@@ -20,11 +20,20 @@ import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
 import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
 import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
 import { FullRealityShowcase } from "./FullRealityShowcase";
+import { PhoneCallShowcase } from "./PhoneCallShowcase";
 
 
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            <Composition
+                id="PhoneCallShowcase"
+                component={PhoneCallShowcase}
+                durationInFrames={390}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
             <Composition
                 id="FullRealityShowcase"
                 component={FullRealityShowcase}

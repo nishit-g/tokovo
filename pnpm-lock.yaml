@@ -51,6 +51,9 @@ importers:
       '@tokovo/apps-instagram':
         specifier: workspace:*
         version: link:../../packages/apps-instagram
+      '@tokovo/apps-phone':
+        specifier: workspace:*
+        version: link:../../packages/apps-phone
       '@tokovo/apps-spotify':
         specifier: workspace:*
         version: link:../../packages/apps-spotify
@@ -128,6 +131,25 @@ importers:
     devDependencies:
       '@types/react':
         specifier: ^18.0.0
+        version: 18.2.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/apps-phone:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tokovo/devices':
+        specifier: workspace:*
+        version: link:../devices
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.0
         version: 18.2.0
       typescript:
         specifier: ^5.0.0

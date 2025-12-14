@@ -181,13 +181,43 @@ export interface BackgroundAppState {
 // CALL STATE
 // =============================================================================
 
+/** Call display mode - controlled via DSL */
+export type CallDisplayMode = "overlay" | "fullscreen";
+
+/** Call type */
+export type CallType = "voice" | "video" | "facetime" | "whatsapp";
+
+/** iOS Contact Poster metadata (iOS 17+) */
+export interface CallerMetadata {
+    posterImage?: string;
+    posterStyle?: "modern" | "classic";
+    posterNameFont?: string;
+}
+
 export interface CallState {
-    status: "incoming" | "active" | "ended";
+    status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
     callerId: string;
     callerName: string;
     callerAvatar?: string;
     isVideo?: boolean;
+
+    /** Call type (voice, FaceTime, WhatsApp, etc.) */
+    callType: CallType;
+
+    /** Display mode - overlay (banner) or fullscreen */
+    displayMode: CallDisplayMode;
+
+    /** iOS Contact Poster metadata (iOS 17+) */
+    callerMetadata?: CallerMetadata;
+
+    /** Call controls */
+    isMuted?: boolean;
+    isSpeakerOn?: boolean;
+    isOnHold?: boolean;
+
+    /** Timestamps */
     startedAt?: number;
+    answeredAt?: number;
     endedAt?: number;
 }
 
@@ -958,7 +988,15 @@ export type TimelineEvent =
     | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
     | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
     | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number };
+    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number }
+    // Call events - PHONE CALL SIMULATION
+    | { at: number; kind: "CALL"; type: "INCOMING"; deviceId?: string; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean; callType?: CallType; displayMode?: CallDisplayMode; callerMetadata?: CallerMetadata }
+    | { at: number; kind: "CALL"; type: "ANSWER"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "DECLINE"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "END"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_MUTE"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_SPEAKER"; deviceId?: string }
+    | { at: number; kind: "CALL"; type: "TOGGLE_HOLD"; deviceId?: string };
 
 // --- Layout System Types ---
 

@@ -269,6 +269,8 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
                     callerName: event.callerName,
                     callerAvatar: event.callerAvatar,
                     isVideo: event.isVideo || false,
+                    callType: "voice",
+                    displayMode: "fullscreen",
                     startedAt: event.at
                 };
                 break;
