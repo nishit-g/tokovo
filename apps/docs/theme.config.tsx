@@ -1,5 +1,6 @@
 import React from "react";
 import { DocsThemeConfig } from "nextra-theme-docs";
+import { CopyMarkdownButton } from "./components/CopyMarkdownButton";
 
 const config: DocsThemeConfig = {
     logo: <span style={{ fontWeight: 700, fontSize: 20 }}>🎬 Tokovo</span>,
@@ -28,6 +29,7 @@ const config: DocsThemeConfig = {
     },
     toc: {
         backToTop: true,
+        extraContent: () => <CopyMarkdownButton />,
     },
     navigation: {
         prev: true,

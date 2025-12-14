@@ -1,5 +1,6 @@
 {
     "index": "Introduction",
+    "llms": "🤖 LLM Reference",
     "architecture": "Architecture",
     "dsl": "DSL Reference",
     "ir": "IR Reference",
