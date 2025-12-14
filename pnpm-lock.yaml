@@ -51,6 +51,9 @@ importers:
       '@tokovo/apps-instagram':
         specifier: workspace:*
         version: link:../../packages/apps-instagram
+      '@tokovo/apps-spotify':
+        specifier: workspace:*
+        version: link:../../packages/apps-spotify
       '@tokovo/apps-twitter':
         specifier: workspace:*
         version: link:../../packages/apps-twitter

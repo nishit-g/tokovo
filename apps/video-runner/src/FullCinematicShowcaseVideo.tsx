@@ -13,6 +13,9 @@ import { iPhone16Profile } from "@tokovo/devices";
 // Import device reducer
 import "@tokovo/devices";
 
+// Import Spotify to register plugin and widgets
+import "@tokovo/apps-spotify";
+
 /**
  * Full Cinematic Showcase - DSL Style
  * 

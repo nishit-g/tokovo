@@ -61,12 +61,56 @@ export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
 };
 
 /**
+ * Dynamic Island configuration (iOS 14+ iPhones)
+ */
+export interface DynamicIslandConfig {
+    /** Center X position in device pixels */
+    centerX: number;
+    /** Top Y position */
+    topY: number;
+    /** Collapsed pill width */
+    collapsedWidth: number;
+    /** Collapsed pill height */
+    collapsedHeight: number;
+    /** Expanded width */
+    expandedWidth: number;
+    /** Expanded height */
+    expandedHeight: number;
+    /** Corner radius for pill shape */
+    cornerRadius: number;
+}
+
+/**
+ * Status bar widget area (Android)
+ */
+export interface StatusBarWidgetConfig {
+    /** Right edge X position */
+    rightX: number;
+    /** Top Y position */
+    topY: number;
+    /** Maximum width for indicators */
+    maxWidth: number;
+    /** Height of indicator area */
+    height: number;
+}
+
+/**
  * Device profile defining physical characteristics and camera behavior
  */
 export interface DeviceProfile {
     id: string;
     dimensions: { width: number; height: number };
     statusBarHeight: number;
+
+    /** Platform type */
+    platform: "ios" | "android";
+
     /** Camera behavior configuration (uses defaults if not specified) */
     camera?: CameraDeviceConfig;
+
+    /** Dynamic Island configuration (iOS only) */
+    dynamicIsland?: DynamicIslandConfig;
+
+    /** Status bar widget configuration (Android only) */
+    statusBarWidget?: StatusBarWidgetConfig;
 }

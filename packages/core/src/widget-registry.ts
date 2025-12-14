@@ -1,0 +1,142 @@
+/**
+ * Widget Registry - Manages platform-specific widgets from plugins
+ * 
+ * Apps register widgets (Dynamic Island, status bar, etc.) and the registry
+ * resolves which widget to render based on priority and platform.
+ */
+
+import { WidgetSlot, WidgetMode, WidgetComponent } from "./plugin";
+import { Platform } from "./tokens";
+
+// =============================================================================
+// WIDGET REGISTRY
+// =============================================================================
+
+class WidgetRegistryClass {
+    private slots = new Map<string, WidgetSlot[]>();
+
+    /**
+     * Register widgets for an app
+     */
+    register(appId: string, widgets: WidgetSlot[]): void {
+        if (this.slots.has(appId)) {
+            console.warn(`[WidgetRegistry] Overwriting widgets for: ${appId}`);
+        }
+        this.slots.set(appId, widgets);
+        console.log(`[WidgetRegistry] Registered ${widgets.length} widgets for: ${appId}`);
+    }
+
+    /**
+     * Get widget for mode + platform with priority resolution
+     * Returns highest priority widget from active apps
+     */
+    resolve(
+        mode: WidgetMode,
+        platform: Platform,
+        activeAppIds: string[]
+    ): { appId: string; widget: WidgetSlot } | null {
+        let best: { appId: string; widget: WidgetSlot; priority: number } | null = null;
+
+        for (const appId of activeAppIds) {
+            const appWidgets = this.slots.get(appId);
+            if (!appWidgets) continue;
+
+            for (const widget of appWidgets) {
+                // Check mode and platform match
+                if (widget.mode !== mode) continue;
+                if (!widget.platforms.includes(platform)) continue;
+
+                // Higher priority wins
+                if (!best || widget.priority > best.priority) {
+                    best = { appId, widget, priority: widget.priority };
+                }
+            }
+        }
+
+        return best ? { appId: best.appId, widget: best.widget } : null;
+    }
+
+    /**
+     * Get all widgets for a mode (for stacking multiple)
+     */
+    getAll(
+        mode: WidgetMode,
+        platform: Platform,
+        activeAppIds: string[]
+    ): Array<{ appId: string; widget: WidgetSlot }> {
+        const results: Array<{ appId: string; widget: WidgetSlot }> = [];
+
+        for (const appId of activeAppIds) {
+            const appWidgets = this.slots.get(appId);
+            if (!appWidgets) continue;
+
+            for (const widget of appWidgets) {
+                if (widget.mode === mode && widget.platforms.includes(platform)) {
+                    results.push({ appId, widget });
+                }
+            }
+        }
+
+        // Sort by priority (highest first)
+        return results.sort((a, b) => b.widget.priority - a.widget.priority);
+    }
+
+    /**
+     * Get widgets for a specific app
+     */
+    getForApp(appId: string): WidgetSlot[] {
+        return this.slots.get(appId) || [];
+    }
+
+    /**
+     * Check if an app has widgets registered
+     */
+    hasWidgets(appId: string): boolean {
+        return this.slots.has(appId);
+    }
+
+    /**
+     * Get all registered app IDs with widgets
+     */
+    getRegisteredApps(): string[] {
+        return Array.from(this.slots.keys());
+    }
+
+    /**
+     * Clear all registered widgets (for testing)
+     */
+    clear(): void {
+        this.slots.clear();
+    }
+}
+
+export const WidgetRegistry = new WidgetRegistryClass();
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Get the Dynamic Island widget for the current context
+ */
+export function getDynamicIslandWidget(
+    platform: Platform,
+    backgroundAppIds: string[]
+): { appId: string; component: WidgetComponent } | null {
+    const result = WidgetRegistry.resolve("dynamicIsland", platform, backgroundAppIds);
+    if (!result) return null;
+    return { appId: result.appId, component: result.widget.component };
+}
+
+/**
+ * Get notification widgets for display
+ */
+export function getNotificationWidgets(
+    platform: Platform,
+    appIds: string[]
+): Array<{ appId: string; component: WidgetComponent }> {
+    return WidgetRegistry.getAll("notification", platform, appIds).map(r => ({
+        appId: r.appId,
+        component: r.widget.component,
+    }));
+}

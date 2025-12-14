@@ -6,10 +6,12 @@
  * - State reducers  
  * - Sound effects
  * - Event types they handle
+ * - Platform-specific widgets (Dynamic Island, status bar)
  */
 
-import { WorldState } from "./types";
+import { WorldState, Notification, BackgroundAppState } from "./types";
 import { AppReducer, ReducerRegistry } from "./engine";
+import { Platform } from "./tokens";
 
 // =============================================================================
 // PLUGIN TYPES
@@ -30,6 +32,97 @@ export interface AppViewProps {
  * App view component type (generic, will be React.FC in renderer)
  */
 export type AppViewComponent = (props: AppViewProps) => any;
+
+// =============================================================================
+// WIDGET TYPES
+// =============================================================================
+
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+// Platform type is re-exported from tokens.ts
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: any;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => any;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+/**
+ * Notification adapter - formats app notifications
+ */
+export interface NotificationAdapter {
+    /** Format notification for display */
+    format(notification: Notification): {
+        title: string;
+        body: string;
+        icon?: string;
+        preview?: { kind: "text" | "image"; value: string };
+        accentColor?: string;
+    };
+}
 
 /**
  * Plugin definition - everything an app needs to function
@@ -67,6 +160,14 @@ export interface TokovoPlugin {
 
     /** Default app state */
     defaultState?: any;
+
+    // === NEW: Widget System ===
+
+    /** Platform-specific widgets this app provides */
+    widgets?: WidgetSlot[];
+
+    /** Notification adapter for formatting */
+    notificationAdapter?: NotificationAdapter;
 }
 
 // =============================================================================

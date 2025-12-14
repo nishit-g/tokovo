@@ -7,6 +7,7 @@ export * from "./constants";
 export * from "./typeGuards";
 export * from "./eventUtils";
 export * from "./plugin";
+export * from "./widget-registry";
 export * from "./transitions";
 export * from "./director-lite";
 export * from "./audio";

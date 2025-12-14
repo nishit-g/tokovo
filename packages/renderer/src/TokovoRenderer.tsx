@@ -20,7 +20,7 @@ import { CallOverlay } from "./CallOverlay";
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
-import { NowPlayingBar } from "./NowPlayingBar";
+import { DynamicIsland } from "./DynamicIsland";
 import { Audio, staticFile } from "remotion";
 import { ViewKind, LayoutContext } from "./layout/types";
 import { iPhone16Profile, PixelProfile } from "@tokovo/devices";
@@ -331,12 +331,13 @@ export const TokovoRenderer: React.FC<{
                                 />
                             )}
 
-                            {/* Now Playing Bar (Spotify background music) */}
+                            {/* Dynamic Island (iOS) / Status Bar Widget (Android) */}
                             {!device.isLocked && !hasActiveCall && (
-                                <NowPlayingBar
-                                    backgroundApps={device.backgroundApps}
-                                    currentFrame={t}
-                                    variant={variant}
+                                <DynamicIsland
+                                    device={device}
+                                    deviceProfile={profile}
+                                    world={world}
+                                    t={t}
                                 />
                             )}
                         </DeviceFrame>

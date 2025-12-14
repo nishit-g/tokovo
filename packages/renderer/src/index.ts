@@ -12,5 +12,5 @@ export { MultiDeviceRenderer } from "./MultiDeviceRenderer";
 export { AudioLayer } from "./AudioLayer";
 export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
-export { NowPlayingBar } from "./NowPlayingBar";
+export { DynamicIsland } from "./DynamicIsland";
 export * from "./layout";

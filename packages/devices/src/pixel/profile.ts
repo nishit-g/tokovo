@@ -18,12 +18,27 @@ const PixelCamera: CameraDeviceConfig = {
     panSpeedMultiplier: 1.0,
 };
 
+/**
+ * Pixel 7 Pro Device Profile
+ * 
+ * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
+ * No Dynamic Island - uses status bar indicators
+ */
 export const PixelProfile: DeviceProfile = {
     id: "pixel",
+    platform: "android",
     dimensions: {
-        width: 1080, // Pixel 7 Pro approx width
-        height: 2400, // Pixel 7 Pro approx height
+        width: 1080,
+        height: 2400,
     },
-    statusBarHeight: 90, // Approx 30px * 3
+    statusBarHeight: 90,
     camera: PixelCamera,
+
+    // Android uses status bar for background app indicators
+    statusBarWidget: {
+        rightX: 1000,      // Near right edge
+        topY: 24,
+        maxWidth: 200,
+        height: 66,
+    },
 };

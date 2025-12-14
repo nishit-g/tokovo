@@ -3,12 +3,12 @@
  * 
  * Features:
  * - Now Playing widget (background music visualization)
+ * - Dynamic Island widget (iOS)
+ * - Status bar widget (Android)
  * - Full player UI
  * - Notification adapter for music notifications
- * - Mini player for status bar
  */
 
-export * from "./types";
 export * from "./runtime";
 export * from "./ui";
-export * from "./notification-adapter";
+export * from "./widgets";
