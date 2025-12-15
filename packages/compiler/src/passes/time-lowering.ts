@@ -18,6 +18,10 @@ import {
     MessageSentOp,
     MessageReadOp,
     MessageDeletedOp,
+    TimelineCameraZoomOp,
+    TimelineCameraShakeOp,
+    TimelinePOVSwitchOp,
+    TimelineSplitPOVOp,
     Trace,
 } from "@tokovo/ir";
 import { CompilerContext, Cursor } from "../context";
@@ -540,6 +544,66 @@ function lowerOp(
 
             // Small delay for navigation animation
             cursor.advance(op.animationDuration ?? 15);
+            return events;
+        }
+
+        // =====================================================================
+        // CAMERA & POV OPERATIONS
+        // =====================================================================
+
+        case "CameraZoom": {
+            const duration = op.duration ? parseDuration(op.duration, ctx.config.fps) : 30; // Default 30 frames (0.5s)
+            const event: TimelineCameraZoomOp = {
+                at,
+                kind: "CameraZoom",
+                scale: op.scale,
+                duration,
+                originX: op.originX,
+                originY: op.originY,
+                easing: op.easing,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "CameraShake": {
+            const duration = op.duration ? parseDuration(op.duration, ctx.config.fps) : 30;
+            const event: TimelineCameraShakeOp = {
+                at,
+                kind: "CameraShake",
+                deviceId: op.deviceId || deviceId,
+                intensity: op.intensity,
+                frequency: op.frequency,
+                decay: op.decay,
+                duration,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "POVSwitch": {
+            const event: TimelinePOVSwitchOp = {
+                at,
+                kind: "POVSwitch",
+                deviceId: op.deviceId,
+                transition: op.transition,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "SplitPOV": {
+            const event: TimelineSplitPOVOp = {
+                at,
+                kind: "SplitPOV",
+                devices: op.devices,
+                layout: op.layout,
+                trace,
+            };
+            events.push(event);
             return events;
         }
 

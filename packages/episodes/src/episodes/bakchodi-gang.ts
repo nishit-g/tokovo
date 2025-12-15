@@ -1,6 +1,8 @@
 import { episode } from "@tokovo/dsl";
 
-export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
+import { EpisodeDefinition } from "@tokovo/dsl";
+
+export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", ep => {
     ep.config({
         title: "Berozgaar Engineers 🛠️",
         fps: 30,
@@ -20,58 +22,69 @@ export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
             b.wait("1s");
 
             // Vicky enters with a bang
-            b.receive("Vicky", "Bhai log ek scheme hai! 💰💰");
+            b.receive("Vicky", "Oye BC log! Utho bhenchod! Ek faadu scheme haath lagi hai! 💰💰");
             b.wait("0.5s");
-            b.receive("Vicky", "Double paisa in 21 days! Trust me bro.");
+            b.receive("Vicky", "21 din mein paisa double BC. Trust me bro. Is baar pakka! 🤑");
 
             // Rahul (Me) is skeptical
             b.typing("me").for("1.5s");
-            b.send("Fir shuru ho gaya tu? 😂");
-            b.send("Pichli baar Laxmi Chit Fund mein mera 500 duba tha.");
+            b.send("Fir shuru ho gaya tu MC? 😂");
+            b.send("Pichli baar Laxmi Chit Fund mein mera 500 duba tha bhadwe.");
+            b.send("Tu sudhrega nahi na bsdike?");
 
             // Sameer the innocent
             b.wait("1s");
             b.typing("Sameer").for("2s");
             b.receive("Sameer", "Vicky bhai, is this legit? 🤔");
             b.wait("0.5s");
-            b.receive("Sameer", "Priya bhi invest karegi kya?");
+            b.receive("Sameer", "Priya bhi invest karegi kya? I need to know...");
 
-            // Camera focus on Sameer's dumb message
-            ep.camera(c => {
-                c.pushIn(0.1, { originY: 0.8, duration: "0.5s" });
+            // Camera focus on Sameer's dumb message - VALIDATING CAMERA ZOOM
+            b.camera(c => {
+                c.zoom(1.5, { duration: "0.2s", easing: "ease-in" });
             });
 
             // Rahul roasts Sameer
             b.wait("0.5s");
-            b.send("Saale Simp! 😂");
-            b.send("Priya ke chakkar mein tu kidney bech dega.");
+            b.send("Abey Saale Simp ke chode! 🤬");
+            b.send("Priya ke chakkar mein tu apni kidney bech dega BC.");
+            b.send("Gandu aadmi.");
         });
 
         // ACT 2: The Pitch
         d.beat("the_pitch", b => {
             b.wait("1s");
-            b.receive("Vicky", "Arre suno toh! Crypto hai bhai.");
+            b.receive("Vicky", "Arre suno toh gandu log! Crypto hai bhai. Future hai ye!");
             b.typing("Vicky").for("1s");
-            b.receive("Vicky", "'DogeElonMars' coin. 🚀");
+            b.receive("Vicky", "'DogeElonMars' coin. 🚀 To the moon BC!");
             b.receive("Vicky", "Elon Musk ne tweet kiya hai (shayad).");
 
-            // Dramatic reaction
-            ep.camera(c => {
-                c.shake("RahulPhone", { intensity: 5, duration: "0.5s" });
+            // Dramatic reaction - VALIDATING CAMERA SHAKE
+            b.camera(c => {
+                c.shake("RahulPhone", { intensity: 15, duration: "0.5s" });
             });
             b.react(b.send("Elon Musk ne tweet kiya hai (shayad)."), "me", "🤣");
+
+            b.wait("0.5s");
+            b.send("Elon Musk teri gaand maarega kisi din BC.");
+            b.send("Chup chap naukri dhund le bsdike.");
         });
 
         // ACT 3: The Entry
         d.beat("priya_entry", b => {
             b.wait("2s");
 
+            // Reset camera before entry
+            b.camera(c => {
+                c.reset({ duration: "0.5s" });
+            });
+
             // Priya enters
             b.receive("Priya", "Hey guys! What's going on? 😊");
 
-            // Everyone stops
-            ep.camera(c => {
-                c.follow(0.5, 0.85, { duration: "1s" });
+            // Everyone stops - VALIDATING CAMERA ZOOM
+            b.camera(c => {
+                c.zoom(1.2, { duration: "0.4s" });
             });
 
             // Sameer instantly replies
@@ -79,13 +92,13 @@ export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
             b.receive("Sameer", "Hey Priya! 😍 Vicky was just telling us how he's going to become a billionaire.");
 
             b.wait("1s");
-            b.send("Lol. Vicky billionaire nahi, bhikari banega.");
-            b.send("Aur hum sabko Panvel le jayega.");
+            b.send("Lol. Vicky billionaire nahi, bhikari banega BC.");
+            b.send("Aur hum sabko Panvel le jayega ye chutiya.");
         });
 
         // ACT 4: The Roast
         d.beat("the_roast", b => {
-            b.receive("Vicky", "Abey saalon, mazak uda lo.");
+            b.receive("Vicky", "Abey saalon, mazak uda lo. Randi rona band karo.");
             b.receive("Vicky", "Jab main Lambo mein aunga na...");
 
             b.wait("1s");
@@ -104,11 +117,11 @@ export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
             b.receive("Sameer", "(Currently unemployed anyway loool)");
 
             b.wait("1s");
-            b.receive("Vicky", "Coffee ka paisa nahi hai.");
-            b.receive("Vicky", "Scheme mein laga diya sab. 🥲");
+            b.receive("Vicky", "Coffee ka paisa nahi hai BC. कंगाल hu main.");
+            b.receive("Vicky", "Scheme mein laga diya sab. 🥲 Lag gaye lode.");
 
             // Final camera pull out
-            ep.camera(c => {
+            b.camera(c => {
                 c.reset({ duration: "1s" });
             });
         });

@@ -187,6 +187,48 @@ export interface ReactionAddedOp extends TimelineOpBase {
 }
 
 /**
+ * Camera zoom effect (Resolved).
+ */
+export interface TimelineCameraZoomOp extends TimelineOpBase {
+    readonly kind: "CameraZoom";
+    readonly scale: number;
+    readonly duration: number; // Resolved frames
+    readonly originX?: number;
+    readonly originY?: number;
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Camera shake effect (Resolved).
+ */
+export interface TimelineCameraShakeOp extends TimelineOpBase {
+    readonly kind: "CameraShake";
+    readonly deviceId: string;
+    readonly intensity?: number;
+    readonly frequency?: number;
+    readonly decay?: number;
+    readonly duration: number; // Resolved frames
+}
+
+/**
+ * POV switch (Resolved).
+ */
+export interface TimelinePOVSwitchOp extends TimelineOpBase {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV (Resolved).
+ */
+export interface TimelineSplitPOVOp extends TimelineOpBase {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: "horizontal" | "vertical" | "pip" | "split-diagonal";
+}
+
+/**
  * Union of all timeline operations.
  */
 export type TimelineOp =
@@ -200,7 +242,11 @@ export type TimelineOp =
     | MessageReadOp
     | MessageDeletedOp
     | ReactionAddedOp
-    | ScreenNavigatedOp;
+    | ScreenNavigatedOp
+    | TimelineCameraZoomOp
+    | TimelineCameraShakeOp
+    | TimelinePOVSwitchOp
+    | TimelineSplitPOVOp;
 
 // =============================================================================
 // TIMELINE IR (COMPLETE)

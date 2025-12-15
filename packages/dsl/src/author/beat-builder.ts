@@ -43,6 +43,7 @@ import {
     MessageMeta,
 } from "@tokovo/ir";
 import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
+import { CameraBuilder } from "./camera-builder";
 
 /**
  * Message options for semantic annotations.
@@ -102,6 +103,20 @@ export class BeatBuilder {
         this.deviceId = deviceId;
         this.appId = appId;
         this.conversationId = conversationId;
+    }
+
+    /**
+     * Define camera operations within the beat.
+     * These operations will be timed relative to the current beat cursor.
+     */
+    camera(fn: (c: CameraBuilder) => void): this {
+        const builder = new CameraBuilder();
+        fn(builder);
+        // Extract operations and add to beat stream (ignoring 'at' since beat handles timing)
+        for (const event of builder.getEvents()) {
+            this.ops.push(event.op);
+        }
+        return this;
     }
 
     /**
