@@ -1,0 +1,84 @@
+# Resolution Independent UI Architecture
+
+Tokovo apps are designed to be **device-agnostic** while retaining pixel-perfect fidelity. To achieve this, we separate **Application Design** (Logical Points) from **Device Rendering** (Physical Pixels).
+
+This ensures that a single codebase looks correct on an iPhone 16 Pro, a Google Pixel, or any future device size, without manual media queries or scaling hacks.
+
+## The Core Concept
+
+### Logical Design Width: `393`
+We standardize all app development on a **Logical Width of 393 points**.
+This corresponds to the viewport width of modern standard iPhones (iPhone 14/15/16 Pro).
+
+*   **Design Target**: 393 x 852 (Standard iPhone)
+*   **Font Sizes**: Use standard web/native sizes (e.g., `16px` body, `12px` caption).
+*   **Layout**: Use standard Flexbox.
+
+### `AppSurface` Component
+The `<AppSurface />` component (exported from `@tokovo/core`) acts as the bridge between your logical design and the physical device screen.
+
+It automatically:
+1.  Accepts a `targetWidth` (the physical width of the device being rendered, e.g., 1290px).
+2.  Calculates the scale factor (`targetWidth / 393`).
+3.  Applies a `transform: scale(...)` to the app container.
+
+## How to Build Apps
+
+### 1. Wrap your Root View
+In your app's main entry point (e.g., `WhatsappChatView`), wrap everything in `AppSurface`.
+
+```tsx
+import { AppSurface } from "@tokovo/core";
+import { iPhone16Profile } from "@tokovo/devices";
+
+export const MyApp = ({ world, deviceId }) => {
+    // 1. Get the target device profile dimensions
+    // In reality, you'd look up the profile ID from world.devices[deviceId]
+    const deviceProfile = iPhone16Profile; 
+
+    return (
+        <AppSurface
+            designWidth={393} // Standard
+            targetWidth={deviceProfile.dimensions.width}
+            targetHeight={deviceProfile.dimensions.height}
+        >
+            <MyFlexboxLayout />
+        </AppSurface>
+    );
+};
+```
+
+### 2. Use Standard Units everywhere
+Stop multiplying by 3. Stop using `48px` fonts for body text.
+
+**Bad (Old Way):**
+```tsx
+// Optimized for 3x rendering manually
+<div style={{ fontSize: 48, padding: 30 }}>Hello</div>
+```
+
+**Good (New Way):**
+```tsx
+// Standard 1x Logic
+<div style={{ fontSize: 16, padding: 10 }}>Hello</div>
+```
+
+### 3. Handle Safe Areas
+Since scaling happens automatically, you need to scale your Safe Area values (which usually come from the physical device config) back to logical points if you are applying them inside the scaled container.
+
+```ts
+const scale = targetWidth / 393;
+// Convert physical safety inset (e.g., 110px) to logical (e.g., ~36px)
+const safeAreaTop = deviceProfile.camera.safeAreaTop / scale;
+```
+
+## Why this is better?
+*   **Developer Experience**: You write standard CSS. It feels like building a normal web app.
+*   **Device Independence**: Switch the `deviceProfile` to a Pixel 8 (width 1080), and the UI automatically scales to fill that frame perfectly. No code changes needed.
+*   **Future Proof**: Ready for 4x screens or weird aspect ratios.
+
+## Example: WhatsApp Refactor
+We successfully migrated `apps-whatsapp` to this system. 
+*   **Header**: `60px` height (Logical).
+*   **Message Bubble**: `16px` font, `10px` padding.
+*   Rendered on iPhone 16 (1290px wide) -> Effectively looks like high-res native rendering.
