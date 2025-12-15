@@ -1,128 +1,223 @@
-# Building Apps: The Tokovo Way
+# The Tokovo App Bible 📖
 
-This guide explains how to build robust, scalable, and pixel-perfect applications within the Tokovo ecosystem.
+**Building Production-Grade Apps for the Tokovo Ecosystem**
 
-## Core Philosophy
-
-Tokovo apps are built on a **Architecture of Separation**:
-1.  **State (Runtime)**: Pure data reducers that handle events.
-2.  **Logic (Hooks)**: Transformers that turn data into structured UI props.
-3.  **Surface (Device)**: The physical layer that handles scaling.
+This is the definitive guide to creating apps for Tokovo. It covers the philosophy, architecture, and step-by-step implementation details required to build "Best-in-Class" applications.
 
 ---
 
-## 1. Resolution Independence (`AppSurface`)
+## 🏛️ Core Philosophy
 
-**Rule #1**: Design for **393px** (iPhone 14/15/16 Pro).
+Tokovo apps are **Simulations**, not just UIs. They must adhere to three core principles:
 
-Never check `window.innerWidth`. Never use `@media` queries for device sizes. Instead, use the `AppSurface` component.
+1.  **Resolution Independence**: Apps must look perfect on *any* device (iPhone, Pixel, Tablet) without code changes.
+2.  **Sandbox Architecture**: Apps are "Content Only". They must never render system UI (Status Bars, Bezels).
+3.  **Strict State/Logic Separation**: The Runtime (Data) is completely separate from the UI (Presentation).
+
+---
+
+## 🏗️ Architecture: The "Sandbox" Model
+
+We follow a strict **Host vs. Guest** architecture to ensure scalability and reusability.
+
+| Layer | Responsibility | Example |
+| :--- | :--- | :--- |
+| **Renderer (Host)** | Handles the "Physical World". Renders the device frame, status bar, and manages safe areas. | `TokovoRenderer`, `DeviceFrame` |
+| **App (Guest)** | Handles the "Logical Content". Renders the inner UI of the app. agnostic of the device it's running on. | `WhatsappChatView`, `TwitterUI` |
+
+**❌ DON'T:**
+*   Render a Status Bar inside your app.
+*   Import `iPhone16Profile` directly into your app.
+*   Hardcode pixel values like `390px` width.
+
+**✅ DO:**
+*   Accept `width`, `height`, and `safeAreaInsets` as props.
+*   Use `AppSurface` to scale your logical design to the physical container.
+
+---
+
+## 🚀 Step-by-Step Implementation
+
+### Phase 1: Setup
+
+Create a new package in `packages/apps-<name>`. Use the standard structure:
+
+```text
+packages/apps-myapp/
+├── package.json          # Dependencies (@tokovo/core)
+├── src/
+│   ├── index.ts          # Public Exports
+│   ├── types.ts          # Semantic Types (The "Truth")
+│   ├── runtime.ts        # Reducer & Event Handling
+│   ├── ui.tsx            # The Visual Layer
+│   └── components/       # Platform-Specific UI
+│       ├── ios/
+│       └── android/
+```
+
+### Phase 2: Define Truth (`types.ts`)
+
+Start with **Data**, not UI. Define strict Discriminated Unions for your content.
+
+```typescript
+// types.ts
+export type MessageType = "text" | "image" | "system";
+
+export interface BaseMessage {
+    id: string;
+    from: string;
+    timestamp: number;
+}
+
+export interface TextMessage extends BaseMessage {
+    type: "text";
+    text: string;
+}
+
+export interface ImageMessage extends BaseMessage {
+    type: "image";
+    url: string;
+    aspectRatio: number;
+}
+
+export type AppMessage = TextMessage | ImageMessage;
+```
+
+### Phase 3: The Runtime (`runtime.ts`)
+
+Write a **Pure Reducer** that listens for DSL events and updates the World State.
+
+```typescript
+// runtime.ts
+import { ReducerRegistry, APP_IDS } from "@tokovo/core";
+
+export function myAppReducer(draft: WorldState, event: TimelineEvent) {
+    if (event.appId !== APP_IDS.MY_APP) return;
+
+    switch (event.type) {
+        case "MESSAGE_RECEIVED":
+            // 1. Validate payload
+            // 2. Update conversation state
+            // 3. Push to message array
+            break;
+    }
+}
+
+// Auto-register
+ReducerRegistry.registerAppReducer(APP_IDS.MY_APP, myAppReducer);
+```
+
+### Phase 4: Resolution Independence (`ui.tsx`)
+
+This is the most critical step. You must map your **Logical Design** to the **Physical Screen**.
+
+1.  **Pick a Logic Width**: We standardize on **393px** (iPhone 14/15/16 Pro width). Design everything assuming this width.
+2.  **Receive Props**: Your main component receives physical dimensions from the Renderer.
+3.  **Scale**: Use `AppSurface` to glue them together.
 
 ```tsx
+// ui.tsx
 import { AppSurface } from "@tokovo/core";
 
-export const MyApp = ({ world, deviceId }) => {
-    // 1. Get the target device (e.g., iPhone 16 Pro Max)
-    const deviceProfile = getDeviceProfile(deviceId);
+export interface MyAppProps {
+    width?: number;          // Physical Width (e.g. 1179)
+    height?: number;         // Physical Height (e.g. 2556)
+    safeAreaInsets?: Insets; // Physical Safe Areas
+}
+
+export const MyApp: React.FC<MyAppProps> = ({ width, height, safeAreaInsets }) => {
+    // 1. Define Design Baseline
+    const DESIGN_WIDTH = 393;
     
-    // 2. Wrap your app
+    // 2. Calculate Scale & Logical Safe Areas
+    const targetWidth = width || 1179;
+    const scale = targetWidth / DESIGN_WIDTH;
+    
+    const safeTop = (safeAreaInsets?.top || 0) / scale;
+    const safeBottom = (safeAreaInsets?.bottom || 0) / scale;
+
     return (
         <AppSurface
-            designWidth={393}                  // Logic Width
-            targetWidth={deviceProfile.width}  // Physical Width (e.g., 1290)
-            targetHeight={deviceProfile.height}
+            designWidth={DESIGN_WIDTH}
+            targetWidth={targetWidth}
+            targetHeight={height || 2556}
         >
-            {/* 3. Build using standard pixels (16px font, 20px margin) */}
-            <div style={{ fontSize: 16, padding: 20 }}>
-                Hello World
+            <div style={{ paddingTop: safeTop, paddingBottom: safeBottom }}>
+                {/* 
+                    Now write Standard CSS! 
+                    fontSize: 16 means 16 "logical" pixels.
+                    It will render as 48 physical pixels on iPhone 16.
+                */}
+                <Header />
+                <Content />
             </div>
         </AppSurface>
     );
 };
 ```
 
-**Why?**
-*   If you deploy to a **Pixel 7** (1080px wide), `AppSurface` automatically scales your 393px design by `2.75x`.
-*   If you deploy to an **iPhone 16** (1179px wide), it scales by `3.0x`.
-*   You build **once**. It looks perfect **everywhere**.
+### Phase 5: Semantic Grouping
 
----
+Don't just map over arrays. Process your data into **Semantic Groups** using hooks.
 
----
+**The "WhatsApp Pattern":**
+1.  **Raw Data**: Array of messages ordered by time.
+2.  **Hook (`useMessageGrouping`)**:
+    *   Groups consecutive messages from same sender.
+    *   Adds `isFirst`, `isLast`, `hasTail` metadata.
+    *   Injects time dividers if gap > 1 hr.
+3.  **Render**: Map the *Groups*, not the messages.
 
-## 2. Device Segregation (Sandbox Model)
-
-**Rule #2**: Apps are **Content Only**.
-
-Do NOT render the Status Bar, Home Indicator, or Dynamic Island inside your app.
-The **Device Wrapper** (`@tokovo/devices`) handles the OS UI.
-
-**Why?**
-*   If you render a Status Bar, you will have **two** status bars (one from you, one from the Device).
-*   Your app should be "Pure" — it doesn't care if it's on an iPhone 16 (Island) or iPhone 13 (Notch).
-
-**Correct Structure:**
 ```tsx
-// ui.tsx
-export const WhatsappChatView = () => {
-    return (
-        <AppSurface>
-            <Header />      {/* YES: App Navigation */}
-            <MessageList /> {/* YES: App Content */} 
-            <InputArea />   {/* YES: App Controls */}
-            {/* NO <StatusBar /> -- Device handles this */}
-        </AppSurface>
-    );
+// hooks/useMessageGrouping.ts
+export function useMessageGrouping(messages: Message[]) {
+    return useMemo(() => {
+        const groups = [];
+        // ... heavy grouping logic ...
+        return groups;
+    }, [messages]);
+}
+```
+
+This keeps your UI code clean ("dumb") and your business logic testable.
+
+---
+
+## 💅 Styling & Assets
+
+### 1x Logical Pixels
+Always use **Logical Pixels** in your CSS.
+*   Font Size `17px` (Standard Body) -> Renders as `51px` on device.
+*   Border Radius `20px` -> Renders as `60px`.
+
+### Platform Segregation
+If your app supports both iOS and Android, use a **Strategy Pattern**.
+
+```tsx
+const PlatformComponents = {
+    ios: { Header: IOSHeader, List: IOSList },
+    android: { Header: AndroidHeader, List: AndroidList }
 };
 ```
 
----
-
-## 3. Semantic Grouping (The "WhatsApp Model")
-
-Don't render flat lists of data. Use a **Logic Layer** to group semantic elements.
-
-**Bad:**
-```tsx
-messages.map(msg => <Bubble margin={4} />)
-// Result: Jumpy spacing, no flow.
-```
-
-**Good:**
-```tsx
-// Logic Layer
-const groups = useMessageGrouping(messages); 
-
-// Render Layer
-groups.map(group => (
-    <GroupContainer marginTop={group.newSender ? 12 : 2}>
-        {group.messages.map(msg => (
-            <Bubble isFirst={msg.isFirst} hasTail={msg.isFirst} />
-        ))}
-    </GroupContainer>
-));
-```
-
-This ensures "Rhythm" (12px vs 2px spacing) is handled by *Logic*, not by *CSS*.
+Determine the platform via props and select the correct component set at runtime.
 
 ---
 
-## 3. Strict Types
+## 🧪 Verification
 
-In `runtime.ts` and `types.ts`, define strict discriminated unions.
+Never assume it looks good. Verify it.
 
-```typescript
-export type AppMessage = 
-    | { type: "text", text: string }
-    | { type: "image", url: string, caption?: string };
-```
-
-Do not use "loose" objects with optional fields for everything. This prevents UI bugs where an image tries to render as text.
+1.  **Video Runner**: Use the `video-runner` app to see your app running inside a real device frame.
+2.  **Timeline Ops**: Trigger DSL events (`message.receive`, `scroll`) to verify dynamic behavior.
+3.  **Cross-Device**: Switch the profile in your test episode (`iphone16` -> `pixel`) to verify your scaling logic holds up.
 
 ---
 
-## Summary Checklist
+## 🧹 Checklist for PRs
 
-- [ ] Does your app use `AppSurface` with `designWidth={393}`?
-- [ ] Are you using `1x` CSS values (e.g., `16px` font, not `48px`)?
-- [ ] Is your business logic (grouping) separate from your rendering?
-- [ ] Are your types strict?
+- [ ] **Strict Types**: Are `runtime.ts` and `types.ts` strictly typed?
+- [ ] **Pure UI**: Does `ui.tsx` accept `width/height` props? (No direct device imports)
+- [ ] **AppSurface**: Is `AppSurface` used with `designWidth={393}`?
+- [ ] **No Bezel**: Did you check that you aren't rendering a Status Bar?
+- [ ] **Grouping**: Is complex list logic moved to a custom hook?
