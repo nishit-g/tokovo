@@ -1,25 +1,51 @@
 import React, { useMemo } from "react";
 import { WorldState, Platform, AppSurface } from "@tokovo/core";
-// We need to access device profiles. Assuming a direct import or core export.
-// If devices are in core, import from core. If in separate package, we need to check imports.
-// Based on previous file reads, iPhone16Profile was in packages/devices.
-import { iPhone16Profile } from "@tokovo/devices";
-// In a real app we would use a registry, but for now explicitly using iPhone16 as default/example
-// until generic registry is cleaner.
-
-import { Header } from "./components/ios/Header";
-import { MessageList } from "./components/ios/MessageList";
-import { InputArea } from "./components/ios/InputArea";
+import { Header as IOSHeader } from "./components/ios/Header";
+import { MessageList as IOSMessageList } from "./components/ios/MessageList";
+import { InputArea as IOSInputArea } from "./components/ios/InputArea";
 import { WhatsAppState, MessageData } from "./types";
 
-export const WhatsappChatView: React.FC<{
+// =============================================================================
+// PLATFORM SEGREGATION LAYER
+// =============================================================================
+// Future-proof: This allows easy addition of Android components later.
+const PlatformComponents = {
+    ios: {
+        Header: IOSHeader,
+        MessageList: IOSMessageList,
+        InputArea: IOSInputArea,
+    },
+    // android: { ... }
+};
+
+export interface WhatsappChatViewProps {
     world: WorldState;
     t: number;
-    deviceId?: string
-}> = ({ world, t, deviceId }) => {
-    // 1. Resolve Device Profile
-    // In future, getDeviceProfile(deviceId)
-    const deviceProfile = iPhone16Profile;
+    deviceId?: string;
+    platform?: "ios" | "android";
+    width?: number;
+    height?: number;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+}
+
+export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
+    world,
+    t,
+    deviceId,
+    platform = "ios",
+    width,
+    height,
+    safeAreaInsets
+}) => {
+    // 1. Resolve Platform
+    // Architecture: Device Segregation (Renderer passes platform)
+    // Fallback components (safety)
+    const Components = PlatformComponents[platform] || PlatformComponents.ios;
 
     // 2. Resolve App State
     const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
@@ -57,22 +83,33 @@ export const WhatsappChatView: React.FC<{
         }
     });
 
-    // 4. Calculate Safe Areas (Physical -> Logical)
-    // Design Width: 393 (Standard 1x)
-    // Target Width: deviceProfile.dimensions.width
+    // 4. Calculate Safe Areas & Scaling (Resolution Independence)
+    // Design Width: 393 (Logical 1x)
+    // Target Dimensions: Provided by Renderer (or fallback standard)
     const designWidth = 393;
-    const targetWidth = deviceProfile.dimensions.width;
+    const targetWidth = width || 1179; // Default fallback (iPhone 16)
+    const targetHeight = height || 2556;
+
+    // Calculate Scale
     const scale = targetWidth / designWidth;
 
-    // Safe Areas
-    const safeAreaTop = (deviceProfile.camera?.safeAreaTop || 110) / scale;
-    const safeAreaBottom = (deviceProfile.camera?.safeAreaBottom || 102) / scale;
+    // Safe Areas (Physical -> Logical)
+    // If safeAreaInsets not provided, assume generous safe areas
+    const physicalSafeTop = safeAreaInsets?.top ?? 177; // ~59px * 3
+    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102; // ~34px * 3
+
+    const safeAreaTop = physicalSafeTop / scale;
+    const safeAreaBottom = physicalSafeBottom / scale;
+
+    // 5. Time Simulation
+    // Apps don't need to know the time for the status bar anymore.
+    // The Device Wrapper handles that.
 
     return (
         <AppSurface
             designWidth={designWidth}
             targetWidth={targetWidth}
-            targetHeight={deviceProfile.dimensions.height}
+            targetHeight={targetHeight}
             backgroundColor="#000"
         >
             <div style={{
@@ -82,19 +119,21 @@ export const WhatsappChatView: React.FC<{
                 backgroundColor: "#ECE5DD", // Chat BG
                 position: "relative"
             }}>
-                <Header
+                {/* STATUS BAR handled by Device Wrapper */}
+
+                <Components.Header
                     contactName={contactName}
                     avatarUrl={conversation?.avatar}
                     status="online"
                     safeAreaTop={safeAreaTop}
                 />
 
-                <MessageList
+                <Components.MessageList
                     messages={messages}
                     ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
                 />
 
-                <InputArea
+                <Components.InputArea
                     text=""
                     showCursor={false}
                     safeAreaBottom={safeAreaBottom}

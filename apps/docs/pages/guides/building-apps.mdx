@@ -1,0 +1,128 @@
+# Building Apps: The Tokovo Way
+
+This guide explains how to build robust, scalable, and pixel-perfect applications within the Tokovo ecosystem.
+
+## Core Philosophy
+
+Tokovo apps are built on a **Architecture of Separation**:
+1.  **State (Runtime)**: Pure data reducers that handle events.
+2.  **Logic (Hooks)**: Transformers that turn data into structured UI props.
+3.  **Surface (Device)**: The physical layer that handles scaling.
+
+---
+
+## 1. Resolution Independence (`AppSurface`)
+
+**Rule #1**: Design for **393px** (iPhone 14/15/16 Pro).
+
+Never check `window.innerWidth`. Never use `@media` queries for device sizes. Instead, use the `AppSurface` component.
+
+```tsx
+import { AppSurface } from "@tokovo/core";
+
+export const MyApp = ({ world, deviceId }) => {
+    // 1. Get the target device (e.g., iPhone 16 Pro Max)
+    const deviceProfile = getDeviceProfile(deviceId);
+    
+    // 2. Wrap your app
+    return (
+        <AppSurface
+            designWidth={393}                  // Logic Width
+            targetWidth={deviceProfile.width}  // Physical Width (e.g., 1290)
+            targetHeight={deviceProfile.height}
+        >
+            {/* 3. Build using standard pixels (16px font, 20px margin) */}
+            <div style={{ fontSize: 16, padding: 20 }}>
+                Hello World
+            </div>
+        </AppSurface>
+    );
+};
+```
+
+**Why?**
+*   If you deploy to a **Pixel 7** (1080px wide), `AppSurface` automatically scales your 393px design by `2.75x`.
+*   If you deploy to an **iPhone 16** (1179px wide), it scales by `3.0x`.
+*   You build **once**. It looks perfect **everywhere**.
+
+---
+
+---
+
+## 2. Device Segregation (Sandbox Model)
+
+**Rule #2**: Apps are **Content Only**.
+
+Do NOT render the Status Bar, Home Indicator, or Dynamic Island inside your app.
+The **Device Wrapper** (`@tokovo/devices`) handles the OS UI.
+
+**Why?**
+*   If you render a Status Bar, you will have **two** status bars (one from you, one from the Device).
+*   Your app should be "Pure" — it doesn't care if it's on an iPhone 16 (Island) or iPhone 13 (Notch).
+
+**Correct Structure:**
+```tsx
+// ui.tsx
+export const WhatsappChatView = () => {
+    return (
+        <AppSurface>
+            <Header />      {/* YES: App Navigation */}
+            <MessageList /> {/* YES: App Content */} 
+            <InputArea />   {/* YES: App Controls */}
+            {/* NO <StatusBar /> -- Device handles this */}
+        </AppSurface>
+    );
+};
+```
+
+---
+
+## 3. Semantic Grouping (The "WhatsApp Model")
+
+Don't render flat lists of data. Use a **Logic Layer** to group semantic elements.
+
+**Bad:**
+```tsx
+messages.map(msg => <Bubble margin={4} />)
+// Result: Jumpy spacing, no flow.
+```
+
+**Good:**
+```tsx
+// Logic Layer
+const groups = useMessageGrouping(messages); 
+
+// Render Layer
+groups.map(group => (
+    <GroupContainer marginTop={group.newSender ? 12 : 2}>
+        {group.messages.map(msg => (
+            <Bubble isFirst={msg.isFirst} hasTail={msg.isFirst} />
+        ))}
+    </GroupContainer>
+));
+```
+
+This ensures "Rhythm" (12px vs 2px spacing) is handled by *Logic*, not by *CSS*.
+
+---
+
+## 3. Strict Types
+
+In `runtime.ts` and `types.ts`, define strict discriminated unions.
+
+```typescript
+export type AppMessage = 
+    | { type: "text", text: string }
+    | { type: "image", url: string, caption?: string };
+```
+
+Do not use "loose" objects with optional fields for everything. This prevents UI bugs where an image tries to render as text.
+
+---
+
+## Summary Checklist
+
+- [ ] Does your app use `AppSurface` with `designWidth={393}`?
+- [ ] Are you using `1x` CSS values (e.g., `16px` font, not `48px`)?
+- [ ] Is your business logic (grouping) separate from your rendering?
+- [ ] Are your types strict?

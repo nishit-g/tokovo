@@ -151,7 +151,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             width: profile.dimensions.width,
             height: profile.dimensions.height,
             position: "relative",
-            overflow: "hidden",
+            // overflow: "hidden", // ALLOW BEZEL SHADOW TO BE VISIBLE
         }}>
             {/* Camera wrapper — applies cinematic transforms */}
             <div style={cameraStyle}>
@@ -177,7 +177,21 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
                         {/* App View / Lockscreen / Home Screen */}
                         {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView world={world} t={t} layout={layout} platform={variant} deviceId={deviceId} />
+                            <AppView
+                                world={world}
+                                t={t}
+                                layout={layout}
+                                platform={variant}
+                                deviceId={deviceId}
+                                width={profile.dimensions.width}
+                                height={profile.dimensions.height}
+                                safeAreaInsets={{
+                                    top: profile.camera?.safeAreaTop || 0,
+                                    bottom: profile.camera?.safeAreaBottom || 0,
+                                    left: 0,
+                                    right: 0
+                                }}
+                            />
                         ) : !hasActiveCall && device.isLocked ? (
                             <LockscreenView
                                 notifications={device.notifications}

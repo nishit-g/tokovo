@@ -22,6 +22,17 @@ export interface AppViewProps {
     layout?: LayoutState;
     platform?: string;
     deviceId?: string;
+    /** Physical width of the screen */
+    width?: number;
+    /** Physical height of the screen */
+    height?: number;
+    /** Safe area insets (physical pixels) */
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
 }
 
 /**
