@@ -2,18 +2,13 @@
 
 import { Callout, Cards, Card, Steps, Tabs, Tab } from 'nextra/components'
 
-<div className="hero-section" style={{textAlign: 'center', padding: '2rem 0 3rem'}}>
-  <h1 style={{fontSize: '3rem', fontWeight: 800, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
-    The Story Compiler
-  </h1>
-  <p style={{fontSize: '1.25rem', color: '#666', maxWidth: '600px', margin: '1rem auto', lineHeight: 1.6}}>
-    Transform conversation scripts into pixel-perfect viral phone videos.<br/>
-    <strong>Deterministic. Cinematic. Frame-accurate.</strong>
-  </p>
-</div>
+## The Story Compiler
+
+Transform conversation scripts into pixel-perfect viral phone videos.
+**Deterministic. Cinematic. Frame-accurate.**
 
 <Callout type="info">
-**What is Tokovo?** A programmable narrative engine that compiles stories (DSL) into deterministic video frames. Same script = same video, every time.
+<strong>What is Tokovo?</strong> A programmable narrative engine that compiles stories (DSL) into deterministic video frames. Same script = same video, every time.
 </Callout>
 
 ---
@@ -48,23 +43,21 @@ import { Callout, Cards, Card, Steps, Tabs, Tab } from 'nextra/components'
 
 ## Quick Start
 
-<Steps>
-
-### Install
+### 1. Install
 
 ```bash
 git clone https://github.com/your-org/tokovo.git && cd tokovo
 pnpm install && pnpm build
 ```
 
-### Run
+### 2. Run
 
 ```bash
 pnpm --filter video-runner dev
 # Open http://localhost:3000
 ```
 
-### Create
+### 3. Create
 
 ```typescript
 import { dsl } from "@tokovo/dsl";
@@ -77,13 +70,7 @@ const events = [
 ];
 ```
 
-</Steps>
-
-<div style={{textAlign: 'center', margin: '2rem 0'}}>
-  <a href="/guides/quickstart" style={{display: 'inline-block', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 600}}>
-    Get Started →
-  </a>
-</div>
+[**Get Started →**](/guides/quickstart)
 
 ---
 
@@ -115,55 +102,51 @@ const events = [
 
 <Tabs items={['Episode', 'Event', 'WorldState', 'Camera']}>
   <Tab>
-    **Episode**: A complete story containing devices, conversations, and beats.
-    
-    ```typescript
-    const scene = episode("breakup-01", ep => {
-      ep.device("AlicePhone", "iphone16", d => {
-        d.conversation("dm_bob", { name: "Bob" });
-        d.beat("tension", b => {
-          b.receive("Bob", "We need to talk.");
-        });
-      });
+<strong>Episode</strong>: A complete story containing devices, conversations, and beats.
+```typescript
+const scene = episode("breakup-01", ep => {
+  ep.device("AlicePhone", "iphone16", d => {
+    d.conversation("dm_bob", { name: "Bob" });
+    d.beat("tension", b => {
+      b.receive("Bob", "We need to talk.");
     });
-    ```
+  });
+});
+```
   </Tab>
   <Tab>
-    **Event**: A frame-based instruction that mutates WorldState.
-    
-    ```typescript
-    {
-      at: 60,               // Frame number
-      kind: "APP",          // Event category
-      appId: "app_whatsapp",
-      type: "MESSAGE_RECEIVED",
-      text: "Hello!",
-    }
-    ```
+<strong>Event</strong>: A frame-based instruction that mutates WorldState.
+```typescript
+{
+  at: 60,               // Frame number
+  kind: "APP",          // Event category
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  text: "Hello!",
+}
+```
   </Tab>
   <Tab>
-    **WorldState**: The complete application state at any frame.
-    
-    ```typescript
-    {
-      devices: { phone: { isLocked: false, ... } },
-      conversations: { dm_1: { messages: [...] } },
-      appState: { app_whatsapp: { screen: "chat" } },
-      camera: { transform: { scale: 1.08, ... } },
-      audio: { activeSounds: { ... } },
-    }
-    ```
+<strong>WorldState</strong>: The complete application state at any frame.
+```typescript
+{
+  devices: { phone: { isLocked: false, ... } },
+  conversations: { dm_1: { messages: [...] } },
+  appState: { app_whatsapp: { screen: "chat" } },
+  camera: { transform: { scale: 1.08, ... } },
+  audio: { activeSounds: { ... } },
+}
+```
   </Tab>
   <Tab>
-    **Camera**: Semantic anchors + shot presets for cinematic effects.
-    
-    ```typescript
-    // Focus on the last message with dramatic zoom
-    dsl.camera.anchorFocus(60, "lastMessage", "dramatic", 5);
-    
-    // Smooth tracking follow (webseries style)
-    dsl.camera.anchorTrack(100, "inputArea", 40, 0.18);
-    ```
+<strong>Camera</strong>: Semantic anchors + shot presets for cinematic effects.
+```typescript
+// Focus on the last message with dramatic zoom
+dsl.camera.anchorFocus(60, "lastMessage", "dramatic", 5);
+
+// Smooth tracking follow (webseries style)
+dsl.camera.anchorTrack(100, "inputArea", 40, 0.18);
+```
   </Tab>
 </Tabs>
 

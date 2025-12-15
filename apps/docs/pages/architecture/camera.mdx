@@ -8,7 +8,7 @@ import { Callout, Tabs, Tab, Steps } from 'nextra/components'
 # Camera System
 
 <Callout type="info">
-**The camera follows meaning, not pixels.**
+<strong>The camera follows meaning, not pixels.</strong>
 </Callout>
 
 The Semantic Anchor-Driven Camera System (SACS) provides production-grade cinematic effects that target **semantic anchors** (like "lastMessage" or "inputArea") rather than hardcoded pixel coordinates. This 665-line engine powers all camera behavior in Tokovo.
@@ -105,7 +105,7 @@ dsl.camera.anchorFocus(100, "lastMessage", "dramatic", 5)
 ### ANCHOR_TRACK (Continuous Following)
 
 <Callout type="warning">
-**NEW in v1**: Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously follows the anchor with exponential smoothing. This is the "webseries camera operator" feel.
+<strong>NEW in v1</strong>: Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously follows the anchor with exponential smoothing. This is the "webseries camera operator" feel.
 </Callout>
 
 ```typescript
@@ -170,7 +170,7 @@ dsl.camera.reset(100, 20)
 ## Shot Presets
 
 <Callout type="error">
-**v1 Presets are LOCKED.** Do not modify their values. They define the "Tokovo look."
+<strong>v1 Presets are LOCKED.</strong> Do not modify their values. They define the "Tokovo look."
 </Callout>
 
 ### v1 Core Presets (Production Ship Set)
