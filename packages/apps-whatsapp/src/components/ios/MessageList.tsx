@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import { getTheme } from "./theme";
 import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../../hooks/useMessageGrouping";
@@ -14,21 +14,32 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = 
 
     // Architecture Layer 1: Semantic Grouping
     const groups = useMessageGrouping(messages, ownerName);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const lastMessageId = messages[messages.length - 1]?.id;
+
+    // Auto-scroll to bottom when new messages arrive
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+    }, [messages.length, lastMessageId]);
 
     return (
-        <div style={{
-            flex: 1,
-            backgroundColor: theme.colors.chatBg,
-            backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
-            backgroundSize: "400px",
-            display: "flex",
-            flexDirection: "column",
-            padding: "10px 16px",
-            // Remove 'gap' here because we control it via margins for precise rhythm
-            overflowY: "auto",
-            WebkitOverflowScrolling: "touch",
-            paddingBottom: 100
-        }}>
+        <div
+            ref={containerRef}
+            style={{
+                flex: 1,
+                backgroundColor: theme.colors.chatBg,
+                backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
+                backgroundSize: "400px",
+                display: "flex",
+                flexDirection: "column",
+                padding: "10px 16px",
+                // Remove 'gap' here because we control it via margins for precise rhythm
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                paddingBottom: 100
+            }}>
             {groups.map((group) => {
                 const isSystem = group.senderId === "system";
 
