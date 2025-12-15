@@ -514,6 +514,7 @@ export function createActiveEffect(
                 duration,
                 easing: params.easing,
                 shake: params.shake,
+                align: params.align,
             } as any;  // Cast to any since CameraAnchorFocusEffect is newly added
             break;
         case "ANCHOR_TRACK":
@@ -525,6 +526,7 @@ export function createActiveEffect(
                 duration,
                 easing: params.easing,
                 smoothing: params.smoothing,
+                align: params.align,
             } as any;
             break;
         default:

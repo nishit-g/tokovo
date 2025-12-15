@@ -623,6 +623,7 @@ function lowerOp(
                 anchor: op.anchor,
                 preset: op.preset,
                 shake: op.shake,
+                align: op.align,
                 duration,
                 easing: op.easing,
                 trace,
@@ -640,6 +641,7 @@ function lowerOp(
                 duration,
                 smoothing: op.smoothing,
                 preset: op.preset,
+                align: op.align,
                 easing: op.easing,
                 trace,
             };

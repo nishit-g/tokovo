@@ -615,6 +615,7 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 scale: (event as any).scale,
                 originX: (event as any).originX,
                 originY: (event as any).originY,
+                align: (event as any).align,
                 translateX: (event as any).translateX || ((event as any).originX ? ((event as any).originX - 0.5) * 1000 : 0)
             };
             processCameraEvent(draft, legacyEvent, index);

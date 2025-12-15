@@ -352,6 +352,7 @@ export interface AnchorFocusOp {
     readonly anchor: string;          // Semantic anchor ID (e.g. "lastMessage")
     readonly preset?: string;         // Shot preset (dramatic, subtle, etc)
     readonly shake?: number;          // Optional shake intensity
+    readonly align?: { x: number; y: number };
     readonly duration?: DurationExpr; // Duration of move
     readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
 }
@@ -366,6 +367,7 @@ export interface AnchorTrackOp {
     readonly duration?: DurationExpr;
     readonly smoothing?: number;      // 0-1 smoothing factor
     readonly preset?: string;
+    readonly align?: { x: number; y: number };
     readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
 }
 

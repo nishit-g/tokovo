@@ -323,13 +323,16 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                     const viewportHeight = profile.dimensions.height;
 
                     // === THE KEY MATH: Convert rect → origin ===
-                    // Center of the rect becomes the transform origin
-                    const centerX = rect.x + rect.width / 2;
-                    const centerY = rect.y + rect.height / 2;
+                    // Use provided alignment or default to center (0.5)
+                    const alignX = effect.align?.x ?? 0.5;
+                    const alignY = effect.align?.y ?? 0.5;
+
+                    const targetX = rect.x + rect.width * alignX;
+                    const targetY = rect.y + rect.height * alignY;
 
                     // Normalize to 0-1 range
-                    const originX = centerX / viewportWidth;
-                    const originY = centerY / viewportHeight;
+                    const originX = targetX / viewportWidth;
+                    const originY = targetY / viewportHeight;
 
                     // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
                     const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
@@ -401,11 +404,15 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                     const viewportWidth = profile.dimensions.width;
                     const viewportHeight = profile.dimensions.height;
 
-                    // Compute target origin from rect center
-                    const centerX = rect.x + rect.width / 2;
-                    const centerY = rect.y + rect.height / 2;
-                    const targetOriginX = Math.max(0.1, Math.min(0.9, centerX / viewportWidth));
-                    const targetOriginY = Math.max(0.1, Math.min(0.9, centerY / viewportHeight));
+                    // Compute target origin from rect center (or aligned point)
+                    const alignX = effect.align?.x ?? 0.5;
+                    const alignY = effect.align?.y ?? 0.5;
+
+                    const targetPointX = rect.x + rect.width * alignX;
+                    const targetPointY = rect.y + rect.height * alignY;
+
+                    const targetOriginX = Math.max(0.1, Math.min(0.9, targetPointX / viewportWidth));
+                    const targetOriginY = Math.max(0.1, Math.min(0.9, targetPointY / viewportHeight));
 
                     // Get previous origin from tracking state
                     const prev = trackingStateRef.current;

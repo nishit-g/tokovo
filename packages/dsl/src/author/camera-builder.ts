@@ -331,12 +331,13 @@ export class CameraBuilder {
      * Focus on a semantic anchor (e.g., "lastMessage", "header").
      * One-shot movement to frame the target.
      */
-    focus(anchor: string, options?: { preset?: string; duration?: string; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
+    focus(anchor: string, options?: { preset?: string; duration?: string; align?: { x: number; y: number }; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
         const op: AnchorFocusOp = {
             kind: "AnchorFocus",
             anchor,
             preset: options?.preset,
             duration: options?.duration,
+            align: options?.align,
             easing: options?.easing,
         };
         this.events.push({ at: this.currentTime, op });
@@ -347,13 +348,14 @@ export class CameraBuilder {
      * Continuously track a semantic anchor.
      * Camera will follow the target as it moves/grows.
      */
-    track(anchor: string, options?: { duration?: string; smoothing?: number; preset?: string; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
+    track(anchor: string, options?: { duration?: string; smoothing?: number; preset?: string; align?: { x: number; y: number }; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
         const op: AnchorTrackOp = {
             kind: "AnchorTrack",
             anchor,
             duration: options?.duration,
             smoothing: options?.smoothing,
             preset: options?.preset,
+            align: options?.align,
             easing: options?.easing,
         };
         this.events.push({ at: this.currentTime, op });

@@ -236,6 +236,7 @@ export interface TimelineAnchorFocusOp extends TimelineOpBase {
     readonly anchor: string;
     readonly preset?: string;
     readonly shake?: number;
+    readonly align?: { x: number; y: number };
     readonly duration: number; // Resolved frames
     readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
 }
@@ -249,6 +250,7 @@ export interface TimelineAnchorTrackOp extends TimelineOpBase {
     readonly duration: number; // Resolved frames
     readonly smoothing?: number;
     readonly preset?: string;
+    readonly align?: { x: number; y: number };
     readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
 }
 

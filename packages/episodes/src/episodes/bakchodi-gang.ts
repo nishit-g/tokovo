@@ -25,6 +25,12 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
             b.wait("0.5s");
             b.receive("Vicky", "21 din mein paisa double BC. Trust me bro. Is baar pakka! 🤑");
 
+            // READING SCAN EFFECT (Cinematic Left-to-Right)
+            // 1. Cut to start of message (Left) - Zoomed in ("dramatic")
+            b.camera(c => c.focus("lastMessage", { align: { x: 0.15, y: 0.5 }, preset: "dramatic", duration: "5s" }));
+            // 2. Smoothly scan to end (Right)
+            b.camera(c => c.focus("lastMessage", { align: { x: 0.85, y: 0.5 }, preset: "dramatic", duration: "2.5s", easing: "linear" }));
+
             // Rahul (Me) is skeptical
             b.typing("me").for("1.5s");
             b.send("Fir shuru ho gaya tu MC? 😂");
