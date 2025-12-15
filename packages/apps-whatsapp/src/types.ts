@@ -1,3 +1,14 @@
+export interface MessageData {
+    id: string;
+    text: string;
+    from: string;
+    timestamp?: string;
+    status?: "sent" | "delivered" | "read";
+    type?: "text" | "image" | "video" | "voice" | "system";
+    // Add other fields as necessary from the legacy implementation
+}
+
 export interface WhatsAppState {
-    // Add specific state if needed, for now using generic ConversationState from core
+    conversationId?: string;
+    // Add other state properties if needed for navigation
 }

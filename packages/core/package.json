@@ -8,10 +8,12 @@
     },
     "dependencies": {
         "immer": "^10.0.0",
-        "@tokovo/ir": "workspace:*"
+        "@tokovo/ir": "workspace:*",
+        "react": "18.2.0"
     },
     "devDependencies": {
         "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0"
     }
 }

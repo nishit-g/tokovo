@@ -1,6 +1,5 @@
-import { episode } from "@tokovo/dsl";
+import { episode, EpisodeDefinition } from "@tokovo/dsl";
 
-import { EpisodeDefinition } from "@tokovo/dsl";
 
 export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", ep => {
     ep.config({

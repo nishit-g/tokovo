@@ -251,10 +251,16 @@ importers:
       immer:
         specifier: ^10.0.0
         version: 10.2.0
+      react:
+        specifier: 18.2.0
+        version: 18.2.0
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.25
+      '@types/react':
+        specifier: 18.2.0
+        version: 18.2.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3

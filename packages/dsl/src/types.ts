@@ -46,3 +46,12 @@ export interface EpisodeConfig {
     fps?: number;
     title?: string;
 }
+
+/**
+ * Episode Definition
+ */
+export interface EpisodeDefinition {
+    id: string;
+    flow: any; // Using any for now to avoid circular dependency hell with IR
+    schemaVersion: string;
+}

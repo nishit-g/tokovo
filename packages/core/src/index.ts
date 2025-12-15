@@ -8,6 +8,7 @@ export * from "./typeGuards";
 export * from "./eventUtils";
 export * from "./plugin";
 export * from "./widget-registry";
+export * from "./components/AppSurface";
 export * from "./notification-adapter";
 export * from "./notification-dsl";
 export * from "./transitions";
