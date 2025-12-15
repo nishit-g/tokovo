@@ -124,5 +124,20 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
                 c.reset({ duration: "1s" });
             });
         });
+
+        // ACT 6: Navigation Test
+        d.beat("navigation_test", b => {
+            // Navigate to Chat List
+            b.goBack({ duration: "0.5s" });
+            b.wait("1s");
+
+            // Navigate back to this chat
+            b.openChat("group_engineers", { duration: "0.5s" });
+            b.wait("1s");
+
+            // Navigate to Chat List again
+            b.showScreen("chats-list", { duration: "0.5s" });
+            b.wait(1); // implicit duration type test (Trace verified)
+        });
     });
 });

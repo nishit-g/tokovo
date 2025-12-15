@@ -21,12 +21,13 @@
  * Human-readable duration expression.
  * Examples: "1.2s", "300ms", "45frames"
  */
-export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string;
+export type DurationExpr = `${number}${"s" | "ms" | "frames"}` | string | number;
 
 /**
  * Parse duration to frames
  */
 export function parseDuration(expr: DurationExpr, fps: number): number {
+    if (typeof expr === "number") return expr;
     const match = expr.match(/^([\d.]+)(s|ms|frames)$/);
     if (!match) {
         throw new Error(`Invalid duration: ${expr}`);
@@ -486,7 +487,7 @@ export interface NavigateScreenOp {
     readonly kind: "NavigateScreen";
     readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
     readonly transition?: "push" | "pop" | "present" | "dismiss";
-    readonly animationDuration?: number;  // frames
+    readonly animationDuration?: DurationExpr;  // frames or string duration
 }
 
 /**
@@ -497,7 +498,7 @@ export interface OpenChatOp {
     readonly kind: "OpenChat";
     readonly conversationId: string;
     readonly transition?: "push" | "pop";
-    readonly animationDuration?: number;
+    readonly animationDuration?: DurationExpr;
 }
 
 /**
@@ -506,7 +507,7 @@ export interface OpenChatOp {
 export interface GoBackOp {
     readonly kind: "GoBack";
     readonly transition?: "pop" | "dismiss";
-    readonly animationDuration?: number;
+    readonly animationDuration?: DurationExpr;
 }
 
 /**

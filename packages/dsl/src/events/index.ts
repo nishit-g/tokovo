@@ -27,6 +27,7 @@ export { audio as audioEvents, PlayOptions, FadeOptions } from "./audio";
 export { os } from "./os";
 export { touch } from "./touch";
 export { call, CallEvent, IncomingCallOptions } from "./call";
+export { navigation } from "./navigation";
 
 // Typing simulation
 export {
@@ -45,6 +46,7 @@ import { audio as audioEvents } from "./audio";
 import { os } from "./os";
 import { touch } from "./touch";
 import { call } from "./call";
+import { navigation } from "./navigation";
 
 /**
  * Bundled DSL object with all event factories
@@ -69,7 +71,7 @@ export const dsl = {
     messages,
     camera,
     audio: audioEvents,
-    os,
     touch,
     call,
+    navigation,
 };

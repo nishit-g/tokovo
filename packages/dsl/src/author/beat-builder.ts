@@ -564,7 +564,7 @@ export class BeatBuilder {
      */
     showScreen(
         screen: "chats-list" | "chat" | "settings" | "status" | "calls",
-        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: number }
+        options?: { transition?: "push" | "pop" | "present" | "dismiss"; duration?: string | number }
     ): this {
         const op: NavigateScreenOp = {
             kind: "NavigateScreen",
@@ -583,7 +583,7 @@ export class BeatBuilder {
      */
     openChat(
         conversationId: string,
-        options?: { transition?: "push" | "pop"; duration?: number }
+        options?: { transition?: "push" | "pop"; duration?: string | number }
     ): this {
         const op: OpenChatOp = {
             kind: "OpenChat",
@@ -599,7 +599,7 @@ export class BeatBuilder {
      * Go back to the previous screen.
      * @param options - Transition options
      */
-    goBack(options?: { transition?: "pop" | "dismiss"; duration?: number }): this {
+    goBack(options?: { transition?: "pop" | "dismiss"; duration?: string | number }): this {
         const op: GoBackOp = {
             kind: "GoBack",
             transition: options?.transition,
@@ -620,7 +620,7 @@ export class BeatBuilder {
             screen?: string;
             conversationId?: string;
             transition?: "push" | "pop" | "present";
-            duration?: number
+            duration?: string | number
         }
     ): this {
         const op = {

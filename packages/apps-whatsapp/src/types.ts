@@ -42,5 +42,6 @@ export type MessageData = TextMessage | ImageMessage | VideoMessage | VoiceMessa
 
 export interface WhatsAppState {
     conversationId?: string;
-    // Add other state properties if needed for navigation
+    // Navigation state
+    screen?: string;
 }

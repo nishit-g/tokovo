@@ -122,8 +122,17 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
             viewKind = "LOCKSCREEN";
         } else if (appId) {
             if (appId === "app_whatsapp") {
-                viewKind = "CHAT";
-                activeConversationId = Object.keys(world.conversations)[0];
+                const appState = world.appState?.["app_whatsapp"] as any;
+                const screen = appState?.screen || "chat";
+
+                if (screen === "chat") {
+                    viewKind = "CHAT";
+                    activeConversationId = appState?.conversationId || Object.keys(world.conversations)[0];
+                } else {
+                    // For chat list, settings, etc, we don't have a specialized layout engine yet.
+                    // Fallback to generic transition layout (safe).
+                    viewKind = "TRANSITION";
+                }
             } else if (appId === "app_instagram") {
                 const appState = world.appState?.["app_instagram"];
                 const currentView = appState?.currentView || "feed";

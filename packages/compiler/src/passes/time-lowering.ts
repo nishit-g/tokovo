@@ -504,11 +504,13 @@ function lowerOp(
                 type: "SCREEN_NAVIGATED",
                 screen: op.screen,
                 transition: op.transition,
+                trace,
             };
             events.push(event as any);
 
             // Small delay for navigation animation
-            cursor.advance(op.animationDuration ?? 15);
+            const delay = op.animationDuration ? parseDuration(op.animationDuration, ctx.config.fps) : 15;
+            cursor.advance(delay);
             return events;
         }
 
@@ -522,11 +524,13 @@ function lowerOp(
                 screen: "chat",
                 conversationId: op.conversationId,
                 transition: op.transition,
+                trace,
             };
             events.push(event as any);
 
             // Small delay for navigation animation
-            cursor.advance(op.animationDuration ?? 15);
+            const delay = op.animationDuration ? parseDuration(op.animationDuration, ctx.config.fps) : 15;
+            cursor.advance(delay);
             return events;
         }
 
@@ -539,11 +543,13 @@ function lowerOp(
                 type: "SCREEN_NAVIGATED",
                 screen: "chats-list",
                 transition: op.transition ?? "pop",
+                trace,
             };
             events.push(event as any);
 
             // Small delay for navigation animation
-            cursor.advance(op.animationDuration ?? 15);
+            const delay = op.animationDuration ? parseDuration(op.animationDuration, ctx.config.fps) : 15;
+            cursor.advance(delay);
             return events;
         }
 
