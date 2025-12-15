@@ -10,8 +10,7 @@ import {
     AnchorSnapshot,
     SemanticAnchorId,
     LayoutRect,
-    WhatsAppAnchorId,
-    LAYOUT,
+    SemanticLayoutState
 } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 import type { ChatLayoutState } from "../layout/types";
@@ -25,7 +24,7 @@ const APP_ID = "app_whatsapp";
  * - lastMessage: Most recent message bubble
  * - typingIndicator: Typing dots (when active)
  * - inputArea: Input bar (always available)
- * - reactionBubble: Active reaction popup (when visible)
+ * - profile: Profile picture in header (if available)
  */
 export const WhatsAppAnchorProvider: AnchorProvider = {
     appId: APP_ID,
@@ -48,46 +47,36 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
         }
 
         const chatLayout = layout as ChatLayoutState;
-        const device = world.devices[deviceId];
-        const profile = getDeviceProfile(device?.profileId);
-        const viewportWidth = profile?.dimensions?.width ?? 430;
-        const viewportHeight = profile?.dimensions?.height ?? 932;
 
         // =========================================================================
-        // LAST MESSAGE
+        // SEMANTIC LAYOUT (The New Truth)
         // =========================================================================
-        const lastMessageId = chatLayout.meta?.lastMessageId;
-        if (lastMessageId && chatLayout.messageLayouts[lastMessageId]?.rect) {
-            anchors.lastMessage = chatLayout.messageLayouts[lastMessageId].rect;
+
+        // If the layout strategy provided semantic regions, use them directly.
+        if (chatLayout.semantic) {
+            const regions = chatLayout.semantic.regions;
+
+            // 1. Last Message
+            const lastMessageId = chatLayout.meta?.lastMessageId;
+            if (lastMessageId && regions[lastMessageId]) {
+                anchors.lastMessage = regions[lastMessageId].rect;
+            }
+
+            // 2. Typing Indicator
+            if (regions["typing_indicator"]) {
+                anchors.typingIndicator = regions["typing_indicator"].rect;
+            }
+
+            // 3. Input Area
+            if (regions["input_area"]) {
+                anchors.inputArea = regions["input_area"].rect;
+            }
         }
-
-        // =========================================================================
-        // TYPING INDICATOR
-        // =========================================================================
-        if (chatLayout.typingLayout?.rect) {
-            anchors.typingIndicator = chatLayout.typingLayout.rect;
-        }
-
-        // =========================================================================
-        // INPUT AREA (always available)
-        // =========================================================================
-        const inputHeight = LAYOUT.CHAT_INPUT_HEIGHT;
-        anchors.inputArea = {
-            x: 0,
-            y: chatLayout.scrollY + viewportHeight - inputHeight,
-            width: viewportWidth,
-            height: inputHeight,
-        };
 
         // =========================================================================
         // DEVICE (full frame — final fallback)
         // =========================================================================
-        anchors.device = {
-            x: 0,
-            y: 0,
-            width: viewportWidth,
-            height: viewportHeight,
-        };
+        anchors.device = getDeviceRect(world, deviceId);
 
         return {
             anchors,

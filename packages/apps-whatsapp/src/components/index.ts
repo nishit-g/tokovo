@@ -9,7 +9,7 @@ export * from "./icons";
 
 // Components
 export { Header, type HeaderProps } from "./Header";
-export { MessageBubble, type MessageBubbleProps, type MessageData } from "./MessageBubble";
+export { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
 
 // Media Bubbles
 export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./MediaBubbles";

@@ -1,4 +1,4 @@
-import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout } from "../types";
+import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout, SemanticRegion } from "@tokovo/core";
 import {
     DEFAULT_LAYOUT_CONFIG,
     calculateMessageHeight,
@@ -12,10 +12,11 @@ import {
     type MessageForGap,        // Type import
     type MessageType,          // Type import
     type GapContext,           // Type import
-} from "@tokovo/apps-whatsapp";
+} from "./config";
+import { MessageData } from "./types";
 
 // =============================================================================
-// PRODUCTION-GRADE CHAT LAYOUT STRATEGY
+// PRODUCTION-GRADE CHAT LAYOUT STRATEGY (PLUGIN)
 // =============================================================================
 
 /**
@@ -27,6 +28,7 @@ import {
  * - Group chat member awareness with interruption handling
  * - Per-message-type spacing overrides
  * - Fully configurable via MessageLayoutConfig
+ * - Semantic Region Generation (Anchors)
  */
 export function computeChatLayout(
     ctx: LayoutContext,
@@ -55,6 +57,12 @@ export function computeChatLayout(
     const isGroupChat = uniqueSenders.size > 2;
 
     const messageLayouts: Record<string, ChatMessageLayout> = {};
+    const semanticRegions: Record<string, SemanticRegion> = {};
+    const semanticGroups: Record<string, string[]> = {
+        message: [],
+        system: [],
+    };
+
     let currentY = config.spacing.global.topPadding;
     let lastMessageId: string | undefined;
 
@@ -62,8 +70,8 @@ export function computeChatLayout(
     // SINGLE-PASS LAYOUT ALGORITHM
     // ==========================================================
     for (let i = 0; i < messages.length; i++) {
-        const msg = messages[i];
-        const prevMsg = i > 0 ? messages[i - 1] : undefined;
+        const msg = messages[i] as unknown as MessageData;
+        const prevMsg = i > 0 ? messages[i - 1] as unknown as MessageData : undefined;
         const msgType = (msg.type || "text") as MessageType;
 
         // Calculate gap from previous message
@@ -97,7 +105,7 @@ export function computeChatLayout(
         // Calculate height using the config-based function
         const msgForHeight: MessageForHeight = {
             type: msgType,
-            text: msg.text,
+            text: (msg as any).text,
             caption: (msg as any).caption,
             from: msg.from,
             // Enhanced Visual Run Logic: Find previous groupable message
@@ -160,6 +168,13 @@ export function computeChatLayout(
                 : config.spacing.global.bubbleMargin;
         }
 
+        const rect = {
+            x: rectX,
+            y: currentY,
+            width: bubbleWidth,
+            height,
+        };
+
         messageLayouts[msg.id] = {
             id: msg.id,
             y: currentY,
@@ -167,13 +182,27 @@ export function computeChatLayout(
             opacity,
             translateY,
             translateX,
-            rect: {
-                x: rectX,
-                y: currentY,
-                width: bubbleWidth,
-                height,
-            },
+            rect,
         };
+
+        // --- SEMANTIC ANCHOR GENERATION ---
+
+        // 1. Message Anchor
+        const anchorId = msg.id;
+        semanticRegions[anchorId] = {
+            id: anchorId,
+            rect,
+            tags: ["message", msg.from === "me" ? "message_me" : "message_other", msgType],
+            metadata: {
+                from: msg.from,
+                type: msgType,
+                timestamp: msg.timestamp
+            }
+        };
+        semanticGroups["message"].push(anchorId);
+        if (msgType === "system") {
+            semanticGroups["system"].push(anchorId);
+        }
 
         lastMessageId = msg.id;
         currentY += height;
@@ -216,19 +245,64 @@ export function computeChatLayout(
             currentY += gap;
         }
 
+        const rect = {
+            x: config.spacing.global.bubbleMargin,
+            y: currentY,
+            width: typingWidth,
+            height: typingHeight,
+        };
+
         typingLayout = {
             y: currentY,
             height: typingHeight,
             opacity: 1,
-            rect: {
-                x: config.spacing.global.bubbleMargin,
-                y: currentY,
-                width: typingWidth,
-                height: typingHeight,
-            },
+            rect,
         };
+
+        // --- SEMANTIC ANCHOR FOR TYPING ---
+        const typingAnchorId = "typing_indicator";
+        semanticRegions[typingAnchorId] = {
+            id: typingAnchorId,
+            rect,
+            tags: ["typing", "indicator"],
+        };
+
         currentY += typingHeight;
     }
+
+    // ==========================================================
+    // INPUT AREA ANCHOR (Semantic only, not visual layout item)
+    // ==========================================================
+    const inputHeight = config.messageTypes.text.height.base; // Approximate or from config
+    // Actually, Input Area is fixed to bottom of viewport usually, or below content?
+    // In chat layout, contentHeight includes padding. Input area is separate.
+    // Ideally, the InputArea component itself should report this, but since we compute layout here:
+    // We can define a "logical" input area anchor at the bottom of the viewport.
+
+    // NOTE: This assumes Input Area is 60px height (standard).
+    // TODO: Move this constant to config
+    const INPUT_HEIGHT = 60;
+    const inputRect = {
+        x: 0,
+        y: viewportHeight - INPUT_HEIGHT, // In screen coordinates? Or content coordinates?
+        // LayoutRects in Semantic Layout are traditionally in "Content Space" (scrolled) or "Viewport Space" (fixed)?
+        // UseCameraEngine expects logic. Let's assume Viewport Space for fixed elements.
+        // But message rects are in Content Space (y increases forever).
+        // The Camera Engine needs to know which space it is.
+        // For now, let's treat "Input Area" as a fixed UI element.
+        // Actually, if we use `scrollY` to transform, then content space is better.
+        // But Input Area is sticky.
+        width: viewportWidth,
+        height: INPUT_HEIGHT
+    };
+
+    semanticRegions["input_area"] = {
+        id: "input_area",
+        rect: inputRect,
+        tags: ["input", "footer"],
+        metadata: { sticky: true }
+    };
+
 
     const contentHeight = currentY + config.spacing.global.bottomPadding;
 
@@ -251,9 +325,10 @@ export function computeChatLayout(
         meta: {
             lastMessageId,
             isGroupChat,  // Expose for components
+        },
+        semantic: {
+            regions: semanticRegions,
+            groups: semanticGroups
         }
     };
 }
-
-// For backward compatibility, export the config types
-export { MessageLayoutConfig, DEFAULT_LAYOUT_CONFIG };

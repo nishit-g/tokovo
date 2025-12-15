@@ -14,7 +14,7 @@
  * - reset: Return to neutral
  */
 
-import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout, CameraZoomOp, CameraShakeOp } from "@tokovo/ir";
+import { SceneOp, POVSwitchOp, SplitPOVOp, POVLayout, CameraZoomOp, CameraShakeOp, AnchorFocusOp, AnchorTrackOp } from "@tokovo/ir";
 
 // =============================================================================
 // OPTION TYPES
@@ -320,6 +320,54 @@ export class CameraBuilder {
             duration: options?.duration,
         };
         this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    // =========================================================================
+    // SEMANTIC CAMERA (ANCHORS)
+    // =========================================================================
+
+    /**
+     * Focus on a semantic anchor (e.g., "lastMessage", "header").
+     * One-shot movement to frame the target.
+     */
+    focus(anchor: string, options?: { preset?: string; duration?: string; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
+        const op: AnchorFocusOp = {
+            kind: "AnchorFocus",
+            anchor,
+            preset: options?.preset,
+            duration: options?.duration,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * Continuously track a semantic anchor.
+     * Camera will follow the target as it moves/grows.
+     */
+    track(anchor: string, options?: { duration?: string; smoothing?: number; preset?: string; easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic" }): this {
+        const op: AnchorTrackOp = {
+            kind: "AnchorTrack",
+            anchor,
+            duration: options?.duration,
+            smoothing: options?.smoothing,
+            preset: options?.preset,
+            easing: options?.easing,
+        };
+        this.events.push({ at: this.currentTime, op });
+        return this;
+    }
+
+    /**
+     * PUNCH GLIDE - Rapid push-in then smooth track.
+     * Cinematic emphasis on a new element.
+     */
+    punchGlide(anchor: string, options?: { intensity?: number }): this {
+        // This is a composite of PushIn + Track
+        this.pushIn(options?.intensity ?? 0.05, { duration: "0.2s" });
+        this.track(anchor, { duration: "2s", smoothing: 0.1 });
         return this;
     }
 

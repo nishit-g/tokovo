@@ -254,6 +254,11 @@ export class CameraController {
                 // Here we just apply the scale and easing
                 this.applyAnchorFocus(transform, effect as any, localT, t, startFrame);
                 break;
+            case "ANCHOR_TRACK":
+                // Handled by renderer useCameraEngine
+                // We just pass through the scale logic if needed
+                this.applyAnchorFocus(transform, effect as any, localT, t, startFrame);
+                break;
             case "RESET":
                 this.applyReset(transform, effect, localT);
                 break;
@@ -510,6 +515,17 @@ export function createActiveEffect(
                 easing: params.easing,
                 shake: params.shake,
             } as any;  // Cast to any since CameraAnchorFocusEffect is newly added
+            break;
+        case "ANCHOR_TRACK":
+            effect = {
+                type: "ANCHOR_TRACK",
+                anchor: params.anchor ?? "device",
+                preset: params.preset,
+                scale: params.scale,
+                duration,
+                easing: params.easing,
+                smoothing: params.smoothing,
+            } as any;
             break;
         default:
             return null;

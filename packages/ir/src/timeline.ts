@@ -229,6 +229,30 @@ export interface TimelineSplitPOVOp extends TimelineOpBase {
 }
 
 /**
+ * Anchor focus effect (Resolved).
+ */
+export interface TimelineAnchorFocusOp extends TimelineOpBase {
+    readonly kind: "AnchorFocus";
+    readonly anchor: string;
+    readonly preset?: string;
+    readonly shake?: number;
+    readonly duration: number; // Resolved frames
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Anchor track effect (Resolved).
+ */
+export interface TimelineAnchorTrackOp extends TimelineOpBase {
+    readonly kind: "AnchorTrack";
+    readonly anchor: string;
+    readonly duration: number; // Resolved frames
+    readonly smoothing?: number;
+    readonly preset?: string;
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
  * Union of all timeline operations.
  */
 export type TimelineOp =
@@ -246,7 +270,9 @@ export type TimelineOp =
     | TimelineCameraZoomOp
     | TimelineCameraShakeOp
     | TimelinePOVSwitchOp
-    | TimelineSplitPOVOp;
+    | TimelineSplitPOVOp
+    | TimelineAnchorFocusOp
+    | TimelineAnchorTrackOp;
 
 // =============================================================================
 // TIMELINE IR (COMPLETE)

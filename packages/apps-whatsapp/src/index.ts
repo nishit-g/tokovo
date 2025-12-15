@@ -8,3 +8,5 @@ export * from "./camera";
 export * from "./notification-adapter";
 export * from "./behaviors";
 
+
+export * from "./layout";

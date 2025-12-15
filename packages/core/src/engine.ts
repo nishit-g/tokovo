@@ -139,7 +139,8 @@ function processCameraEvent(
         case "PAN":
         case "SHAKE":
         case "FOCUS":
-        case "ANCHOR_FOCUS":  // NEW: Semantic anchor-driven camera
+        case "ANCHOR_FOCUS":
+        case "ANCHOR_TRACK":
         case "RESET": {
             // Create active effect and add to list
             const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
@@ -599,12 +600,18 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
         }
 
         // Handle V2 Camera Ops (e.g., CameraZoom, CameraPan)
-        if (typeof event.kind === "string" && event.kind.startsWith("Camera")) {
+        if (typeof event.kind === "string" && (event.kind.startsWith("Camera") || event.kind.startsWith("Anchor"))) {
             const type = event.kind.replace("Camera", "").toUpperCase();
+            // Handle AnchorFocus -> ANCHOR_FOCUS mapping
+            const normalizedType = type === "ANCHORFOCUS" ? "ANCHOR_FOCUS"
+                : type === "ANCHORTRACK" ? "ANCHOR_TRACK"
+                    : type === "SHAKE" ? "SHAKE"
+                        : type;
+
             const legacyEvent: any = {
                 ...event,
                 kind: "CAMERA",
-                type: type === "SHAKE" ? "SHAKE" : type,
+                type: normalizedType,
                 scale: (event as any).scale,
                 originX: (event as any).originX,
                 originY: (event as any).originY,

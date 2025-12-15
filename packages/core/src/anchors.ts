@@ -17,10 +17,10 @@
  */
 
 import { WorldState } from "./types";
-import { LayoutRect } from "./director-lite";
+import { LayoutRect } from "./types";
 
 // Re-export LayoutRect for convenience
-export { LayoutRect };
+// LayoutRect is imported from types.ts
 
 // =============================================================================
 // ANCHOR IDS

@@ -22,6 +22,8 @@ import {
     TimelineCameraShakeOp,
     TimelinePOVSwitchOp,
     TimelineSplitPOVOp,
+    TimelineAnchorFocusOp,
+    TimelineAnchorTrackOp,
     Trace,
 } from "@tokovo/ir";
 import { CompilerContext, Cursor } from "../context";
@@ -607,6 +609,38 @@ function lowerOp(
                 kind: "SplitPOV",
                 devices: op.devices,
                 layout: op.layout,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "AnchorFocus": {
+            const duration = op.duration ? parseDuration(op.duration, ctx.config.fps) : 30;
+            const event: TimelineAnchorFocusOp = {
+                at,
+                kind: "AnchorFocus",
+                anchor: op.anchor,
+                preset: op.preset,
+                shake: op.shake,
+                duration,
+                easing: op.easing,
+                trace,
+            };
+            events.push(event);
+            return events;
+        }
+
+        case "AnchorTrack": {
+            const duration = op.duration ? parseDuration(op.duration, ctx.config.fps) : 60;
+            const event: TimelineAnchorTrackOp = {
+                at,
+                kind: "AnchorTrack",
+                anchor: op.anchor,
+                duration,
+                smoothing: op.smoothing,
+                preset: op.preset,
+                easing: op.easing,
                 trace,
             };
             events.push(event);

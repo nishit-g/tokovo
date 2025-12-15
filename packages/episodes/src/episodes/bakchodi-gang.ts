@@ -38,9 +38,9 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
             b.wait("0.5s");
             b.receive("Sameer", "Priya bhi invest karegi kya? I need to know...");
 
-            // Camera focus on Sameer's dumb message - VALIDATING CAMERA ZOOM
+            // Camera focus on Sameer's dumb message - SEMANTIC FOCUS
             b.camera(c => {
-                c.zoom(1.5, { duration: "0.2s", easing: "ease-in" });
+                c.punchGlide("lastMessage", { intensity: 1.5 });
             });
 
             // Rahul roasts Sameer
@@ -58,9 +58,9 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
             b.receive("Vicky", "'DogeElonMars' coin. 🚀 To the moon BC!");
             b.receive("Vicky", "Elon Musk ne tweet kiya hai (shayad).");
 
-            // Dramatic reaction - VALIDATING CAMERA SHAKE
+            // Semantic Track - Follow the flow
             b.camera(c => {
-                c.shake("RahulPhone", { intensity: 15, duration: "0.5s" });
+                c.track("lastMessage", { duration: "5s", smoothing: 0.1 });
             });
             b.react(b.send("Elon Musk ne tweet kiya hai (shayad)."), "me", "🤣");
 
@@ -81,9 +81,9 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
             // Priya enters
             b.receive("Priya", "Hey guys! What's going on? 😊");
 
-            // Everyone stops - VALIDATING CAMERA ZOOM
+            // Everyone stops - Focus on her message
             b.camera(c => {
-                c.zoom(1.2, { duration: "0.4s" });
+                c.focus("lastMessage", { duration: "0.4s" });
             });
 
             // Sameer instantly replies
@@ -137,7 +137,7 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
 
             // Navigate to Chat List again
             b.showScreen("chats-list", { duration: "0.5s" });
-            b.wait(1); // implicit duration type test (Trace verified)
+            b.wait("1s"); // fixed type error
         });
     });
 });

@@ -1213,7 +1213,39 @@ export interface TransitionLayoutConfig {
     panDuration: number;
     zoomDuration: number;
 
-    // Optionally, per-transition presets (open app, unlock, etc.)
+    // Computed state
+    notifications: Notification[];
+}
+
+export interface LayoutRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
+// =============================================================================
+// SEMANTIC LAYOUT PROTOCOL
+// =============================================================================
+
+/**
+ * A Semantic Region describes a named area of interest in the layout.
+ * The App (Plugin) is responsible for defining these during layout.
+ */
+export interface SemanticRegion {
+    id: string;          // e.g. "msg_123", "header_profile", "input_area"
+    rect: LayoutRect;    // { x, y, width, height } - absolute viewport coordinates
+    tags: string[];      // e.g. ["message", "header", "interactive"]
+    metadata?: Record<string, any>; // Extensible metadata
+}
+
+/**
+ * Extends LayoutState to include a semantic map.
+ * This is the "bridge" between Layout Engine (Math) and Camera Engine (Intent).
+ */
+export interface SemanticLayoutState {
+    regions: Record<string, SemanticRegion>; // ID -> Region
+    groups: Record<string, string[]>;        // Tag -> IDs (e.g. "message" -> ["msg_1", "msg_2"])
 }
 
 // --- LayoutState ---
@@ -1227,6 +1259,8 @@ export type LayoutState =
 
 export interface BaseLayoutState {
     kind: ViewKind;
+    /** Semantic regions defined by the app plugin */
+    semantic?: SemanticLayoutState;
 }
 
 // ChatLayoutState

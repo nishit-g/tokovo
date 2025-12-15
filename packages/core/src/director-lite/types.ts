@@ -9,12 +9,8 @@
 // LAYOUT
 // =============================================================================
 
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+import { LayoutRect } from "../types";
+export { LayoutRect };
 
 export interface DirectorLayoutModel {
     deviceId: string;

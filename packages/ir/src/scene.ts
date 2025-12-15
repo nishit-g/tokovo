@@ -343,6 +343,32 @@ export interface CameraShakeOp {
     readonly duration?: DurationExpr; // Duration of shake effect
 }
 
+/**
+ * Camera anchor focus effect (Semantic).
+ * Focuses on a named semantic region.
+ */
+export interface AnchorFocusOp {
+    readonly kind: "AnchorFocus";
+    readonly anchor: string;          // Semantic anchor ID (e.g. "lastMessage")
+    readonly preset?: string;         // Shot preset (dramatic, subtle, etc)
+    readonly shake?: number;          // Optional shake intensity
+    readonly duration?: DurationExpr; // Duration of move
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Camera anchor track effect (Semantic).
+ * Continuously follows a semantic region.
+ */
+export interface AnchorTrackOp {
+    readonly kind: "AnchorTrack";
+    readonly anchor: string;
+    readonly duration?: DurationExpr;
+    readonly smoothing?: number;      // 0-1 smoothing factor
+    readonly preset?: string;
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
 // =============================================================================
 // POV OPERATIONS (STORY GRAMMAR)
 // =============================================================================
@@ -538,6 +564,8 @@ export type SceneOp =
     // Camera effects
     | CameraZoomOp
     | CameraShakeOp
+    | AnchorFocusOp
+    | AnchorTrackOp
     // Navigation operations
     | NavigateScreenOp
     | OpenChatOp

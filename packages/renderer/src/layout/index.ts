@@ -1,6 +1,6 @@
 import { LayoutContext, LayoutState } from "./types";
 import { defaultLayoutConfig } from "./config";
-import { computeChatLayout } from "./strategies/chat";
+import { computeChatLayout } from "@tokovo/apps-whatsapp";
 import { computeFeedLayout } from "./strategies/feed";
 import { computeStoryLayout } from "./strategies/story";
 import { computeLockscreenLayout } from "./strategies/lockscreen";
