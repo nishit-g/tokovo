@@ -1,4 +1,3 @@
-```javascript
 import React from 'react';
 
 export interface AppSurfaceProps {
@@ -34,7 +33,7 @@ export const AppSurface: React.FC<AppSurfaceProps> = ({
     // Avoid division by zero
     const finalDesignWidth = designWidth || 393;
     const finalTargetWidth = targetWidth || finalDesignWidth;
-    
+
     // Calculate scale factor: Mapping physical pixels to logical points
     const scale = finalTargetWidth / finalDesignWidth;
 
@@ -47,22 +46,21 @@ export const AppSurface: React.FC<AppSurfaceProps> = ({
             backgroundColor,
             ...style
         }}>
-           <div style={{
-               width: finalDesignWidth,
-               // We need the logical height to fill the physical height
-               height: targetHeight / scale,
-               minHeight: targetHeight / scale,
-               transform: `scale(${ scale })`,
-               transformOrigin: 'top left',
-               position: 'absolute',
-               top: 0,
-               left: 0,
-               display: 'flex',
-               flexDirection: 'column'
-           }}>
-               {children}
-           </div>
+            <div style={{
+                width: finalDesignWidth,
+                // We need the logical height to fill the physical height
+                height: targetHeight / scale,
+                minHeight: targetHeight / scale,
+                transform: "scale(" + scale + ")",
+                transformOrigin: 'top left',
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
+                {children}
+            </div>
         </div>
     );
 };
-```

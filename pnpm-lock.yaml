@@ -213,6 +213,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/devices':
+        specifier: workspace:*
+        version: link:../devices
       immer:
         specifier: ^10.0.0
         version: 10.2.0

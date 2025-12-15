@@ -28,7 +28,34 @@ export const WhatsappChatView: React.FC<{
 
     // 3. Prepare Data
     const contactName = conversation?.name || "Unknown";
-    const messages = (conversation?.messages || []) as unknown as MessageData[];
+    const rawMessages = (conversation?.messages || []) as any[];
+
+    // Map runtime messages to strict MessageData
+    // Runtime might have loose types, we ensure UI gets strict shape
+    // This mapping layer protects the UI from runtime messiness
+    const messages: MessageData[] = rawMessages.map(m => {
+        const base = {
+            id: m.id,
+            from: m.from,
+            timestamp: m.timestamp,
+            status: m.status,
+            at: m.at
+        };
+
+        switch (m.type) {
+            case "image":
+                return { ...base, type: "image", imageUrl: m.imageUrl, caption: m.caption };
+            case "video":
+                return { ...base, type: "video", videoUrl: m.videoUrl, thumbnailUrl: m.thumbnailUrl, duration: m.duration, caption: m.caption };
+            case "voice":
+                return { ...base, type: "voice", duration: m.duration || 0 };
+            case "system":
+                return { ...base, type: "system", text: m.text, systemType: m.systemType };
+            case "text":
+            default:
+                return { ...base, type: "text", text: m.text || "" };
+        }
+    });
 
     // 4. Calculate Safe Areas (Physical -> Logical)
     // Design Width: 393 (Standard 1x)
@@ -63,13 +90,7 @@ export const WhatsappChatView: React.FC<{
                 />
 
                 <MessageList
-                    messages={messages.map(m => ({
-                        id: m.id,
-                        text: m.text,
-                        from: m.from,
-                        timestamp: m.timestamp,
-                        read: m.status === 'read'
-                    }))}
+                    messages={messages}
                     ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
                 />
 
