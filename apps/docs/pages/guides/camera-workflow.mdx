@@ -1,0 +1,281 @@
+# Camera Workflow Guide
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components'
+
+<Callout type="info">
+**Camera is semantic.** Focus on *what* matters, not *where* it is in pixels. The camera engine handles the math.
+</Callout>
+
+This guide covers practical camera usage patterns for creating cinematic videos.
+
+---
+
+## Quick Reference
+
+| Effect | DSL | Use Case |
+|--------|-----|----------|
+| Focus on anchor | `dsl.camera.anchorFocus(frame, anchor, preset)` | Message arrives, reader reacts |
+| Track movement | `dsl.camera.anchorTrack(frame, anchor, duration, smoothing)` | Following input area |
+| Punch + Glide | `dsl.camera.punchGlide(frame, anchor)` | Dramatic reveal |
+| Hold still | `dsl.camera.hold(frame, duration)` | Let viewer read |
+| Reset to neutral | `dsl.camera.reset(frame, duration)` | End of scene |
+
+---
+
+## Common Patterns
+
+### Pattern 1: Message Arrival
+
+The classic pattern when a significant message arrives:
+
+```typescript
+const events = [
+  // Message arrives
+  dsl.messages.receive(60, "conv_1", "Alice", "We need to talk."),
+  
+  // Camera follows with dramatic focus
+  dsl.camera.anchorFocus(60, "lastMessage", "dramatic", 3),
+  
+  // Hold for reading
+  dsl.camera.hold(90, 20),
+];
+```
+
+### Pattern 2: Typing Anticipation
+
+Build tension while someone is typing:
+
+```typescript
+const events = [
+  // Start typing indicator
+  dsl.messages.typingStart(60, "conv_1", "Alice"),
+  
+  // Camera subtly moves to input area
+  dsl.camera.anchorFocus(60, "inputArea", "subtle"),
+  
+  // Track while typing
+  dsl.camera.anchorTrack(80, "inputArea", 60, 0.12),
+  
+  // Message arrives with punch glide
+  dsl.messages.typingEnd(140, "conv_1", "Alice"),
+  dsl.messages.receive(140, "conv_1", "Alice", "I'm pregnant."),
+  ...dsl.camera.punchGlide(140, "lastMessage"),
+];
+```
+
+### Pattern 3: Call Interruption
+
+When an incoming call interrupts the conversation:
+
+```typescript
+const events = [
+  // Chatting normally
+  dsl.camera.anchorFocus(0, "lastMessage", "message"),
+  
+  // CALL INCOMING - Dynamic Island expands
+  dsl.call.incoming(120, "phone", "Mom"),
+  dsl.camera.anchorFocus(120, "dynamicIsland", "interrupt", 4),
+  
+  // Hold on the notification
+  dsl.camera.hold(135, 30),
+  
+  // Call answered - full screen takeover
+  dsl.call.answer(170),
+  dsl.camera.anchorFocus(170, "callPoster", "takeover"),
+];
+```
+
+### Pattern 4: Webseries Signature
+
+The professional "webseries camera operator" feel:
+
+```typescript
+const events = [
+  // Establish shot
+  dsl.camera.anchorFocus(0, "device", "establish"),
+  dsl.camera.hold(0, 30),
+  
+  // First message - punch glide
+  dsl.messages.receive(30, "conv_1", "Alice", "Are you home?"),
+  ...dsl.camera.punchGlide(30, "lastMessage"),
+  
+  // Continuous tracking during conversation
+  dsl.messages.receive(90, "conv_1", "Alice", "I need to see you"),
+  dsl.camera.anchorTrack(90, "lastMessage", 60, 0.18, "operatorFollow"),
+  
+  // Reply with snap
+  dsl.messages.send(150, "conv_1", "Coming over now"),
+  dsl.camera.anchorFocus(150, "lastMessage", "snap"),
+  
+  // Scene end - reset to wide
+  dsl.camera.reset(200, 30),
+];
+```
+
+---
+
+## Shot Presets
+
+<Tabs items={['Core', 'Motion', 'Interruption', 'Structural']}>
+  <Tab>
+    **Core presets** for standard messaging:
+    
+    | Preset | Scale | Shake | When to Use |
+    |--------|-------|-------|-------------|
+    | `message` | 1.08 | 0 | Default message arrival |
+    | `subtle` | 1.04 | 0 | Typing, soft moments |
+    | `impact` | 1.35 | 6 | Big reveals |
+    | `snap` | 1.15 | 1 | Quick reactions |
+  </Tab>
+  <Tab>
+    **Motion presets** for tracking shots:
+    
+    | Preset | Scale | Smoothing | When to Use |
+    |--------|-------|-----------|-------------|
+    | `operatorFollow` | 1.22 | 0.18 | Standard tracking |
+    | `punchGlide` | 1.35 | 0.18 | Dramatic tracking |
+  </Tab>
+  <Tab>
+    **Interruption presets** for notifications/calls:
+    
+    | Preset | Scale | Shake | When to Use |
+    |--------|-------|-------|-------------|
+    | `interrupt` | 1.25 | 4 | Notification arrives |
+    | `takeover` | 0.85 | 0 | Full screen call |
+  </Tab>
+  <Tab>
+    **Structural presets** for scene flow:
+    
+    | Preset | Scale | When to Use |
+    |--------|-------|-------------|
+    | `reset` | 1.0 | Return to neutral |
+    | `establish` | 0.9 | Open/close scene |
+  </Tab>
+</Tabs>
+
+---
+
+## Semantic Anchors
+
+| Anchor | Available When | Best Presets |
+|--------|----------------|--------------|
+| `lastMessage` | Chat screen, messages exist | `message`, `dramatic`, `snap` |
+| `inputArea` | Chat screen | `subtle` |
+| `typingIndicator` | Typing in progress | `subtle` |
+| `dynamicIsland` | iOS, notification showing | `interrupt` |
+| `callPoster` | Call screen | `takeover` |
+| `device` | Always (fallback) | `establish`, `reset` |
+
+### Anchor Selection Tips
+
+<Callout type="tip">
+Always have a fallback. Use `inputArea` when `typingIndicator` might flash briefly.
+</Callout>
+
+```typescript
+// DON'T: Risk camera jitter
+dsl.camera.anchorFocus(60, "typingIndicator", "subtle");
+
+// DO: Use stable anchor
+dsl.camera.anchorFocus(60, "inputArea", "subtle");
+```
+
+---
+
+## Smoothing Values (ANCHOR_TRACK)
+
+| Value | Feel | Use Case |
+|-------|------|----------|
+| `0.08` | Very slow, dreamy | Emotional moments |
+| `0.12` | Slow | Sad scenes |
+| `0.18` | Operator feel | Standard webseries |
+| `0.25` | Moderate | Regular tracking |
+| `0.35` | Snappy | Action, urgency |
+| `0.60` | Whip-fast | Dramatic cuts |
+
+---
+
+## Complete Example: Drama Scene
+
+```typescript
+import { dsl } from "@tokovo/dsl";
+
+const dramaScene = [
+  // === ESTABLISH ===
+  dsl.camera.anchorFocus(0, "device", "establish"),
+  dsl.camera.hold(0, 30),
+  
+  // === TENSION BUILD ===
+  // "They" start typing
+  dsl.messages.typingStart(30, "conv_1", "Alex"),
+  dsl.camera.anchorFocus(30, "inputArea", "subtle"),
+  dsl.camera.anchorTrack(45, "inputArea", 60, 0.12, "subtle"),
+  
+  // Typing stops... no message (false alarm tension)
+  dsl.messages.typingEnd(105, "conv_1", "Alex"),
+  dsl.camera.hold(105, 20),
+  
+  // === THE DROP ===
+  // Message arrives
+  dsl.messages.typingStart(125, "conv_1", "Alex"),
+  dsl.messages.typingEnd(145, "conv_1", "Alex"),
+  dsl.messages.receive(145, "conv_1", "Alex", "We need to talk."),
+  
+  // Punch + Glide for impact
+  ...dsl.camera.punchGlide(145, "lastMessage"),
+  
+  // === REACTION ===
+  // Hold for reader to absorb
+  dsl.camera.hold(195, 25),
+  
+  // User reads
+  dsl.messages.markRead(220, "conv_1", "msg_1"),
+  
+  // User types response
+  dsl.messages.typingStart(250, "conv_1", "me"),
+  dsl.camera.anchorTrack(250, "inputArea", 60, 0.25, "subtle"),
+  
+  dsl.messages.typingEnd(310, "conv_1", "me"),
+  dsl.messages.send(310, "conv_1", "What's wrong?"),
+  dsl.camera.anchorFocus(310, "lastMessage", "message"),
+  
+  // === OUTRO ===
+  dsl.camera.reset(360, 30),
+];
+```
+
+---
+
+## Anti-Patterns
+
+<Callout type="error">
+**Avoid these common mistakes.**
+</Callout>
+
+| Don't | Why | Do Instead |
+|-------|-----|------------|
+| `dsl.camera.zoom(60, 1.2, 30, {originY: 0.7})` | Hardcoded pixels | `dsl.camera.anchorFocus(60, "lastMessage", "message")` |
+| Focus + Track + Focus (rapid) | Camera jitter | Pick one approach per beat |
+| No holds between moves | Viewer can't read | Add 15-25 frame holds |
+| Track on `typingIndicator` | Volatile anchor | Use `inputArea` instead |
+| Same preset for everything | Monotonous | Vary intensity with story |
+
+---
+
+## Debugging
+
+| Symptom | Cause | Fix |
+|---------|-------|-----|
+| Camera doesn't move | Anchor not found | Check anchor provider registered |
+| Wrong target | Layout mismatch | Verify `layout.kind` in anchor provider |
+| Jittery movement | Smoothing too low | Increase to 0.18+ |
+| Feels slow | Smoothing too high | Decrease to 0.12 |
+| No shake | Preset has shake: 0 | Override: `dsl.camera.anchorFocus(frame, anchor, "message", 3)` |
+
+---
+
+## Related
+
+- [Camera System](/architecture/camera) - Full technical reference
+- [Shot Presets](/architecture/camera#shot-presets) - All presets with values
+- [Plugin Behaviors](/architecture/plugins#step-5-define-camera-behaviors) - Auto-camera from events

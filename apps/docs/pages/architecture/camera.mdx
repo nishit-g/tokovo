@@ -11,7 +11,7 @@ import { Callout, Tabs, Tab, Steps } from 'nextra/components'
 **The camera follows meaning, not pixels.**
 </Callout>
 
-The Semantic Anchor-Driven Camera System (SACS) provides production-grade cinematic effects that target **semantic anchors** (like "lastMessage" or "inputArea") rather than hardcoded pixel coordinates.
+The Semantic Anchor-Driven Camera System (SACS) provides production-grade cinematic effects that target **semantic anchors** (like "lastMessage" or "inputArea") rather than hardcoded pixel coordinates. This 665-line engine powers all camera behavior in Tokovo.
 
 ## The New Way
 
@@ -24,7 +24,7 @@ dsl.zoom(60, 1.25, 20, { originY: 0.8 })
 **After (semantic):**
 ```typescript
 // ✅ Camera follows the last message
-dsl.anchorFocus(60, "lastMessage", "dramatic")
+dsl.camera.anchorFocus(60, "lastMessage", "dramatic")
 ```
 
 ---
@@ -37,180 +37,54 @@ graph TB
         WA[WhatsApp Provider]
         PH[Phone Provider]
         TW[Twitter Provider]
+        NT[Notification Provider]
     end
     
     subgraph "Layer 2: Intent Resolution"
         DIR[Director/DSL]
         FB[Fallback Chains]
-        HY[Hysteresis]
+        HY[Hysteresis 3f]
     end
     
     subgraph "Layer 3: Shot Presets"
-        PR[Presets]
+        V1[v1 Locked Presets]
+        V2[v2 Feature-flagged]
         FR[Anchor Framing]
     end
     
     subgraph "Layer 4: Camera Math"
-        ENG[useCameraEngine]
+        ENG["useCameraEngine (665 lines)"]
         CTL[CameraController]
     end
     
     WA --> DIR
     PH --> DIR
     TW --> DIR
-    DIR --> FB --> HY --> PR
-    PR --> FR --> ENG
+    NT --> DIR
+    DIR --> FB --> HY --> V1
+    HY --> V2
+    V1 --> FR
+    V2 --> FR
+    FR --> ENG
     ENG --> CTL --> CSS[CSS Transform]
 ```
 
 ### Four Layers
 
-| Layer | Responsibility | Example |
-|-------|----------------|---------|
-| **Anchor Providers** | Define *what* can be focused | WhatsApp extracts `lastMessage` rect |
-| **Intent Resolution** | Decide *when* to focus | "On MESSAGE_RECEIVED → FOCUS lastMessage" |
-| **Shot Presets** | Define *how* to look | `dramatic` = scale 1.3, shake 4 |
-| **Camera Math** | Execute transforms | Convert rect center → CSS origin |
-
----
-
-## How It Works
-
-<Steps>
-
-### World State Update
-
-```typescript
-dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉")
-// Result: message added to world.conversations
-```
-
-### Layout Computes Pixels
-
-```typescript
-// Layout engine produces:
-messageLayouts["m_42"] = {
-  rect: { x: 50, y: 650, width: 280, height: 45 }
-}
-```
-
-### Anchor Provider Extracts Meaning
-
-```typescript
-// WhatsAppAnchorProvider.getAnchors()
-anchors.lastMessage = { x: 50, y: 650, width: 280, height: 45 }
-```
-
-### Camera Effect Triggers
-
-```typescript
-dsl.anchorFocus(60, "lastMessage", "dramatic", 5)
-```
-
-### Anchor Resolution (The Key Math)
-
-```typescript
-// In useCameraEngine:
-const rect = resolveAnchorWithFallback("lastMessage", anchors);
-
-// Convert rect center → normalized origin
-const centerX = rect.x + rect.width / 2;    // 190
-const centerY = rect.y + rect.height / 2;   // 672.5
-const originX = centerX / viewportWidth;    // 0.442
-const originY = centerY / viewportHeight;   // 0.721
-```
-
-### CSS Output
-
-```css
-.camera {
-  transform: scale(1.3);
-  transform-origin: 44.2% 72.1%;
-}
-```
-
-</Steps>
-
----
-
-## Semantic Anchors
-
-### Core Anchors
-
-| Anchor | Description | Apps |
-|--------|-------------|------|
-| `lastMessage` | Most recent message bubble | WhatsApp, Instagram DM |
-| `inputArea` | Text input field | All chat apps |
-| `typingIndicator` | Typing dots (volatile) | WhatsApp |
-| `callPoster` | Contact poster image | Phone |
-| `device` | Full screen (fallback) | All |
-
-### Anchor Snapshot
-
-```typescript
-interface AnchorSnapshot {
-  appId: string;
-  deviceId: string;
-  anchors: Partial<Record<SemanticAnchorId, LayoutRect>>;
-}
-
-// Example:
-{
-  appId: "app_whatsapp",
-  anchors: {
-    lastMessage: { x: 50, y: 650, width: 280, height: 45 },
-    inputArea: { x: 0, y: 880, width: 430, height: 52 },
-    device: { x: 0, y: 0, width: 430, height: 932 },
-  }
-}
-```
-
-### Fallback Chains
-
-When an anchor isn't available:
-
-```typescript
-const FALLBACK_CHAINS = {
-  typingIndicator: ["inputArea", "lastMessage", "device"],
-  lastMessage: ["inputArea", "device"],
-  inputArea: ["device"],
-};
-```
-
----
-
-## Shot Presets
-
-### Available Presets
-
-| Preset | Scale | Shake | Duration | Use Case |
-|--------|-------|-------|----------|----------|
-| `dramatic` | 1.3 | 4 | 25 frames | Big reveals |
-| `subtle` | 1.08 | 0 | 30 frames | Typing anticipation |
-| `snap` | 1.15 | 0 | 10 frames | Quick reactions |
-| `impact` | 1.4 | 8 | 15 frames | Maximum intensity |
-| `message` | 1.1 | 0 | 25 frames | Standard follow |
-| `reset` | 1.0 | 0 | 20 frames | Return to neutral |
-
-### Preset Definition
-
-```typescript
-const SHOT_PRESETS = {
-  dramatic: {
-    scale: 1.3,
-    durationFrames: 25,
-    easing: "ease-out",
-    shake: 4,
-  },
-  // ...
-};
-```
+| Layer | Responsibility | Key Files |
+|-------|----------------|-----------|
+| **Anchor Providers** | Define *what* can be focused | `@tokovo/renderer/anchor-providers/*` |
+| **Intent Resolution** | Decide *when* to focus | `@tokovo/core/director-lite/derive.ts` |
+| **Shot Presets** | Define *how* to look | `@tokovo/core/camera/presets.ts` (676 lines) |
+| **Camera Math** | Execute transforms | `@tokovo/renderer/engines/useCameraEngine.ts` |
 
 ---
 
 ## Camera Effects
 
-### ANCHOR_FOCUS (Recommended)
+### ANCHOR_FOCUS (One-Time Focus)
+
+Focus on a semantic anchor with a shot preset. Sets origin once and zooms.
 
 ```typescript
 {
@@ -218,62 +92,290 @@ const SHOT_PRESETS = {
   kind: "CAMERA",
   type: "ANCHOR_FOCUS",
   anchor: "lastMessage",   // Semantic anchor
-  preset: "dramatic",      // Shot preset
-  shake: 5,                // Optional override
+  preset: "dramatic",      // Shot preset (see table below)
+  shake: 5,                // Optional shake intensity
+  duration: 25,            // Frames
+  easing: "ease-out",
 }
+
+// DSL shorthand:
+dsl.camera.anchorFocus(100, "lastMessage", "dramatic", 5)
 ```
 
-### ZOOM (Manual)
+### ANCHOR_TRACK (Continuous Following)
+
+<Callout type="warning">
+**NEW in v1**: Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously follows the anchor with exponential smoothing. This is the "webseries camera operator" feel.
+</Callout>
 
 ```typescript
 {
   at: 100,
   kind: "CAMERA",
-  type: "ZOOM",
-  scale: 1.5,
-  duration: 30,
-  originX: 0.5,
-  originY: 0.8,
+  type: "ANCHOR_TRACK",
+  anchor: "lastMessage",
+  duration: 35,            // Frames to track
+  smoothing: 0.18,         // 0.08=slow, 0.18=operator, 0.35=snappy, 0.6=whip
+  preset: "operatorFollow",
   easing: "ease-out",
 }
+
+// DSL shorthand:
+dsl.camera.anchorTrack(100, "lastMessage", 35, 0.18, "operatorFollow")
 ```
 
-### SHAKE
+**Smoothing Values:**
+
+| Value | Behavior | Use Case |
+|-------|----------|----------|
+| `0.08` | Very slow, dreamy | Emotional moments |
+| `0.18` | Operator feel | Standard webseries |
+| `0.35` | Snappy response | Action sequences |
+| `0.60` | Whip-fast | Dramatic cuts |
+
+### HOLD (Intentional Stillness)
+
+Let the viewer breathe and read.
 
 ```typescript
-{
-  at: 200,
-  kind: "CAMERA",
-  type: "SHAKE",
-  intensity: 20,
-  duration: 30,
-  decay: true,
-  frequency: 3,
-}
+dsl.camera.hold(100, 18)  // Hold for 18 frames (minimum 12 recommended)
 ```
 
-### RESET
+### PUNCH + GLIDE (Webseries Signature)
+
+Fast zoom-in, then smooth follow. Combines impact + tracking.
 
 ```typescript
-{
-  at: 300,
-  kind: "CAMERA",
-  type: "RESET",
-  duration: 45,
-}
+// Returns array of TWO events:
+const events = dsl.camera.punchGlide(100, "lastMessage");
+// [0]: ANCHOR_FOCUS with impactPunch preset (10f)
+// [1]: ANCHOR_TRACK with operatorFollow (35f)
+```
+
+### Legacy: ZOOM, SHAKE, RESET
+
+```typescript
+// Manual zoom (deprecated - prefer anchorFocus)
+dsl.camera.zoom(100, 1.5, 30, { originX: 0.5, originY: 0.8 })
+
+// Shake effect
+dsl.camera.shake(100, 5, 12)  // intensity, duration
+
+// Reset to neutral
+dsl.camera.reset(100, 20)
 ```
 
 ---
 
-## Easing Functions
+## Shot Presets
 
-| Easing | Description |
-|--------|-------------|
-| `linear` | Constant speed |
-| `ease-in` | Accelerate from start |
-| `ease-out` | Decelerate to end |
-| `ease-in-out` | Accelerate then decelerate |
-| `cinematic` | Film-style S-curve |
+<Callout type="error">
+**v1 Presets are LOCKED.** Do not modify their values. They define the "Tokovo look."
+</Callout>
+
+### v1 Core Presets (Production Ship Set)
+
+| Preset | Scale | Shake | Duration | Easing | Use Case |
+|--------|-------|-------|----------|--------|----------|
+| `message` | 1.08 | 0 | 22f | ease-out | Default message follow |
+| `subtle` | 1.04 | 0 | 30f | cinematic | Typing anticipation |
+| `impact` | 1.35 | 6 | 14f | expoOut | Big reveals, breakups |
+| `snap` | 1.15 | 1 | 8f | ease-out | Quick reactions |
+
+### v1 Motion Presets
+
+| Preset | Scale | Tracking | Smoothing | Duration | Use Case |
+|--------|-------|----------|-----------|----------|----------|
+| `operatorFollow` | 1.22 | ✅ | 0.18 | 40f | Standard tracking |
+| `punchGlide` | 1.35 | ✅ | 0.18 | 40f | Punch + glide sequence |
+
+### v1 Interruption Presets
+
+| Preset | Scale | Shake | Duration | Use Case |
+|--------|-------|-------|----------|----------|
+| `interrupt` | 1.25 | 4 | 10f | Notification breaks flow |
+| `takeover` | 0.85 | 0 | 20f | Call takes full screen |
+
+### v1 Structural Presets
+
+| Preset | Scale | Duration | Use Case |
+|--------|-------|----------|----------|
+| `reset` | 1.0 | 20f | Return to neutral |
+| `establish` | 0.9 | 30f | Scene-opening wide shot |
+
+### v2 Presets (Feature-Flagged)
+
+<Callout>
+v2 presets require emotional state model and are not included in the standard ship set.
+</Callout>
+
+| Preset | Scale | Category | Notes |
+|--------|-------|----------|-------|
+| `suspenseHold` | 1.1 | Psychological | Tension stretch |
+| `voyeur` | 0.92 | Psychological | Distant observation |
+| `isolation` | 0.88 | Psychological | Emotional withdrawal |
+| `whipSnap` | 1.18 | Dynamic | Fast pan with overshoot |
+| `floatFollow` | 1.15 | Dynamic | Very slow dreamy follow |
+| `panic` | 1.4 | Meta | Loss of control |
+| `collapse` | 0.8 | Meta | Aftermath pullback |
+
+---
+
+## Semantic Anchors
+
+### Anchor Types by App
+
+<Tabs items={['WhatsApp', 'Phone', 'Twitter', 'Notification']}>
+  <Tab>
+    ```typescript
+    type WhatsAppAnchorId =
+      | "lastMessage"      // Most recent message rect
+      | "typingIndicator"  // Typing dots (volatile!)
+      | "inputArea"        // Input bar (stable)
+      | "reactionBubble"   // Reaction popup
+      | "voiceNote"        // Voice message waveform
+      | "imagePreview"     // Image in chat
+      | "device";          // Full frame fallback
+    ```
+  </Tab>
+  <Tab>
+    ```typescript
+    type PhoneAnchorId =
+      | "callPoster"       // Contact poster/photo
+      | "acceptButton"     // Green answer button
+      | "declineButton"    // Red decline button
+      | "callTimer"        // Active call timer
+      | "device";          // Full frame fallback
+    ```
+  </Tab>
+  <Tab>
+    ```typescript
+    type TwitterAnchorId =
+      | "lastTweet"        // Most recent tweet
+      | "composeTweet"     // Tweet composer
+      | "profileHeader"    // Profile banner
+      | "device";          // Full frame fallback
+    ```
+  </Tab>
+  <Tab>
+    ```typescript
+    type NotificationAnchorId =
+      | "headsUpBanner"    // Notification banner
+      | "dynamicIsland"    // iOS Dynamic Island
+      | "device";          // Full frame fallback
+    ```
+  </Tab>
+</Tabs>
+
+### Anchor Framing Configuration
+
+Each anchor has a **framing config** that defines where it should appear in frame:
+
+```typescript
+// From @tokovo/core/camera/presets.ts
+const ANCHOR_FRAMING = {
+  lastMessage: {
+    anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third
+    paddingPx: 24,
+    targetFill: 0.55,
+  },
+  inputArea: {
+    anchorPoint: { x: 0.5, y: 0.9 },   // Very bottom
+    paddingPx: 16,
+    targetFill: 0.4,
+  },
+  callPoster: {
+    anchorPoint: { x: 0.5, y: 0.4 },   // Upper portion
+    paddingPx: 32,
+    targetFill: 0.65,
+  },
+  headsUpNotification: {
+    anchorPoint: { x: 0.5, y: 0.1 },   // Top of frame
+    paddingPx: 16,
+    targetFill: 0.35,
+  },
+  device: {
+    anchorPoint: { x: 0.5, y: 0.5 },   // Center (fallback)
+    paddingPx: 0,
+    targetFill: 1.0,
+  },
+};
+```
+
+### Fallback Chains
+
+When an anchor isn't available, the system falls back:
+
+```typescript
+const ANCHOR_FALLBACK_CHAINS = {
+  typingIndicator: ["inputArea", "lastMessage", "device"],
+  lastMessage: ["inputArea", "device"],
+  inputArea: ["device"],
+  callPoster: ["device"],
+  reactionBubble: ["lastMessage", "device"],
+};
+```
+
+---
+
+## Creating Anchor Providers
+
+To add semantic anchors for a new app:
+
+```typescript
+// packages/apps-myapp/src/anchor-provider.ts
+import { AnchorProvider, AnchorSnapshot, AnchorRegistry } from "@tokovo/core";
+
+export const MyAppAnchorProvider: AnchorProvider = {
+  appId: "app_myapp",
+  
+  getAnchors(world, layout, deviceId): AnchorSnapshot {
+    const anchors: Record<string, LayoutRect> = {};
+    
+    // Extract semantic regions from your layout
+    if (layout.kind === "MY_VIEW" && layout.featureRect) {
+      anchors.myFeature = layout.featureRect;
+    }
+    
+    // Always provide device fallback
+    anchors.device = { x: 0, y: 0, width: 430, height: 932 };
+    
+    return { anchors, deviceId, appId: "app_myapp" };
+  }
+};
+
+// Register at module load
+AnchorRegistry.register(MyAppAnchorProvider);
+```
+
+---
+
+## App Behaviors (Event → Intent Mapping)
+
+Apps define how their events map to camera intents:
+
+```typescript
+// packages/apps-whatsapp/src/behaviors.ts
+import { AppBehavior, CameraIntent } from "@tokovo/core";
+
+export const WhatsAppBehavior: AppBehavior = {
+  appId: "app_whatsapp",
+  
+  eventMappings: {
+    MESSAGE_RECEIVED: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    MESSAGE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
+    TYPING_START: { type: "FOCUS", anchor: "inputArea", preset: "subtle" },
+    TYPING_END: { type: "RESET", preset: "reset" },
+    REACTION_ADDED: { type: "FOCUS", anchor: "reactionBubble", preset: "snap" },
+  },
+  
+  // Optional: override global presets
+  presetOverrides: {
+    dramatic: { scale: 1.25 },  // WhatsApp uses slightly less zoom
+    snap: { scale: 1.18 },      // Snaps are snappier
+  },
+};
+```
 
 ---
 
@@ -284,51 +386,94 @@ Anchors must be stable for 3 frames before the camera switches:
 ```typescript
 const ANCHOR_STABILITY_FRAMES = 3;
 
-// Prevents: typing dots flicker → camera doesn't spaz
+// Prevents: typing dots flash → camera doesn't spaz
+// The camera ignores volatile anchors that appear briefly
 ```
 
 ---
 
-## CameraTransform
+## CameraTransform Output
 
-The output of camera calculations:
+The final output applied to CSS:
 
 ```typescript
 interface CameraTransform {
   scale: number;      // 1.0 = no zoom
-  translateX: number;
-  translateY: number;
-  rotation: number;
-  originX: number;    // 0-1 normalized
-  originY: number;
-  shakeX: number;     // Shake offset
-  shakeY: number;
+  translateX: number; // Pan X offset
+  translateY: number; // Pan Y offset
+  rotation: number;   // Degrees
+  originX: number;    // 0-1 normalized X
+  originY: number;    // 0-1 normalized Y
+  shakeX: number;     // Current shake X offset
+  shakeY: number;     // Current shake Y offset
+}
+```
+
+Applied as:
+```css
+.camera {
+  transform: 
+    translate(var(--shakeX), var(--shakeY))
+    scale(var(--scale));
+  transform-origin: 
+    calc(var(--originX) * 100%) 
+    calc(var(--originY) * 100%);
 }
 ```
 
 ---
 
-## Usage Example
+## Complete Example
 
 ```typescript
+import { dsl } from "@tokovo/dsl";
+
 const events = [
-  // Message arrives → camera follows
-  dsl.receive(60, "Bestie 💕", "I got the job!!! 🎉"),
-  dsl.anchorFocus(60, "lastMessage", "dramatic", 5),
+  // Scene opens with establishing shot
+  dsl.camera.anchorFocus(0, "device", "establish"),
   
-  // Reply → quick snap
-  dsl.send(120, "OMG CONGRATS!!!"),
-  dsl.anchorFocus(120, "lastMessage", "snap", 2),
+  // Message arrives → dramatic focus with shake
+  dsl.messages.receive(60, "conv_1", "Alice", "I got the job!!! 🎉"),
+  dsl.camera.anchorFocus(60, "lastMessage", "impact", 5),
   
-  // Reset to neutral
-  dsl.reset(200, 40),
+  // Let viewer read
+  dsl.camera.hold(85, 18),
+  
+  // Reply with standard follow
+  dsl.messages.send(120, "conv_1", "OMG CONGRATS!!!"),
+  dsl.camera.anchorFocus(120, "lastMessage", "message"),
+  
+  // Typing anticipation → track the input area
+  dsl.messages.typingStart(160, "conv_1", "Alice"),
+  dsl.camera.anchorTrack(160, "inputArea", 40, 0.18, "subtle"),
+  
+  // Message arrives → punch + glide signature move
+  dsl.messages.typingEnd(200, "conv_1", "Alice"),
+  dsl.messages.receive(200, "conv_1", "Alice", "We need to celebrate! 🥳"),
+  ...dsl.camera.punchGlide(200, "lastMessage"),  // Spreads to 2 events
+  
+  // Scene ends → reset to neutral
+  dsl.camera.reset(280, 30),
 ];
 ```
 
 ---
 
+## Debugging Camera Issues
+
+| Symptom | Likely Cause | Fix |
+|---------|--------------|-----|
+| Camera jumps erratically | Anchor not stable | Check hysteresis, use stable anchors like `inputArea` |
+| Wrong zoom level | Preset mismatch | Verify preset exists, check presetOverrides |
+| Camera targets wrong area | Anchor provider bug | Log `getAnchors()` output, check layout.kind |
+| No camera movement | DirectorLite disabled | Set `directorEnabled: true` in TokovoRenderer |
+| Shake feels wrong | Decay/frequency | Adjust shake intensity, frequency, decay |
+
+---
+
 ## Related
 
-- [DSL Semantic](/dsl/semantic) - Semantic DSL helpers
-- [DirectorLite](/director) - Automatic camera effects
-- [Anchor Providers](/architecture/plugins) - Creating custom anchors
+- [Renderer Engines](/architecture/renderer-engines) - The 3-engine architecture
+- [DirectorLite](/director) - Automatic camera effects from events
+- [Plugin System](/architecture/plugins) - Creating apps with behaviors
+- [DSL Events: Camera](/dsl/events#camera) - Camera event factories

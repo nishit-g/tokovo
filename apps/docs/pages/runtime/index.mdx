@@ -1,25 +1,41 @@
 # Runtime Overview
 
+import { Callout, Cards, Card } from 'nextra/components'
+
+<Callout type="info">
+**Stories → Pixels.** The runtime executes events and renders frames. It's deterministic: same events always produce the same video.
+</Callout>
+
 The runtime is where stories become pixels. It executes events and renders frames.
+
+---
 
 ## Architecture
 
+```mermaid
+graph LR
+    E[Timeline Events] --> R[Engine/Reducer]
+    R --> W[World State]
+    W --> L[Layout Engine]
+    W --> C[Camera Engine]
+    W --> A[Audio Engine]
+    L --> TR[TokovoRenderer]
+    C --> TR
+    A --> TR
+    TR --> P[Pixels]
 ```
-Timeline Events → Engine (reducer) → World State → Renderer Engines → Pixels
-```
 
-### Components
+### 3 Renderer Engines
 
-| Component | Location | Purpose |
-|-----------|----------|---------|
-| Engine | `@tokovo/core` | Reduces events to state |
-| World State | `@tokovo/core` | Complete app state |
-| **Layout Engine** | `@tokovo/renderer` | Computes view kind, positions |
-| **Camera Engine** | `@tokovo/renderer` | Computes transforms + DirectorLite |
-| **Audio Engine** | `@tokovo/renderer` | Computes bus states, active sounds |
-| TokovoRenderer | `@tokovo/renderer` | Paints JSX (no compute) |
+| Engine | Responsibility |
+|--------|----------------|
+| **Layout Engine** | View kind detection, device positions, app sizing |
+| **Camera Engine** | Transforms, anchors, DirectorLite, smoothing |
+| **Audio Engine** | Bus states, ducking, active sounds |
 
-> See [Renderer Engines](/architecture/renderer-engines) for details on the 3-engine split.
+> TokovoRenderer just paints — no computation. Engines do all the heavy lifting.
+
+---
 
 ## The Engine
 

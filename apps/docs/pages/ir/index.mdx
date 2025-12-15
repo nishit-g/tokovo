@@ -1,13 +1,44 @@
 # IR Overview
 
+import { Callout, Cards, Card } from 'nextra/components'
+
+<Callout type="info">
+**IR = Source of Truth.** Scene IR describes WHAT happens. Timeline IR describes WHEN (at which frame). The compiler transforms one to the other.
+</Callout>
+
 The Intermediate Representation (IR) is the **source of truth** between layers.
+
+---
 
 ## Two IRs
 
-| IR | Purpose | Has Frames? |
-|----|---------|-------------|
-| **Scene IR** | Semantic truth | No |
-| **Timeline IR** | Execution contract | Yes |
+```mermaid
+graph LR
+    subgraph "Semantic Layer"
+        S[Scene IR]
+    end
+    
+    subgraph "Compiler"
+        C[compile]
+    end
+    
+    subgraph "Execution Layer"
+        T[Timeline IR]
+    end
+    
+    S -->|"No frames"| C
+    C -->|"Has frames"| T
+    
+    S -.-> S1["WHAT happens"]
+    T -.-> T1["WHEN it happens"]
+```
+
+| IR | Purpose | Has Frames? | Example |
+|----|---------|-------------|---------|
+| **Scene IR** | Semantic truth | No | `{ kind: "Wait", duration: "1.5s" }` |
+| **Timeline IR** | Execution contract | Yes | `{ at: 45, kind: "MessageReceived" }` |
+
+---
 
 ## Why Two IRs?
 
@@ -15,40 +46,36 @@ The Intermediate Representation (IR) is the **source of truth** between layers.
 
 Scene IR doesn't change when:
 - FPS changes (30 → 60)
-- App adapters change
 - Camera rules update
 - Rendering engine changes
+- App adapters evolve
+
+This means your DSL scripts are **future-proof**.
 
 ### Timeline IR is Executable
 
 Timeline IR is the frame-by-frame plan:
 - Every event has an `at` frame number
 - Sorted deterministically
-- Ready for the engine
+- Ready for the engine's `replay()` function
 
-## The Transformation
-
-```
-Scene IR (semantic)
-    ↓
-  compile()
-    ↓
-Timeline IR (execution)
-```
+---
 
 ## Package Structure
 
 ```
 packages/ir/src/
-├── semantic.ts    # EpisodeConfig, SemanticMeta, BeatMeta, POVLayout
-├── trace.ts       # Trace model for debugging
-├── scene.ts       # SceneIR, SceneOp types
+├── semantic.ts    # EpisodeConfig, SemanticMeta, BeatMeta, Mood
+├── trace.ts       # Debug traces with source locations
+├── scene.ts       # SceneIR, SceneOp, Beat, DeviceScene
 ├── timeline.ts    # TimelineIR, TimelineOp types
-├── ordering.ts    # Phase, Priority for sorting
+├── ordering.ts    # Phase, Priority for deterministic sorting
 ├── validate.ts    # IR validation utilities
 ├── constraints.ts # Narrative constraint checking
-└── index.ts       # Exports
+└── index.ts       # All exports
 ```
+
+---
 
 ## Type Imports
 
@@ -61,7 +88,6 @@ import {
   TypingStartOp,
   SendMessageOp,
   ReceiveMessageOp,
-  POVSwitchOp,
   Beat,
   DeviceScene,
   EpisodeMeta,
@@ -71,58 +97,60 @@ import {
 import {
   TimelineIR,
   TimelineOp,
-  DeviceUnlockedOp,
   MessageReceivedOp,
   Phase,
 } from "@tokovo/ir";
 
-// Semantic types
+// Semantic types (for AI-readable metadata)
 import {
-  EpisodeConfig,
   SemanticMeta,
   BeatMeta,
   Mood,
-  POVLayout,
 } from "@tokovo/ir";
 
 // Utilities
 import {
   parseDuration,
   messageRef,
-  validateConstraints,
 } from "@tokovo/ir";
 ```
+
+---
 
 ## Design Principles
 
 ### 1. Readonly Everywhere
 
-All IR types use `readonly`:
+All IR types enforce immutability:
 
 ```typescript
 interface SceneOp {
   readonly kind: string;
-  // ...
+  readonly _trace?: Trace;
 }
 ```
 
-This enforces immutability.
-
 ### 2. Discriminated Unions
 
-Operations use `kind` for discrimination:
+Operations use `kind` for type-safe switching:
 
 ```typescript
 type SceneOp =
   | WaitOp          // kind: "Wait"
   | TypingStartOp   // kind: "TypingStart"
   | SendMessageOp   // kind: "SendMessage"
+  | ReceiveMessageOp
   // ...
 
 // Type-safe switching
 switch (op.kind) {
   case "Wait":
     // TypeScript knows op is WaitOp
+    console.log(op.duration);
+    break;
+  case "SendMessage":
+    // TypeScript knows op is SendMessageOp
+    console.log(op.text);
     break;
 }
 ```
@@ -131,16 +159,22 @@ switch (op.kind) {
 
 Required fields are required. Optional only when truly optional.
 
-```typescript
-// Good
-interface WaitOp {
-  readonly kind: "Wait";
-  readonly duration: DurationExpr;  // Required
-}
+---
 
-// Bad
-interface WaitOp {
-  readonly kind?: "Wait";  // Why optional?
-  readonly duration?: string;
-}
-```
+## Explore IR Types
+
+<Cards>
+  <Card title="Scene IR" href="/ir/scene-ir">
+    Semantic operations (WHAT happens)
+  </Card>
+  <Card title="Timeline IR" href="/ir/timeline-ir">
+    Frame-based events (WHEN it happens)
+  </Card>
+  <Card title="Constraints" href="/ir/constraints">
+    Narrative validation rules
+  </Card>
+  <Card title="Traces" href="/ir/trace">
+    Debug source tracking
+  </Card>
+</Cards>
+

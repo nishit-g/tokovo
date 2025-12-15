@@ -1,0 +1,194 @@
+---
+title: Phone/Calls
+description: iOS and Android phone call UI simulation
+---
+
+import { Callout, Tabs, Tab } from 'nextra/components'
+
+# Phone / Calls
+
+<Callout type="info">
+**Realistic call simulation.** Full iOS 17 Contact Poster and Android incoming call UI with animations, slide-to-answer, and active call states.
+</Callout>
+
+## Package
+
+```bash
+@tokovo/apps-phone
+```
+
+```typescript
+// Import to auto-register
+import "@tokovo/apps-phone";
+```
+
+---
+
+## Features
+
+| Feature | iOS | Android | Notes |
+|---------|-----|---------|-------|
+| Incoming call | ✅ | ✅ | Full-screen UI |
+| Contact Poster | ✅ | - | iOS 17 style |
+| Slide to answer | ✅ | ✅ | Animated gesture |
+| Swipe bubbles | - | ✅ | Android style |
+| Active call | ✅ | ✅ | Timer, controls |
+| Mute/Speaker/Hold | ✅ | ✅ | Control toggles |
+| Caller avatar | ✅ | ✅ | With ring animation |
+| Call timer | ✅ | ✅ | MM:SS format |
+
+---
+
+## DSL Usage
+
+### Incoming Call
+
+```typescript
+d.beat("incoming-call", b => {
+    // Use CALL events directly
+    // Incoming call from Bob
+});
+```
+
+### Timeline Events
+
+```typescript
+// Incoming call
+{
+  at: 100,
+  kind: "CALL",
+  type: "INCOMING",
+  deviceId: "phone",
+  callerId: "bob",
+  callerName: "Bob Smith",
+  callerAvatar: "/avatars/bob.png",
+  isVideo: false,
+  callType: "voice",
+  displayMode: "fullscreen"
+}
+
+// Answer
+{ at: 150, kind: "CALL", type: "ANSWER", deviceId: "phone" }
+
+// Decline
+{ at: 200, kind: "CALL", type: "DECLINE", deviceId: "phone" }
+
+// End call
+{ at: 300, kind: "CALL", type: "END", deviceId: "phone" }
+
+// Toggle controls
+{ at: 180, kind: "CALL", type: "TOGGLE_MUTE", deviceId: "phone" }
+{ at: 200, kind: "CALL", type: "TOGGLE_SPEAKER", deviceId: "phone" }
+{ at: 220, kind: "CALL", type: "TOGGLE_HOLD", deviceId: "phone" }
+```
+
+---
+
+## Components
+
+<Tabs items={['iOS', 'Android', 'Shared']}>
+  <Tab>
+    | Component | Description |
+    |-----------|-------------|
+    | `IncomingIOS` | Full-screen incoming call |
+    | `ContactPoster` | iOS 17 contact poster with photo |
+    | `ClassicIncoming` | Pre-iOS 17 style |
+    | `SlideToAnswer` | Animated slide gesture |
+    | `ActiveCallIOS` | Active call with timer and controls |
+  </Tab>
+  <Tab>
+    | Component | Description |
+    |-----------|-------------|
+    | `IncomingAndroid` | Full-screen incoming call |
+    | `SwipeBubble` | Swipe accept/decline bubbles |
+    | `ActiveCallAndroid` | Active call UI |
+  </Tab>
+  <Tab>
+    | Component | Description |
+    |-----------|-------------|
+    | `ActionButtons` | Accept/Decline buttons |
+    | `AvatarRing` | Pulsing avatar ring |
+    | `CallTimer` | MM:SS timer display |
+    | `ControlGrid` | Mute/Speaker/Hold grid |
+  </Tab>
+</Tabs>
+
+---
+
+## Camera Integration
+
+The Phone app defines camera behaviors for call events:
+
+```typescript
+// From @tokovo/apps-phone/behaviors.ts
+const PHONE_INTENT_MAPPINGS = {
+    INCOMING_CALL: { type: "FOCUS", anchor: "callPoster", preset: "dramatic" },
+    CALL_ANSWERED: { type: "FOCUS", anchor: "callPoster", preset: "subtle" },
+    CALL_DECLINED: { type: "RESET", preset: "reset" },
+    CALL_ENDED: { type: "RESET", preset: "reset" },
+    MUTE_TOGGLED: { type: "HOLD" },
+    SPEAKER_TOGGLED: { type: "HOLD" },
+    HOLD_TOGGLED: { type: "HOLD" },
+};
+```
+
+### Semantic Anchors
+
+```typescript
+type PhoneAnchorId =
+  | "callPoster"      // Contact poster image
+  | "acceptButton"    // Green answer button
+  | "declineButton"   // Red decline button
+  | "callTimer"       // Active call timer
+  | "muteButton"      // Mute control
+  | "device";         // Full frame fallback
+```
+
+---
+
+## Call States
+
+| State | Description | UI |
+|-------|-------------|-----|
+| `incoming` | Call is ringing | Full-screen with accept/decline |
+| `ringing` | Outgoing call ringing | Timer shows "Calling..." |
+| `active` | Call connected | Timer counting, control grid |
+| `declined` | Call was declined | Brief flash, then dismiss |
+| `ended` | Call ended | Brief flash, then dismiss |
+
+---
+
+## File Structure
+
+```
+packages/apps-phone/
+├── src/
+│   ├── components/
+│   │   ├── ios/
+│   │   │   ├── IncomingIOS.tsx
+│   │   │   ├── ContactPoster.tsx
+│   │   │   ├── ClassicIncoming.tsx
+│   │   │   ├── SlideToAnswer.tsx
+│   │   │   └── ActiveCallIOS.tsx
+│   │   ├── android/
+│   │   │   ├── IncomingAndroid.tsx
+│   │   │   ├── SwipeBubble.tsx
+│   │   │   └── ActiveCallAndroid.tsx
+│   │   └── shared/
+│   │       ├── ActionButtons.tsx
+│   │       ├── AvatarRing.tsx
+│   │       ├── CallTimer.tsx
+│   │       └── ControlGrid.tsx
+│   ├── behaviors.ts      # Camera intent mappings
+│   ├── runtime.ts        # Event reducer
+│   ├── plugin.ts         # Registration
+│   └── ui.tsx            # Main renderer
+```
+
+---
+
+## Related
+
+- [Runtime Events: CALL](/runtime/events#call-events) - Call event types
+- [Camera System](/architecture/camera) - Semantic anchors for calls
+- [WhatsApp](/apps/whatsapp) - Messaging app

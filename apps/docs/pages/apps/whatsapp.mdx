@@ -3,23 +3,43 @@ title: WhatsApp
 description: WhatsApp iOS/Android configuration and usage
 ---
 
+import { Callout, Tabs, Tab } from 'nextra/components'
+
 # WhatsApp
 
-Production-ready WhatsApp iOS and Android UI with all message types.
+<Callout type="info">
+**Production-ready.** Over 1300 lines of pixel-perfect iOS WhatsApp UI with all message types, animations, and theming.
+</Callout>
+
+## Package
+
+```bash
+@tokovo/apps-whatsapp
+```
+
+```typescript
+// Import to auto-register
+import "@tokovo/apps-whatsapp";
+```
+
+---
 
 ## Features
 
-- ✅ Text messages with read receipts
-- ✅ Voice notes with waveform animation
-- ✅ Images with captions
-- ✅ Videos with thumbnails
-- ✅ GIFs (inline playback)
-- ✅ Typing indicators
-- ✅ System messages
-- ✅ Chats list screen
-- ✅ Reactions
-- ✅ Reply/quote UI
-- 🔜 Link previews
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Text messages | ✅ | With read receipts |
+| Voice notes | ✅ | Waveform animation |
+| Images | ✅ | With captions |
+| Videos | ✅ | With thumbnails |
+| GIFs | ✅ | Inline playback |
+| Typing indicators | ✅ | Animated dots |
+| System messages | ✅ | Time separators |
+| Reactions | ✅ | Emoji reactions |
+| Reply/quote | ✅ | Reply bubbles |
+| Link previews | ✅ | URL cards with image |
+
+---
 
 ## DSL Usage
 

@@ -5,8 +5,5 @@
     "episode": "episode()",
     "device": "Device Builder",
     "beat": "Beat Builder",
-    "camera": "Camera Builder",
-    "scene": "Scene Builder",
-    "semantic": "Semantic Annotations",
-    "pov": "POV Control"
+    "semantic": "Semantic Annotations"
 }

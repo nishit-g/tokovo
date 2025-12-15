@@ -1,10 +1,13 @@
 {
-    "quickstart": "Quick Start",
+    "zero-to-video": "Zero to Video",
+    "quickstart": "Development Setup",
     "first-episode": "Your First Episode",
-    "creating-an-app": "Creating an App Package",
+    "camera-workflow": "Camera Workflow",
+    "creating-an-app": "Creating an App",
+    "debugging": "Debugging",
+    "troubleshooting": "Troubleshooting",
     "notification-adapters": "Notification Adapters",
     "multi-device": "Multi-Device Stories",
     "ai-generation": "AI Generation",
-    "ai-contract": "AI Contract",
-    "custom-apps": "Custom Apps (Legacy)"
+    "ai-contract": "AI Contract"
 }

@@ -1,6 +1,14 @@
 # DirectorLite Overview
 
+import { Callout, Cards, Card } from 'nextra/components'
+
+<Callout type="info">
+**Automatic cinematography.** DirectorLite watches events and moves the camera. Writers focus on story, not camera positions.
+</Callout>
+
 DirectorLite is Tokovo's **automatic camera director**. It observes runtime events and applies cinematic camera effects without manual choreography.
+
+---
 
 ## Philosophy
 
@@ -8,56 +16,34 @@ DirectorLite is Tokovo's **automatic camera director**. It observes runtime even
 
 Writers focus on **story**. DirectorLite handles **cinematography**.
 
+---
+
 ## How It Works
 
-```
-Runtime Events → Signal Extraction → Rule Matching → Camera Effects → Final Transform
-```
-
-### 1. Events Happen
-
-```typescript
-{ at: 45, kind: "APP", type: "MESSAGE_RECEIVED", ... }
-```
-
-### 2. Signals Extracted
-
-```typescript
-{ at: 45, type: "NewMessage", targetRect: {...}, messageId: "msg_1" }
+```mermaid
+graph LR
+    E[Runtime Events] --> S[Signal Extraction]
+    S --> R[Rule Matching]
+    R --> F[Camera Effects]
+    F --> T[Final Transform]
+    
+    E -.-> E1["MESSAGE_RECEIVED<br/>TYPING_STARTED"]
+    S -.-> S1["NewMessage signal<br/>with target rect"]
+    R -.-> R1["ViralDramaV1 rules<br/>match signal"]
+    F -.-> F1["ZoomToRect<br/>with scale, shake"]
 ```
 
-### 3. Rules Match
+### Event → Signal → Rule → Effect → Transform
 
-```typescript
-// Rule: NewMessage → ZoomToRect
-{
-  signal: "NewMessage",
-  effect: "ZoomToRect",
-  duration: 25 frames,
-  cooldown: 20 frames
-}
-```
+| Step | Input | Output |
+|------|-------|--------|
+| **Events** | `{ at: 45, type: "MESSAGE_RECEIVED" }` | Timeline event |
+| **Signals** | Event + Layout | `{ type: "NewMessage", rect: {...} }` |
+| **Rules** | Signal | Effect type + parameters |
+| **Effects** | Rule match | `{ effect: "ZoomToRect", scale: 1.2 }` |
+| **Transform** | Effect + progress | `{ translateX, translateY, scale }` |
 
-### 4. Effects Applied
-
-```typescript
-{
-  effect: "ZoomToRect",
-  targetRect: { x: 20, y: 340, w: 280, h: 60 },
-  progress: 0.5,
-  scale: 1.2
-}
-```
-
-### 5. Camera Transform
-
-```typescript
-{
-  offsetX: -30,
-  offsetY: -120,
-  scale: 1.2
-}
-```
+---
 
 ## Enabling DirectorLite
 
@@ -65,44 +51,75 @@ Runtime Events → Signal Extraction → Rule Matching → Camera Effects → Fi
 <TokovoRenderer
   world={world}
   t={frame}
-  eventIndex={eventIndex}      // Required for signals
-  directorEnabled={true}       // Enable DirectorLite
+  directorEnabled={true}   // Enable automatic camera
+  directorDebug={true}     // Optional: log decisions
 />
 ```
+
+---
+
+## Relationship to Semantic Camera
+
+<Callout type="warning">
+**DirectorLite vs Manual Camera:** DirectorLite is automatic. For precise control, use the semantic camera system with `dsl.camera.anchorFocus()`.
+</Callout>
+
+| Approach | Use Case | Control Level |
+|----------|----------|---------------|
+| **DirectorLite** | Let events drive camera | Automatic |
+| **Semantic Camera** | Specific dramatic moments | Manual |
+| **Both** | General + overrides | Hybrid |
+
+DirectorLite effects can be overridden by explicit camera events:
+
+```typescript
+// DirectorLite handles general movement
+// Manual overrides for key moments
+dsl.camera.anchorFocus(120, "lastMessage", "dramatic", 5);
+```
+
+---
 
 ## Key Properties
 
 ### Pure & Stateless
 
+Same inputs → Same outputs. No accumulated state.
+
 ```typescript
-// Same inputs → Same outputs
 const output1 = deriveDirectorEffects({ t: 45, signals, layout });
 const output2 = deriveDirectorEffects({ t: 45, signals, layout });
-// output1 === output2 (functionally)
+// output1 === output2 (functionally identical)
 ```
 
 ### Scrubbing-Safe
 
-No accumulated state. Jump to any frame instantly.
+Jump to any frame instantly. No state to reset.
 
 ### Cooldown-Aware
 
-Won't spam zooms. Respects cooldowns per signal type.
+Won't spam zooms. Respects cooldowns per signal type:
 
 ```typescript
 // Frame 45: NewMessage → ZoomToRect ✅
-// Frame 55: NewMessage → SKIPPED (cooldown)
+// Frame 55: NewMessage → SKIPPED (cooldown active)
 // Frame 75: NewMessage → ZoomToRect ✅
 ```
 
-## The ViralDramaV1 Style
+---
 
-Current implementation uses a single baked style optimized for **viral drama videos**:
+## ViralDramaV1 Style
 
-- **Aggressive zooms** on new messages
-- **Anticipatory push** during typing
-- **Quick shakes** on message deletes
-- **Smart cooldowns** to prevent jitter
+Current implementation uses a baked style optimized for **viral drama videos**:
+
+| Signal | Effect | Scale | Shake |
+|--------|--------|-------|-------|
+| NewMessage | ZoomToRect | 1.2 | 0 |
+| TypingStarted | PushIn | 1.08 | 0 |
+| MessageDeleted | ShakeAndZoom | 1.15 | 4 |
+| CallIncoming | Interrupt | 1.25 | 3 |
+
+---
 
 ## Architecture
 
@@ -115,14 +132,7 @@ packages/core/src/director-lite/
 └── index.ts      # Exports
 ```
 
-## Integration Points
-
-| Component | Responsibility |
-|-----------|----------------|
-| `TokovoRenderer` | Creates layout model, calls derive |
-| `CameraComposer` | Applies effects to camera transform |
-| `signals.ts` | Extracts signals from event index |
-| `derive.ts` | Matches rules, generates effects |
+---
 
 ## Debug Mode
 
@@ -131,13 +141,30 @@ Enable logging to understand decisions:
 ```tsx
 <TokovoRenderer
   directorEnabled={true}
-  directorDebug={true}  // Log decisions
+  directorDebug={true}
 />
 ```
 
-Output:
+Console output:
 ```
 [DirectorLite] Frame 45: NewMessage → ZoomToRect (msg_1)
 [DirectorLite] Frame 60: TypingStarted → PushIn (cooldown OK)
 [DirectorLite] Frame 65: NewMessage → SKIPPED (cooldown 5 remaining)
 ```
+
+---
+
+## Related
+
+<Cards>
+  <Card title="Camera System" href="/architecture/camera">
+    Semantic camera with manual control
+  </Card>
+  <Card title="Camera Workflow" href="/guides/camera-workflow">
+    Practical patterns and anti-patterns
+  </Card>
+  <Card title="Rules Reference" href="/director/rules">
+    Complete rule definitions
+  </Card>
+</Cards>
+

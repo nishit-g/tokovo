@@ -1,142 +1,414 @@
 # Plugin System
 
-Tokovo uses a **plugin architecture** for apps. Each app (WhatsApp, Instagram, etc.) is a self-contained plugin.
+import { Callout, Tabs, Tab, Steps, Cards, Card } from 'nextra/components'
+
+<Callout type="info">
+**Apps are plugins.** Every Tokovo app (WhatsApp, Phone, Twitter) is a self-contained plugin that owns its UI, state, sounds, camera behaviors, and widgets.
+</Callout>
+
+Tokovo uses a **plugin architecture** for apps, enabling you to add new apps without modifying the core engine.
 
 ## Why Plugins?
 
 | Benefit | How |
 |---------|-----|
-| **Self-contained** | Each app owns its UI, state, sounds |
-| **Auto-registration** | Plugins register themselves |
+| **Self-contained** | Each app owns UI, state, sounds, camera, widgets |
+| **Auto-registration** | Plugins register at import time |
 | **Extensible** | Add new apps without modifying core |
-| **Typed** | Full TypeScript support |
+| **Typed** | Full TypeScript support with interfaces |
+| **Isolated** | Bugs in one app don't crash others |
+
+---
+
+## 7 Registries
+
+Tokovo uses **seven registries** to manage app components. Understanding these is key to building apps.
+
+| Registry | Purpose | Package | Auto-registers? |
+|----------|---------|---------|-----------------|
+| `PluginManager` | App plugins | `@tokovo/core` | On `PluginManager.register()` |
+| `ReducerRegistry` | State reducers | `@tokovo/core` | ✅ When plugin has `reducer` |
+| `AnchorRegistry` | Semantic anchors | `@tokovo/core` | Manual |
+| `WidgetRegistry` | Platform widgets | `@tokovo/core` | ✅ When plugin has `widgets` |
+| `BehaviorRegistry` | Camera behaviors | `@tokovo/core` | Manual |
+| `NotificationAdapterRegistry` | Notification formatting | `@tokovo/core` | Manual |
+| `DeviceProfileRegistry` | Device profiles | `@tokovo/devices` | On import |
+
+---
 
 ## Plugin Interface
 
+The complete `TokovoPlugin` interface:
+
 ```typescript
 interface TokovoPlugin {
-  // Identity
-  id: string;           // "app_whatsapp"
-  name: string;         // "WhatsApp"
-  version: string;      // "1.0.0"
+  // === Identity ===
+  id: string;                    // "app_whatsapp" (must start with app_)
+  name: string;                  // "WhatsApp"
+  version: string;               // "1.0.0"
 
-  // Branding
-  icon?: string;        // Icon path or emoji
-  primaryColor?: string; // "#25D366"
+  // === Branding ===
+  icon?: string;                 // Icon path or emoji
+  primaryColor?: string;         // "#25D366"
 
-  // Components
-  appView?: AppViewComponent;  // React component
-  reducer?: AppReducer;        // State reducer
+  // === Core Components ===
+  appView?: AppViewComponent;    // React component for app UI
+  reducer?: AppReducer;          // State reducer for events
+  defaultState?: any;            // Initial app state
 
-  // Integration
-  eventTypes?: string[];       // Events this handles
-  sounds?: Record<string, string>; // Sound mappings
-  notificationSound?: string;  // Default notification sound
-  defaultState?: any;          // Initial app state
+  // === Event Handling ===
+  eventTypes?: string[];         // Events this plugin handles
+
+  // === Audio ===
+  sounds?: Record<string, string>;  // Sound mappings
+  notificationSound?: string;       // Default notification sound
+
+  // === Widgets (Dynamic Island, etc.) ===
+  widgets?: WidgetSlot[];
+
+  // === Notifications ===
+  notificationAdapter?: NotificationAdapter;
 }
 ```
 
-## Creating a Plugin
+---
 
-### 1. Define the Plugin
+## Adding a New App
 
-```typescript
-// packages/apps-whatsapp/src/plugin.ts
-import { definePlugin } from "@tokovo/core";
-import { WhatsAppView } from "./ui";
-import { whatsappReducer } from "./runtime";
+<Steps>
 
-export const WhatsAppPlugin = definePlugin({
-  id: "app_whatsapp",
-  name: "WhatsApp",
-  version: "1.0.0",
-  
-  icon: "💬",
-  primaryColor: "#25D366",
-  
-  appView: WhatsAppView,
-  reducer: whatsappReducer,
-  
-  eventTypes: [
-    "MESSAGE_RECEIVED",
-    "TYPING_START",
-    "TYPING_END",
-    "MESSAGE_READ",
-    "MESSAGE_DELETED",
-  ],
-  
-  sounds: {
-    "message_received": "whatsapp_received.mp3",
-    "message_sent": "whatsapp_sent.mp3",
-  },
-  
-  notificationSound: "whatsapp_notification.mp3",
-});
-```
+### Step 1: Create Package
 
-### 2. Create the Reducer
+```bash
+# Create package structure
+mkdir -p packages/apps-myapp/src
+cd packages/apps-myapp
 
-```typescript
-// packages/apps-whatsapp/src/runtime.ts
-import { AppReducer, WorldState, TimelineEvent } from "@tokovo/core";
-
-export const whatsappReducer: AppReducer = (
-  world: WorldState,
-  event: TimelineEvent
-): WorldState => {
-  if (event.kind !== "APP") return world;
-  
-  switch (event.type) {
-    case "MESSAGE_RECEIVED":
-      return addMessage(world, event);
-    case "TYPING_START":
-      return setTyping(world, event, true);
-    case "TYPING_END":
-      return setTyping(world, event, false);
-    case "MESSAGE_READ":
-      return markRead(world, event);
-    default:
-      return world;
+# Create package.json
+cat > package.json << 'EOF'
+{
+  "name": "@tokovo/apps-myapp",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@tokovo/core": "workspace:*"
   }
-};
+}
+EOF
 ```
 
-### 3. Create the View
+### Step 2: Define Plugin
+
+```typescript
+// packages/apps-myapp/src/plugin.ts
+import { definePlugin, PluginManager, TokovoPlugin, AppViewComponent } from "@tokovo/core";
+import { myAppReducer } from "./runtime";
+import { MyAppView } from "./ui";
+
+export const MyAppPlugin: TokovoPlugin = definePlugin({
+  id: "app_myapp",
+  name: "My App",
+  version: "1.0.0",
+
+  // Branding
+  icon: "🚀",
+  primaryColor: "#FF5722",
+
+  // Core
+  appView: MyAppView as unknown as AppViewComponent,
+  reducer: myAppReducer,
+
+  // Events this plugin handles
+  eventTypes: [
+    "MY_ACTION",
+    "ANOTHER_ACTION",
+  ],
+
+  // Sounds
+  sounds: {
+    "action": "myapp-action.mp3",
+    "notification": "myapp-notification.mp3",
+  },
+  notificationSound: "myapp-notification.mp3",
+});
+
+// Auto-register on import
+PluginManager.register(MyAppPlugin);
+```
+
+### Step 3: Create Reducer
+
+```typescript
+// packages/apps-myapp/src/runtime.ts
+import { WorldState, TimelineEvent, ReducerRegistry } from "@tokovo/core";
+import produce from "immer";
+
+export function myAppReducer(draft: WorldState, event: TimelineEvent): void {
+  // Only handle APP events for our app
+  if (event.kind !== "APP") return;
+  if ((event as any).appId !== "app_myapp") return;
+
+  switch (event.type) {
+    case "MY_ACTION":
+      // Mutate draft directly (uses Immer)
+      if (!draft.appState.app_myapp) {
+        draft.appState.app_myapp = { items: [] };
+      }
+      draft.appState.app_myapp.items.push((event as any).payload);
+      break;
+
+    case "SET_SCREEN":
+      draft.appState.app_myapp.screen = (event as any).screen;
+      break;
+  }
+}
+
+// Register with engine (also done automatically via PluginManager)
+ReducerRegistry.registerAppReducer("app_myapp", myAppReducer);
+```
+
+### Step 4: Create View Component
 
 ```tsx
-// packages/apps-whatsapp/src/ui.tsx
+// packages/apps-myapp/src/ui.tsx
 import React from "react";
-import { AppViewProps } from "@tokovo/core";
+import { AppViewProps, getTokens, Platform } from "@tokovo/core";
 
-export const WhatsAppView: React.FC<AppViewProps> = ({ 
-  world, 
-  deviceId 
+export const MyAppView: React.FC<AppViewProps> = ({
+  world,
+  deviceId,
+  platform = "ios",
+  t = 0,
 }) => {
-  const device = world.devices[deviceId];
-  const conversation = getCurrentConversation(world, deviceId);
-  
+  const tokens = getTokens(platform as Platform);
+  const appState = world.appState.app_myapp || { items: [] };
+  const device = world.devices[deviceId || Object.keys(world.devices)[0]];
+
   return (
-    <div className="whatsapp">
-      <Header contact={conversation?.name} />
-      <MessageList messages={conversation?.messages} />
-      <InputArea />
+    <div style={{
+      width: "100%",
+      height: "100%",
+      backgroundColor: "#ffffff",
+      fontFamily: tokens.fontFamily,
+      display: "flex",
+      flexDirection: "column",
+    }}>
+      {/* Header */}
+      <header style={{
+        height: 144,
+        backgroundColor: "#FF5722",
+        color: "#fff",
+        display: "flex",
+        alignItems: "center",
+        padding: "0 36px",
+        fontSize: 51,
+        fontWeight: 600,
+      }}>
+        My App
+      </header>
+
+      {/* Content */}
+      <main style={{ flex: 1, padding: 36 }}>
+        {appState.items.map((item: any, i: number) => (
+          <div key={i} style={{ marginBottom: 24 }}>{item}</div>
+        ))}
+      </main>
     </div>
   );
 };
 ```
 
-### 4. Register the Plugin
+### Step 5: Define Camera Behaviors
 
 ```typescript
-// packages/apps-whatsapp/src/index.ts
-import { PluginManager } from "@tokovo/core";
-import { WhatsAppPlugin } from "./plugin";
+// packages/apps-myapp/src/behaviors.ts
+import { AppBehavior, CameraIntent, BehaviorRegistry } from "@tokovo/core";
 
-// Auto-register on import
-PluginManager.register(WhatsAppPlugin);
+export const MyAppBehavior: AppBehavior = {
+  appId: "app_myapp",
 
-export { WhatsAppPlugin };
+  eventMappings: {
+    MY_ACTION: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    ANOTHER_ACTION: { type: "RESET", preset: "reset" },
+    // Add more mappings as needed
+  },
+
+  // Optional: override global presets for your app
+  presetOverrides: {
+    dramatic: { scale: 1.4 },  // More intense for this app
+  },
+};
+
+// Register behavior
+BehaviorRegistry.register(MyAppBehavior);
 ```
+
+### Step 6: Create Anchor Provider
+
+```typescript
+// packages/apps-myapp/src/anchor-provider.ts
+import { AnchorProvider, AnchorSnapshot, AnchorRegistry, LayoutRect } from "@tokovo/core";
+
+export const MyAppAnchorProvider: AnchorProvider = {
+  appId: "app_myapp",
+
+  getAnchors(world, layout, deviceId): AnchorSnapshot {
+    const anchors: Record<string, LayoutRect> = {};
+
+    // Extract semantic regions from your layout
+    if (layout.kind === "MY_VIEW") {
+      if (layout.mainContentRect) {
+        anchors.mainContent = layout.mainContentRect;
+      }
+      if (layout.headerRect) {
+        anchors.header = layout.headerRect;
+      }
+    }
+
+    // Always provide device fallback
+    anchors.device = { x: 0, y: 0, width: 430, height: 932 };
+
+    return { anchors, deviceId, appId: "app_myapp" };
+  }
+};
+
+// Register at module load
+AnchorRegistry.register(MyAppAnchorProvider);
+```
+
+### Step 7: Create Notification Adapter (Optional)
+
+```typescript
+// packages/apps-myapp/src/notification-adapter.ts
+import {
+  NotificationAdapter,
+  NotificationAdapterRegistry,
+  Notification,
+  FormattedNotification
+} from "@tokovo/core";
+
+const myAppAdapter: NotificationAdapter = {
+  appId: "app_myapp",
+
+  format(notification: Notification): FormattedNotification {
+    return {
+      title: notification.title,
+      body: notification.body,
+      icon: "🚀",
+      iconBackground: "#FF5722",
+      accentColor: "#FF5722",
+      preview: notification.preview,
+      actions: [
+        { id: "open", label: "Open" },
+        { id: "dismiss", label: "Dismiss" },
+      ],
+    };
+  },
+
+  handleAction(actionId: string, notification: Notification) {
+    if (actionId === "open") {
+      return [{
+        at: Date.now(),
+        kind: "DEVICE",
+        deviceId: notification.deviceId || "phone",
+        type: "OPEN_APP",
+        appId: "app_myapp",
+      }];
+    }
+    return [];
+  },
+
+  measureHeight(notification: Notification, viewport: { width: number }) {
+    return 180;  // Base height in 3x scale
+  },
+};
+
+NotificationAdapterRegistry.register(myAppAdapter);
+```
+
+### Step 8: Create Widgets (Optional)
+
+```tsx
+// packages/apps-myapp/src/widgets/DynamicIsland.tsx
+import React from "react";
+import { WidgetProps } from "@tokovo/core";
+
+export const MyAppDynamicIsland: React.FC<WidgetProps> = ({
+  appState,
+  expansionMode = "compact",
+  currentFrame,
+}) => {
+  if (expansionMode === "minimal") {
+    return (
+      <div style={{
+        width: 12,
+        height: 12,
+        borderRadius: "50%",
+        backgroundColor: "#FF5722",
+      }} />
+    );
+  }
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      padding: "8px 16px",
+      backgroundColor: "#1c1c1e",
+      borderRadius: 30,
+      color: "#fff",
+    }}>
+      🚀 My App Active
+    </div>
+  );
+};
+```
+
+Register widgets in plugin:
+
+```typescript
+// In plugin.ts
+widgets: [{
+  mode: "dynamicIsland",
+  platforms: ["ios"],
+  priority: 50,
+  component: MyAppDynamicIsland,
+  expansionModes: ["minimal", "compact", "expanded"],
+}],
+```
+
+### Step 9: Export Everything
+
+```typescript
+// packages/apps-myapp/src/index.ts
+export * from "./plugin";
+export * from "./runtime";
+export * from "./ui";
+export * from "./behaviors";
+export * from "./anchor-provider";
+export * from "./notification-adapter";
+
+// Side-effects: register everything on import
+import "./plugin";        // Registers with PluginManager
+import "./behaviors";     // Registers with BehaviorRegistry
+import "./anchor-provider"; // Registers with AnchorRegistry
+import "./notification-adapter"; // Registers with NotificationAdapterRegistry
+```
+
+### Step 10: Import in Video Runner
+
+```typescript
+// apps/video-runner/src/plugins.ts
+import "@tokovo/apps-whatsapp";
+import "@tokovo/apps-phone";
+import "@tokovo/apps-twitter";
+import "@tokovo/apps-myapp";  // ← Your new app!
+```
+
+</Steps>
+
+---
 
 ## PluginManager API
 
@@ -147,36 +419,93 @@ import { PluginManager } from "@tokovo/core";
 PluginManager.register(MyPlugin);
 
 // Get a plugin
-const plugin = PluginManager.get("app_whatsapp");
+const plugin = PluginManager.get("app_myapp");
 
 // Get view component
-const View = PluginManager.getView("app_whatsapp");
+const View = PluginManager.getView("app_myapp");
 
 // Check if registered
-if (PluginManager.has("app_instagram")) {
-  // ...
+if (PluginManager.has("app_myapp")) {
+  // Plugin is available
 }
 
 // Get all plugins
 const allPlugins = PluginManager.getAll();
 
-// Get app IDs
+// Get all app IDs
 const appIds = PluginManager.getAppIds();
+// → ["app_whatsapp", "app_phone", "app_myapp"]
 
-// Get metadata
-const meta = PluginManager.getMetadata("app_whatsapp");
-// → { name: "WhatsApp", icon: "💬", color: "#25D366" }
+// Get metadata for display
+const meta = PluginManager.getMetadata("app_myapp");
+// → { name: "My App", icon: "🚀", color: "#FF5722" }
 
-// Get sound
-const sound = PluginManager.getSound("app_whatsapp", "message_received");
-// → "whatsapp_received.mp3"
+// Get sound path
+const sound = PluginManager.getSound("app_myapp", "notification");
+// → "myapp-notification.mp3"
 ```
 
-## Plugin Helper Functions
+---
+
+## Widget System
+
+Widgets appear in platform-specific areas (Dynamic Island, status bar, lock screen).
+
+### WidgetSlot Interface
+
+```typescript
+interface WidgetSlot {
+  /** Where to render: dynamicIsland, statusBar, lockscreen, notification */
+  mode: WidgetMode;
+
+  /** Which platforms: ["ios"], ["android"], or ["ios", "android"] */
+  platforms: Platform[];
+
+  /** Priority when multiple widgets compete (higher wins) */
+  priority: number;
+
+  /** React component to render */
+  component: WidgetComponent;
+
+  /** Optional: expansion modes this widget supports */
+  expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+```
+
+### WidgetProps
+
+```typescript
+interface WidgetProps {
+  /** App-specific state from world.appState[appId] */
+  appState: any;
+
+  /** Background app state (e.g., playing track info) */
+  backgroundApp?: BackgroundAppState;
+
+  /** Device profile for dimensions */
+  deviceProfile: {
+    dynamicIsland?: DynamicIslandConfig;
+    statusBarWidget?: StatusBarWidgetConfig;
+  };
+
+  /** Current frame */
+  currentFrame: number;
+
+  /** Widget expansion mode */
+  expansionMode: "minimal" | "compact" | "expanded";
+
+  /** Platform */
+  platform: Platform;
+}
+```
+
+---
+
+## Helper Functions
 
 ### definePlugin()
 
-Create a plugin with defaults:
+Create a plugin with sensible defaults:
 
 ```typescript
 import { definePlugin } from "@tokovo/core";
@@ -192,111 +521,115 @@ const MyPlugin = definePlugin({
 
 ### registerPlugins()
 
-Register multiple at once:
+Register multiple plugins at once:
 
 ```typescript
 import { registerPlugins } from "@tokovo/core";
 
 registerPlugins([
   WhatsAppPlugin,
-  InstagramPlugin,
-  MessagesPlugin,
+  PhonePlugin,
+  TwitterPlugin,
+  MyAppPlugin,
 ]);
 ```
 
-## Event Reducer Registry
+---
 
-Plugins auto-register with the engine:
+## Real-World Example: WhatsApp Plugin
 
+<Tabs items={['plugin.ts', 'runtime.ts', 'behaviors.ts']}>
+  <Tab>
 ```typescript
-// Happens automatically in PluginManager.register()
-if (plugin.reducer) {
-  ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-}
+// packages/apps-whatsapp/src/plugin.ts
+export const WhatsAppPlugin = definePlugin({
+  id: APP_IDS.WHATSAPP,
+  name: "WhatsApp",
+  version: "1.0.0",
+
+  icon: "whatsapp-icon.png",
+  primaryColor: "#25D366",
+
+  appView: WhatsappChatView,
+  reducer: whatsappReducer,
+
+  eventTypes: [
+    "MESSAGE_RECEIVED",
+    "MESSAGE_SENT",
+    "TYPING_START",
+    "TYPING_END",
+    "MESSAGE_READ",
+    "VOICE_MESSAGE_RECEIVED",
+  ],
+
+  sounds: {
+    "message_in": "whatsapp-received.mp3",
+    "message_out": "whatsapp-sent.mp3",
+  },
+
+  notificationSound: "whatsapp-notification.mp3",
+});
 ```
-
-The engine then routes events:
-
+  </Tab>
+  <Tab>
 ```typescript
-// In engine.ts
-function replay(world, events) {
-  for (const event of events) {
-    if (event.kind === "APP") {
-      const reducer = ReducerRegistry.get(event.appId);
-      world = reducer(world, event);
-    }
+// packages/apps-whatsapp/src/runtime.ts
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+  if (event.kind !== "APP") return;
+  if ((event as any).appId !== "app_whatsapp") return;
+
+  switch (event.type) {
+    case "MESSAGE_RECEIVED":
+      addMessageToConversation(draft, event);
+      break;
+    case "TYPING_START":
+      setTypingIndicator(draft, event, true);
+      break;
+    case "TYPING_END":
+      setTypingIndicator(draft, event, false);
+      break;
+    // ... more cases
   }
-  return world;
 }
 ```
-
-## App View Registry
-
-Views are also auto-registered:
-
+  </Tab>
+  <Tab>
 ```typescript
-// In renderer
-function renderApp(appId, props) {
-  const View = PluginManager.getView(appId);
-  if (!View) return <UnknownApp />;
-  return <View {...props} />;
-}
-```
-
-## Sound Integration
-
-Plugins define sound mappings:
-
-```typescript
-sounds: {
-  "message_received": "whatsapp_received.mp3",
-  "typing": "whatsapp_typing.mp3",
-}
-```
-
-The audio layer uses these:
-
-```typescript
-// In AudioLayer
-const soundFile = PluginManager.getSound(appId, soundKey);
-playSound(soundFile);
-```
-
-## Adding a New App
-
-Complete checklist:
-
-1. **Create package** — `packages/apps-newapp/`
-2. **Define plugin** — `plugin.ts` with TokovoPlugin
-3. **Create reducer** — Handle your event types
-4. **Create view** — React component
-5. **Add sounds** — Optional sound mappings
-6. **Export** — Re-export from index.ts
-7. **Import** — Import in video-runner to register
-
-```typescript
-// apps/video-runner/src/plugins.ts
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-instagram";
-import "@tokovo/apps-newapp";  // Auto-registers!
-```
-
-## TypeScript Support
-
-Full type inference:
-
-```typescript
-// Event is typed
-interface MyAppEvent extends TimelineEvent {
-  kind: "APP";
-  type: "MY_CUSTOM_EVENT";
-  payload: MyPayload;
-}
-
-// Reducer is typed
-const reducer: AppReducer = (world, event) => {
-  // event.type is string union
-  // world is WorldState
-  return world;
+// packages/apps-whatsapp/src/behaviors.ts
+export const WhatsAppBehavior: AppBehavior = {
+  appId: "app_whatsapp",
+  eventMappings: {
+    MESSAGE_RECEIVED: { type: "FOCUS", anchor: "lastMessage", preset: "dramatic" },
+    MESSAGE_SENT: { type: "FOCUS", anchor: "lastMessage", preset: "message" },
+    TYPING_START: { type: "FOCUS", anchor: "inputArea", preset: "subtle" },
+    TYPING_END: { type: "RESET", preset: "reset" },
+    REACTION_ADDED: { type: "FOCUS", anchor: "reactionBubble", preset: "snap" },
+  },
+  presetOverrides: {
+    dramatic: { scale: 1.25 },
+  },
 };
 ```
+  </Tab>
+</Tabs>
+
+---
+
+## Debugging Plugins
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| App not rendering | Plugin not registered | Import in video-runner plugins.ts |
+| Events not handled | Reducer not working | Check event.kind, event.appId |
+| Camera not following | Behavior not registered | Call `BehaviorRegistry.register()` |
+| Anchors not resolving | Provider not registered | Call `AnchorRegistry.register()` |
+| Widgets not showing | Wrong platform/priority | Check `platforms` array and `priority` |
+
+---
+
+## Related
+
+- [Camera System](/architecture/camera) - Semantic anchors and behaviors
+- [Renderer Engines](/architecture/renderer-engines) - How plugins render
+- [Widgets](/architecture/widgets) - Dynamic Island, status bar widgets
+- [DSL Events](/dsl/events) - Creating events for your app

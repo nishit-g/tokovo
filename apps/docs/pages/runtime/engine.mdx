@@ -1,29 +1,41 @@
 # Engine
 
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+**Pure reducer.** The engine processes events into world state. Same events + same initial state = same world, every time. This is what makes scrubbing work.
+</Callout>
+
 The Engine is a **pure reducer** that processes events into world state.
 
-## Core Concept
+---
+
+## How It Works
+
+```mermaid
+graph LR
+    E[Events] --> R[replay]
+    I[Initial World] --> R
+    F[Frame Number] --> R
+    R --> W[WorldState at Frame]
+    
+    R -.-> R1["For each event where at <= frame<br/>apply reducer"]
+```
+
+---
+
+## Core Function: replay()
 
 ```typescript
-function advanceWorld(
-  world: WorldState,
-  events: RuntimeEvent[],
-  toFrame: number
-): WorldState {
-  let current = world;
-  
-  for (const event of events) {
-    if (event.at <= toFrame && event.at > world._eventCursor) {
-      current = reduceEvent(current, event);
-    }
-  }
-  
-  return {
-    ...current,
-    _eventCursor: toFrame,
-  };
-}
+import { replay } from "@tokovo/core";
+
+// Compute world state at any frame
+const world = replay(initialWorld, events, frame);
+
+// The engine applies all events where event.at <= frame
 ```
+
+---
 
 ## WorldState
 

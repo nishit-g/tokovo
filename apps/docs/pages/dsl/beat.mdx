@@ -1,6 +1,14 @@
 # Beat Builder
 
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+**Beats are semantic units.** Each beat groups related actions (messages, typing, reactions) with optional mood/intensity metadata for AI-readable stories.
+</Callout>
+
 The Beat Builder provides fluent methods for defining actions within a beat.
+
+---
 
 ## Core Actions
 
@@ -9,9 +17,9 @@ The Beat Builder provides fluent methods for defining actions within a beat.
 Pause for a duration. Advances the cursor but emits no runtime event.
 
 ```typescript
-b.wait("2s");     // 2 seconds
-b.wait("500ms");  // 500 milliseconds
-b.wait("30frames"); // 30 frames
+b.wait("2s");       // 2 seconds
+b.wait("500ms");    // 500 milliseconds
+b.wait("30frames"); // 30 frames at current FPS
 ```
 
 ### typing(actor).for(duration)

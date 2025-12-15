@@ -3,7 +3,13 @@ title: DSL Reference
 description: Complete reference for the Tokovo DSL
 ---
 
+import { Callout } from 'nextra/components'
+
 # DSL Reference
+
+<Callout type="info">
+**Complete API reference.** Every method on EpisodeBuilder, DeviceBuilder, BeatBuilder, and CameraBuilder documented here.
+</Callout>
 
 The Tokovo DSL (Domain Specific Language) is a fluent TypeScript API for authoring episodes.
 
@@ -58,6 +64,8 @@ Actions within a beat:
 b.send("Hello");                      // Send text
 b.receive("Bob", "Hi there!");        // Receive text
 b.typing("Bob").for("2s");            // Typing indicator
+b.typingStart("Bob");                 // Start typing (manual end)
+b.typingEnd("Bob");                   // End typing
 ```
 
 ### Media Messages
@@ -76,12 +84,29 @@ b.sendVoice(10);                      // 10 second voice note
 b.receiveVoice("Bob", 8);
 ```
 
-### Navigation (Phase 12)
+### Message Interactions
+
+```typescript
+const msg = b.receive("Bob", "Hello");
+b.read(msg);                          // Mark as read
+b.readLast();                         // Mark last message as read
+b.delete(msg);                        // Delete message
+b.deleteLast();                       // Delete last message
+b.react(msg, "me", "❤️");             // Add reaction
+```
+
+### Navigation
 
 ```typescript
 b.showScreen("chats-list");           // Navigate to screen
 b.openChat("dm_alice");               // Open specific chat
 b.goBack();                           // Go back
+b.navigate("app_twitter");            // Switch to different app
+b.notification("app_whatsapp", {      // Show notification
+    title: "New Message",
+    body: "Hey!",
+    mode: "headsup"
+});
 ```
 
 ### Control
@@ -94,14 +119,55 @@ b.concurrent([                         // Parallel actions
 ]);
 ```
 
-### Reactions & Drama Events
+### POV (Point of View)
 
 ```typescript
-const msg = b.receive("Bob", "I love you");
-b.react(msg, "me", "❤️");             // Add reaction to message
+b.pov("BobPhone");                    // Switch to device
+b.pov("BobPhone", "crossfade");       // With transition
+b.splitPov(["AlicePhone", "BobPhone"], "horizontal");
+```
 
+### Drama Events
+
+```typescript
 b.screenshot();                        // Screenshot notification
-b.missedCall("Bob");                   // Missed call indicator
+b.missedCall("Bob");                   // Missed call
+b.missedCall("Bob", "video");         // Missed video call
+```
+
+### Twitter/X Methods
+
+```typescript
+// Post a tweet
+b.postTweet("Hello world!", {
+    author: { name: "You", handle: "you", verified: "blue" }
+});
+
+// Receive a tweet
+const tweet = b.tweetReceived(
+    { name: "Elon", handle: "elonmusk", verified: "blue" },
+    "The future is here 🚀",
+    { likeCount: 89000, retweetCount: 12800 }
+);
+
+// Engagement
+b.likeTweet(tweet);
+b.retweetTweet(tweet);
+b.quoteTweet(tweet, "This is huge!");
+b.replyTweet(tweet, "Agreed!");
+b.bookmarkTweet(tweet);
+```
+
+### Keyboard Simulation
+
+```typescript
+b.showKeyboard();                     // Show keyboard
+b.showKeyboard("emoji");              // Emoji keyboard
+b.hideKeyboard();                     // Hide keyboard
+b.simulateTyping("Hello!", {          // Realistic typing
+    speed: "casual",                  // slow|casual|fast|angry
+    typos: 2                          // Optional typos
+});
 ```
 
 ---

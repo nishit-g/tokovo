@@ -3,29 +3,50 @@ title: Twitter/X
 description: Twitter/X iOS dark mode configuration and usage
 ---
 
+import { Callout } from 'nextra/components'
+
 # Twitter/X
 
-Production-ready Twitter/X iOS dark mode UI with timeline, tweets, and engagement actions.
+<Callout type="info">
+**Full X experience.** Complete Twitter/X iOS dark mode UI with timeline, tweets, engagement, profiles, and all screens.
+</Callout>
+
+## Package
+
+```bash
+@tokovo/apps-twitter
+```
+
+```typescript
+// Import to auto-register
+import "@tokovo/apps-twitter";
+```
+
+---
 
 ## Features
 
-- ✅ Timeline feed with tweets
-- ✅ Tweet text with @mentions and #hashtags
-- ✅ Media grids (1-4 images)
-- ✅ Verified badges (blue, gold, grey)
-- ✅ Like, retweet, reply, quote actions
-- ✅ View counts and engagement metrics
-- ✅ Quote tweets (embedded)
-- ✅ Reply context
-- ✅ Header with For You / Following tabs
-- ✅ Bottom navigation (Home, Search, Grok, Notifications, Messages)
-- ✅ Compose FAB button
-- ✅ Tweet detail screen
-- ✅ Profile screen
-- ✅ Notifications screen
-- ✅ Search/Explore screen
-- ✅ Poll component
-- ✅ Compose modal
+| Feature | Status | Notes |
+|---------|--------|-------|
+| Timeline feed | ✅ | Tweet list with scroll |
+| Tweet text | ✅ | @mentions, #hashtags |
+| Media grids | ✅ | 1-4 images |
+| Verified badges | ✅ | Blue, gold, grey |
+| Engagement | ✅ | Like, RT, reply, quote |
+| View counts | ✅ | Engagement metrics |
+| Quote tweets | ✅ | Embedded quotes |
+| Reply context | ✅ | Threaded replies |
+| Header tabs | ✅ | For You / Following |
+| Bottom nav | ✅ | Home, Search, Grok, Notifs, DMs |
+| Compose FAB | ✅ | Tweet button |
+| Tweet detail | ✅ | Thread view |
+| Profile screen | ✅ | Full profile |
+| Notifications | ✅ | Activity feed |
+| Search/Explore | ✅ | Trending topics |
+| Polls | ✅ | Voting UI |
+| Compose modal | ✅ | Tweet composition |
+
+---
 
 ## DSL Usage
 

@@ -1,6 +1,14 @@
 # Architecture Overview
 
+import { Callout, Cards, Card } from 'nextra/components'
+
+<Callout type="info">
+**Mental Model**: Stories flow down through layers. Pixels flow up through engines.
+</Callout>
+
 Tokovo is built on a **strict layered architecture** that enforces separation of concerns.
+
+---
 
 ## The Four Layers
 
@@ -26,8 +34,58 @@ Tokovo is built on a **strict layered architecture** that enforces separation of
 └───────────────────────────┘
 ```
 
-> **New**: The runtime uses a [3-engine split](/architecture/renderer-engines) for layout, camera, and audio computation.
+---
 
+## The 3-Engine System
+
+<Callout type="warning">
+**The renderer doesn't compute.** All logic lives in three engines that produce blueprints.
+</Callout>
+
+```
+WorldState + Frame
+        │
+        ▼
+┌───────────────────────────────────────────┐
+│            TokovoRenderer (Orchestrator)   │
+├───────────────────────────────────────────┤
+│                                           │
+│   useLayoutEngine()                       │
+│        │ → ViewKind, LayoutState,         │
+│        │   DeviceProfile, Platform        │
+│        ▼                                  │
+│   useCameraEngine()                       │
+│        │ → CameraTransform, CSS Styles    │
+│        │   (uses layout for anchors)      │
+│        ▼                                  │
+│   useAudioEngine()                        │
+│        │ → BusStates, ActiveSounds,       │
+│        │   MusicBed, Ducking              │
+│                                           │
+├───────────────────────────────────────────┤
+│   JSX Output → DeviceFrame, AppView,      │
+│                Overlays, Notifications    │
+└───────────────────────────────────────────┘
+```
+
+### Engine Responsibilities
+
+| Engine | Input | Output | Responsibility |
+|--------|-------|--------|---------------|
+| **Layout** | `world`, `t`, `focusDeviceId` | `LayoutState`, `ViewKind` | What to show, where |
+| **Camera** | `world`, `t`, `layoutOutput` | `CameraTransform`, CSS | Zoom, pan, shake |
+| **Audio** | `world`, `t`, `focusDeviceId` | `BusStates`, sounds | Volume, ducking |
+
+### Why This Split?
+
+| Symptom Before | Solution Now |
+|----------------|--------------|
+| 350+ line god component | Each engine isolated |
+| Break everything on change | Changes don't cascade |
+| "Which layer is buggy?" | Clear ownership |
+| Can't test camera alone | Each engine unit-testable |
+
+---
 
 ## Key Invariants
 
@@ -64,20 +122,77 @@ function timeLowering(sceneOps: SceneOp[]): TimelineOp[] { ... }
 
 No side effects. No state. Same input → same output.
 
+### 4. Engines Don't Mutate
+
+Engines receive `WorldState` and return new objects. They never mutate input.
+
+```typescript
+// Engine pattern
+function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
+  // Pure computation
+  return { ... };
+}
+```
+
+---
+
 ## Package Dependencies
 
 ```
 @tokovo/ir        ← Pure types (no deps)
       ↑
-@tokovo/dsl       ← Depends on IR
+@tokovo/dsl       ← Depends only on IR
       ↑
-@tokovo/compiler  ← Depends on IR
-      ↑
-@tokovo/adapters  ← Depends on IR
+@tokovo/compiler  ← Depends only on IR
       
 @tokovo/core      ← Runtime (isolated)
-@tokovo/renderer  ← Visual (isolated)
+      ↑
+@tokovo/renderer  ← Depends on core
+      ↑
+@tokovo/apps-*    ← Depends on core + renderer
+      ↑
+@tokovo/devices   ← Depends on core
 ```
+
+---
+
+## Data Flow
+
+```
+User writes DSL
+       │
+       ▼
+episode() → SceneIR
+       │
+       ▼
+compile() → TimelineIR → Events[]
+       │
+       ▼
+replay(events, t) → WorldState
+       │
+       ▼
+TokovoRenderer(world, t) → JSX → Remotion → Video
+```
+
+---
+
+## Plugin System
+
+Apps are self-contained plugins:
+
+```
+@tokovo/apps-whatsapp
+├── plugin.ts        ← Registers with PluginManager
+├── runtime.ts       ← Reducer (mutates WorldState)
+├── ui.tsx           ← React view component
+├── behaviors.ts     ← Camera intent mappings
+├── anchor-provider.ts ← Semantic anchor extraction
+└── notification-adapter.ts
+```
+
+See [Plugin System](/architecture/plugins) for details.
+
+---
 
 ## Why This Matters
 
@@ -88,3 +203,24 @@ No side effects. No state. Same input → same output.
 | **Testing** | Golden tests on deterministic output |
 | **FPS changes** | Scene IR unchanged |
 | **Platform ports** | Same IR, different adapters |
+| **Extensibility** | Add apps without modifying core |
+
+---
+
+## Explore Architecture
+
+<Cards>
+  <Card title="Renderer Engines" href="/architecture/renderer-engines">
+    The 3-engine split in detail
+  </Card>
+  <Card title="Camera System" href="/architecture/camera">
+    Semantic anchors and shot presets
+  </Card>
+  <Card title="Plugin System" href="/architecture/plugins">
+    Building apps as plugins
+  </Card>
+  <Card title="Data Flow" href="/architecture/data-flow">
+    How data moves through the system
+  </Card>
+</Cards>
+

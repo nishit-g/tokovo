@@ -1,6 +1,14 @@
 # Runtime Events
 
+import { Callout } from 'nextra/components'
+
+<Callout type="info">
+**Events are commands.** Each event tells the runtime what happens at a specific frame. The engine processes them to build world state.
+</Callout>
+
 Events are the **execution contract** between the compiler and runtime.
+
+---
 
 ## Event Structure
 
@@ -20,11 +28,12 @@ interface TimelineEvent {
 |------|-------------|----------|
 | `DEVICE` | Device state changes | UNLOCK, LOCK, OPEN_APP, SHOW_NOTIFICATION |
 | `APP` | App-specific actions | MESSAGE_RECEIVED, TYPING_START, MESSAGE_STATUS |
-| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE, FOCUS, RESET |
+| `CAMERA` | Camera commands | ZOOM, PAN, SHAKE, FOCUS, RESET, ANCHOR_FOCUS |
 | `AUDIO` | Audio events | PLAY_SOUND, STOP_SOUND, FADE_VOLUME |
 | `KEYBOARD` | Virtual keyboard | SHOW, HIDE, TYPE_CHAR, BACKSPACE, CLEAR |
 | `OS` | Device OS state | SET_TIME, SET_BATTERY, SET_NETWORK, SET_DND |
 | `TOUCH` | Touch gestures | TAP, LONG_PRESS, DRAG, SCROLL |
+| `CALL` | Phone calls | INCOMING, ANSWER, DECLINE, END, TOGGLE_MUTE |
 
 ## Device Events
 
@@ -406,6 +415,53 @@ Device OS events control status bar and system state.
   deviceId: "phone",
   enabled: true
 }
+```
+
+## Call Events
+
+Phone call simulation for incoming calls, FaceTime, etc.
+
+### INCOMING
+
+```typescript
+{
+  at: 100,
+  kind: "CALL",
+  type: "INCOMING",
+  deviceId: "phone",
+  callerId: "bob",
+  callerName: "Bob Smith",
+  callerAvatar: "/avatars/bob.png",
+  isVideo: false,
+  callType: "voice",
+  displayMode: "fullscreen"
+}
+```
+
+### ANSWER
+
+```typescript
+{
+  at: 150,
+  kind: "CALL",
+  type: "ANSWER",
+  deviceId: "phone"
+}
+```
+
+### DECLINE / END
+
+```typescript
+{ at: 200, kind: "CALL", type: "DECLINE", deviceId: "phone" }
+{ at: 300, kind: "CALL", type: "END", deviceId: "phone" }
+```
+
+### TOGGLE_MUTE / TOGGLE_SPEAKER / TOGGLE_HOLD
+
+```typescript
+{ at: 180, kind: "CALL", type: "TOGGLE_MUTE", deviceId: "phone" }
+{ at: 200, kind: "CALL", type: "TOGGLE_SPEAKER", deviceId: "phone" }
+{ at: 220, kind: "CALL", type: "TOGGLE_HOLD", deviceId: "phone" }
 ```
 
 ## Touch Events

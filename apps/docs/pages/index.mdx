@@ -1,62 +1,211 @@
 # Tokovo
 
-**A Programmable Narrative Operating System**
+import { Callout, Cards, Card, Steps, Tabs, Tab } from 'nextra/components'
 
-Tokovo is a deterministic video engine that transforms stories into viral phone videos. 
-It separates **what happens** (your story) from **how it looks** (the runtime).
+<div className="hero-section" style={{textAlign: 'center', padding: '2rem 0 3rem'}}>
+  <h1 style={{fontSize: '3rem', fontWeight: 800, margin: 0, background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'}}>
+    The Story Compiler
+  </h1>
+  <p style={{fontSize: '1.25rem', color: '#666', maxWidth: '600px', margin: '1rem auto', lineHeight: 1.6}}>
+    Transform conversation scripts into pixel-perfect viral phone videos.<br/>
+    <strong>Deterministic. Cinematic. Frame-accurate.</strong>
+  </p>
+</div>
 
-## What Makes Tokovo Different
+<Callout type="info">
+**What is Tokovo?** A programmable narrative engine that compiles stories (DSL) into deterministic video frames. Same script = same video, every time.
+</Callout>
+
+---
+
+## How It Works
 
 ```
-Writers write INTENT → Compiler produces STRUCTURE → Runtime executes EVENTS → Director adds CINEMA
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   WRITE DSL     │ ──► │    COMPILE      │ ──► │     RENDER      │ ──► │      VIDEO      │
+│  (Your Story)   │     │  (Scene→Frame)  │     │ (3-Engine Loop) │     │   (MP4/WebM)    │
+└─────────────────┘     └─────────────────┘     └─────────────────┘     └─────────────────┘
+       │                       │                       │
+       ▼                       ▼                       ▼
+   Author DSL              Compiler              Layout Engine
+   or Events             Passes (5)            Camera Engine
+                                                Audio Engine
 ```
 
-### Four Layers, Zero Coupling
+<Cards>
+  <Card title="1. Write" href="/dsl">
+    Author stories using semantic DSL or frame-precise event factories
+  </Card>
+  <Card title="2. Compile" href="/compiler">
+    Scene IR → Timeline IR through deterministic passes
+  </Card>
+  <Card title="3. Render" href="/architecture/renderer-engines">
+    3-engine pipeline produces world state → CSS → pixels
+  </Card>
+</Cards>
 
-| Layer | What It Does | Example |
-|-------|--------------|---------|
-| **DSL** | Human-friendly story writing | `b.receive("Bob", "We need to talk.")` |
-| **Scene IR** | Semantic truth (no frames) | `{ kind: "ReceiveMessage", actor: "Bob", ... }` |
-| **Timeline IR** | Frame-based execution | `{ at: 45, kind: "MessageReceived", ... }` |
-| **Runtime** | Renders pixels | DirectorLite camera + Renderer |
+---
 
 ## Quick Start
 
-```typescript
-import { episode } from "@tokovo/dsl";
+<Steps>
 
-const scene = episode("breakup-01", ep => {
-  ep.config({ pacing: "slow-burn", director: "auto" });
+### Install
 
-  ep.device("AlicePhone", "iphone16", d => {
-    d.app("app_whatsapp");
-    d.conversation("dm_bob", { name: "Bob" });
-
-    d.beat("tension", b => {
-      b.typing("Bob").for("2s");
-      b.receive("Bob", "We need to talk.", {
-        mood: "tense",
-        intensity: 0.7
-      });
-    });
-  });
-});
+```bash
+git clone https://github.com/your-org/tokovo.git && cd tokovo
+pnpm install && pnpm build
 ```
 
-## Why This Matters
+### Run
 
-1. **AI-Friendly** — Structured output, not magic prompts
-2. **Deterministic** — Same script → same video, every time
-3. **Scalable** — Batch-generate thousands of episodes
-4. **Debuggable** — Trace every frame to its source
+```bash
+pnpm --filter video-runner dev
+# Open http://localhost:3000
+```
 
-## Explore
+### Create
 
-import { Cards, Card } from 'nextra/components'
+```typescript
+import { dsl } from "@tokovo/dsl";
+
+const events = [
+  dsl.messages.receive(0, "conv_1", "Alice", "Hey!"),
+  dsl.camera.anchorFocus(0, "lastMessage", "message"),
+  dsl.messages.send(60, "conv_1", "Hi Alice!"),
+  dsl.camera.anchorFocus(60, "lastMessage", "snap"),
+];
+```
+
+</Steps>
+
+<div style={{textAlign: 'center', margin: '2rem 0'}}>
+  <a href="/guides/quickstart" style={{display: 'inline-block', padding: '0.75rem 2rem', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', color: 'white', borderRadius: '8px', textDecoration: 'none', fontWeight: 600}}>
+    Get Started →
+  </a>
+</div>
+
+---
+
+## Why Tokovo?
+
+| Feature | Traditional | Tokovo |
+|---------|-------------|--------|
+| **Determinism** | Different renders each time | Same script = same video |
+| **AI Generation** | Magic prompts, random output | Structured IR, predictable |
+| **Scalability** | Manual editing per video | Batch-generate thousands |
+| **Debugging** | "Something looks wrong" | Trace any frame to source |
+| **Camera** | Manual keyframes | Semantic anchors ("lastMessage") |
+| **Audio** | Manual sync | Bus-based mixer with ducking |
+
+---
+
+## The Four Layers
+
+| Layer | Package | What It Does |
+|-------|---------|-------------|
+| **DSL** | `@tokovo/dsl` | Human-friendly story writing |
+| **Scene IR** | `@tokovo/ir` | Semantic truth (no frames) |
+| **Timeline IR** | `@tokovo/compiler` | Frame-based execution |
+| **Runtime** | `@tokovo/core` + `@tokovo/renderer` | Renders pixels |
+
+---
+
+## Core Concepts
+
+<Tabs items={['Episode', 'Event', 'WorldState', 'Camera']}>
+  <Tab>
+    **Episode**: A complete story containing devices, conversations, and beats.
+    
+    ```typescript
+    const scene = episode("breakup-01", ep => {
+      ep.device("AlicePhone", "iphone16", d => {
+        d.conversation("dm_bob", { name: "Bob" });
+        d.beat("tension", b => {
+          b.receive("Bob", "We need to talk.");
+        });
+      });
+    });
+    ```
+  </Tab>
+  <Tab>
+    **Event**: A frame-based instruction that mutates WorldState.
+    
+    ```typescript
+    {
+      at: 60,               // Frame number
+      kind: "APP",          // Event category
+      appId: "app_whatsapp",
+      type: "MESSAGE_RECEIVED",
+      text: "Hello!",
+    }
+    ```
+  </Tab>
+  <Tab>
+    **WorldState**: The complete application state at any frame.
+    
+    ```typescript
+    {
+      devices: { phone: { isLocked: false, ... } },
+      conversations: { dm_1: { messages: [...] } },
+      appState: { app_whatsapp: { screen: "chat" } },
+      camera: { transform: { scale: 1.08, ... } },
+      audio: { activeSounds: { ... } },
+    }
+    ```
+  </Tab>
+  <Tab>
+    **Camera**: Semantic anchors + shot presets for cinematic effects.
+    
+    ```typescript
+    // Focus on the last message with dramatic zoom
+    dsl.camera.anchorFocus(60, "lastMessage", "dramatic", 5);
+    
+    // Smooth tracking follow (webseries style)
+    dsl.camera.anchorTrack(100, "inputArea", 40, 0.18);
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Available Apps
+
+| App | Package | Features |
+|-----|---------|----------|
+| 💬 **WhatsApp** | `@tokovo/apps-whatsapp` | Messages, typing, reactions, voice notes |
+| 📞 **Phone** | `@tokovo/apps-phone` | Incoming/outgoing calls, Dynamic Island |
+| 🐦 **Twitter** | `@tokovo/apps-twitter` | Tweets, likes, retweets, DMs |
+| 📷 **Instagram** | `@tokovo/apps-instagram` | Stories, DMs, posts (in progress) |
+
+---
+
+## Explore Documentation
 
 <Cards>
-  <Card title="Architecture" href="/architecture" />
-  <Card title="DSL Reference" href="/dsl" />
-  <Card title="Compiler" href="/compiler" />
-  <Card title="DirectorLite" href="/director" />
+  <Card title="📖 Guides" href="/guides/quickstart">
+    Step-by-step tutorials for common tasks
+  </Card>
+  <Card title="🏗️ Architecture" href="/architecture">
+    Understand the 3-engine system and data flow
+  </Card>
+  <Card title="📝 DSL Reference" href="/dsl">
+    Complete API for Author DSL and Event Factories
+  </Card>
+  <Card title="🔌 Plugins" href="/architecture/plugins">
+    Build your own apps with the plugin system
+  </Card>
+  <Card title="🎬 Camera System" href="/architecture/camera">
+    Semantic anchors and cinematic presets
+  </Card>
+  <Card title="🤖 AI Integration" href="/guides/ai-contract">
+    Generate stories with LLMs
+  </Card>
 </Cards>
+
+---
+
+## For LLMs
+
+If you're an AI consuming this documentation, see the [LLM Reference](/llms) for a structured overview of all packages, types, and APIs.
+
