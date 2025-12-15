@@ -529,6 +529,92 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
 
     // Event handlers by kind (Strategy Pattern)
     const handleEvent = (draft: WorldState, event: TimelineEvent, index: number): void => {
+        // === V2 NATIVE HANDLERS (@tokovo/ir) ===
+        if (event.kind === "MessageReceived") {
+            const e = event as import("@tokovo/ir").MessageReceivedOp;
+            const reducer = ReducerRegistry.getAppReducer(e.appId);
+
+            // Construct V1-compatible event for reducer consumption
+            // NOTE: We do not change the event kind/type here to avoid type conflicts
+            // Instead, we manually invoke the app logic or synthesize a legacy event structure
+            const legacyEvent: any = {
+                at: e.at,
+                kind: "APP",
+                type: "MESSAGE_RECEIVED",
+                appId: e.appId,
+                conversationId: e.conversationId,
+                from: e.message.from,
+                text: e.message.text,
+                message: e.message
+            };
+            reducer?.(draft, legacyEvent);
+            return;
+        }
+
+        if (event.kind === "MessageSent") {
+            const e = event as import("@tokovo/ir").MessageSentOp;
+            const reducer = ReducerRegistry.getAppReducer(e.appId);
+            const legacyEvent: any = {
+                at: e.at,
+                kind: "APP",
+                type: "MESSAGE_RECEIVED", // Sent messages are treated as received from 'me' in current engine
+                appId: e.appId,
+                conversationId: e.conversationId,
+                from: "me",
+                text: e.message.text,
+                message: { ...e.message, from: "me" }
+            };
+            reducer?.(draft, legacyEvent);
+            return;
+        }
+
+        if (event.kind === "TypingStarted") {
+            const e = event as import("@tokovo/ir").TypingStartedOp;
+            const reducer = ReducerRegistry.getAppReducer(e.appId);
+            const legacyEvent: any = {
+                at: e.at,
+                kind: "APP",
+                type: "TYPING_START",
+                appId: e.appId,
+                conversationId: e.conversationId,
+                from: e.actor
+            };
+            reducer?.(draft, legacyEvent);
+            return;
+        }
+
+        if (event.kind === "TypingEnded") {
+            const e = event as import("@tokovo/ir").TypingEndedOp;
+            const reducer = ReducerRegistry.getAppReducer(e.appId);
+            const legacyEvent: any = {
+                at: e.at,
+                kind: "APP",
+                type: "TYPING_END",
+                appId: e.appId,
+                conversationId: e.conversationId,
+                from: e.actor
+            };
+            reducer?.(draft, legacyEvent);
+            return;
+        }
+
+        // Handle V2 Camera Ops (e.g., CameraZoom, CameraPan)
+        if (typeof event.kind === "string" && event.kind.startsWith("Camera")) {
+            const type = event.kind.replace("Camera", "").toUpperCase();
+            const legacyEvent: any = {
+                ...event,
+                kind: "CAMERA",
+                type: type === "SHAKE" ? "SHAKE" : type,
+                scale: (event as any).scale,
+                originX: (event as any).originX,
+                originY: (event as any).originY,
+                translateX: (event as any).translateX || ((event as any).originX ? ((event as any).originX - 0.5) * 1000 : 0)
+            };
+            processCameraEvent(draft, legacyEvent, index);
+            return;
+        }
+
+        // === V1 LEGACY HANDLERS ===
         switch (event.kind) {
             case "DEVICE":
                 if (ReducerRegistry.deviceReducer) {

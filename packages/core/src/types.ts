@@ -2,6 +2,8 @@ export type DeviceId = string;
 export type AppId = string;
 export type ConversationId = string;
 
+import { TimelineOp } from "@tokovo/ir";
+
 // =============================================================================
 // NOTIFICATION IR (Intermediate Representation)
 // =============================================================================
@@ -1090,7 +1092,11 @@ export type TimelineEvent =
     | { at: number; kind: "CALL"; type: "END"; deviceId?: string }
     | { at: number; kind: "CALL"; type: "TOGGLE_MUTE"; deviceId?: string }
     | { at: number; kind: "CALL"; type: "TOGGLE_SPEAKER"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "TOGGLE_HOLD"; deviceId?: string };
+    | { at: number; kind: "CALL"; type: "TOGGLE_HOLD"; deviceId?: string }
+
+    // NATIVE V2 OPS (from @tokovo/ir)
+    // This makes the engine polyglot, supporting both V1 and V2 events natively
+    | TimelineOp;
 
 // --- Layout System Types ---
 

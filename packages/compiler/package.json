@@ -12,7 +12,8 @@
         "dev": "tsc --watch"
     },
     "dependencies": {
-        "@tokovo/ir": "workspace:*"
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/core": "workspace:*"
     },
     "devDependencies": {
         "typescript": "^5.0.0"

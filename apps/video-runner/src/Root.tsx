@@ -25,6 +25,7 @@ import { UltimateShowcase } from "./UltimateShowcase";
 import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
 import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
 import { ManualCameraShowcase } from "./ManualCameraShowcase";
+import { BakchodiGangVideo } from "./BakchodiGangVideo";
 
 
 export const RemotionRoot: React.FC = () => {
@@ -226,6 +227,14 @@ export const RemotionRoot: React.FC = () => {
                 id="KeyboardTypingShowcase"
                 component={KeyboardTypingShowcase}
                 durationInFrames={600}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="BakchodiGang"
+                component={BakchodiGangVideo}
+                durationInFrames={1500}
                 fps={30}
                 width={1080}
                 height={1920}

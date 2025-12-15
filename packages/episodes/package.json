@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@tokovo/core": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
         "zod": "^3.0.0"
     },
     "devDependencies": {

@@ -10,6 +10,7 @@ import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
 
 // DSL-based episodes
 export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+export { bakchodiGangEpisode } from "./episodes/bakchodi-gang";
 
 export * from "./schema";
 export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };

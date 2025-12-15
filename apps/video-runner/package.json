@@ -11,6 +11,7 @@
     },
     "dependencies": {
         "@remotion/cli": "4.0.380",
+        "@tokovo/compiler": "workspace:*",
         "@tokovo/apps-phone": "workspace:*",
         "@tokovo/apps-spotify": "workspace:*",
         "@tokovo/apps-whatsapp": "workspace:*",
@@ -20,6 +21,7 @@
         "@tokovo/devices": "workspace:*",
         "@tokovo/dsl": "workspace:*",
         "@tokovo/episodes": "workspace:*",
+        "@tokovo/ir": "workspace:*",
         "@tokovo/renderer": "workspace:*",
         "react": "18.2.0",
         "react-dom": "18.2.0",
