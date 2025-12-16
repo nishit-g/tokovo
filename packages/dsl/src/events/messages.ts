@@ -5,6 +5,8 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 /** Message status for tick progression */
 export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
@@ -19,13 +21,14 @@ export const messages = {
     send: (at: number, conversationId: string, text: string, appId = "app_whatsapp") => ({
         at,
         kind: "MessageSent", // V2 IR
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         message: {
             id: `msg_${Math.random().toString(36).substr(2, 9)}`,
             from: "me",
             text,
-            timestamp: Date.now(),
+            timestamp: Date.now().toString(),
             status: "sent"
         }
     } as const),
@@ -37,14 +40,14 @@ export const messages = {
         at,
         kind: "MessageReceived", // V2 IR
         deviceId: "primary",
-        trace: "dsl",
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         message: {
             id: `msg_${Math.random().toString(36).substr(2, 9)}`,
             from,
             text,
-            timestamp: Date.now(),
+            timestamp: Date.now().toString(),
             status: "delivered"
         }
     } as const),
@@ -55,6 +58,7 @@ export const messages = {
     typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp") => ({
         at,
         kind: "TypingStarted",
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         actor: from
@@ -66,6 +70,7 @@ export const messages = {
     typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp") => ({
         at,
         kind: "TypingEnded",
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         actor: from
@@ -77,6 +82,7 @@ export const messages = {
     sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp") => ({
         at,
         kind: "MessageSent",
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         message: {
@@ -84,7 +90,7 @@ export const messages = {
             from: "me",
             text: caption || "",
             imageUrl,
-            timestamp: Date.now(),
+            timestamp: Date.now().toString(),
             status: "sent"
         }
     } as const),
@@ -95,6 +101,7 @@ export const messages = {
     receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp") => ({
         at,
         kind: "MessageReceived",
+        trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
         message: {
@@ -109,6 +116,6 @@ export const messages = {
 
     // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
     markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
-        at, kind: "APP", type: "MESSAGE_STATUS", appId, conversationId, messageId, status: "read"
+        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
     } as any)
 };

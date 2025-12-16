@@ -20,6 +20,7 @@
 
 // Types
 export * from "./types";
+export * from "./tracer";
 
 // Author API (high-level builders)
 export * from "./author";

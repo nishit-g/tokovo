@@ -5,6 +5,8 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 export interface ZoomOptions {
     originX?: number;
@@ -32,6 +34,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "ANCHOR_FOCUS",
+        trace: createTrace(Tracer.capture()),
         anchor: options.target,
         preset: "message", // Default
         shake: 0,
@@ -46,6 +49,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "ANCHOR_TRACK",
+        trace: createTrace(Tracer.capture()),
         anchor: options.target,
         preset: "operatorFollow",
         duration: options.duration ?? 35,
@@ -61,6 +65,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "ZOOM",
+        trace: createTrace(Tracer.capture()),
         scale,
         duration,
         originX: opts.originX ?? 0.5,
@@ -75,6 +80,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "PAN",
+        trace: createTrace(Tracer.capture()),
         translateX,
         translateY,
         duration,
@@ -88,6 +94,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "SHAKE",
+        trace: createTrace(Tracer.capture()),
         intensity,
         duration,
         frequency: opts.frequency ?? 18,
@@ -101,6 +108,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "RESET",
+        trace: createTrace(Tracer.capture()),
         duration,
         easing,
     } as TimelineEvent),
@@ -121,6 +129,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "ANCHOR_FOCUS",
+        trace: createTrace(Tracer.capture()),
         anchor,
         preset,
         shake,
@@ -144,6 +153,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "ANCHOR_TRACK",
+        trace: createTrace(Tracer.capture()),
         anchor,
         duration,
         smoothing,
@@ -161,6 +171,7 @@ export const camera = {
         at,
         kind: "CAMERA",
         type: "HOLD",
+        trace: createTrace(Tracer.capture()),
         duration,
     } as TimelineEvent),
 
@@ -173,30 +184,35 @@ export const camera = {
      * @param at - Frame to start
      * @param anchor - Semantic anchor to follow
      */
-    punchGlide: (at: number, anchor: string): TimelineEvent[] => [
-        // Phase 1: Punch (fast zoom + shake)
-        {
-            at,
-            kind: "CAMERA",
-            type: "ANCHOR_FOCUS",
-            anchor,
-            preset: "impactPunch",
-            shake: 3,
-            duration: 10,
-            easing: "ease-out",
-        } as TimelineEvent,
-        // Phase 2: Glide (smooth follow)
-        {
-            at: at + 10,
-            kind: "CAMERA",
-            type: "ANCHOR_TRACK",
-            anchor,
-            duration: 35,
-            smoothing: 0.18,
-            preset: "operatorFollow",
-            easing: "ease-out",
-        } as TimelineEvent,
-    ],
+    punchGlide: (at: number, anchor: string): TimelineEvent[] => {
+        const trace = createTrace(Tracer.capture());
+        return [
+            // Phase 1: Punch (fast zoom + shake)
+            {
+                at,
+                kind: "CAMERA",
+                type: "ANCHOR_FOCUS",
+                trace,
+                anchor,
+                preset: "impactPunch",
+                shake: 3,
+                duration: 10,
+                easing: "ease-out",
+            } as TimelineEvent,
+            // Phase 2: Glide (smooth follow)
+            {
+                at: at + 10,
+                kind: "CAMERA",
+                type: "ANCHOR_TRACK",
+                trace,
+                anchor,
+                duration: 35,
+                smoothing: 0.18,
+                preset: "operatorFollow",
+                easing: "ease-out",
+            } as TimelineEvent,
+        ]
+    },
 };
 
 /**

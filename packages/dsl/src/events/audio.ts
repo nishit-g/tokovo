@@ -5,6 +5,8 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 export interface PlayOptions {
     loop?: boolean;
@@ -28,6 +30,7 @@ export const audio = {
         at,
         kind: "AUDIO",
         type: "PLAY_SOUND",
+        trace: createTrace(Tracer.capture()),
         soundId,
         volume,
         loop: opts.loop,
@@ -43,6 +46,7 @@ export const audio = {
         at,
         kind: "AUDIO",
         type: "STOP_SOUND",
+        trace: createTrace(Tracer.capture()),
         instanceId,
     } as TimelineEvent),
 
@@ -53,6 +57,7 @@ export const audio = {
         at,
         kind: "AUDIO",
         type: "FADE_VOLUME",
+        trace: createTrace(Tracer.capture()),
         instanceId,
         toVolume,
         duration,
@@ -65,6 +70,7 @@ export const audio = {
         at,
         kind: "AUDIO",
         type: "BACKGROUND_MUSIC",
+        trace: createTrace(Tracer.capture()),
         soundId,
         volume,
         loop,

@@ -6,6 +6,8 @@
  */
 
 import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 /**
  * Keyboard event factories
@@ -18,6 +20,7 @@ export const keyboard = {
         at,
         kind: "KEYBOARD",
         type: "SHOW",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         layout,
     } as TimelineEvent),
@@ -29,6 +32,7 @@ export const keyboard = {
         at,
         kind: "KEYBOARD",
         type: "HIDE",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     } as TimelineEvent),
 
@@ -38,6 +42,7 @@ export const keyboard = {
     typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
         at,
         kind: "KeyboardType",
+        trace: createTrace(Tracer.capture()),
         text: char,
         deviceId,
     } as TimelineEvent),
@@ -49,6 +54,7 @@ export const keyboard = {
         at,
         kind: "KEYBOARD",
         type: "BACKSPACE",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     } as TimelineEvent),
 
@@ -59,6 +65,7 @@ export const keyboard = {
         at,
         kind: "KEYBOARD",
         type: "SET_TEXT",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         text,
     } as TimelineEvent),
@@ -70,6 +77,7 @@ export const keyboard = {
         at,
         kind: "KEYBOARD",
         type: "CLEAR",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     } as TimelineEvent),
 
@@ -80,6 +88,7 @@ export const keyboard = {
         at,
         kind: "KeyboardInput",
         type: "keyDown",
+        trace: createTrace(Tracer.capture()),
         key,
         deviceId,
     } as TimelineEvent),
@@ -91,6 +100,7 @@ export const keyboard = {
         at,
         kind: "KeyboardInput",
         type: "keyUp",
+        trace: createTrace(Tracer.capture()),
         key: "", // Key up clears current key
         deviceId,
     } as TimelineEvent),
@@ -105,6 +115,7 @@ export const keyboard = {
      * - Uses seeded RNG for deterministic variance
      */
     type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
+        const trace = createTrace(Tracer.capture());
         const events: TimelineEvent[] = [];
         let t = at;
 
@@ -144,6 +155,7 @@ export const keyboard = {
                     at: t,
                     kind: "KEYBOARD",
                     type: "SHOW", // SHOW updates layout too
+                    trace,
                     deviceId,
                     layout: requiredLayout
                 } as any);
@@ -161,6 +173,7 @@ export const keyboard = {
                 at: t,
                 kind: "KEYBOARD",
                 type: "KEY_DOWN",
+                trace,
                 deviceId,
                 key: char
             } as TimelineEvent);
@@ -170,6 +183,7 @@ export const keyboard = {
                 at: t,
                 kind: "KEYBOARD",
                 type: "TYPE_CHAR",
+                trace,
                 deviceId,
                 char
             } as TimelineEvent);
@@ -181,6 +195,7 @@ export const keyboard = {
                 at: t,
                 kind: "KEYBOARD",
                 type: "KEY_UP",
+                trace,
                 deviceId
             } as TimelineEvent);
 
