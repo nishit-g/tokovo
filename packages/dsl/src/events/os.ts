@@ -6,6 +6,8 @@
  */
 
 import { TimelineEvent, NetworkType } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 /**
  * OS event factories
@@ -18,6 +20,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_TIME",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         time,
     } as TimelineEvent),
@@ -29,6 +32,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_BATTERY",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         level,
         charging,
@@ -41,6 +45,7 @@ export const os = {
         at,
         kind: "OS",
         type: "DRAIN_BATTERY",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         rate,
     } as TimelineEvent),
@@ -52,6 +57,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_NETWORK",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         network,
         strength,
@@ -64,6 +70,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_DND",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         enabled,
     } as TimelineEvent),
@@ -75,6 +82,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_LOW_POWER",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         enabled,
     } as TimelineEvent),
@@ -86,6 +94,7 @@ export const os = {
         at,
         kind: "OS",
         type: "SET_AIRPLANE",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         enabled,
     } as TimelineEvent),

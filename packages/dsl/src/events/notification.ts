@@ -1,4 +1,6 @@
 import { NotificationIR } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 // Simple ID Generator since utils doesn't exist yet
 const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
@@ -43,6 +45,7 @@ export const notification = {
             kind: "DEVICE",
             deviceId: "primary", // Default to primary for now
             type: "SHOW_NOTIFICATION",
+            trace: createTrace(Tracer.capture()),
 
             // The IR fields
             id,
@@ -68,6 +71,7 @@ export const notification = {
         kind: "DEVICE",
         deviceId: "primary",
         type: "TAP_NOTIFICATION",
+        trace: createTrace(Tracer.capture()),
         notificationId,
         actionId,
     } as const),
@@ -80,6 +84,7 @@ export const notification = {
         kind: "DEVICE",
         deviceId: "primary",
         type: "DISMISS_NOTIFICATION",
+        trace: createTrace(Tracer.capture()),
         notificationId,
     } as const),
 
@@ -91,5 +96,6 @@ export const notification = {
         kind: "DEVICE",
         deviceId: "primary",
         type: "CLEAR_ALL_NOTIFICATIONS",
+        trace: createTrace(Tracer.capture()),
     } as const),
 };

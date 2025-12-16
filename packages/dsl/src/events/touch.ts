@@ -5,6 +5,8 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 /**
  * Touch event factories
@@ -17,6 +19,7 @@ export const touch = {
         at,
         kind: "TOUCH",
         type: "TAP",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         x,
         y,
@@ -29,6 +32,7 @@ export const touch = {
         at,
         kind: "TOUCH",
         type: "LONG_PRESS",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         x,
         y,
@@ -42,6 +46,7 @@ export const touch = {
         at,
         kind: "TOUCH",
         type: "DRAG",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         startX,
         startY,
@@ -57,6 +62,7 @@ export const touch = {
         at,
         kind: "TOUCH",
         type: "SCROLL",
+        trace: createTrace(Tracer.capture()),
         deviceId,
         y,
         velocity,

@@ -5,6 +5,8 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 export const navigation = {
     /**
@@ -24,6 +26,7 @@ export const navigation = {
         kind: "APP",
         appId: targetAppId, // Targeted at the destination app
         type: "NAVIGATE_APP",
+        trace: createTrace(Tracer.capture()),
         screen: options?.screen,
         conversationId: options?.conversationId,
         transition: options?.transition,
@@ -53,6 +56,7 @@ export const navigation = {
         kind: "APP",
         appId: appId as string,
         type: "NAVIGATE_SCREEN",
+        trace: createTrace(Tracer.capture()),
         screen: screen as string,
         transition: options?.transition,
         animationDuration: options?.duration

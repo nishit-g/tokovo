@@ -6,6 +6,8 @@
  */
 
 import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
 
 // =============================================================================
 // CALL EVENT TYPES
@@ -110,6 +112,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "INCOMING",
+        trace: createTrace(Tracer.capture()),
         callerId,
         callerName,
         callerAvatar: opts?.callerAvatar,
@@ -134,6 +137,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "ANSWER",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -147,6 +151,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "DECLINE",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -160,6 +165,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "END",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -173,6 +179,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_MUTE",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -186,6 +193,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_SPEAKER",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -199,6 +207,7 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_HOLD",
+        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 };
