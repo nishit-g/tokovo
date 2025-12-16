@@ -15,7 +15,7 @@ import { WorldState, Notification, BackgroundAppState } from "./types";
 import { AppReducer, ReducerRegistry } from "./engine";
 import { Platform } from "./tokens";
 import type { NotificationAdapter } from "./notification-adapter";
-import { AnchorFraming, AnchorRegistry } from "./anchors";
+import { AnchorFraming, AnchorRegistry, AnchorSnapshot } from "./anchors";
 import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
 import { AppRegistry } from "./app-registry";
 import { SoundRegistry } from "./sound-registry";
@@ -202,6 +202,13 @@ export interface TokovoPlugin {
      * Defines how looking at "lastMessage" or "input" works.
      */
     anchors?: Record<string, AnchorFraming>;
+
+    /**
+     * Dynamic Anchor Calculation Logic.
+     * Optional: Provide a custom function to resolve anchor rects at runtime.
+     * If omitted, a default layout-based fallback is used.
+     */
+    getAnchors?: (world: WorldState, layout: unknown, deviceId: string) => AnchorSnapshot;
 }
 
 // =============================================================================
@@ -274,7 +281,7 @@ export class PluginManagerClass {
             AnchorRegistry.register({
                 appId: plugin.id,
                 framing: plugin.anchors,
-                getAnchors: (world, layout, deviceId) => {
+                getAnchors: plugin.getAnchors || ((world, layout, deviceId) => {
                     // Default generic anchor logic - can be enhanced later or overriden
                     // This is a simplified fallback if the app doesn't implement a complex provider.
                     // Ideally, we move the full AnchorProvider logic into an AppKit helper.
@@ -297,7 +304,7 @@ export class PluginManagerClass {
                     }
 
                     return { anchors, deviceId, appId: plugin.id };
-                }
+                })
             });
             console.log(`[PluginManager] Auto-registered anchors for: ${plugin.id}`);
         }

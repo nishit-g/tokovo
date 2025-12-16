@@ -36,12 +36,8 @@ export const PhonePlugin = definePlugin({
     reducer: phoneReducer,
 
     // Anchors
-    anchors: PhoneAnchors.framing, // Static fallback
-    // Note: Plugin definition currently accepts object. 
-    // To support dynamic anchors, we need to register the provider manually or upgrade definePlugin types.
-    // PluginManager.register (Step 713) handles `plugin.anchors` as `AnchorFraming`.
-    // To use full dynamic Provider, we rely on the side-effect here OR PluginManager improvement.
-    // I will stick to side-effect registration for the Provider for now until Core is upgraded.
+    anchors: PhoneAnchors.framing,
+    getAnchors: PhoneAnchors.getAnchors,
 
     // Widgets
     widgets: [
@@ -57,9 +53,6 @@ export const PhonePlugin = definePlugin({
     eventTypes: ["CALL"]
 });
 
-// Register Provider Side-Effect (Bridge for dynamic anchors)
-import { AnchorRegistry } from "@tokovo/core";
-AnchorRegistry.register(PhoneAnchors);
 
 export default PhonePlugin;
 
