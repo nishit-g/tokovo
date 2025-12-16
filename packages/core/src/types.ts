@@ -206,6 +206,32 @@ export interface StatusBarIcon {
 }
 
 // =============================================================================
+// APP STATE CONTRACT
+// =============================================================================
+
+/**
+ * Base interface that ALL App States should extend to be compatible with True OS.
+ * This replaces heuristic string matching in the Layout Engine.
+ */
+export interface BaseAppState {
+    /** 
+     * The overarching layout mode this app is currently in.
+     * IF provided, the OS will respect this over default metadata strategies.
+     */
+    viewMode?: import("./types").ViewKind;
+
+    /** Context for CHAT view */
+    conversationId?: string;
+
+    /** Context for STORY view */
+    activeStoryId?: string;
+
+    // Future standard fields:
+    // title?: string;       // Dynamic title bar override
+    // themeColor?: string;  // Dynamic status bar color override
+}
+
+// =============================================================================
 // BACKGROUND APP STATE
 // =============================================================================
 

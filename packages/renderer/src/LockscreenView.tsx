@@ -10,56 +10,7 @@ import { LayoutState, LockscreenLayoutState } from "@tokovo/core";
  * - App logo icons in notifications
  */
 
-// App icons as actual images/gradients
-const APP_LOGOS: Record<string, React.ReactNode> = {
-    app_whatsapp: (
-        <div style={{
-            width: 66,
-            height: 66,
-            borderRadius: 15,
-            background: "#25D366",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-        }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-            </svg>
-        </div>
-    ),
-    app_instagram: (
-        <div style={{
-            width: 66,
-            height: 66,
-            borderRadius: 15,
-            background: "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-        }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
-                <rect x="2" y="2" width="20" height="20" rx="5" stroke="white" strokeWidth="2" fill="none" />
-                <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" fill="none" />
-                <circle cx="18" cy="6" r="1.5" fill="white" />
-            </svg>
-        </div>
-    ),
-    app_messages: (
-        <div style={{
-            width: 66,
-            height: 66,
-            borderRadius: 15,
-            background: "#34C759",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-        }}>
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="white">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-            </svg>
-        </div>
-    )
-};
+// APP_LOGOS Removed. Using AppMetadataRegistry.
 
 interface LockscreenViewProps {
     notifications?: Notification[];
@@ -242,26 +193,31 @@ const NotificationCard: React.FC<{
     const ir = notification.ir;
     if (!ir) return null; // Safety check
 
-    const appLogo = APP_LOGOS[ir.appId] || (
+    // Decoupled: Use Registry
+    // Since this is a React component, we might need to handle the case where "icon" is a string or component.
+    // Ideally we pass it as a prop or context, but for now we look it up.
+    // Note: In strict React, side-effect imports inside render are bad, but this is a static registry.
+    const { AppMetadataRegistry } = require("@tokovo/core/src/app-metadata");
+    const meta = AppMetadataRegistry.get(ir.appId);
+
+    const appIcon = typeof meta.icon === "string" ? (
         <div style={{
             width: 66,
             height: 66,
             borderRadius: 15,
-            background: "#8E8E93",
+            background: meta.themeColor || "#8E8E93",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 30,
             color: "white"
-        }}>📱</div>
+        }}>{meta.icon}</div>
+    ) : (
+        // It's a React Node (SVG)
+        meta.icon
     );
 
-    const appNames: Record<string, string> = {
-        app_whatsapp: "WHATSAPP",
-        app_instagram: "INSTAGRAM",
-        app_messages: "MESSAGES"
-    };
-    const appName = appNames[ir.appId] || "APP";
+    const appName = meta.displayName || "APP";
 
     return (
         <div style={{
@@ -279,14 +235,14 @@ const NotificationCard: React.FC<{
                 gap: 18,
                 marginBottom: 15
             }}>
-                {appLogo}
+                {appIcon}
                 <span style={{
                     fontSize: 30,
                     opacity: 0.6,
                     fontWeight: 600,
                     letterSpacing: 1.5
                 }}>
-                    {appName}
+                    {appName.toUpperCase()}
                 </span>
                 <span style={{ marginLeft: "auto", fontSize: 27, opacity: 0.4 }}>
                     now

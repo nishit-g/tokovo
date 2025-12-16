@@ -27,6 +27,14 @@ export interface AppMetadata {
      * Optional: Short name for tight spaces (e.g. "Messages")
      */
     shortName?: string;
+
+    /**
+     * Layout Strategy
+     * Tells the OS what kind of view this app renders by default.
+     * Can be a static ViewKind or a function (handled via Registry in V3).
+     * For now, we support static default.
+     */
+    viewStrategy?: import("./types").ViewKind;
 }
 
 class AppMetadataRegistryClass {
@@ -70,17 +78,27 @@ export const AppMetadataRegistry = new AppMetadataRegistryClass();
 AppMetadataRegistry.register("app_whatsapp", {
     displayName: "WhatsApp",
     themeColor: "#25D366",
-    icon: "💬"
+    icon: "💬",
+    viewStrategy: "CHAT"
 });
 
 AppMetadataRegistry.register("app_instagram", {
     displayName: "Instagram",
     themeColor: "#E1306C", // Instagram Gradient-ish
-    icon: "📸"
+    icon: "📸",
+    viewStrategy: "FEED" // Default to FEED, though logic might checking state
 });
 
 AppMetadataRegistry.register("app_gmail", {
     displayName: "Gmail",
     themeColor: "#EA4335",
-    icon: "📧"
+    icon: "📧",
+    viewStrategy: "FEED" // Warning: Gmail is list-based, effectively FEED layout structure
+});
+
+AppMetadataRegistry.register("app_twitter", {
+    displayName: "X",
+    themeColor: "#000000",
+    icon: "✖️",
+    viewStrategy: "FEED"
 });

@@ -21,7 +21,18 @@ export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
         switch (event.name) {
             case "NAVIGATE":
                 appState.currentView = event.payload.view;
-                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView}`);
+
+                // STANDARD CONTRACT ADHERENCE
+                const v = appState.currentView;
+                if (v === "dm" || v === "chat") {
+                    (appState as any).viewMode = "CHAT";
+                } else if (v === "stories") {
+                    (appState as any).viewMode = "STORY";
+                } else if (["feed", "explore", "profile", "reels"].includes(v)) {
+                    (appState as any).viewMode = "FEED";
+                }
+
+                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView} (Mode: ${(appState as any).viewMode})`);
                 break;
             // Add other custom events here
         }

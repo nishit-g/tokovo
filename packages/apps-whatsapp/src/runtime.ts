@@ -145,6 +145,14 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         const screen = appEvent.screen || "chat";
         draft.appState.app_whatsapp.screen = screen;
 
+        // STANDARD CONTRACT ADHERENCE
+        // Map screen to generic ViewKind
+        if (screen === "chat") {
+            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
+        } else {
+            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
+        }
+
         // If navigating to a specific conversation
         if (appEvent.conversationId) {
             draft.appState.app_whatsapp.conversationId = appEvent.conversationId;

@@ -24,6 +24,7 @@ import {
 } from "@tokovo/core";
 import { computeLayout, LayoutState, ViewKind, LayoutContext } from "../layout";
 import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
+import { AppMetadataRegistry } from "@tokovo/core/src/app-metadata";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -121,45 +122,32 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         if (device.isLocked) {
             viewKind = "LOCKSCREEN";
         } else if (appId) {
-            if (appId === "app_whatsapp") {
-                const appState = world.appState?.["app_whatsapp"] as any;
-                const screen = appState?.screen || "chat";
+            // GENERIC LAYOUT RESOLUTION
+            // 1. Check App Metadata for default strategy
+            const { AppMetadataRegistry } = require("@tokovo/core/src/app-metadata"); // Dynamic require to avoid cycle if any, or just import at top
+            const meta = AppMetadataRegistry.get(appId);
+            viewKind = meta.viewStrategy || "TRANSITION";
 
-                if (screen === "chat") {
-                    viewKind = "CHAT";
-                    activeConversationId = appState?.conversationId || Object.keys(world.conversations)[0];
-                } else {
-                    // For chat list, settings, etc, we don't have a specialized layout engine yet.
-                    // Fallback to generic transition layout (safe).
-                    viewKind = "TRANSITION";
-                }
-            } else if (appId === "app_instagram") {
-                const appState = world.appState?.["app_instagram"];
-                const currentView = appState?.currentView || "feed";
+            // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
+            // Apps MUST implement `BaseAppState` to dynamically switch layouts.
+            // Heuristics have been removed for architectural purity.
+            const appState = world.appState?.[appId] as import("@tokovo/core").BaseAppState;
 
-                switch (currentView) {
-                    case "dm":
-                        viewKind = "CHAT";
-                        activeConversationId = Object.keys(world.conversations)[0];
-                        break;
-                    case "stories":
-                        viewKind = "STORY";
-                        activeStoryId = appState?.stories?.activeStoryId;
-                        break;
-                    case "feed":
-                    case "explore":
-                    case "profile":
-                    case "notifications":
-                    case "reels":
-                    case "post":
-                        viewKind = "FEED";
-                        break;
-                    default:
-                        viewKind = "FEED";
+            if (appState && appState.viewMode) {
+                viewKind = appState.viewMode;
+
+                // Extract Standard Context
+                if (viewKind === "CHAT") {
+                    // Prefer explicit conversationId, fallback to first one (Legacy behavior preserved for now)
+                    activeConversationId = appState.conversationId || Object.keys(world.conversations)[0];
+                } else if (viewKind === "STORY") {
+                    activeStoryId = appState.activeStoryId;
                 }
-            } else if (appId === "app_twitter") {
-                viewKind = "FEED";
             }
+
+            // 3. Twitter Special Case (Implicit Feed if not set)
+            // TODO: Move this to Twitter App Reducer in next sprint
+            if (appId === "app_twitter" && !viewKind) viewKind = "FEED";
         } else {
             // No app open, show home screen
             viewKind = "HOMESCREEN";
