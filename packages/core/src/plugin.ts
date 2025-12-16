@@ -2,17 +2,25 @@
  * Plugin System - Self-contained app registration
  * 
  * Apps register themselves as plugins with all their dependencies:
- * - UI components
+ * - UI components / Screens
  * - State reducers  
  * - Sound effects
  * - Event types they handle
  * - Platform-specific widgets (Dynamic Island, status bar)
+ * - Semantic Anchors (Framing)
+ * - Metadata (Icon, Name)
  */
 
 import { WorldState, Notification, BackgroundAppState } from "./types";
 import { AppReducer, ReducerRegistry } from "./engine";
 import { Platform } from "./tokens";
 import type { NotificationAdapter } from "./notification-adapter";
+import { AnchorFraming, AnchorRegistry } from "./anchors";
+import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
+import { AppRegistry } from "./app-registry";
+import { SoundRegistry } from "./sound-registry";
+import { NotificationAdapterRegistry } from "./notification-adapter";
+
 export type { NotificationAdapter };
 
 // =============================================================================
@@ -34,6 +42,11 @@ export interface AppViewProps {
  * App view component type (generic, will be React.FC in renderer)
  */
 export type AppViewComponent = (props: AppViewProps) => any;
+
+/**
+ * Screen Component Type (for Router)
+ */
+export type ScreenComponent = AppViewComponent;
 
 // =============================================================================
 // WIDGET TYPES
@@ -122,20 +135,35 @@ export interface TokovoPlugin {
     /** Unique app ID (e.g., "app_whatsapp") */
     id: string;
 
-    /** Display name */
-    name: string;
+    /** 
+     * Metadata used for Notifications, Home Screen, Library.
+     * Replaces manual AppMetadataRegistry calls.
+     */
+    metadata?: Partial<AppMetadata> & { name: string };
 
     /** Plugin version */
     version: string;
 
-    /** App icon for notifications/home screen */
+    // --- DEPRECATED FIELDS (Moved to metadata) ---
+    /** @deprecated Use metadata.icon */
     icon?: string;
-
-    /** Primary color for theming */
+    /** @deprecated Use metadata.themeColor */
     primaryColor?: string;
+    /** @deprecated Use metadata.name */
+    name: string;
+    // ---------------------------------------------
 
-    /** React component to render the app view */
+    /** 
+     * React component to render the MAIN app view.
+     * If `screens` is provided, this can be omitted (Router will be used).
+     */
     appView?: AppViewComponent;
+
+    /**
+     * Map of screen definitions for declarative routing.
+     * Used by AppKit Router.
+     */
+    screens?: Record<string, ScreenComponent>;
 
     /** State reducer for APP events */
     reducer?: AppReducer;
@@ -152,13 +180,21 @@ export interface TokovoPlugin {
     /** Default app state */
     defaultState?: any;
 
-    // === NEW: Widget System ===
+    // === Widgets ===
 
     /** Platform-specific widgets this app provides */
     widgets?: WidgetSlot[];
 
     /** Notification adapter for formatting */
     notificationAdapter?: NotificationAdapter;
+
+    // === Camera Anchors ===
+
+    /** 
+     * Semantic Framing Configuration.
+     * Defines how looking at "lastMessage" or "input" works.
+     */
+    anchors?: Record<string, AnchorFraming>;
 }
 
 // =============================================================================
@@ -182,17 +218,23 @@ class PluginManagerClass {
 
         this.plugins.set(plugin.id, plugin);
 
-        // Auto-register reducer
+        // 1. Auto-register Reducer
         if (plugin.reducer) {
             ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
         }
 
-        // Store view component
+        // 2. Auto-register View
         if (plugin.appView) {
             this.viewRegistry.set(plugin.id, plugin.appView);
+            // Also register with legacy AppRegistry for compatibility
+            AppRegistry.register(plugin.id, plugin.appView as any);
+        } else if (plugin.screens) {
+            // TODO: If we have AppKit Router, we could synthesize a view here.
+            // For now, we expect consumers to use the Router manually or for the plugin to export a Router wrapper.
+            console.log(`[PluginManager] Plugin ${plugin.name} has screens but no root appView. Router required.`);
         }
 
-        // Auto-register widgets with WidgetRegistry
+        // 3. Auto-register Widgets
         if (plugin.widgets && plugin.widgets.length > 0) {
             // Import at top level or use type-only to avoid circular dependency
             // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -200,6 +242,65 @@ class PluginManagerClass {
                 WidgetRegistry.register(plugin.id, plugin.widgets!);
                 console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
             });
+        }
+
+        // 4. Auto-register Metadata
+        const meta: AppMetadata = {
+            displayName: plugin.metadata?.name || plugin.name,
+            themeColor: plugin.metadata?.themeColor || plugin.primaryColor || "#000000",
+            icon: plugin.metadata?.icon || plugin.icon || "📱",
+            viewStrategy: plugin.metadata?.viewStrategy
+        };
+        AppMetadataRegistry.register(plugin.id, meta);
+
+        // 5. Auto-register Anchors
+        if (plugin.anchors) {
+            // Create a synthetic AnchorProvider
+            AnchorRegistry.register({
+                appId: plugin.id,
+                framing: plugin.anchors,
+                getAnchors: (world, layout, deviceId) => {
+                    // Default generic anchor logic - can be enhanced later or overriden
+                    // This is a simplified fallback if the app doesn't implement a complex provider.
+                    // Ideally, we move the full AnchorProvider logic into an AppKit helper.
+
+                    // For now, return basic device anchor + simple layout mapping
+                    const anchors: any = {
+                        device: { x: 0, y: 0, width: 430, height: 932 } // TODO: Get real device dims
+                    };
+
+                    // Access layout state safely
+                    if (layout && typeof layout === 'object' && 'regions' in layout) {
+                        const regions = (layout as any).regions;
+                        if (regions) {
+                            for (const [key, region] of Object.entries(regions)) {
+                                if ((region as any).rect) {
+                                    anchors[key] = (region as any).rect;
+                                }
+                            }
+                        }
+                    }
+
+                    return { anchors, deviceId, appId: plugin.id };
+                }
+            });
+            console.log(`[PluginManager] Auto-registered anchors for: ${plugin.id}`);
+        }
+
+        // 6. Auto-register Sounds
+        if (plugin.sounds) {
+            const soundMap: Record<string, string> = {};
+            // Prefix keys with plugin ID to avoid collisions if registry is flat? 
+            // SoundRegistry.registerMany usually takes flat keys. 
+            // We should trust the plugin provides unique enough keys or we prefix them.
+            // Current convention seems to be "whatsapp_sent".
+
+            SoundRegistry.registerMany(plugin.sounds);
+        }
+
+        // 7. Auto-register Notification Adapter
+        if (plugin.notificationAdapter) {
+            NotificationAdapterRegistry.register(plugin.notificationAdapter);
         }
 
         console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
@@ -246,10 +347,11 @@ class PluginManagerClass {
     getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
         const plugin = this.plugins.get(id);
         if (!plugin) return undefined;
+        // Prefer metadata object
         return {
-            name: plugin.name,
-            icon: plugin.icon,
-            color: plugin.primaryColor,
+            name: plugin.metadata?.name || plugin.name,
+            icon: plugin.metadata?.icon as string || plugin.icon,
+            color: plugin.metadata?.themeColor || plugin.primaryColor,
         };
     }
 
@@ -277,6 +379,12 @@ export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name:
         version: config.version ?? "1.0.0",
         eventTypes: config.eventTypes ?? [],
         sounds: config.sounds ?? {},
+        // Ensure metadata is populated from deprecated fields if missing
+        metadata: config.metadata ?? {
+            name: config.name,
+            icon: config.icon,
+            themeColor: config.primaryColor
+        }
     } as TokovoPlugin;
 }
 

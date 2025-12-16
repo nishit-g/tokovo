@@ -65,6 +65,6 @@ const whatsappAdapter: NotificationAdapter = {
 };
 
 // Register adapter
-NotificationAdapterRegistry.register(whatsappAdapter);
+// NotificationAdapterRegistry.register(whatsappAdapter); -- DEPRECATED
 
 export { whatsappAdapter };

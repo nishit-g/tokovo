@@ -28,7 +28,11 @@ import { ManualCameraShowcase } from "./ManualCameraShowcase";
 import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
+import { PluginManager } from "@tokovo/core";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
 
+// Register Plugins
+PluginManager.register(WhatsApp);
 
 export const RemotionRoot: React.FC = () => {
     return (

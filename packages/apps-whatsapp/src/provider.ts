@@ -2,7 +2,7 @@
 import { AnchorProvider, AnchorSnapshot, LayoutRect, AnchorFraming } from "@tokovo/core";
 
 // Define the framing configuration for WhatsApp
-const WHATSAPP_FRAMING: Record<string, AnchorFraming> = {
+export const WHATSAPP_FRAMING: Record<string, AnchorFraming> = {
     lastMessage: {
         anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third, slightly off-center
         paddingPx: 24,
