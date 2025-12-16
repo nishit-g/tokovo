@@ -183,6 +183,11 @@ packages/
     tsconfig.json
   apps-whatsapp/
     src/
+      adapters/
+        anchors.ts
+        notifications.ts
+      assets/
+        metadata.tsx
       camera/
         index.ts
         whatsapp-director.ts
@@ -214,21 +219,21 @@ packages/
         whatsapp-theme.ts
       hooks/
         useMessageGrouping.ts
-      screens/
-        ios/
-          ChatListScreen.tsx
-          ChatScreen.tsx
+      logic/
+        reducer.ts
+      ui/
+        screens/
+          ios/
+            ChatListScreen.tsx
+            ChatScreen.tsx
+        index.tsx
       behaviors.ts
       index.ts
       layout.ts
-      metadata.tsx
-      notification-adapter.ts
       plugin.ts
       provider.ts
-      runtime.ts
       types.ts
       TypingBubble.tsx
-      ui.tsx
     LAYOUT_LOGIC.md
     package.json
     README.md
@@ -462,6 +467,8 @@ packages/
     package.json
     README.md
     tsconfig.json
+scripts/
+  create-plugin.js
 .gitignore
 .tool-versions
 llms.txt
@@ -6644,6 +6651,313 @@ export const ANIMATION_POLISH = {
         easing: "ease-out",
     },
 };
+````
+
+## File: packages/apps-whatsapp/src/config/whatsapp-theme.ts
+````typescript
+/**
+ * WhatsApp Theme Configuration
+ * 
+ * Configurable colors, typography, and bubble styling.
+ * Supports light/dark mode and custom themes.
+ */
+
+// =============================================================================
+// COLOR CONFIGURATION
+// =============================================================================
+
+export interface BubbleColors {
+    /** Background color for own messages */
+    myBubble: string;
+    /** Background color for others' messages */
+    otherBubble: string;
+    /** Text color for own messages */
+    myText: string;
+    /** Text color for others' messages */
+    otherText: string;
+    /** Timestamp color */
+    timestamp: string;
+    /** Link color */
+    link: string;
+}
+
+export interface HeaderColors {
+    /** Header background */
+    background: string;
+    /** Header title text */
+    title: string;
+    /** Header subtitle (status) */
+    subtitle: string;
+    /** Icon color */
+    icons: string;
+}
+
+export interface InputColors {
+    /** Input area background */
+    background: string;
+    /** Input field background */
+    field: string;
+    /** Input field border */
+    border: string;
+    /** Placeholder text */
+    placeholder: string;
+    /** Icon color */
+    icons: string;
+    /** Send button color */
+    sendButton: string;
+}
+
+export interface SystemColors {
+    /** WhatsApp accent green */
+    accent: string;
+    /** Read receipt blue */
+    readReceipt: string;
+    /** Unread badge background */
+    unreadBadge: string;
+    /** Online indicator */
+    online: string;
+    /** Chat background / wallpaper */
+    chatBackground: string;
+    /** System message bubble */
+    systemBubble: string;
+    /** System message text */
+    systemText: string;
+}
+
+export interface ThemeColors {
+    bubble: BubbleColors;
+    header: HeaderColors;
+    input: InputColors;
+    system: SystemColors;
+}
+
+// =============================================================================
+// TYPOGRAPHY CONFIGURATION
+// =============================================================================
+
+export interface FontConfig {
+    family: string;
+    size: number;
+    weight: number;
+    lineHeight: number;
+}
+
+export interface ThemeTypography {
+    /** Message text */
+    message: FontConfig;
+    /** Message timestamp */
+    timestamp: FontConfig;
+    /** Header title */
+    headerTitle: FontConfig;
+    /** Header subtitle */
+    headerSubtitle: FontConfig;
+    /** System message */
+    systemMessage: FontConfig;
+    /** Input field */
+    input: FontConfig;
+}
+
+// =============================================================================
+// BUBBLE CONFIGURATION
+// =============================================================================
+
+export interface BubbleConfig {
+    /** Border radius for bubbles */
+    borderRadius: number;
+    /** Maximum width as percentage of container */
+    maxWidth: number;
+    /** Horizontal padding inside bubble */
+    horizontalPadding: number;
+    /** Vertical padding inside bubble */
+    verticalPadding: number;
+    /** Show bubble tail */
+    showTail: boolean;
+    /** Tail size */
+    tailSize: number;
+}
+
+// =============================================================================
+// COMPLETE THEME
+// =============================================================================
+
+export interface WhatsAppTheme {
+    mode: "light" | "dark";
+    colors: ThemeColors;
+    typography: ThemeTypography;
+    bubble: BubbleConfig;
+}
+
+// =============================================================================
+// iOS WHATSAPP LIGHT THEME
+// =============================================================================
+
+import { LAYOUT_CONSTANTS } from "./layout-config";
+
+// ... (existing code)
+
+export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
+    mode: "light",
+    colors: {
+        bubble: {
+            myBubble: "#DCF8C6",
+            otherBubble: "#FFFFFF",
+            myText: "#000000",
+            otherText: "#000000",
+            timestamp: "#8E8E93",
+            link: "#007AFF",
+        },
+        header: {
+            background: "#F6F6F6",
+            title: "#000000",
+            subtitle: "#8E8E93",
+            icons: "#007AFF",
+        },
+        input: {
+            background: "#F6F6F6",
+            field: "#FFFFFF",
+            border: "#E5E5EA",
+            placeholder: "#8E8E93",
+            icons: "#007AFF",
+            sendButton: "#25D366",
+        },
+        system: {
+            accent: "#25D366",
+            readReceipt: "#53BDEB",
+            unreadBadge: "#25D366",
+            online: "#25D366",
+            chatBackground: "#E5DDD5",
+            systemBubble: "rgba(0,0,0,0.05)",
+            systemText: "#8E8E93",
+        },
+    },
+    typography: {
+        message: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: LAYOUT_CONSTANTS.FONT_SIZE,      // 17px * 3 for retina
+            weight: 400,
+            lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
+        },
+        timestamp: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 33,      // 11px * 3
+            weight: 400,
+            lineHeight: 36,
+        },
+        headerTitle: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 51,
+            weight: 600,
+            lineHeight: 60,
+        },
+        headerSubtitle: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 36,
+            weight: 400,
+            lineHeight: 42,
+        },
+        systemMessage: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 39,
+            weight: 400,
+            lineHeight: 48,
+        },
+        input: {
+            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+            size: 48,
+            weight: 400,
+            lineHeight: 60,
+        },
+    },
+    bubble: {
+        borderRadius: 54,
+        maxWidth: 0.78,
+        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
+        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
+        showTail: true,
+        tailSize: 24,
+    },
+};
+
+// =============================================================================
+// iOS WHATSAPP DARK THEME
+// =============================================================================
+
+export const iOS_WHATSAPP_DARK: WhatsAppTheme = {
+    mode: "dark",
+    colors: {
+        bubble: {
+            myBubble: "#005C4B",
+            otherBubble: "#1F2C34",
+            myText: "#FFFFFF",
+            otherText: "#FFFFFF",
+            timestamp: "#8696A0",
+            link: "#53BDEB",
+        },
+        header: {
+            background: "#1F2C34",
+            title: "#FFFFFF",
+            subtitle: "#8696A0",
+            icons: "#53BDEB",
+        },
+        input: {
+            background: "#1F2C34",
+            field: "#2A3942",
+            border: "#2A3942",
+            placeholder: "#8696A0",
+            icons: "#8696A0",
+            sendButton: "#00A884",
+        },
+        system: {
+            accent: "#00A884",
+            readReceipt: "#53BDEB",
+            unreadBadge: "#00A884",
+            online: "#00A884",
+            chatBackground: "#0B141A",
+            systemBubble: "rgba(255,255,255,0.05)",
+            systemText: "#8696A0",
+        },
+    },
+    typography: iOS_WHATSAPP_LIGHT.typography, // Same typography
+    bubble: {
+        borderRadius: 48,
+        maxWidth: 0.78,
+        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
+        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
+        showTail: true,
+        tailSize: 24,
+    },
+};
+
+// =============================================================================
+// THEME HELPERS
+// =============================================================================
+
+export function getTheme(mode: "light" | "dark" = "light"): WhatsAppTheme {
+    return mode === "dark" ? iOS_WHATSAPP_DARK : iOS_WHATSAPP_LIGHT;
+}
+
+/** Create custom theme by merging with base */
+export function createTheme(
+    base: WhatsAppTheme,
+    overrides: Partial<WhatsAppTheme>
+): WhatsAppTheme {
+    return {
+        ...base,
+        ...overrides,
+        colors: {
+            ...base.colors,
+            ...overrides.colors,
+        },
+        typography: {
+            ...base.typography,
+            ...overrides.typography,
+        },
+        bubble: {
+            ...base.bubble,
+            ...overrides.bubble,
+        },
+    };
+}
 ````
 
 ## File: packages/apps-whatsapp/src/plugin.ts
@@ -21613,6 +21927,214 @@ export function getTwitterIntent(eventType: string): CameraIntent | undefined {
 }
 ````
 
+## File: packages/apps-whatsapp/src/adapters/anchors.ts
+````typescript
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    SemanticAnchorId,
+    LayoutRect,
+    ChatLayoutState,
+    APP_IDS
+} from "@tokovo/core";
+
+const APP_ID = APP_IDS.WHATSAPP;
+
+// Production-grade anchor provider converting Layout Engine output to Semantic Anchors
+export const WhatsAppAnchors: AnchorProvider = {
+    appId: APP_ID,
+
+    // Static Framing Definitions
+    framing: {
+        // Conversation / Messages
+        message: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        message_me: {
+            anchorPoint: { x: 0.6, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        message_other: {
+            anchorPoint: { x: 0.4, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        device: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 0,
+            targetFill: 1.0
+        },
+
+        // System / Status
+        typing: {
+            anchorPoint: { x: 0.35, y: 0.5 },
+            paddingPx: 30,
+            targetFill: 0.3
+        },
+        input: {
+            anchorPoint: { x: 0.5, y: 0.8 },
+            paddingPx: 20,
+            targetFill: 0.9
+        },
+
+        // Nav
+        header: {
+            anchorPoint: { x: 0.5, y: 0.15 },
+            paddingPx: 10,
+            targetFill: 0.9
+        },
+        profile: {
+            anchorPoint: { x: 0.2, y: 0.15 }, // Focus specifically on avatar
+            paddingPx: 50,
+            targetFill: 0.4
+        }
+    },
+
+    // Dynamic extraction from Computed Layout
+    getAnchors(
+        world,
+        layout,
+        deviceId
+    ): AnchorSnapshot {
+        // Cast generic layout to ChatLayoutState
+        const chatLayout = layout as ChatLayoutState;
+        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+
+        // If no layout (e.g. app not active), return empty or device fallback
+        if (!chatLayout || !chatLayout.semantic) {
+            // Fallback to device? Or empty.
+            return { anchors: {}, deviceId, appId: APP_ID };
+        }
+
+        // Map Semantic Regions to Anchors
+        // ChatLayoutState.semantic.regions is Record<string, SemanticRegion>
+        const regions = chatLayout.semantic.regions;
+        for (const [key, region] of Object.entries(regions)) {
+            // Mapping strategy: 
+            // 1. ID match (e.g. "msg_123")
+            // 2. Tag match? (Layout Engine provides specific IDs)
+            // The Camera system requests specific IDs like "msg_123".
+            // So we just pass them through.
+
+            // We can also alias standard semantic names like "lastMessage"
+            anchors[key] = region.rect;
+        }
+
+        // Computed Aliases
+        if (chatLayout.meta?.lastMessageId && regions[chatLayout.meta.lastMessageId]) {
+            anchors["lastMessage"] = regions[chatLayout.meta.lastMessageId].rect;
+        }
+
+        // Input area and Header are already in regions from layout.ts
+
+        return {
+            anchors,
+            deviceId,
+            appId: APP_ID,
+        };
+    }
+};
+````
+
+## File: packages/apps-whatsapp/src/adapters/notifications.ts
+````typescript
+/**
+ * WhatsApp Notification Adapter
+ * 
+ * Formats WhatsApp notifications with messaging-specific styling.
+ */
+
+import { NotificationAdapter, NotificationAdapterRegistry, Notification, FormattedNotification } from "@tokovo/core";
+
+const WHATSAPP_GREEN = "#25D366";
+
+const whatsappAdapter: NotificationAdapter = {
+    appId: "app_whatsapp",
+
+    format(notification: Notification): FormattedNotification {
+        const ir = notification.ir;
+        return {
+            title: ir.title,
+            body: ir.body,
+            icon: "💬",
+            iconBackground: WHATSAPP_GREEN,
+            accentColor: WHATSAPP_GREEN,
+            preview: ir.preview,
+            actions: ir.actions || [
+                { id: "reply", label: "Reply" },
+                { id: "mark_read", label: "Mark as Read" },
+            ],
+            sender: ir.payload?.sender,
+        };
+    },
+
+    handleAction(actionId: string, notification: Notification) {
+        const baseEvents: any[] = [];
+        const threadId = notification.ir.threadKey;
+
+        if (actionId === "open" || actionId === "reply") {
+            baseEvents.push({
+                at: Date.now(),
+                kind: "DEVICE",
+                deviceId: notification.deviceId || "phone",
+                type: "OPEN_APP",
+                appId: "app_whatsapp",
+            });
+
+            if (threadId) {
+                baseEvents.push({
+                    at: Date.now(),
+                    kind: "APP",
+                    appId: "app_whatsapp",
+                    type: "NAVIGATE",
+                    screen: "chat",
+                    conversationId: threadId,
+                });
+            }
+        }
+
+        return baseEvents;
+    },
+
+    measureHeight(notification: Notification, viewport: { width: number }) {
+        // Base height + extra for image preview
+        let height = 180;
+        if (notification.ir.preview?.kind === "image") {
+            height += 200;
+        }
+        return height;
+    },
+};
+
+// Register adapter
+// NotificationAdapterRegistry.register(whatsappAdapter); -- DEPRECATED
+
+export { whatsappAdapter as WhatsAppNotificationAdapter };
+````
+
+## File: packages/apps-whatsapp/src/assets/metadata.tsx
+````typescript
+import React from "react";
+import { AppMetadata } from "@tokovo/core";
+
+export const WhatsAppIcon = (
+    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+    </svg>
+);
+
+export const WhatsAppMetadata: Partial<AppMetadata> & { name: string } = {
+    name: "WhatsApp",
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: WhatsAppIcon,
+    viewStrategy: "CHAT"
+};
+````
+
 ## File: packages/apps-whatsapp/src/camera/index.ts
 ````typescript
 /**
@@ -23115,313 +23637,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => 
 };
 ````
 
-## File: packages/apps-whatsapp/src/config/whatsapp-theme.ts
-````typescript
-/**
- * WhatsApp Theme Configuration
- * 
- * Configurable colors, typography, and bubble styling.
- * Supports light/dark mode and custom themes.
- */
-
-// =============================================================================
-// COLOR CONFIGURATION
-// =============================================================================
-
-export interface BubbleColors {
-    /** Background color for own messages */
-    myBubble: string;
-    /** Background color for others' messages */
-    otherBubble: string;
-    /** Text color for own messages */
-    myText: string;
-    /** Text color for others' messages */
-    otherText: string;
-    /** Timestamp color */
-    timestamp: string;
-    /** Link color */
-    link: string;
-}
-
-export interface HeaderColors {
-    /** Header background */
-    background: string;
-    /** Header title text */
-    title: string;
-    /** Header subtitle (status) */
-    subtitle: string;
-    /** Icon color */
-    icons: string;
-}
-
-export interface InputColors {
-    /** Input area background */
-    background: string;
-    /** Input field background */
-    field: string;
-    /** Input field border */
-    border: string;
-    /** Placeholder text */
-    placeholder: string;
-    /** Icon color */
-    icons: string;
-    /** Send button color */
-    sendButton: string;
-}
-
-export interface SystemColors {
-    /** WhatsApp accent green */
-    accent: string;
-    /** Read receipt blue */
-    readReceipt: string;
-    /** Unread badge background */
-    unreadBadge: string;
-    /** Online indicator */
-    online: string;
-    /** Chat background / wallpaper */
-    chatBackground: string;
-    /** System message bubble */
-    systemBubble: string;
-    /** System message text */
-    systemText: string;
-}
-
-export interface ThemeColors {
-    bubble: BubbleColors;
-    header: HeaderColors;
-    input: InputColors;
-    system: SystemColors;
-}
-
-// =============================================================================
-// TYPOGRAPHY CONFIGURATION
-// =============================================================================
-
-export interface FontConfig {
-    family: string;
-    size: number;
-    weight: number;
-    lineHeight: number;
-}
-
-export interface ThemeTypography {
-    /** Message text */
-    message: FontConfig;
-    /** Message timestamp */
-    timestamp: FontConfig;
-    /** Header title */
-    headerTitle: FontConfig;
-    /** Header subtitle */
-    headerSubtitle: FontConfig;
-    /** System message */
-    systemMessage: FontConfig;
-    /** Input field */
-    input: FontConfig;
-}
-
-// =============================================================================
-// BUBBLE CONFIGURATION
-// =============================================================================
-
-export interface BubbleConfig {
-    /** Border radius for bubbles */
-    borderRadius: number;
-    /** Maximum width as percentage of container */
-    maxWidth: number;
-    /** Horizontal padding inside bubble */
-    horizontalPadding: number;
-    /** Vertical padding inside bubble */
-    verticalPadding: number;
-    /** Show bubble tail */
-    showTail: boolean;
-    /** Tail size */
-    tailSize: number;
-}
-
-// =============================================================================
-// COMPLETE THEME
-// =============================================================================
-
-export interface WhatsAppTheme {
-    mode: "light" | "dark";
-    colors: ThemeColors;
-    typography: ThemeTypography;
-    bubble: BubbleConfig;
-}
-
-// =============================================================================
-// iOS WHATSAPP LIGHT THEME
-// =============================================================================
-
-import { LAYOUT_CONSTANTS } from "./layout-config";
-
-// ... (existing code)
-
-export const iOS_WHATSAPP_LIGHT: WhatsAppTheme = {
-    mode: "light",
-    colors: {
-        bubble: {
-            myBubble: "#DCF8C6",
-            otherBubble: "#FFFFFF",
-            myText: "#000000",
-            otherText: "#000000",
-            timestamp: "#8E8E93",
-            link: "#007AFF",
-        },
-        header: {
-            background: "#F6F6F6",
-            title: "#000000",
-            subtitle: "#8E8E93",
-            icons: "#007AFF",
-        },
-        input: {
-            background: "#F6F6F6",
-            field: "#FFFFFF",
-            border: "#E5E5EA",
-            placeholder: "#8E8E93",
-            icons: "#007AFF",
-            sendButton: "#25D366",
-        },
-        system: {
-            accent: "#25D366",
-            readReceipt: "#53BDEB",
-            unreadBadge: "#25D366",
-            online: "#25D366",
-            chatBackground: "#E5DDD5",
-            systemBubble: "rgba(0,0,0,0.05)",
-            systemText: "#8E8E93",
-        },
-    },
-    typography: {
-        message: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: LAYOUT_CONSTANTS.FONT_SIZE,      // 17px * 3 for retina
-            weight: 400,
-            lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-        },
-        timestamp: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 33,      // 11px * 3
-            weight: 400,
-            lineHeight: 36,
-        },
-        headerTitle: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 51,
-            weight: 600,
-            lineHeight: 60,
-        },
-        headerSubtitle: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 36,
-            weight: 400,
-            lineHeight: 42,
-        },
-        systemMessage: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 39,
-            weight: 400,
-            lineHeight: 48,
-        },
-        input: {
-            family: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            size: 48,
-            weight: 400,
-            lineHeight: 60,
-        },
-    },
-    bubble: {
-        borderRadius: 54,
-        maxWidth: 0.78,
-        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
-        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
-        showTail: true,
-        tailSize: 24,
-    },
-};
-
-// =============================================================================
-// iOS WHATSAPP DARK THEME
-// =============================================================================
-
-export const iOS_WHATSAPP_DARK: WhatsAppTheme = {
-    mode: "dark",
-    colors: {
-        bubble: {
-            myBubble: "#005C4B",
-            otherBubble: "#1F2C34",
-            myText: "#FFFFFF",
-            otherText: "#FFFFFF",
-            timestamp: "#8696A0",
-            link: "#53BDEB",
-        },
-        header: {
-            background: "#1F2C34",
-            title: "#FFFFFF",
-            subtitle: "#8696A0",
-            icons: "#53BDEB",
-        },
-        input: {
-            background: "#1F2C34",
-            field: "#2A3942",
-            border: "#2A3942",
-            placeholder: "#8696A0",
-            icons: "#8696A0",
-            sendButton: "#00A884",
-        },
-        system: {
-            accent: "#00A884",
-            readReceipt: "#53BDEB",
-            unreadBadge: "#00A884",
-            online: "#00A884",
-            chatBackground: "#0B141A",
-            systemBubble: "rgba(255,255,255,0.05)",
-            systemText: "#8696A0",
-        },
-    },
-    typography: iOS_WHATSAPP_LIGHT.typography, // Same typography
-    bubble: {
-        borderRadius: 48,
-        maxWidth: 0.78,
-        horizontalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_H,
-        verticalPadding: LAYOUT_CONSTANTS.BUBBLE_PADDING_V,
-        showTail: true,
-        tailSize: 24,
-    },
-};
-
-// =============================================================================
-// THEME HELPERS
-// =============================================================================
-
-export function getTheme(mode: "light" | "dark" = "light"): WhatsAppTheme {
-    return mode === "dark" ? iOS_WHATSAPP_DARK : iOS_WHATSAPP_LIGHT;
-}
-
-/** Create custom theme by merging with base */
-export function createTheme(
-    base: WhatsAppTheme,
-    overrides: Partial<WhatsAppTheme>
-): WhatsAppTheme {
-    return {
-        ...base,
-        ...overrides,
-        colors: {
-            ...base.colors,
-            ...overrides.colors,
-        },
-        typography: {
-            ...base.typography,
-            ...overrides.typography,
-        },
-        bubble: {
-            ...base.bubble,
-            ...overrides.bubble,
-        },
-    };
-}
-````
-
 ## File: packages/apps-whatsapp/src/hooks/useMessageGrouping.ts
 ````typescript
 import { useMemo } from "react";
@@ -23514,11 +23729,351 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
 };
 ````
 
-## File: packages/apps-whatsapp/src/screens/ios/ChatListScreen.tsx
+## File: packages/apps-whatsapp/src/logic/reducer.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+    // React and reply
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        // Voice-specific fields
+        duration?: number;
+        // Read receipt fields
+        messageId?: string;
+        // Navigation fields
+        screen?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
+        // Ensure appState exists for WhatsApp
+        if (!draft.appState) {
+            draft.appState = {};
+        }
+        if (!draft.appState.app_whatsapp) {
+            draft.appState.app_whatsapp = {};
+        }
+
+        // Update the current screen
+        const screen = appEvent.screen || "chat";
+        draft.appState.app_whatsapp.screen = screen;
+
+        // STANDARD CONTRACT ADHERENCE
+        // Map screen to generic ViewKind
+        if (screen === "chat") {
+            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
+        } else {
+            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
+        }
+
+        // If navigating to a specific conversation
+        if (appEvent.conversationId) {
+            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
+            const msgPayload = appEvent.message || {};
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
+            const newMessage: WhatsAppMessage = {
+                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
+                text: appEvent.text || msgPayload.text,
+                at: event.at,
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
+            break;
+        }
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            if (appEvent.from) {
+                conversation.typing[appEvent.from] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            if (conversation.typing && appEvent.from) {
+                delete conversation.typing[appEvent.from];
+            }
+            break;
+        }
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            (conversation.messages as any[]).push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            } as WhatsAppMessage);
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
+                }
+            }
+            break;
+        }
+
+        case "INPUT_CHANGE": {
+            // "OS-Level Input Management"
+            // The OS has dispatched this event with the raw text from the keyboard.
+            // We update the local conversation draft state.
+            const text = (appEvent as any).payload?.text;
+            if (conversation) {
+                (conversation as any).draftText = text;
+            }
+            break;
+        }
+    }
+}
+````
+
+## File: packages/apps-whatsapp/src/ui/screens/ios/ChatListScreen.tsx
 ````typescript
 import React from "react";
+import { Header } from "../../../components/ios/Header";
 import { WorldState } from "@tokovo/core";
-import { WhatsAppState } from "../../types";
+import { WhatsAppState } from "../../../types";
+import { WhatsAppIcon } from "../../../assets/metadata";
 
 export interface ChatListScreenProps {
     world: WorldState;
@@ -23590,6 +24145,209 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
             </div>
         </div>
     );
+};
+````
+
+## File: packages/apps-whatsapp/src/ui/screens/ios/ChatScreen.tsx
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { AppSurface } from "@tokovo/core";
+import { Header } from "../../../components/ios/Header";
+import { MessageList } from "../../../components/ios/MessageList";
+import { InputArea } from "../../../components/ios/InputArea";
+import { TypingIndicator } from "../../../components/ios/TypingIndicator";
+import { WhatsAppState, MessageData } from "../../../types";
+
+export interface ChatScreenProps {
+    world: WorldState;
+    deviceId?: string;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+    width: number;
+    height: number;
+}
+
+export const ChatScreen: React.FC<ChatScreenProps> = ({
+    world,
+    deviceId,
+    safeAreaInsets,
+    width,
+    height
+}) => {
+    // 1. Resolve App State
+    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
+    const conversationId = appState?.conversationId || Object.keys(world.conversations || {})[0];
+    const conversation = world.conversations?.[conversationId];
+
+    // 2. Prepare Data
+    const contactName = conversation?.name || "Unknown";
+    const rawMessages = (conversation?.messages || []) as any[];
+
+    // Map runtime messages to strict MessageData
+    // Runtime might have loose types, we ensure UI gets strict shape
+    // This mapping layer protects the UI from runtime messiness
+    const messages: MessageData[] = rawMessages.map(m => {
+        const base = {
+            id: m.id,
+            from: m.from,
+            timestamp: m.timestamp,
+            status: m.status,
+            at: m.at
+        };
+
+        switch (m.type) {
+            case "image":
+                return { ...base, type: "image", imageUrl: m.imageUrl, caption: m.caption };
+            case "video":
+                return { ...base, type: "video", videoUrl: m.videoUrl, thumbnailUrl: m.thumbnailUrl, duration: m.duration, caption: m.caption };
+            case "voice":
+                return { ...base, type: "voice", duration: m.duration || 0 };
+            case "system":
+                return { ...base, type: "system", text: m.text, systemType: m.systemType };
+            case "text":
+            default:
+                return { ...base, type: "text", text: m.text || "" };
+        }
+    });
+
+    // 3. Calculate Safe Areas & Scaling (Resolution Independence)
+    // Design Width: 393 (Standard 1x)
+    const designWidth = 393;
+    const targetWidth = width || 1179; // Default fallback (iPhone 16)
+
+    // Calculate Scale
+    const scale = targetWidth / designWidth;
+
+    // Safe Areas (Physical -> Logical)
+    // If safeAreaInsets not provided, assume generous safe areas
+    const physicalSafeTop = safeAreaInsets?.top ?? 177; // ~59px * 3
+    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102; // ~34px * 3
+
+    const safeAreaTop = physicalSafeTop / scale;
+    const safeAreaBottom = physicalSafeBottom / scale;
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            backgroundColor: "#ECE5DD", // Chat BG
+            position: "relative"
+        }}>
+            <Header
+                contactName={contactName}
+                avatarUrl={conversation?.avatar}
+                status="online"
+                safeAreaTop={safeAreaTop}
+            />
+
+            <MessageList
+                messages={messages}
+                ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
+                isTyping={conversation?.typing && Object.keys(conversation.typing).some(id => id !== "me")}
+            />
+
+            <InputArea
+                text=""
+                showCursor={false}
+                safeAreaBottom={safeAreaBottom}
+            />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/ui/index.tsx
+````typescript
+import React from "react";
+import { WorldState, AppSurface } from "@tokovo/core";
+
+// Screens
+import { ChatScreen } from "./screens/ios/ChatScreen";
+import { ChatListScreen } from "./screens/ios/ChatListScreen";
+
+import { WhatsAppState } from "../types";
+
+export interface WhatsappChatViewProps {
+    world: WorldState;
+    t?: number;
+    deviceId?: string;
+    platform?: "ios" | "android";
+    width?: number;
+    height?: number;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+}
+
+export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
+    world,
+    t,
+    deviceId,
+    platform = "ios",
+    width,
+    height,
+    safeAreaInsets
+}) => {
+    // 1. Resolve App State & Screen
+    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
+    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+
+    // 2. Resolve Dimensions (Resolution Independence)
+    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
+    // If undefined, assume standard logical width (393)
+    const activeWidth = width || 393;
+    const activeHeight = height || 2556;
+
+    // 3. Render Appropriate Screen
+    // Strategy Pattern for Screen Navigation
+    let activeScreenContent;
+
+    switch (currentScreen) {
+        case "list":
+        case "chats":
+            activeScreenContent = (
+                <ChatListScreen
+                    world={world}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+        case "chat":
+        default:
+            activeScreenContent = (
+                <ChatScreen
+                    world={world}
+                    deviceId={deviceId}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+    }
+
+    // 4. Return Content (Hoisted AppSurface handles scaling now)
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
+            {activeScreenContent}
+        </div>
+    );
+};
+
+// Main Entry
+export const ui = {
+    WhatsappChatView
 };
 ````
 
@@ -26066,69 +26824,6 @@ export function getSoundPath(soundId: string): string {
 }
 
 export { SoundRegistry };
-````
-
-## File: packages/core/src/validation.ts
-````typescript
-import { z } from "zod";
-import { TokovoPlugin } from "./plugin";
-import { AppMetadata } from "./app-metadata";
-
-// =============================================================================
-// PLUGIN & METADATA SCHEMAS
-// =============================================================================
-
-export const AppMetadataSchema = z.object({
-    displayName: z.string(),
-    themeColor: z.string().regex(/^#/, "Must be a hex color"),
-    icon: z.string(),
-    viewStrategy: z.enum(["CHAT", "FEED", "STORY", "LOCKSCREEN", "HOMESCREEN", "FULLSCREEN", "TRANSITION"]).optional(),
-    designWidth: z.number().optional().default(393),
-}) as z.ZodType<Partial<AppMetadata> & { name?: string }>; // Loose typing to match Partial
-
-// NOTE: We don't deeply validate React components or Functions (runtime checks only)
-export const TokovoPluginSchema = z.object({
-    id: z.string().min(3),
-    version: z.string(),
-
-    // Metadata block
-    metadata: z.object({
-        name: z.string(),
-        themeColor: z.string().optional(),
-        icon: z.string().optional(),
-        designWidth: z.number().optional(),
-    }).optional(),
-
-    // Deprecated fields (lax schema)
-    name: z.string().optional(),
-    icon: z.string().optional(),
-    primaryColor: z.string().optional(),
-
-    // Arrays
-    eventTypes: z.array(z.string()).optional(),
-
-    // Maps
-    sounds: z.record(z.string(), z.string()).optional(),
-    anchors: z.record(z.string(), z.any()).optional(), // Framing config is complex, lazy check
-});
-
-/**
- * Validates a plugin definition at load time.
- * @throws ZodError if invalid
- */
-export function validatePlugin(plugin: TokovoPlugin): void {
-    // 1. Structural Check
-    TokovoPluginSchema.parse(plugin);
-
-    // 2. Logic Checks
-    if (!plugin.appView && !plugin.screens) {
-        throw new Error(`[Validation] Plugin ${plugin.id} must provide 'appView' or 'screens'.`);
-    }
-
-    if (!plugin.metadata?.name && !plugin.name) {
-        throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
-    }
-}
 ````
 
 ## File: packages/core/src/widget-registry.ts
@@ -30258,6 +30953,159 @@ export const TouchOverlay: React.FC<TouchOverlayProps> = ({ touches, t }) => {
 export default TouchOverlay;
 ````
 
+## File: scripts/create-plugin.js
+````javascript
+#!/usr/bin/env node
+
+/**
+ * Tokovo Plugin Scaffolder
+ * Usage: node scripts/create-plugin.js <plugin-name>
+ * Example: node scripts/create-plugin.js spotify
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+const pluginName = process.argv[2];
+
+if (!pluginName) {
+    console.error("Please provide a plugin name (e.g. 'spotify')");
+    process.exit(1);
+}
+
+const appId = `app_${pluginName.toLowerCase()}`;
+const pkgName = `@tokovo/apps-${pluginName.toLowerCase()}`;
+const rootDir = path.resolve(__dirname, '..');
+const targetDir = path.join(rootDir, 'packages', `apps-${pluginName.toLowerCase()}`);
+
+if (fs.existsSync(targetDir)) {
+    console.error(`Plugin directory ${targetDir} already exists.`);
+    process.exit(1);
+}
+
+console.log(`Creating plugin: ${pkgName} in ${targetDir}...`);
+
+// 1. Create Directories
+const dirs = [
+    'src/adapters',
+    'src/assets',
+    'src/logic',
+    'src/ui',
+    'src/widgets'
+];
+
+fs.mkdirSync(targetDir, { recursive: true });
+dirs.forEach(dir => fs.mkdirSync(path.join(targetDir, dir), { recursive: true }));
+
+// 2. Create package.json
+const packageJson = {
+    name: pkgName,
+    version: "0.0.1",
+    main: "./src/index.ts",
+    types: "./src/index.ts",
+    dependencies: {
+        "@tokovo/core": "workspace:*",
+        "react": "^18.2.0"
+    },
+    devDependencies: {
+        "typescript": "^5.0.0",
+        "@types/react": "^18.2.0"
+    }
+};
+fs.writeFileSync(path.join(targetDir, 'package.json'), JSON.stringify(packageJson, null, 4));
+
+// 3. Create tsconfig.json
+const tsConfig = {
+    extends: "../../tsconfig.json",
+    compilerOptions: {
+        "jsx": "react-jsx",
+        "outDir": "./dist"
+    },
+    include: ["src/**/*"]
+};
+fs.writeFileSync(path.join(targetDir, 'tsconfig.json'), JSON.stringify(tsConfig, null, 4));
+
+// 4. Create Source Files
+
+// assets/metadata.tsx
+const metadataContent = `import React from "react";
+import { AppMetadata } from "@tokovo/core";
+
+export const ${pluginName}Metadata: Partial<AppMetadata> & { name: string } = {
+    name: "${pluginName}",
+    displayName: "${pluginName.charAt(0).toUpperCase() + pluginName.slice(1)}",
+    themeColor: "#000000",
+    icon: "📦", // Replace with SVG component
+    viewStrategy: "CHAT"
+};
+`;
+fs.writeFileSync(path.join(targetDir, 'src/assets/metadata.tsx'), metadataContent);
+
+// logic/reducer.ts
+const reducerContent = `import { WorldState, TimelineEvent, APP_IDS } from "@tokovo/core";
+
+export function ${pluginName}Reducer(draft: WorldState, event: TimelineEvent): void {
+    if (event.kind !== "APP" || event.appId !== "${appId}") return;
+    
+    // Handle events
+}
+`;
+fs.writeFileSync(path.join(targetDir, 'src/logic/reducer.ts'), reducerContent);
+
+// ui/index.tsx
+const uiContent = `import React from "react";
+import { WorldState } from "@tokovo/core";
+
+export const ${pluginName}View: React.FC<{ world: WorldState }> = ({ world }) => {
+    return (
+        <div style={{ flex: 1, backgroundColor: "white", display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <h1>${pluginName}</h1>
+        </div>
+    );
+};
+`;
+fs.writeFileSync(path.join(targetDir, 'src/ui/index.tsx'), uiContent);
+
+// adapters/anchors.ts
+const anchorsContent = `import { AnchorProvider, AnchorSnapshot } from "@tokovo/core";
+
+export const ${pluginName}Anchors: AnchorProvider = {
+    appId: "${appId}",
+    framing: {
+        device: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 0, targetFill: 1 }
+    },
+    getAnchors: (world, layout, deviceId) => {
+        return { anchors: {}, deviceId, appId: "${appId}" };
+    }
+};
+`;
+fs.writeFileSync(path.join(targetDir, 'src/adapters/anchors.ts'), anchorsContent);
+
+// index.ts
+const indexContent = `import { definePlugin } from "@tokovo/core";
+import { ${pluginName}Reducer } from "./logic/reducer";
+import { ${pluginName}View } from "./ui";
+import { ${pluginName}Metadata } from "./assets/metadata";
+import { ${pluginName}Anchors } from "./adapters/anchors";
+
+export const ${pluginName}Plugin = definePlugin({
+    id: "${appId}",
+    name: "${pluginName}",
+    version: "1.0.0",
+    metadata: ${pluginName}Metadata,
+    appView: ${pluginName}View,
+    reducer: ${pluginName}Reducer,
+    anchors: ${pluginName}Anchors.framing,
+    getAnchors: ${pluginName}Anchors.getAnchors,
+});
+
+export default ${pluginName}Plugin;
+`;
+fs.writeFileSync(path.join(targetDir, 'src/index.ts'), indexContent);
+
+console.log("Done! Run 'npx turbo build' to verify.");
+````
+
 ## File: llms.txt
 ````
 # Tokovo - LLM Complete Reference
@@ -32451,120 +33299,6 @@ export const Header: React.FC<{
 };
 ````
 
-## File: packages/apps-whatsapp/src/screens/ios/ChatScreen.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { AppSurface } from "@tokovo/core";
-import { Header } from "../../components/ios/Header";
-import { MessageList } from "../../components/ios/MessageList";
-import { InputArea } from "../../components/ios/InputArea";
-import { TypingIndicator } from "../../components/ios/TypingIndicator";
-import { WhatsAppState, MessageData } from "../../types";
-
-export interface ChatScreenProps {
-    world: WorldState;
-    deviceId?: string;
-    safeAreaInsets?: {
-        top: number;
-        bottom: number;
-        left: number;
-        right: number;
-    };
-    width: number;
-    height: number;
-}
-
-export const ChatScreen: React.FC<ChatScreenProps> = ({
-    world,
-    deviceId,
-    safeAreaInsets,
-    width,
-    height
-}) => {
-    // 1. Resolve App State
-    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const conversationId = appState?.conversationId || Object.keys(world.conversations || {})[0];
-    const conversation = world.conversations?.[conversationId];
-
-    // 2. Prepare Data
-    const contactName = conversation?.name || "Unknown";
-    const rawMessages = (conversation?.messages || []) as any[];
-
-    // Map runtime messages to strict MessageData
-    // Runtime might have loose types, we ensure UI gets strict shape
-    // This mapping layer protects the UI from runtime messiness
-    const messages: MessageData[] = rawMessages.map(m => {
-        const base = {
-            id: m.id,
-            from: m.from,
-            timestamp: m.timestamp,
-            status: m.status,
-            at: m.at
-        };
-
-        switch (m.type) {
-            case "image":
-                return { ...base, type: "image", imageUrl: m.imageUrl, caption: m.caption };
-            case "video":
-                return { ...base, type: "video", videoUrl: m.videoUrl, thumbnailUrl: m.thumbnailUrl, duration: m.duration, caption: m.caption };
-            case "voice":
-                return { ...base, type: "voice", duration: m.duration || 0 };
-            case "system":
-                return { ...base, type: "system", text: m.text, systemType: m.systemType };
-            case "text":
-            default:
-                return { ...base, type: "text", text: m.text || "" };
-        }
-    });
-
-    // 3. Calculate Safe Areas & Scaling (Resolution Independence)
-    // Design Width: 393 (Standard 1x)
-    const designWidth = 393;
-    const targetWidth = width || 1179; // Default fallback (iPhone 16)
-
-    // Calculate Scale
-    const scale = targetWidth / designWidth;
-
-    // Safe Areas (Physical -> Logical)
-    // If safeAreaInsets not provided, assume generous safe areas
-    const physicalSafeTop = safeAreaInsets?.top ?? 177; // ~59px * 3
-    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102; // ~34px * 3
-
-    const safeAreaTop = physicalSafeTop / scale;
-    const safeAreaBottom = physicalSafeBottom / scale;
-
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            backgroundColor: "#ECE5DD", // Chat BG
-            position: "relative"
-        }}>
-            <Header
-                contactName={contactName}
-                avatarUrl={conversation?.avatar}
-                status="online"
-                safeAreaTop={safeAreaTop}
-            />
-
-            <MessageList
-                messages={messages}
-                ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
-                isTyping={conversation?.typing && Object.keys(conversation.typing).some(id => id !== "me")}
-            />
-
-            <InputArea
-                text=""
-                showCursor={false}
-                safeAreaBottom={safeAreaBottom}
-            />
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/layout.ts
 ````typescript
 import { LayoutContext, ChatLayoutState, ChatMessageLayout, TypingLayout, SemanticRegion } from "@tokovo/core";
@@ -32932,100 +33666,6 @@ export function computeChatLayout(
 }
 ````
 
-## File: packages/apps-whatsapp/src/metadata.tsx
-````typescript
-import React from "react";
-import { AppMetadata } from "@tokovo/core";
-
-export const WhatsAppIcon = (
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="white">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
-    </svg>
-);
-
-export const WhatsAppMetadata: Partial<AppMetadata> & { name: string } = {
-    name: "WhatsApp",
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: WhatsAppIcon,
-    viewStrategy: "CHAT"
-};
-````
-
-## File: packages/apps-whatsapp/src/notification-adapter.ts
-````typescript
-/**
- * WhatsApp Notification Adapter
- * 
- * Formats WhatsApp notifications with messaging-specific styling.
- */
-
-import { NotificationAdapter, NotificationAdapterRegistry, Notification, FormattedNotification } from "@tokovo/core";
-
-const WHATSAPP_GREEN = "#25D366";
-
-const whatsappAdapter: NotificationAdapter = {
-    appId: "app_whatsapp",
-
-    format(notification: Notification): FormattedNotification {
-        return {
-            title: notification.title,
-            body: notification.body,
-            icon: "💬",
-            iconBackground: WHATSAPP_GREEN,
-            accentColor: WHATSAPP_GREEN,
-            preview: notification.preview,
-            actions: notification.actions || [
-                { id: "reply", label: "Reply" },
-                { id: "mark_read", label: "Mark as Read" },
-            ],
-            sender: notification.metadata?.sender,
-        };
-    },
-
-    handleAction(actionId: string, notification: Notification) {
-        const baseEvents: any[] = [];
-
-        if (actionId === "open" || actionId === "reply") {
-            baseEvents.push({
-                at: Date.now(),
-                kind: "DEVICE",
-                deviceId: notification.deviceId || "phone",
-                type: "OPEN_APP",
-                appId: "app_whatsapp",
-            });
-
-            if (notification.threadId) {
-                baseEvents.push({
-                    at: Date.now(),
-                    kind: "APP",
-                    appId: "app_whatsapp",
-                    type: "NAVIGATE",
-                    screen: "chat",
-                    conversationId: notification.threadId,
-                });
-            }
-        }
-
-        return baseEvents;
-    },
-
-    measureHeight(notification: Notification, viewport: { width: number }) {
-        // Base height + extra for image preview
-        let height = 180;
-        if (notification.preview?.kind === "image") {
-            height += 200;
-        }
-        return height;
-    },
-};
-
-// Register adapter
-// NotificationAdapterRegistry.register(whatsappAdapter); -- DEPRECATED
-
-export { whatsappAdapter };
-````
-
 ## File: packages/apps-whatsapp/src/provider.ts
 ````typescript
 import { AnchorProvider, AnchorSnapshot, LayoutRect, AnchorFraming } from "@tokovo/core";
@@ -33120,347 +33760,6 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
         return { anchors, deviceId, appId: "app_whatsapp" };
     }
 };
-````
-
-## File: packages/apps-whatsapp/src/runtime.ts
-````typescript
-/**
- * WhatsApp Runtime Reducer
- * 
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
- * 
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
- */
-
-import {
-    TimelineEvent,
-    WorldState,
-    ReducerRegistry,
-    APP_IDS
-} from "@tokovo/core";
-
-// Extended message type for WhatsApp-specific features
-type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
-
-interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
-}
-
-interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-interface WhatsAppMessage {
-    id: string;
-    from: string;
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-    // React and reply
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    // Timestamp display
-    timestamp?: string;
-}
-
-/**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
- */
-function generateTimestamp(frame: number, messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
-
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * WhatsApp reducer - handles all WhatsApp events
- */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-    // Only handle APP events for WhatsApp
-    if (event.kind !== "APP") return;
-
-    // Type assertion for APP events with extended payload
-    const appEvent = event as TimelineEvent & {
-        appId: string;
-        conversationId?: string;
-        from?: string;
-        text?: string;
-        message?: Partial<WhatsAppMessage>;
-        // Media-specific fields
-        imageUrl?: string;
-        thumbnailUrl?: string;
-        videoUrl?: string;
-        gifUrl?: string;
-        caption?: string;
-        // Group-specific fields
-        memberId?: string;
-        memberName?: string;
-        addedBy?: string;
-        removedBy?: string;
-        // Voice-specific fields
-        duration?: number;
-        // Read receipt fields
-        messageId?: string;
-        // Navigation fields
-        screen?: string;
-    };
-
-    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
-
-    // Use string type for event.type to allow extended event types
-    const eventType = event.type as string;
-
-    // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        // Ensure appState exists for WhatsApp
-        if (!draft.appState) {
-            draft.appState = {};
-        }
-        if (!draft.appState.app_whatsapp) {
-            draft.appState.app_whatsapp = {};
-        }
-
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
-        draft.appState.app_whatsapp.screen = screen;
-
-        // STANDARD CONTRACT ADHERENCE
-        // Map screen to generic ViewKind
-        if (screen === "chat") {
-            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
-        } else {
-            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
-        }
-
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
-        }
-
-        return;
-    }
-
-    // Get conversation ID from event
-    const conversationId = appEvent.conversationId;
-    if (!conversationId) return;
-
-    // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
-
-    switch (eventType) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT": {
-            const msgPayload = appEvent.message || {};
-            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
-
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
-
-            const newMessage: WhatsAppMessage = {
-                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
-                type: msgType,
-                text: appEvent.text || msgPayload.text,
-                at: event.at,
-                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
-                edited: msgPayload.edited,
-                timestamp,  // Dynamic timestamp
-            };
-
-            // Handle media-specific fields based on type
-            switch (msgType) {
-                case "image":
-                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "video":
-                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "gif":
-                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
-                    break;
-            }
-
-            (conversation.messages as any[]).push(newMessage);
-            break;
-        }
-
-        case "TYPING_START": {
-            if (!conversation.typing) conversation.typing = {};
-            if (appEvent.from) {
-                conversation.typing[appEvent.from] = true;
-            }
-            break;
-        }
-
-        case "TYPING_END": {
-            if (conversation.typing && appEvent.from) {
-                delete conversation.typing[appEvent.from];
-            }
-            break;
-        }
-
-        case "GROUP_MEMBER_ADDED": {
-            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: addedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: appEvent.memberId || "",
-                name: appEvent.memberName || ""
-            });
-            break;
-        }
-
-        case "GROUP_MEMBER_REMOVED": {
-            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: removedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: { id: string }) => m.id !== appEvent.memberId
-                );
-            }
-            break;
-        }
-
-        case "VOICE_MESSAGE_RECEIVED": {
-            (conversation.messages as any[]).push({
-                id: `voice_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
-                type: "voice",
-                duration: appEvent.duration,
-                at: event.at,
-                status: "delivered"
-            } as WhatsAppMessage);
-            break;
-        }
-
-        case "MESSAGE_READ": {
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
-                if (msg) {
-                    msg.status = "read";
-                }
-            }
-            break;
-        }
-
-        case "REACTION_ADDED": {
-            // Find the message and add/update the reaction
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
-                if (msg) {
-                    // Initialize reactions array if needed
-                    if (!msg.reactions) {
-                        msg.reactions = [];
-                    }
-
-                    const emoji = (appEvent as any).emoji || "❤️";
-                    const fromMe = (appEvent as any).fromMe || false;
-
-                    // Check if this emoji already exists
-                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
-                    if (existing) {
-                        existing.count += 1;
-                        if (fromMe) existing.fromMe = true;
-                    } else {
-                        msg.reactions.push({
-                            emoji,
-                            count: 1,
-                            fromMe,
-                        });
-                    }
-                }
-            }
-            break;
-        }
-
-        case "INPUT_CHANGE": {
-            // "OS-Level Input Management"
-            // The OS has dispatched this event with the raw text from the keyboard.
-            // We update the local conversation draft state.
-            const text = (appEvent as any).payload?.text;
-            if (conversation) {
-                (conversation as any).draftText = text;
-            }
-            break;
-        }
-    }
-}
-
-// Register the reducer with the core engine
-ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
 ````
 
 ## File: packages/apps-whatsapp/package.json
@@ -34237,6 +34536,120 @@ export const notificationDsl = {
     clearAll: clearAllNotifications,
     setDynamicIsland,
 };
+````
+
+## File: packages/core/src/validation.ts
+````typescript
+import { z } from "zod";
+import { TokovoPlugin } from "./plugin";
+import { AppMetadata } from "./app-metadata";
+
+// =============================================================================
+// PLUGIN & METADATA SCHEMAS
+// =============================================================================
+
+export const AppMetadataSchema = z.object({
+    displayName: z.string(),
+    themeColor: z.string().regex(/^#/, "Must be a hex color"),
+    icon: z.string(),
+    viewStrategy: z.enum(["CHAT", "FEED", "STORY", "LOCKSCREEN", "HOMESCREEN", "FULLSCREEN", "TRANSITION"]).optional(),
+    designWidth: z.number().optional().default(393),
+}) as z.ZodType<Partial<AppMetadata> & { name?: string }>; // Loose typing to match Partial
+
+// NOTE: We don't deeply validate React components or Functions (runtime checks only)
+export const TokovoPluginSchema = z.object({
+    id: z.string().min(3),
+    version: z.string(),
+
+    // Metadata block
+    metadata: z.object({
+        name: z.string(),
+        themeColor: z.string().optional(),
+        icon: z.string().optional(),
+        designWidth: z.number().optional(),
+    }).optional(),
+
+    // Deprecated fields (lax schema)
+    name: z.string().optional(),
+    icon: z.string().optional(),
+    primaryColor: z.string().optional(),
+
+    // Arrays
+    eventTypes: z.array(z.string()).optional(),
+
+    // Maps
+    sounds: z.record(z.string(), z.string()).optional(),
+    anchors: z.record(z.string(), z.any()).optional(), // Framing config is complex, lazy check
+});
+
+/**
+ * Validates a plugin definition at load time.
+ * @throws ZodError if invalid
+ */
+export function validatePlugin(plugin: TokovoPlugin): void {
+    // 1. Structural Check
+    TokovoPluginSchema.parse(plugin);
+
+    // 2. Logic Checks
+    if (!plugin.appView && !plugin.screens) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must provide 'appView' or 'screens'.`);
+    }
+
+    if (!plugin.metadata?.name && !plugin.name) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
+    }
+
+    // 3. Conflict Prevention (Enterprise Standard)
+
+    // Core events that don't need namespacing
+    const CORE_EVENT_TYPES = new Set([
+        "MESSAGE_RECEIVED", "MESSAGE_SENT", "MESSAGE_READ", "MESSAGE_DELETED",
+        "TYPING_START", "TYPING_END",
+        "REACTION_ADDED",
+        "CALL", // Provisionally Core
+        "NOTIFICATION", "SHOW_NOTIFICATION", "HIDE_NOTIFICATION",
+        "PLAY_TRACK", "PAUSE_TRACK", "START_BACKGROUND_APP",
+        "OPEN_APP", "CLOSE_APP",
+        "SCREEN_NAVIGATED",
+        // Enhanced Features (Standardized)
+        "VOICE_MESSAGE_RECEIVED",
+        "GROUP_MEMBER_ADDED", "GROUP_MEMBER_REMOVED"
+    ]);
+
+    // Enforce Event Namespacing
+    if (plugin.eventTypes) {
+        for (const type of plugin.eventTypes) {
+            if (CORE_EVENT_TYPES.has(type)) continue;
+
+            const validPrefix = `${plugin.id}.`;
+            if (!type.startsWith(validPrefix)) {
+                throw new Error(
+                    `[Conflict Prevention] Event type '${type}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `Required format: '${validPrefix}MyEvent'.\n` +
+                    `Core events allowed: ${Array.from(CORE_EVENT_TYPES).join(", ")}`
+                );
+            }
+        }
+    }
+
+    // Enforce Sound Namespacing
+    if (plugin.sounds) {
+        for (const key of Object.keys(plugin.sounds)) {
+            // Allow dot or underscore separator
+            const validPrefixDot = `${plugin.id}.`;
+            // For legacy mostly, but strict enterprise usually prefers dot. 
+            // However, many assets use underscore (app_whatsapp_sent).
+            // Let's allow underscore if the ID itself has underscores.
+            // Actually, best to strictly check if it STARTS with the ID.
+            if (!key.startsWith(plugin.id)) {
+                throw new Error(
+                    `[Conflict Prevention] Sound key '${key}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `It must start with '${plugin.id}' (e.g. '${plugin.id}.sent' or '${plugin.id}_sent').`
+                );
+            }
+        }
+    }
+}
 ````
 
 ## File: packages/devices/src/keyboards/IOSKeyboard.tsx
@@ -46801,95 +47214,6 @@ export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEn
 export * from "./anchor-providers";
 ````
 
-## File: packages/apps-whatsapp/src/ui.tsx
-````typescript
-import React from "react";
-import { WorldState, AppSurface } from "@tokovo/core";
-
-// Screens
-import { ChatScreen } from "./screens/ios/ChatScreen";
-import { ChatListScreen } from "./screens/ios/ChatListScreen";
-
-import { WhatsAppState } from "./types";
-
-export interface WhatsappChatViewProps {
-    world: WorldState;
-    t: number;
-    deviceId?: string;
-    platform?: "ios" | "android";
-    width?: number;
-    height?: number;
-    safeAreaInsets?: {
-        top: number;
-        bottom: number;
-        left: number;
-        right: number;
-    };
-}
-
-export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
-    world,
-    t,
-    deviceId,
-    platform = "ios",
-    width,
-    height,
-    safeAreaInsets
-}) => {
-    // 1. Resolve App State & Screen
-    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const currentScreen = appState?.screen || "chat"; // Default to chat for now
-
-    // 2. Resolve Dimensions (Resolution Independence)
-    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
-    // If undefined, assume standard logical width (393)
-    const activeWidth = width || 393;
-    const activeHeight = height || 2556;
-
-    // 3. Render Appropriate Screen
-    // Strategy Pattern for Screen Navigation
-    let activeScreenContent;
-
-    switch (currentScreen) {
-        case "list":
-        case "chats":
-            activeScreenContent = (
-                <ChatListScreen
-                    world={world}
-                    width={activeWidth}
-                    height={activeHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
-        case "chat":
-        default:
-            activeScreenContent = (
-                <ChatScreen
-                    world={world}
-                    deviceId={deviceId}
-                    width={activeWidth}
-                    height={activeHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
-    }
-
-    // 4. Return Content (Hoisted AppSurface handles scaling now)
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
-            {activeScreenContent}
-        </div>
-    );
-};
-
-// Main Entry
-export const ui = {
-    WhatsappChatView
-};
-````
-
 ## File: packages/episodes/src/episodes/bakchodi-gang.ts
 ````typescript
 import { episode, EpisodeDefinition } from "@tokovo/dsl";
@@ -47508,73 +47832,6 @@ export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name:
 export function registerPlugins(plugins: TokovoPlugin[]): void {
     plugins.forEach(plugin => PluginManager.register(plugin));
 }
-````
-
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-/**
- * WhatsApp App Definition
- * 
- * Unified Plugin Export
- */
-
-import { definePlugin, APP_IDS } from "@tokovo/core";
-import { whatsappReducer } from "./runtime";
-import { WhatsappChatView } from "./ui";
-import { WHATSAPP_FRAMING } from "./provider";
-import { WhatsAppMetadata } from "./metadata";
-import { whatsappAdapter } from "./notification-adapter";
-
-// Export Components & Types for direct usage if needed
-export * from "./types";
-export * from "./runtime";
-export * from "./components";
-export * from "./ui";
-export * from "./config";
-export * from "./camera";
-export * from "./behaviors";
-export * from "./layout";
-
-// Define the Unified Plugin
-export const WhatsApp = definePlugin({
-    id: APP_IDS.WHATSAPP,
-    name: "WhatsApp",
-    version: "2.0.0",
-
-    // 1. Metadata (Icon, Name, Color)
-    metadata: WhatsAppMetadata,
-
-    // 2. Routing / Views
-    // We use the existing Wrapper View which handles internal routing for now.
-    // In V3 we can expose `screens` directly.
-    appView: WhatsappChatView as any,
-
-    // 3. Logic (Reducer)
-    reducer: whatsappReducer,
-
-    // 4. Notifications
-    notificationAdapter: whatsappAdapter,
-
-    // 5. Camera Framing (Anchors)
-    anchors: WHATSAPP_FRAMING,
-
-    // 6. Assets (Sounds)
-    sounds: {
-        "whatsapp_sent": "whatsapp-sent.mp3",
-        "whatsapp_received": "whatsapp-received.mp3",
-        "whatsapp_typing": "typing.mp3",
-    },
-
-    // 7. Event Types
-    eventTypes: [
-        "MESSAGE_RECEIVED", "MESSAGE_SENT",
-        "TYPING_START", "TYPING_END",
-        "MESSAGE_READ", "VOICE_MESSAGE_RECEIVED"
-    ]
-});
-
-// Default Export
-export default WhatsApp;
 ````
 
 ## File: packages/renderer/src/engines/useCameraEngine.ts
@@ -48269,41 +48526,6 @@ function lerp(a: number, b: number, t: number): number {
 }
 ````
 
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-// Utils
-export { SeededRNG } from "./utils/rng";
-
-// App Metadata Registry
-export * from "./app-metadata";
-
-// Engine
-export * from "./engine";
-export { AppRegistry } from "./app-registry";
-export type { AppViewProps, AppViewComponent } from "./app-registry";
-export * from "./camera";
-export * from "./sounds";
-export * from "./sound-registry";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./validation"; // [NEW] Runtime Validation
-export * from "./widget-registry";
-export * from "./components/AppSurface";
-export * from "./notification-adapter";
-export * from "./notification-dsl";
-export * from "./transitions";
-export * from "./director-lite";
-export * from "./audio";
-export * from "./anchors";
-export * from "./behavior-registry";
-export * from "./apps-config";
-export * from "./notification-registry";
-export * from "./scheduler/notification-scheduler";
-````
-
 ## File: packages/apps-whatsapp/src/config/layout-config.ts
 ````typescript
 /**
@@ -48899,6 +49121,93 @@ export function shouldShowSenderName(ctx: SenderNameContext): boolean {
     // Show if previous sender was different (or no previous sender, or generic BREAK token)
     return ctx.from !== ctx.prevFrom;
 }
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+import { APP_IDS, definePlugin } from "@tokovo/core";
+import { whatsappReducer } from "./logic/reducer";
+import { ui } from "./ui";
+import { WhatsAppAnchors } from "./adapters/anchors";
+import { WhatsAppMetadata } from "./assets/metadata";
+import { WhatsAppNotificationAdapter } from "./adapters/notifications";
+
+// Export Internal Parts (Enterprise Standard)
+export * from "./logic/reducer";
+export * from "./ui";
+export * from "./types";
+export * from "./adapters/anchors";
+export * from "./adapters/notifications";
+export * from "./layout";
+
+// Define Plugin
+export const WhatsAppPlugin = definePlugin({
+    id: APP_IDS.WHATSAPP,
+    name: "WhatsApp",
+    version: "2.0.0", // Bumped for Enterprise Refactor
+
+    // Metadata
+    metadata: WhatsAppMetadata,
+
+    // UI & Logic
+    appView: ui.WhatsappChatView,
+    reducer: whatsappReducer,
+
+    // Adapters (Enterprise Standard)
+    anchors: WhatsAppAnchors.framing,
+    getAnchors: WhatsAppAnchors.getAnchors,
+    notificationAdapter: WhatsAppNotificationAdapter,
+
+    // Events (Standard IR events + Custom)
+    // Core events like MESSAGE_RECEIVED are handled, but we declare custom ones if any.
+    // Currently WhatsApp uses mostly standard events.
+    eventTypes: [
+        "GROUP_MEMBER_ADDED",
+        "GROUP_MEMBER_REMOVED",
+        "VOICE_MESSAGE_RECEIVED" // Should be standard or namespaced?
+        // Note: VOICE_MESSAGE_RECEIVED might fail namespacing if not in CORE_EVENTS.
+        // It likely should be `whatsapp.VOICE_MESSAGE_RECEIVED`.
+    ]
+});
+
+export const WhatsApp = WhatsAppPlugin;
+
+export default WhatsAppPlugin;
+````
+
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+// Utils
+export { SeededRNG } from "./utils/rng";
+
+// App Metadata Registry
+export * from "./app-metadata";
+
+// Engine
+export * from "./engine";
+export { AppRegistry } from "./app-registry";
+export type { AppViewProps, AppViewComponent } from "./app-registry";
+export * from "./camera";
+export * from "./sounds";
+export * from "./sound-registry";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./validation"; // [NEW] Runtime Validation
+export * from "./widget-registry";
+export * from "./components/AppSurface";
+export * from "./notification-adapter";
+export * from "./notification-dsl";
+export * from "./transitions";
+export * from "./director-lite";
+export * from "./audio";
+export * from "./anchors";
+export * from "./behavior-registry";
+export * from "./apps-config";
+export * from "./notification-registry";
+export * from "./scheduler/notification-scheduler";
 ````
 
 ## File: packages/core/src/engine.ts

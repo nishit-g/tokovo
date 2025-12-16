@@ -14,7 +14,7 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
             position: "relative",
             overflow: "hidden",
             display: "flex",
-            flexDirection: "column"
+            flexDirection: "column",
         }}>
             {/* Dynamic Island Area */}
             <div style={{
@@ -52,7 +52,13 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
                 backgroundColor: "white",
                 display: "flex",
                 flexDirection: "column",
-                position: "relative"
+                position: "relative",
+                // Strict clipping for transformed children (AppSurface)
+                overflow: "hidden",
+                borderRadius: 55 * 3, // Match the physical scaled radius
+                clipPath: "inset(0px round " + (55 * 3) + "px)", // Force browser masking
+                transform: "translateZ(0)", // New stacking context
+                willChange: "transform",
             }}>
                 {children}
             </div>
