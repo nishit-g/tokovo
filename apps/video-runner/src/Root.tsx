@@ -27,6 +27,7 @@ import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
 import { ManualCameraShowcase } from "./ManualCameraShowcase";
 import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
+import { KeyboardVerifyVideo } from "./KeyboardVerifyVideo";
 
 
 export const RemotionRoot: React.FC = () => {
@@ -244,6 +245,14 @@ export const RemotionRoot: React.FC = () => {
                 id="BakchodiGang"
                 component={BakchodiGangVideo}
                 durationInFrames={1500}
+                fps={30}
+                width={1080}
+                height={1920}
+            />
+            <Composition
+                id="KeyboardVerify"
+                component={KeyboardVerifyVideo}
+                durationInFrames={900}
                 fps={30}
                 width={1080}
                 height={1920}

@@ -310,6 +310,8 @@ export interface KeyboardState {
     currentKey: string | null;
     /** Frame when key was pressed (for pop-up timing) */
     keyPressedAt: number | null;
+    /** Frame when visibility last changed (for animations) */
+    visibilityChangedAt: number;
     /** Current text in input field (character-by-character) */
     inputText: string;
     /** Cursor position within inputText */
@@ -324,6 +326,7 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
     layout: "qwerty",
     currentKey: null,
     keyPressedAt: null,
+    visibilityChangedAt: 0,
     inputText: "",
     cursorPosition: 0,
     cursorVisible: true,

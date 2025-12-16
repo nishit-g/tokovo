@@ -44,11 +44,13 @@ export const keyboardReducer: FeatureReducer = (
             device.keyboard.layout = (event as any).layout || "qwerty";
             device.keyboard.inputText = "";
             device.keyboard.cursorPosition = 0;
+            device.keyboard.visibilityChangedAt = event.at;
             break;
 
         case "HIDE":
             device.keyboard.visible = false;
             device.keyboard.currentKey = null;
+            device.keyboard.visibilityChangedAt = event.at;
             break;
 
         case "KEY_DOWN":

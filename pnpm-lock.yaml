@@ -327,9 +327,15 @@ importers:
 
   packages/renderer:
     dependencies:
+      '@tokovo/apps-whatsapp':
+        specifier: workspace:*
+        version: link:../apps-whatsapp
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../devices

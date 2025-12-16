@@ -4,12 +4,15 @@ import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../../hooks/useMessageGrouping";
 import { MessageData } from "../../types";
 
+import { TypingIndicator } from "./TypingIndicator";
+
 interface MessageListProps {
     messages: MessageData[];
     ownerName?: string;
+    isTyping?: boolean;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me" }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me", isTyping }) => {
     const theme = getTheme("ios");
 
     // Architecture Layer 1: Semantic Grouping
@@ -17,12 +20,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = 
     const containerRef = useRef<HTMLDivElement>(null);
     const lastMessageId = messages[messages.length - 1]?.id;
 
-    // Auto-scroll to bottom when new messages arrive
+    // Auto-scroll to bottom when new messages arrive or typing status changes
     useEffect(() => {
         if (containerRef.current) {
             containerRef.current.scrollTop = containerRef.current.scrollHeight;
         }
-    }, [messages.length, lastMessageId]);
+    }, [messages.length, lastMessageId, isTyping]);
 
     return (
         <div
@@ -68,6 +71,12 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = 
                     </div>
                 );
             })}
+
+            {isTyping && (
+                <div style={{ marginTop: 12 }}>
+                    <TypingIndicator />
+                </div>
+            )}
         </div>
     );
 };

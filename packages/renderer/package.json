@@ -9,6 +9,8 @@
     "dependencies": {
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
         "react": "18.2.0",
         "react-dom": "18.2.0",
         "remotion": "4.0.211"

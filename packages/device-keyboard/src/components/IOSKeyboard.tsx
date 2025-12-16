@@ -203,19 +203,34 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const frame = useCurrentFrame();
 
     // Slide animation
+    // Slide animation logic
     const KEYBOARD_HEIGHT = 900; // At 3x scale
-    const slideProgress = keyboard.visible
-        ? interpolate(frame, [0, 10], [0, 1], {
+    const ANIMATION_DURATION = 15;
+
+    // Get transition start time
+    const transitionStart = keyboard.visibilityChangedAt || 0;
+
+    // Determine target state
+    // If visible: animate 0 -> 1
+    // If hidden: animate 1 -> 0
+    const targetValue = keyboard.visible ? 1 : 0;
+    const startValue = keyboard.visible ? 0 : 1;
+
+    const slideProgress = interpolate(
+        frame,
+        [transitionStart, transitionStart + ANIMATION_DURATION],
+        [startValue, targetValue],
+        {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
             easing: Easing.out(Easing.cubic),
-        })
-        : 0;
+        }
+    );
 
     const translateY = interpolate(slideProgress, [0, 1], [KEYBOARD_HEIGHT, 0]);
     const opacity = interpolate(slideProgress, [0, 1], [0, 1]);
 
-    // If not visible and no animation, don't render
+    // Don't render if fully hidden and animation is done
     if (!keyboard.visible && slideProgress === 0) {
         return null;
     }
