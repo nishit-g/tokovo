@@ -20,14 +20,9 @@ const EVENTS: TimelineEvent[] = [
     { at: 0, kind: "DEVICE", deviceId: "primary", type: "UNLOCK" },
     { at: 0, kind: "DEVICE", deviceId: "primary", type: "GO_HOME" },
 
-    // 2. Incoming WhatsApp (Heads Up)
-    dsl.notification.schedule(30, {
-        appId: "app_whatsapp",
-        title: "Alice",
-        body: "Hey! Are we still on for dinner tonight? 🌮",
-        category: "message",
-        actions: [{ id: "reply", label: "Reply" }]
-    }),
+    // 2. Incoming WhatsApp (Heads Up) - NOW IMPLICIT!
+    // We use .receive to simulate an incoming message from "Alice"
+    dsl.messages.receive(30, "chat_alice", "Alice", "Hey! Are we still on for dinner tonight? 🌮", "app_whatsapp"),
 
     // 3. User taps notification -> Opens WhatsApp
     dsl.notification.tap(90, "notif_0"),
@@ -36,33 +31,27 @@ const EVENTS: TimelineEvent[] = [
     // In a full simulation, the app would read from state. 
     // Here we just simulate the notification flow.
 
-    // 4. Go Home & Lock
-    dsl.touch.tap(200, 195, 900), // Swipe up gesture simulation
-    { at: 200, kind: "DEVICE", deviceId: "primary", type: "GO_HOME" },
-    { at: 230, kind: "DEVICE", deviceId: "primary", type: "LOCK" },
+    // 4. Sequence of notifications (No Lockscreen, just HeadsUp stacking if feasible, or sequential)
 
-    // 5. Stack notifications on Lockscreen
-    dsl.notification.schedule(260, {
+    // Notification 2: Instagram (Explicit)
+    dsl.notification.schedule(150, {
         id: "insta_1",
         appId: "app_instagram",
         title: "Instagram",
-        body: "bob_builder liked your story",
+        body: "zuck liked your photo",
         icon: "❤️"
     }),
 
-    dsl.notification.schedule(270, {
-        id: "insta_2",
-        appId: "app_instagram",
-        title: "Instagram",
-        body: "alice_w commented: 'Amazing!'",
-    }),
-
-    dsl.notification.schedule(280, {
+    // Notification 3: Gmail (Explicit)
+    dsl.notification.schedule(200, {
         id: "mail_1",
         appId: "app_gmail",
         title: "Gmail",
         body: "Security Alert: New sign-in on Mac",
     }),
+
+    // Notification 4: WhatsApp (Implicit) - Another one
+    dsl.messages.receive(250, "chat_bob", "Bob", "Where are the designs? 😡", "app_whatsapp"),
 
     // 6. Camera zoom to inspect stack
     dsl.camera.zoom(300, 1.5, 30),

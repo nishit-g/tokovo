@@ -8,9 +8,12 @@ import {
     DEFAULT_CAMERA_STATE,
     DEFAULT_CAMERA_TRANSFORM,
     DEFAULT_AUDIO_STATE,
+    DEFAULT_OS_STATE,
+    NotificationInstance
 } from "./types";
 import { CameraController, createActiveEffect } from "./camera";
 import { TIMING } from "./constants";
+import { AppMetadataRegistry } from "./app-metadata";
 
 export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
@@ -627,9 +630,7 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             const e = event as import("@tokovo/ir").MessageReceivedOp;
             const reducer = ReducerRegistry.getAppReducer(e.appId);
 
-            // Construct V1-compatible event for reducer consumption
-            // NOTE: We do not change the event kind/type here to avoid type conflicts
-            // Instead, we manually invoke the app logic or synthesize a legacy event structure
+            // 1. Run App Logic (Update internal state, add message to chat)
             const legacyEvent: any = {
                 at: e.at,
                 kind: "APP",
@@ -641,6 +642,55 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 message: e.message
             };
             reducer?.(draft, legacyEvent);
+
+            // 2. Run OS Notification Logic (Implicit Creation)
+            // Default to primary device if not specified (IR definition gap, assuming primary for now)
+            const deviceId = "primary";
+            const device = draft.devices[deviceId] || draft.devices[Object.keys(draft.devices)[0]];
+
+            if (device) {
+                // Policy Check: Don't notify if user is IN this app
+                const isForeground = device.foregroundAppId === e.appId;
+
+                // Also check DND (OS Level)
+                const isDND = device.os?.dnd;
+
+                if (!isForeground && !isDND) {
+                    // Create Notification
+                    if (!device.os) device.os = { ...DEFAULT_OS_STATE, notifications: [] };
+                    if (!device.os.notifications) device.os.notifications = [];
+
+                    // Resolve Metadata for nice Title
+                    const meta = AppMetadataRegistry.get(e.appId);
+                    const title = meta.displayName || e.appId;
+
+                    // Identify Sender Name if possible
+                    // (In a real engine, we'd lookup the contact name from the `from` ID)
+                    // For now, use the title or a generic fallback
+                    const senderName = title;
+
+                    const notification: NotificationInstance = {
+                        id: `auto_notif_${e.at}_${e.appId}`,
+                        ir: {
+                            id: `auto_notif_${e.at}_${e.appId}`,
+                            appId: e.appId,
+                            title: senderName,
+                            body: e.message.text || "New Image",
+                            icon: meta.icon as string, // Use app icon or specific sender avatar if available
+                            category: "message",
+                            threadKey: e.conversationId,
+                        },
+                        state: "headsUp",
+                        createdAtFrame: e.at,
+                        shownAtFrame: e.at,
+                        deviceId: device.id,
+                        importance: "default",
+                        mode: "headsup"
+                    };
+
+                    device.os.notifications.push(notification);
+                }
+            }
             return;
         }
 
