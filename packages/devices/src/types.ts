@@ -101,6 +101,8 @@ export interface DeviceProfile {
     id: string;
     dimensions: { width: number; height: number };
     statusBarHeight: number;
+    /** Scale factor (e.g. 3.0 for Super Retina) */
+    pixelDensity: number;
 
     /** Platform type */
     platform: "ios" | "android";

@@ -662,21 +662,21 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
 
                     // Resolve Metadata for nice Title
                     const meta = AppMetadataRegistry.get(e.appId);
-                    const title = meta.displayName || e.appId;
 
-                    // Identify Sender Name if possible
-                    // (In a real engine, we'd lookup the contact name from the `from` ID)
-                    // For now, use the title or a generic fallback
-                    const senderName = title;
+                    // Identify Sender Name
+                    // If message is from someone specific (not "me"), use their name.
+                    // Otherwise fallback to app name.
+                    const fromName = e.message.from === "me" ? null : e.message.from;
+                    const title = fromName || meta.displayName || e.appId;
 
                     const notification: NotificationInstance = {
                         id: `auto_notif_${e.at}_${e.appId}`,
                         ir: {
                             id: `auto_notif_${e.at}_${e.appId}`,
                             appId: e.appId,
-                            title: senderName,
+                            title: title,
                             body: e.message.text || "New Image",
-                            icon: meta.icon as string, // Use app icon or specific sender avatar if available
+                            icon: meta.icon as string, // Use app icon (Strategy will upgrade to Avatar if we had a contact registry)
                             category: "message",
                             threadKey: e.conversationId,
                         },

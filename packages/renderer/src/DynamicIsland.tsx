@@ -144,15 +144,8 @@ export const DynamicIsland: React.FC<DynamicIslandProps> = ({
     // Find the notification that should be displayed as headsUp at current frame
     // A notification is visible in headsUp if: t >= at AND t < (at + duration)
     // 4. CHECK NOTIFICATIONS
-    // We disable this restricted logic because "HeadsUpNotification.tsx" now handles
-    // the main notification rendering (Card style).
-    // If we kept this, we'd get a double notification (Island Pill + Card).
-    // In a future refactor, we could merge them so the Island *is* the card.
-    /*
-    if (activeHeadsUp) {
-        return <NotificationDynamicIsland config={config} notification={activeHeadsUp} />;
-    }
-    */
+    // (Notifications are now handled exclusively by HeadsUpNotification.tsx)
+    // Legacy logic removed.
 
     // Get active background app IDs
     const activeAppIds = device.backgroundApps?.map(a => a.appId) || [];

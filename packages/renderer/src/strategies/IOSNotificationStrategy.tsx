@@ -30,7 +30,7 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                marginBottom: 6
+                marginBottom: 2
             }}>
                 {/* App Icon */}
                 <div style={{
@@ -54,7 +54,8 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                     fontWeight: 600,
                     textTransform: "uppercase",
                     letterSpacing: 0.3,
-                    opacity: 0.6
+                    opacity: 0.5,
+                    color: "black"
                 }}>
                     {appMeta.displayName || "APP"}
                 </span>
@@ -71,17 +72,18 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                 ) : (
                     // SMART CONTENT RENDERER
                     (() => {
+                        const isMessage = ir.category === 'message' || !!ir.icon;
                         const hasCustomIcon = !!ir.icon;
                         const isEmoji = hasCustomIcon && /^\p{Emoji}/u.test(ir.icon || "");
 
-                        if (hasCustomIcon) {
+                        if (isMessage && hasCustomIcon) {
                             return (
                                 <div style={{
                                     display: "flex",
                                     gap: 12,
                                     alignItems: "flex-start",
                                     width: "100%",
-                                    marginTop: 4
+                                    marginTop: 0
                                 }}>
                                     {/* Avatar */}
                                     <div style={{

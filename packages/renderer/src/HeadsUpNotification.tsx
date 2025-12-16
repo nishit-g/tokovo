@@ -9,6 +9,7 @@ interface HeadsUpNotificationProps {
     currentTime: number;
     variant?: "ios" | "android";
     autoDismissAfter?: number; // frames
+    density?: number;
 }
 
 /**
@@ -20,7 +21,8 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     notification,
     currentTime,
     variant = "ios",
-    autoDismissAfter = 150 // 5 seconds at 30fps
+    autoDismissAfter = 150,
+    density = 3
 }) => {
     const isAndroid = variant === "android";
     const ir = notification.ir;
@@ -69,12 +71,9 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     // Select Strategy
     const Strategy = isAndroid ? AndroidNotificationStrategy : IOSNotificationStrategy;
 
-    // Scale Logic
-    // If iOS, we want to simulate Logical Pixels (393px) on Physical Device (1179px) -> Scale 3.
-    // If Android, we might also want scale or direct rendering.
-    // Assuming Android strategy currently uses physical pixels? No, let's standardize.
-    // We will use AppSurface for BOTH.
-    const SCALE = 3;
+    // Scale Logic: Enterprise Grade
+    // Use the actual device density to scale Logical -> Physical
+    const SCALE = density;
 
     return (
         <div style={{

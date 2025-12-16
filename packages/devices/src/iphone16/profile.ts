@@ -29,6 +29,7 @@ export const iPhone16Profile: DeviceProfile = {
     platform: "ios",
     dimensions: { width: 1290, height: 2796 },
     statusBarHeight: 110,
+    pixelDensity: 3,
     camera: iPhone16Camera,
 
     // Dynamic Island dimensions (measured from iPhone 16 specs)

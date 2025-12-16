@@ -239,6 +239,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                                 currentTime={t}
                                 variant={variant}
                                 autoDismissAfter={headsUpDuration}
+                                density={profile.pixelDensity || 3} // Fallback to 3 if missing
                             />
                         )}
 
