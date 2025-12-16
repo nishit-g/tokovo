@@ -1,6 +1,8 @@
 export * from "./types";
-export * from "./engine";
 export * from "./tokens";
+export * from "./engine";
+export { AppRegistry } from "./app-registry";
+export type { AppViewProps, AppViewComponent } from "./app-registry";
 export * from "./camera";
 export * from "./sounds";
 export * from "./constants";

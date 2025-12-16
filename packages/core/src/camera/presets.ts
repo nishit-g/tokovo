@@ -555,24 +555,6 @@ export const SHOT_PRESETS = {
 
 export type ShotPresetId = keyof typeof SHOT_PRESETS;
 
-// =============================================================================
-// ANCHOR FRAMING CONFIGURATION (Layer 3: Semantic Interpretation)
-// =============================================================================
-
-/**
- * Framing instruction for how to position anchor in frame.
- * @deprecated Moved to @tokovo/core/anchors.ts
- */
-export interface AnchorFraming {
-    /** Anchor point within frame: normalized 0-1 (x, y) */
-    anchorPoint: { x: number; y: number };
-
-    /** Padding around anchor in pixels */
-    paddingPx?: number;
-
-    /** Target fill: how much of frame the anchor should occupy (0-1) */
-    targetFill?: number;
-}
 
 
 // NOTE: ANCHOR_FRAMING constant has been removed. 

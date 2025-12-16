@@ -16,3 +16,7 @@ export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
 
 // Export behaviors (Semantic Camera System)
 export * from "./behaviors";
+
+import { AppRegistry } from "@tokovo/core";
+import { TwitterUI } from "./ui";
+AppRegistry.register("app_twitter", TwitterUI as any);

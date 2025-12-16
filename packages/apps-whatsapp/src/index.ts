@@ -18,4 +18,9 @@ export * from "./notification-adapter";
 export * from "./behaviors";
 
 
+import { AppRegistry, APP_IDS } from "@tokovo/core";
+import { WhatsappChatView } from "./ui";
+
+AppRegistry.register(APP_IDS.WHATSAPP, WhatsappChatView as any);
+
 export * from "./layout";

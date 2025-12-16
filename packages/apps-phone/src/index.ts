@@ -31,3 +31,7 @@ import { PhoneAnchorProvider } from "./provider";
 
 registerPhonePlugin();
 AnchorRegistry.register(PhoneAnchorProvider);
+
+import { AppRegistry, APP_IDS } from "@tokovo/core";
+import { PhoneApp } from "./ui";
+AppRegistry.register(APP_IDS.PHONE, PhoneApp as any);
