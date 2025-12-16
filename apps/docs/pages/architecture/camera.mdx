@@ -102,6 +102,17 @@ Focus on a semantic anchor with a shot preset. Sets origin once and zooms.
 dsl.camera.anchorFocus(100, "lastMessage", "dramatic", 5)
 ```
 
+### Sticky vs. Scrolled Anchors
+
+<Callout type="info">
+<strong>Smart Coordinate Handling</strong>: The engine automatically handles coordinate spaces for sticky vs. scrolled elements.
+</Callout>
+
+*   **Scrolled Elements** (e.g., `lastMessage`): The engine subtracts the current scroll offset to map the element's content position to viewport space.
+*   **Sticky Elements** (e.g., `profile`, `header`, `inputArea`): Must be flagged with `metadata: { sticky: true }` in the Anchor Provider. The engine uses their raw coordinates without scroll adjustment.
+
+This ensures that a focus on `lastMessage` works correctly even deep in a chat history, while `profile` remains rock-steady at the top.
+
 ### ANCHOR_TRACK (Continuous Following)
 
 <Callout type="warning">
@@ -340,7 +351,15 @@ export const MyAppAnchorProvider: AnchorProvider = {
     // Always provide device fallback
     anchors.device = { x: 0, y: 0, width: 430, height: 932 };
     
-    return { anchors, deviceId, appId: "app_myapp" };
+    return { 
+        anchors: {
+            ...anchors,
+            // Add metadata for sticky elements!
+            myStickyNav: { ...rect, metadata: { sticky: true } }
+        }, 
+        deviceId, 
+        appId: "app_myapp" 
+    };
   }
 };
 

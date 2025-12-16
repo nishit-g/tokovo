@@ -112,6 +112,24 @@ const events = [
 ];
 ```
 
+### Pattern 5: Character Intro (The "Profile Glance")
+
+Establish who is speaking or set the tone by focusing on their profile picture (a sticky element).
+
+```typescript
+const events = [
+  // 1. Establish the character context (Focus on Profile)
+  dsl.camera.anchorFocus(0, "profile", "dramatic"),
+  dsl.camera.hold(0, 45), // Let it registrer
+  
+  // 2. Cut to the chat
+  dsl.camera.reset(45, 20),
+  
+  // 3. Action starts
+  dsl.messages.receive(70, "conv_1", "Vicky", "I have a crazy idea..."),
+];
+```
+
 ---
 
 ## Shot Presets
@@ -160,6 +178,7 @@ const events = [
 | Anchor | Available When | Best Presets |
 |--------|----------------|--------------|
 | `lastMessage` | Chat screen, messages exist | `message`, `dramatic`, `snap` |
+| `profile` | Chat screen (Sticky Header) | `dramatic` |
 | `inputArea` | Chat screen | `subtle` |
 | `typingIndicator` | Typing in progress | `subtle` |
 | `dynamicIsland` | iOS, notification showing | `interrupt` |

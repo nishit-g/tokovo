@@ -233,6 +233,7 @@ dsl.anchorFocus(120, "lastMessage", "snap", 2);
 | Anchor | Description | Apps |
 |--------|-------------|------|
 | `lastMessage` | Most recent message bubble | WhatsApp, Instagram |
+| `profile` | Profile picture (Sticky) | WhatsApp |
 | `inputArea` | Text input field | All chat apps |
 | `typingIndicator` | Typing dots | WhatsApp |
 | `callPoster` | Contact poster | Phone |
@@ -264,6 +265,10 @@ const originY = (650 + 45/2) / 932;  // 0.721
 // 3. Result: camera zooms to ACTUAL message location
 // transform-origin: 44.2% 72.1%
 ```
+
+**Note:** The system automatically handles **scroll compensation**.
+- Anchors like `lastMessage` are adjusted based on scroll position.
+- Sticky anchors like `profile` or `inputArea` (if flagged) are treated as viewport-relative.
 
 See [Camera System](/architecture/camera) for full documentation.
 
