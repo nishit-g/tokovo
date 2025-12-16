@@ -18,6 +18,25 @@ export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" |
 export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
 
 /**
+ * EXTENSIBLE REGISTRIES
+ * Plugins can use Module Augmentation to add their own types here.
+ * 
+ * Example:
+ * declare module "@tokovo/core" {
+ *   interface AppScreens {
+ *     "app_whatsapp": "chat" | "list";
+ *   }
+ * }
+ */
+export interface AppScreens {
+    [key: string]: string; // Fallback for unknown apps
+}
+
+export interface AppCallTypes {
+    [key: string]: string;
+}
+
+/**
  * NotificationIR - Production-grade notification representation
  */
 export interface Notification {
@@ -184,15 +203,18 @@ export interface BackgroundAppState {
 // =============================================================================
 
 /** Call display mode - controlled via DSL */
-export type CallDisplayMode = "overlay" | "fullscreen";
+export type CallDisplayMode = "overlay" | "fullscreen" | (string & {});
 
-/** Call type */
-export type CallType = "voice" | "video" | "facetime" | "whatsapp";
+/** 
+ * Call type 
+ * Open for extension by plugins (e.g. "telegram", "messenger")
+ */
+export type CallType = "voice" | "video" | "facetime" | "whatsapp" | (string & {});
 
 /** iOS Contact Poster metadata (iOS 17+) */
 export interface CallerMetadata {
     posterImage?: string;
-    posterStyle?: "modern" | "classic";
+    posterStyle?: "modern" | "classic" | (string & {});
     posterNameFont?: string;
 }
 

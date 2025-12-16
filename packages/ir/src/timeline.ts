@@ -165,7 +165,12 @@ export interface ScreenNavigatedOp extends TimelineOpBase {
     readonly kind: "ScreenNavigated";
     readonly deviceId: string;
     readonly appId: string;
-    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls";
+    /** 
+     * Screen identifier. 
+     * Standard: "chats-list" | "chat" | "settings" | "status" | "calls"
+     * Open for extension: "feed" | "reels" | "profile" | etc.
+     */
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls" | (string & {});
     readonly conversationId?: string;  // For "chat" screen
     readonly transition?: "push" | "pop" | "present" | "dismiss";
 }
@@ -274,7 +279,20 @@ export type TimelineOp =
     | TimelinePOVSwitchOp
     | TimelineSplitPOVOp
     | TimelineAnchorFocusOp
-    | TimelineAnchorTrackOp;
+    | TimelineAnchorTrackOp
+    | CustomOp;
+
+/**
+ * Custom Operation - Escape hatch for plugin-specific events.
+ * Allows plugins to define new event types without forking the IR.
+ */
+export interface CustomOp extends TimelineOpBase {
+    readonly kind: "Custom";
+    readonly deviceId?: string;
+    readonly appId?: string;
+    readonly eventType: string;
+    readonly payload?: Record<string, any>;
+}
 
 // =============================================================================
 // TIMELINE IR (COMPLETE)

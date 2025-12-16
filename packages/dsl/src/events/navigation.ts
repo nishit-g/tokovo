@@ -33,10 +33,17 @@ export const navigation = {
     /**
      * Navigate within current app
      */
-    navigateScreen: (
+    /**
+     * Navigate within current app
+     * 
+     * @example
+     * // Autocompletes 'screen' based on 'appId'!
+     * dsl.navigation.navigateScreen(0, "app_whatsapp", "chat")
+     */
+    navigateScreen: <ID extends keyof import("@tokovo/core").AppScreens>(
         at: number,
-        appId: string,
-        screen: string,
+        appId: ID,
+        screen: import("@tokovo/core").AppScreens[ID],
         options?: {
             transition?: "push" | "pop" | "present" | "dismiss";
             duration?: number
@@ -44,9 +51,9 @@ export const navigation = {
     ): TimelineEvent => ({
         at,
         kind: "APP",
-        appId,
+        appId: appId as string,
         type: "NAVIGATE_SCREEN",
-        screen,
+        screen: screen as string,
         transition: options?.transition,
         animationDuration: options?.duration
     } as any)

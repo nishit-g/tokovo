@@ -31,3 +31,12 @@ SoundRegistry.registerMany({
 });
 
 export * from "./layout";
+
+// Type Augmentation
+declare module "@tokovo/core" {
+    interface AppScreens {
+        "app_whatsapp": "chat" | "list" | "status" | "settings";
+        // Support short alias if used
+        "whatsapp": "chat" | "list" | "status" | "settings";
+    }
+}
