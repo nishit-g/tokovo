@@ -11,7 +11,6 @@ import {
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
-import { Spotify } from "@tokovo/apps-spotify";
 
 // Import device reducer
 import "@tokovo/devices";
@@ -23,8 +22,9 @@ import "@tokovo/devices";
  * - DSL helpers abstract away raw event structure
  * - Camera movements synchronized with story beats
  * - Production audio with buses and ducking
- * - Spotify background music (Now Playing widget)
  * - Notification system with grouping
+ * 
+ * NOTE: Spotify and Instagram dependencies removed.
  */
 
 // =============================================================================
@@ -111,39 +111,6 @@ const dsl = {
         easing: "ease-out",
     } as any),
 
-    // Spotify - Background Music
-    spotifyPlay: (at: number, track: { name: string; artist: string; albumArt?: string }): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_spotify",
-        type: "PLAY_TRACK",
-        track,
-    } as any),
-
-    spotifyBackground: (at: number, deviceId: string, track: { name: string; artist: string }): TimelineEvent => ({
-        at,
-        kind: "DEVICE",
-        deviceId,
-        type: "START_BACKGROUND_APP",
-        appId: "app_spotify",
-        indicator: "music",
-        label: `${track.name} - ${track.artist}`,
-    } as any),
-
-    // Notifications
-    notification: (at: number, deviceId: string, opts: { appId: string; title: string; body: string; mode?: string; threadId?: string; icon?: string }): TimelineEvent => ({
-        at,
-        kind: "DEVICE",
-        deviceId,
-        type: "SHOW_NOTIFICATION",
-        appId: opts.appId,
-        title: opts.title,
-        body: opts.body,
-        mode: opts.mode ?? "headsup",
-        threadId: opts.threadId,
-        icon: opts.icon,
-    } as any),
-
     // Audio
     playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
         at,
@@ -161,18 +128,10 @@ const dsl = {
         kind: "AUDIO",
         type: "STOP_SOUND",
         instanceId,
+        volume: 0,
+        duration: 0,
+        loop: false,
     } as any),
-};
-
-// =============================================================================
-// DEMO TRACK
-// =============================================================================
-
-const DEMO_TRACK = {
-    name: "Blinding Lights",
-    artist: "The Weeknd",
-    album: "After Hours",
-    albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
 };
 
 // =============================================================================
@@ -205,10 +164,6 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
                 screen: "chat",
                 conversationId: "dm_ex",
             },
-            app_spotify: {
-                screen: "player",
-                isMinimized: true,
-            },
         },
         camera: {
             baseView: "APP_VIEW",
@@ -232,12 +187,6 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
     // -------------------------------------------------------------------------
     const events: TimelineEvent[] = [
         // =====================================================================
-        // ACT 0: SPOTIFY STARTS (background music)
-        // =====================================================================
-        dsl.spotifyPlay(0, DEMO_TRACK),
-        dsl.spotifyBackground(0, "phone", DEMO_TRACK),
-
-        // =====================================================================
         // ACT 1: ESTABLISHING (0-3s)
         // =====================================================================
         dsl.zoom(0, 1.15, 1, { originY: 1.0 }),
@@ -251,17 +200,6 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
         dsl.playSound(90, "whatsapp_received", 0.9),
         dsl.pan(90, 0, 50, 45),
         dsl.zoom(100, 1.03, 35, { originY: 0.75 }),
-
-        // =====================================================================
-        // ACT 3: INSTAGRAM NOTIFICATION (4s) - demo grouping
-        // =====================================================================
-        dsl.notification(120, "phone", {
-            appId: "app_instagram",
-            title: "mike_photos",
-            body: "Liked your photo ❤️",
-            threadId: "ig_likes",
-            icon: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
-        }),
 
         // =====================================================================
         // ACT 4: TYPING ANTICIPATION (5s)
@@ -278,16 +216,6 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
         dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
         dsl.playSound(240, "whatsapp_received", 1.0),
         dsl.zoom(240, 1.12, 8, { originY: 0.7 }),
-
-        // =====================================================================
-        // ACT 6: ANOTHER IG NOTIFICATION (9s) - grouped with previous
-        // =====================================================================
-        dsl.notification(270, "phone", {
-            appId: "app_instagram",
-            title: "sarah_travels",
-            body: "Also liked your photo ❤️",
-            threadId: "ig_likes",
-        }),
 
         // =====================================================================
         // ACT 7: BREATHING ROOM (10s)
@@ -337,8 +265,6 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
 // VIDEO COMPONENT
 // =============================================================================
 
-import { Instagram } from "@tokovo/apps-instagram";
-
 export const FullCinematicShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
@@ -347,8 +273,6 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
     const pluginManager = useMemo(() => {
         const pm = new PluginManagerClass();
         pm.register(WhatsApp);
-        pm.register(Spotify);
-        pm.register(Instagram);
         return pm;
     }, []);
 

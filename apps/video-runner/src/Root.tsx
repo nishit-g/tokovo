@@ -1,7 +1,6 @@
 import React from "react";
 import { Composition } from "remotion";
 import { AndroidVideo } from "./AndroidVideo";
-import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
@@ -175,14 +174,6 @@ export const RemotionRoot: React.FC = () => {
                 id="AndroidNotificationTest"
                 component={AndroidVideo}
                 durationInFrames={150}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="InstagramDMTest"
-                component={InstagramVideo}
-                durationInFrames={300}
                 fps={30}
                 width={1080}
                 height={1920}

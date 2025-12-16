@@ -88,12 +88,6 @@ AppMetadataRegistry.register("app_whatsapp", {
     viewStrategy: "CHAT"
 });
 
-AppMetadataRegistry.register("app_instagram", {
-    displayName: "Instagram",
-    themeColor: "#E1306C", // Instagram Gradient-ish
-    icon: "📸",
-    viewStrategy: "FEED" // Default to FEED, though logic might checking state
-});
 
 AppMetadataRegistry.register("app_gmail", {
     displayName: "Gmail",
