@@ -60,6 +60,20 @@ export const keyboardReducer: FeatureReducer = (
         if (e.type === "keyDown") {
             device.keyboard.currentKey = e.key;
             device.keyboard.keyPressedAt = event.at;
+
+            // Handle Backspace logic for V2
+            if (e.key === "Backspace") {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    device.keyboard.inputText = newText;
+                    device.keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+
             // AUDIO: Handled by AutoSound Rules
         } else {
             device.keyboard.currentKey = null;

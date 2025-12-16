@@ -52,9 +52,10 @@ export const keyboard = {
      */
     backspace: (at: number, deviceId: string): TimelineEvent => ({
         at,
-        kind: "KEYBOARD",
-        type: "BACKSPACE",
+        kind: "KeyboardInput",
+        type: "keyDown",
         trace: createTrace(Tracer.capture()),
+        key: "Backspace",
         deviceId,
     } as TimelineEvent),
 
@@ -168,36 +169,16 @@ export const keyboard = {
             }
 
             // Normal Key Press
-            // Press
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "KEY_DOWN",
-                trace,
-                deviceId,
-                key: char
-            } as TimelineEvent);
+            // Press - V2
+            events.push(keyboard.keyDown(t, deviceId, char));
 
-            // Commit char (Input Change happens here)
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "TYPE_CHAR",
-                trace,
-                deviceId,
-                char
-            } as TimelineEvent);
+            // Commit char (Input Change happens here) - V2
+            events.push(keyboard.typeChar(t, deviceId, char));
 
             t += Math.floor(baseSpeed * 0.5);
 
-            // Release
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "KEY_UP",
-                trace,
-                deviceId
-            } as TimelineEvent);
+            // Release - V2
+            events.push(keyboard.keyUp(t, deviceId));
 
             // Delay next char
             t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
