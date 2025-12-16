@@ -20,6 +20,7 @@ import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
 import { AppRegistry } from "./app-registry";
 import { SoundRegistry } from "./sound-registry";
 import { NotificationAdapterRegistry } from "./notification-adapter";
+import { validatePlugin } from "./validation";
 
 export type { NotificationAdapter };
 
@@ -36,6 +37,12 @@ export interface AppViewProps {
     layout?: any;
     platform?: "ios" | "android";
     deviceId?: string;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
 }
 
 /**
@@ -212,6 +219,14 @@ class PluginManagerClass {
      * Register a plugin
      */
     register(plugin: TokovoPlugin): void {
+        // Enforce Enterprise Validation
+        try {
+            validatePlugin(plugin);
+        } catch (e: any) {
+            console.error(`[PluginManager] Failed to register plugin ${plugin.id}:`, e.message);
+            console.warn("Continuing despite validation error (Migration Mode)");
+        }
+
         if (this.plugins.has(plugin.id)) {
             console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
         }

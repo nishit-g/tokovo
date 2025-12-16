@@ -373,5 +373,44 @@ export const SceneIRSchema = z.object({
     })).optional()
 });
 
-// function removed to avoid conflict with validate.ts
+// =============================================================================
+// NOTIFICATION SCHEMAS
+// =============================================================================
+
+export const NotificationActionSchema = z.object({
+    id: z.string(),
+    label: z.string(),
+    icon: z.string().optional(),
+    destructive: z.boolean().optional(),
+});
+
+export const NotificationIRSchema = z.object({
+    id: z.string(),
+    appId: z.string(),
+    channelId: z.string().optional(),
+    title: z.string(),
+    body: z.string(),
+    icon: z.string().optional(),
+    preview: z.object({
+        kind: z.enum(["text", "image", "video"]),
+        value: z.string(),
+        aspectRatio: z.number().optional(),
+    }).optional(),
+    payload: z.any().optional(),
+    category: z.enum(["message", "call", "system", "reminder"]).optional(),
+    threadKey: z.string().optional(),
+    groupKey: z.string().optional(),
+    peopleIds: z.array(z.string()).optional(),
+    actions: z.array(NotificationActionSchema).optional(),
+    replyable: z.boolean().optional(),
+});
+
+// =============================================================================
+// HELPER FOR GENERIC VALIDATION
+// =============================================================================
+
+export function validateNotificationIR(data: unknown) {
+    return NotificationIRSchema.parse(data);
+}
+
 

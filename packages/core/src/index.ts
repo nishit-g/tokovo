@@ -16,6 +16,7 @@ export * from "./constants";
 export * from "./typeGuards";
 export * from "./eventUtils";
 export * from "./plugin";
+export * from "./validation"; // [NEW] Runtime Validation
 export * from "./widget-registry";
 export * from "./components/AppSurface";
 export * from "./notification-adapter";
