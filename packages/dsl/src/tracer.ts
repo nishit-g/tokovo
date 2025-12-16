@@ -1,4 +1,5 @@
-import 'source-map-support/register';
+// Source map support removed for browser compatibility
+
 import { Trace } from "@tokovo/ir";
 
 /**
