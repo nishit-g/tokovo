@@ -97,22 +97,44 @@ export interface StatusBarWidgetConfig {
 /**
  * Device profile defining physical characteristics and camera behavior
  */
+export interface DeviceShell {
+    /** Unique ID (e.g. "iphone16", "pixel6") */
+    id: string;
+
+    /** The outer frame component (bezel + screen container) */
+    FrameComponent: React.ComponentType<any>;
+
+    /** The System UI (Status Bar) */
+    StatusBarComponent: React.ComponentType<any>;
+
+    /** The Home Indicator (Bottom bar) */
+    HomeIndicatorComponent?: React.ComponentType<any>;
+
+    /** Physical config */
+    cornerRadius: number;
+    hasDynamicIsland: boolean;
+}
+
 export interface DeviceProfile {
     id: string;
-    dimensions: { width: number; height: number };
-    statusBarHeight: number;
-    /** Scale factor (e.g. 3.0 for Super Retina) */
+    name: string;
+    type: "phone" | "tablet" | "desktop" | "watch";
+    dimensions: {
+        width: number;
+        height: number;
+        depth?: number;
+    };
+    screen: {
+        width: number;
+        height: number;
+        ppi: number;
+        cornerRadius: number;
+    };
     pixelDensity: number;
-
-    /** Platform type */
-    platform: "ios" | "android";
-
     /** Camera behavior configuration (uses defaults if not specified) */
     camera?: CameraDeviceConfig;
 
     /** Dynamic Island configuration (iOS only) */
     dynamicIsland?: DynamicIslandConfig;
-
-    /** Status bar widget configuration (Android only) */
     statusBarWidget?: StatusBarWidgetConfig;
 }

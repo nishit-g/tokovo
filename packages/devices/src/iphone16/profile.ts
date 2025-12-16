@@ -26,9 +26,15 @@ const iPhone16Camera: CameraDeviceConfig = {
  */
 export const iPhone16Profile: DeviceProfile = {
     id: "iphone16",
-    platform: "ios",
+    name: "iPhone 16 Pro Max",
+    type: "phone",
     dimensions: { width: 1290, height: 2796 },
-    statusBarHeight: 110,
+    screen: {
+        width: 1290,
+        height: 2796,
+        ppi: 460,
+        cornerRadius: 55,
+    },
     pixelDensity: 3,
     camera: iPhone16Camera,
 

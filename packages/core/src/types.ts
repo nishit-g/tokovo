@@ -418,6 +418,22 @@ export interface DeviceState {
 
     // === OS LAYER (clock, battery, network, DND) ===
     os?: DeviceOSState;
+
+    // === SCHEDULER STATE (V2) ===
+    /**
+     * Source of truth for what IS showing.
+     * Computed by the Engine, consumed by Renderer.
+     */
+    notificationQueues?: NotificationQueueState;
+}
+
+export interface NotificationQueueState {
+    /** The single notification currently showing as Heads-Up */
+    headsUp: NotificationInstance | null;
+    /** Notifications currently on lockscreen (ordered) */
+    lockScreen: NotificationInstance[];
+    /** Dynamic Island state (expanded/compact) */
+    dynamicIsland?: any;
 }
 
 

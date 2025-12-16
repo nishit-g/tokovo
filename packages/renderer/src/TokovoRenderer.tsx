@@ -16,8 +16,10 @@ import {
     EventIndex,
     PluginManager,
     APP_IDS,
+    NotificationScheduler,
 } from "@tokovo/core";
-import { DeviceFrame } from "./DeviceFrame";
+// import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
+import { DeviceRegistry } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
@@ -113,69 +115,13 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // 3. HELPER: Find active heads-up notification
     // ==========================================================================
     // ==========================================================================
-    // 3. HELPER: Find active heads-up notification
+    // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
     // ==========================================================================
-    // ==========================================================================
-    // 3. HELPER: Find active heads-up notification (Smart Queuing)
-    // ==========================================================================
-    const activeHeadsUp = React.useMemo(() => {
-        // Safe access to notifications from OS
-        const notifications = device.os?.notifications || [];
+    const notificationState = React.useMemo(() => {
+        return NotificationScheduler.schedule(device, t);
+    }, [device, t]);
 
-        if (notifications.length === 0 || device.isLocked) return null;
-        if (!showHeadsUpWhenAppOpen && appId) return null;
-
-        // Filter relevant notifications
-        const candidates = notifications.filter(n => {
-            const mode = n.mode || "both";
-            if (mode === "lockscreen") return false;
-            // Ignore dismissed purely by manual interactions (we handle auto-dismiss timing here)
-            if (n.state === "dismissed" && n.dismissedAtFrame) return false;
-            return true;
-        });
-
-        if (candidates.length === 0) return null;
-
-        // SMART QUEUE ALGORITHM
-        // Serialize the timeline so notifications allow each other to finish.
-        // Even if scheduled 10ms apart, they will play sequentially.
-
-        const MIN_DURATION = 90; // Minimum 3 seconds visibility
-        const GAP = 10; // Gap between notifications
-
-        let lastEndTime = 0;
-        let active: NotificationInstance | null = null;
-
-        // Sort by creation time to establish order
-        const sorted = [...candidates].sort((a, b) => a.createdAtFrame - b.createdAtFrame);
-
-        for (const n of sorted) {
-            // The earliest this notification can show is its creation time.
-            // But if the previous one is still showing, we must wait.
-            // effectiveStart = max(created, lastEndTime + GAP)
-            const effectiveStart = Math.max(n.createdAtFrame, lastEndTime > 0 ? lastEndTime + GAP : 0);
-
-            // Effective Duration (fallback to config default if not set)
-            const duration = headsUpDuration;
-            const effectiveEnd = effectiveStart + duration;
-
-            // Update lastEndTime for the next iteration
-            lastEndTime = effectiveEnd;
-
-            // Check if current time `t` falls within this window
-            if (t >= effectiveStart && t < effectiveEnd) {
-                active = n;
-                // Important: We artificially adjust the 'shownAtFrame' property 
-                // for the *Component* so it animates correctly relative to its *effective* start.
-                // We clone to avoid mutating the Redux state directly in render.
-                active = { ...n, shownAtFrame: effectiveStart };
-                break;
-            }
-        }
-
-        return active;
-
-    }, [device.os?.notifications, device.isLocked, showHeadsUpWhenAppOpen, appId, headsUpDuration, t]);
+    const activeHeadsUp = notificationState.headsUp;
 
     // DEBUG: Notification State
     if (debug && t % 30 === 0) {
@@ -200,33 +146,32 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 5. RENDER — Paint the blueprints
     // ==========================================================================
+
+    // Resolve Device Shell
+    const shell = DeviceRegistry.get(device.profileId) || DeviceRegistry.get("iphone16");
+    if (!shell) return null; // Should not happen with fallback
+
+    const { FrameComponent, StatusBarComponent } = shell;
+
     return (
         <div style={{
             width: profile.dimensions.width,
             height: profile.dimensions.height,
             position: "relative",
-            // overflow: "hidden", // ALLOW BEZEL SHADOW TO BE VISIBLE
         }}>
             {/* Camera wrapper — applies cinematic transforms */}
             <div style={cameraStyle}>
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <DeviceFrame profileId={device.profileId} variant={variant} device={device}>
-                        {/* Call View - Plugin-based (or fallback to CallOverlay) */}
+                    <FrameComponent statusBar={<StatusBarComponent os={device.os} variant={variant} />}>
+
+                        {/* Call View - Plugin-based */}
                         {hasActiveCall && (() => {
                             const PhoneView = PluginManager.getView(APP_IDS.PHONE);
-                            console.log('[TokovoRenderer] PhoneView lookup:', APP_IDS.PHONE, '→', PhoneView ? 'FOUND' : 'NOT FOUND');
                             if (PhoneView) {
                                 return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
                             }
-                            // Fallback to built-in CallOverlay if no plugin registered
-                            return (
-                                <CallOverlay
-                                    call={device.call!}
-                                    currentTime={t}
-                                    variant={variant}
-                                />
-                            );
+                            return <CallOverlay call={device.call!} currentTime={t} variant={variant} />;
                         })()}
 
                         {/* App View / Lockscreen / Home Screen */}
@@ -276,12 +221,12 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                                 currentTime={t}
                                 variant={variant}
                                 autoDismissAfter={headsUpDuration}
-                                density={profile.pixelDensity || 3} // Fallback to 3 if missing
+                                density={profile.pixelDensity || 3}
                             />
                         )}
 
-                        {/* Dynamic Island (iOS) */}
-                        {!device.isLocked && !hasActiveCall && (
+                        {/* Dynamic Island (iOS) - Only if Shell supports it */}
+                        {shell.hasDynamicIsland && !device.isLocked && !hasActiveCall && (
                             <DynamicIsland
                                 device={device}
                                 deviceProfile={profile}
@@ -300,7 +245,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                                 width={profile.dimensions.width}
                             />
                         )}
-                    </DeviceFrame>
+
+                    </FrameComponent>
                 </div>
             </div>
 

@@ -27,6 +27,7 @@ export * from "./anchors";
 export * from "./behavior-registry";
 export * from "./apps-config";
 export * from "./notification-registry";
+export * from "./scheduler/notification-scheduler";
 
 
 

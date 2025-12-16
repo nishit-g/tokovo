@@ -26,13 +26,21 @@ const PixelCamera: CameraDeviceConfig = {
  */
 export const PixelProfile: DeviceProfile = {
     id: "pixel",
-    platform: "android",
+    name: "Pixel 7 Pro",
+    type: "phone",
     dimensions: {
         width: 1080,
         height: 2400,
     },
+    screen: {
+        width: 1080,
+        height: 2400,
+        ppi: 512,
+        cornerRadius: 24, // Approximation
+    },
     statusBarHeight: 90,
     camera: PixelCamera,
+    pixelDensity: 3,
 
     // Android uses status bar for background app indicators
     statusBarWidget: {
