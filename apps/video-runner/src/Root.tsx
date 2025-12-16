@@ -1,12 +1,6 @@
 import React from "react";
 import { Composition } from "remotion";
-import { AndroidVideo } from "./AndroidVideo";
-import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
-import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
-import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
-import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
 import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
-import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
@@ -37,8 +31,8 @@ export const RemotionRoot: React.FC = () => {
                 component={AutoDirectorShowcase}
                 durationInFrames={450}
                 fps={30}
-                width={1920}
-                height={1080}
+                width={1080}
+                height={1920}
             />
             <Composition
                 id="NotificationShowcase2"
@@ -105,14 +99,6 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
             <Composition
-                id="CinematicCameraShowcase"
-                component={CinematicCameraShowcaseVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
                 id="MultiAppShowcase"
                 component={MultiAppShowcaseVideo}
                 durationInFrames={900}
@@ -149,47 +135,6 @@ export const RemotionRoot: React.FC = () => {
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}
                 durationInFrames={420}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="MultiPovDemo"
-                component={MultiPovDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="CameraShowcase"
-                component={CameraShowcaseVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-
-            <Composition
-                id="AndroidNotificationTest"
-                component={AndroidVideo}
-                durationInFrames={150}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="NotificationCallDemo"
-                component={NotificationCallDemoVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="HomeScreenGroupDemo"
-                component={HomeScreenGroupDemoVideo}
-                durationInFrames={900}
                 fps={30}
                 width={1080}
                 height={1920}
