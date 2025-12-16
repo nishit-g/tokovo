@@ -1,20 +1,20 @@
 /**
  * Sound Registry - Maps sound IDs to audio files
  * 
- * Place audio files in apps/video-runner/public/sounds/
+ * REFACTORED: Now uses the dynamic SoundRegistry.
+ * This file registers the CORE (generic) sounds. 
+ * App-specific sounds are registered by the apps themselves.
  */
 
-export const SOUND_REGISTRY: Record<string, string> = {
-    // WhatsApp sounds
-    "whatsapp_sent": "whatsapp-sent.mp3",
-    "whatsapp_received": "whatsapp-received.mp3",
-    "whatsapp_typing": "typing.mp3",
+import { SoundRegistry } from "./sound-registry";
 
+// Register Core Sounds (Generic UI, OS, Ambient)
+SoundRegistry.registerMany({
     // Notification sounds
     "notification": "notification.mp3",
     "notification_soft": "notification-soft.mp3",
 
-    // Call sounds
+    // Call sounds (Generic)
     "ringtone": "ringtone.mp3",
     "call_end": "call-end.mp3",
 
@@ -23,20 +23,27 @@ export const SOUND_REGISTRY: Record<string, string> = {
     "screenshot": "screenshot.mp3",
     "lock": "lock.mp3",
     "unlock": "unlock.mp3",
+    "tap": "tap.mp3",
+    "keyboard_click": "keyboard-click.mp3",
 
     // Ambient / Music
     "suspense": "suspense.mp3",
     "dramatic": "dramatic.mp3",
-};
+});
 
 /**
  * Get sound file path for a sound ID
+ * Uses the dynamic SoundRegistry.
  */
 export function getSoundPath(soundId: string): string {
-    const filename = SOUND_REGISTRY[soundId];
-    if (!filename) {
-        console.warn(`Unknown sound ID: ${soundId}`);
-        return `sounds/${soundId}.mp3`; // Fallback to direct ID
+    const path = SoundRegistry.getPath(soundId);
+    if (!path) {
+        // Fallback or warning
+        // console.warn(`[SoundRegistry] Unknown sound ID: ${soundId}`);
+        // Default behavior: Assume it's a direct filename in sounds/
+        return `sounds/${soundId}.mp3`;
     }
-    return `sounds/${filename}`;
+    return `sounds/${path}`;
 }
+
+export { SoundRegistry };

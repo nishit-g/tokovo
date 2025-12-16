@@ -18,9 +18,16 @@ export * from "./notification-adapter";
 export * from "./behaviors";
 
 
-import { AppRegistry, APP_IDS } from "@tokovo/core";
+import { AppRegistry, APP_IDS, SoundRegistry } from "@tokovo/core";
 import { WhatsappChatView } from "./ui";
 
 AppRegistry.register(APP_IDS.WHATSAPP, WhatsappChatView as any);
+
+// Register Sounds
+SoundRegistry.registerMany({
+    "whatsapp_sent": "whatsapp-sent.mp3",
+    "whatsapp_received": "whatsapp-received.mp3",
+    "whatsapp_typing": "typing.mp3",
+});
 
 export * from "./layout";

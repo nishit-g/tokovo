@@ -5,6 +5,7 @@ export { AppRegistry } from "./app-registry";
 export type { AppViewProps, AppViewComponent } from "./app-registry";
 export * from "./camera";
 export * from "./sounds";
+export * from "./sound-registry";
 export * from "./constants";
 export * from "./typeGuards";
 export * from "./eventUtils";
