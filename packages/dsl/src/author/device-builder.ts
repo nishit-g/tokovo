@@ -51,12 +51,18 @@ export class DeviceBuilder {
      * Define a conversation.
      * Also sets it as the current conversation for subsequent beats.
      */
-    conversation(id: string, config?: { name?: string; avatar?: string; type?: "dm" | "group" }): this {
+    conversation(id: string, config?: {
+        name?: string;
+        avatar?: string;
+        type?: "dm" | "group";
+        initialMessages?: Array<{ text: string; from: string; at?: string }>;
+    }): this {
         const def: ConversationDef = {
             id,
             name: config?.name,
             avatar: config?.avatar,
             type: config?.type ?? "dm",
+            initialMessages: config?.initialMessages,
         };
         this.conversations.push(def);
         this.currentConversationId = id;

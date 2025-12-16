@@ -483,6 +483,7 @@ export interface ConversationState {
     admins?: string[];               // Member IDs who are admins
 
     messages: Message[];
+    unreadCount?: number;
     typing?: Record<string, boolean>;
 }
 

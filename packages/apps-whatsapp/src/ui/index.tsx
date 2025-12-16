@@ -48,6 +48,7 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     switch (currentScreen) {
         case "list":
         case "chats":
+        case "chats-list":
             activeScreenContent = (
                 <ChatListScreen
                     world={world}

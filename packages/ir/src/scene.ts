@@ -622,6 +622,11 @@ export interface ConversationDef {
     readonly name?: string;
     readonly avatar?: string;
     readonly type?: "dm" | "group";
+    readonly initialMessages?: Array<{
+        text: string;
+        from: string; // "me" or other
+        at?: string; // "5m ago", "12:30", etc.
+    }>;
 }
 
 /**

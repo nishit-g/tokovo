@@ -39,7 +39,14 @@ function createInitialWorld(scene: SceneIR): WorldState {
                 type: conv.type === "group" ? "group" : "dm",
                 name: conv.name,
                 avatar: conv.avatar,
-                messages: [],
+                messages: (conv as any).initialMessages?.map((m: any, idx: number) => ({
+                    id: `init_${conv.id}_${idx}`,
+                    from: m.from,
+                    text: m.text,
+                    type: "text",
+                    timestamp: m.at, // UI uses this string
+                    at: 0
+                })) || [],
                 typing: {}
             };
         }

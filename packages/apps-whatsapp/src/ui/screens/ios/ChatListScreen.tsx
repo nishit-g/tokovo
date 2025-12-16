@@ -1,8 +1,10 @@
 import React from "react";
-import { Header } from "../../../components/ios/Header";
 import { WorldState } from "@tokovo/core";
-import { WhatsAppState } from "../../../types";
-import { WhatsAppIcon } from "../../../assets/metadata";
+import { ArchiveIcon } from "../../../components/ios/Icons";
+import { ChatListHeader } from "../../../components/ios/ChatListHeader";
+import { TabNavigation } from "../../../components/ios/TabNavigation";
+import { ChatListItem } from "../../../components/ios/ChatListItem";
+import { UI_CONSTANTS } from "../../../config/layout-config";
 
 export interface ChatListScreenProps {
     world: WorldState;
@@ -23,12 +25,24 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
     height
 }) => {
     // 1. Calculate Safe Areas (Resolution Independence)
+    // Receive logical dimensions from parent
     const designWidth = 393;
     const targetWidth = width || 1179;
     const scale = targetWidth / designWidth;
 
     const physicalSafeTop = safeAreaInsets?.top ?? 177;
+    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
+
     const safeAreaTop = physicalSafeTop / scale;
+    const safeAreaBottom = physicalSafeBottom / scale;
+
+    // 2. Data Preparation
+    const conversations = Object.values(world.conversations || {}).sort((a, b) => {
+        // Sort by last message timestamp (descending) mechanism to be added
+        // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
+        return 0;
+        // TODO: Add proper sorting when timestamp logic is solidified in core/episodes
+    });
 
     return (
         <div style={{
@@ -37,41 +51,101 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
             height: "100%",
             backgroundColor: "#FFFFFF",
             position: "relative",
-            paddingTop: safeAreaTop
         }}>
-            {/* Header */}
-            <div style={{
-                padding: "16px 20px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: "1px solid #EFEFEF"
-            }}>
-                <div style={{ fontSize: 32, fontWeight: "bold", color: "#000" }}>Chats</div>
-                <div style={{ color: "#007AFF", fontSize: 17 }}>Edit</div>
-            </div>
+            {/* Header (Sticky) */}
+            <ChatListHeader safeAreaTop={safeAreaTop} />
 
-            {/* List */}
-            <div style={{ padding: "0 20px" }}>
-                {/* Mock Item 1 */}
+            {/* Scrollable Content */}
+            <div style={{
+                flex: 1,
+                overflowY: "auto",
+                // Padding bottom for Tab Bar
+                paddingBottom: 85 + safeAreaBottom,
+                backgroundColor: "#FFFFFF",
+                WebkitOverflowScrolling: "touch", // Smooth scrolling
+            }}>
+                {/* Archived Row */}
                 <div style={{
                     display: "flex",
-                    padding: "12px 0",
-                    borderBottom: "1px solid #F0F0F0",
-                    gap: 12
+                    height: 56, // Slightly shorter than chat row
+                    alignItems: "center",
+                    paddingLeft: 20,
+                    paddingRight: 16,
+                    cursor: "pointer",
                 }}>
-                    <div style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#E0E0E0" }} />
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <div style={{ fontWeight: 600, fontSize: 17 }}>Berozgaar Engineers 🛠️</div>
-                            <div style={{ color: "#8E8E93", fontSize: 15 }}>10:42 AM</div>
-                        </div>
-                        <div style={{ color: "#8E8E93", fontSize: 15, marginTop: 4 }}>
-                            Sameer: Meeee! 🙋‍♂️ I'm free!
-                        </div>
+                    {/* Icon */}
+                    <div style={{
+                        width: 30, // Smaller visual weight
+                        display: "flex",
+                        justifyContent: "center",
+                        marginRight: 24 // Align with text start of chat items (which is 76 + ? actually chat item avatar is 60, left margin 20? No. 
+                        // Chat Item: Left padding 0 (in container), Avatar 76 width centered. 
+                        // So center of avatar is at 38px. 
+                        // Archived text should probably align with Name? 
+                        // Let's standard iOS: "Archived" appears on left? 
+                        // Actually standard WhatsApp: "Archived" is a specific row.
+                        // Let's simpler: Icon + Text.
+                    }}>
+                        {/* No Icon for standard row, just text "Archived" and number on right? 
+                           WhatsApp iOS 2024: Top row is "Archived" with an Archive Box icon on the very left (margin) or right?
+                           Actually it's "Archived" text on left, number on right.
+                           LET'S DO: Archive Icon (Grey) + "Archived" Text.
+                        */}
+                        <ArchiveIcon color="#8E8E93" />
+                    </div>
+
+                    <div style={{
+                        flex: 1,
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        borderBottom: "0.5px solid #C6C6C8",
+                        fontSize: 17,
+                        fontWeight: "600",
+                        color: "#000",
+                        marginLeft: 12
+                    }}>
+                        <span>Archived</span>
+                        <span style={{ color: "#8E8E93", fontWeight: "400", marginRight: 8 }}>1</span>
                     </div>
                 </div>
+
+                {/* Conversations List */}
+                <div style={{ paddingLeft: 16 }}> {/* Left padding for inset separators */}
+                    {conversations.length > 0 ? conversations.map((conv, i) => {
+                        // Runtime cast to access standard or plugin-specific fields
+                        const rawMessages = conv.messages as any[];
+                        const lastMsg = rawMessages && rawMessages.length > 0
+                            ? rawMessages[rawMessages.length - 1]
+                            : null;
+
+                        return (
+                            <ChatListItem
+                                key={conv.id}
+                                id={conv.id}
+                                name={conv.name || "Unknown"}
+                                avatarUrl={conv.avatar}
+                                lastMessage={lastMsg?.text || (lastMsg?.imageUrl ? "Photo" : lastMsg ? "Media" : "")}
+                                timestamp={lastMsg?.timestamp || "Yesterday"}
+                                unreadCount={conv.unreadCount || 0}
+                                status={lastMsg?.from === "me" ? "read" : undefined} // Mock status logic
+                                isTyping={conv.typing && Object.values(conv.typing).some(Boolean)}
+                                // Is last item?
+                                isLast={i === conversations.length - 1}
+                            />
+                        );
+                    }) : (
+                        // Empty State
+                        <div style={{ padding: 40, textAlign: "center", color: "#999" }}>
+                            No conversations yet
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Tab Navigation (Fixed Bottom) */}
+            <TabNavigation activeTab="chats" safeAreaBottom={safeAreaBottom} />
         </div>
     );
 };

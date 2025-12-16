@@ -1,7 +1,7 @@
 import { episode, EpisodeDefinition } from "@tokovo/dsl";
 
 
-export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", ep => {
+export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
     ep.config({
         title: "Berozgaar Engineers 🛠️",
         fps: 30,
@@ -9,15 +9,55 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
 
     ep.device("RahulPhone", "iphone16", d => {
         d.app("app_whatsapp");
+        // Primary Group Chat
         d.conversation("group_engineers", {
             name: "Berozgaar Engineers 🛠️",
             type: "group",
-            avatar: "/avatars/group_be.png" // We assume this exists or fallback
+            avatar: "/avatars/group_be.png"
+        });
+
+        // Filler Conversations for Chat List
+        d.conversation("mom", {
+            name: "Mom ❤️",
+            avatar: "/avatars/mom.png",
+            initialMessages: [{ text: "Beta khana khaya?", from: "mom", at: "5m ago" }]
+        });
+
+        d.conversation("landlord", {
+            name: "Landlord (Khadus)",
+            avatar: "/avatars/landlord.png",
+            initialMessages: [{ text: "Rent due tomorrow. No excuses.", from: "landlord", at: " yesterday" }]
+        });
+
+        d.conversation("ex_gf", {
+            name: "Neha (Do Not Text)",
+            avatar: "/avatars/neha.png",
+            initialMessages: [{ text: "I want my hoodie back.", from: "ex_gf", at: "2d ago" }]
+        });
+
+        d.conversation("work_group", {
+            name: "Office Official 🏢",
+            type: "group",
+            avatar: "/avatars/office.png",
+            initialMessages: [{ text: "HR: Please fill the survey by EOD.", from: "hr", at: "3d ago" }]
+        });
+
+        d.conversation("pizza_hut", {
+            name: "Pizza Hut Offer",
+            avatar: "/avatars/pizza.png",
+            initialMessages: [{ text: "Buy 1 Get 1 Free! Order Now 🍕", from: "pizza_hut", at: "1w ago" }]
         });
 
         // ACT 1: The Scheme
         d.beat("the_scheme", b => {
+            // Start at Chat List
+            b.showScreen("chats-list");
+            b.wait("2s");
+
+            // Open the Group Chat
+            b.openChat("group_engineers");
             b.wait("1s");
+
             b.camera(c => c.focus("profile", { duration: "10s", preset: "dramatic" }));
 
             // Vicky enters with a bang
