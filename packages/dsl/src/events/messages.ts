@@ -18,9 +18,10 @@ export const messages = {
     /**
      * Send a message (from device owner)
      */
-    send: (at: number, conversationId: string, text: string, appId = "app_whatsapp") => ({
+    send: (at: number, conversationId: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "MessageSent", // V2 IR
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -36,10 +37,10 @@ export const messages = {
     /**
      * Receive a message (from someone else)
      */
-    receive: (at: number, conversationId: string, from: string, text: string, appId = "app_whatsapp") => ({
+    receive: (at: number, conversationId: string, from: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "MessageReceived", // V2 IR
-        deviceId: "primary",
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -55,9 +56,10 @@ export const messages = {
     /**
      * Start typing indicator
      */
-    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp") => ({
+    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "TypingStarted",
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -67,9 +69,10 @@ export const messages = {
     /**
      * Stop typing indicator
      */
-    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp") => ({
+    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "TypingEnded",
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -79,9 +82,10 @@ export const messages = {
     /**
      * Send an image
      */
-    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp") => ({
+    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "MessageSent",
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -98,9 +102,10 @@ export const messages = {
     /**
      * Receive an image
      */
-    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp") => ({
+    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
         kind: "MessageReceived",
+        deviceId,
         trace: createTrace(Tracer.capture()),
         appId,
         conversationId,
@@ -109,7 +114,7 @@ export const messages = {
             from,
             text: caption || "",
             imageUrl,
-            timestamp: Date.now(),
+            timestamp: Date.now().toString(),
             status: "delivered"
         }
     } as const),

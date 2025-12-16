@@ -232,7 +232,7 @@ export const CustomOpSchema = TimelineOpBaseSchema.extend({
     deviceId: z.string().optional(),
     appId: z.string().optional(),
     eventType: z.string(),
-    payload: z.record(z.any()).optional(),
+    payload: z.record(z.string(), z.any()).optional(),
 });
 
 // =============================================================================
@@ -265,3 +265,113 @@ export const TimelineOpSchema = z.discriminatedUnion("kind", [
 export function validateTimelineOp(op: unknown) {
     return TimelineOpSchema.parse(op);
 }
+
+// =============================================================================
+// SCENE IR SCHEMAS
+// =============================================================================
+
+export const DurationExprSchema = z.union([
+    z.string().regex(/^[\d.]+(s|ms|frames)$/),
+    z.string(),
+    z.number()
+]);
+
+// Helper for Recursive Types (ConcurrentOp)
+const BaseSceneOpSchema = z.union([
+    z.object({ kind: z.literal("Wait"), duration: DurationExprSchema }),
+    z.object({ kind: z.literal("TypingStart"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("TypingEnd"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("SendMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
+    z.object({ kind: z.literal("ReceiveMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
+    z.object({ kind: z.literal("ReadMessage"), ref: z.any() }), // Todo: RefSchema
+    z.object({ kind: z.literal("DeleteMessage"), ref: z.any() }),
+
+    // Media ops
+    z.object({ kind: z.literal("SendImage"), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveImage"), actor: z.string(), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendVideo"), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveVideo"), actor: z.string(), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendGif"), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveGif"), actor: z.string(), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendVoice"), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveVoice"), actor: z.string(), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
+
+    // Camera/POV
+    z.object({ kind: z.literal("POVSwitch"), deviceId: z.string(), transition: z.enum(["cut", "crossfade", "wipe"]).optional() }),
+    z.object({ kind: z.literal("SplitPOV"), devices: z.array(z.string()), layout: z.any() }),
+    z.object({ kind: z.literal("CameraZoom"), scale: z.number(), duration: DurationExprSchema.optional(), originX: z.number().optional(), originY: z.number().optional(), easing: EasingSchema.optional() }),
+    z.object({ kind: z.literal("CameraShake"), deviceId: z.string(), intensity: z.number().optional(), frequency: z.number().optional(), decay: z.number().optional(), duration: DurationExprSchema.optional() }),
+    z.object({ kind: z.literal("AnchorFocus"), anchor: z.string(), preset: z.string().optional(), shake: z.number().optional(), duration: DurationExprSchema.optional(), easing: EasingSchema.optional() }),
+    z.object({ kind: z.literal("AnchorTrack"), anchor: z.string(), duration: DurationExprSchema.optional(), smoothing: z.number().optional(), easing: EasingSchema.optional() }),
+
+    // Navigation
+    z.object({ kind: z.literal("NavigateScreen"), screen: z.enum(["chats-list", "chat", "settings", "status", "calls"]) }),
+    z.object({ kind: z.literal("OpenChat"), conversationId: z.string() }),
+    z.object({ kind: z.literal("GoBack") }),
+
+    // Reserved
+    z.object({ kind: z.literal("AddReaction"), ref: z.any(), actor: z.string(), emoji: z.string() }),
+    z.object({ kind: z.literal("VoiceNoteSent"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
+    z.object({ kind: z.literal("VoiceNoteReceived"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
+    z.object({ kind: z.literal("MissedCall"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("OnlineStatusChanged"), actor: z.string(), status: z.enum(["online", "offline", "typing", "last_seen"]) }),
+    z.object({ kind: z.literal("ScreenshotTaken"), conversationId: z.string() }),
+    z.object({ kind: z.literal("BlockedUser"), actor: z.string() }),
+
+    // Keyboard
+    z.object({ kind: z.literal("ShowKeyboard"), deviceId: z.string() }),
+    z.object({ kind: z.literal("HideKeyboard"), deviceId: z.string() }),
+    z.object({ kind: z.literal("SimulateTyping"), deviceId: z.string(), text: z.string() }),
+    z.object({ kind: z.literal("ClearKeyboardText"), deviceId: z.string() })
+]);
+
+// Recursive Schema for Concurrent Op
+export const SceneOpSchema: z.ZodType<any> = z.lazy(() =>
+    z.union([
+        BaseSceneOpSchema,
+        z.object({ kind: z.literal("Concurrent"), tracks: z.array(z.array(SceneOpSchema)) })
+    ])
+);
+
+export const BeatSchema = z.object({
+    name: z.string(),
+    ops: z.array(SceneOpSchema),
+    meta: z.object({
+        isImprov: z.boolean().optional(),
+        rhythm: z.enum(["fast", "normal", "slow"]).optional(),
+        intensity: z.number().optional()
+    }).optional()
+});
+
+export const DeviceSceneSchema = z.object({
+    deviceId: z.string(),
+    profileId: z.string(),
+    appId: z.string(),
+    conversations: z.array(z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        avatar: z.string().optional(),
+        type: z.enum(["dm", "group"]).optional()
+    })),
+    beats: z.array(BeatSchema)
+});
+
+export const SceneIRSchema = z.object({
+    episodeId: z.string(),
+    meta: z.object({
+        fps: z.number(),
+        durationInFrames: z.number().optional()
+    }),
+    devices: z.array(DeviceSceneSchema),
+    cameraTrack: z.array(z.object({
+        at: DurationExprSchema,
+        op: SceneOpSchema
+    })).optional(),
+    scenes: z.array(z.object({
+        name: z.string(),
+        deviceBeats: z.record(z.string(), z.array(BeatSchema))
+    })).optional()
+});
+
+// function removed to avoid conflict with validate.ts
+
