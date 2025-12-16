@@ -115,31 +115,67 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 3. HELPER: Find active heads-up notification
     // ==========================================================================
-    const getActiveHeadsUpNotification = (): NotificationInstance | null => {
+    // ==========================================================================
+    // 3. HELPER: Find active heads-up notification (Smart Queuing)
+    // ==========================================================================
+    const activeHeadsUp = React.useMemo(() => {
         // Safe access to notifications from OS
-        const notifications = device.os?.notifications;
+        const notifications = device.os?.notifications || [];
 
-        if (!notifications || device.isLocked) return null;
+        if (notifications.length === 0 || device.isLocked) return null;
         if (!showHeadsUpWhenAppOpen && appId) return null;
 
-        const headsUpNotifs = notifications.filter(n => {
+        // Filter relevant notifications
+        const candidates = notifications.filter(n => {
             const mode = n.mode || "both";
             if (mode === "lockscreen") return false;
-            // Check state
-            if (n.state === "dismissed" || n.state === "queued") return false;
-
-            const timeSinceAppear = t - (n.shownAtFrame ?? 0);
-            if (timeSinceAppear < 0) return false;
-            if (timeSinceAppear > headsUpDuration + 30) return false;
-            if (n.ir.appId === appId) return false;
-
+            // Ignore dismissed purely by manual interactions (we handle auto-dismiss timing here)
+            if (n.state === "dismissed" && n.dismissedAtFrame) return false;
             return true;
         });
 
-        return headsUpNotifs.length > 0 ? headsUpNotifs[headsUpNotifs.length - 1] : null;
-    };
+        if (candidates.length === 0) return null;
 
-    const activeHeadsUp = getActiveHeadsUpNotification();
+        // SMART QUEUE ALGORITHM
+        // Serialize the timeline so notifications allow each other to finish.
+        // Even if scheduled 10ms apart, they will play sequentially.
+
+        const MIN_DURATION = 90; // Minimum 3 seconds visibility
+        const GAP = 10; // Gap between notifications
+
+        let lastEndTime = 0;
+        let active: NotificationInstance | null = null;
+
+        // Sort by creation time to establish order
+        const sorted = [...candidates].sort((a, b) => a.createdAtFrame - b.createdAtFrame);
+
+        for (const n of sorted) {
+            // The earliest this notification can show is its creation time.
+            // But if the previous one is still showing, we must wait.
+            // effectiveStart = max(created, lastEndTime + GAP)
+            const effectiveStart = Math.max(n.createdAtFrame, lastEndTime > 0 ? lastEndTime + GAP : 0);
+
+            // Effective Duration (fallback to config default if not set)
+            const duration = headsUpDuration;
+            const effectiveEnd = effectiveStart + duration;
+
+            // Update lastEndTime for the next iteration
+            lastEndTime = effectiveEnd;
+
+            // Check if current time `t` falls within this window
+            if (t >= effectiveStart && t < effectiveEnd) {
+                active = n;
+                // Important: We artificially adjust the 'shownAtFrame' property 
+                // for the *Component* so it animates correctly relative to its *effective* start.
+                // We clone to avoid mutating the Redux state directly in render.
+                active = { ...n, shownAtFrame: effectiveStart };
+                break;
+            }
+        }
+
+        return active;
+
+    }, [device.os?.notifications, device.isLocked, showHeadsUpWhenAppOpen, appId, headsUpDuration, t]);
 
     // DEBUG: Notification State
     if (debug && t % 30 === 0) {
@@ -235,6 +271,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         {/* Heads-Up Notification */}
                         {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
                             <HeadsUpNotification
+                                key={activeHeadsUp.id}
                                 notification={activeHeadsUp}
                                 currentTime={t}
                                 variant={variant}

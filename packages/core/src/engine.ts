@@ -401,15 +401,18 @@ function processNotificationEvent(
 
     switch (event.type) {
         case "SHOW_NOTIFICATION":
+            // Resolve Metadata for defaults
+            const meta = AppMetadataRegistry.get(e.appId);
+
             // IR to Instance Transformation
             const instance: import("./types").NotificationInstance = {
                 id: e.id,
                 ir: {
                     id: e.id,
                     appId: e.appId,
-                    title: e.title,
+                    title: e.title || meta.displayName || e.appId,
                     body: e.body,
-                    icon: e.icon,
+                    icon: e.icon || (meta.icon as string),
                     category: e.category,
                     threadKey: e.threadKey,
                     groupKey: e.groupKey,

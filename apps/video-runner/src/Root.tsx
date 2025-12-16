@@ -43,7 +43,7 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="NotificationShowcase2"
                 component={NotificationShowcase}
-                durationInFrames={450}
+                durationInFrames={950}
                 fps={30}
                 width={1080}
                 height={1920}

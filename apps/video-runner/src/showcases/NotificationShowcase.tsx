@@ -25,25 +25,19 @@ const EVENTS: TimelineEvent[] = [
     dsl.messages.receive(30, "chat_alice", "Alice", "Hey! Are we still on for dinner tonight? 🌮", "app_whatsapp"),
 
     // 3. User taps notification -> Opens WhatsApp
+    // In V2, tapping creates a new event but doesn't auto-dismiss in the timeline unless we script it or engine handles it.
+    // We'll let it naturally timeout (150 frames) -> Ends at 180.
     dsl.notification.tap(90, "notif_0"),
 
-    // 3a. Message actually appears in app (simulated context)
-    // In a full simulation, the app would read from state. 
-    // Here we just simulate the notification flow.
+    // 4. Sequence of notifications 
+    // Spaced out to ensure no overlap confusion for now (after frame 200)
 
-    // 4. Sequence of notifications (No Lockscreen, just HeadsUp stacking if feasible, or sequential)
-
-    // Notification 2: Instagram (Explicit)
-    dsl.notification.schedule(150, {
-        id: "insta_1",
-        appId: "app_instagram",
-        title: "Instagram",
-        body: "zuck liked your photo",
-        icon: "❤️"
-    }),
+    // Notification 2: Instagram (Test as Message)
+    // Note: Implicit messages now use correct types via engine
+    dsl.messages.receive(220, "chat_zuck", "Instagram", "zuck liked your photo", "app_instagram"),
 
     // Notification 3: Gmail (Explicit)
-    dsl.notification.schedule(200, {
+    dsl.notification.schedule(400, {
         id: "mail_1",
         appId: "app_gmail",
         title: "Gmail",
@@ -51,10 +45,10 @@ const EVENTS: TimelineEvent[] = [
     }),
 
     // Notification 4: WhatsApp (Implicit) - Another one
-    dsl.messages.receive(250, "chat_bob", "Bob", "Where are the designs? 😡", "app_whatsapp"),
+    dsl.messages.receive(280, "chat_bob", "Bob", "Where are the designs? 😡", "app_whatsapp"),
 
     // 6. Camera zoom to inspect stack
-    dsl.camera.zoom(300, 1.5, 30),
+    dsl.camera.zoom(650, 1.5, 30),
 ];
 
 export const NotificationShowcase: React.FC = () => {
@@ -69,7 +63,6 @@ export const NotificationShowcase: React.FC = () => {
                 isLocked: false,
                 notifications: [], // Legacy compat
                 homeScreen: {
-                    wallpaper: "linear-gradient(to bottom, #1c1c1c, #000000)",
                     pages: [
                         {
                             apps: [

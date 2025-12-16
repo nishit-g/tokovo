@@ -65,3 +65,22 @@ class AppMetadataRegistryClass {
 }
 
 export const AppMetadataRegistry = new AppMetadataRegistryClass();
+
+// Register Default Apps
+AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬"
+});
+
+AppMetadataRegistry.register("app_instagram", {
+    displayName: "Instagram",
+    themeColor: "#E1306C", // Instagram Gradient-ish
+    icon: "📸"
+});
+
+AppMetadataRegistry.register("app_gmail", {
+    displayName: "Gmail",
+    themeColor: "#EA4335",
+    icon: "📧"
+});
