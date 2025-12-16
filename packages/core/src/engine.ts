@@ -323,6 +323,8 @@ function processOSEvent(
             dnd: false,
             lowPowerMode: false,
             airplaneMode: false,
+            notifications: [],
+            notificationHistory: [],
         };
     }
 
@@ -363,13 +365,103 @@ function processOSEvent(
             device.os.lowPowerMode = (event as any).enabled;
             break;
 
-        case "SET_AIRPLANE":
-            device.os.airplaneMode = (event as any).enabled;
-            if ((event as any).enabled) {
-                device.os.network = "no-service";
-                device.os.wifiStrength = 0;
-                device.os.cellStrength = 0;
+            break;
+    }
+}
+
+/**
+ * Process notification event and update device notifications
+ */
+function processNotificationEvent(
+    draft: WorldState,
+    event: TimelineEvent & { kind: "DEVICE" },
+    t: number
+): void {
+    const e = event as any;
+    const deviceId = e.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Ensure OS/Notification state exists
+    if (!device.os) {
+        // ... (initialize OS logic from processOSEvent if needed, 
+        // but ideally processOSEvent handles initialization. 
+        // We'll trust processOSEvent runs or init here defensively)
+        device.os = {
+            clock: Date.now(), battery: 100, charging: false, network: "wifi",
+            wifiStrength: 3, cellStrength: 4, dnd: false, lowPowerMode: false, airplaneMode: false,
+            notifications: [], notificationHistory: []
+        };
+    }
+    if (!device.os.notifications) device.os.notifications = [];
+    if (!device.os.notificationHistory) device.os.notificationHistory = [];
+
+    switch (event.type) {
+        case "SHOW_NOTIFICATION":
+            // IR to Instance Transformation
+            const instance: import("./types").NotificationInstance = {
+                id: e.id,
+                ir: {
+                    id: e.id,
+                    appId: e.appId,
+                    title: e.title,
+                    body: e.body,
+                    icon: e.icon,
+                    category: e.category,
+                    threadKey: e.threadKey,
+                    groupKey: e.groupKey,
+                    actions: e.actions,
+                    replyable: e.replyable,
+                },
+                state: "headsUp", // Default state
+                createdAtFrame: event.at,
+                // Timestamps
+                shownAtFrame: event.at,
+                // State properties
+                deviceId,
+                importance: e.priority || "default",
+                mode: e.mode || "headsup",
+            };
+
+            // Two-Layer Policy Check (Engine Layer)
+            if (device.os.dnd && instance.importance !== "critical") {
+                instance.state = "queued"; // Or silent
+                // But for now we just add it. The Renderer decides visibility based on state.
             }
+
+            device.os.notifications.push(instance);
+            break;
+
+        case "DISMISS_NOTIFICATION":
+            const notif = device.os.notifications.find(n => n.id === e.notificationId);
+            if (notif) {
+                notif.state = "dismissed";
+                notif.dismissedAtFrame = event.at;
+
+                // Move to history after animation (simplified here)
+                // In real engine, we might clean up later.
+            }
+            break;
+
+        case "TAP_NOTIFICATION":
+            // Interaction Logic
+            // 1. Mark as clicked
+            // 2. Open App (Engine Side Effect)
+            const targetNotif = device.os.notifications.find(n => n.id === e.notificationId);
+            if (targetNotif) {
+                // Open the app associated with the notification
+                device.foregroundAppId = targetNotif.ir.appId;
+
+                // If locking logic exists, unlock device
+                device.isLocked = false;
+            }
+            break;
+
+        case "CLEAR_ALL_NOTIFICATIONS":
+            device.os.notifications.forEach(n => {
+                n.state = "dismissed";
+                n.dismissedAtFrame = event.at;
+            });
             break;
     }
 }
@@ -627,6 +719,11 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             case "DEVICE":
                 if (ReducerRegistry.deviceReducer) {
                     draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+                }
+                // Handle Notification Events (which are kind="DEVICE" but typed specifically)
+                const type = (event as any).type;
+                if (type && (type.includes("NOTIFICATION"))) {
+                    processNotificationEvent(draft, event as any, event.at);
                 }
                 break;
             case "APP":

@@ -12,7 +12,7 @@
 import React from "react";
 import {
     WorldState,
-    Notification,
+    NotificationInstance,
     EventIndex,
     PluginManager,
     APP_IDS,
@@ -112,19 +112,26 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 3. HELPER: Find active heads-up notification
     // ==========================================================================
-    const getActiveHeadsUpNotification = (): Notification | null => {
-        if (!device.notifications || device.isLocked) return null;
+    // ==========================================================================
+    // 3. HELPER: Find active heads-up notification
+    // ==========================================================================
+    const getActiveHeadsUpNotification = (): NotificationInstance | null => {
+        // Safe access to notifications from OS
+        const notifications = device.os?.notifications;
+
+        if (!notifications || device.isLocked) return null;
         if (!showHeadsUpWhenAppOpen && appId) return null;
 
-        const headsUpNotifs = device.notifications.filter(n => {
+        const headsUpNotifs = notifications.filter(n => {
             const mode = n.mode || "both";
             if (mode === "lockscreen") return false;
-            if (n.dismissedAt !== undefined) return false;
+            // Check state
+            if (n.state === "dismissed" || n.state === "queued") return false;
 
-            const timeSinceAppear = t - n.at;
+            const timeSinceAppear = t - (n.shownAtFrame ?? 0);
             if (timeSinceAppear < 0) return false;
             if (timeSinceAppear > headsUpDuration + 30) return false;
-            if (n.appId === appId) return false;
+            if (n.ir.appId === appId) return false;
 
             return true;
         });
@@ -133,6 +140,17 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     };
 
     const activeHeadsUp = getActiveHeadsUpNotification();
+
+    // DEBUG: Notification State
+    if (debug && t % 30 === 0) {
+        console.log(`[TokovoRenderer] Frame ${t}:`, {
+            totalNotifs: device.os?.notifications?.length,
+            activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
+            isLocked: device.isLocked,
+            appId
+        });
+    }
+
     const hasActiveCall = device.call && device.call.status !== "ended";
 
     // ==========================================================================
@@ -194,7 +212,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                             />
                         ) : !hasActiveCall && device.isLocked ? (
                             <LockscreenView
-                                notifications={device.notifications}
+                                notifications={device.os?.notifications || []}
                                 layout={layout}
                                 variant={variant}
                             />
@@ -209,7 +227,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
                         {/* Lockscreen Notification Overlay */}
                         <NotificationOverlay
-                            notifications={device?.notifications}
+                            notifications={device.os?.notifications || []}
                             variant={variant}
                             layout={layout}
                         />

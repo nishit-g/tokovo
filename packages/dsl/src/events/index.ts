@@ -28,6 +28,7 @@ export { os } from "./os";
 export { touch } from "./touch";
 export { call, CallEvent, IncomingCallOptions } from "./call";
 export { navigation } from "./navigation";
+export { notification, ScheduleNotificationOptions } from "./notification";
 
 // Typing simulation
 export {
@@ -47,6 +48,7 @@ import { os } from "./os";
 import { touch } from "./touch";
 import { call } from "./call";
 import { navigation } from "./navigation";
+import { notification } from "./notification";
 
 /**
  * Bundled DSL object with all event factories
@@ -75,4 +77,5 @@ export const dsl = {
     call,
     navigation,
     os,
+    notification,
 };

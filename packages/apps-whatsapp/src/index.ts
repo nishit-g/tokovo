@@ -30,6 +30,9 @@ SoundRegistry.registerMany({
     "whatsapp_typing": "typing.mp3",
 });
 
+// Register Metadata
+import "./metadata";
+
 export * from "./layout";
 
 // Type Augmentation

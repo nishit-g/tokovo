@@ -1,23 +1,6 @@
 import React from "react";
-import { Notification, NotificationGroup } from "@tokovo/core";
+import { NotificationInstance, NotificationGroup, AppMetadataRegistry } from "@tokovo/core";
 import { LayoutState, LockscreenLayoutState } from "./layout/types";
-
-// =============================================================================
-// APP BRANDING (for icons and colors)
-// =============================================================================
-
-const APP_BRANDING: Record<string, { color: string; icon: string; name: string }> = {
-    app_whatsapp: { color: "#25D366", icon: "W", name: "WhatsApp" },
-    app_instagram: { color: "#E1306C", icon: "📷", name: "Instagram" },
-    app_twitter: { color: "#1DA1F2", icon: "𝕏", name: "X" },
-    app_spotify: { color: "#1DB954", icon: "♪", name: "Spotify" },
-    app_imessage: { color: "#34C759", icon: "💬", name: "Messages" },
-    default: { color: "#8E8E93", icon: "⬤", name: "App" },
-};
-
-function getAppBranding(appId: string) {
-    return APP_BRANDING[appId] || APP_BRANDING.default;
-}
 
 // =============================================================================
 // GROUPING LOGIC
@@ -26,20 +9,23 @@ function getAppBranding(appId: string) {
 /**
  * Group notifications by app or threadId
  */
-function groupNotifications(notifications: Notification[]): NotificationGroup[] {
+function groupNotifications(notifications: NotificationInstance[]): NotificationGroup[] {
     const groups = new Map<string, NotificationGroup>();
 
     for (const notif of notifications) {
-        // Skip dismissed notifications
-        if (notif.dismissedAt) continue;
+        const ir = notif.ir;
+        // Skip dismissed notifications or those not meant for lockscreen
+        if (notif.state === "dismissed") continue;
+        if (notif.mode === "headsup" || notif.mode === "silent") continue;
 
         // Group key: use groupKey if provided, else threadId + appId, else just appId
-        const key = notif.groupKey || (notif.threadId ? `${notif.appId}_${notif.threadId}` : notif.appId);
+        // Use threadKey from IR now
+        const key = ir.groupKey || (ir.threadKey ? `${ir.appId}_${ir.threadKey}` : ir.appId);
 
         if (!groups.has(key)) {
             groups.set(key, {
                 key,
-                appId: notif.appId,
+                appId: ir.appId,
                 notifications: [],
                 collapsed: true,
                 count: 0,
@@ -50,7 +36,9 @@ function groupNotifications(notifications: Notification[]): NotificationGroup[] 
         const group = groups.get(key)!;
         group.notifications.push(notif);
         group.count++;
-        group.latestAt = Math.max(group.latestAt, notif.at);
+        // Use shownAtFrame for sorting, fallback to createdAtFrame
+        const time = notif.shownAtFrame || notif.createdAtFrame;
+        group.latestAt = Math.max(group.latestAt, time);
     }
 
     // Sort by latest notification time (most recent first)
@@ -71,8 +59,11 @@ interface GroupCardProps {
 
 const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, variant }) => {
     const isAndroid = variant === "android";
-    const branding = getAppBranding(group.appId);
+    // Use Registry for branding
+    const branding = AppMetadataRegistry.get(group.appId);
+
     const latestNotif = group.notifications[group.notifications.length - 1];
+    const ir = latestNotif.ir;
     const hasMultiple = group.count > 1;
 
     return (
@@ -140,13 +131,14 @@ const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, va
                         width: 100,
                         height: 100,
                         borderRadius: 20,
-                        backgroundColor: branding.color,
+                        backgroundColor: branding.themeColor,
                         display: "flex",
                         justifyContent: "center",
                         alignItems: "center",
                         fontSize: 50,
                         color: "white",
                         flexShrink: 0,
+                        overflow: "hidden"
                     }}
                 >
                     {branding.icon}
@@ -167,13 +159,13 @@ const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, va
                         }}
                     >
                         <span style={{ textTransform: "uppercase", letterSpacing: 1 }}>
-                            {branding.name}
+                            {branding.displayName}
                         </span>
                         {hasMultiple && (
                             <span
                                 style={{
                                     fontSize: 24,
-                                    backgroundColor: branding.color,
+                                    backgroundColor: branding.themeColor,
                                     color: "white",
                                     borderRadius: 12,
                                     padding: "2px 10px",
@@ -197,7 +189,7 @@ const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, va
                             color: isAndroid ? "white" : "black",
                         }}
                     >
-                        {latestNotif.title}
+                        {ir.title}
                     </div>
 
                     {/* Body */}
@@ -210,7 +202,7 @@ const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, va
                             textOverflow: "ellipsis",
                         }}
                     >
-                        {latestNotif.body}
+                        {ir.body}
                     </div>
 
                     {/* Summary for groups */}
@@ -236,7 +228,7 @@ const GroupCard: React.FC<GroupCardProps> = ({ group, y, opacity, translateY, va
 // =============================================================================
 
 interface NotificationOverlayProps {
-    notifications?: Notification[];
+    notifications?: NotificationInstance[];
     variant?: "ios" | "android";
     layout?: LayoutState;
 }

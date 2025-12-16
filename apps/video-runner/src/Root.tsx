@@ -25,6 +25,7 @@ import { UltimateShowcase } from "./UltimateShowcase";
 import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
 import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
 import { ManualCameraShowcase } from "./ManualCameraShowcase";
+import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
 
 
@@ -34,7 +35,15 @@ export const RemotionRoot: React.FC = () => {
             <Composition
                 id="AutoDirectorShowcase"
                 component={AutoDirectorShowcase}
-                durationInFrames={1380}
+                durationInFrames={450}
+                fps={30}
+                width={1920}
+                height={1080}
+            />
+            <Composition
+                id="NotificationShowcase2"
+                component={NotificationShowcase}
+                durationInFrames={450}
                 fps={30}
                 width={1080}
                 height={1920}

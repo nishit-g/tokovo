@@ -236,10 +236,13 @@ const LockscreenButton: React.FC<{ icon: "flashlight" | "camera" }> = ({ icon })
  * Notification Card with app icon
  */
 const NotificationCard: React.FC<{
-    notification: Notification;
+    notification: Notification; // Is actually NotificationInstance
     variant?: "ios" | "android";
 }> = ({ notification, variant = "ios" }) => {
-    const appLogo = APP_LOGOS[notification.appId] || (
+    const ir = notification.ir;
+    if (!ir) return null; // Safety check
+
+    const appLogo = APP_LOGOS[ir.appId] || (
         <div style={{
             width: 66,
             height: 66,
@@ -258,7 +261,7 @@ const NotificationCard: React.FC<{
         app_instagram: "INSTAGRAM",
         app_messages: "MESSAGES"
     };
-    const appName = appNames[notification.appId] || "APP";
+    const appName = appNames[ir.appId] || "APP";
 
     return (
         <div style={{
@@ -292,10 +295,10 @@ const NotificationCard: React.FC<{
 
             {/* Content */}
             <div style={{ fontSize: 45, fontWeight: 600, marginBottom: 9 }}>
-                {notification.title}
+                {ir.title}
             </div>
             <div style={{ fontSize: 42, opacity: 0.9, lineHeight: 1.35 }}>
-                {notification.body}
+                {ir.body}
             </div>
         </div>
     );

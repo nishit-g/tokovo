@@ -1,6 +1,7 @@
 export type DeviceId = string;
 export type AppId = string;
 export type ConversationId = string;
+export type Platform = "ios" | "android";
 
 import { TimelineOp } from "@tokovo/ir";
 
@@ -39,59 +40,76 @@ export interface AppCallTypes {
 /**
  * NotificationIR - Production-grade notification representation
  */
-export interface Notification {
+/**
+ * NotificationIR - The Immutable Request
+ * What the app sends. Stable, serializable, and device-agnostic.
+ */
+export interface NotificationIR {
+    // Identity
     id: string;
-    deviceId?: string;                // Who receives it
     appId: string;
+    channelId?: string; // e.g. "messages", "promotions"
 
     // Content
     title: string;
     body: string;
-    icon?: string;
+    icon?: string;      // Asset Ref
+
+    // Media / Rich Content
     preview?: {
         kind: "text" | "image" | "video";
         value: string;
         aspectRatio?: number;
     };
+    payload?: any;      // Custom data for custom renderers
 
-    // Action buttons (max 3)
+    // Semantics
+    category?: "message" | "call" | "system" | "reminder";
+    threadKey?: string; // "chat_alice"
+    groupKey?: string;  // "whatsapp_messages"
+    peopleIds?: string[]; // ["alice"] - for focus modes
+
+    // Actions
     actions?: Array<{
         id: string;
         label: string;
         icon?: string;
-        destructive?: boolean;
+        destructive?: boolean
     }>;
-    replyable?: boolean;              // Quick reply input
-
-    // Grouping
-    groupKey?: string;
-    threadId?: string;
-
-    // Priority & Mode
-    priority?: NotificationPriority;
-    mode?: "lockscreen" | "headsup" | "both" | "silent";
-    deliverWhen?: NotificationDeliverWhen;
-
-    // === LIFECYCLE (state machine) ===
-    at: number;                       // DSL spawn time
-    deliveredAt?: number;             // When entered device state
-    state?: NotificationState;
-    updatedAt?: number;               // For updates (same id)
-    dismissedAt?: number;
-
-    // Heads-up lifecycle
-    headsUp?: {
-        shownAt?: number;
-        hideAt?: number;
-        duration?: number;            // OS default if not set
-    };
-
-    // Metadata
-    metadata?: Record<string, any>;
+    replyable?: boolean; // Quick reply input
 }
 
-// Alias for backward compatibility
-export type NotificationIR = Notification;
+/**
+ * NotificationInstance - The Mutable State
+ * What the Engine tracks. Includes lifecycle, timestamps, and OS state.
+ */
+export interface NotificationInstance {
+    // Reference
+    id: string;
+    ir: NotificationIR;
+
+    // Lifecycle
+    state: "queued" | "headsUp" | "inShade" | "onLockscreen" | "dismissed";
+
+    // Timestamps (Frame numbers)
+    createdAtFrame: number;
+    deliveredAtFrame?: number;
+    shownAtFrame?: number;
+    dismissedAtFrame?: number;
+    expiresAtFrame?: number;
+
+    // Encapsulated State from OS
+    deviceId?: string;
+
+    // Computed Priority / Mode
+    importance?: "low" | "default" | "high" | "critical";
+    mode?: "lockscreen" | "headsup" | "both" | "silent";
+}
+
+// Backward Compatibility / Alias (Deprecated)
+// We keep this to avoid breaking everything immediately, but mapped to Instance
+export type Notification = NotificationInstance;
+export type NotificationIR_Alias = NotificationIR;
 
 /**
  * Notification group for stacking multiple notifications
@@ -99,7 +117,7 @@ export type NotificationIR = Notification;
 export interface NotificationGroup {
     key: string;
     appId: string;
-    notifications: Notification[];
+    notifications: NotificationInstance[];
     collapsed: boolean;
     count: number;
     latestAt: number;
@@ -320,6 +338,11 @@ export interface DeviceOSState {
     lowPowerMode: boolean;
     /** Airplane mode enabled */
     airplaneMode: boolean;
+
+    /** Active notifications */
+    notifications: NotificationInstance[];
+    /** Dismissed notifications history */
+    notificationHistory: NotificationInstance[];
 }
 
 /** Default OS state (normal day, full battery, good network) */
@@ -333,6 +356,8 @@ export const DEFAULT_OS_STATE: DeviceOSState = {
     dnd: false,
     lowPowerMode: false,
     airplaneMode: false,
+    notifications: [],
+    notificationHistory: [],
 };
 
 // =============================================================================
@@ -998,23 +1023,34 @@ export type TimelineEvent =
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
 
     // === NOTIFICATION EVENTS (IR-compliant) ===
+    // === NOTIFICATION EVENTS (IR-compliant) ===
     | {
         at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
-        appId: string; title: string; body: string;
-        mode?: "lockscreen" | "headsup" | "both" | "silent";
-        priority?: NotificationPriority;
-        deliverWhen?: NotificationDeliverWhen;
-        groupKey?: string; threadId?: string;
+
+        // IR Fields (Simplified for Event)
+        id: string; // REQUIRED now
+        appId: string;
+        title: string;
+        body: string;
         icon?: string;
-        preview?: { kind: "text" | "image" | "video"; value: string; aspectRatio?: number };
-        actions?: Array<{ id: string; label: string; icon?: string; destructive?: boolean }>;
+
+        // Meta
+        category?: NotificationIR["category"];
+        threadKey?: string;
+        groupKey?: string;
+
+        // Actions
+        actions?: NotificationIR["actions"];
         replyable?: boolean;
-        metadata?: Record<string, any>;
+
+        // Valid overrides
+        priority?: NotificationInstance["importance"];
+        mode?: NotificationInstance["mode"];
     }
     | {
         at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
         notificationId: string;
-        patch: Partial<{ title: string; body: string; preview: Notification["preview"]; metadata: Record<string, any> }>;
+        patch: Partial<{ title: string; body: string; preview: NotificationIR["preview"]; metadata: Record<string, any> }>;
     }
     | {
         at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";

@@ -62,32 +62,32 @@ class NotificationAdapterRegistryClass {
     }
 
     format(notification: Notification): FormattedNotification {
-        const adapter = this.adapters.get(notification.appId);
+        const adapter = this.adapters.get(notification.ir.appId);
         if (adapter) {
             return adapter.format(notification);
         }
         // Default formatting
         return {
-            title: notification.title,
-            body: notification.body,
-            icon: notification.icon,
-            preview: notification.preview,
-            actions: notification.actions,
+            title: notification.ir.title,
+            body: notification.ir.body,
+            icon: notification.ir.icon,
+            preview: notification.ir.preview,
+            actions: notification.ir.actions,
         };
     }
 
     handleAction(notification: Notification, actionId: string = "open"): TimelineEvent[] {
-        const adapter = this.adapters.get(notification.appId);
+        const adapter = this.adapters.get(notification.ir.appId);
         if (adapter?.handleAction) {
             return adapter.handleAction(actionId, notification);
         }
         // Default: just open the app
         return [{
-            at: Date.now(),
+            at: Date.now(), // This timestamp is placeholder, replaced by engine
             kind: "DEVICE",
             deviceId: notification.deviceId || "phone",
             type: "OPEN_APP",
-            appId: notification.appId,
+            appId: notification.ir.appId,
         }] as TimelineEvent[];
     }
 }
