@@ -1,40 +1,63 @@
 import React from "react";
-import { KeyboardState } from "@tokovo/core";
+import { KeyboardState, AppSurface } from "@tokovo/core";
 import { KeyboardRegistry } from "./core/registry";
 
 // Default Implementations
-import "./components/IOSKeyboard"; // Triggers registration
+import "./components/IOSKeyboard";
 
 interface KeyboardSurfaceProps {
     keyboard: KeyboardState;
-    variant?: "light" | "dark"; // Theme variant
-    platform?: "ios" | "android" | "pixel" | string; // OS variant
+    variant?: "light" | "dark";
+    platform?: "ios" | "android" | "pixel" | string;
+    width?: number; // Target width
     t: number;
 }
 
 /**
  * KeyboardSurface
  * 
- * The unified entry point for rendering virtual keyboards.
- * Uses the Strategy Pattern to select the correct implementation based on the platform.
+ * Now integrated with AppSurface for correct architectural scaling.
+ * Design Width: 393px (Standard iOS)
  */
 export const KeyboardSurface: React.FC<KeyboardSurfaceProps> = ({
     keyboard,
     variant = "light",
     platform = "ios",
+    width,
     t
 }) => {
-    // 1. Resolve Implementation
-    // Normalize platform ID (e.g., "iphone16" -> "ios")
-    // Implementation Detail: We might want a smarter resolver here.
-    // const resolvedPlatform = normalizePlatform(platform); // Removed
-
-    const View = KeyboardRegistry.get(platform) || KeyboardRegistry.get("ios"); // Fallback
+    const View = KeyboardRegistry.get(platform) || KeyboardRegistry.get("ios");
 
     if (!View) return null;
 
+    // SCALING LOGIC
+    // We want the keyboard to be EXACTLY 393px wide (Logical Design).
+    // We scale it up/down to fit the Target Width.
+    // We anchor it to the BOTTOM of the screen.
+    const designWidth = 393;
+    const targetWidth = width || designWidth;
+    const scale = targetWidth / designWidth;
+
     return (
-        <View keyboard={keyboard} variant={variant} t={t} />
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "100%", // Physical width
+            display: "flex",
+            justifyContent: "flex-start", // Left align for transform origin
+            pointerEvents: "none", // Let clicks pass through empty space above
+            zIndex: 1000,
+        }}>
+            <div style={{
+                width: designWidth,
+                transform: `scale(${scale})`,
+                transformOrigin: "bottom left",
+                pointerEvents: "auto", // Re-enable pointer events
+            }}>
+                <View keyboard={keyboard} variant={variant} t={t} />
+            </div>
+        </div>
     );
 };
 

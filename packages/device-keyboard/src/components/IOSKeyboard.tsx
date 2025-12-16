@@ -36,15 +36,13 @@ const NUMBERS_ROWS = [
 
 import { KeyboardProps } from "../core/registry";
 
-interface IOSKeyboardProps extends KeyboardProps { }
-
 interface KeyProps {
     label: string;
     isPressed: boolean;
-    width?: number;
+    width?: number; // Sizing weight (roughly px)
     isSpecial?: boolean;
     variant: "light" | "dark";
-    isIcon?: boolean; // New prop for icons to adjust padding/sizing
+    isIcon?: boolean;
 }
 
 // =============================================================================
@@ -54,7 +52,7 @@ interface KeyProps {
 const Key: React.FC<KeyProps> = ({
     label,
     isPressed,
-    width = 10, // Flex weight now
+    width = 33, // Standard key width in px
     isSpecial = false,
     variant
 }) => {
@@ -73,8 +71,9 @@ const Key: React.FC<KeyProps> = ({
             shadow: "0 1px 0 rgba(0,0,0,0.45)",
         };
 
-    // PURE RELATIVE SIZING - No pixel caps to ensure 4K/Scaling support
-    const fontSize = label === "space" ? "4.5cqw" : label.length > 1 ? "4.5cqw" : "5.5cqw";
+    // ARCHITECTURE STANDARD: PIXEL VALUES
+    // Designed for 393px width
+    const fontSize = label === "space" ? 16 : label.length > 1 ? 16 : 25; // 25px Standard
     const fontWeight = label === "shift" || label === "delete" ? 300 : 400;
 
     const bg = isPressed ? (isSpecial ? "#EAECF0" : "#E5E5E5") : colors.keyBg;
@@ -85,14 +84,14 @@ const Key: React.FC<KeyProps> = ({
     return (
         <div style={{
             position: "relative",
-            flex: width, // FLEX BASED WIDTH
-            margin: "0.8%", // Tighten Gap slightly
-            height: "100%",
-            zIndex: showPopup ? 100 : 1, // Bring to front if popping up
+            width: width, // PIXEL WIDTH
+            height: 42,   // PIXEL HEIGHT
+            margin: "0 3px", // PIXEL MARGIN (Side gaps)
+            zIndex: showPopup ? 100 : 1,
         }}>
             {/* Pop-up */}
             {showPopup && (
-                <KeyPopup label={label} variant={variant} colors={colors} />
+                <KeyPopup label={label} variant={variant} colors={colors} keyWidth={width} />
             )}
 
             {/* Key Body */}
@@ -103,7 +102,7 @@ const Key: React.FC<KeyProps> = ({
                 width: "100%",
                 height: "100%",
                 backgroundColor: bg,
-                borderRadius: 6,
+                borderRadius: 5, // iOS Standard Radius
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -111,7 +110,7 @@ const Key: React.FC<KeyProps> = ({
                 fontWeight,
                 color: colors.keyText,
                 boxShadow: colors.shadow,
-                transition: "background-color 0.05s", // Fast active state
+                transition: "background-color 0.05s",
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
             }}>
                 {renderLabel(label, variant)}
@@ -127,25 +126,21 @@ const Key: React.FC<KeyProps> = ({
 const KeyPopup: React.FC<{
     label: string,
     variant: "light" | "dark",
-    colors: any
-}> = ({ label, variant, colors }) => {
-    // The "paddle" shape is iconic to iOS. 
-    // It is wider at the top, and narrows down to the key width at the bottom.
-    // We render this in a container that overflows the key cleanly.
-
-    // SVG Coordinate System:
-    // 0,0 is top-left of the POPUP bubble.
-    // 100,200 is bottom-center of the stem.
-    // We just map 0-100 coordinates and stretch via viewBox.
+    colors: any,
+    keyWidth: number
+}> = ({ label, variant, colors, keyWidth }) => {
+    // Popup metrics
+    const POPUP_WIDTH = keyWidth + 24; // ~58px
+    const POPUP_HEIGHT = 100; // Fixed tall height
 
     return (
         <div style={{
             position: "absolute",
             bottom: 0,
             left: "50%",
-            width: "160%", // 1.6x key width
+            width: POPUP_WIDTH,
+            height: POPUP_HEIGHT,
             transform: "translateX(-50%)",
-            height: "220%", // 2.2x key height
             pointerEvents: "none",
             zIndex: 200,
             filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))"
@@ -157,25 +152,8 @@ const KeyPopup: React.FC<{
                 preserveAspectRatio="none"
                 style={{ overflow: "visible" }}
             >
-                {/* 
-                  Path:
-                  Start left-bottom stem (20, 130) -> up to neck (20, 70) -> out to bubble left (0, 60) -> up to top (0, 10)...
-                  This rough path approximates the iOS shape.
-                */}
                 <path
-                    d="
-                    M 20 130 
-                    L 80 130 
-                    L 80 80 
-                    Q 80 60 100 60 
-                    L 100 15 
-                    Q 100 0 85 0 
-                    L 15 0 
-                    Q 0 0 0 15 
-                    L 0 60 
-                    Q 20 60 20 80 
-                    Z
-                    "
+                    d="M 20 130 L 80 130 L 80 80 Q 80 60 100 60 L 100 15 Q 100 0 85 0 L 15 0 Q 0 0 0 15 L 0 60 Q 20 60 20 80 Z"
                     fill={colors.popupBg}
                 />
             </svg>
@@ -186,19 +164,15 @@ const KeyPopup: React.FC<{
                 top: 0,
                 left: 0,
                 width: "100%",
-                height: "50%", // Top half is the bubble
+                height: 60, // Top bubble height
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "10cqw", // We can keep px cap for VERY large screens but relative is key
-                // Actually user requested scalable. Let's use pure CQW for safety.
-                // But typically pops are fixed relative to key.
-                // Key width is approx 10% of screen. 1.6x key = 16% screen.
-                // Font should be BIG.
+                fontSize: 36, // Large 36px char
                 color: colors.keyText,
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
                 fontWeight: 400,
-                paddingBottom: "5%"
+                paddingBottom: 5
             }}>
                 {label.toUpperCase()}
             </div>
@@ -256,8 +230,7 @@ const KeyboardRow: React.FC<{
             display: "flex",
             justifyContent: "center",
             width: "100%",
-            height: "22%", // Distribute 4 rows + gaps
-            marginBottom: "1%"
+            marginBottom: 10, // 10px Gap
         }}>
             {keys.map((key, index) => {
                 const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
@@ -266,14 +239,13 @@ const KeyboardRow: React.FC<{
                     (key === "⌫" && currentKey === "⌫") ||
                     (isSpace && currentKey === " ");
 
-                // Flex Weights
-                // Normal key: 10
-                // Side keys: 15
-                // Space: 60
-                let width = 10;
-                if (isSpace) width = 55;
-                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 15;
-                if (key === "⇧" || key === "⌫") width = 14;
+                // PIXEL WIDTHS (Based on 393 width)
+                // Standard: ~31-33
+                let width = 33; // Base (Matches ~10% minus gap)
+
+                if (key === "space") width = 192; // 5x
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 48; // 1.5x
+                if (key === "⇧" || key === "⌫") width = 42;
 
                 return (
                     <Key
@@ -319,9 +291,6 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     // LET'S GO WITH FLUID WIDTH (100%) but keep aspect ratio constraints?
     // Actually, "perfect rectangle" complaint suggests it's not fitting.
     // Let's rely on standard scaling: We render at 393px logical, and scale up to 100% of parent.
-
-    const LOGICAL_WIDTH = 393;
-    const LOGICAL_HEIGHT = 295; // height + home indicator
 
     // Animation
     const ANIMATION_DURATION = 18;
@@ -369,39 +338,35 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
         }}>
             {/* 
                Content Wrapper: 
-               This matches our Logical Design (393px).
-               We scale this to fit the parent width.
+               Designed at 393px. AppSurface handles the rest.
             */}
             <div style={{
-                width: "100%", // Contain
+                width: 393, // FIXED PIXEL WIDTH
                 backgroundColor: bgColor,
                 backdropFilter,
                 WebkitBackdropFilter: backdropFilter,
-                paddingTop: "2%", // Relative padding
-                paddingBottom: "6%", // Home indicator area
+                paddingTop: 8,
+                paddingBottom: 34, // Home indicator area
                 boxShadow: "0 -1px 0 rgba(0,0,0,0.1)",
                 display: "flex",
                 flexDirection: "column",
-                // We use a container query approach or just aspect ratio
-                // To keep keys square-ish
-                aspectRatio: `${LOGICAL_WIDTH}/${LOGICAL_HEIGHT}`
             }}>
                 {/* Predictive Bar */}
                 <div style={{
-                    flex: "0 0 14%", // ~42px equivalent
+                    height: 48,
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "0 1%", // Safe area
-                    marginBottom: "1%",
+                    padding: "0 10px",
+                    marginBottom: 4,
                 }}>
                     {suggestions.map((word, i) => (
                         <div key={i} style={{
                             flex: 1,
-                            margin: "0 0.5%",
+                            margin: "0 4px",
                             textAlign: "center",
-                            fontSize: "4.5cqw", // Responsive: ~18px
-                            color: variant === "light" ? (i === 1 ? "#007AFF" : '"#111"') : (i === 1 ? "#0A84FF" : "#FFF"),
+                            fontSize: 17, // Standard iOS body
+                            color: variant === "light" ? (i === 1 ? "#007AFF" : "#111") : (i === 1 ? "#0A84FF" : "#FFF"),
                             fontWeight: 400,
                             letterSpacing: -0.3,
                             height: "100%",
@@ -409,18 +374,16 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                             alignItems: "center",
                             justifyContent: "center",
                             position: "relative",
-
                             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
                         }}>
                             {/* Dividers */}
-                            {i > 0 && (
+                            {i < 2 && (
                                 <div style={{
                                     position: "absolute",
-                                    left: -2,
-                                    top: "25%",
-                                    height: "50%",
+                                    right: -4,
+                                    height: "40%",
                                     width: 1,
-                                    backgroundColor: variant === "light" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
+                                    backgroundColor: variant === "light" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"
                                 }} />
                             )}
                             {i === 1 ? `"${word}"` : word}
@@ -429,7 +392,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                 </div>
 
                 {/* Keyboard Rows */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "0 1%" }}>
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "0 6px" }}>
                     {rows.map((row, index) => (
                         <KeyboardRow
                             key={index}
@@ -444,10 +407,10 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                 {/* Bottom Actions (Emoji / Mic) with SVGs */}
                 <div style={{
                     position: "absolute",
-                    bottom: "2%",
-                    left: "6%",
-                    width: "6cqw",
-                    height: "6cqw",
+                    bottom: 8,
+                    left: 24,
+                    width: 26,
+                    height: 26,
                     opacity: 0.6,
                     color: variant === "light" ? "#444" : "#CCC"
                 }}>
@@ -455,10 +418,10 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                 </div>
                 <div style={{
                     position: "absolute",
-                    bottom: "2%",
-                    right: "6%",
-                    width: "5cqw",
-                    height: "5cqw",
+                    bottom: 8,
+                    right: 24,
+                    width: 22,
+                    height: 22,
                     opacity: 0.6,
                     color: variant === "light" ? "#444" : "#CCC"
                 }}>

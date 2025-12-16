@@ -297,6 +297,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                                 platform={variant}
                                 variant={variant === "ios" ? "light" : "light"}
                                 t={t}
+                                width={profile.dimensions.width}
                             />
                         )}
                     </DeviceFrame>
