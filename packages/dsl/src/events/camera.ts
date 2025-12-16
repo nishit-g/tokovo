@@ -26,6 +26,35 @@ export interface ShakeOptions {
  */
 export const camera = {
     /**
+     * Focus on a specific semantic anchor (Alias for anchorFocus)
+     */
+    focus: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        anchor: options.target,
+        preset: "message", // Default
+        shake: 0,
+        duration: options.duration ?? 30, // Default duration
+        easing: "ease-out",
+    } as any),
+
+    /**
+     * Track a semantic anchor (Alias for anchorTrack)
+     */
+    track: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_TRACK",
+        anchor: options.target,
+        preset: "operatorFollow",
+        duration: options.duration ?? 35,
+        smoothing: 0.18,
+        easing: "ease-out",
+        zoom: options.zoom // Pass zoom if supported by IR
+    } as any),
+
+    /**
      * Zoom in/out
      */
     zoom: (at: number, scale: number, duration: number, opts: ZoomOptions = {}): TimelineEvent => ({

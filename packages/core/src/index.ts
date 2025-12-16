@@ -1,4 +1,7 @@
 export * from "./types";
+// Utils
+export { SeededRNG } from "./utils/rng";
+
 // App Metadata Registry
 export * from "./app-metadata";
 

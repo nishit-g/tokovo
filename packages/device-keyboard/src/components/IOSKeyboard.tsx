@@ -53,98 +53,182 @@ interface KeyProps {
 const Key: React.FC<KeyProps> = ({
     label,
     isPressed,
-    width = 96,
+    width = 10, // Flex weight now
     isSpecial = false,
     variant
 }) => {
-    const frame = useCurrentFrame();
-
-    // Colors based on variant
+    // Colors
     const colors = variant === "light"
         ? {
-            keyBg: isSpecial ? "#AEB3BC" : "#FFFFFF",
+            keyBg: isSpecial ? "#B3B6BE" : "#FFFFFF",
             keyText: "#000000",
             popupBg: "#FFFFFF",
-            shadow: "rgba(0,0,0,0.3)",
+            shadow: "0 1px 0 rgba(0,0,0,0.3)",
         }
         : {
-            keyBg: isSpecial ? "#3D3D41" : "#5A5A5E",
+            keyBg: isSpecial ? "#3A3A3C" : "#6D6D72",
             keyText: "#FFFFFF",
-            popupBg: "#5A5A5E",
-            shadow: "rgba(0,0,0,0.5)",
+            popupBg: "#6D6D72",
+            shadow: "0 1px 0 rgba(0,0,0,0.45)",
         };
 
-    // Key dimensions
-    const height = 132;
-    const borderRadius = 15;
-    const fontSize = label === "space" ? 48 : label.length > 1 ? 42 : 66;
+    // PURE RELATIVE SIZING - No pixel caps to ensure 4K/Scaling support
+    const fontSize = label === "space" ? "4.5cqw" : label.length > 1 ? "4.5cqw" : "5.5cqw";
+    const fontWeight = label === "shift" || label === "delete" ? 300 : 400;
 
-    // Pop-up animation (show enlarged key above when pressed)
-    const popupScale = isPressed ? 1.3 : 0;
-    const popupOpacity = isPressed ? 1 : 0;
+    const bg = isPressed ? (isSpecial ? "#EAECF0" : "#E5E5E5") : colors.keyBg;
+
+    // Pop-ups enabled!
+    const showPopup = isPressed && label.length === 1 && !isSpecial;
 
     return (
         <div style={{
             position: "relative",
-            width,
-            height,
-            margin: 6,
+            flex: width, // FLEX BASED WIDTH
+            margin: "0.8%", // Tighten Gap slightly
+            height: "100%",
+            zIndex: showPopup ? 100 : 1, // Bring to front if popping up
         }}>
-            {/* Key pop-up (above key when pressed) */}
-            {isPressed && (
-                <div style={{
-                    position: "absolute",
-                    bottom: height + 12,
-                    left: "50%",
-                    transform: `translateX(-50%) scale(${popupScale})`,
-                    width: width * 1.4,
-                    height: height * 1.5,
-                    backgroundColor: colors.popupBg,
-                    borderRadius: 24,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: fontSize * 1.3,
-                    fontWeight: 400,
-                    color: colors.keyText,
-                    boxShadow: `0 12px 30px ${colors.shadow}`,
-                    opacity: popupOpacity,
-                    zIndex: 100,
-                }}>
-                    {label === "space" ? "" : label.toUpperCase()}
-                </div>
+            {/* Pop-up */}
+            {showPopup && (
+                <KeyPopup label={label} variant={variant} colors={colors} />
             )}
 
-            {/* Main key */}
+            {/* Key Body */}
             <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
                 width: "100%",
                 height: "100%",
-                backgroundColor: isPressed ? colors.popupBg : colors.keyBg,
-                borderRadius,
+                backgroundColor: bg,
+                borderRadius: 6,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 fontSize,
-                fontWeight: 400,
+                fontWeight,
                 color: colors.keyText,
-                boxShadow: `0 3px 0 ${colors.shadow}`,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
-                textTransform: isSpecial ? "none" : "none",
-                transform: isPressed ? "scale(0.95)" : "scale(1)",
-                transition: "transform 0.05s",
+                boxShadow: colors.shadow,
+                transition: "background-color 0.05s", // Fast active state
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
             }}>
-                {label === "space" ? "" :
-                    label === "⇧" ? "⇧" :
-                        label === "⌫" ? "⌫" :
-                            label === "return" ? "return" :
-                                label === "123" ? "123" :
-                                    label === "ABC" ? "ABC" :
-                                        label === "🌐" ? "🌐" :
-                                            label}
+                {renderLabel(label, variant)}
             </div>
         </div>
     );
 };
+
+// =============================================================================
+// KEY POPUP (SVG Shape)
+// =============================================================================
+
+const KeyPopup: React.FC<{
+    label: string,
+    variant: "light" | "dark",
+    colors: any
+}> = ({ label, variant, colors }) => {
+    // The "paddle" shape is iconic to iOS. 
+    // It is wider at the top, and narrows down to the key width at the bottom.
+    // We render this in a container that overflows the key cleanly.
+
+    // SVG Coordinate System:
+    // 0,0 is top-left of the POPUP bubble.
+    // 100,200 is bottom-center of the stem.
+    // We just map 0-100 coordinates and stretch via viewBox.
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: "50%",
+            width: "160%", // 1.6x key width
+            transform: "translateX(-50%)",
+            height: "220%", // 2.2x key height
+            pointerEvents: "none",
+            zIndex: 200,
+            filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))"
+        }}>
+            <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 100 130"
+                preserveAspectRatio="none"
+                style={{ overflow: "visible" }}
+            >
+                {/* 
+                  Path:
+                  Start left-bottom stem (20, 130) -> up to neck (20, 70) -> out to bubble left (0, 60) -> up to top (0, 10)...
+                  This rough path approximates the iOS shape.
+                */}
+                <path
+                    d="
+                    M 20 130 
+                    L 80 130 
+                    L 80 80 
+                    Q 80 60 100 60 
+                    L 100 15 
+                    Q 100 0 85 0 
+                    L 15 0 
+                    Q 0 0 0 15 
+                    L 0 60 
+                    Q 20 60 20 80 
+                    Z
+                    "
+                    fill={colors.popupBg}
+                />
+            </svg>
+
+            {/* Character */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "50%", // Top half is the bubble
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "10cqw", // We can keep px cap for VERY large screens but relative is key
+                // Actually user requested scalable. Let's use pure CQW for safety.
+                // But typically pops are fixed relative to key.
+                // Key width is approx 10% of screen. 1.6x key = 16% screen.
+                // Font should be BIG.
+                color: colors.keyText,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+                fontWeight: 400,
+                paddingBottom: "5%"
+            }}>
+                {label.toUpperCase()}
+            </div>
+        </div>
+    );
+};
+
+// Helper for Icons
+const renderLabel = (label: string, variant: string) => {
+    // SF Symbols approximation
+    if (label === "space") return "";
+    if (label === "⇧") return <ArrowUpIcon />; // Arrow Up
+    if (label === "⌫") return <DeleteIcon />; // Backspace X
+    if (label === "return") return "return";
+    if (label === "123") return "123";
+    if (label === "ABC") return "ABC";
+    if (label === "🌐") return <GlobeIcon />;
+    return label;
+}
+
+const ArrowUpIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4L4 16H8V20H16V16H20L12 4Z" /></svg>
+); // Placeholder
+
+const DeleteIcon = () => (
+    <svg width="22" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2H10L2 12L10 22H22V2Z" /><line x1="12" y1="8" x2="18" y2="16" /><line x1="12" y1="16" x2="18" y2="8" /></svg>
+); // Placeholder
+
+const GlobeIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+);
 
 // =============================================================================
 // KEYBOARD ROW
@@ -160,7 +244,9 @@ const KeyboardRow: React.FC<{
         <div style={{
             display: "flex",
             justifyContent: "center",
-            marginBottom: 12,
+            width: "100%",
+            height: "22%", // Distribute 4 rows + gaps
+            marginBottom: "1%"
         }}>
             {keys.map((key, index) => {
                 const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
@@ -169,12 +255,14 @@ const KeyboardRow: React.FC<{
                     (key === "⌫" && currentKey === "⌫") ||
                     (isSpace && currentKey === " ");
 
-                // Key widths
-                let width = 96;
-                if (isSpace) width = 500;
-                else if (key === "return") width = 240;
-                else if (key === "⇧" || key === "⌫") width = 126;
-                else if (key === "123" || key === "ABC") width = 126;
+                // Flex Weights
+                // Normal key: 10
+                // Side keys: 15
+                // Space: 60
+                let width = 10;
+                if (isSpace) width = 55;
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 15;
+                if (key === "⇧" || key === "⌫") width = 14;
 
                 return (
                     <Key
@@ -195,24 +283,38 @@ const KeyboardRow: React.FC<{
 // MAIN KEYBOARD COMPONENT
 // =============================================================================
 
+// =============================================================================
+// MAIN KEYBOARD COMPONENT
+// =============================================================================
+
 export const IOSKeyboard: React.FC<KeyboardProps> = ({
     keyboard,
     variant = "light",
-    t,
 }) => {
     const frame = useCurrentFrame();
 
-    // Slide animation
-    // Slide animation logic
-    const KEYBOARD_HEIGHT = 900; // At 3x scale
-    const ANIMATION_DURATION = 15;
+    // -------------------------------------------------------------------------
+    // SCALING INFRASTRUCTURE
+    // -------------------------------------------------------------------------
+    // The keyboard is designed at 393 logical pixels (iPhone 14/15/16 Pro).
+    // We want it to fill the rendered width (e.g. 1080px or 1179px).
+    // Instead of hardcoding 1080, we use percentage width for the container,
+    // and a transform: scale() on the inner content to match logical pixels.
 
-    // Get transition start time
+    // HOWEVER, scaling inner content is tricky without knowing exact width.
+    // simpler approach: CSS Zoom or just design keys in % or fluid units?
+    // Keys need specific sizes. 
+
+    // LET'S GO WITH FLUID WIDTH (100%) but keep aspect ratio constraints?
+    // Actually, "perfect rectangle" complaint suggests it's not fitting.
+    // Let's rely on standard scaling: We render at 393px logical, and scale up to 100% of parent.
+
+    const LOGICAL_WIDTH = 393;
+    const LOGICAL_HEIGHT = 295; // height + home indicator
+
+    // Animation
+    const ANIMATION_DURATION = 18;
     const transitionStart = keyboard.visibilityChangedAt || 0;
-
-    // Determine target state
-    // If visible: animate 0 -> 1
-    // If hidden: animate 1 -> 0
     const targetValue = keyboard.visible ? 1 : 0;
     const startValue = keyboard.visible ? 0 : 1;
 
@@ -223,78 +325,142 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
         {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
-            easing: Easing.out(Easing.cubic),
+            easing: Easing.bezier(0.19, 1, 0.22, 1),
         }
     );
 
-    const translateY = interpolate(slideProgress, [0, 1], [KEYBOARD_HEIGHT, 0]);
-    const opacity = interpolate(slideProgress, [0, 1], [0, 1]);
+    const translateY = interpolate(slideProgress, [0, 1], [100, 0]); // % based translate
+    const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
 
-    // Don't render if fully hidden and animation is done
-    if (!keyboard.visible && slideProgress === 0) {
-        return null;
-    }
+    if (!keyboard.visible && slideProgress === 0) return null;
 
-    // Select layout
     const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
+    const bgColor = variant === "light" ? "rgba(209, 211, 217, 0.96)" : "rgba(28, 28, 30, 0.94)";
+    const backdropFilter = "blur(50px)";
 
-    // Background colors
-    const bgColor = variant === "light" ? "#D1D3D9" : "#2C2C2E";
+    const inputLen = keyboard.inputText.length;
+    const suggestions = getSuggestions(inputLen, variant);
 
     return (
         <div style={{
             position: "absolute",
             bottom: 0,
             left: 0,
-            right: 0,
-            height: KEYBOARD_HEIGHT,
-            backgroundColor: bgColor,
-            transform: `translateY(${translateY}px)`,
+            width: "100%", // FILL THE DEVICE FRAME
+            height: "auto", // Let content dictate height
+            transform: `translateY(${translateY}%)`,
             opacity,
-            paddingTop: 24,
-            paddingBottom: 60,
             zIndex: 1000,
+            display: "flex", // Centering wrapper
+            justifyContent: "center",
+            alignItems: "flex-end",
+            overflow: "hidden" // Clip to device frame
         }}>
-            {/* Predictive text bar */}
+            {/* 
+               Content Wrapper: 
+               This matches our Logical Design (393px).
+               We scale this to fit the parent width.
+            */}
             <div style={{
-                height: 120,
+                width: "100%", // Contain
+                backgroundColor: bgColor,
+                backdropFilter,
+                WebkitBackdropFilter: backdropFilter,
+                paddingTop: "2%", // Relative padding
+                paddingBottom: "6%", // Home indicator area
+                boxShadow: "0 -1px 0 rgba(0,0,0,0.1)",
                 display: "flex",
-                justifyContent: "space-around",
-                alignItems: "center",
-                borderBottom: `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}`,
-                marginBottom: 12,
-                paddingLeft: 24,
-                paddingRight: 24,
+                flexDirection: "column",
+                // We use a container query approach or just aspect ratio
+                // To keep keys square-ish
+                aspectRatio: `${LOGICAL_WIDTH}/${LOGICAL_HEIGHT}`
             }}>
-                {["The", "I", "a"].map((word, i) => (
-                    <div key={i} style={{
-                        flex: 1,
-                        textAlign: "center",
-                        fontSize: 48,
-                        color: variant === "light" ? "#000" : "#FFF",
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro', sans-serif",
-                        borderRight: i < 2 ? `1px solid ${variant === "light" ? "#C4C4C6" : "#3D3D41"}` : "none",
-                        paddingTop: 12,
-                        paddingBottom: 12,
-                    }}>
-                        {word}
-                    </div>
-                ))}
-            </div>
+                {/* Predictive Bar */}
+                <div style={{
+                    flex: "0 0 14%", // ~42px equivalent
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0 1%",
+                    marginBottom: "1%",
+                }}>
+                    {suggestions.map((word, i) => (
+                        <div key={i} style={{
+                            flex: 1,
+                            margin: "0 1%",
+                            textAlign: "center",
+                            fontSize: "min(4cqw, 18px)", // Responsive font
+                            color: variant === "light" ? (i === 1 ? "#007AFF" : '"#111"') : (i === 1 ? "#0A84FF" : "#FFF"),
+                            fontWeight: 400,
+                            letterSpacing: -0.3,
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            position: "relative",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
+                        }}>
+                            {/* Dividers */}
+                            {i > 0 && (
+                                <div style={{
+                                    position: "absolute",
+                                    left: -2,
+                                    top: "25%",
+                                    height: "50%",
+                                    width: 1,
+                                    backgroundColor: variant === "light" ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.15)"
+                                }} />
+                            )}
+                            {i === 1 ? `"${word}"` : word}
+                        </div>
+                    ))}
+                </div>
 
-            {/* Keyboard rows */}
-            {rows.map((row, index) => (
-                <KeyboardRow
-                    key={index}
-                    keys={row}
-                    currentKey={keyboard.currentKey}
-                    variant={variant}
-                    rowIndex={index}
-                />
-            ))}
+                {/* Keyboard Rows */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "0 1%" }}>
+                    {rows.map((row, index) => (
+                        <KeyboardRow
+                            key={index}
+                            keys={row}
+                            currentKey={keyboard.currentKey}
+                            variant={variant}
+                            rowIndex={index}
+                        />
+                    ))}
+                </div>
+
+                {/* Emoji / Dictation Icons (Bottom Corners) */}
+                <div style={{
+                    position: "absolute",
+                    bottom: "2%",
+                    left: "6%",
+                    fontSize: "6cqw",
+                    opacity: 0.5
+                }}>😊</div>
+                <div style={{
+                    position: "absolute",
+                    bottom: "2%",
+                    right: "6%",
+                    fontSize: "5cqw",
+                    opacity: 0.5
+                }}>🎙️</div>
+            </div>
         </div>
     );
 };
+
+// Mock Predictive Logic
+function getSuggestions(seed: number, variant: "light" | "dark"): string[] {
+    const common = ["the", "I", "a", "to", "and", "in", "it", "you", "of", "for"];
+    const context = ["love", "peace", "truth", "soul", "mind", "life", "world"];
+
+    // Deterministic pseudo-random based on input length
+    const i1 = (seed * 3) % common.length;
+    const i2 = (seed * 7 + 1) % context.length;
+    const i3 = (seed * 2 + 5) % common.length;
+
+    return [common[i1], context[i2], common[i3]];
+}
 
 export default IOSKeyboard;
 // Strategy Registration

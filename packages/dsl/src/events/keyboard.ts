@@ -5,7 +5,7 @@
  * Used by showcases and DSL builders.
  */
 
-import { TimelineEvent, KeyboardLayout } from "@tokovo/core";
+import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
 
 /**
  * Keyboard event factories
@@ -101,19 +101,64 @@ export const keyboard = {
     /**
      * Generate a realistic typing sequence
      */
-    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number }): TimelineEvent[] => {
+    /**
+     * Generate a realistic, smart typing sequence
+     * 
+     * - Automatically switches layouts (123, ABC)
+     * - Uses seeded RNG for deterministic variance
+     */
+    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
         const events: TimelineEvent[] = [];
         let t = at;
+
+        // Deterministic RNG
+        const seed = options?.seed || 123456;
+        // Simple hash of text to vary seed if not provided, for different texts
+        const textHash = text.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+        const rng = new SeededRNG(seed + textHash);
+
         const speedMap = { fast: 2, normal: 3, slow: 5 };
         const baseSpeed = speedMap[options?.speed || "normal"];
+        const variance = options?.variance || 0;
 
-        // Ensure keyboard is shown? (This is tricky if we don't know state. Usually better to be explicit or have a 'ensureVisible' flag)
-        // For now, raw typing.
+        // Smart Layout State
+        let currentLayout: "qwerty" | "numbers" = "qwerty"; // default
+
+        // Helpers
+        const isNumberOrSymbol = (char: string) => /[0-9\-/:;()$&@"\.,?!']/.test(char);
+        const getLayoutForChar = (char: string): "qwerty" | "numbers" => {
+            if (char === " ") return currentLayout; // Space works on likely both, or we assume stickiness
+            return isNumberOrSymbol(char) ? "numbers" : "qwerty";
+        };
 
         for (const char of text) {
-            // Check for layout switching if needed (simplified: just type)
-            // Ideally we'd switch to numeric if char is digit.
+            const requiredLayout = getLayoutForChar(char);
 
+            // Switch Layout if needed
+            if (requiredLayout !== currentLayout) {
+                const switchKey = currentLayout === "qwerty" ? "123" : "ABC";
+
+                // Press Switch Key
+                events.push(keyboard.keyDown(t, deviceId, switchKey));
+                t += Math.floor(baseSpeed * 0.5);
+
+                // Switch Action
+                events.push({
+                    at: t,
+                    kind: "KEYBOARD",
+                    type: "SHOW", // SHOW updates layout too
+                    deviceId,
+                    layout: requiredLayout
+                } as any);
+
+                // Release Switch Key
+                events.push(keyboard.keyUp(t, deviceId));
+
+                currentLayout = requiredLayout;
+                t += baseSpeed + rng.nextInt(0, variance);
+            }
+
+            // Normal Key Press
             // Press
             events.push({
                 at: t,
@@ -143,7 +188,7 @@ export const keyboard = {
             } as TimelineEvent);
 
             // Delay next char
-            t += baseSpeed + (options?.variance ? Math.floor(Math.random() * options.variance) : 0);
+            t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
         }
 
         return events;

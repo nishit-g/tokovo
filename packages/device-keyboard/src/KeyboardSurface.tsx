@@ -27,16 +27,15 @@ export const KeyboardSurface: React.FC<KeyboardSurfaceProps> = ({
     // 1. Resolve Implementation
     // Normalize platform ID (e.g., "iphone16" -> "ios")
     // Implementation Detail: We might want a smarter resolver here.
-    const resolvedPlatform = normalizePlatform(platform);
+    // const resolvedPlatform = normalizePlatform(platform); // Removed
 
-    const Component = KeyboardRegistry.get(resolvedPlatform);
+    const View = KeyboardRegistry.get(platform) || KeyboardRegistry.get("ios"); // Fallback
 
-    if (!Component) {
-        console.warn(`[KeyboardSurface] No keyboard found for platform: ${platform} (resolved: ${resolvedPlatform})`);
-        return null;
-    }
+    if (!View) return null;
 
-    return <Component keyboard={keyboard} variant={variant} t={t} />;
+    return (
+        <View keyboard={keyboard} variant={variant} t={t} />
+    );
 };
 
 function normalizePlatform(p: string): string {

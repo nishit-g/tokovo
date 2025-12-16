@@ -27,7 +27,7 @@ import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
 import { ManualCameraShowcase } from "./ManualCameraShowcase";
 import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
-import { KeyboardVerifyVideo } from "./KeyboardVerifyVideo";
+import { GandhiTextingVideo } from "./GandhiTextingVideo";
 
 
 export const RemotionRoot: React.FC = () => {
@@ -250,13 +250,14 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
             <Composition
-                id="KeyboardVerify"
-                component={KeyboardVerifyVideo}
-                durationInFrames={900}
+                id="GandhiTexting"
+                component={GandhiTextingVideo}
+                durationInFrames={450}
                 fps={30}
                 width={1080}
                 height={1920}
             />
+
         </>
     );
 };
