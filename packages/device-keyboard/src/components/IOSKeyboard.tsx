@@ -44,6 +44,7 @@ interface KeyProps {
     width?: number;
     isSpecial?: boolean;
     variant: "light" | "dark";
+    isIcon?: boolean; // New prop for icons to adjust padding/sizing
 }
 
 // =============================================================================
@@ -207,27 +208,37 @@ const KeyPopup: React.FC<{
 
 // Helper for Icons
 const renderLabel = (label: string, variant: string) => {
-    // SF Symbols approximation
+    // SF Symbols approximation - returning SVGs that fill their container
+    const iconStyle = { width: "50%", height: "50%", display: "block" };
+
     if (label === "space") return "";
-    if (label === "⇧") return <ArrowUpIcon />; // Arrow Up
-    if (label === "⌫") return <DeleteIcon />; // Backspace X
+    if (label === "⇧") return <ArrowUpIcon style={iconStyle} />;
+    if (label === "⌫") return <DeleteIcon style={iconStyle} />;
     if (label === "return") return "return";
     if (label === "123") return "123";
     if (label === "ABC") return "ABC";
-    if (label === "🌐") return <GlobeIcon />;
+    if (label === "🌐") return <GlobeIcon style={{ width: "60%", height: "60%" }} />;
     return label;
 }
 
-const ArrowUpIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4L4 16H8V20H16V16H20L12 4Z" /></svg>
-); // Placeholder
+const ArrowUpIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="currentColor"><path d="M12 4L4 16H8V20H16V16H20L12 4Z" /></svg>
+);
 
-const DeleteIcon = () => (
-    <svg width="22" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2H10L2 12L10 22H22V2Z" /><line x1="12" y1="8" x2="18" y2="16" /><line x1="12" y1="16" x2="18" y2="8" /></svg>
-); // Placeholder
+const DeleteIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 2H10L2 12L10 22H22V2Z" vectorEffect="non-scaling-stroke" /><line x1="12" y1="8" x2="18" y2="16" vectorEffect="non-scaling-stroke" /><line x1="12" y1="16" x2="18" y2="8" vectorEffect="non-scaling-stroke" /></svg>
+);
 
-const GlobeIcon = () => (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" /></svg>
+const GlobeIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><line x1="2" y1="12" x2="22" y2="12" vectorEffect="non-scaling-stroke" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><path d="M8 14s1.5 2 4 2 4-2 4-2" vectorEffect="non-scaling-stroke" /><line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" vectorEffect="non-scaling-stroke" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" vectorEffect="non-scaling-stroke" /><line x1="12" y1="19" x2="12" y2="23" vectorEffect="non-scaling-stroke" /><line x1="8" y1="23" x2="16" y2="23" vectorEffect="non-scaling-stroke" /></svg>
 );
 
 // =============================================================================
@@ -381,15 +392,15 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "0 1%",
+                    padding: "0 1%", // Safe area
                     marginBottom: "1%",
                 }}>
                     {suggestions.map((word, i) => (
                         <div key={i} style={{
                             flex: 1,
-                            margin: "0 1%",
+                            margin: "0 0.5%",
                             textAlign: "center",
-                            fontSize: "min(4cqw, 18px)", // Responsive font
+                            fontSize: "4.5cqw", // Responsive: ~18px
                             color: variant === "light" ? (i === 1 ? "#007AFF" : '"#111"') : (i === 1 ? "#0A84FF" : "#FFF"),
                             fontWeight: 400,
                             letterSpacing: -0.3,
@@ -398,6 +409,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                             alignItems: "center",
                             justifyContent: "center",
                             position: "relative",
+
                             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
                         }}>
                             {/* Dividers */}
@@ -429,21 +441,29 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     ))}
                 </div>
 
-                {/* Emoji / Dictation Icons (Bottom Corners) */}
+                {/* Bottom Actions (Emoji / Mic) with SVGs */}
                 <div style={{
                     position: "absolute",
                     bottom: "2%",
                     left: "6%",
-                    fontSize: "6cqw",
-                    opacity: 0.5
-                }}>😊</div>
+                    width: "6cqw",
+                    height: "6cqw",
+                    opacity: 0.6,
+                    color: variant === "light" ? "#444" : "#CCC"
+                }}>
+                    <EmojiIcon style={{ width: "100%", height: "100%" }} />
+                </div>
                 <div style={{
                     position: "absolute",
                     bottom: "2%",
                     right: "6%",
-                    fontSize: "5cqw",
-                    opacity: 0.5
-                }}>🎙️</div>
+                    width: "5cqw",
+                    height: "5cqw",
+                    opacity: 0.6,
+                    color: variant === "light" ? "#444" : "#CCC"
+                }}>
+                    <MicIcon style={{ width: "100%", height: "100%" }} />
+                </div>
             </div>
         </div>
     );
