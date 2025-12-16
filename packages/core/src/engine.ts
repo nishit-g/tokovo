@@ -17,6 +17,7 @@ import { AppMetadataRegistry } from "./app-metadata";
 
 export type DeviceReducer = (state: Record<string, DeviceState>, event: TimelineEvent) => Record<string, DeviceState>;
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
+export type FeatureReducer = (draft: WorldState, event: TimelineEvent, index: number) => void;
 
 /**
  * ReducerRegistry - Manages app and device reducers
@@ -27,6 +28,7 @@ export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
 class ReducerRegistryClass {
     private _deviceReducer: DeviceReducer | null = null;
     private _appReducers = new Map<string, AppReducer>();
+    private _featureReducers = new Map<string, FeatureReducer>();
 
     /**
      * Register a device reducer (handles DEVICE events)
@@ -46,6 +48,13 @@ class ReducerRegistryClass {
     }
 
     /**
+     * Register a generic feature reducer (handles specific event kinds like KEYBOARD, AUDIO)
+     */
+    registerFeatureReducer(kind: string, reducer: FeatureReducer): void {
+        this._featureReducers.set(kind, reducer);
+    }
+
+    /**
      * Get the device reducer
      */
     get deviceReducer(): DeviceReducer | null {
@@ -57,6 +66,13 @@ class ReducerRegistryClass {
      */
     getAppReducer(appId: string): AppReducer | undefined {
         return this._appReducers.get(appId);
+    }
+
+    /**
+     * Get a feature reducer by kind
+     */
+    getFeatureReducer(kind: string): FeatureReducer | undefined {
+        return this._featureReducers.get(kind);
     }
 
     /**
@@ -220,85 +236,21 @@ function processAudioEvent(
     }
 }
 
+
 /**
- * Process keyboard event and update device keyboard state
+ * Helper to push input changes to the active app
  */
-function processKeyboardEvent(
-    draft: WorldState,
-    event: TimelineEvent & { kind: "KEYBOARD" },
-    eventIndex: number
-): void {
-    // Keyboard events target a specific device
-    const deviceId = event.deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
-
-    // Initialize keyboard state if needed
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-        };
-    }
-
-    switch (event.type) {
-        case "SHOW":
-            device.keyboard.visible = true;
-            device.keyboard.layout = event.layout || "qwerty";
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            break;
-
-        case "HIDE":
-            device.keyboard.visible = false;
-            device.keyboard.currentKey = null;
-            break;
-
-        case "KEY_DOWN":
-            device.keyboard.currentKey = event.key;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "KEY_UP":
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
-            break;
-
-        case "TYPE_CHAR":
-            // Add character to input
-            const pos = device.keyboard.cursorPosition;
-            const text = device.keyboard.inputText;
-            device.keyboard.inputText = text.slice(0, pos) + event.char + text.slice(pos);
-            device.keyboard.cursorPosition = pos + 1;
-            device.keyboard.currentKey = event.char;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "BACKSPACE":
-            if (device.keyboard.cursorPosition > 0) {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
-                device.keyboard.inputText = text.slice(0, pos - 1) + text.slice(pos);
-                device.keyboard.cursorPosition = pos - 1;
-            }
-            device.keyboard.currentKey = "⌫";
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "SET_TEXT":
-            device.keyboard.inputText = event.text;
-            device.keyboard.cursorPosition = event.text.length;
-            break;
-
-        case "CLEAR":
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            break;
+function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
+    if (!appId) return;
+    const reducer = ReducerRegistry.getAppReducer(appId);
+    if (reducer) {
+        reducer(draft, { // Use legacy event format expected by apps
+            kind: "APP",
+            type: "INPUT_CHANGE",
+            appId,
+            payload: { text },
+            at
+        } as any);
     }
 }
 
@@ -789,9 +741,16 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             case "AUDIO":
                 processAudioEvent(draft, event, index);
                 break;
-            case "KEYBOARD":
-                processKeyboardEvent(draft, event as any, index);
+            case "KEYBOARD": {
+                // Use registered plugin reducer
+                const reducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
+                if (reducer) {
+                    reducer(draft, event, index);
+                } else {
+                    console.warn("[Engine] No KEYBOARD reducer registered. Ensure @tokovo/device-keyboard is imported.");
+                }
                 break;
+            }
             case "OS":
                 processOSEvent(draft, event as any);
                 break;

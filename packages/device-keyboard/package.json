@@ -1,0 +1,24 @@
+{
+    "name": "@tokovo/device-keyboard",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "react": "18.2.0",
+        "lucide-react": "^0.263.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "remotion": "4.0.265"
+    },
+    "peerDependencies": {
+        "remotion": ">=4.0.0"
+    }
+}

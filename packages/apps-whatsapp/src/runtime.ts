@@ -319,6 +319,17 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             }
             break;
         }
+
+        case "INPUT_CHANGE": {
+            // "OS-Level Input Management"
+            // The OS has dispatched this event with the raw text from the keyboard.
+            // We update the local conversation draft state.
+            const text = (appEvent as any).payload?.text;
+            if (conversation) {
+                (conversation as any).draftText = text;
+            }
+            break;
+        }
     }
 }
 
