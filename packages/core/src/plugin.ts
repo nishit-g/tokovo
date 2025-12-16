@@ -211,7 +211,7 @@ export interface TokovoPlugin {
 /**
  * PluginManager - Central registry for all app plugins
  */
-class PluginManagerClass {
+export class PluginManagerClass {
     private plugins = new Map<string, TokovoPlugin>();
     private viewRegistry = new Map<string, AppViewComponent>();
 

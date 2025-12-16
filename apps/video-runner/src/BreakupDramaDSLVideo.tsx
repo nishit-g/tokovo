@@ -1,8 +1,9 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
 
 // Import device reducer to ensure it's registered
 import "@tokovo/devices";
@@ -65,7 +66,15 @@ function createBreakupDramaEpisode(): { initialWorld: WorldState; events: Timeli
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
     };
 
     // Timeline events (what DSL compiler would generate)
@@ -195,6 +204,13 @@ export const BreakupDramaDSLVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
     // Get episode data
     const episode = useMemo(() => createBreakupDramaEpisode(), []);
 
@@ -234,6 +250,7 @@ export const BreakupDramaDSLVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={true}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

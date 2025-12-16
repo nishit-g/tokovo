@@ -15,6 +15,7 @@ import {
     NotificationInstance,
     EventIndex,
     PluginManager,
+    PluginManagerClass,
     APP_IDS,
     NotificationScheduler,
     AppSurface
@@ -51,6 +52,7 @@ interface TokovoRendererProps {
     eventIndex?: EventIndex;
     directorEnabled?: boolean;
     directorDebug?: boolean;
+    pluginManager?: PluginManagerClass;
 }
 
 // =============================================================================
@@ -66,7 +68,11 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     eventIndex,
     directorEnabled = true,
     directorDebug = false,
+    pluginManager,
 }) => {
+    // Resolve Plugin Manager (Injectable > Global Fallback)
+    const pm = pluginManager || PluginManager;
+
     const {
         headsUpDuration = 150,
         showHeadsUpWhenAppOpen = true,
@@ -139,7 +145,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 4. SELECT APP VIEW
     // ==========================================================================
-    const AppView = appId ? PluginManager.getView(appId) : null;
+    const AppView = appId ? pm.getView(appId) : null;
 
     // 5. RENDER — Paint the blueprints
     // ==========================================================================
@@ -168,11 +174,11 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         {(() => {
                             // A. Active Call takes precedence
                             if (hasActiveCall) {
-                                const PhoneView = PluginManager.getView(APP_IDS.PHONE);
+                                const PhoneView = pm.getView(APP_IDS.PHONE);
                                 if (PhoneView) {
                                     // Phone App handles its own scaling/surface if needed, or we wrap it?
                                     // Usually full-screen system apps define their own layout, but let's standardise.
-                                    const meta = PluginManager.get(APP_IDS.PHONE)?.metadata;
+                                    const meta = pm.get(APP_IDS.PHONE)?.metadata;
                                     const designWidth = meta?.designWidth || 393; // Default logical width
 
                                     return (
@@ -191,7 +197,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
                             // B. Active App (Unlocked)
                             if (AppView && !device.isLocked) {
-                                const meta = PluginManager.get(appId!)?.metadata;
+                                const meta = pm.get(appId!)?.metadata;
                                 const designWidth = meta?.designWidth || 393;
 
                                 // Calculate scale factor explicitly to normalize props
