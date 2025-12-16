@@ -322,13 +322,26 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                     const viewportWidth = profile.dimensions.width;
                     const viewportHeight = profile.dimensions.height;
 
+                    // === FIX: APPLY SCROLL OFFSET ===
+                    // Layout Rects are in Content Space (absolute Y).
+                    // Camera Transform is in Viewport Space.
+                    // We must subtract scrollY for non-sticky elements.
+                    let finalY = rect.y;
+                    const isSticky = resolved.metadata?.sticky || rect.y < 0; // Negative Y usually implies special handling, but sticky flag is safer
+
+                    if (!isSticky) {
+                        // Safe access to scrollY from layout
+                        const scrollY = (layout as any).scrollY || 0;
+                        finalY -= scrollY;
+                    }
+
                     // === THE KEY MATH: Convert rect → origin ===
                     // Use provided alignment or default to center (0.5)
                     const alignX = effect.align?.x ?? 0.5;
                     const alignY = effect.align?.y ?? 0.5;
 
                     const targetX = rect.x + rect.width * alignX;
-                    const targetY = rect.y + rect.height * alignY;
+                    const targetY = finalY + rect.height * alignY;
 
                     // Normalize to 0-1 range
                     const originX = targetX / viewportWidth;

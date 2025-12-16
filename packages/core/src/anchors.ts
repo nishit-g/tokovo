@@ -90,7 +90,7 @@ export type TwitterAnchorId =
  */
 export interface AnchorSnapshot {
     /** Available anchors mapped to their rects */
-    anchors: Partial<Record<SemanticAnchorId, LayoutRect>>;
+    anchors: Partial<Record<SemanticAnchorId, LayoutRect & { metadata?: { sticky?: boolean } }>>;
 
     /** Device this snapshot belongs to */
     deviceId: string;

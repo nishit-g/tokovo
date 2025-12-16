@@ -13,6 +13,7 @@ import {
     type MessageType,          // Type import
     type GapContext,           // Type import
 } from "./config";
+import { UI_CONSTANTS } from "./config";
 import { MessageData } from "./types";
 
 // =============================================================================
@@ -279,19 +280,31 @@ export function computeChatLayout(
     // Ideally, the InputArea component itself should report this, but since we compute layout here:
     // We can define a "logical" input area anchor at the bottom of the viewport.
 
-    // NOTE: This assumes Input Area is 60px height (standard).
-    // TODO: Move this constant to config
-    const INPUT_HEIGHT = 60;
+    const INPUT_HEIGHT = UI_CONSTANTS.INPUT_MIN_HEIGHT;
+
+    // HEADER CONSTANTS (From Shared Config)
+    // Note: This relies on ChatScreen's default safeAreaInsets if not provided in layout ctx
+    // In layout context, we might not have insets.
+    // Let's assume iPhone 16 default top inset (47) + Content Height (60) = 107
+    // TODO: Pass safeAreaInsets to layout context for perfect alignment
+    const SAFE_AREA_TOP_ASSUMED = 47;
+    const HEADER_HEIGHT = UI_CONSTANTS.HEADER_CONTENT_HEIGHT + SAFE_AREA_TOP_ASSUMED;
+
+    // Profile Position Calculation
+    const PROFILE_SIZE = UI_CONSTANTS.HEADER_AVATAR_SIZE;
+    // X = Left Padding + Back Button + Margin + Margin (Approximate check against Header.tsx flex)
+    // Header.tsx: paddingLeft(10) + BackBtn(24+5+17+margin) + Avatar
+    // Let's reverse engineer exact X from Header.tsx visual flow:
+    // Pl(10) + BackBtnWrapper(marginRight 5) + Avatar
+    // BackBtnWrapper: Width is roughly 24 (icon) + 17 (text) + gaps
+    const PROFILE_X_OFFSET = 10 + (24 + 17) + 10; // Approx 61px
+
+    // Y = SafeAreaTop + (ContentHeight - AvatarSize)/2
+    const PROFILE_Y_OFFSET = SAFE_AREA_TOP_ASSUMED + (UI_CONSTANTS.HEADER_CONTENT_HEIGHT - PROFILE_SIZE) / 2;
+
     const inputRect = {
         x: 0,
-        y: viewportHeight - INPUT_HEIGHT, // In screen coordinates? Or content coordinates?
-        // LayoutRects in Semantic Layout are traditionally in "Content Space" (scrolled) or "Viewport Space" (fixed)?
-        // UseCameraEngine expects logic. Let's assume Viewport Space for fixed elements.
-        // But message rects are in Content Space (y increases forever).
-        // The Camera Engine needs to know which space it is.
-        // For now, let's treat "Input Area" as a fixed UI element.
-        // Actually, if we use `scrollY` to transform, then content space is better.
-        // But Input Area is sticky.
+        y: viewportHeight - INPUT_HEIGHT,
         width: viewportWidth,
         height: INPUT_HEIGHT
     };
@@ -300,6 +313,22 @@ export function computeChatLayout(
         id: "input_area",
         rect: inputRect,
         tags: ["input", "footer"],
+        metadata: { sticky: true }
+    };
+
+    // Header Region (Sticky Top)
+    semanticRegions["header"] = {
+        id: "header",
+        rect: { x: 0, y: 0, width: viewportWidth, height: HEADER_HEIGHT },
+        tags: ["header", "nav"],
+        metadata: { sticky: true }
+    };
+
+    // Profile Region (Inside Header)
+    semanticRegions["profile"] = {
+        id: "profile",
+        rect: { x: PROFILE_X_OFFSET, y: PROFILE_Y_OFFSET, width: PROFILE_SIZE, height: PROFILE_SIZE },
+        tags: ["profile", "avatar"],
         metadata: { sticky: true }
     };
 

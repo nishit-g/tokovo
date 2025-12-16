@@ -1,10 +1,5 @@
-import React from "react";
+import { UI_CONSTANTS } from "../../config/layout-config";
 import { getTheme } from "./theme";
-
-// Standard iOS Header Height (Standard/Logical)
-// Status Bar (usually 47 on 14/15/16 Pro) + Nav Bar (44) = ~91pt
-// But WhatsApp has a taller header with two rows (Name + Subtitle)
-// Let's use standard logical height: 60px content + safeAreaTop
 
 export const Header: React.FC<{
     contactName: string;
@@ -15,19 +10,19 @@ export const Header: React.FC<{
     const theme = getTheme("ios");
 
     // Total header height = Safe Area + Content Height
-    const contentHeight = 60;
+    const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
     const totalHeight = safeAreaTop + contentHeight;
 
     return (
         <div style={{
             height: totalHeight,
-            backgroundColor: theme.colors.headerBg, // Glassmorphism handle in theme or here
+            backgroundColor: theme.colors.headerBg,
             paddingTop: safeAreaTop,
             display: "flex",
             alignItems: "center",
-            paddingLeft: 10,
-            paddingRight: 10,
-            borderBottom: "0.5px solid rgba(0,0,0,0.1)", // Logical standard border
+            paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
+            paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
+            borderBottom: "0.5px solid rgba(0,0,0,0.1)",
             backdropFilter: "blur(20px)",
             position: "relative",
             zIndex: 100,
@@ -48,11 +43,11 @@ export const Header: React.FC<{
 
             {/* Avatar */}
             <div style={{
-                width: 37,
-                height: 37,
+                width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
+                height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
                 borderRadius: "50%",
                 backgroundColor: "#ddd",
-                marginRight: 10,
+                marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
                 overflow: "hidden",
                 flexShrink: 0
             }}>

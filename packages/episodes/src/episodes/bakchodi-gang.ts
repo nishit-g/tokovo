@@ -8,7 +8,6 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
     });
 
     ep.device("RahulPhone", "iphone16", d => {
-        // Define the group chat
         d.app("app_whatsapp");
         d.conversation("group_engineers", {
             name: "Berozgaar Engineers 🛠️",
@@ -19,6 +18,7 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
         // ACT 1: The Scheme
         d.beat("the_scheme", b => {
             b.wait("1s");
+            b.camera(c => c.focus("profile", { duration: "10s", preset: "dramatic" }));
 
             // Vicky enters with a bang
             b.receive("Vicky", "Oye BC log! Utho bhenchod! Ek faadu scheme haath lagi hai! 💰💰");
@@ -27,9 +27,15 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
 
             // READING SCAN EFFECT (Cinematic Left-to-Right)
             // 1. Cut to start of message (Left) - Zoomed in ("dramatic")
-            b.camera(c => c.focus("lastMessage", { align: { x: 0.15, y: 0.5 }, preset: "dramatic", duration: "5s" }));
-            // 2. Smoothly scan to end (Right)
-            b.camera(c => c.focus("lastMessage", { align: { x: 0.85, y: 0.5 }, preset: "dramatic", duration: "2.5s", easing: "linear" }));
+            // b.camera(c => c.focus("lastMessage", { align: { x: 0.15, y: 0.5 }, preset: "dramatic", duration: "5s" }));
+            // // 2. Smoothly scan to end (Right)
+            // b.camera(c => c.focus("lastMessage", { align: { x: 0.85, y: 0.5 }, preset: "dramatic", duration: "2.5s", easing: "linear" }));
+
+            // Start with a dramatic profile focus to establish the "character"
+            b.wait("2s");
+
+            // Then cut to standard view
+            // b.camera(c => c.reset({ duration: "0.5s" }));
 
             // Rahul (Me) is skeptical
             b.typing("me").for("1.5s");

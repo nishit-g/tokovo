@@ -34,7 +34,7 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
         layout: unknown,
         deviceId: string
     ): AnchorSnapshot {
-        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+        const anchors: AnchorSnapshot["anchors"] = {};
 
         // Type guard for chat layout
         if (!layout || typeof layout !== "object" || (layout as any).kind !== "CHAT") {
@@ -70,6 +70,14 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
             // 3. Input Area
             if (regions["input_area"]) {
                 anchors.inputArea = regions["input_area"].rect;
+            }
+
+            // 4. Profile Picture
+            if (regions["profile"]) {
+                anchors.profile = {
+                    ...regions["profile"].rect,
+                    metadata: regions["profile"].metadata
+                };
             }
         }
 

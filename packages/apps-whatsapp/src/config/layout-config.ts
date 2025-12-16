@@ -63,6 +63,22 @@ export const LAYOUT_CONSTANTS = {
 };
 
 /**
+ * UI Constants (Header, Input, etc.)
+ * Source of Truth for both React Components and Layout Engine.
+ */
+export const UI_CONSTANTS = {
+    // Header
+    HEADER_CONTENT_HEIGHT: 60,
+    HEADER_AVATAR_SIZE: 37,
+    HEADER_AVATAR_MARGIN_RIGHT: 10,
+    HEADER_PADDING_X: 10,
+    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
+
+    // Input Area
+    INPUT_MIN_HEIGHT: 60, // Standard single line
+};
+
+/**
  * Simplified Per-Message-Type Configuration
  */
 export interface MessageTypeConfig {
