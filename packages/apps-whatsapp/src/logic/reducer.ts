@@ -333,5 +333,3 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     }
 }
 
-// Register the reducer with the core engine
-ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);

@@ -57,4 +57,55 @@ export function validatePlugin(plugin: TokovoPlugin): void {
     if (!plugin.metadata?.name && !plugin.name) {
         throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
     }
+
+    // 3. Conflict Prevention (Enterprise Standard)
+
+    // Core events that don't need namespacing
+    const CORE_EVENT_TYPES = new Set([
+        "MESSAGE_RECEIVED", "MESSAGE_SENT", "MESSAGE_READ", "MESSAGE_DELETED",
+        "TYPING_START", "TYPING_END",
+        "REACTION_ADDED",
+        "CALL", // Provisionally Core
+        "NOTIFICATION", "SHOW_NOTIFICATION", "HIDE_NOTIFICATION",
+        "PLAY_TRACK", "PAUSE_TRACK", "START_BACKGROUND_APP",
+        "OPEN_APP", "CLOSE_APP",
+        "SCREEN_NAVIGATED",
+        // Enhanced Features (Standardized)
+        "VOICE_MESSAGE_RECEIVED",
+        "GROUP_MEMBER_ADDED", "GROUP_MEMBER_REMOVED"
+    ]);
+
+    // Enforce Event Namespacing
+    if (plugin.eventTypes) {
+        for (const type of plugin.eventTypes) {
+            if (CORE_EVENT_TYPES.has(type)) continue;
+
+            const validPrefix = `${plugin.id}.`;
+            if (!type.startsWith(validPrefix)) {
+                throw new Error(
+                    `[Conflict Prevention] Event type '${type}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `Required format: '${validPrefix}MyEvent'.\n` +
+                    `Core events allowed: ${Array.from(CORE_EVENT_TYPES).join(", ")}`
+                );
+            }
+        }
+    }
+
+    // Enforce Sound Namespacing
+    if (plugin.sounds) {
+        for (const key of Object.keys(plugin.sounds)) {
+            // Allow dot or underscore separator
+            const validPrefixDot = `${plugin.id}.`;
+            // For legacy mostly, but strict enterprise usually prefers dot. 
+            // However, many assets use underscore (app_whatsapp_sent).
+            // Let's allow underscore if the ID itself has underscores.
+            // Actually, best to strictly check if it STARTS with the ID.
+            if (!key.startsWith(plugin.id)) {
+                throw new Error(
+                    `[Conflict Prevention] Sound key '${key}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `It must start with '${plugin.id}' (e.g. '${plugin.id}.sent' or '${plugin.id}_sent').`
+                );
+            }
+        }
+    }
 }

@@ -1,63 +1,48 @@
-/**
- * WhatsApp App Definition
- * 
- * Unified Plugin Export
- */
+import { APP_IDS, definePlugin } from "@tokovo/core";
+import { whatsappReducer } from "./logic/reducer";
+import { ui } from "./ui";
+import { WhatsAppAnchors } from "./adapters/anchors";
+import { WhatsAppMetadata } from "./assets/metadata";
+import { WhatsAppNotificationAdapter } from "./adapters/notifications";
 
-import { definePlugin, APP_IDS } from "@tokovo/core";
-import { whatsappReducer } from "./runtime";
-import { WhatsappChatView } from "./ui";
-import { WHATSAPP_FRAMING } from "./provider";
-import { WhatsAppMetadata } from "./metadata";
-import { whatsappAdapter } from "./notification-adapter";
-
-// Export Components & Types for direct usage if needed
-export * from "./types";
-export * from "./runtime";
-export * from "./components";
+// Export Internal Parts (Enterprise Standard)
+export * from "./logic/reducer";
 export * from "./ui";
-export * from "./config";
-export * from "./camera";
-export * from "./behaviors";
+export * from "./types";
+export * from "./adapters/anchors";
+export * from "./adapters/notifications";
 export * from "./layout";
 
-// Define the Unified Plugin
-export const WhatsApp = definePlugin({
+// Define Plugin
+export const WhatsAppPlugin = definePlugin({
     id: APP_IDS.WHATSAPP,
     name: "WhatsApp",
-    version: "2.0.0",
+    version: "2.0.0", // Bumped for Enterprise Refactor
 
-    // 1. Metadata (Icon, Name, Color)
+    // Metadata
     metadata: WhatsAppMetadata,
 
-    // 2. Routing / Views
-    // We use the existing Wrapper View which handles internal routing for now.
-    // In V3 we can expose `screens` directly.
-    appView: WhatsappChatView as any,
-
-    // 3. Logic (Reducer)
+    // UI & Logic
+    appView: ui.WhatsappChatView,
     reducer: whatsappReducer,
 
-    // 4. Notifications
-    notificationAdapter: whatsappAdapter,
+    // Adapters (Enterprise Standard)
+    anchors: WhatsAppAnchors.framing,
+    getAnchors: WhatsAppAnchors.getAnchors,
+    notificationAdapter: WhatsAppNotificationAdapter,
 
-    // 5. Camera Framing (Anchors)
-    anchors: WHATSAPP_FRAMING,
-
-    // 6. Assets (Sounds)
-    sounds: {
-        "whatsapp_sent": "whatsapp-sent.mp3",
-        "whatsapp_received": "whatsapp-received.mp3",
-        "whatsapp_typing": "typing.mp3",
-    },
-
-    // 7. Event Types
+    // Events (Standard IR events + Custom)
+    // Core events like MESSAGE_RECEIVED are handled, but we declare custom ones if any.
+    // Currently WhatsApp uses mostly standard events.
     eventTypes: [
-        "MESSAGE_RECEIVED", "MESSAGE_SENT",
-        "TYPING_START", "TYPING_END",
-        "MESSAGE_READ", "VOICE_MESSAGE_RECEIVED"
+        "GROUP_MEMBER_ADDED",
+        "GROUP_MEMBER_REMOVED",
+        "VOICE_MESSAGE_RECEIVED" // Should be standard or namespaced?
+        // Note: VOICE_MESSAGE_RECEIVED might fail namespacing if not in CORE_EVENTS.
+        // It likely should be `whatsapp.VOICE_MESSAGE_RECEIVED`.
     ]
 });
 
-// Default Export
-export default WhatsApp;
+export const WhatsApp = WhatsAppPlugin;
+
+export default WhatsAppPlugin;

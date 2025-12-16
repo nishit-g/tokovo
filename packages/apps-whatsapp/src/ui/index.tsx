@@ -5,11 +5,11 @@ import { WorldState, AppSurface } from "@tokovo/core";
 import { ChatScreen } from "./screens/ios/ChatScreen";
 import { ChatListScreen } from "./screens/ios/ChatListScreen";
 
-import { WhatsAppState } from "./types";
+import { WhatsAppState } from "../types";
 
 export interface WhatsappChatViewProps {
     world: WorldState;
-    t: number;
+    t?: number;
     deviceId?: string;
     platform?: "ios" | "android";
     width?: number;

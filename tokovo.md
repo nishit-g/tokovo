@@ -62,7 +62,6 @@ apps/
       GandhiTextingVideo.tsx
       HomeScreenGroupDemoVideo.tsx
       index.ts
-      InstagramVideo.tsx
       KeyboardTypingShowcase.tsx
       KeyboardVerifyVideo.tsx
       ManualCameraShowcase.tsx
@@ -76,11 +75,8 @@ apps/
       TwitterShowcaseVideo.tsx
       UltimateShowcase.tsx
       UltimateShowcaseVideo.tsx
-      Video.tsx
       WhatsappCompleteShowcaseVideo.tsx
       WhatsappMediaShowcaseVideo.tsx
-      WhatsappProductionDemoVideo.tsx
-      WhatsappPsychoticDemoVideo.tsx
     package.json
     remotion.config.ts
     tsconfig.json
@@ -107,35 +103,12 @@ packages/
       router.tsx
     package.json
     tsconfig.json
-  apps-instagram/
-    src/
-      views/
-        dm/
-          InstagramChatView.tsx
-        explore/
-          ExploreView.tsx
-        feed/
-          FeedView.tsx
-        notifications/
-          NotificationsView.tsx
-        post/
-          PostView.tsx
-        profile/
-          ProfileView.tsx
-        reels/
-          ReelsView.tsx
-        stories/
-          StoriesView.tsx
-        BottomNav.tsx
-      index.ts
-      notification-adapter.ts
-      runtime.ts
-      types.ts
-      ui.tsx
-    package.json
-    tsconfig.json
   apps-phone/
     src/
+      adapters/
+        anchors.ts
+      assets/
+        metadata.tsx
       components/
         android/
           ActiveCallAndroid.tsx
@@ -160,9 +133,16 @@ packages/
           index.ts
       i18n/
         index.ts
+      logic/
+        reducer.ts
       theme/
         index.ts
+      ui/
+        ios/
+          CallScreen.tsx
+        index.tsx
       widgets/
+        DynamicIsland.tsx
         IncomingCallBanner.tsx
         index.ts
         PhoneDynamicIsland.tsx
@@ -171,19 +151,6 @@ packages/
       plugin.ts
       provider.ts
       runtime.ts
-      ui.tsx
-    package.json
-    tsconfig.json
-  apps-spotify/
-    src/
-      widgets/
-        DynamicIslandWidget.tsx
-        index.ts
-        StatusBarWidget.tsx
-      index.ts
-      notification-adapter.ts
-      runtime.ts
-      types.ts
       ui.tsx
     package.json
     tsconfig.json
@@ -326,6 +293,7 @@ packages/
       transitions.ts
       typeGuards.ts
       types.ts
+      validation.ts
       widget-registry.ts
     package.json
     README.md
@@ -551,251 +519,6 @@ export const AndroidVideo: React.FC = () => {
 };
 ````
 
-## File: apps/video-runner/src/BreakupDramaDSLVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * DSL Breakup Drama Episode
- * 
- * This episode is defined using the DSL and compiled inline.
- * DirectorLite enabled - camera automatically reacts to events.
- */
-
-// Define the episode inline (later this will come from DSL compilation)
-function createBreakupDramaEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const fps = 30;
-
-    // Initial world state
-    const initialWorld: WorldState = {
-        devices: {
-            AlicePhone: {
-                id: "AlicePhone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-            }
-        },
-        conversations: {
-            dm_bob: {
-                id: "dm_bob",
-                type: "dm" as const,
-                name: "Bob",
-                avatar: undefined,
-                messages: [],
-                typing: {},
-            }
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_bob",
-            }
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: "AlicePhone",
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: "AlicePhone",
-            },
-            activeEffects: [],
-            transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: { activeSounds: {} },
-    };
-
-    // Timeline events (what DSL compiler would generate)
-    const events: TimelineEvent[] = [
-        // Beat: silence - just wait 2s (60 frames)
-
-        // Beat: typing-tension (starts at frame 60)
-        {
-            at: 60,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_bob",
-            from: "Bob",
-        } as any,
-
-        // Concurrent: message arrives at frame 81 (0.7s after typing starts)
-        {
-            at: 81,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob",
-            message: {
-                id: "msg_1",
-                type: "text",
-                text: "We need to talk.",
-                status: "delivered",
-            },
-        } as any,
-
-        // Typing ends at frame 105 (1.5s after start)
-        {
-            at: 105,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_bob",
-            from: "Bob",
-        } as any,
-
-        // Beat: aftermath (starts at frame 120)
-        {
-            at: 120,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "Bob",
-            message: {
-                id: "msg_2",
-                type: "text",
-                text: "I'm sorry. It's over.",
-                status: "delivered",
-            },
-        } as any,
-
-        // Read message at frame 156 (1.2s later)
-        {
-            at: 156,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_READ",
-            conversationId: "dm_bob",
-            messageId: "msg_2",
-        } as any,
-
-        // Beat: panic (starts at frame 171)
-        {
-            at: 171,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "me",
-            message: {
-                id: "msg_3",
-                type: "text",
-                text: "Wait, what?",
-                status: "sent",
-            },
-        } as any,
-
-        // Second panic message at frame 195
-        {
-            at: 195,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_bob",
-            from: "me",
-            message: {
-                id: "msg_4",
-                type: "text",
-                text: "Can we talk about this?",
-                status: "sent",
-            },
-        } as any,
-
-        // Beat: silence-after (starts at frame 225)
-        // Wait 2s then Bob starts typing...
-        {
-            at: 285,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_bob",
-            from: "Bob",
-        } as any,
-
-        // Typing ends but no message...
-        {
-            at: 345,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_bob",
-            from: "Bob",
-        } as any,
-    ];
-
-    return { initialWorld, events };
-}
-
-export const BreakupDramaDSLVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Get episode data
-    const episode = useMemo(() => createBreakupDramaEpisode(), []);
-
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={true}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
 ## File: apps/video-runner/src/CameraShowcaseVideo.tsx
 ````typescript
 import React from "react";
@@ -928,57 +651,6 @@ import { RemotionRoot } from "./Root";
 registerRoot(RemotionRoot);
 ````
 
-## File: apps/video-runner/src/InstagramVideo.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { instagramEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-import "@tokovo/apps-instagram";
-
-export const InstagramVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    // Note: We cast to any because the JSON types might be slightly loose compared to strict TS types
-    const world = replay(instagramEpisode.initialWorld as unknown as WorldState, instagramEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "#111", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} debug={true} />
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: apps/video-runner/src/MultiPovDemoVideo.tsx
 ````typescript
 import React from "react";
@@ -1087,289 +759,6 @@ export const NotificationCallDemoVideo: React.FC = () => {
                 />
             </div>
         </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/TwitterShowcaseVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import Twitter app to ensure reducer is registered
-import "@tokovo/apps-twitter";
-
-/**
- * Twitter/X Showcase Video
- * 
- * Demonstrates the Twitter timeline with tweets, likes, retweets.
- */
-
-function createTwitterShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    // Initial world state
-    const initialWorld: WorldState = {
-        devices: {
-            UserPhone: {
-                id: "UserPhone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_twitter",
-                notifications: [],
-            }
-        },
-        conversations: {},
-        appState: {
-            app_twitter: {
-                screen: "timeline",
-                activeTab: "for-you",
-                tweets: [],
-            }
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: "UserPhone",
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: "UserPhone",
-            },
-            activeEffects: [],
-            transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: { activeSounds: {} },
-    };
-
-    // Timeline events
-    const events: TimelineEvent[] = [
-        // Tweet 1: Tech influencer
-        {
-            at: 30,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_RECEIVED",
-            tweetId: "tweet_1",
-            author: {
-                name: "Elon Musk",
-                handle: "elonmusk",
-                verified: "blue",
-            },
-            text: "The future of AI is here. We're entering a new era of human-machine collaboration 🚀",
-            replyCount: 5432,
-            retweetCount: 12800,
-            likeCount: 89000,
-            viewCount: 2400000,
-            media: [{ url: "https://picsum.photos/800/450", type: "image" }],
-        } as any,
-
-        // Tweet 2: Another influencer
-        {
-            at: 60,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_RECEIVED",
-            tweetId: "tweet_2",
-            author: {
-                name: "Sam Altman",
-                handle: "sama",
-                verified: "blue",
-            },
-            text: "GPT-5 coming soon. It's going to be wild.",
-            replyCount: 2100,
-            retweetCount: 8900,
-            likeCount: 45000,
-            viewCount: 890000,
-        } as any,
-
-        // Like the first tweet
-        {
-            at: 90,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_LIKED",
-            tweetId: "tweet_1",
-        } as any,
-
-        // Tweet 3: Organization
-        {
-            at: 120,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_RECEIVED",
-            tweetId: "tweet_3",
-            author: {
-                name: "ESPN",
-                handle: "espn",
-                verified: "gold",
-            },
-            text: "BREAKING: Historic trade shakes up the league! Full details ⬇️",
-            replyCount: 890,
-            retweetCount: 3200,
-            likeCount: 15000,
-            viewCount: 450000,
-        } as any,
-
-        // Retweet
-        {
-            at: 150,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_RETWEETED",
-            tweetId: "tweet_3",
-        } as any,
-
-        // Tweet 4: Meme with multiple images
-        {
-            at: 180,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_RECEIVED",
-            tweetId: "tweet_4",
-            author: {
-                name: "Internet Historian",
-                handle: "historyinmemes",
-                verified: "blue",
-            },
-            text: "The four horsemen of procrastination:",
-            replyCount: 12500,
-            retweetCount: 45000,
-            likeCount: 234000,
-            viewCount: 5600000,
-            media: [
-                { url: "https://picsum.photos/400/400?1", type: "image" },
-                { url: "https://picsum.photos/400/400?2", type: "image" },
-                { url: "https://picsum.photos/400/400?3", type: "image" },
-                { url: "https://picsum.photos/400/400?4", type: "image" },
-            ],
-        } as any,
-
-        // User posts their own tweet
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_twitter",
-            type: "TWEET_POSTED",
-            tweetId: "tweet_5",
-            author: {
-                name: "Alex",
-                handle: "alexdev",
-                verified: "blue",
-            },
-            text: "Just built a new app with @tokovo - the future of video generation is here! 🎬✨ #buildinpublic",
-        } as any,
-    ];
-
-    return { initialWorld, events };
-}
-
-export const TwitterShowcaseVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Get episode data
-    const episode = useMemo(() => createTwitterShowcaseEpisode(), []);
-
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#000",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-
-export default TwitterShowcaseVideo;
-````
-
-## File: apps/video-runner/src/Video.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { exampleEpisode } from "@tokovo/episodes";
-
-// Ensure reducers are registered
-import "@tokovo/devices";
-import "@tokovo/apps-whatsapp";
-
-export const Video: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / iPhone16Profile.dimensions.width;
-    const scaleY = availableHeight / iPhone16Profile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(exampleEpisode.initialWorld as unknown as WorldState, exampleEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: iPhone16Profile.dimensions.width,
-                height: iPhone16Profile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
-            </div>
-        </div>
     );
 };
 ````
@@ -1677,157 +1066,6 @@ export const WhatsappMediaShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={true}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/WhatsappProductionDemoVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { whatsappProductionDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * WhatsappProductionDemoVideo
- * Showcases all new WhatsApp features:
- * - Image messages with captions
- * - Video messages with thumbnails
- * - GIF messages from Giphy
- * - Typing indicators (Remotion frame-based animation)
- * - Voice notes with waveforms
- * - Read receipts
- * 
- * DirectorLite enabled - camera will automatically react to events
- */
-export const WhatsappProductionDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data - cast through unknown to handle JSON structure
-    const episode = whatsappProductionDemo as unknown as {
-        meta: { fps: number; durationInFrames: number };
-        initialWorld: WorldState;
-        events: TimelineEvent[]
-    };
-
-    // Create event index once for DirectorLite (memoized)
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/WhatsappPsychoticDemoVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { whatsappPsychoticDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * WhatsappPsychoticDemoVideo
- * Demonstrates advanced "psychotic" messaging features:
- * - Missed calls
- * - Deleted messages
- * - Screenshot alerts
- * - Voice notes with waveforms
- * - Edited messages
- * 
- * DirectorLite enabled - camera will automatically react to events
- */
-export const WhatsappPsychoticDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data
-    const episode = whatsappPsychoticDemo as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Create event index once for DirectorLite (memoized)
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={true}  // Enable debug logging for testing
                 />
             </div>
         </AbsoluteFill>
@@ -2233,2131 +1471,6 @@ export const adapterRegistry = new AdapterRegistry();
 ## File: packages/adapters/tsconfig.tsbuildinfo
 ````
 {"root":["./src/adapter.ts","./src/index.ts","./src/registry.ts","./src/whatsapp/index.ts"],"version":"5.9.3"}
-````
-
-## File: packages/apps-instagram/src/views/dm/InstagramChatView.tsx
-````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { LayoutState, ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
-
-// ============================================================================
-// AUTHENTIC INSTAGRAM DM ICONS (Pixel-Perfect SVG Replicas)
-// ============================================================================
-
-const ChevronLeftIcon = () => (
-    <svg width="36" height="60" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const VideoCallIcon = () => (
-    <svg width="78" height="60" viewBox="0 0 26 20" fill="none">
-        <rect x="1" y="3" width="17" height="14" rx="2" stroke="white" strokeWidth="1.8" />
-        <path d="M18 8L25 4V16L18 12V8Z" stroke="white" strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-
-const InfoIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="10" stroke="white" strokeWidth="1.8" />
-        <path d="M11 6V6.01M11 10V16" stroke="white" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-const CameraCircleIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 26 26" fill="none">
-        <circle cx="13" cy="13" r="12.5" fill="#0095F6" />
-        <path d="M8 11C8 10.4 8.4 10 9 10H10.5L11.5 8.5H14.5L15.5 10H17C17.6 10 18 10.4 18 11V17C18 17.6 17.6 18 17 18H9C8.4 18 8 17.6 8 17V11Z" fill="white" />
-        <circle cx="13" cy="13.5" r="2" fill="#0095F6" />
-    </svg>
-);
-
-const MicrophoneIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="8" y="4" width="6" height="9" rx="3" stroke="white" strokeWidth="1.5" />
-        <path d="M6 11V12C6 14.8 8.2 17 11 17C13.8 17 16 14.8 16 12V11" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M11 17V20M9 20H13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-);
-
-const ImageIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <rect x="3" y="4" width="16" height="14" rx="2" stroke="white" strokeWidth="1.5" />
-        <circle cx="8" cy="9" r="1.5" stroke="white" strokeWidth="1" />
-        <path d="M3 15L8 11L12 15L16 11L19 14" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const StickerIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <circle cx="11" cy="11" r="9" stroke="white" strokeWidth="1.5" />
-        <path d="M7 13C7.8 15 9.2 16 11 16C12.8 16 14.2 15 15 13" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="8" cy="9" r="1" fill="white" />
-        <circle cx="14" cy="9" r="1" fill="white" />
-    </svg>
-);
-
-const HeartIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 22 22" fill="none">
-        <path d="M11 18L10.4 17.5C6 13.5 3 10.8 3 7.5C3 4.9 5 3 7.5 3C8.9 3 10.3 3.7 11 4.8C11.7 3.7 13.1 3 14.5 3C17 3 19 4.9 19 7.5C19 10.8 16 13.5 11.6 17.5L11 18Z" stroke="white" strokeWidth="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// HEADER COMPONENT - Authentic Instagram DM Navigation
-// ============================================================================
-
-interface HeaderProps {
-    contactName: string;
-    avatarUrl?: string;
-    isActive?: boolean;
-}
-
-const Header: React.FC<HeaderProps> = ({ contactName, avatarUrl, isActive = true }) => (
-    <div style={{
-        height: 180,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 42px",
-        marginTop: 144, // Below dynamic island
-        zIndex: 10
-    }}>
-        {/* Back button */}
-        <ChevronLeftIcon />
-
-        {/* Avatar + Name Group */}
-        <div style={{
-            flex: 1,
-            display: "flex",
-            alignItems: "center",
-            marginLeft: 36,
-            gap: 30
-        }}>
-            {/* Avatar with active indicator */}
-            <div style={{ position: "relative" }}>
-                <div style={{
-                    width: 102,
-                    height: 102,
-                    borderRadius: "50%",
-                    background: avatarUrl
-                        ? `url(${avatarUrl}) center/cover`
-                        : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: 42,
-                    fontWeight: "600"
-                }}>
-                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
-                </div>
-                {isActive && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 3,
-                        right: 3,
-                        width: 30,
-                        height: 30,
-                        borderRadius: "50%",
-                        backgroundColor: "#44D62D",
-                        border: "4px solid #000"
-                    }} />
-                )}
-            </div>
-
-            {/* Username + Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-                <span style={{
-                    fontSize: 48,
-                    fontWeight: "600",
-                    color: "white",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-                }}>
-                    {contactName}
-                </span>
-                <span style={{
-                    fontSize: 36,
-                    color: "#A8A8A8",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {isActive ? "Active now" : "Active 2h ago"}
-                </span>
-            </div>
-        </div>
-
-        {/* Action icons */}
-        <div style={{ display: "flex", gap: 54, alignItems: "center" }}>
-            <VideoCallIcon />
-            <InfoIcon />
-        </div>
-    </div>
-);
-
-// ============================================================================
-// MESSAGE BUBBLE - Authentic Instagram DM Styling with Gradient
-// ============================================================================
-
-interface MessageBubbleProps {
-    msg: { id: string; from: string; text: string };
-    layout: ChatMessageLayout;
-}
-
-const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateY, y } = layout;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: y,
-            left: isMe ? "auto" : 42,
-            right: isMe ? 42 : "auto",
-            maxWidth: "70%",
-            opacity,
-            transform: `translateY(${translateY}px)`,
-        }}>
-            <div style={{
-                // Instagram gradient for sent messages
-                background: isMe
-                    ? "linear-gradient(to right, #405DE6, #5851DB, #833AB4, #C13584, #E1306C, #FD1D1D)"
-                    : "#262626",
-                color: "white",
-                padding: "30px 42px",
-                borderRadius: 66, // Fully pill-shaped
-                fontSize: 48,
-                lineHeight: "60px",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                wordWrap: "break-word"
-            }}>
-                {msg.text}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// MESSAGE LIST
-// ============================================================================
-
-interface MessageListProps {
-    messages: any[];
-    layout?: ChatLayoutState;
-}
-
-const MessageList: React.FC<MessageListProps> = ({ messages, layout }) => {
-    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : null;
-    const scrollY = chatLayout?.scrollY || 0;
-    const contentHeight = chatLayout?.contentHeight || "100%";
-
-    return (
-        <div style={{
-            flex: 1,
-            position: "relative",
-            overflow: "hidden"
-        }}>
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: contentHeight,
-                transform: `translateY(-${scrollY}px)`,
-                paddingTop: 30,
-                paddingBottom: 30
-            }}>
-                {messages.map((msg: any) => {
-                    const msgLayout = chatLayout?.messageLayouts[msg.id];
-                    if (!msgLayout) return null;
-                    return <MessageBubble key={msg.id} msg={msg} layout={msgLayout} />;
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// INPUT AREA - Authentic Instagram DM Composer
-// ============================================================================
-
-interface InputAreaProps {
-    text?: string;
-}
-
-const InputArea: React.FC<InputAreaProps> = ({ text }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        padding: "24px 42px",
-        gap: 24
-    }}>
-        {/* Input container */}
-        <div style={{
-            flex: 1,
-            minHeight: 132,
-            backgroundColor: "#262626",
-            borderRadius: 66,
-            display: "flex",
-            alignItems: "center",
-            padding: "0 24px",
-            gap: 18,
-            border: "1px solid #363636"
-        }}>
-            {/* Camera button */}
-            <CameraCircleIcon />
-
-            {/* Input text */}
-            <div style={{
-                flex: 1,
-                fontSize: 48,
-                color: text ? "white" : "#A8A8A8",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                padding: "0 12px"
-            }}>
-                {text || "Message..."}
-            </div>
-
-            {/* Right icons - hidden when typing */}
-            {!text && (
-                <div style={{ display: "flex", gap: 30, alignItems: "center" }}>
-                    <MicrophoneIcon />
-                    <ImageIcon />
-                    <StickerIcon />
-                </div>
-            )}
-        </div>
-
-        {/* Heart or Send button */}
-        {text ? (
-            <span style={{
-                color: "#0095F6",
-                fontSize: 48,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                Send
-            </span>
-        ) : (
-            <HeartIcon />
-        )}
-    </div>
-);
-
-// ============================================================================
-// HOME INDICATOR
-// ============================================================================
-
-const HomeIndicator: React.FC = () => (
-    <div style={{
-        height: 102,
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-end",
-        paddingBottom: 24
-    }}>
-        <div style={{
-            width: 402,
-            height: 15,
-            backgroundColor: "white",
-            borderRadius: 9,
-            opacity: 0.4
-        }} />
-    </div>
-);
-
-// ============================================================================
-// MAIN VIEW EXPORT
-// ============================================================================
-
-export const InstagramChatView: React.FC<{ world: WorldState; t: number; layout?: ChatLayoutState }> = ({ world, t, layout }) => {
-    const conversationId = Object.keys(world.conversations)[0];
-    const conversation = world.conversations[conversationId];
-    const messages = conversation ? conversation.messages : [];
-
-    return (
-        <div style={{
-            backgroundColor: "#000000",
-            height: "100%",
-            display: "flex",
-            flexDirection: "column",
-            color: "white",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            <Header contactName="sarah.design" isActive={true} />
-            <MessageList messages={messages} layout={layout} />
-            <InputArea />
-            <HomeIndicator />
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/explore/ExploreView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-const SearchBar = () => (
-    <div style={{
-        height: 80,
-        backgroundColor: "#262626",
-        borderRadius: 20,
-        display: "flex",
-        alignItems: "center",
-        padding: "0 30px",
-        margin: "20px 30px",
-        gap: 20
-    }}>
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
-        <div style={{ fontSize: 32, color: "#888" }}>Search</div>
-    </div>
-);
-
-export const ExploreView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Generate some mock explore content
-    const exploreItems = Array.from({ length: 15 }).map((_, i) => ({
-        id: `exp_${i}`,
-        image: `https://picsum.photos/seed/exp${i}/500/500`,
-        isLarge: i % 10 === 0 // Every 10th item is large (2x2)
-    }));
-
-    return (
-        <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            <div style={{ marginTop: 60 }}>
-                <SearchBar />
-            </div>
-
-            <div style={{
-                flex: 1,
-                overflow: "hidden",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 3,
-                alignContent: "flex-start"
-            }}>
-                {exploreItems.map((item, i) => (
-                    <div key={item.id} style={{
-                        width: item.isLarge ? "calc(66.66% - 2px)" : "calc(33.33% - 2px)",
-                        aspectRatio: item.isLarge ? "1/1" : "1/1",
-                        backgroundColor: "#222",
-                        backgroundImage: `url(${item.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        position: "relative"
-                    }}>
-                        {i % 5 === 0 && (
-                            <div style={{ position: "absolute", top: 10, right: 10 }}>
-                                <svg width="40" height="40" viewBox="0 0 24 24" fill="white" stroke="white" strokeWidth="2">
-                                    <path d="M2 2l20 20" stroke="none" />
-                                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5" fill="none" stroke="none" />
-                                    <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" fill="white" />
-                                </svg>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/feed/FeedView.tsx
-````typescript
-import React from "react";
-import { InstagramState, Post, StoryUser } from "../../types";
-import { LayoutState, FeedLayoutState } from "@tokovo/core";
-
-// ============================================================================
-// HEADER ICONS - Authentic Instagram iOS
-// ============================================================================
-
-const CameraIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2v11z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        <circle cx="12" cy="13" r="4" stroke="white" strokeWidth="1.8" />
-    </svg>
-);
-
-const MessengerIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const HeartIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "#FF3040" : "none"} stroke={filled ? "#FF3040" : "white"} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="54" height="54" viewBox="0 0 24 24" fill="white">
-        <circle cx="12" cy="5" r="1.5" />
-        <circle cx="12" cy="12" r="1.5" />
-        <circle cx="12" cy="19" r="1.5" />
-    </svg>
-);
-
-// ============================================================================
-// INSTAGRAM LOGO - Script font with dropdown
-// ============================================================================
-
-const InstagramLogo = () => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12
-    }}>
-        <span style={{
-            fontFamily: "'Billabong', 'Grand Hotel', cursive, -apple-system",
-            fontSize: 90,
-            color: "white",
-            letterSpacing: 1,
-            fontWeight: 400
-        }}>
-            Instagram
-        </span>
-        <svg width="36" height="36" viewBox="0 0 12 12" fill="none">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-    </div>
-);
-
-// ============================================================================
-// STORY BUBBLE - Larger authentic Instagram style
-// ============================================================================
-
-const StoryBubble: React.FC<{ user: StoryUser; isYourStory?: boolean }> = ({ user, isYourStory }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginRight: 36,
-        width: 210
-    }}>
-        {/* Story Ring */}
-        <div style={{
-            width: 210,
-            height: 210,
-            borderRadius: "50%",
-            padding: 9,
-            background: isYourStory
-                ? "transparent"
-                : user.hasUnseen
-                    ? "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-                    : "#444"
-        }}>
-            <div style={{
-                width: "100%",
-                height: "100%",
-                borderRadius: "50%",
-                border: "6px solid #000",
-                position: "relative",
-                overflow: "hidden"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    backgroundImage: user.avatar ? `url(${user.avatar})` : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-
-                {/* Your Story + icon */}
-                {isYourStory && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        right: 0,
-                        width: 60,
-                        height: 60,
-                        borderRadius: "50%",
-                        backgroundColor: "#0095F6",
-                        border: "4px solid #000",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <svg width="30" height="30" viewBox="0 0 24 24" fill="white">
-                            <path d="M12 5v14M5 12h14" stroke="white" strokeWidth="3" strokeLinecap="round" />
-                        </svg>
-                    </div>
-                )}
-            </div>
-        </div>
-
-        {/* Username */}
-        <div style={{
-            color: "white",
-            fontSize: 30,
-            marginTop: 15,
-            maxWidth: 210,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-            textAlign: "center"
-        }}>
-            {isYourStory ? "Your story" : user.username}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// POST ITEM - Authentic Instagram post
-// ============================================================================
-
-const PostItem: React.FC<{ post: Post }> = ({ post }) => (
-    <div style={{ marginBottom: 48 }}>
-        {/* Header */}
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "24px 36px",
-            gap: 24
-        }}>
-            {/* Avatar with story ring if applicable */}
-            <div style={{
-                width: 102,
-                height: 102,
-                borderRadius: "50%",
-                padding: 6,
-                background: "linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)"
-            }}>
-                <div style={{
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "50%",
-                    border: "4px solid #000",
-                    backgroundImage: `url(${post.avatar})`,
-                    backgroundSize: "cover",
-                    backgroundColor: "#333"
-                }} />
-            </div>
-
-            {/* Username + Location */}
-            <div style={{ flex: 1 }}>
-                <div style={{
-                    color: "white",
-                    fontSize: 39,
-                    fontWeight: 600,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                }}>
-                    {post.username}
-                </div>
-            </div>
-
-            <MoreIcon />
-        </div>
-
-        {/* Image */}
-        <div style={{
-            width: "100%",
-            aspectRatio: "1/1",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: `url(${post.image})`,
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }} />
-
-        {/* Actions */}
-        <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            padding: "30px 36px 18px",
-            alignItems: "center"
-        }}>
-            <div style={{ display: "flex", gap: 48 }}>
-                <HeartIcon filled={post.liked} />
-                <CommentIcon />
-                <ShareIcon />
-            </div>
-            <BookmarkIcon filled={post.saved} />
-        </div>
-
-        {/* Likes */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <div style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.likes.toLocaleString()} likes
-            </div>
-        </div>
-
-        {/* Caption */}
-        <div style={{ padding: "0 36px", marginBottom: 12 }}>
-            <span style={{
-                color: "white",
-                fontSize: 39,
-                fontWeight: 600,
-                marginRight: 12,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-            }}>
-                {post.username}
-            </span>
-            <span style={{ color: "white", fontSize: 39 }}>
-                {post.caption}
-            </span>
-        </div>
-
-        {/* Comments link */}
-        <div style={{ padding: "0 36px", marginBottom: 6 }}>
-            <span style={{ color: "#A8A8A8", fontSize: 36 }}>
-                View all {post.comments} comments
-            </span>
-        </div>
-
-        {/* Timestamp */}
-        <div style={{ padding: "0 36px" }}>
-            <span style={{ color: "#A8A8A8", fontSize: 30, textTransform: "uppercase" }}>
-                2 hours ago
-            </span>
-        </div>
-    </div>
-);
-
-// ============================================================================
-// FEED VIEW - Main export
-// ============================================================================
-
-export const FeedView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
-    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
-    const scrollY = feedLayout?.scrollY || 0;
-
-    // Create "Your Story" user for first position
-    const yourStory: StoryUser = {
-        username: "Your story",
-        avatar: "",
-        hasUnseen: false,
-        stories: []
-    };
-
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            {/* Header */}
-            <div style={{
-                height: 156,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "0 36px",
-                marginTop: 120,
-                backgroundColor: "#000",
-                zIndex: 10
-            }}>
-                <CameraIcon />
-                <InstagramLogo />
-                <div style={{ display: "flex", gap: 60 }}>
-                    <HeartIcon />
-                    <MessengerIcon />
-                </div>
-            </div>
-
-            {/* Scrollable Content */}
-            <div style={{
-                flex: 1,
-                overflow: "hidden",
-                position: "relative"
-            }}>
-                <div style={{
-                    transform: `translateY(-${scrollY}px)`
-                }}>
-                    {/* Stories Row */}
-                    <div style={{
-                        display: "flex",
-                        padding: "24px 36px",
-                        borderBottom: "1px solid #262626",
-                        marginBottom: 6,
-                        overflowX: "hidden"
-                    }}>
-                        <StoryBubble user={yourStory} isYourStory />
-                        {state.stories.users.map(user => (
-                            <StoryBubble key={user.username} user={user} />
-                        ))}
-                    </div>
-
-                    {/* Posts */}
-                    {state.feed.posts.map(post => (
-                        <PostItem key={post.id} post={post} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/notifications/NotificationsView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-const NotificationItem: React.FC<{ type: string; username: string; time: string; text?: string; avatar: string }> = ({ type, username, time, text, avatar }) => (
-    <div style={{ display: "flex", alignItems: "center", padding: "20px 30px", gap: 20 }}>
-        <div style={{
-            width: 90,
-            height: 90,
-            borderRadius: "50%",
-            backgroundImage: `url(${avatar})`,
-            backgroundSize: "cover",
-            backgroundColor: "#333"
-        }} />
-        <div style={{ flex: 1, fontSize: 30, lineHeight: "1.3" }}>
-            <span style={{ fontWeight: "bold" }}>{username}</span>
-            {" "}
-            {type === "like" && "liked your photo."}
-            {type === "follow" && "started following you."}
-            {type === "comment" && `commented: ${text}`}
-            {" "}
-            <span style={{ color: "#888" }}>{time}</span>
-        </div>
-        {type === "follow" ? (
-            <div style={{
-                backgroundColor: "#0095f6",
-                color: "white",
-                padding: "10px 30px",
-                borderRadius: 10,
-                fontSize: 28,
-                fontWeight: "600"
-            }}>
-                Follow
-            </div>
-        ) : (
-            <div style={{
-                width: 90,
-                height: 90,
-                backgroundColor: "#333",
-                backgroundImage: `url(https://picsum.photos/seed/post1/100/100)`, // Mock post image
-                backgroundSize: "cover"
-            }} />
-        )}
-    </div>
-);
-
-export const NotificationsView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Mock notifications
-    const notifications = [
-        { id: "n1", type: "like", username: "alice_wonder", time: "2m", avatar: "https://i.pravatar.cc/150?u=alice" },
-        { id: "n2", type: "follow", username: "bob_builder", time: "15m", avatar: "https://i.pravatar.cc/150?u=bob" },
-        { id: "n3", type: "comment", username: "charlie_chaplin", time: "1h", text: "Great shot! 🔥", avatar: "https://i.pravatar.cc/150?u=charlie" },
-        { id: "n4", type: "like", username: "dave_diver", time: "3h", avatar: "https://i.pravatar.cc/150?u=dave" },
-        { id: "n5", type: "follow", username: "eve_hacker", time: "5h", avatar: "https://i.pravatar.cc/150?u=eve" },
-    ];
-
-    return (
-        <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            <div style={{
-                height: 120,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 30px",
-                marginTop: 60,
-                fontSize: 42,
-                fontWeight: "bold",
-                borderBottom: "1px solid #222"
-            }}>
-                Notifications
-            </div>
-
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                <div style={{ padding: "20px 0" }}>
-                    <div style={{ padding: "0 30px 20px", fontSize: 32, fontWeight: "bold" }}>New</div>
-                    {notifications.slice(0, 2).map(n => (
-                        <NotificationItem key={n.id} {...n} />
-                    ))}
-                    <div style={{ padding: "40px 30px 20px", fontSize: 32, fontWeight: "bold" }}>Today</div>
-                    {notifications.slice(2).map(n => (
-                        <NotificationItem key={n.id} {...n} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/post/PostView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-// Reuse icons from FeedView or create shared icon library
-const BackIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M15 18l-6-6 6-6" />
-    </svg>
-);
-
-const HeartIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "#ed4956" : "none"} stroke={filled ? "#ed4956" : "white"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="22" y1="2" x2="11" y2="13" />
-        <polygon points="22 2 15 22 11 13 2 9 22 2" />
-    </svg>
-);
-
-const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
-    <svg width="60" height="60" viewBox="0 0 24 24" fill={filled ? "white" : "none"} stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-export const PostView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    // Mock single post data
-    const post = {
-        username: "instagram_user",
-        avatar: "https://i.pravatar.cc/150?u=instagram_user",
-        image: "https://picsum.photos/seed/insta1/1080/1080",
-        caption: "Living my best life! 🌟 #blessed",
-        likes: 1234,
-        comments: 42,
-        liked: false,
-        saved: false
-    };
-
-    return (
-        <div style={{
-            backgroundColor: "black",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Header */}
-            <div style={{
-                height: 120,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 30px",
-                marginTop: 60,
-                borderBottom: "1px solid #222"
-            }}>
-                <BackIcon />
-                <div style={{ marginLeft: 30, fontSize: 36, fontWeight: "bold" }}>Posts</div>
-            </div>
-
-            {/* Post Content (Similar to Feed Item) */}
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                <div style={{ display: "flex", alignItems: "center", padding: "20px 30px" }}>
-                    <div style={{
-                        width: 70,
-                        height: 70,
-                        borderRadius: "50%",
-                        backgroundImage: `url(${post.avatar})`,
-                        backgroundSize: "cover",
-                        backgroundColor: "#333",
-                        marginRight: 20
-                    }} />
-                    <div style={{ flex: 1, color: "white", fontSize: 32, fontWeight: "600" }}>{post.username}</div>
-                    <div style={{ color: "white", fontSize: 40 }}>...</div>
-                </div>
-
-                <div style={{
-                    width: "100%",
-                    aspectRatio: "1/1",
-                    backgroundColor: "#222",
-                    backgroundImage: `url(${post.image})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center"
-                }} />
-
-                <div style={{ display: "flex", justifyContent: "space-between", padding: "20px 30px" }}>
-                    <div style={{ display: "flex", gap: 40 }}>
-                        <HeartIcon filled={post.liked} />
-                        <CommentIcon />
-                        <ShareIcon />
-                    </div>
-                    <BookmarkIcon filled={post.saved} />
-                </div>
-
-                <div style={{ padding: "0 30px" }}>
-                    <div style={{ color: "white", fontSize: 32, fontWeight: "600", marginBottom: 10 }}>
-                        {post.likes.toLocaleString()} likes
-                    </div>
-                    <div style={{ color: "white", fontSize: 32 }}>
-                        <span style={{ fontWeight: "600", marginRight: 10 }}>{post.username}</span>
-                        {post.caption}
-                    </div>
-                    <div style={{ color: "#888", fontSize: 28, marginTop: 10 }}>
-                        View all {post.comments} comments
-                    </div>
-                    <div style={{ color: "#888", fontSize: 24, marginTop: 10, textTransform: "uppercase" }}>
-                        2 hours ago
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/profile/ProfileView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-import { LayoutState, FeedLayoutState } from "@tokovo/core";
-
-// ============================================================================
-// ICONS
-// ============================================================================
-
-const GridIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill={active ? "white" : "none"} stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="7" height="7" />
-        <rect x="14" y="3" width="7" height="7" />
-        <rect x="14" y="14" width="7" height="7" />
-        <rect x="3" y="14" width="7" height="7" />
-    </svg>
-);
-
-const ReelsIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <polygon points="10,8 16,12 10,16" />
-    </svg>
-);
-
-const TaggedIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke={active ? "white" : "#A8A8A8"} strokeWidth="1.5">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-    </svg>
-);
-
-const SettingsIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <line x1="3" y1="6" x2="21" y2="6" />
-        <line x1="3" y1="12" x2="21" y2="12" />
-        <line x1="3" y1="18" x2="21" y2="18" />
-    </svg>
-);
-
-const AddIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-        <rect x="3" y="3" width="18" height="18" rx="3" />
-        <line x1="12" y1="8" x2="12" y2="16" />
-        <line x1="8" y1="12" x2="16" y2="12" />
-    </svg>
-);
-
-const ChevronDownIcon = () => (
-    <svg width="42" height="42" viewBox="0 0 12 12" fill="none">
-        <path d="M3 4.5L6 7.5L9 4.5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-// ============================================================================
-// STAT ITEM
-// ============================================================================
-
-const StatItem: React.FC<{ value: string | number; label: string }> = ({ value, label }) => (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <div style={{
-            fontSize: 48,
-            fontWeight: 700,
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif"
-        }}>
-            {value}
-        </div>
-        <div style={{ fontSize: 36, opacity: 0.9 }}>{label}</div>
-    </div>
-);
-
-// ============================================================================
-// HIGHLIGHT BUBBLE
-// ============================================================================
-
-const HighlightBubble: React.FC<{ title: string; imageUrl?: string; isNew?: boolean }> = ({ title, imageUrl, isNew }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        marginRight: 36,
-        width: 192
-    }}>
-        <div style={{
-            width: 192,
-            height: 192,
-            borderRadius: "50%",
-            border: isNew ? "none" : "3px solid #444",
-            backgroundColor: "#1a1a1a",
-            backgroundImage: imageUrl ? `url(${imageUrl})` : undefined,
-            backgroundSize: "cover",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center"
-        }}>
-            {isNew && (
-                <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-            )}
-        </div>
-        <div style={{
-            marginTop: 15,
-            fontSize: 30,
-            textAlign: "center",
-            maxWidth: 192,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
-        }}>
-            {title}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// PROFILE VIEW - Main export
-// ============================================================================
-
-export const ProfileView: React.FC<{ state: InstagramState; layout?: LayoutState }> = ({ state, layout }) => {
-    const feedLayout = layout?.kind === "FEED" ? (layout as FeedLayoutState) : null;
-    const scrollY = feedLayout?.scrollY || 0;
-
-    // Mock user data
-    const user = {
-        username: "instagram_user",
-        name: "Instagram User",
-        bio: "Digital Creator 📸\nLiving the dream ✨\n📍 New York",
-        posts: 42,
-        followers: "1.2M",
-        following: 250,
-        avatar: "https://i.pravatar.cc/300?u=profile"
-    };
-
-    const highlights = [
-        { title: "New", isNew: true },
-        { title: "Travel ✈️", imageUrl: "https://picsum.photos/seed/h1/200" },
-        { title: "Food 🍕", imageUrl: "https://picsum.photos/seed/h2/200" },
-        { title: "Pets 🐕", imageUrl: "https://picsum.photos/seed/h3/200" },
-    ];
-
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif"
-        }}>
-            {/* Scrollable Content */}
-            <div style={{
-                transform: `translateY(-${scrollY}px)`,
-                width: "100%"
-            }}>
-                {/* Header */}
-                <div style={{
-                    height: 150,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "0 36px",
-                    marginTop: 120
-                }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <span style={{ fontSize: 54, fontWeight: 700 }}>{user.username}</span>
-                        <ChevronDownIcon />
-                    </div>
-                    <div style={{ display: "flex", gap: 48 }}>
-                        <AddIcon />
-                        <SettingsIcon />
-                    </div>
-                </div>
-
-                {/* Profile Info Section */}
-                <div style={{ padding: "24px 36px" }}>
-                    {/* Avatar + Stats Row */}
-                    <div style={{ display: "flex", alignItems: "center", marginBottom: 30 }}>
-                        {/* Avatar */}
-                        <div style={{
-                            width: 240,
-                            height: 240,
-                            borderRadius: "50%",
-                            backgroundImage: `url(${user.avatar})`,
-                            backgroundSize: "cover",
-                            backgroundColor: "#333",
-                            marginRight: 60
-                        }} />
-
-                        {/* Stats */}
-                        <div style={{
-                            flex: 1,
-                            display: "flex",
-                            justifyContent: "space-around"
-                        }}>
-                            <StatItem value={user.posts} label="Posts" />
-                            <StatItem value={user.followers} label="Followers" />
-                            <StatItem value={user.following} label="Following" />
-                        </div>
-                    </div>
-
-                    {/* Name & Bio */}
-                    <div style={{ marginBottom: 27 }}>
-                        <div style={{ fontSize: 39, fontWeight: 600, marginBottom: 6 }}>
-                            {user.name}
-                        </div>
-                        <div style={{ fontSize: 39, whiteSpace: "pre-wrap", lineHeight: 1.35, opacity: 0.95 }}>
-                            {user.bio}
-                        </div>
-                    </div>
-
-                    {/* Edit & Share Buttons */}
-                    <div style={{ display: "flex", gap: 24, marginBottom: 30 }}>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Edit profile
-                        </div>
-                        <div style={{
-                            flex: 1,
-                            height: 102,
-                            backgroundColor: "#262626",
-                            borderRadius: 24,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 39,
-                            fontWeight: 600
-                        }}>
-                            Share profile
-                        </div>
-                    </div>
-                </div>
-
-                {/* Highlights Row */}
-                <div style={{
-                    display: "flex",
-                    padding: "12px 36px 30px",
-                    overflowX: "hidden"
-                }}>
-                    {highlights.map((h, i) => (
-                        <HighlightBubble key={i} {...h} />
-                    ))}
-                </div>
-
-                {/* Tabs */}
-                <div style={{
-                    display: "flex",
-                    borderTop: "1px solid #262626",
-                    borderBottom: "1px solid #262626"
-                }}>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderBottom: "3px solid white"
-                    }}>
-                        <GridIcon active={true} />
-                    </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <ReelsIcon active={false} />
-                    </div>
-                    <div style={{
-                        flex: 1,
-                        height: 132,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center"
-                    }}>
-                        <TaggedIcon active={false} />
-                    </div>
-                </div>
-
-                {/* Grid */}
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 3 }}>
-                    {state.feed.posts.map(post => (
-                        <div key={post.id} style={{
-                            width: "calc(33.33% - 2px)",
-                            aspectRatio: "1/1",
-                            backgroundColor: "#1a1a1a",
-                            backgroundImage: `url(${post.image})`,
-                            backgroundSize: "cover",
-                            backgroundPosition: "center"
-                        }} />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/reels/ReelsView.tsx
-````typescript
-import React from "react";
-import { InstagramState } from "../../types";
-
-// ============================================================================
-// REELS ICONS - Authentic Instagram style
-// ============================================================================
-
-const CameraIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="none">
-        <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" />
-        <polygon points="10,8 17,12 10,16" fill="white" />
-    </svg>
-);
-
-const HeartIcon = ({ filled = false }: { filled?: boolean }) => (
-    <svg width="84" height="84" viewBox="0 0 24 24">
-        <path
-            d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"
-            fill={filled ? "#FF3040" : "none"}
-            stroke={filled ? "#FF3040" : "white"}
-            strokeWidth="1.8"
-        />
-    </svg>
-);
-
-const CommentIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
-        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" stroke="white" strokeWidth="1.8" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="white">
-        <circle cx="12" cy="5" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="12" cy="19" r="2" />
-    </svg>
-);
-
-const BookmarkIcon = () => (
-    <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-    </svg>
-);
-
-// ============================================================================
-// AUDIO BAR - Scrolling song at bottom
-// ============================================================================
-
-const AudioBar: React.FC<{ song: string; artist: string }> = ({ song, artist }) => (
-    <div style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 18,
-        paddingRight: 30
-    }}>
-        {/* Music note icon */}
-        <svg width="42" height="42" viewBox="0 0 24 24" fill="white">
-            <path d="M9 18V5l12-2v13" />
-            <circle cx="6" cy="18" r="3" fill="white" />
-            <circle cx="18" cy="16" r="3" fill="white" />
-        </svg>
-        {/* Song text */}
-        <div style={{
-            fontSize: 36,
-            overflow: "hidden",
-            whiteSpace: "nowrap",
-            maxWidth: 600
-        }}>
-            {artist} · {song}
-        </div>
-    </div>
-);
-
-// ============================================================================
-// ROTATING ALBUM COVER
-// ============================================================================
-
-const AlbumCover: React.FC<{ imageUrl?: string }> = ({ imageUrl }) => (
-    <div style={{
-        width: 108,
-        height: 108,
-        borderRadius: 18,
-        border: "3px solid rgba(255,255,255,0.6)",
-        backgroundImage: imageUrl
-            ? `url(${imageUrl})`
-            : "linear-gradient(135deg, #405DE6 0%, #833AB4 50%, #C13584 100%)",
-        backgroundSize: "cover",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-    }}>
-        {!imageUrl && (
-            <div style={{
-                width: 45,
-                height: 45,
-                borderRadius: "50%",
-                backgroundColor: "white",
-                border: "3px solid #333"
-            }} />
-        )}
-    </div>
-);
-
-// ============================================================================
-// SIDE ACTION BUTTON
-// ============================================================================
-
-const SideAction: React.FC<{ icon: React.ReactNode; count?: string }> = ({ icon, count }) => (
-    <div style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 9
-    }}>
-        {icon}
-        {count && (
-            <span style={{ fontSize: 30, fontWeight: 500 }}>{count}</span>
-        )}
-    </div>
-);
-
-// ============================================================================
-// REELS VIEW - Main export
-// ============================================================================
-
-export const ReelsView: React.FC<{ state: InstagramState }> = ({ state }) => {
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            position: "relative",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-        }}>
-            {/* Video Background */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundImage: `url(https://picsum.photos/seed/reel1/1080/1920)`,
-                backgroundSize: "cover",
-                backgroundPosition: "center"
-            }} />
-
-            {/* Gradient Overlay */}
-            <div style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: "50%",
-                background: "linear-gradient(transparent, rgba(0,0,0,0.6))",
-                pointerEvents: "none"
-            }} />
-
-            {/* Header */}
-            <div style={{
-                position: "absolute",
-                top: 150,
-                left: 36,
-                right: 36,
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                zIndex: 10
-            }}>
-                <div style={{
-                    fontSize: 54,
-                    fontWeight: 700,
-                    textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-                }}>
-                    Reels
-                </div>
-                <CameraIcon />
-            </div>
-
-            {/* Right Side Actions */}
-            <div style={{
-                position: "absolute",
-                bottom: 420,
-                right: 30,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                gap: 48,
-                zIndex: 10
-            }}>
-                <SideAction icon={<HeartIcon />} count="123K" />
-                <SideAction icon={<CommentIcon />} count="1.2K" />
-                <SideAction icon={<ShareIcon />} />
-                <SideAction icon={<BookmarkIcon />} />
-                <SideAction icon={<MoreIcon />} />
-                <AlbumCover />
-            </div>
-
-            {/* Bottom Info Section */}
-            <div style={{
-                position: "absolute",
-                bottom: 300,
-                left: 36,
-                right: 180, // Space for side actions
-                zIndex: 10
-            }}>
-                {/* User Info */}
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 24,
-                    marginBottom: 21
-                }}>
-                    {/* Avatar */}
-                    <div style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: "50%",
-                        border: "3px solid white",
-                        backgroundImage: `url(https://i.pravatar.cc/150?u=reel)`,
-                        backgroundSize: "cover"
-                    }} />
-                    {/* Username */}
-                    <span style={{
-                        fontSize: 42,
-                        fontWeight: 600,
-                        textShadow: "0 2px 4px rgba(0,0,0,0.5)"
-                    }}>
-                        reels_creator
-                    </span>
-                    {/* Follow Button */}
-                    <div style={{
-                        border: "2px solid white",
-                        borderRadius: 12,
-                        padding: "12px 30px",
-                        fontSize: 36,
-                        fontWeight: 600
-                    }}>
-                        Follow
-                    </div>
-                </div>
-
-                {/* Caption */}
-                <div style={{
-                    fontSize: 39,
-                    marginBottom: 21,
-                    textShadow: "0 1px 3px rgba(0,0,0,0.5)",
-                    lineHeight: 1.3
-                }}>
-                    Wait for the drop! 🎵🔥 #dance #viral #trending
-                </div>
-
-                {/* Audio Bar */}
-                <AudioBar song="Original Audio" artist="reels_creator" />
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/stories/StoriesView.tsx
-````typescript
-import React from "react";
-import { InstagramState, StoryUser } from "../../types";
-import { LayoutState, StoryLayoutState } from "@tokovo/core";
-
-// ============================================================================
-// ICONS
-// ============================================================================
-
-const CloseIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="18" y1="6" x2="6" y2="18" />
-        <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-);
-
-const MoreIcon = () => (
-    <svg width="66" height="66" viewBox="0 0 24 24" fill="white">
-        <circle cx="5" cy="12" r="2" />
-        <circle cx="12" cy="12" r="2" />
-        <circle cx="19" cy="12" r="2" />
-    </svg>
-);
-
-const HeartIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-    </svg>
-);
-
-const ShareIcon = () => (
-    <svg width="78" height="78" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8">
-        <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
-    </svg>
-);
-
-// ============================================================================
-// PROGRESS BAR
-// ============================================================================
-
-const ProgressBar: React.FC<{ count: number; activeIndex: number; progress: number }> = ({ count, activeIndex, progress }) => (
-    <div style={{ display: "flex", gap: 9, padding: "30px 24px" }}>
-        {Array.from({ length: count }).map((_, i) => (
-            <div key={i} style={{
-                flex: 1,
-                height: 9,
-                backgroundColor: "rgba(255,255,255,0.3)",
-                borderRadius: 6,
-                overflow: "hidden"
-            }}>
-                <div style={{
-                    height: "100%",
-                    width: i < activeIndex ? "100%" : i === activeIndex ? `${progress * 100}%` : "0%",
-                    backgroundColor: "white",
-                    borderRadius: 6,
-                    transition: "width 0.1s linear"
-                }} />
-            </div>
-        ))}
-    </div>
-);
-
-// ============================================================================
-// EMOJI SHORTCUTS
-// ============================================================================
-
-const EmojiShortcuts = () => (
-    <div style={{ display: "flex", gap: 30 }}>
-        {["❤️", "🔥", "👏", "😂", "😮", "😢"].map(emoji => (
-            <span key={emoji} style={{ fontSize: 66 }}>{emoji}</span>
-        ))}
-    </div>
-);
-
-// ============================================================================
-// STORIES VIEW - Main export
-// ============================================================================
-
-export const StoriesView: React.FC<{ state: InstagramState; t: number; layout?: LayoutState }> = ({ state, t, layout }) => {
-    const storyLayout = layout?.kind === "STORY" ? (layout as StoryLayoutState) : null;
-
-    if (!storyLayout) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeUser = state.stories.users.find(u => u.username === state.stories.activeStoryId?.split(':')[0]);
-    if (!activeUser) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    const activeIndex = storyLayout.activeStoryIndex;
-    const progress = storyLayout.storyProgress;
-    const activeStory = activeUser.stories[activeIndex];
-
-    if (!activeStory) return <div style={{ backgroundColor: "black", height: "100%" }} />;
-
-    return (
-        <div style={{
-            backgroundColor: "#000",
-            height: "100%",
-            color: "white",
-            position: "relative",
-            display: "flex",
-            flexDirection: "column",
-            overflow: "hidden",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-        }}>
-            {/* Story Images (with transitions) */}
-            {storyLayout.storyLayouts.map(sl => {
-                const story = activeUser.stories[sl.index];
-                if (!story) return null;
-
-                return (
-                    <div key={story.id} style={{
-                        position: "absolute",
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        backgroundImage: `url(${story.image})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        opacity: sl.opacity,
-                        transform: `translateX(${sl.translateX}%) scale(${sl.scale})`
-                    }} />
-                );
-            })}
-
-            {/* Top Gradient */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 450,
-                background: "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Bottom Gradient */}
-            <div style={{
-                position: "absolute",
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: 450,
-                background: "linear-gradient(0deg, rgba(0,0,0,0.5) 0%, transparent 100%)",
-                pointerEvents: "none",
-                zIndex: 5
-            }} />
-
-            {/* Top UI */}
-            <div style={{ position: "relative", zIndex: 10, paddingTop: 120 }}>
-                {/* Progress bars */}
-                <ProgressBar count={activeUser.stories.length} activeIndex={activeIndex} progress={progress} />
-
-                {/* User info */}
-                <div style={{
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 24px",
-                    marginTop: 12
-                }}>
-                    {/* Avatar */}
-                    <div style={{
-                        width: 96,
-                        height: 96,
-                        borderRadius: "50%",
-                        backgroundImage: `url(${activeUser.avatar})`,
-                        backgroundSize: "cover",
-                        backgroundColor: "#333",
-                        marginRight: 24
-                    }} />
-
-                    {/* Username + Time */}
-                    <span style={{
-                        fontSize: 42,
-                        fontWeight: 600,
-                        marginRight: 18
-                    }}>
-                        {activeUser.username}
-                    </span>
-                    <span style={{
-                        fontSize: 36,
-                        opacity: 0.7
-                    }}>
-                        12h
-                    </span>
-
-                    <div style={{ flex: 1 }} />
-
-                    {/* Actions */}
-                    <MoreIcon />
-                    <div style={{ width: 30 }} />
-                    <CloseIcon />
-                </div>
-            </div>
-
-            {/* Bottom UI */}
-            <div style={{
-                position: "absolute",
-                bottom: 60,
-                left: 0,
-                right: 0,
-                padding: "0 36px",
-                display: "flex",
-                alignItems: "center",
-                gap: 30,
-                zIndex: 10
-            }}>
-                {/* Message Input */}
-                <div style={{
-                    flex: 1,
-                    height: 132,
-                    borderRadius: 66,
-                    border: "3px solid rgba(255,255,255,0.5)",
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 42px",
-                    fontSize: 42,
-                    color: "rgba(255,255,255,0.8)"
-                }}>
-                    Send message
-                </div>
-
-                {/* Quick reactions */}
-                <HeartIcon />
-                <ShareIcon />
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/views/BottomNav.tsx
-````typescript
-import React from "react";
-import { InstagramView } from "../types";
-
-// ============================================================================
-// AUTHENTIC INSTAGRAM iOS BOTTOM NAV ICONS
-// ============================================================================
-
-// Home icon - Filled house shape (Instagram-specific)
-const HomeIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        {active ? (
-            // Filled version
-            <path
-                d="M12 2L3 9V22H9V15H15V22H21V9L12 2Z"
-                fill="white"
-            />
-        ) : (
-            // Outline version
-            <path
-                d="M12 3L4 10V21H10V15H14V21H20V10L12 3Z"
-                stroke="white"
-                strokeWidth="1.8"
-                strokeLinejoin="round"
-                fill="none"
-            />
-        )}
-    </svg>
-);
-
-// Search/Explore icon - Magnifying glass
-const SearchIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <circle
-            cx="10.5"
-            cy="10.5"
-            r="7"
-            stroke="white"
-            strokeWidth={active ? "2.5" : "1.8"}
-        />
-        <line
-            x1="15.5"
-            y1="15.5"
-            x2="21"
-            y2="21"
-            stroke="white"
-            strokeWidth={active ? "2.5" : "1.8"}
-            strokeLinecap="round"
-        />
-    </svg>
-);
-
-// Reels icon - Clapperboard style
-const ReelsIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        {active ? (
-            <>
-                <rect x="3" y="3" width="18" height="18" rx="3" fill="white" />
-                <polygon points="10,8 17,12 10,16" fill="black" />
-            </>
-        ) : (
-            <>
-                <rect x="3" y="3" width="18" height="18" rx="3" stroke="white" strokeWidth="1.8" fill="none" />
-                <polygon points="10,8 17,12 10,16" stroke="white" strokeWidth="1.5" fill="none" strokeLinejoin="round" />
-            </>
-        )}
-    </svg>
-);
-
-// Create/Add icon - Plus in square
-const CreateIcon = ({ active }: { active: boolean }) => (
-    <svg width="72" height="72" viewBox="0 0 24 24" fill="none">
-        <rect
-            x="3"
-            y="3"
-            width="18"
-            height="18"
-            rx="3"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            fill="none"
-        />
-        <line
-            x1="12"
-            y1="8"
-            x2="12"
-            y2="16"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            strokeLinecap="round"
-        />
-        <line
-            x1="8"
-            y1="12"
-            x2="16"
-            y2="12"
-            stroke="white"
-            strokeWidth={active ? "2.2" : "1.8"}
-            strokeLinecap="round"
-        />
-    </svg>
-);
-
-// Profile icon - Avatar with optional ring
-const ProfileIcon = ({ active, avatarUrl }: { active: boolean; avatarUrl?: string }) => (
-    <div style={{
-        width: 72,
-        height: 72,
-        borderRadius: "50%",
-        border: active ? "6px solid white" : "none",
-        padding: active ? 0 : 6,
-        boxSizing: "border-box",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center"
-    }}>
-        <div style={{
-            width: active ? 60 : 60,
-            height: active ? 60 : 60,
-            borderRadius: "50%",
-            backgroundColor: "#444",
-            backgroundImage: avatarUrl ? `url(${avatarUrl})` : "linear-gradient(135deg, #833AB4 0%, #FD1D1D 50%, #FCAF45 100%)",
-            backgroundSize: "cover",
-            backgroundPosition: "center"
-        }} />
-    </div>
-);
-
-// ============================================================================
-// BOTTOM NAVIGATION COMPONENT
-// ============================================================================
-
-export const BottomNav: React.FC<{ currentView: InstagramView }> = ({ currentView }) => {
-    return (
-        <div style={{
-            height: 156, // 52pt * 3
-            backgroundColor: "#000",
-            borderTop: "1px solid #262626",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-around",
-            paddingBottom: 30, // Home indicator spacing
-            paddingTop: 12
-        }}>
-            <HomeIcon active={currentView === 'feed'} />
-            <SearchIcon active={currentView === 'explore'} />
-            <ReelsIcon active={currentView === 'reels'} />
-            <CreateIcon active={false} />
-            <ProfileIcon active={currentView === 'profile'} />
-        </div>
-    );
-};
-````
-
-## File: packages/apps-instagram/src/types.ts
-````typescript
-export type InstagramView = 'dm' | 'feed' | 'stories' | 'profile' | 'post' | 'explore' | 'notifications' | 'reels';
-
-export interface Post {
-    id: string;
-    username: string;
-    avatar: string;
-    image: string;
-    caption: string;
-    likes: number;
-    comments: number;
-    liked: boolean;
-    saved: boolean;
-}
-
-export interface Story {
-    id: string;
-    image: string;
-    seen: boolean;
-}
-
-export interface StoryUser {
-    username: string;
-    avatar: string;
-    stories: Story[];
-    hasUnseen: boolean;
-}
-
-export interface Notification {
-    id: string;
-    type: 'like' | 'follow' | 'comment' | 'mention';
-    username: string;
-    avatar: string;
-    text?: string;
-    time: string;
-}
-
-export interface InstagramState {
-    currentView: InstagramView;
-    feed: {
-        posts: Post[];
-        scrollPosition: number;
-    };
-    stories: {
-        users: StoryUser[];
-        activeStoryId?: string;
-    };
-    notifications: {
-        items: Notification[];
-    };
-    // Add other module states here
-}
-
-export const initialInstagramState: InstagramState = {
-    currentView: 'dm', // Default to DM for now as it's the most developed
-    feed: {
-        posts: [],
-        scrollPosition: 0
-    },
-    stories: {
-        users: [],
-    },
-    notifications: {
-        items: []
-    }
-};
-````
-
-## File: packages/apps-instagram/package.json
-````json
-{
-    "name": "@tokovo/apps-instagram",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "react": "^18.0.0",
-        "immer": "^10.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "^18.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
-## File: packages/apps-instagram/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "outDir": "dist",
-        "rootDir": "src",
-        "jsx": "react-jsx"
-    },
-    "include": [
-        "src/**/*"
-    ]
-}
-````
-
-## File: packages/apps-phone/src/i18n/index.ts
-````typescript
-export const strings = {
-    en: {
-        incomingCall: "Tokovo Audio...",
-        slideToAnswer: "slide to answer",
-        remindMe: "Remind Me",
-        message: "Message",
-        decline: "Decline",
-        accept: "Accept",
-        mute: "mute",
-        keypad: "keypad",
-        speaker: "audio",
-        addCall: "add call",
-        video: "FaceTime",
-        contacts: "contacts",
-        end: "End",
-    }
-};
-
-export const useStrings = () => strings.en;
-````
-
-## File: packages/apps-phone/src/theme/index.ts
-````typescript
-export const PhoneTheme = {
-    colors: {
-        accept: "#34C759",  // iOS Green
-        decline: "#FF3B30", // iOS Red
-        muted: "#8E8E93",
-        text: {
-            primary: "#FFFFFF",
-            secondary: "rgba(255, 255, 255, 0.6)",
-        },
-        background: {
-            incoming: "rgba(22, 22, 22, 0.95)",
-            active: "rgba(0, 0, 0, 0.8)",
-        }
-    },
-    typography: {
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-    }
-};
 ````
 
 ## File: packages/apps-twitter/src/components/Avatar.tsx
@@ -12594,6 +9707,212 @@ export const ultimateShowcase = episode("ultimate-showcase", ep => {
 export default ultimateShowcase;
 ````
 
+## File: packages/dsl/examples/whatsapp-complete-showcase.dsl.ts
+````typescript
+/**
+ * WhatsApp Complete Showcase DSL
+ * 
+ * Demonstrates all WhatsApp features:
+ * - Chat list screen with multiple conversations
+ * - Navigate to group chat
+ * - Group admin actions (add member, change name)
+ * - Mixed media messages (image, video, gif, voice)
+ * - Typing indicators
+ * - Reactions
+ * - Screenshot alerts
+ */
+
+import { episode, whatsapp, camera } from "@tokovo/dsl";
+
+export const whatsappCompleteShowcase = episode("WhatsApp Complete Showcase")
+    .fps(30)
+    .duration(1200)  // 40 seconds
+
+    // Initial state: Chat list screen
+    .initialWorld({
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                ownerName: "me",
+                notifications: []
+            }
+        },
+        conversations: {
+            family_group: {
+                id: "family_group",
+                type: "group",
+                name: "Family Group 👨‍👩‍👧‍👦",
+                avatar: "",
+                members: ["Mom", "Dad", "Sister", "me"],
+                messages: [
+                    {
+                        id: "fg1",
+                        from: "Mom",
+                        text: "Dinner at 7pm tonight!",
+                        type: "text",
+                        status: "read"
+                    }
+                ],
+                typing: {}
+            },
+            work_team: {
+                id: "work_team",
+                type: "group",
+                name: "Work Team 💼",
+                avatar: "",
+                members: ["Boss", "Colleague", "me"],
+                messages: [
+                    {
+                        id: "wt1",
+                        from: "Boss",
+                        text: "Great work on the presentation!",
+                        type: "text",
+                        status: "read"
+                    }
+                ],
+                typing: {}
+            },
+            bestie: {
+                id: "bestie",
+                type: "dm",
+                name: "Best Friend 💕",
+                avatar: "",
+                messages: [
+                    {
+                        id: "b1",
+                        from: "Best Friend 💕",
+                        text: "Hey! Are you free?",
+                        type: "text",
+                        status: "read"
+                    }
+                ],
+                typing: {}
+            }
+        },
+        appState: {
+            activeApp: "whatsapp",
+            whatsapp: {
+                screen: "chats"  // Start at chat list
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0
+            }
+        },
+        audio: {
+            activeSounds: []
+        }
+    })
+
+    // Beat 1: Show chat list (wait 1 second)
+    .beat("show_chat_list", 0)
+
+    // Beat 2: Navigate to Family Group chat
+    .beat("open_family_group", 60)
+    .with(whatsapp.navigate("phone", "chat", "family_group"))
+
+    // Beat 3: Sister starts typing
+    .beat("sister_typing", 120)
+    .with(whatsapp.typingStart("phone", "family_group", "Sister"))
+
+    // Beat 4: Sister sends image with caption
+    .beat("sister_image", 180)
+    .with(whatsapp.typingEnd("phone", "family_group", "Sister"))
+    .with(whatsapp.receive("phone", "family_group", {
+        from: "Sister",
+        type: "image",
+        imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
+        caption: "Made this for dinner! 🍝"
+    }))
+
+    // Beat 5: Mom reacts with heart
+    .beat("mom_react", 240)
+    .with(whatsapp.react("phone", "family_group", "fg2", "❤️", "Mom"))
+
+    // Beat 6: I (owner) send text reply
+    .beat("reply_text", 300)
+    .with(whatsapp.send("phone", "family_group", {
+        type: "text",
+        text: "OMG looks delicious! 😍"
+    }))
+
+    // Beat 7: Dad starts typing
+    .beat("dad_typing", 360)
+    .with(whatsapp.typingStart("phone", "family_group", "Dad"))
+
+    // Beat 8: Dad sends voice message
+    .beat("dad_voice", 450)
+    .with(whatsapp.typingEnd("phone", "family_group", "Dad"))
+    .with(whatsapp.voiceReceive("phone", "family_group", "Dad", 8))
+
+    // Beat 9: I (owner) send a GIF
+    .beat("send_gif", 540)
+    .with(whatsapp.send("phone", "family_group", {
+        type: "gif",
+        gifUrl: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif"
+    }))
+
+    // Beat 10: Zoom in on the chat
+    .beat("zoom_focus", 600)
+    .with(camera.zoom(1.2, "center", 15))
+
+    // Beat 11: Sister sends another text
+    .beat("sister_text", 660)
+    .with(whatsapp.receive("phone", "family_group", {
+        from: "Sister",
+        type: "text",
+        text: "Can't wait to see everyone! 🎉"
+    }))
+
+    // Beat 12: Mom adds video
+    .beat("mom_video", 750)
+    .with(whatsapp.receive("phone", "family_group", {
+        from: "Mom",
+        type: "video",
+        thumbnailUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600",
+        duration: 15,
+        caption: "Setting up the table 🍽️"
+    }))
+
+    // Beat 13: Zoom out
+    .beat("zoom_out", 840)
+    .with(camera.zoom(1.0, "center", 15))
+
+    // Beat 14: Final message
+    .beat("final_message", 900)
+    .with(whatsapp.send("phone", "family_group", {
+        type: "text",
+        text: "See you all soon! 🚗💨"
+    }))
+
+    // Beat 15: Show reactions
+    .beat("final_reactions", 960)
+    .with(whatsapp.react("phone", "family_group", "fg_last", "🔥", "Dad"))
+    .with(whatsapp.react("phone", "family_group", "fg_last", "💕", "Mom"))
+
+    // Beat 16: Slight shake for emphasis
+    .beat("shake", 1020)
+    .with(camera.shake(3, 10))
+
+    // End
+    .beat("end", 1140)
+
+    .build();
+````
+
 ## File: packages/dsl/examples/whatsapp-media-showcase.dsl.ts
 ````typescript
 /**
@@ -18412,6 +15731,268 @@ export const BakchodiGangVideo: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/BreakupDramaDSLVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * DSL Breakup Drama Episode
+ * 
+ * This episode is defined using the DSL and compiled inline.
+ * DirectorLite enabled - camera automatically reacts to events.
+ */
+
+// Define the episode inline (later this will come from DSL compilation)
+function createBreakupDramaEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const fps = 30;
+
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            AlicePhone: {
+                id: "AlicePhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            }
+        },
+        conversations: {
+            dm_bob: {
+                id: "dm_bob",
+                type: "dm" as const,
+                name: "Bob",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            }
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bob",
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "AlicePhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "AlicePhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
+    };
+
+    // Timeline events (what DSL compiler would generate)
+    const events: TimelineEvent[] = [
+        // Beat: silence - just wait 2s (60 frames)
+
+        // Beat: typing-tension (starts at frame 60)
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Concurrent: message arrives at frame 81 (0.7s after typing starts)
+        {
+            at: 81,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob",
+            message: {
+                id: "msg_1",
+                type: "text",
+                text: "We need to talk.",
+                status: "delivered",
+            },
+        } as any,
+
+        // Typing ends at frame 105 (1.5s after start)
+        {
+            at: 105,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Beat: aftermath (starts at frame 120)
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "Bob",
+            message: {
+                id: "msg_2",
+                type: "text",
+                text: "I'm sorry. It's over.",
+                status: "delivered",
+            },
+        } as any,
+
+        // Read message at frame 156 (1.2s later)
+        {
+            at: 156,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_READ",
+            conversationId: "dm_bob",
+            messageId: "msg_2",
+        } as any,
+
+        // Beat: panic (starts at frame 171)
+        {
+            at: 171,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "me",
+            message: {
+                id: "msg_3",
+                type: "text",
+                text: "Wait, what?",
+                status: "sent",
+            },
+        } as any,
+
+        // Second panic message at frame 195
+        {
+            at: 195,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "dm_bob",
+            from: "me",
+            message: {
+                id: "msg_4",
+                type: "text",
+                text: "Can we talk about this?",
+                status: "sent",
+            },
+        } as any,
+
+        // Beat: silence-after (starts at frame 225)
+        // Wait 2s then Bob starts typing...
+        {
+            at: 285,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+
+        // Typing ends but no message...
+        {
+            at: 345,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "dm_bob",
+            from: "Bob",
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const BreakupDramaDSLVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
+    // Get episode data
+    const episode = useMemo(() => createBreakupDramaEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={true}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
 ## File: apps/video-runner/src/KeyboardVerifyVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -18533,13 +16114,24 @@ export const KeyboardVerifyVideo: React.FC = () => {
 ````typescript
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    PluginManagerClass
+} from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { Twitter } from "@tokovo/apps-twitter";
 
-// Import apps to ensure reducers are registered
-import "@tokovo/apps-twitter";
-import "@tokovo/apps-whatsapp";
+// Import device reducer
+import "@tokovo/devices";
+
+// Legacy imports removed in favor of explicit registration
+// import "@tokovo/apps-twitter";
+// import "@tokovo/apps-whatsapp";
 
 /**
  * Multi-App Showcase Video
@@ -18596,7 +16188,15 @@ function createMultiAppShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
     };
 
     // Timeline events - Multi-app flow
@@ -18806,6 +16406,14 @@ function createMultiAppShowcaseEpisode(): { initialWorld: WorldState; events: Ti
 export const MultiAppShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(Twitter);
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
     const { initialWorld, events } = useMemo(() => createMultiAppShowcaseEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(events), [events]);
 
@@ -18839,6 +16447,7 @@ export const MultiAppShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>
@@ -18952,182 +16561,6 @@ function getFeatureLabel(frame: number): string {
 }
 
 export default NotificationShowcaseVideo;
-````
-
-## File: apps/video-runner/src/PhoneCallShowcase.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import {
-    replay,
-    WorldState,
-    TimelineEvent,
-} from "@tokovo/core";
-import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer
-import "@tokovo/devices";
-
-// Import DSL event factories
-import { dsl } from "@tokovo/dsl";
-
-// Import phone plugin
-import "@tokovo/apps-phone";
-
-/**
- * Phone Call Showcase
- *
- * Demonstrates the phone call simulation:
- * - iOS Contact Poster (iOS 17+) incoming call
- * - Call answer and active call screen
- * - Call controls (mute, speaker)
- * - Call end
- */
-
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const DEVICE_ID = "phone";
-
-// Starting time: 3:30 PM
-const START_TIME = new Date();
-START_TIME.setHours(15, 30, 0, 0);
-
-// =============================================================================
-// EPISODE DEFINITION
-// =============================================================================
-
-function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const initialWorld: WorldState = {
-        devices: {
-            [DEVICE_ID]: {
-                id: DEVICE_ID,
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_phone",
-                notifications: [],
-                os: {
-                    clock: START_TIME.getTime(),
-                    battery: 92,
-                    charging: false,
-                    network: "wifi" as const,
-                    wifiStrength: 3,
-                    cellStrength: 4,
-                    dnd: false,
-                    lowPowerMode: false,
-                    airplaneMode: false,
-                },
-            },
-        },
-        conversations: {},
-        appState: {
-            app_phone: {
-                screen: "recents",
-            },
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: DEVICE_ID,
-            activeEffects: [],
-            deviceTransforms: {},
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: DEVICE_ID,
-            },
-        },
-        audio: {
-            masterVolume: 1,
-            activeSounds: [],
-        },
-    };
-
-    // Timeline events - Phone call story (NO camera effects)
-    const events: TimelineEvent[] = [
-        // Set initial time
-        dsl.os.setTime(0, START_TIME.getTime()),
-
-        // Frame 60 (2 seconds) - Incoming call arrives
-        dsl.call.incoming(60, "alice_123", "Alice Johnson", {
-            displayMode: "fullscreen",
-            isVideo: false,
-            callType: "voice",
-            posterImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
-        }),
-
-        // Answer after 4 seconds
-        dsl.call.answer(180),
-
-        // Toggle mute at 6 seconds
-        dsl.call.toggleMute(210),
-
-        // Toggle speaker at 7 seconds
-        dsl.call.toggleSpeaker(240),
-
-        // Unmute at 8 seconds
-        dsl.call.toggleMute(270),
-
-        // End call
-        dsl.call.end(330),
-    ];
-
-    return { initialWorld, events };
-}
-
-// =============================================================================
-// COMPONENT
-// =============================================================================
-
-export const PhoneCallShowcase: React.FC = () => {
-    const frame = useCurrentFrame();
-
-    // Create episode
-    const episode = useMemo(() => createPhoneCallEpisode(), []);
-
-    // Compute world state at current frame
-    const worldState = useMemo(() => {
-        return replay(episode.initialWorld, episode.events, frame);
-    }, [episode, frame]);
-
-    return (
-        <AbsoluteFill
-            style={{
-                backgroundColor: "#0a0a1a",
-                justifyContent: "center",
-                alignItems: "center",
-            }}
-        >
-            {/* Audio Layer */}
-            <AudioLayer world={worldState} t={frame} />
-
-            {/* Renderer - centered like FullCinematicShowcase */}
-            <div
-                style={{
-                    transform: "scale(0.5)",
-                    transformOrigin: "center center",
-                }}
-            >
-                <TokovoRenderer
-                    world={worldState}
-                    deviceId={DEVICE_ID}
-                    deviceProfile={iPhone16Profile}
-                    currentFrame={frame}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-
-// Video config
-export const phoneCallShowcaseConfig = {
-    id: "PhoneCallShowcase",
-    component: PhoneCallShowcase,
-    durationInFrames: 390, // ~13 seconds at 30fps
-    fps: 30,
-    width: 1920,
-    height: 1080,
-};
 ````
 
 ## File: apps/video-runner/src/SemanticCameraShowcase.tsx
@@ -19492,6 +16925,257 @@ export const SemanticCameraShowcase: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/TwitterShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { Twitter } from "@tokovo/apps-twitter";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+/**
+ * Twitter/X Showcase Video
+ * 
+ * Demonstrates the Twitter timeline with tweets, likes, retweets.
+ */
+
+function createTwitterShowcaseEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    // Initial world state
+    const initialWorld: WorldState = {
+        devices: {
+            UserPhone: {
+                id: "UserPhone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_twitter",
+                notifications: [],
+            }
+        },
+        conversations: {},
+        appState: {
+            app_twitter: {
+                screen: "timeline",
+                activeTab: "for-you",
+                tweets: [],
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "UserPhone",
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: "UserPhone",
+            },
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
+    };
+
+    // Timeline events
+    const events: TimelineEvent[] = [
+        // Tweet 1: Tech influencer
+        {
+            at: 30,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_1",
+            author: {
+                name: "Elon Musk",
+                handle: "elonmusk",
+                verified: "blue",
+            },
+            text: "The future of AI is here. We're entering a new era of human-machine collaboration 🚀",
+            replyCount: 5432,
+            retweetCount: 12800,
+            likeCount: 89000,
+            viewCount: 2400000,
+            media: [{ url: "https://picsum.photos/800/450", type: "image" }],
+        } as any,
+
+        // Tweet 2: Another influencer
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_2",
+            author: {
+                name: "Sam Altman",
+                handle: "sama",
+                verified: "blue",
+            },
+            text: "GPT-5 coming soon. It's going to be wild.",
+            replyCount: 2100,
+            retweetCount: 8900,
+            likeCount: 45000,
+            viewCount: 890000,
+        } as any,
+
+        // Like the first tweet
+        {
+            at: 90,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_LIKED",
+            tweetId: "tweet_1",
+        } as any,
+
+        // Tweet 3: Organization
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_3",
+            author: {
+                name: "ESPN",
+                handle: "espn",
+                verified: "gold",
+            },
+            text: "BREAKING: Historic trade shakes up the league! Full details ⬇️",
+            replyCount: 890,
+            retweetCount: 3200,
+            likeCount: 15000,
+            viewCount: 450000,
+        } as any,
+
+        // Retweet
+        {
+            at: 150,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RETWEETED",
+            tweetId: "tweet_3",
+        } as any,
+
+        // Tweet 4: Meme with multiple images
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_RECEIVED",
+            tweetId: "tweet_4",
+            author: {
+                name: "Internet Historian",
+                handle: "historyinmemes",
+                verified: "blue",
+            },
+            text: "The four horsemen of procrastination:",
+            replyCount: 12500,
+            retweetCount: 45000,
+            likeCount: 234000,
+            viewCount: 5600000,
+            media: [
+                { url: "https://picsum.photos/400/400?1", type: "image" },
+                { url: "https://picsum.photos/400/400?2", type: "image" },
+                { url: "https://picsum.photos/400/400?3", type: "image" },
+                { url: "https://picsum.photos/400/400?4", type: "image" },
+            ],
+        } as any,
+
+        // User posts their own tweet
+        {
+            at: 240,
+            kind: "APP",
+            appId: "app_twitter",
+            type: "TWEET_POSTED",
+            tweetId: "tweet_5",
+            author: {
+                name: "Alex",
+                handle: "alexdev",
+                verified: "blue",
+            },
+            text: "Just built a new app with @tokovo - the future of video generation is here! 🎬✨ #buildinpublic",
+        } as any,
+    ];
+
+    return { initialWorld, events };
+}
+
+export const TwitterShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(Twitter);
+        return pm;
+    }, []);
+
+    // Get episode data
+    const episode = useMemo(() => createTwitterShowcaseEpisode(), []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episode.events),
+        [episode.events]
+    );
+
+    // Replay world state at current time
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#000",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default TwitterShowcaseVideo;
+````
+
 ## File: apps/video-runner/src/UltimateShowcase.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -19830,6 +17514,281 @@ export const ultimateShowcaseConfig = {
     fps: 30,
     width: 1920,
     height: 1080,
+};
+````
+
+## File: apps/video-runner/src/WhatsappCompleteShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
+import { TokovoRenderer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+// ... (episodeData definition remains, but I need to patch audio buses if I access it)
+// Ideally I should patch the episodeData separately or include it in this huge block.
+// Since episodeData is local const, I can replace the whole file content or just the Component.
+// But episodeData is 180 lines.
+// I will just replace the component and imports for now, and patch audio data in a separate call if needed.
+
+// ... (skipping episodeData in this thought block, will target Imports + Component)
+
+// I will target imports first.
+
+/**
+ * WhatsApp Complete Showcase Video
+ * 
+ * Comprehensive demonstration of all WhatsApp features:
+ * - Chat list screen with multiple conversations
+ * - Group chat navigation  
+ * - Mixed media messages (image, video, gif, voice)
+ * - Typing indicators and reactions
+ * - Camera effects (zoom, shake)
+ */
+
+// Define episode data (cast through unknown to bypass strict type checks)
+const episodeData = {
+    initialWorld: {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                ownerName: "me",
+                notifications: []
+            }
+        },
+        conversations: {
+            family_group: {
+                id: "family_group",
+                type: "group",
+                name: "Family Group 👨‍👩‍👧‍👦",
+                avatar: "",
+                members: [
+                    { id: "mom", name: "Mom" },
+                    { id: "dad", name: "Dad" },
+                    { id: "sister", name: "Sister" },
+                    { id: "me", name: "me" }
+                ],
+                messages: [
+                    {
+                        id: "fg1",
+                        from: "Mom",
+                        text: "Dinner at 7pm tonight!",
+                        type: "text",
+                        status: "read"
+                    }
+                ],
+                typing: {}
+            },
+            bestie: {
+                id: "bestie",
+                type: "dm",
+                name: "Best Friend 💕",
+                avatar: "",
+                messages: [
+                    {
+                        id: "b1",
+                        from: "Best Friend 💕",
+                        text: "Hey! Are you free?",
+                        type: "text",
+                        status: "read"
+                    }
+                ],
+                typing: {}
+            }
+        },
+        appState: {
+            activeApp: "whatsapp",
+            app_whatsapp: {
+                screen: "chats-list"
+            }
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeDeviceId: "phone",
+            layout: "SINGLE",
+            deviceTransforms: {},
+            activeEffects: [],
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0
+            }
+        },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        }
+    },
+    events: [
+        // Navigate to chat
+        {
+            at: 60,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "SCREEN_CHANGE",
+            screen: "chat",
+            conversationId: "family_group"
+        },
+        // Sister typing
+        {
+            at: 120,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_START",
+            conversationId: "family_group",
+            from: "Sister"
+        },
+        // Sister sends image
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "TYPING_END",
+            conversationId: "family_group",
+            from: "Sister"
+        },
+        {
+            at: 180,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "Sister",
+            message: {
+                id: "fg2",
+                type: "image",
+                imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
+                caption: "Made this for dinner! 🍝"
+            }
+        },
+        // I send reply
+        {
+            at: 300,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "me",
+            text: "OMG looks delicious! 😍"
+        },
+        // Dad voice message
+        {
+            at: 450,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VOICE_MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "Dad",
+            duration: 8
+        },
+        // Sister text
+        {
+            at: 600,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "Sister",
+            text: "Can't wait to see everyone! 🎉"
+        },
+        // Mom video
+        {
+            at: 750,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "Mom",
+            message: {
+                id: "fg7",
+                type: "video",
+                thumbnailUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600",
+                duration: 15,
+                caption: "Setting up the table 🍽️"
+            }
+        },
+        // Final message
+        {
+            at: 900,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            conversationId: "family_group",
+            from: "me",
+            text: "See you all soon! 🚗💨"
+        }
+    ]
+} as unknown as { initialWorld: WorldState; events: TimelineEvent[] };
+
+export const WhatsappCompleteShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
+    // Create event index for DirectorLite
+    const eventIndex = useMemo(
+        () => createEventIndex(episodeData.events),
+        []
+    );
+
+    // Replay world state at current time
+    const world = replay(episodeData.initialWorld, episodeData.events, t);
+
+    // Calculate scale to fit device in composition
+    const compositionWidth = 1080;
+    const compositionHeight = 1920;
+    const deviceWidth = iPhone16Profile.dimensions.width;
+    const deviceHeight = iPhone16Profile.dimensions.height;
+
+    const scaleX = compositionWidth / deviceWidth;
+    const scaleY = compositionHeight / deviceHeight;
+    const scale = Math.min(scaleX, scaleY);
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#1a1a2e",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
 };
 ````
 
@@ -21409,130 +19368,172 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
 }
 ````
 
-## File: packages/apps-instagram/src/notification-adapter.ts
+## File: packages/apps-phone/src/adapters/anchors.ts
 ````typescript
 /**
- * Instagram Notification Adapter
- * 
- * Formats Instagram notifications with social-specific styling.
+ * Phone Anchor Adapter
+ *
+ * Extracts semantic anchors from phone/call screens.
+ * Handles incoming call, active call, and Dynamic Island states.
  */
 
-import { NotificationAdapter, NotificationAdapterRegistry, Notification, FormattedNotification } from "@tokovo/core";
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    SemanticAnchorId,
+    LayoutRect,
+} from "@tokovo/core";
+import type { WorldState } from "@tokovo/core";
 
-const INSTAGRAM_GRADIENT = "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)";
-const INSTAGRAM_PINK = "#E1306C";
+const APP_ID = "app_phone";
 
-const instagramAdapter: NotificationAdapter = {
-    appId: "app_instagram",
+// Helper: Device profile lookup
+function getDeviceProfile(profileId?: string): { dimensions: { width: number; height: number } } {
+    const profiles: Record<string, { dimensions: { width: number; height: number } }> = {
+        iphone16: { dimensions: { width: 430, height: 932 } },
+        iphone15: { dimensions: { width: 430, height: 932 } },
+        iphone14: { dimensions: { width: 390, height: 844 } },
+        pixel8: { dimensions: { width: 412, height: 915 } },
+        pixel7: { dimensions: { width: 412, height: 915 } },
+    };
+    return profiles[profileId || "iphone16"] || profiles.iphone16;
+}
 
-    format(notification: Notification): FormattedNotification {
-        const isLike = notification.body?.includes("liked") || notification.body?.includes("❤");
-        const isFollow = notification.body?.includes("follow");
-        const isComment = notification.body?.includes("comment");
+export const PhoneAnchors: AnchorProvider = {
+    appId: APP_ID,
+
+    // Static Framing Definitions (Optional fallback)
+    framing: {
+        callPoster: {
+            anchorPoint: { x: 0.5, y: 0.4 },
+            paddingPx: 32,
+            targetFill: 0.65,
+        },
+        acceptButton: {
+            anchorPoint: { x: 0.7, y: 0.85 },
+            paddingPx: 40,
+            targetFill: 0.25,
+        },
+        declineButton: {
+            anchorPoint: { x: 0.3, y: 0.85 },
+            paddingPx: 40,
+            targetFill: 0.25,
+        },
+        device: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 0,
+            targetFill: 1.0,
+        }
+    },
+
+    // Dynamic Anchor Calculation
+    getAnchors(
+        world: WorldState,
+        layout: unknown,
+        deviceId: string
+    ): AnchorSnapshot {
+        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+
+        const device = world.devices[deviceId];
+        const call = device?.call;
+
+        // Get viewport dimensions from device profile (NOT hardcoded)
+        const profile = getDeviceProfile(device?.profileId);
+        const viewportWidth = profile.dimensions.width;
+        const viewportHeight = profile.dimensions.height;
+
+        // =========================================================================
+        // CALL POSTER (iOS 17+ style)
+        // =========================================================================
+        if (call && (call.status === "incoming" || call.status === "ringing")) {
+            // Contact poster takes most of the screen
+            anchors.callPoster = {
+                x: 0,
+                y: 100,  // Below status bar
+                width: viewportWidth,
+                height: viewportHeight * 0.55,  // Relative to viewport
+            };
+
+            // Accept button (green, bottom right area)
+            anchors.acceptButton = {
+                x: viewportWidth * 0.6,
+                y: viewportHeight - 200,
+                width: 100,
+                height: 100,
+            };
+
+            // Decline button (red, bottom left area)
+            anchors.declineButton = {
+                x: viewportWidth * 0.15,
+                y: viewportHeight - 200,
+                width: 100,
+                height: 100,
+            };
+        }
+
+        // =========================================================================
+        // ACTIVE CALL (mute, speaker, etc.)
+        // =========================================================================
+        if (call && call.status === "active") {
+            // During active call, poster is centered
+            anchors.callPoster = {
+                x: viewportWidth * 0.25,
+                y: 150,
+                width: viewportWidth * 0.5,
+                height: 300,
+            };
+        }
+
+        // =========================================================================
+        // DEVICE (full frame — final fallback, from viewport)
+        // =========================================================================
+        anchors.device = {
+            x: 0,
+            y: 0,
+            width: viewportWidth,
+            height: viewportHeight,
+        };
 
         return {
-            title: notification.title,
-            body: notification.body,
-            icon: "📸",
-            iconBackground: INSTAGRAM_PINK,
-            accentColor: INSTAGRAM_PINK,
-            preview: notification.preview || (isLike ? { kind: "text", value: "❤️" } : undefined),
-            actions: [
-                isLike ? { id: "like_back", label: "❤️ Like Back" } : null,
-                isComment ? { id: "reply", label: "Reply" } : null,
-                isFollow ? { id: "follow_back", label: "Follow Back" } : null,
-            ].filter(Boolean) as FormattedNotification["actions"],
-            sender: notification.metadata?.sender,
+            anchors,
+            deviceId,
+            appId: APP_ID,
         };
     },
-
-    handleAction(actionId: string, notification: Notification) {
-        return [{
-            at: Date.now(),
-            kind: "DEVICE",
-            deviceId: notification.deviceId || "phone",
-            type: "OPEN_APP",
-            appId: "app_instagram",
-        }] as any[];
-    },
-
-    measureHeight(notification: Notification, viewport: { width: number }) {
-        let height = 160;
-        if (notification.preview?.kind === "image") {
-            height += 200;
-        }
-        return height;
-    },
 };
-
-// Register adapter
-NotificationAdapterRegistry.register(instagramAdapter);
-
-export { instagramAdapter };
 ````
 
-## File: packages/apps-instagram/src/ui.tsx
+## File: packages/apps-phone/src/assets/metadata.tsx
 ````typescript
+/**
+ * Phone Application Metadata
+ */
+
 import React from "react";
-import { WorldState, LayoutState, ChatLayoutState } from "@tokovo/core";
-import { InstagramState } from "./types";
-import { InstagramChatView } from "./views/dm/InstagramChatView";
-import { FeedView } from "./views/feed/FeedView";
-import { StoriesView } from "./views/stories/StoriesView";
-import { ProfileView } from "./views/profile/ProfileView";
-import { ExploreView } from "./views/explore/ExploreView";
-import { NotificationsView } from "./views/notifications/NotificationsView";
-import { ReelsView } from "./views/reels/ReelsView";
-import { PostView } from "./views/post/PostView";
-import { BottomNav } from "./views/BottomNav";
+import { AppMetadata } from "@tokovo/core";
 
-export const InstagramApp: React.FC<{ world: WorldState; t: number; layout?: LayoutState }> = ({ world, t, layout }) => {
-    const appState = world.appState?.["app_instagram"] as InstagramState;
-    const currentView = appState?.currentView || "dm";
+export const PhoneIcon = (
+    <div style={{
+        width: "100%",
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: "1.2em",
+        color: "white"
+    }}>
+        📞
+    </div>
+);
 
-    console.log(`[InstagramApp] Current View: ${currentView}, t=${t}`);
-
-    // Views that show the bottom navigation
-    const showBottomNav = ['feed', 'explore', 'reels', 'profile'].includes(currentView);
-
-    // Cast layout to ChatLayoutState for views that need it
-    const chatLayout = layout?.kind === "CHAT" ? (layout as ChatLayoutState) : undefined;
-
-    const renderView = () => {
-        switch (currentView) {
-            case "dm":
-                return <InstagramChatView world={world} t={t} layout={chatLayout} />;
-            case "feed":
-                return <FeedView state={appState} layout={layout} />;
-            case "stories":
-                return <StoriesView state={appState} t={t} layout={layout} />;
-            case "profile":
-                return <ProfileView state={appState} />;
-            case "post":
-                return <PostView state={appState} />;
-            case "explore":
-                return <ExploreView state={appState} />;
-            case "notifications":
-                return <NotificationsView state={appState} />;
-            case "reels":
-                return <ReelsView state={appState} />;
-            default:
-                return <InstagramChatView world={world} t={t} layout={chatLayout} />;
-        }
-    };
-
-    return (
-        <div style={{ height: "100%", display: "flex", flexDirection: "column", backgroundColor: "black" }}>
-            <div style={{ flex: 1, overflow: "hidden" }}>
-                {renderView()}
-            </div>
-            {showBottomNav && <BottomNav currentView={currentView} />}
-        </div>
-    );
+export const PhoneMetadata: AppMetadata & { name: string } = {
+    name: "Phone",
+    displayName: "Phone",
+    themeColor: "#34C759", // iOS Green
+    icon: PhoneIcon,
+    viewStrategy: "FULLSCREEN" as any, // Cast to any until ViewKind is verified
+    designWidth: 393
 };
-
-// Re-export specific views if needed externally, but InstagramApp is the main entry
-export { InstagramChatView };
 ````
 
 ## File: packages/apps-phone/src/components/android/ActiveCallAndroid.tsx
@@ -22414,6 +20415,434 @@ export { ControlGrid } from "./ControlGrid";
 export { ActionButton, AcceptButton, DeclineButton } from "./ActionButtons";
 ````
 
+## File: packages/apps-phone/src/i18n/index.ts
+````typescript
+export const strings = {
+    en: {
+        incomingCall: "Tokovo Audio...",
+        slideToAnswer: "slide to answer",
+        remindMe: "Remind Me",
+        message: "Message",
+        decline: "Decline",
+        accept: "Accept",
+        mute: "mute",
+        keypad: "keypad",
+        speaker: "audio",
+        addCall: "add call",
+        video: "FaceTime",
+        contacts: "contacts",
+        end: "End",
+    }
+};
+
+export const useStrings = () => strings.en;
+````
+
+## File: packages/apps-phone/src/logic/reducer.ts
+````typescript
+/**
+ * Phone App Reducer
+ * 
+ * Handles CALL events and updates device.call state.
+ */
+
+import { AppReducer, WorldState, TimelineEvent } from "@tokovo/core";
+
+export const phoneReducer: AppReducer = (
+    draft: WorldState,
+    event: TimelineEvent
+): void => {
+    // Only handle CALL kind events (Performance optimization)
+    if (event.kind !== "CALL") return;
+
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    switch (event.type) {
+        case "INCOMING": {
+            const e = event as any;
+            device.call = {
+                status: "incoming",
+                callerId: e.callerId,
+                callerName: e.callerName,
+                callerAvatar: e.callerAvatar,
+                isVideo: e.isVideo ?? false,
+                callType: e.callType ?? "voice",
+                displayMode: e.displayMode ?? "fullscreen",
+                callerMetadata: e.callerMetadata,
+                startedAt: event.at,
+            };
+            break;
+        }
+
+        case "ANSWER": {
+            if (device.call) {
+                device.call.status = "active";
+                device.call.answeredAt = event.at;
+            }
+            break;
+        }
+
+        case "DECLINE": {
+            if (device.call) {
+                device.call.status = "declined";
+                device.call.endedAt = event.at;
+            }
+            break;
+        }
+
+        case "END": {
+            if (device.call) {
+                device.call.status = "ended";
+                device.call.endedAt = event.at;
+            }
+            break;
+        }
+
+        case "TOGGLE_MUTE": {
+            if (device.call) {
+                device.call.isMuted = !device.call.isMuted;
+            }
+            break;
+        }
+
+        case "TOGGLE_SPEAKER": {
+            if (device.call) {
+                device.call.isSpeakerOn = !device.call.isSpeakerOn;
+            }
+            break;
+        }
+
+        case "TOGGLE_HOLD": {
+            if (device.call) {
+                device.call.isOnHold = !device.call.isOnHold;
+            }
+            break;
+        }
+    }
+};
+````
+
+## File: packages/apps-phone/src/theme/index.ts
+````typescript
+export const PhoneTheme = {
+    colors: {
+        accept: "#34C759",  // iOS Green
+        decline: "#FF3B30", // iOS Red
+        muted: "#8E8E93",
+        text: {
+            primary: "#FFFFFF",
+            secondary: "rgba(255, 255, 255, 0.6)",
+        },
+        background: {
+            incoming: "rgba(22, 22, 22, 0.95)",
+            active: "rgba(0, 0, 0, 0.8)",
+        }
+    },
+    typography: {
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+    }
+};
+````
+
+## File: packages/apps-phone/src/ui/ios/CallScreen.tsx
+````typescript
+/**
+ * iOS 17 Call Screen
+ * 
+ * Features:
+ * - Contact Poster layout (Full bleed image/color)
+ * - Depth effect typography (simulated)
+ * - Glassmorphism controls
+ */
+
+import React, { useMemo } from "react";
+import { AppViewProps } from "@tokovo/core";
+import { PhoneTheme } from "../../theme";
+import { useStrings } from "../../i18n";
+
+export const CallScreenIOS: React.FC<AppViewProps> = ({ world, deviceId, t }) => {
+    const strings = useStrings();
+    const device = world.devices[deviceId || Object.keys(world.devices)[0]];
+    const call = device?.call;
+
+    // Safety: No call state?
+    if (!call || call.status === "ended") return null;
+
+    const isIncoming = call.status === "incoming" || call.status === "ringing";
+    const isActive = call.status === "active";
+
+    // --- Contact Poster Logic ---
+    // Extract metadata or default
+    const posterColor = typeof call.callerMetadata?.posterColor === 'string' ? call.callerMetadata.posterColor : "#8e8e93";
+    const posterImage = typeof call.callerMetadata?.posterImage === 'string' ? call.callerMetadata.posterImage : null;
+    const name = call.callerName || "Unknown";
+
+    // Background Style
+    const backgroundStyle: React.CSSProperties = posterImage
+        ? {
+            backgroundImage: `url(${posterImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+        }
+        : {
+            backgroundColor: posterColor,
+            background: `linear-gradient(180deg, ${posterColor} 0%, #000 100%)`,
+        };
+
+    return (
+        <div style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            position: "relative",
+            color: "white",
+            fontFamily: PhoneTheme.typography.fontFamily,
+            ...backgroundStyle
+        }}>
+            {/* Overlay Gradient for readability */}
+            <div style={{
+                position: "absolute",
+                top: 0, left: 0, right: 0, bottom: 0,
+                background: "linear-gradient(180deg, rgba(0,0,0,0.2) 0%, rgba(0,0,0,0) 40%, rgba(0,0,0,0.4) 80%)",
+                pointerEvents: "none"
+            }} />
+
+            {/* --- Top Metadata (Name/Status) --- */}
+            <div style={{
+                marginTop: 60, // Safe Area
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                zIndex: 10,
+            }}>
+                {/* Contact Poster Name (Big, Bold) */}
+                <div style={{
+                    fontSize: 48,
+                    fontWeight: 300, // iOS 17 Thin Weight preference for Name
+                    letterSpacing: -0.5,
+                    marginBottom: 8,
+                    textShadow: "0 2px 10px rgba(0,0,0,0.3)"
+                }}>
+                    {name}
+                </div>
+
+                {isIncoming && (
+                    <div style={{
+                        fontSize: 18,
+                        fontWeight: 500,
+                        opacity: 0.8,
+                        color: "rgba(255,255,255,0.7)"
+                    }}>
+                        {strings.incomingCall}
+                    </div>
+                )}
+
+                {isActive && (
+                    <div style={{
+                        fontSize: 18,
+                        fontWeight: 500,
+                        opacity: 0.8,
+                        // TODO: Format duration
+                        color: "rgba(255,255,255,0.7)"
+                    }}>
+                        00:24
+                    </div>
+                )}
+            </div>
+
+            <div style={{ flex: 1 }} />
+
+            {/* --- Bottom Controls --- */}
+            <div style={{
+                paddingBottom: 60, // Safe Area
+                paddingLeft: 32,
+                paddingRight: 32,
+                display: "flex",
+                flexDirection: "column",
+                gap: 40,
+                zIndex: 10,
+            }}>
+
+                {/* Active Controls Grid */}
+                {isActive && (
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "1fr 1fr 1fr",
+                        gap: 16,
+                        marginBottom: 20
+                    }}>
+                        <ControlButton icon="mic.slash.fill" label={strings.mute} active={call.isMuted} />
+                        <ControlButton icon="keypad" label={strings.keypad} />
+                        <ControlButton icon="speaker.wave.3.fill" label={strings.speaker} active={call.isSpeakerOn} />
+                        <ControlButton icon="plus" label={strings.addCall} />
+                        <ControlButton icon="video.fill" label={strings.video} />
+                        <ControlButton icon="person.circle.fill" label={strings.contacts} />
+                    </div>
+                )}
+
+                {/* Primary Action Buttons */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0 20px"
+                }}>
+                    {isIncoming ? (
+                        <>
+                            {/* Decline */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                <BigButton color={PhoneTheme.colors.decline} icon="phone.down.fill" />
+                                <span style={{ fontSize: 14, fontWeight: 500 }}>{strings.decline}</span>
+                            </div>
+
+                            {/* Accept */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                                <BigButton color={PhoneTheme.colors.accept} icon="phone.fill" />
+                                <span style={{ fontSize: 14, fontWeight: 500 }}>{strings.accept}</span>
+                            </div>
+                        </>
+                    ) : (
+                        /* End Call (Centered) */
+                        <div style={{ width: "100%", display: "flex", justifyContent: "center", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                            <BigButton color={PhoneTheme.colors.decline} icon="phone.down.fill" size={72} />
+                        </div>
+                    )}
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+// --- Subcomponents ---
+
+const ControlButton: React.FC<{ icon: string, label: string, active?: boolean }> = ({ icon, label, active }) => (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <div style={{
+            width: 64,
+            height: 64,
+            borderRadius: "50%",
+            backgroundColor: active ? "white" : "rgba(255,255,255,0.15)",
+            backdropFilter: "blur(20px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: active ? "black" : "white",
+            fontSize: 28
+        }}>
+            {/* Placeholder Icon */}
+            <div />
+        </div>
+        <span style={{ fontSize: 12, fontWeight: 500 }}>{label}</span>
+    </div>
+);
+
+const BigButton: React.FC<{ color: string, icon: string, size?: number }> = ({ color, icon, size = 64 }) => (
+    <div style={{
+        width: size,
+        height: size,
+        borderRadius: "50%",
+        backgroundColor: color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        boxShadow: "0 4px 20px rgba(0,0,0,0.3)"
+    }}>
+        {/* Placeholder Icon */}
+        <div style={{ width: size / 2, height: size / 2, background: "white" }} />
+    </div>
+);
+````
+
+## File: packages/apps-phone/src/ui/index.tsx
+````typescript
+/**
+ * Phone App - UI Entry Point
+ * 
+ * Routes to platform-specific implementations.
+ */
+
+import React from "react";
+import { AppViewProps } from "@tokovo/core";
+import { CallScreenIOS } from "./ios/CallScreen";
+// import { CallScreenAndroid } from "./android/CallScreen"; // Future
+
+export const PhoneApp: React.FC<AppViewProps> = (props) => {
+    const { platform = "ios" } = props;
+
+    // TODO: Implement Android
+    if (platform === "android") {
+        return <div style={{ color: "white" }}>Android Call Screen (Coming Soon)</div>;
+    }
+
+    return <CallScreenIOS {...props} />;
+};
+````
+
+## File: packages/apps-phone/src/widgets/DynamicIsland.tsx
+````typescript
+/**
+ * Phone Dynamic Island Widget
+ * 
+ * Shows active call status.
+ */
+
+import React from "react";
+import { WidgetComponent } from "@tokovo/core";
+import { PhoneTheme } from "../theme";
+
+export const DynamicIslandCall: WidgetComponent = ({ appState, currentFrame, expansionMode }) => {
+    // Determine active call duration (mock or from state)
+    // appState might be undefined if accessing from background, 
+    // but WidgetRegistry logic usually passes relevant state.
+    // However, phoneReducer puts state on `device.call`, NOT `world.appState`.
+    // Wait, Phone App stores state on `device.call`!
+    // The `WidgetProps` pass `appState` which is `world.appState['app_phone']`.
+    // Phone App doesn't USE `world.appState`! It uses `device.call`.
+    // This is a legacy quirk of the Phone app being "System Level".
+
+    // For now, render a generic "Active Call" indicator.
+    // In V3 we should move `device.call` to `appState.phone`.
+
+    return (
+        <div style={{
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 12px",
+            color: "#fff",
+            fontFamily: PhoneTheme.typography.fontFamily
+        }}>
+            {/* Left: Duration */}
+            <div style={{
+                color: PhoneTheme.colors.accept,
+                fontSize: 14,
+                fontWeight: 600
+            }}>
+                00:24
+            </div>
+
+            {/* Right: Waveform (Animated) */}
+            <div style={{ display: "flex", gap: 3, alignItems: "center", height: 12 }}>
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} style={{
+                        width: 3,
+                        height: 4 + (Math.sin(currentFrame * 0.2 + i) * 6),
+                        backgroundColor: PhoneTheme.colors.accept,
+                        borderRadius: 2
+                    }} />
+                ))}
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/apps-phone/src/widgets/IncomingCallBanner.tsx
 ````typescript
 /**
@@ -23122,919 +21551,6 @@ export const phoneReducer: AppReducer = (
     },
     "include": [
         "src"
-    ]
-}
-````
-
-## File: packages/apps-spotify/src/widgets/DynamicIslandWidget.tsx
-````typescript
-/**
- * Spotify Dynamic Island Widget - iOS
- * 
- * Renders Spotify Now Playing in the Dynamic Island.
- * Supports minimal (icon+waveform), compact (track name), and expanded (full player) modes.
- */
-
-import React from "react";
-import { WidgetProps } from "@tokovo/core";
-
-interface SpotifyDynamicIslandProps extends WidgetProps {
-    appState: {
-        currentTrack?: {
-            name: string;
-            artist: string;
-            albumArt?: string;
-        };
-        isPlaying?: boolean;
-    };
-}
-
-/**
- * Spotify Dynamic Island Widget Component
- */
-export const SpotifyDynamicIslandWidget: React.FC<SpotifyDynamicIslandProps> = ({
-    appState,
-    backgroundApp,
-    deviceProfile,
-    currentFrame,
-    expansionMode,
-}) => {
-    const di = deviceProfile.dynamicIsland;
-    if (!di) return null;
-
-    // Parse track info from backgroundApp label
-    const label = backgroundApp?.label || "";
-    const parts = label.split(" - ");
-    const trackName = parts[0] || appState.currentTrack?.name || "Now Playing";
-    const artistName = parts[1] || appState.currentTrack?.artist || "Spotify";
-
-    // Animation
-    const startFrame = backgroundApp?.startedAt || 0;
-    const elapsed = currentFrame - startFrame;
-    const expandDuration = 20;
-    const expandProgress = Math.min(1, elapsed / expandDuration);
-    const ease = 1 - Math.pow(1 - expandProgress, 3);
-
-    // Size interpolation based on expansion mode
-    const isExpanded = expansionMode === "expanded" || expansionMode === "compact";
-    const width = isExpanded
-        ? di.collapsedWidth + (di.expandedWidth - di.collapsedWidth) * ease
-        : di.collapsedWidth;
-    const height = isExpanded
-        ? di.collapsedHeight + (di.expandedHeight - di.collapsedHeight) * ease
-        : di.collapsedHeight;
-
-    return (
-        <div
-            style={{
-                width,
-                height,
-                background: "#000000",
-                borderRadius: di.cornerRadius,
-                display: "flex",
-                alignItems: "center",
-                padding: "0 40px",
-                gap: 30,
-                boxShadow: "0 12px 60px rgba(0,0,0,0.5)",
-                overflow: "hidden",
-            }}
-        >
-            {/* Spotify Logo */}
-            <div
-                style={{
-                    width: 90,
-                    height: 90,
-                    borderRadius: 20,
-                    background: "#1DB954",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                }}
-            >
-                <SpotifyIcon size={50} />
-            </div>
-
-            {/* Track Info - shows when expanded */}
-            {expandProgress > 0.5 && (
-                <div
-                    style={{
-                        flex: 1,
-                        minWidth: 0,
-                        opacity: (expandProgress - 0.5) * 2,
-                    }}
-                >
-                    <div
-                        style={{
-                            fontSize: 42,
-                            fontWeight: 600,
-                            color: "#fff",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                            marginBottom: 6,
-                        }}
-                    >
-                        {trackName}
-                    </div>
-                    <div
-                        style={{
-                            fontSize: 36,
-                            color: "rgba(255,255,255,0.6)",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                        }}
-                    >
-                        {artistName}
-                    </div>
-                </div>
-            )}
-
-            {/* Music Wave Animation */}
-            {expandProgress > 0.3 && (
-                <div style={{ opacity: (expandProgress - 0.3) / 0.7, flexShrink: 0 }}>
-                    <MusicWaveIcon />
-                </div>
-            )}
-        </div>
-    );
-};
-
-// =============================================================================
-// ICONS
-// =============================================================================
-
-const SpotifyIcon: React.FC<{ size?: number }> = ({ size = 50 }) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="#000">
-        <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-    </svg>
-);
-
-const MusicWaveIcon: React.FC = () => (
-    <svg width={60} height={60} viewBox="0 0 24 24" fill="#1DB954">
-        <rect x="4" y="10" width="3" height="4" rx="1">
-            <animate attributeName="height" values="4;12;4" dur="0.6s" repeatCount="indefinite" />
-            <animate attributeName="y" values="10;6;10" dur="0.6s" repeatCount="indefinite" />
-        </rect>
-        <rect x="10" y="6" width="3" height="12" rx="1">
-            <animate attributeName="height" values="12;4;12" dur="0.5s" repeatCount="indefinite" />
-            <animate attributeName="y" values="6;10;6" dur="0.5s" repeatCount="indefinite" />
-        </rect>
-        <rect x="16" y="8" width="3" height="8" rx="1">
-            <animate attributeName="height" values="8;14;8" dur="0.7s" repeatCount="indefinite" />
-            <animate attributeName="y" values="8;5;8" dur="0.7s" repeatCount="indefinite" />
-        </rect>
-    </svg>
-);
-
-export default SpotifyDynamicIslandWidget;
-````
-
-## File: packages/apps-spotify/src/widgets/index.ts
-````typescript
-/**
- * Spotify Widgets Index
- * 
- * Exports all Spotify widgets for registration with PluginManager
- */
-
-export { SpotifyDynamicIslandWidget } from "./DynamicIslandWidget";
-export { SpotifyStatusBarWidget } from "./StatusBarWidget";
-````
-
-## File: packages/apps-spotify/src/widgets/StatusBarWidget.tsx
-````typescript
-/**
- * Spotify Status Bar Widget - Android
- * 
- * Renders a small music indicator in Android status bar.
- */
-
-import React from "react";
-import { WidgetProps } from "@tokovo/core";
-
-/**
- * Spotify Status Bar Widget for Android
- * Shows a small music note indicator when Spotify is playing
- */
-export const SpotifyStatusBarWidget: React.FC<WidgetProps> = ({
-    backgroundApp,
-    deviceProfile,
-}) => {
-    const config = deviceProfile.statusBarWidget;
-    if (!config) return null;
-
-    return (
-        <div
-            style={{
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-                background: "#1DB954",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-            }}
-        >
-            <svg width={24} height={24} viewBox="0 0 24 24" fill="#000">
-                <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
-            </svg>
-        </div>
-    );
-};
-
-export default SpotifyStatusBarWidget;
-````
-
-## File: packages/apps-spotify/src/notification-adapter.ts
-````typescript
-/**
- * Spotify Notification Adapter
- * 
- * Converts Spotify events into notification content.
- * OS surfaces render this using NotificationOverlay/HeadsUpNotification.
- */
-
-import { SpotifyAppState, NowPlaying, SpotifyTrack } from "./types";
-
-// =============================================================================
-// NOTIFICATION ADAPTER INTERFACE
-// =============================================================================
-
-export interface NotificationContent {
-    appId: string;
-    appName: string;
-    appIcon: string;
-    accentColor: string;
-    title: string;
-    body: string;
-    preview?: {
-        kind: "text" | "image";
-        value: string;
-    };
-    threadId?: string;
-    soundId?: string;
-}
-
-// =============================================================================
-// SPOTIFY ADAPTER
-// =============================================================================
-
-export const SPOTIFY_APP_ID = "app_spotify";
-export const SPOTIFY_APP_NAME = "Spotify";
-export const SPOTIFY_ICON = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Spotify_icon.svg/232px-Spotify_icon.svg.png";
-export const SPOTIFY_ACCENT = "#1DB954";
-
-/**
- * Format a Spotify Now Playing state into notification content
- */
-export function formatSpotifyNotification(
-    nowPlaying: NowPlaying,
-    type: "now_playing" | "track_change" | "liked"
-): NotificationContent {
-    const { track } = nowPlaying;
-
-    switch (type) {
-        case "now_playing":
-            return {
-                appId: SPOTIFY_APP_ID,
-                appName: SPOTIFY_APP_NAME,
-                appIcon: SPOTIFY_ICON,
-                accentColor: SPOTIFY_ACCENT,
-                title: "Now Playing",
-                body: `${track.name} • ${track.artist}`,
-                preview: track.albumArt
-                    ? { kind: "image", value: track.albumArt }
-                    : undefined,
-                threadId: "spotify_playback",
-            };
-
-        case "track_change":
-            return {
-                appId: SPOTIFY_APP_ID,
-                appName: SPOTIFY_APP_NAME,
-                appIcon: SPOTIFY_ICON,
-                accentColor: SPOTIFY_ACCENT,
-                title: track.name,
-                body: `${track.artist} • ${track.album}`,
-                preview: track.albumArt
-                    ? { kind: "image", value: track.albumArt }
-                    : undefined,
-                threadId: "spotify_playback",
-            };
-
-        case "liked":
-            return {
-                appId: SPOTIFY_APP_ID,
-                appName: SPOTIFY_APP_NAME,
-                appIcon: SPOTIFY_ICON,
-                accentColor: SPOTIFY_ACCENT,
-                title: "Added to Liked Songs",
-                body: `${track.name} by ${track.artist}`,
-                threadId: "spotify_likes",
-            };
-    }
-}
-
-/**
- * Create a simple text notification from Spotify
- */
-export function createSpotifyTextNotification(
-    title: string,
-    body: string
-): NotificationContent {
-    return {
-        appId: SPOTIFY_APP_ID,
-        appName: SPOTIFY_APP_NAME,
-        appIcon: SPOTIFY_ICON,
-        accentColor: SPOTIFY_ACCENT,
-        title,
-        body,
-    };
-}
-
-// =============================================================================
-// SPOTIFY NOTIFICATION ADAPTER (for global registry)
-// =============================================================================
-
-export const SpotifyNotificationAdapter = {
-    appId: SPOTIFY_APP_ID,
-    appName: SPOTIFY_APP_NAME,
-    appIcon: SPOTIFY_ICON,
-    accentColor: SPOTIFY_ACCENT,
-
-    /**
-     * Format notification from raw event
-     */
-    format(event: { title: string; body: string; preview?: string }): NotificationContent {
-        return {
-            appId: SPOTIFY_APP_ID,
-            appName: SPOTIFY_APP_NAME,
-            appIcon: SPOTIFY_ICON,
-            accentColor: SPOTIFY_ACCENT,
-            title: event.title,
-            body: event.body,
-            preview: event.preview
-                ? { kind: "image", value: event.preview }
-                : undefined,
-        };
-    },
-};
-````
-
-## File: packages/apps-spotify/src/types.ts
-````typescript
-/**
- * Spotify Types
- * 
- * Data structures for Spotify app state, tracks, and playback.
- */
-
-// =============================================================================
-// TRACK & PLAYLIST
-// =============================================================================
-
-export interface SpotifyTrack {
-    id: string;
-    name: string;
-    artist: string;
-    album: string;
-    albumArt?: string;         // URL to album artwork
-    durationMs: number;        // Track duration in milliseconds
-}
-
-export interface SpotifyPlaylist {
-    id: string;
-    name: string;
-    coverArt?: string;
-    tracks: SpotifyTrack[];
-}
-
-// =============================================================================
-// PLAYBACK STATE
-// =============================================================================
-
-export type PlaybackState = "playing" | "paused" | "stopped";
-
-export interface NowPlaying {
-    track: SpotifyTrack;
-    state: PlaybackState;
-    progressMs: number;        // Current position in track
-    startedAtFrame: number;    // Frame when playback started
-    shuffleEnabled: boolean;
-    repeatMode: "off" | "all" | "one";
-}
-
-// =============================================================================
-// SPOTIFY APP STATE
-// =============================================================================
-
-export type SpotifyScreen = "home" | "search" | "library" | "player" | "playlist";
-
-export interface SpotifyAppState {
-    screen: SpotifyScreen;
-    nowPlaying?: NowPlaying;
-    currentPlaylist?: SpotifyPlaylist;
-    recentlyPlayed: SpotifyTrack[];
-    isMinimized: boolean;      // Widget mode vs full app
-}
-
-// =============================================================================
-// DEFAULT STATE
-// =============================================================================
-
-export const DEFAULT_SPOTIFY_STATE: SpotifyAppState = {
-    screen: "home",
-    nowPlaying: undefined,
-    recentlyPlayed: [],
-    isMinimized: false,
-};
-
-// =============================================================================
-// SAMPLE TRACKS (for demos)
-// =============================================================================
-
-export const SAMPLE_TRACKS: SpotifyTrack[] = [
-    {
-        id: "track_1",
-        name: "Blinding Lights",
-        artist: "The Weeknd",
-        album: "After Hours",
-        albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
-        durationMs: 200000,
-    },
-    {
-        id: "track_2",
-        name: "As It Was",
-        artist: "Harry Styles",
-        album: "Harry's House",
-        albumArt: "https://i.scdn.co/image/ab67616d0000b273b46f74097655d7f353caab14",
-        durationMs: 167000,
-    },
-    {
-        id: "track_3",
-        name: "Anti-Hero",
-        artist: "Taylor Swift",
-        album: "Midnights",
-        albumArt: "https://i.scdn.co/image/ab67616d0000b273bb54dde68cd23e2a268ae0f5",
-        durationMs: 200000,
-    },
-    {
-        id: "track_4",
-        name: "Unholy",
-        artist: "Sam Smith & Kim Petras",
-        album: "Gloria",
-        albumArt: "https://i.scdn.co/image/ab67616d0000b2730895066d172e1f51f520bc65",
-        durationMs: 157000,
-    },
-];
-````
-
-## File: packages/apps-spotify/src/ui.tsx
-````typescript
-/**
- * Spotify UI Components
- * 
- * - NowPlayingWidget: Floating mini player
- * - SpotifyPlayer: Full player screen
- * - StatusBarIndicator: Shows in status bar when playing
- */
-
-import React from "react";
-import { SpotifyAppState, NowPlaying, SpotifyTrack } from "./types";
-
-// =============================================================================
-// NOW PLAYING WIDGET (Mini Player)
-// =============================================================================
-
-interface NowPlayingWidgetProps {
-    nowPlaying: NowPlaying;
-    currentFrame: number;
-    variant?: "ios" | "android";
-    onTap?: () => void;
-}
-
-/**
- * Floating Now Playing widget - shows current track with progress
- */
-export const NowPlayingWidget: React.FC<NowPlayingWidgetProps> = ({
-    nowPlaying,
-    currentFrame,
-    variant = "ios",
-    onTap,
-}) => {
-    const { track, state, startedAtFrame } = nowPlaying;
-
-    // Calculate progress (30fps)
-    const elapsedMs = ((currentFrame - startedAtFrame) / 30) * 1000;
-    const progress = state === "playing"
-        ? Math.min(1, elapsedMs / track.durationMs)
-        : (nowPlaying.progressMs / track.durationMs);
-
-    const isIOS = variant === "ios";
-
-    return (
-        <div
-            onClick={onTap}
-            style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "10px 14px",
-                background: isIOS
-                    ? "rgba(30, 30, 31, 0.95)"
-                    : "linear-gradient(180deg, #1DB954 0%, #191414 100%)",
-                borderRadius: isIOS ? 14 : 8,
-                backdropFilter: "blur(20px)",
-                boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
-                maxWidth: 380,
-                cursor: "pointer",
-            }}
-        >
-            {/* Album Art */}
-            <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 6,
-                background: track.albumArt
-                    ? `url(${track.albumArt}) center/cover`
-                    : "linear-gradient(135deg, #1DB954 0%, #191414 100%)",
-                flexShrink: 0,
-            }} />
-
-            {/* Track Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                    fontSize: 15,
-                    fontWeight: 600,
-                    color: "#fff",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                }}>
-                    {track.name}
-                </div>
-                <div style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.6)",
-                    whiteSpace: "nowrap",
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-                }}>
-                    {track.artist}
-                </div>
-
-                {/* Progress Bar */}
-                <div style={{
-                    marginTop: 6,
-                    height: 3,
-                    background: "rgba(255,255,255,0.2)",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                }}>
-                    <div style={{
-                        width: `${progress * 100}%`,
-                        height: "100%",
-                        background: "#1DB954",
-                        transition: "width 0.1s linear",
-                    }} />
-                </div>
-            </div>
-
-            {/* Play/Pause Icon */}
-            <div style={{
-                width: 36,
-                height: 36,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-            }}>
-                {state === "playing" ? (
-                    <PauseIcon />
-                ) : (
-                    <PlayIcon />
-                )}
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// STATUS BAR INDICATOR
-// =============================================================================
-
-interface StatusBarMusicIndicatorProps {
-    track?: SpotifyTrack;
-    isPlaying: boolean;
-}
-
-/**
- * Tiny indicator for status bar showing music is playing
- */
-export const StatusBarMusicIndicator: React.FC<StatusBarMusicIndicatorProps> = ({
-    track,
-    isPlaying,
-}) => {
-    if (!track || !isPlaying) return null;
-
-    return (
-        <div style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "2px 6px",
-            background: "rgba(29, 185, 84, 0.9)",
-            borderRadius: 4,
-            fontSize: 11,
-            fontWeight: 600,
-            color: "#fff",
-        }}>
-            <MusicWaveIcon />
-            <span style={{
-                maxWidth: 80,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-            }}>
-                {track.name}
-            </span>
-        </div>
-    );
-};
-
-// =============================================================================
-// FULL SPOTIFY PLAYER
-// =============================================================================
-
-interface SpotifyPlayerProps {
-    appState: SpotifyAppState;
-    currentFrame: number;
-}
-
-/**
- * Full Spotify player screen
- */
-export const SpotifyPlayer: React.FC<SpotifyPlayerProps> = ({
-    appState,
-    currentFrame,
-}) => {
-    const { nowPlaying } = appState;
-
-    if (!nowPlaying) {
-        return <SpotifyHome />;
-    }
-
-    const { track, state, startedAtFrame } = nowPlaying;
-    const elapsedMs = ((currentFrame - startedAtFrame) / 30) * 1000;
-    const progress = state === "playing"
-        ? Math.min(1, elapsedMs / track.durationMs)
-        : (nowPlaying.progressMs / track.durationMs);
-
-    const formatTime = (ms: number) => {
-        const seconds = Math.floor(ms / 1000);
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, "0")}`;
-    };
-
-    return (
-        <div style={{
-            width: "100%",
-            height: "100%",
-            background: "linear-gradient(180deg, #1e3a5f 0%, #121212 40%)",
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            padding: "60px 30px 40px",
-            boxSizing: "border-box",
-            fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-        }}>
-            {/* Album Art */}
-            <div style={{
-                width: 320,
-                height: 320,
-                borderRadius: 8,
-                background: track.albumArt
-                    ? `url(${track.albumArt}) center/cover`
-                    : "linear-gradient(135deg, #1DB954 0%, #191414 100%)",
-                boxShadow: "0 8px 48px rgba(0,0,0,0.5)",
-                marginBottom: 40,
-            }} />
-
-            {/* Track Info */}
-            <div style={{ textAlign: "center", width: "100%", marginBottom: 24 }}>
-                <div style={{
-                    fontSize: 24,
-                    fontWeight: 700,
-                    color: "#fff",
-                    marginBottom: 6,
-                }}>
-                    {track.name}
-                </div>
-                <div style={{
-                    fontSize: 16,
-                    color: "rgba(255,255,255,0.6)",
-                }}>
-                    {track.artist}
-                </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div style={{ width: "100%", marginBottom: 8 }}>
-                <div style={{
-                    height: 4,
-                    background: "rgba(255,255,255,0.2)",
-                    borderRadius: 2,
-                    overflow: "hidden",
-                }}>
-                    <div style={{
-                        width: `${progress * 100}%`,
-                        height: "100%",
-                        background: "#1DB954",
-                    }} />
-                </div>
-                <div style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    marginTop: 8,
-                    fontSize: 12,
-                    color: "rgba(255,255,255,0.6)",
-                }}>
-                    <span>{formatTime(elapsedMs)}</span>
-                    <span>{formatTime(track.durationMs)}</span>
-                </div>
-            </div>
-
-            {/* Controls */}
-            <div style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 40,
-                marginTop: 24,
-            }}>
-                <SkipBackIcon />
-                <div style={{
-                    width: 64,
-                    height: 64,
-                    borderRadius: 32,
-                    background: "#fff",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                }}>
-                    {state === "playing" ? (
-                        <PauseIcon color="#000" size={32} />
-                    ) : (
-                        <PlayIcon color="#000" size={32} />
-                    )}
-                </div>
-                <SkipForwardIcon />
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// SPOTIFY HOME (Placeholder)
-// =============================================================================
-
-const SpotifyHome: React.FC = () => (
-    <div style={{
-        width: "100%",
-        height: "100%",
-        background: "#121212",
-        padding: 24,
-        boxSizing: "border-box",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    }}>
-        <div style={{ fontSize: 28, fontWeight: 700, color: "#fff", marginBottom: 24 }}>
-            Good evening
-        </div>
-        <div style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr",
-            gap: 12
-        }}>
-            {["Liked Songs", "Daily Mix 1", "Discover Weekly", "Release Radar"].map((name, i) => (
-                <div key={i} style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 12,
-                    background: "rgba(255,255,255,0.1)",
-                    borderRadius: 4,
-                    overflow: "hidden",
-                }}>
-                    <div style={{
-                        width: 56,
-                        height: 56,
-                        background: `hsl(${i * 60 + 140}, 60%, 40%)`,
-                    }} />
-                    <div style={{
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#fff",
-                    }}>
-                        {name}
-                    </div>
-                </div>
-            ))}
-        </div>
-    </div>
-);
-
-// =============================================================================
-// ICONS
-// =============================================================================
-
-const PlayIcon: React.FC<{ color?: string; size?: number }> = ({
-    color = "#fff",
-    size = 20
-}) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-        <path d="M8 5v14l11-7z" />
-    </svg>
-);
-
-const PauseIcon: React.FC<{ color?: string; size?: number }> = ({
-    color = "#fff",
-    size = 20
-}) => (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
-        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
-    </svg>
-);
-
-const SkipBackIcon: React.FC = () => (
-    <svg width={28} height={28} viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
-        <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z" />
-    </svg>
-);
-
-const SkipForwardIcon: React.FC = () => (
-    <svg width={28} height={28} viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)">
-        <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
-    </svg>
-);
-
-const MusicWaveIcon: React.FC = () => (
-    <svg width={12} height={12} viewBox="0 0 24 24" fill="#fff">
-        <rect x="4" y="8" width="3" height="8" rx="1">
-            <animate attributeName="height" values="8;16;8" dur="0.6s" repeatCount="indefinite" />
-            <animate attributeName="y" values="8;4;8" dur="0.6s" repeatCount="indefinite" />
-        </rect>
-        <rect x="10" y="4" width="3" height="16" rx="1">
-            <animate attributeName="height" values="16;8;16" dur="0.5s" repeatCount="indefinite" />
-            <animate attributeName="y" values="4;8;4" dur="0.5s" repeatCount="indefinite" />
-        </rect>
-        <rect x="16" y="6" width="3" height="12" rx="1">
-            <animate attributeName="height" values="12;16;12" dur="0.7s" repeatCount="indefinite" />
-            <animate attributeName="y" values="6;4;6" dur="0.7s" repeatCount="indefinite" />
-        </rect>
-    </svg>
-);
-````
-
-## File: packages/apps-spotify/package.json
-````json
-{
-    "name": "@tokovo/apps-spotify",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
-}
-````
-
-## File: packages/apps-spotify/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.base.json",
-    "compilerOptions": {
-        "rootDir": "src",
-        "outDir": "dist",
-        "declaration": true,
-        "jsx": "react"
-    },
-    "include": [
-        "src/**/*"
     ]
 }
 ````
@@ -24977,6 +22493,495 @@ export { iOSStatusBar, BubbleTail } from "./iOSStatusBar";
 export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";
 export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPreview";
 export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
+````
+
+## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
+````typescript
+import React from "react";
+import { getAppConfig, Platform, getTokens } from "@tokovo/core";
+
+// ============================================================================
+// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
+// ============================================================================
+
+interface ImageMessageBubbleProps {
+    imageUrl: string;
+    caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
+    imageUrl,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Image container */}
+            <div style={{
+                position: "relative",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+                // Square bottom corners if caption is below
+                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
+                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
+                overflow: "hidden",
+            }}>
+                <img
+                    src={imageUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Timestamp overlay on image (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    {/* Timestamp + Read receipts */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// VIDEO MESSAGE BUBBLE - With Play Overlay
+// ============================================================================
+
+interface VideoMessageBubbleProps {
+    thumbnailUrl: string;
+    duration: number; // in seconds
+    caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number;
+    platform?: Platform;
+}
+
+export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
+    thumbnailUrl,
+    duration,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Video thumbnail container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={thumbnailUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Play button overlay */}
+                {!isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 120,
+                        height: 120,
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </div>
+                )}
+
+                {/* Duration badge */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
+                    </svg>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {formatDuration(duration)}
+                    </span>
+                </div>
+
+                {/* Timestamp overlay (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+
+                {/* Progress bar during playback */}
+                {isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 6,
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                    }}>
+                        <div style={{
+                            height: "100%",
+                            width: `${(playProgress / duration) * 100}%`,
+                            backgroundColor: "#25D366",
+                        }} />
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
+// ============================================================================
+
+interface GifMessageBubbleProps {
+    gifUrl: string;
+    width?: number;
+    height?: number;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
+    gifUrl,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* GIF container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={gifUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 500,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* GIF badge */}
+                <div style={{
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                }}>
+                    <span style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                        letterSpacing: 1,
+                    }}>
+                        GIF
+                    </span>
+                </div>
+
+                {/* Timestamp overlay */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    right: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {timestamp}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} light />}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// SHARED: Double Check Icon for read receipts
+// ============================================================================
+
+const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
+    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 ````
 
 ## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
@@ -28063,6 +26068,69 @@ export function getSoundPath(soundId: string): string {
 export { SoundRegistry };
 ````
 
+## File: packages/core/src/validation.ts
+````typescript
+import { z } from "zod";
+import { TokovoPlugin } from "./plugin";
+import { AppMetadata } from "./app-metadata";
+
+// =============================================================================
+// PLUGIN & METADATA SCHEMAS
+// =============================================================================
+
+export const AppMetadataSchema = z.object({
+    displayName: z.string(),
+    themeColor: z.string().regex(/^#/, "Must be a hex color"),
+    icon: z.string(),
+    viewStrategy: z.enum(["CHAT", "FEED", "STORY", "LOCKSCREEN", "HOMESCREEN", "FULLSCREEN", "TRANSITION"]).optional(),
+    designWidth: z.number().optional().default(393),
+}) as z.ZodType<Partial<AppMetadata> & { name?: string }>; // Loose typing to match Partial
+
+// NOTE: We don't deeply validate React components or Functions (runtime checks only)
+export const TokovoPluginSchema = z.object({
+    id: z.string().min(3),
+    version: z.string(),
+
+    // Metadata block
+    metadata: z.object({
+        name: z.string(),
+        themeColor: z.string().optional(),
+        icon: z.string().optional(),
+        designWidth: z.number().optional(),
+    }).optional(),
+
+    // Deprecated fields (lax schema)
+    name: z.string().optional(),
+    icon: z.string().optional(),
+    primaryColor: z.string().optional(),
+
+    // Arrays
+    eventTypes: z.array(z.string()).optional(),
+
+    // Maps
+    sounds: z.record(z.string(), z.string()).optional(),
+    anchors: z.record(z.string(), z.any()).optional(), // Framing config is complex, lazy check
+});
+
+/**
+ * Validates a plugin definition at load time.
+ * @throws ZodError if invalid
+ */
+export function validatePlugin(plugin: TokovoPlugin): void {
+    // 1. Structural Check
+    TokovoPluginSchema.parse(plugin);
+
+    // 2. Logic Checks
+    if (!plugin.appView && !plugin.screens) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must provide 'appView' or 'screens'.`);
+    }
+
+    if (!plugin.metadata?.name && !plugin.name) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
+    }
+}
+````
+
 ## File: packages/core/src/widget-registry.ts
 ````typescript
 /**
@@ -29415,212 +27483,6 @@ export const semanticCameraShowcase = episode("semantic-camera-showcase", ep => 
 });
 
 export default semanticCameraShowcase;
-````
-
-## File: packages/dsl/examples/whatsapp-complete-showcase.dsl.ts
-````typescript
-/**
- * WhatsApp Complete Showcase DSL
- * 
- * Demonstrates all WhatsApp features:
- * - Chat list screen with multiple conversations
- * - Navigate to group chat
- * - Group admin actions (add member, change name)
- * - Mixed media messages (image, video, gif, voice)
- * - Typing indicators
- * - Reactions
- * - Screenshot alerts
- */
-
-import { episode, whatsapp, camera } from "@tokovo/dsl";
-
-export const whatsappCompleteShowcase = episode("WhatsApp Complete Showcase")
-    .fps(30)
-    .duration(1200)  // 40 seconds
-
-    // Initial state: Chat list screen
-    .initialWorld({
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                ownerName: "me",
-                notifications: []
-            }
-        },
-        conversations: {
-            family_group: {
-                id: "family_group",
-                type: "group",
-                name: "Family Group 👨‍👩‍👧‍👦",
-                avatar: "",
-                members: ["Mom", "Dad", "Sister", "me"],
-                messages: [
-                    {
-                        id: "fg1",
-                        from: "Mom",
-                        text: "Dinner at 7pm tonight!",
-                        type: "text",
-                        status: "read"
-                    }
-                ],
-                typing: {}
-            },
-            work_team: {
-                id: "work_team",
-                type: "group",
-                name: "Work Team 💼",
-                avatar: "",
-                members: ["Boss", "Colleague", "me"],
-                messages: [
-                    {
-                        id: "wt1",
-                        from: "Boss",
-                        text: "Great work on the presentation!",
-                        type: "text",
-                        status: "read"
-                    }
-                ],
-                typing: {}
-            },
-            bestie: {
-                id: "bestie",
-                type: "dm",
-                name: "Best Friend 💕",
-                avatar: "",
-                messages: [
-                    {
-                        id: "b1",
-                        from: "Best Friend 💕",
-                        text: "Hey! Are you free?",
-                        type: "text",
-                        status: "read"
-                    }
-                ],
-                typing: {}
-            }
-        },
-        appState: {
-            activeApp: "whatsapp",
-            whatsapp: {
-                screen: "chats"  // Start at chat list
-            }
-        },
-        camera: {
-            baseView: "APP_VIEW",
-            activeEffects: [],
-            transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0
-            }
-        },
-        audio: {
-            activeSounds: []
-        }
-    })
-
-    // Beat 1: Show chat list (wait 1 second)
-    .beat("show_chat_list", 0)
-
-    // Beat 2: Navigate to Family Group chat
-    .beat("open_family_group", 60)
-    .with(whatsapp.navigate("phone", "chat", "family_group"))
-
-    // Beat 3: Sister starts typing
-    .beat("sister_typing", 120)
-    .with(whatsapp.typingStart("phone", "family_group", "Sister"))
-
-    // Beat 4: Sister sends image with caption
-    .beat("sister_image", 180)
-    .with(whatsapp.typingEnd("phone", "family_group", "Sister"))
-    .with(whatsapp.receive("phone", "family_group", {
-        from: "Sister",
-        type: "image",
-        imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
-        caption: "Made this for dinner! 🍝"
-    }))
-
-    // Beat 5: Mom reacts with heart
-    .beat("mom_react", 240)
-    .with(whatsapp.react("phone", "family_group", "fg2", "❤️", "Mom"))
-
-    // Beat 6: I (owner) send text reply
-    .beat("reply_text", 300)
-    .with(whatsapp.send("phone", "family_group", {
-        type: "text",
-        text: "OMG looks delicious! 😍"
-    }))
-
-    // Beat 7: Dad starts typing
-    .beat("dad_typing", 360)
-    .with(whatsapp.typingStart("phone", "family_group", "Dad"))
-
-    // Beat 8: Dad sends voice message
-    .beat("dad_voice", 450)
-    .with(whatsapp.typingEnd("phone", "family_group", "Dad"))
-    .with(whatsapp.voiceReceive("phone", "family_group", "Dad", 8))
-
-    // Beat 9: I (owner) send a GIF
-    .beat("send_gif", 540)
-    .with(whatsapp.send("phone", "family_group", {
-        type: "gif",
-        gifUrl: "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif"
-    }))
-
-    // Beat 10: Zoom in on the chat
-    .beat("zoom_focus", 600)
-    .with(camera.zoom(1.2, "center", 15))
-
-    // Beat 11: Sister sends another text
-    .beat("sister_text", 660)
-    .with(whatsapp.receive("phone", "family_group", {
-        from: "Sister",
-        type: "text",
-        text: "Can't wait to see everyone! 🎉"
-    }))
-
-    // Beat 12: Mom adds video
-    .beat("mom_video", 750)
-    .with(whatsapp.receive("phone", "family_group", {
-        from: "Mom",
-        type: "video",
-        thumbnailUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600",
-        duration: 15,
-        caption: "Setting up the table 🍽️"
-    }))
-
-    // Beat 13: Zoom out
-    .beat("zoom_out", 840)
-    .with(camera.zoom(1.0, "center", 15))
-
-    // Beat 14: Final message
-    .beat("final_message", 900)
-    .with(whatsapp.send("phone", "family_group", {
-        type: "text",
-        text: "See you all soon! 🚗💨"
-    }))
-
-    // Beat 15: Show reactions
-    .beat("final_reactions", 960)
-    .with(whatsapp.react("phone", "family_group", "fg_last", "🔥", "Dad"))
-    .with(whatsapp.react("phone", "family_group", "fg_last", "💕", "Mom"))
-
-    // Beat 16: Slight shake for emphasis
-    .beat("shake", 1020)
-    .with(camera.shake(3, 10))
-
-    // End
-    .beat("end", 1140)
-
-    .build();
 ````
 
 ## File: packages/dsl/src/author/audio-builder.ts
@@ -33027,421 +30889,6 @@ dsl.camera.reset(200, 30),                        // Reset
 }
 ````
 
-## File: apps/video-runner/src/AutoDirectorShowcase.tsx
-````typescript
-/**
- * ============================================================================
- * AUTO DIRECTOR SHOWCASE - Video Runner Component
- * ============================================================================
- * 
- * Demonstrates 100% AUTOMATIC camera via DirectorLite.
- * No manual camera DSL - all camera movement is reactive to signals.
- * 
- * CAMERA PERSONALITY: "A careful human operator who reacts, but does not anticipate."
- */
-
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE } from "@tokovo/core";
-import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-// Register anchor providers for semantic camera system
-registerBuiltInAnchorProviders();
-
-// =============================================================================
-// DSL HELPERS
-// =============================================================================
-
-const dsl = {
-    receive: (at: number, from: string, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: "dm_viral",
-        from,
-        text,
-    } as any),
-
-    send: (at: number, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: "dm_viral",
-        from: "me",
-        text,
-    } as any),
-
-    typingStart: (at: number, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_START",
-        conversationId: "dm_viral",
-        from,
-    } as any),
-
-    typingEnd: (at: number, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_END",
-        conversationId: "dm_viral",
-        from,
-    } as any),
-
-    // Keyboard events
-    keyboardShow: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SHOW",
-        deviceId: "phone",
-        layout: "qwerty",
-    } as any),
-
-    keyboardHide: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "HIDE",
-        deviceId: "phone",
-    } as any),
-
-    keyDown: (at: number, key: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "KEY_DOWN",
-        deviceId: "phone",
-        key,
-    } as any),
-
-    keyUp: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "KEY_UP",
-        deviceId: "phone",
-    } as any),
-};
-
-// =============================================================================
-// EPISODE CREATION - 100% AUTOMATIC DIRECTORLITE CAMERA
-// =============================================================================
-
-function createAutoDirectorEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const initialWorld: WorldState = {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-            },
-        },
-        conversations: {
-            dm_viral: {
-                id: "dm_viral",
-                type: "dm" as const,
-                name: "Drama 👑",
-                avatar: undefined,
-                messages: [],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_viral",
-            },
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: "phone",
-            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
-            activeEffects: [],
-            transform: {
-                translateX: 0, translateY: 0, scale: 1, rotation: 0,
-                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: DEFAULT_AUDIO_STATE,
-    };
-
-    // =========================================================================
-    // TIMELINE - NO CAMERA EVENTS!
-    // DirectorLite handles all camera movement based on signals.
-    // =========================================================================
-    const events: TimelineEvent[] = [
-        // ACT 1: THE SETUP (0s - 12s)
-        dsl.receive(30, "Drama 👑", "hey girl, you free tonight?"),
-
-        // User types reply - show keyboard
-        dsl.keyboardShow(50),
-        dsl.keyDown(52, "m"), dsl.keyUp(54),
-        dsl.keyDown(57, "a"), dsl.keyUp(59),
-        dsl.keyDown(62, "y"), dsl.keyUp(64),
-        dsl.send(66, "maybe, what's up?"),
-        dsl.keyboardHide(68),
-
-        dsl.receive(96, "Drama 👑", "need to talk to you about something 😬"),
-        dsl.typingStart(141, "Drama 👑"),
-        dsl.typingEnd(165, "Drama 👑"),
-        dsl.receive(168, "Drama 👑", "it's about jake..."),
-
-        // User types shocked reply
-        dsl.keyboardShow(200),
-        dsl.typingStart(204, "You"),
-        dsl.keyDown(206, "w"), dsl.keyUp(208),
-        dsl.keyDown(210, "a"), dsl.keyUp(212),
-        dsl.keyDown(214, "i"), dsl.keyUp(216),
-        dsl.keyDown(218, "t"), dsl.keyUp(220),
-        dsl.typingEnd(222, "You"),
-        dsl.send(225, "wait what about jake???"),
-        dsl.keyboardHide(227),
-
-        // ACT 2: THE BUILDUP (12s - 24s)
-        dsl.typingStart(270, "Drama 👑"),
-        dsl.typingEnd(360, "Drama 👑"),
-        dsl.receive(363, "Drama 👑", "so... remember when i said he was acting weird?"),
-
-        // Quick reply
-        dsl.keyboardShow(395),
-        dsl.keyDown(398, "y"), dsl.keyUp(400),
-        dsl.keyDown(403, "e"), dsl.keyUp(405),
-        dsl.send(408, "yeah..."),
-        dsl.keyboardHide(410),
-
-        dsl.typingStart(432, "Drama 👑"),
-        dsl.typingEnd(492, "Drama 👑"),
-        dsl.receive(495, "Drama 👑", "i found something on his phone"),
-
-        // Shocked reaction
-        dsl.keyboardShow(515),
-        dsl.keyDown(518, "o"), dsl.keyUp(520),
-        dsl.keyDown(523, "m"), dsl.keyUp(525),
-        dsl.keyDown(527, "g"), dsl.keyUp(529),
-        dsl.send(531, "OMG WHAT"),
-        dsl.keyboardHide(533),
-
-        dsl.receive(549, "Drama 👑", "he's been texting someone"),
-
-        // Frantic typing
-        dsl.keyboardShow(560),
-        dsl.keyDown(563, "w"), dsl.keyUp(565),
-        dsl.keyDown(567, "h"), dsl.keyUp(569),
-        dsl.keyDown(570, "o"), dsl.keyUp(571),
-        dsl.send(573, "WHO???"),
-        dsl.keyboardHide(575),
-
-        dsl.typingStart(591, "Drama 👑"),
-        dsl.typingEnd(666, "Drama 👑"),
-
-        // ACT 3: THE CLIMAX (24s - 36s)
-        dsl.receive(669, "Drama 👑", "IT'S MY BEST FRIEND SARAH!!!! 😭😭😭"),
-
-        // Shocked reaction
-        dsl.keyboardShow(715),
-        dsl.keyDown(718, "n"), dsl.keyUp(720),
-        dsl.keyDown(722, "o"), dsl.keyUp(724),
-        dsl.send(729, "NO. WAY."),
-        dsl.keyboardHide(731),
-
-        dsl.receive(759, "Drama 👑", "i have screenshots"),
-
-        // Demanding
-        dsl.keyboardShow(770),
-        dsl.keyDown(773, "s"), dsl.keyUp(775),
-        dsl.keyDown(777, "e"), dsl.keyUp(779),
-        dsl.keyDown(780, "n"), dsl.keyUp(781),
-        dsl.send(783, "send them RIGHT NOW"),
-        dsl.keyboardHide(785),
-
-        dsl.typingStart(801, "Drama 👑"),
-        dsl.typingEnd(846, "Drama 👑"),
-        dsl.receive(849, "Drama 👑", "they've been meeting up for 3 MONTHS"),
-
-        // Supportive message
-        dsl.keyboardShow(880),
-        dsl.keyDown(883, "o"), dsl.keyUp(885),
-        dsl.keyDown(887, "m"), dsl.keyUp(889),
-        dsl.keyDown(890, "g"), dsl.keyUp(891),
-        dsl.send(894, "omg babe im so sorry 💔"),
-        dsl.keyboardHide(896),
-
-        dsl.receive(924, "Drama 👑", "what do i do??? 😭"),
-
-        // Rapid fire supportive messages
-        dsl.keyboardShow(955),
-        dsl.keyDown(958, "i"), dsl.keyUp(960),
-        dsl.keyDown(962, "m"), dsl.keyUp(964),
-        dsl.send(969, "im coming over"),
-        dsl.keyDown(975, "d"), dsl.keyUp(977),
-        dsl.keyDown(979, "o"), dsl.keyUp(981),
-        dsl.send(984, "dont do anything yet"),
-        dsl.keyDown(990, "w"), dsl.keyUp(992),
-        dsl.keyDown(994, "e"), dsl.keyUp(996),
-        dsl.send(999, "we need to talk in person 💕"),
-        dsl.keyboardHide(1001),
-
-        // ACT 4: THE RESOLUTION (36s - 45s)
-        dsl.typingStart(1050, "Drama 👑"),
-        dsl.typingEnd(1110, "Drama 👑"),
-        dsl.receive(1113, "Drama 👑", "ok... thank you 😢"),
-
-        // Sweet reply
-        dsl.keyboardShow(1140),
-        dsl.keyDown(1143, "a"), dsl.keyUp(1145),
-        dsl.keyDown(1148, "l"), dsl.keyUp(1150),
-        dsl.keyDown(1152, "w"), dsl.keyUp(1154),
-        dsl.send(1158, "always here for you ❤️"),
-        dsl.keyboardHide(1160),
-
-        dsl.receive(1194, "Drama 👑", "im so lucky to have you as a friend"),
-
-        // Final supportive message
-        dsl.keyboardShow(1225),
-        dsl.keyDown(1228, "t"), dsl.keyUp(1230),
-        dsl.keyDown(1232, "h"), dsl.keyUp(1234),
-        dsl.keyDown(1235, "a"), dsl.keyUp(1236),
-        dsl.send(1239, "that's what besties are for 💕"),
-        dsl.keyboardHide(1241),
-
-        dsl.receive(1284, "Drama 👑", "see you soon 💛"),
-
-        // Last message
-        dsl.keyboardShow(1300),
-        dsl.keyDown(1303, "b"), dsl.keyUp(1305),
-        dsl.keyDown(1307, "e"), dsl.keyUp(1309),
-        dsl.send(1314, "be there in 20 🚗"),
-        dsl.keyboardHide(1316),
-    ];
-
-    return { initialWorld, events };
-}
-
-// =============================================================================
-// VIDEO COMPONENT
-// =============================================================================
-
-export const AutoDirectorShowcase: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    const episode = useMemo(() => createAutoDirectorEpisode(), []);
-    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
-
-    // Determine current act for display
-    const getActLabel = (t: number): string => {
-        if (t < 270) return "ACT 1: THE SETUP";
-        if (t < 669) return "ACT 2: THE BUILDUP";
-        if (t < 1050) return "ACT 3: THE CLIMAX 🔥";
-        return "ACT 4: RESOLUTION";
-    };
-
-    const getSignalLabel = (t: number): string => {
-        // Check recent events to determine signal
-        const recentEvents = episode.events.filter(e => e.at <= t && e.at > t - 30);
-        for (const e of recentEvents.reverse()) {
-            if ((e as any).type === "TYPING_START") return "Signal: TypingStarted → subtle";
-            if ((e as any).type === "MESSAGE_RECEIVED") {
-                if ((e as any).from === "me") return "Signal: NewMessage → message";
-                return "Signal: NewMessage → punchGlide";
-            }
-        }
-        return "Director: Reactive";
-    };
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            {/* Demo label */}
-            <div style={{
-                position: "absolute",
-                top: 40,
-                left: 40,
-                color: "#ffffff80",
-                fontSize: 24,
-                fontFamily: "system-ui, sans-serif",
-                fontWeight: 500,
-                zIndex: 100,
-            }}>
-                🎬 AUTOMATIC DirectorLite Demo
-            </div>
-
-            {/* Act indicator */}
-            <div style={{
-                position: "absolute",
-                top: 80,
-                left: 40,
-                color: "#00ff88",
-                fontSize: 18,
-                fontFamily: "monospace",
-                zIndex: 100,
-            }}>
-                {getActLabel(t)}
-            </div>
-
-            {/* Signal indicator */}
-            <div style={{
-                position: "absolute",
-                top: 110,
-                left: 40,
-                color: "#ffaa00",
-                fontSize: 14,
-                fontFamily: "monospace",
-                zIndex: 100,
-            }}>
-                {getSignalLabel(t)}
-            </div>
-
-            {/* 100% Automatic badge */}
-            <div style={{
-                position: "absolute",
-                top: 40,
-                right: 40,
-                color: "#00ff88",
-                fontSize: 14,
-                fontFamily: "monospace",
-                backgroundColor: "#00ff8820",
-                padding: "8px 16px",
-                borderRadius: 8,
-                border: "1px solid #00ff8840",
-                zIndex: 100,
-            }}>
-                100% AUTOMATIC CAMERA
-            </div>
-
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}   // 👈 ENABLED!
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-
-export default AutoDirectorShowcase;
-````
-
 ## File: apps/video-runner/src/FullRealityShowcase.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -33985,622 +31432,89 @@ export const KeyboardTypingShowcase: React.FC = () => {
 export default KeyboardTypingShowcase;
 ````
 
-## File: apps/video-runner/src/ManualCameraShowcase.tsx
+## File: apps/video-runner/src/PhoneCallShowcase.tsx
 ````typescript
-/**
- * ============================================================================
- * MANUAL CAMERA SHOWCASE - Video Runner Component
- * ============================================================================
- * 
- * Demonstrates 100% MANUAL camera via explicit anchor-based DSL.
- * DirectorLite is DISABLED - all camera movement is authored.
- * 
- * FEATURES DEMONSTRATED:
- * - anchorFocus(): one-time focus on anchor
- * - anchorTrack(): continuous tracking with smoothing
- * - punchGlide(): webseries signature combo
- * - hold(): let viewer read
- * 
- * CAMERA PERSONALITY: "A seasoned cinematographer with full creative control."
- */
-
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE } from "@tokovo/core";
-import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    PluginManagerClass
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { PhonePlugin } from "@tokovo/apps-phone";
 
-// Import device reducer to ensure it's registered
+// Import device reducer
 import "@tokovo/devices";
 
-// Register anchor providers for semantic camera system
-registerBuiltInAnchorProviders();
+// Import DSL event factories
+import { dsl } from "@tokovo/dsl";
+
+/**
+ * Phone Call Showcase
+ *
+ * Demonstrates the phone call simulation:
+ * - iOS Contact Poster (iOS 17+) incoming call
+ * - Call answer and active call screen
+ * - Call controls (mute, speaker)
+ * - Call end
+ */
 
 // =============================================================================
-// DSL HELPERS
+// CONSTANTS
 // =============================================================================
 
-const dsl = {
-    receive: (at: number, from: string, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: "dm_bff",
-        from,
-        text,
-    } as any),
+const DEVICE_ID = "phone";
 
-    send: (at: number, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: "dm_bff",
-        from: "me",
-        text,
-    } as any),
-
-    typingStart: (at: number, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_START",
-        conversationId: "dm_bff",
-        from,
-    } as any),
-
-    typingEnd: (at: number, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_END",
-        conversationId: "dm_bff",
-        from,
-    } as any),
-
-    // Keyboard events
-    keyboardShow: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SHOW",
-        deviceId: "phone",
-        layout: "qwerty",
-    } as any),
-
-    keyboardHide: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "HIDE",
-        deviceId: "phone",
-    } as any),
-
-    keyDown: (at: number, key: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "KEY_DOWN",
-        deviceId: "phone",
-        key,
-    } as any),
-
-    keyUp: (at: number): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "KEY_UP",
-        deviceId: "phone",
-    } as any),
-};
-
-// Camera DSL helpers (v1 locked values)
-const camera = {
-    anchorFocus: (at: number, anchor: string, preset: string, shake = 0): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_FOCUS",
-        anchor,
-        preset,
-        duration: getPresetDuration(preset),
-        shake,
-        easing: getPresetEasing(preset),
-    } as any),
-
-    anchorTrack: (at: number, anchor: string, duration: number, smoothing: number, preset?: string): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_TRACK",
-        anchor,
-        duration,
-        smoothing,
-        preset: preset ?? "operatorFollow",
-        easing: "ease-out",
-    } as any),
-
-    hold: (at: number, duration: number): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "HOLD",
-        duration,
-    } as any),
-
-    punchGlide: (at: number, anchor: string): TimelineEvent[] => [
-        {
-            at,
-            kind: "CAMERA",
-            type: "ANCHOR_FOCUS",
-            anchor,
-            preset: "impact",
-            duration: 14,
-            shake: 4,
-            easing: "expoOut",
-        } as any,
-        {
-            at: at + 14,
-            kind: "CAMERA",
-            type: "ANCHOR_TRACK",
-            anchor,
-            duration: 30,
-            smoothing: 0.18,
-            preset: "operatorFollow",
-            easing: "ease-out",
-        } as any,
-    ],
-};
-
-function getPresetDuration(preset: string): number {
-    switch (preset) {
-        case "message": return 22;
-        case "subtle": return 30;
-        case "impact": return 14;
-        case "snap": return 8;
-        case "operatorFollow": return 40;
-        case "establish": return 30;
-        case "reset": return 20;
-        case "interrupt": return 10;
-        default: return 22;
-    }
-}
-
-function getPresetEasing(preset: string): string {
-    switch (preset) {
-        case "impact": return "expoOut";
-        case "subtle": return "cinematic";
-        default: return "ease-out";
-    }
-}
+// Starting time: 3:30 PM
+const START_TIME = new Date();
+START_TIME.setHours(15, 30, 0, 0);
 
 // =============================================================================
-// EPISODE CREATION - 100% MANUAL CAMERA CONTROL
+// EPISODE DEFINITION
 // =============================================================================
 
-function createManualCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
     const initialWorld: WorldState = {
         devices: {
-            phone: {
-                id: "phone",
+            [DEVICE_ID]: {
+                id: DEVICE_ID,
                 profileId: "iphone16",
                 isLocked: false,
-                foregroundAppId: "app_whatsapp",
+                foregroundAppId: "app_phone",
                 notifications: [],
+                os: {
+                    clock: START_TIME.getTime(),
+                    battery: 92,
+                    charging: false,
+                    network: "wifi" as const,
+                    wifiStrength: 3,
+                    cellStrength: 4,
+                    dnd: false,
+                    lowPowerMode: false,
+                    airplaneMode: false,
+                    notifications: [],
+                    notificationHistory: [],
+                },
             },
         },
-        conversations: {
-            dm_bff: {
-                id: "dm_bff",
-                type: "dm" as const,
-                name: "BFF 💎",
-                avatar: undefined,
-                messages: [],
-                typing: {},
-            },
-        },
+        conversations: {},
         appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_bff",
+            app_phone: {
+                screen: "recents",
             },
         },
         camera: {
             baseView: "APP_VIEW" as const,
-            activeDeviceId: "phone",
-            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
+            activeDeviceId: DEVICE_ID,
             activeEffects: [],
-            transform: {
-                translateX: 0, translateY: 0, scale: 1, rotation: 0,
-                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
-            },
             deviceTransforms: {},
-        },
-        audio: DEFAULT_AUDIO_STATE,
-    };
-
-    // =========================================================================
-    // TIMELINE WITH MANUAL CAMERA CONTROL
-    // Each camera movement is explicitly authored.
-    // =========================================================================
-    const events: TimelineEvent[] = [
-        // SCENE 1: ESTABLISHING (0s - 5s)
-        camera.anchorFocus(0, "device", "establish"),
-        camera.hold(30, 60),
-
-        // SCENE 2: CASUAL EXCHANGE (5s - 15s)
-        dsl.receive(150, "BFF 💎", "guess what just happened! 🤩"),
-        camera.anchorFocus(150, "lastMessage", "message"),
-
-        // User types with keyboard
-        dsl.keyboardShow(180),
-        dsl.keyDown(183, "w"), dsl.keyUp(185),
-        dsl.keyDown(187, "h"), dsl.keyUp(189),
-        dsl.keyDown(191, "a"), dsl.keyUp(193),
-        dsl.send(195, "what?? tell me everything!!"),
-        camera.anchorFocus(195, "lastMessage", "message"),
-        dsl.keyboardHide(197),
-
-        dsl.receive(231, "BFF 💎", "remember that guy from the party?"),
-        camera.anchorFocus(231, "lastMessage", "message"),
-
-        // User types
-        dsl.keyboardShow(245),
-        dsl.keyDown(248, "t"), dsl.keyUp(250),
-        dsl.keyDown(252, "h"), dsl.keyUp(254),
-        dsl.keyDown(256, "e"), dsl.keyUp(258),
-        dsl.send(261, "the tall one with the glasses? 👀"),
-        camera.anchorFocus(261, "lastMessage", "message"),
-        dsl.keyboardHide(263),
-
-        dsl.receive(291, "BFF 💎", "YES!! him!!"),
-        camera.anchorFocus(291, "lastMessage", "snap"),  // Quick snap for excitement
-
-        dsl.typingStart(321, "BFF 💎"),
-        camera.anchorFocus(321, "inputArea", "subtle"),  // Typing anticipation
-
-        dsl.typingEnd(381, "BFF 💎"),
-        dsl.receive(384, "BFF 💎", "he asked for my number!!!"),
-        camera.anchorFocus(384, "lastMessage", "message"),
-        camera.hold(406, 30),
-
-        // SCENE 3: EXCITEMENT (15s - 25s)
-        dsl.keyboardShow(435),
-        dsl.keyDown(438, "n"), dsl.keyUp(440),
-        dsl.keyDown(442, "o"), dsl.keyUp(444),
-        dsl.keyDown(446, "!"), dsl.keyUp(448),
-        dsl.send(450, "NO WAY!!! 🎉🎉🎉"),
-        camera.anchorFocus(450, "lastMessage", "snap", 2),  // Snap with shake!
-        dsl.keyboardHide(452),
-
-        dsl.receive(474, "BFF 💎", "I KNOW RIGHT"),
-        camera.anchorFocus(474, "lastMessage", "snap"),
-
-        // More typing
-        dsl.keyboardShow(480),
-        dsl.keyDown(483, "d"), dsl.keyUp(485),
-        dsl.keyDown(487, "i"), dsl.keyUp(489),
-        dsl.send(492, "did you give it to him?!"),
-        camera.anchorFocus(492, "lastMessage", "message"),
-        dsl.keyboardHide(494),
-
-        dsl.typingStart(522, "BFF 💎"),
-        camera.anchorFocus(522, "inputArea", "subtle"),  // Dramatic pause
-
-        dsl.typingEnd(597, "BFF 💎"),
-        dsl.receive(600, "BFF 💎", "we've been texting all day!! 💕"),
-        camera.anchorFocus(600, "lastMessage", "impact", 5),  // THE REVEAL with impact!
-        camera.hold(614, 45),
-
-        dsl.keyboardShow(645),
-        dsl.keyDown(648, "s"), dsl.keyUp(650),
-        dsl.keyDown(652, "c"), dsl.keyUp(654),
-        dsl.keyDown(656, "r"), dsl.keyUp(658),
-        dsl.send(660, "SCREAMING"),
-        camera.anchorFocus(660, "lastMessage", "snap"),
-
-        dsl.keyDown(668, "w"), dsl.keyUp(670),
-        dsl.keyDown(672, "h"), dsl.keyUp(674),
-        dsl.keyDown(675, "a"), dsl.keyUp(676),
-        dsl.send(678, "what did he say??"),
-        camera.anchorFocus(678, "lastMessage", "snap"),
-        dsl.keyboardHide(680),
-
-        dsl.receive(702, "BFF 💎", "he wants to take me to dinner 🍝"),
-        camera.anchorFocus(702, "lastMessage", "impact", 3),
-
-        // SCENE 4: WEBSERIES MOMENT (25s - 35s)
-        dsl.keyboardShow(735),
-        dsl.keyDown(738, "o"), dsl.keyUp(740),
-        dsl.keyDown(742, "m"), dsl.keyUp(744),
-        dsl.keyDown(746, "g"), dsl.keyUp(748),
-        dsl.send(750, "OMG WHEN??? WHERE???"),
-        camera.anchorFocus(750, "lastMessage", "snap", 2),
-        dsl.keyboardHide(752),
-
-        dsl.typingStart(780, "BFF 💎"),
-        camera.anchorFocus(780, "inputArea", "subtle"),
-
-        dsl.typingEnd(825, "BFF 💎"),
-        dsl.receive(828, "BFF 💎", "TOMORROW NIGHT!! at that fancy italian place downtown 🍷✨"),
-        // THE BIG MOMENT - PUNCH + GLIDE!
-        ...camera.punchGlide(828, "lastMessage"),
-        camera.hold(872, 45),
-
-        dsl.keyboardShow(905),
-        dsl.keyDown(908, "y"), dsl.keyUp(910),
-        dsl.keyDown(912, "o"), dsl.keyUp(914),
-        dsl.keyDown(916, "u"), dsl.keyUp(918),
-        dsl.send(921, "you're gonna look SO good"),
-        camera.anchorFocus(921, "lastMessage", "message"),
-        dsl.keyboardHide(923),
-
-        dsl.receive(951, "BFF 💎", "i have nothing to wear 😩"),
-        camera.anchorFocus(951, "lastMessage", "message"),
-
-        dsl.keyboardShow(970),
-        dsl.keyDown(973, "s"), dsl.keyUp(975),
-        dsl.keyDown(977, "h"), dsl.keyUp(979),
-        dsl.keyDown(981, "o"), dsl.keyUp(983),
-        dsl.keyDown(984, "p"), dsl.keyUp(985),
-        dsl.send(987, "shopping spree TONIGHT"),
-        camera.anchorFocus(987, "lastMessage", "snap"),
-
-        dsl.keyDown(995, "i"), dsl.keyUp(997),
-        dsl.keyDown(1000, "k"), dsl.keyUp(1002),
-        dsl.keyDown(1005, "n"), dsl.keyUp(1007),
-        dsl.keyDown(1008, "o"), dsl.keyUp(1009),
-        dsl.send(1011, "i know the perfect dress for you 💃"),
-        camera.anchorTrack(1011, "lastMessage", 40, 0.18, "operatorFollow"),
-        dsl.keyboardHide(1013),
-
-        // SCENE 5: RESOLUTION (35s - 45s)
-        dsl.receive(1056, "BFF 💎", "you're the best friend ever 😭💕"),
-        camera.anchorTrack(1056, "lastMessage", 35, 0.18, "operatorFollow"),
-
-        dsl.keyboardShow(1085),
-        dsl.keyDown(1088, "a"), dsl.keyUp(1090),
-        dsl.keyDown(1092, "l"), dsl.keyUp(1094),
-        dsl.keyDown(1096, "w"), dsl.keyUp(1098),
-        dsl.send(1101, "always got your back babe ❤️"),
-        camera.anchorFocus(1101, "lastMessage", "message"),
-        dsl.keyboardHide(1103),
-
-        dsl.receive(1137, "BFF 💎", "mall at 6?"),
-        camera.anchorFocus(1137, "lastMessage", "message"),
-
-        dsl.keyboardShow(1150),
-        dsl.keyDown(1153, "s"), dsl.keyUp(1155),
-        dsl.keyDown(1157, "e"), dsl.keyUp(1159),
-        dsl.keyDown(1161, "e"), dsl.keyUp(1163),
-        dsl.send(1167, "see you then! 🛍️"),
-        camera.anchorFocus(1167, "lastMessage", "snap"),
-        dsl.keyboardHide(1169),
-
-        dsl.receive(1212, "BFF 💎", "love you!!! 💎"),
-        camera.anchorFocus(1212, "lastMessage", "message"),
-
-        dsl.keyboardShow(1240),
-        dsl.keyDown(1243, "l"), dsl.keyUp(1245),
-        dsl.keyDown(1247, "o"), dsl.keyUp(1249),
-        dsl.keyDown(1251, "v"), dsl.keyUp(1253),
-        dsl.keyDown(1254, "e"), dsl.keyUp(1255),
-        dsl.send(1257, "love you more!! 💕💕💕"),
-        camera.anchorFocus(1257, "lastMessage", "message"),
-        dsl.keyboardHide(1259),
-        camera.hold(1279, 45),
-
-        // Final reset
-        camera.anchorFocus(1326, "device", "reset"),
-    ];
-
-    return { initialWorld, events };
-}
-
-// =============================================================================
-// VIDEO COMPONENT
-// =============================================================================
-
-export const ManualCameraShowcase: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    const episode = useMemo(() => createManualCameraEpisode(), []);
-    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
-
-    // Determine current scene/preset for display
-    const getSceneLabel = (t: number): string => {
-        if (t < 150) return "SCENE 1: ESTABLISHING";
-        if (t < 450) return "SCENE 2: CASUAL EXCHANGE";
-        if (t < 750) return "SCENE 3: EXCITEMENT 🎉";
-        if (t < 1056) return "SCENE 4: WEBSERIES MOMENT 🎬";
-        return "SCENE 5: RESOLUTION 💕";
-    };
-
-    const getPresetLabel = (t: number): string => {
-        // Find most recent camera event
-        const cameraEvents = episode.events.filter(e => (e as any).kind === "CAMERA" && e.at <= t);
-        if (cameraEvents.length === 0) return "";
-
-        const lastCamera = cameraEvents[cameraEvents.length - 1] as any;
-        const type = lastCamera.type;
-        const preset = lastCamera.preset || "";
-        const shake = lastCamera.shake ? `, shake: ${lastCamera.shake}` : "";
-
-        if (type === "ANCHOR_FOCUS") return `anchorFocus("${lastCamera.anchor}", "${preset}"${shake})`;
-        if (type === "ANCHOR_TRACK") return `anchorTrack("${lastCamera.anchor}", ${lastCamera.duration}f, ${lastCamera.smoothing})`;
-        if (type === "HOLD") return `hold(${lastCamera.duration}f)`;
-        return type;
-    };
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            {/* Demo label */}
-            <div style={{
-                position: "absolute",
-                top: 40,
-                left: 40,
-                color: "#ffffff80",
-                fontSize: 24,
-                fontFamily: "system-ui, sans-serif",
-                fontWeight: 500,
-                zIndex: 100,
-            }}>
-                🎬 MANUAL Camera DSL Demo
-            </div>
-
-            {/* Scene indicator */}
-            <div style={{
-                position: "absolute",
-                top: 80,
-                left: 40,
-                color: "#00ff88",
-                fontSize: 18,
-                fontFamily: "monospace",
-                zIndex: 100,
-            }}>
-                {getSceneLabel(t)}
-            </div>
-
-            {/* Preset indicator */}
-            <div style={{
-                position: "absolute",
-                top: 110,
-                left: 40,
-                color: "#ffaa00",
-                fontSize: 14,
-                fontFamily: "monospace",
-                zIndex: 100,
-                maxWidth: 500,
-            }}>
-                {getPresetLabel(t)}
-            </div>
-
-            {/* 100% Manual badge */}
-            <div style={{
-                position: "absolute",
-                top: 40,
-                right: 40,
-                color: "#ff8800",
-                fontSize: 14,
-                fontFamily: "monospace",
-                backgroundColor: "#ff880020",
-                padding: "8px 16px",
-                borderRadius: 8,
-                border: "1px solid #ff880040",
-                zIndex: 100,
-            }}>
-                100% MANUAL CAMERA
-            </div>
-
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={false}  // 👈 DISABLED! All camera is manual.
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-
-export default ManualCameraShowcase;
-````
-
-## File: apps/video-runner/src/WhatsappCompleteShowcaseVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * WhatsApp Complete Showcase Video
- * 
- * Comprehensive demonstration of all WhatsApp features:
- * - Chat list screen with multiple conversations
- * - Group chat navigation  
- * - Mixed media messages (image, video, gif, voice)
- * - Typing indicators and reactions
- * - Camera effects (zoom, shake)
- */
-
-// Define episode data (cast through unknown to bypass strict type checks)
-const episodeData = {
-    initialWorld: {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                ownerName: "me",
-                notifications: []
-            }
-        },
-        conversations: {
-            family_group: {
-                id: "family_group",
-                type: "group",
-                name: "Family Group 👨‍👩‍👧‍👦",
-                avatar: "",
-                members: [
-                    { id: "mom", name: "Mom" },
-                    { id: "dad", name: "Dad" },
-                    { id: "sister", name: "Sister" },
-                    { id: "me", name: "me" }
-                ],
-                messages: [
-                    {
-                        id: "fg1",
-                        from: "Mom",
-                        text: "Dinner at 7pm tonight!",
-                        type: "text",
-                        status: "read"
-                    }
-                ],
-                typing: {}
+            layout: {
+                mode: "SINGLE" as const,
+                primaryDeviceId: DEVICE_ID,
             },
-            bestie: {
-                id: "bestie",
-                type: "dm",
-                name: "Best Friend 💕",
-                avatar: "",
-                messages: [
-                    {
-                        id: "b1",
-                        from: "Best Friend 💕",
-                        text: "Hey! Are you free?",
-                        type: "text",
-                        status: "read"
-                    }
-                ],
-                typing: {}
-            }
-        },
-        appState: {
-            activeApp: "whatsapp",
-            app_whatsapp: {
-                screen: "chats-list"
-            }
-        },
-        camera: {
-            baseView: "APP_VIEW",
-            activeDeviceId: "phone",
-            layout: "SINGLE",
-            deviceTransforms: {},
-            activeEffects: [],
             transform: {
                 translateX: 0,
                 translateY: 0,
@@ -34609,265 +31523,111 @@ const episodeData = {
                 originX: 0.5,
                 originY: 0.5,
                 shakeX: 0,
-                shakeY: 0
-            }
+                shakeY: 0,
+            },
         },
         audio: {
-            activeSounds: {}
-        }
-    },
-    events: [
-        // Navigate to chat
-        {
-            at: 60,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "SCREEN_CHANGE",
-            screen: "chat",
-            conversationId: "family_group"
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            },
         },
-        // Sister typing
-        {
-            at: 120,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "family_group",
-            from: "Sister"
-        },
-        // Sister sends image
-        {
-            at: 180,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "family_group",
-            from: "Sister"
-        },
-        {
-            at: 180,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "Sister",
-            message: {
-                id: "fg2",
-                type: "image",
-                imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600",
-                caption: "Made this for dinner! 🍝"
-            }
-        },
-        // I send reply
-        {
-            at: 300,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "me",
-            text: "OMG looks delicious! 😍"
-        },
-        // Dad voice message
-        {
-            at: 450,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "VOICE_MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "Dad",
-            duration: 8
-        },
-        // Sister text
-        {
-            at: 600,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "Sister",
-            text: "Can't wait to see everyone! 🎉"
-        },
-        // Mom video
-        {
-            at: 750,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "Mom",
-            message: {
-                id: "fg7",
-                type: "video",
-                thumbnailUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=600",
-                duration: 15,
-                caption: "Setting up the table 🍽️"
-            }
-        },
-        // Final message
-        {
-            at: 900,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "family_group",
-            from: "me",
-            text: "See you all soon! 🚗💨"
-        }
-    ]
-} as unknown as { initialWorld: WorldState; events: TimelineEvent[] };
+    };
 
-export const WhatsappCompleteShowcaseVideo: React.FC = () => {
+    // Timeline events - Phone call story (NO camera effects)
+    const events: TimelineEvent[] = [
+        // Set initial time
+        dsl.os.setTime(0, START_TIME.getTime()),
+
+        // Frame 60 (2 seconds) - Incoming call arrives
+        dsl.call.incoming(60, "alice_123", "Alice Johnson", {
+            displayMode: "fullscreen",
+            isVideo: false,
+            callType: "voice",
+            posterImage: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400",
+        }),
+
+        // Answer after 4 seconds
+        dsl.call.answer(180),
+
+        // Toggle mute at 6 seconds
+        dsl.call.toggleMute(210),
+
+        // Toggle speaker at 7 seconds
+        dsl.call.toggleSpeaker(240),
+
+        // Unmute at 8 seconds
+        dsl.call.toggleMute(270),
+
+        // End call
+        dsl.call.end(330),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
+export const PhoneCallShowcase: React.FC = () => {
     const frame = useCurrentFrame();
-    const t = frame;
 
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episodeData.events),
-        []
-    );
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(PhonePlugin);
+        return pm;
+    }, []);
 
-    // Replay world state at current time
-    const world = replay(episodeData.initialWorld, episodeData.events, t);
+    // Create episode
+    const episode = useMemo(() => createPhoneCallEpisode(), []);
 
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
+    // Compute world state at current frame
+    const worldState = useMemo(() => {
+        return replay(episode.initialWorld, episode.events, frame);
+    }, [episode, frame]);
 
     return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
+        <AbsoluteFill
+            style={{
+                backgroundColor: "#0a0a1a",
+                justifyContent: "center",
+                alignItems: "center",
+            }}
+        >
+            {/* Audio Layer */}
+            <AudioLayer world={worldState} t={frame} />
+
+            {/* Renderer - centered like FullCinematicShowcase */}
+            <div
+                style={{
+                    transform: "scale(0.5)",
+                    transformOrigin: "center center",
+                }}
+            >
                 <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
+                    world={worldState}
+                    t={frame}
+                    pluginManager={pluginManager}
+                    debug={true}
                 />
             </div>
         </AbsoluteFill>
     );
 };
-````
 
-## File: packages/apps-instagram/src/index.ts
-````typescript
-import { ReducerRegistry } from "@tokovo/core";
-import { instagramRuntime } from "./runtime";
-
-ReducerRegistry.registerAppReducer("app_instagram", instagramRuntime);
-
-export * from "./runtime";
-export * from "./ui";
-export * from "./types";
-import { AppRegistry, APP_IDS } from "@tokovo/core";
-import { InstagramApp } from "./ui";
-
-AppRegistry.register(APP_IDS.INSTAGRAM, InstagramApp as any);
-
-export * from "./notification-adapter";
-````
-
-## File: packages/apps-instagram/src/runtime.ts
-````typescript
-import { WorldState, TimelineEvent } from "@tokovo/core";
-
-import { initialInstagramState, InstagramState } from "./types";
-
-export const instagramRuntime = (draft: WorldState, event: TimelineEvent) => {
-    if (event.kind !== "APP" || event.appId !== "app_instagram") return;
-
-    // Initialize app state if missing
-    if (!draft.appState) {
-        draft.appState = {};
-    }
-    if (!draft.appState["app_instagram"]) {
-        draft.appState["app_instagram"] = initialInstagramState;
-    }
-
-    const appState = draft.appState["app_instagram"] as InstagramState;
-
-    // Handle generic custom events
-    if (event.type === "CUSTOM") {
-        console.log(`[InstagramRuntime] Processing CUSTOM event: ${event.name}`, event.payload);
-        switch (event.name) {
-            case "NAVIGATE":
-                appState.currentView = event.payload.view;
-
-                // STANDARD CONTRACT ADHERENCE
-                const v = appState.currentView;
-                if (v === "dm" || v === "chat") {
-                    (appState as any).viewMode = "CHAT";
-                } else if (v === "stories") {
-                    (appState as any).viewMode = "STORY";
-                } else if (["feed", "explore", "profile", "reels"].includes(v)) {
-                    (appState as any).viewMode = "FEED";
-                }
-
-                console.log(`[InstagramRuntime] Navigated to: ${appState.currentView} (Mode: ${(appState as any).viewMode})`);
-                break;
-            // Add other custom events here
-        }
-        return;
-    }
-
-    // Legacy/Specific events (DM)
-    const { conversationId, type } = event as any; // Cast to access specific fields if needed
-
-    if (conversationId) {
-        // Ensure conversation exists
-        if (!draft.conversations[conversationId]) {
-            draft.conversations[conversationId] = {
-                id: conversationId,
-                messages: [],
-                typing: {}
-            };
-        }
-
-        const conversation = draft.conversations[conversationId];
-
-        switch (type) {
-            case "MESSAGE_RECEIVED": {
-                const e = event as any;
-                conversation.messages.push({
-                    id: `msg_${Date.now()}_${Math.random()}`,
-                    from: e.from,
-                    text: e.text,
-                    at: event.at,
-                });
-                break;
-            }
-
-            case "TYPING_START": {
-                const e = event as any;
-                if (!conversation.typing) conversation.typing = {};
-                conversation.typing[e.from] = true;
-                break;
-            }
-
-            case "TYPING_END": {
-                const e = event as any;
-                if (conversation.typing) {
-                    conversation.typing[e.from] = false;
-                }
-                break;
-            }
-        }
-    }
+// Video config
+export const phoneCallShowcaseConfig = {
+    id: "PhoneCallShowcase",
+    component: PhoneCallShowcase,
+    durationInFrames: 390, // ~13 seconds at 30fps
+    fps: 30,
+    width: 1920,
+    height: 1080,
 };
 ````
 
@@ -35590,238 +32350,6 @@ export const PhoneApp: React.FC<AppViewProps> = ({ world, deviceId, platform, t 
 };
 ````
 
-## File: packages/apps-spotify/src/index.ts
-````typescript
-/**
- * @tokovo/apps-spotify - Spotify App Package
- * 
- * Features:
- * - Now Playing widget (background music visualization)
- * - Dynamic Island widget (iOS)
- * - Status bar widget (Android)
- * - Full player UI
- * - Notification adapter for music notifications
- */
-
-export * from "./runtime";
-export * from "./ui";
-export * from "./widgets";
-````
-
-## File: packages/apps-spotify/src/runtime.ts
-````typescript
-/**
- * Spotify Runtime Reducer
- * 
- * Handles Spotify-specific events and state updates.
- */
-
-import { produce } from "immer";
-import { WorldState, TimelineEvent, PluginManager } from "@tokovo/core";
-import { SpotifyAppState, DEFAULT_SPOTIFY_STATE, SAMPLE_TRACKS } from "./types";
-
-// =============================================================================
-// EVENT TYPES
-// =============================================================================
-
-export interface SpotifyPlayEvent extends TimelineEvent {
-    kind: "APP";
-    appId: "app_spotify";
-    type: "PLAY_TRACK";
-    trackId?: string;
-    track?: {
-        name: string;
-        artist: string;
-        album?: string;
-        albumArt?: string;
-    };
-}
-
-export interface SpotifyPauseEvent extends TimelineEvent {
-    kind: "APP";
-    appId: "app_spotify";
-    type: "PAUSE";
-}
-
-export interface SpotifyResumeEvent extends TimelineEvent {
-    kind: "APP";
-    appId: "app_spotify";
-    type: "RESUME";
-}
-
-export interface SpotifySkipEvent extends TimelineEvent {
-    kind: "APP";
-    appId: "app_spotify";
-    type: "SKIP_NEXT" | "SKIP_PREVIOUS";
-}
-
-// =============================================================================
-// REDUCER
-// =============================================================================
-
-export function spotifyReducer(
-    world: WorldState,
-    event: TimelineEvent
-): WorldState {
-    if (event.kind !== "APP" || (event as any).appId !== "app_spotify") {
-        return world;
-    }
-
-    return produce(world, (draft) => {
-        // Ensure spotify app state exists
-        if (!draft.appState.app_spotify) {
-            draft.appState.app_spotify = { ...DEFAULT_SPOTIFY_STATE };
-        }
-
-        const spotify = draft.appState.app_spotify as SpotifyAppState;
-        const eventType = (event as any).type;
-
-        switch (eventType) {
-            case "PLAY_TRACK": {
-                const playEvent = event as SpotifyPlayEvent;
-
-                // Find track by ID or use provided track data
-                let track = SAMPLE_TRACKS.find(t => t.id === playEvent.trackId);
-
-                if (!track && playEvent.track) {
-                    // Create track from event data
-                    track = {
-                        id: `track_${event.at}`,
-                        name: playEvent.track.name,
-                        artist: playEvent.track.artist,
-                        album: playEvent.track.album || "Unknown Album",
-                        albumArt: playEvent.track.albumArt,
-                        durationMs: 180000, // Default 3 min
-                    };
-                }
-
-                if (track) {
-                    spotify.nowPlaying = {
-                        track,
-                        state: "playing",
-                        progressMs: 0,
-                        startedAtFrame: event.at,
-                        shuffleEnabled: false,
-                        repeatMode: "off",
-                    };
-                }
-                break;
-            }
-
-            case "PAUSE": {
-                if (spotify.nowPlaying) {
-                    spotify.nowPlaying.state = "paused";
-                }
-                break;
-            }
-
-            case "RESUME": {
-                if (spotify.nowPlaying) {
-                    spotify.nowPlaying.state = "playing";
-                }
-                break;
-            }
-
-            case "SKIP_NEXT": {
-                // For demo, just switch to next sample track
-                if (spotify.nowPlaying) {
-                    const currentIdx = SAMPLE_TRACKS.findIndex(
-                        t => t.id === spotify.nowPlaying?.track.id
-                    );
-                    const nextIdx = (currentIdx + 1) % SAMPLE_TRACKS.length;
-                    spotify.nowPlaying = {
-                        track: SAMPLE_TRACKS[nextIdx],
-                        state: "playing",
-                        progressMs: 0,
-                        startedAtFrame: event.at,
-                        shuffleEnabled: spotify.nowPlaying.shuffleEnabled,
-                        repeatMode: spotify.nowPlaying.repeatMode,
-                    };
-                }
-                break;
-            }
-
-            case "NAVIGATE": {
-                const screen = (event as any).screen;
-                if (screen) {
-                    spotify.screen = screen;
-                }
-                break;
-            }
-
-            case "MINIMIZE": {
-                spotify.isMinimized = true;
-                break;
-            }
-
-            case "MAXIMIZE": {
-                spotify.isMinimized = false;
-                break;
-            }
-        }
-    });
-}
-
-// =============================================================================
-// REGISTER PLUGIN
-// =============================================================================
-
-import { SpotifyDynamicIslandWidget, SpotifyStatusBarWidget } from "./widgets";
-
-// Register Spotify as a plugin with widgets
-PluginManager.register({
-    id: "app_spotify",
-    name: "Spotify",
-    version: "1.0.0",
-    icon: "♪",
-    primaryColor: "#1DB954",
-    reducer: spotifyReducer,
-
-    // Platform-specific widgets
-    widgets: [
-        {
-            mode: "dynamicIsland",
-            platforms: ["ios"],
-            priority: 80,  // Music gets high priority
-            component: SpotifyDynamicIslandWidget as any,
-            expansionModes: ["minimal", "compact", "expanded"],
-        },
-        {
-            mode: "statusBar",
-            platforms: ["android"],
-            priority: 80,
-            component: SpotifyStatusBarWidget as any,
-        },
-    ],
-});
-````
-
-## File: packages/apps-twitter/src/index.ts
-````typescript
-/**
- * @tokovo/apps-twitter
- * 
- * Twitter/X app for Tokovo video generation.
- */
-
-// Plugin registration (side-effect import)
-import "./plugin";
-
-// Exports
-export * from "./config";
-export * from "./components";
-export * from "./runtime";
-export * from "./ui";
-export { TWITTER_APP_ID, registerTwitterApp } from "./plugin";
-
-// Export behaviors (Semantic Camera System)
-export * from "./behaviors";
-
-import { AppRegistry } from "@tokovo/core";
-import { TwitterUI } from "./ui";
-AppRegistry.register("app_twitter", TwitterUI as any);
-````
-
 ## File: packages/apps-whatsapp/src/components/ios/Header.tsx
 ````typescript
 import { UI_CONSTANTS } from "../../config/layout-config";
@@ -35921,495 +32449,6 @@ export const Header: React.FC<{
         </div>
     );
 };
-````
-
-## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
-````typescript
-import React from "react";
-import { getAppConfig, Platform, getTokens } from "@tokovo/core";
-
-// ============================================================================
-// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
-// ============================================================================
-
-interface ImageMessageBubbleProps {
-    imageUrl: string;
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
-}
-
-export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
-    imageUrl,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Image container */}
-            <div style={{
-                position: "relative",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-                // Square bottom corners if caption is below
-                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
-                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
-                overflow: "hidden",
-            }}>
-                <img
-                    src={imageUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* Timestamp overlay on image (when no caption) */}
-                {!caption && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
-                        borderRadius: 12,
-                    }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    {/* Timestamp + Read receipts */}
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
-// VIDEO MESSAGE BUBBLE - With Play Overlay
-// ============================================================================
-
-interface VideoMessageBubbleProps {
-    thumbnailUrl: string;
-    duration: number; // in seconds
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    isPlaying?: boolean;
-    playProgress?: number;
-    platform?: Platform;
-}
-
-export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
-    thumbnailUrl,
-    duration,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    isPlaying = false,
-    playProgress = 0,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    const formatDuration = (secs: number) => {
-        const mins = Math.floor(secs / 60);
-        const s = secs % 60;
-        return `${mins}:${s.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Video thumbnail container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={thumbnailUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* Play button overlay */}
-                {!isPlaying && (
-                    <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
-                        width: 120,
-                        height: 120,
-                        backgroundColor: "rgba(0,0,0,0.6)",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}>
-                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
-                            <path d="M8 5v14l11-7z" />
-                        </svg>
-                    </div>
-                )}
-
-                {/* Duration badge */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    left: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
-                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
-                    </svg>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {formatDuration(duration)}
-                    </span>
-                </div>
-
-                {/* Timestamp overlay (when no caption) */}
-                {!caption && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
-                        borderRadius: 12,
-                    }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
-                )}
-
-                {/* Progress bar during playback */}
-                {isPlaying && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 6,
-                        backgroundColor: "rgba(255,255,255,0.3)",
-                    }}>
-                        <div style={{
-                            height: "100%",
-                            width: `${(playProgress / duration) * 100}%`,
-                            backgroundColor: "#25D366",
-                        }} />
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
-// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
-// ============================================================================
-
-interface GifMessageBubbleProps {
-    gifUrl: string;
-    width?: number;
-    height?: number;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
-}
-
-export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
-    gifUrl,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* GIF container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={gifUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 500,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* GIF badge */}
-                <div style={{
-                    position: "absolute",
-                    top: 12,
-                    left: 12,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: "4px 12px",
-                    borderRadius: 8,
-                }}>
-                    <span style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                        letterSpacing: 1,
-                    }}>
-                        GIF
-                    </span>
-                </div>
-
-                {/* Timestamp overlay */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    right: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {timestamp}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={read} light />}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// ============================================================================
-// SHARED: Double Check Icon for read receipts
-// ============================================================================
-
-const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
-    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
-        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
 ````
 
 ## File: packages/apps-whatsapp/src/screens/ios/ChatScreen.tsx
@@ -37081,6 +33120,347 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
         return { anchors, deviceId, appId: "app_whatsapp" };
     }
 };
+````
+
+## File: packages/apps-whatsapp/src/runtime.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+    // React and reply
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        // Voice-specific fields
+        duration?: number;
+        // Read receipt fields
+        messageId?: string;
+        // Navigation fields
+        screen?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
+        // Ensure appState exists for WhatsApp
+        if (!draft.appState) {
+            draft.appState = {};
+        }
+        if (!draft.appState.app_whatsapp) {
+            draft.appState.app_whatsapp = {};
+        }
+
+        // Update the current screen
+        const screen = appEvent.screen || "chat";
+        draft.appState.app_whatsapp.screen = screen;
+
+        // STANDARD CONTRACT ADHERENCE
+        // Map screen to generic ViewKind
+        if (screen === "chat") {
+            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
+        } else {
+            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
+        }
+
+        // If navigating to a specific conversation
+        if (appEvent.conversationId) {
+            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
+            const msgPayload = appEvent.message || {};
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
+            const newMessage: WhatsAppMessage = {
+                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
+                text: appEvent.text || msgPayload.text,
+                at: event.at,
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
+            break;
+        }
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            if (appEvent.from) {
+                conversation.typing[appEvent.from] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            if (conversation.typing && appEvent.from) {
+                delete conversation.typing[appEvent.from];
+            }
+            break;
+        }
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            (conversation.messages as any[]).push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            } as WhatsAppMessage);
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
+                }
+            }
+            break;
+        }
+
+        case "INPUT_CHANGE": {
+            // "OS-Level Input Management"
+            // The OS has dispatched this event with the raw text from the keyboard.
+            // We update the local conversation draft state.
+            const text = (appEvent as any).payload?.text;
+            if (conversation) {
+                (conversation as any).draftText = text;
+            }
+            break;
+        }
+    }
+}
+
+// Register the reducer with the core engine
+ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
 ````
 
 ## File: packages/apps-whatsapp/package.json
@@ -38991,386 +35371,6 @@ export * from "./schema";
 export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
 ````
 
-## File: packages/ir/src/schemas.ts
-````typescript
-import { z } from "zod";
-import { Trace } from "./trace";
-
-// =============================================================================
-// TRACE SCHEMA
-// =============================================================================
-
-export const TraceSchema = z.object({
-    source: z.object({
-        file: z.string(),
-        line: z.number(),
-        column: z.number().optional(),
-    }).optional(),
-    episodeId: z.string().optional(),
-    deviceId: z.string().optional(),
-    beat: z.number().optional(),
-    trackId: z.string().optional(),
-    sceneOpIndex: z.number().optional(),
-});
-
-// =============================================================================
-// SHARED OP BASE
-// =============================================================================
-
-const TimelineOpBaseSchema = z.object({
-    at: z.number(),
-    trace: TraceSchema,
-});
-
-// =============================================================================
-// DEVICE & APP OPS
-// =============================================================================
-
-export const DeviceUnlockedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("DeviceUnlocked"),
-    deviceId: z.string(),
-});
-
-export const AppOpenedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("AppOpened"),
-    deviceId: z.string(),
-    appId: z.string(),
-});
-
-export const ConversationOpenedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("ConversationOpened"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-});
-
-export const ScreenNavigatedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("ScreenNavigated"),
-    deviceId: z.string(),
-    appId: z.string(),
-    screen: z.string(),
-    conversationId: z.string().optional(),
-    transition: z.enum(["push", "pop", "present", "dismiss"]).optional(),
-});
-
-// =============================================================================
-// TYPING OPS
-// =============================================================================
-
-export const TypingStartedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("TypingStarted"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    actor: z.string(),
-});
-
-export const TypingEndedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("TypingEnded"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    actor: z.string(),
-});
-
-// =============================================================================
-// MESSAGE OPS
-// =============================================================================
-
-const MessagePayloadSchema = z.object({
-    id: z.string(),
-    text: z.string().optional(),
-    from: z.string(),
-    type: z.enum(["text", "image", "video", "gif", "voice", "system", "deleted", "screenshot_alert", "call_missed"]).optional(),
-    timestamp: z.string().optional(),
-    // Media
-    imageUrl: z.string().optional(),
-    videoUrl: z.string().optional(),
-    thumbnailUrl: z.string().optional(),
-    gifUrl: z.string().optional(),
-    caption: z.string().optional(),
-    duration: z.number().optional(),
-    height: z.number().optional(),
-    // Interactions
-    reactions: z.array(z.object({
-        emoji: z.string(),
-        count: z.number(),
-        fromMe: z.boolean().optional(),
-    })).optional(),
-    replyTo: z.object({
-        messageId: z.string(),
-        text: z.string(),
-        from: z.string(),
-        type: z.string().optional(),
-    }).optional(),
-    edited: z.boolean().optional(),
-});
-
-export const MessageReceivedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("MessageReceived"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    message: MessagePayloadSchema,
-});
-
-export const MessageSentOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("MessageSent"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    message: MessagePayloadSchema,
-});
-
-export const MessageReadOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("MessageRead"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    messageId: z.string(),
-});
-
-export const MessageDeletedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("MessageDeleted"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    messageId: z.string(),
-});
-
-export const ReactionAddedOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("ReactionAdded"),
-    deviceId: z.string(),
-    appId: z.string(),
-    conversationId: z.string(),
-    messageId: z.string(),
-    reaction: z.object({
-        emoji: z.string(),
-        count: z.number(),
-        fromMe: z.boolean().optional(),
-    }),
-});
-
-// =============================================================================
-// CAMERA OPS
-// =============================================================================
-
-const EasingSchema = z.enum(["linear", "ease-in", "ease-out", "ease-in-out", "cinematic"]);
-
-export const TimelineCameraZoomOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("CameraZoom"),
-    scale: z.number(),
-    duration: z.number(),
-    originX: z.number().optional(),
-    originY: z.number().optional(),
-    easing: EasingSchema.optional(),
-});
-
-export const TimelineCameraShakeOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("CameraShake"),
-    deviceId: z.string(),
-    intensity: z.number().optional(),
-    frequency: z.number().optional(),
-    decay: z.number().optional(),
-    duration: z.number(),
-});
-
-export const TimelinePOVSwitchOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("POVSwitch"),
-    deviceId: z.string(),
-    transition: z.enum(["cut", "crossfade", "wipe"]).optional(),
-});
-
-export const TimelineSplitPOVOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("SplitPOV"),
-    devices: z.array(z.string()),
-    layout: z.enum(["horizontal", "vertical", "pip", "split-diagonal"]),
-});
-
-export const TimelineAnchorFocusOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("AnchorFocus"),
-    anchor: z.string(),
-    preset: z.string().optional(),
-    shake: z.number().optional(),
-    align: z.object({ x: z.number(), y: z.number() }).optional(),
-    duration: z.number(),
-    easing: EasingSchema.optional(),
-});
-
-export const TimelineAnchorTrackOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("AnchorTrack"),
-    anchor: z.string(),
-    duration: z.number(),
-    smoothing: z.number().optional(),
-    preset: z.string().optional(),
-    align: z.object({ x: z.number(), y: z.number() }).optional(),
-    easing: EasingSchema.optional(),
-});
-
-// =============================================================================
-// KEYBOARD OPS
-// =============================================================================
-
-export const KeyboardTypeOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("KeyboardType"),
-    text: z.string(),
-});
-
-export const KeyboardInputOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("KeyboardInput"),
-    type: z.enum(["keyDown", "keyUp"]),
-    key: z.string(),
-});
-
-export const CustomOpSchema = TimelineOpBaseSchema.extend({
-    kind: z.literal("Custom"),
-    deviceId: z.string().optional(),
-    appId: z.string().optional(),
-    eventType: z.string(),
-    payload: z.record(z.string(), z.any()).optional(),
-});
-
-// =============================================================================
-// MASTER SCHEMA
-// =============================================================================
-
-export const TimelineOpSchema = z.discriminatedUnion("kind", [
-    DeviceUnlockedOpSchema,
-    AppOpenedOpSchema,
-    ConversationOpenedOpSchema,
-    TypingStartedOpSchema,
-    TypingEndedOpSchema,
-    MessageReceivedOpSchema,
-    MessageSentOpSchema,
-    MessageReadOpSchema,
-    MessageDeletedOpSchema,
-    ReactionAddedOpSchema,
-    ScreenNavigatedOpSchema,
-    TimelineCameraZoomOpSchema,
-    TimelineCameraShakeOpSchema,
-    TimelinePOVSwitchOpSchema,
-    TimelineSplitPOVOpSchema,
-    TimelineAnchorFocusOpSchema,
-    TimelineAnchorTrackOpSchema,
-    KeyboardTypeOpSchema,
-    KeyboardInputOpSchema,
-    CustomOpSchema,
-]);
-
-export function validateTimelineOp(op: unknown) {
-    return TimelineOpSchema.parse(op);
-}
-
-// =============================================================================
-// SCENE IR SCHEMAS
-// =============================================================================
-
-export const DurationExprSchema = z.union([
-    z.string().regex(/^[\d.]+(s|ms|frames)$/),
-    z.string(),
-    z.number()
-]);
-
-// Helper for Recursive Types (ConcurrentOp)
-const BaseSceneOpSchema = z.union([
-    z.object({ kind: z.literal("Wait"), duration: DurationExprSchema }),
-    z.object({ kind: z.literal("TypingStart"), actor: z.string(), conversationId: z.string() }),
-    z.object({ kind: z.literal("TypingEnd"), actor: z.string(), conversationId: z.string() }),
-    z.object({ kind: z.literal("SendMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
-    z.object({ kind: z.literal("ReceiveMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
-    z.object({ kind: z.literal("ReadMessage"), ref: z.any() }), // Todo: RefSchema
-    z.object({ kind: z.literal("DeleteMessage"), ref: z.any() }),
-
-    // Media ops
-    z.object({ kind: z.literal("SendImage"), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("ReceiveImage"), actor: z.string(), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("SendVideo"), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("ReceiveVideo"), actor: z.string(), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("SendGif"), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("ReceiveGif"), actor: z.string(), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("SendVoice"), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
-    z.object({ kind: z.literal("ReceiveVoice"), actor: z.string(), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
-
-    // Camera/POV
-    z.object({ kind: z.literal("POVSwitch"), deviceId: z.string(), transition: z.enum(["cut", "crossfade", "wipe"]).optional() }),
-    z.object({ kind: z.literal("SplitPOV"), devices: z.array(z.string()), layout: z.any() }),
-    z.object({ kind: z.literal("CameraZoom"), scale: z.number(), duration: DurationExprSchema.optional(), originX: z.number().optional(), originY: z.number().optional(), easing: EasingSchema.optional() }),
-    z.object({ kind: z.literal("CameraShake"), deviceId: z.string(), intensity: z.number().optional(), frequency: z.number().optional(), decay: z.number().optional(), duration: DurationExprSchema.optional() }),
-    z.object({ kind: z.literal("AnchorFocus"), anchor: z.string(), preset: z.string().optional(), shake: z.number().optional(), duration: DurationExprSchema.optional(), easing: EasingSchema.optional() }),
-    z.object({ kind: z.literal("AnchorTrack"), anchor: z.string(), duration: DurationExprSchema.optional(), smoothing: z.number().optional(), easing: EasingSchema.optional() }),
-
-    // Navigation
-    z.object({ kind: z.literal("NavigateScreen"), screen: z.enum(["chats-list", "chat", "settings", "status", "calls"]) }),
-    z.object({ kind: z.literal("OpenChat"), conversationId: z.string() }),
-    z.object({ kind: z.literal("GoBack") }),
-
-    // Reserved
-    z.object({ kind: z.literal("AddReaction"), ref: z.any(), actor: z.string(), emoji: z.string() }),
-    z.object({ kind: z.literal("VoiceNoteSent"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
-    z.object({ kind: z.literal("VoiceNoteReceived"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
-    z.object({ kind: z.literal("MissedCall"), actor: z.string(), conversationId: z.string() }),
-    z.object({ kind: z.literal("OnlineStatusChanged"), actor: z.string(), status: z.enum(["online", "offline", "typing", "last_seen"]) }),
-    z.object({ kind: z.literal("ScreenshotTaken"), conversationId: z.string() }),
-    z.object({ kind: z.literal("BlockedUser"), actor: z.string() }),
-
-    // Keyboard
-    z.object({ kind: z.literal("ShowKeyboard"), deviceId: z.string() }),
-    z.object({ kind: z.literal("HideKeyboard"), deviceId: z.string() }),
-    z.object({ kind: z.literal("SimulateTyping"), deviceId: z.string(), text: z.string() }),
-    z.object({ kind: z.literal("ClearKeyboardText"), deviceId: z.string() })
-]);
-
-// Recursive Schema for Concurrent Op
-export const SceneOpSchema: z.ZodType<any> = z.lazy(() =>
-    z.union([
-        BaseSceneOpSchema,
-        z.object({ kind: z.literal("Concurrent"), tracks: z.array(z.array(SceneOpSchema)) })
-    ])
-);
-
-export const BeatSchema = z.object({
-    name: z.string(),
-    ops: z.array(SceneOpSchema),
-    meta: z.object({
-        isImprov: z.boolean().optional(),
-        rhythm: z.enum(["fast", "normal", "slow"]).optional(),
-        intensity: z.number().optional()
-    }).optional()
-});
-
-export const DeviceSceneSchema = z.object({
-    deviceId: z.string(),
-    profileId: z.string(),
-    appId: z.string(),
-    conversations: z.array(z.object({
-        id: z.string(),
-        name: z.string().optional(),
-        avatar: z.string().optional(),
-        type: z.enum(["dm", "group"]).optional()
-    })),
-    beats: z.array(BeatSchema)
-});
-
-export const SceneIRSchema = z.object({
-    episodeId: z.string(),
-    meta: z.object({
-        fps: z.number(),
-        durationInFrames: z.number().optional()
-    }),
-    devices: z.array(DeviceSceneSchema),
-    cameraTrack: z.array(z.object({
-        at: DurationExprSchema,
-        op: SceneOpSchema
-    })).optional(),
-    scenes: z.array(z.object({
-        name: z.string(),
-        deviceBeats: z.record(z.string(), z.array(BeatSchema))
-    })).optional()
-});
-
-// function removed to avoid conflict with validate.ts
-````
-
 ## File: packages/renderer/src/anchor-providers/index.ts
 ````typescript
 /**
@@ -40545,6 +36545,435 @@ export const NotificationShowcase: React.FC = () => {
 };
 ````
 
+## File: apps/video-runner/src/AutoDirectorShowcase.tsx
+````typescript
+/**
+ * ============================================================================
+ * AUTO DIRECTOR SHOWCASE - Video Runner Component
+ * ============================================================================
+ * 
+ * Demonstrates 100% AUTOMATIC camera via DirectorLite.
+ * No manual camera DSL - all camera movement is reactive to signals.
+ * 
+ * CAMERA PERSONALITY: "A careful human operator who reacts, but does not anticipate."
+ */
+
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE, PluginManagerClass } from "@tokovo/core";
+import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
+
+// Register anchor providers for semantic camera system
+// Note: We will do this inside the component
+// registerBuiltInAnchorProviders();
+
+// =============================================================================
+// DSL HELPERS
+// =============================================================================
+
+const dsl = {
+    receive: (at: number, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_viral",
+        from,
+        text,
+    } as any),
+
+    send: (at: number, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_viral",
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: "dm_viral",
+        from,
+    } as any),
+
+    typingEnd: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: "dm_viral",
+        from,
+    } as any),
+
+    // Keyboard events
+    keyboardShow: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SHOW",
+        deviceId: "phone",
+        layout: "qwerty",
+    } as any),
+
+    keyboardHide: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        deviceId: "phone",
+    } as any),
+
+    keyDown: (at: number, key: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_DOWN",
+        deviceId: "phone",
+        key,
+    } as any),
+
+    keyUp: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_UP",
+        deviceId: "phone",
+    } as any),
+};
+
+// =============================================================================
+// EPISODE CREATION - 100% AUTOMATIC DIRECTORLITE CAMERA
+// =============================================================================
+
+function createAutoDirectorEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_viral: {
+                id: "dm_viral",
+                type: "dm" as const,
+                name: "Drama 👑",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_viral",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: DEFAULT_AUDIO_STATE,
+    };
+
+    // =========================================================================
+    // TIMELINE - NO CAMERA EVENTS!
+    // DirectorLite handles all camera movement based on signals.
+    // =========================================================================
+    const events: TimelineEvent[] = [
+        // ACT 1: THE SETUP (0s - 12s)
+        dsl.receive(30, "Drama 👑", "hey girl, you free tonight?"),
+
+        // User types reply - show keyboard
+        dsl.keyboardShow(50),
+        dsl.keyDown(52, "m"), dsl.keyUp(54),
+        dsl.keyDown(57, "a"), dsl.keyUp(59),
+        dsl.keyDown(62, "y"), dsl.keyUp(64),
+        dsl.send(66, "maybe, what's up?"),
+        dsl.keyboardHide(68),
+
+        dsl.receive(96, "Drama 👑", "need to talk to you about something 😬"),
+        dsl.typingStart(141, "Drama 👑"),
+        dsl.typingEnd(165, "Drama 👑"),
+        dsl.receive(168, "Drama 👑", "it's about jake..."),
+
+        // User types shocked reply
+        dsl.keyboardShow(200),
+        dsl.typingStart(204, "You"),
+        dsl.keyDown(206, "w"), dsl.keyUp(208),
+        dsl.keyDown(210, "a"), dsl.keyUp(212),
+        dsl.keyDown(214, "i"), dsl.keyUp(216),
+        dsl.keyDown(218, "t"), dsl.keyUp(220),
+        dsl.typingEnd(222, "You"),
+        dsl.send(225, "wait what about jake???"),
+        dsl.keyboardHide(227),
+
+        // ACT 2: THE BUILDUP (12s - 24s)
+        dsl.typingStart(270, "Drama 👑"),
+        dsl.typingEnd(360, "Drama 👑"),
+        dsl.receive(363, "Drama 👑", "so... remember when i said he was acting weird?"),
+
+        // Quick reply
+        dsl.keyboardShow(395),
+        dsl.keyDown(398, "y"), dsl.keyUp(400),
+        dsl.keyDown(403, "e"), dsl.keyUp(405),
+        dsl.send(408, "yeah..."),
+        dsl.keyboardHide(410),
+
+        dsl.typingStart(432, "Drama 👑"),
+        dsl.typingEnd(492, "Drama 👑"),
+        dsl.receive(495, "Drama 👑", "i found something on his phone"),
+
+        // Shocked reaction
+        dsl.keyboardShow(515),
+        dsl.keyDown(518, "o"), dsl.keyUp(520),
+        dsl.keyDown(523, "m"), dsl.keyUp(525),
+        dsl.keyDown(527, "g"), dsl.keyUp(529),
+        dsl.send(531, "OMG WHAT"),
+        dsl.keyboardHide(533),
+
+        dsl.receive(549, "Drama 👑", "he's been texting someone"),
+
+        // Frantic typing
+        dsl.keyboardShow(560),
+        dsl.keyDown(563, "w"), dsl.keyUp(565),
+        dsl.keyDown(567, "h"), dsl.keyUp(569),
+        dsl.keyDown(570, "o"), dsl.keyUp(571),
+        dsl.send(573, "WHO???"),
+        dsl.keyboardHide(575),
+
+        dsl.typingStart(591, "Drama 👑"),
+        dsl.typingEnd(666, "Drama 👑"),
+
+        // ACT 3: THE CLIMAX (24s - 36s)
+        dsl.receive(669, "Drama 👑", "IT'S MY BEST FRIEND SARAH!!!! 😭😭😭"),
+
+        // Shocked reaction
+        dsl.keyboardShow(715),
+        dsl.keyDown(718, "n"), dsl.keyUp(720),
+        dsl.keyDown(722, "o"), dsl.keyUp(724),
+        dsl.send(729, "NO. WAY."),
+        dsl.keyboardHide(731),
+
+        dsl.receive(759, "Drama 👑", "i have screenshots"),
+
+        // Demanding
+        dsl.keyboardShow(770),
+        dsl.keyDown(773, "s"), dsl.keyUp(775),
+        dsl.keyDown(777, "e"), dsl.keyUp(779),
+        dsl.keyDown(780, "n"), dsl.keyUp(781),
+        dsl.send(783, "send them RIGHT NOW"),
+        dsl.keyboardHide(785),
+
+        dsl.typingStart(801, "Drama 👑"),
+        dsl.typingEnd(846, "Drama 👑"),
+        dsl.receive(849, "Drama 👑", "they've been meeting up for 3 MONTHS"),
+
+        // Supportive message
+        dsl.keyboardShow(880),
+        dsl.keyDown(883, "o"), dsl.keyUp(885),
+        dsl.keyDown(887, "m"), dsl.keyUp(889),
+        dsl.keyDown(890, "g"), dsl.keyUp(891),
+        dsl.send(894, "omg babe im so sorry 💔"),
+        dsl.keyboardHide(896),
+
+        dsl.receive(924, "Drama 👑", "what do i do??? 😭"),
+
+        // Rapid fire supportive messages
+        dsl.keyboardShow(955),
+        dsl.keyDown(958, "i"), dsl.keyUp(960),
+        dsl.keyDown(962, "m"), dsl.keyUp(964),
+        dsl.send(969, "im coming over"),
+        dsl.keyDown(975, "d"), dsl.keyUp(977),
+        dsl.keyDown(979, "o"), dsl.keyUp(981),
+        dsl.send(984, "dont do anything yet"),
+        dsl.keyDown(990, "w"), dsl.keyUp(992),
+        dsl.keyDown(994, "e"), dsl.keyUp(996),
+        dsl.send(999, "we need to talk in person 💕"),
+        dsl.keyboardHide(1001),
+
+        // ACT 4: THE RESOLUTION (36s - 45s)
+        dsl.typingStart(1050, "Drama 👑"),
+        dsl.typingEnd(1110, "Drama 👑"),
+        dsl.receive(1113, "Drama 👑", "ok... thank you 😢"),
+
+        // Sweet reply
+        dsl.keyboardShow(1140),
+        dsl.keyDown(1143, "a"), dsl.keyUp(1145),
+        dsl.keyDown(1148, "l"), dsl.keyUp(1150),
+        dsl.keyDown(1152, "w"), dsl.keyUp(1154),
+        dsl.send(1158, "always here for you ❤️"),
+        dsl.keyboardHide(1160),
+
+        dsl.receive(1194, "Drama 👑", "im so lucky to have you as a friend"),
+
+        // Final supportive message
+        dsl.keyboardShow(1225),
+        dsl.keyDown(1228, "t"), dsl.keyUp(1230),
+        dsl.keyDown(1232, "h"), dsl.keyUp(1234),
+        dsl.keyDown(1235, "a"), dsl.keyUp(1236),
+        dsl.send(1239, "that's what besties are for 💕"),
+        dsl.keyboardHide(1241),
+
+        dsl.receive(1284, "Drama 👑", "see you soon 💛"),
+
+        // Last message
+        dsl.keyboardShow(1300),
+        dsl.keyDown(1303, "b"), dsl.keyUp(1305),
+        dsl.keyDown(1307, "e"), dsl.keyUp(1309),
+        dsl.send(1314, "be there in 20 🚗"),
+        dsl.keyboardHide(1316),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const AutoDirectorShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+
+        // Ensure built-in system anchors are registered
+        registerBuiltInAnchorProviders();
+
+        return pm;
+    }, []);
+
+    const episode = useMemo(() => createAutoDirectorEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    // Determine current act for display
+    const getActLabel = (t: number): string => {
+        if (t < 270) return "ACT 1: THE SETUP";
+        if (t < 669) return "ACT 2: THE BUILDUP";
+        if (t < 1050) return "ACT 3: THE CLIMAX 🔥";
+        return "ACT 4: RESOLUTION";
+    };
+
+    const getSignalLabel = (t: number): string => {
+        // Check recent events to determine signal
+        const recentEvents = episode.events.filter(e => e.at <= t && e.at > t - 30);
+        for (const e of recentEvents.reverse()) {
+            if ((e as any).type === "TYPING_START") return "Signal: TypingStarted → subtle";
+            if ((e as any).type === "MESSAGE_RECEIVED") {
+                if ((e as any).from === "me") return "Signal: NewMessage → message";
+                return "Signal: NewMessage → punchGlide";
+            }
+        }
+        return "Director: Reactive";
+    };
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            {/* Demo label */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                left: 40,
+                color: "#ffffff80",
+                fontSize: 24,
+                fontFamily: "system-ui, sans-serif",
+                fontWeight: 500,
+                zIndex: 100,
+            }}>
+                🎬 AUTOMATIC DirectorLite Demo
+            </div>
+
+            {/* Act indicator */}
+            <div style={{
+                position: "absolute",
+                top: 80,
+                left: 40,
+                color: "#00ff88",
+                fontSize: 18,
+                fontFamily: "monospace",
+                zIndex: 100,
+            }}>
+                {getActLabel(t)}
+            </div>
+
+            {/* Signal indicator */}
+            <div style={{
+                position: "absolute",
+                top: 110,
+                left: 40,
+                color: "#ffaa00",
+                fontSize: 14,
+                fontFamily: "monospace",
+                zIndex: 100,
+            }}>
+                {getSignalLabel(t)}
+            </div>
+
+            {/* 100% Automatic badge */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                right: 40,
+                color: "#00ff88",
+                fontSize: 14,
+                fontFamily: "monospace",
+                backgroundColor: "#00ff8820",
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "1px solid #00ff8840",
+                zIndex: 100,
+            }}>
+                100% AUTOMATIC CAMERA
+            </div>
+
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}   // 👈 ENABLED!
+                    directorDebug={false}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default AutoDirectorShowcase;
+````
+
 ## File: apps/video-runner/src/CinematicCameraShowcaseVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -41065,345 +37494,619 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: packages/apps-whatsapp/src/runtime.ts
+## File: apps/video-runner/src/ManualCameraShowcase.tsx
 ````typescript
 /**
- * WhatsApp Runtime Reducer
+ * ============================================================================
+ * MANUAL CAMERA SHOWCASE - Video Runner Component
+ * ============================================================================
  * 
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
+ * Demonstrates 100% MANUAL camera via explicit anchor-based DSL.
+ * DirectorLite is DISABLED - all camera movement is authored.
  * 
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
+ * FEATURES DEMONSTRATED:
+ * - anchorFocus(): one-time focus on anchor
+ * - anchorTrack(): continuous tracking with smoothing
+ * - punchGlide(): webseries signature combo
+ * - hold(): let viewer read
+ * 
+ * CAMERA PERSONALITY: "A seasoned cinematographer with full creative control."
  */
 
-import {
-    TimelineEvent,
-    WorldState,
-    ReducerRegistry,
-    APP_IDS
-} from "@tokovo/core";
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE, PluginManagerClass } from "@tokovo/core";
+import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
 
-// Extended message type for WhatsApp-specific features
-type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
 
-interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
+// Register anchor providers for semantic camera system
+// Note: We will do this inside the component to ensure it's tied to the engine lifecycle if possible,
+// though currently it relies on Global Registry side-effects.
+// registerBuiltInAnchorProviders();
+
+// =============================================================================
+// DSL HELPERS
+// =============================================================================
+
+const dsl = {
+    receive: (at: number, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_bff",
+        from,
+        text,
+    } as any),
+
+    send: (at: number, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: "dm_bff",
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: "dm_bff",
+        from,
+    } as any),
+
+    typingEnd: (at: number, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: "dm_bff",
+        from,
+    } as any),
+
+    // Keyboard events
+    keyboardShow: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SHOW",
+        deviceId: "phone",
+        layout: "qwerty",
+    } as any),
+
+    keyboardHide: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        deviceId: "phone",
+    } as any),
+
+    keyDown: (at: number, key: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_DOWN",
+        deviceId: "phone",
+        key,
+    } as any),
+
+    keyUp: (at: number): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "KEY_UP",
+        deviceId: "phone",
+    } as any),
+};
+
+// Camera DSL helpers (v1 locked values)
+const camera = {
+    anchorFocus: (at: number, anchor: string, preset: string, shake = 0): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        anchor,
+        preset,
+        duration: getPresetDuration(preset),
+        shake,
+        easing: getPresetEasing(preset),
+    } as any),
+
+    anchorTrack: (at: number, anchor: string, duration: number, smoothing: number, preset?: string): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_TRACK",
+        anchor,
+        duration,
+        smoothing,
+        preset: preset ?? "operatorFollow",
+        easing: "ease-out",
+    } as any),
+
+    hold: (at: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "HOLD",
+        duration,
+    } as any),
+
+    punchGlide: (at: number, anchor: string): TimelineEvent[] => [
+        {
+            at,
+            kind: "CAMERA",
+            type: "ANCHOR_FOCUS",
+            anchor,
+            preset: "impact",
+            duration: 14,
+            shake: 4,
+            easing: "expoOut",
+        } as any,
+        {
+            at: at + 14,
+            kind: "CAMERA",
+            type: "ANCHOR_TRACK",
+            anchor,
+            duration: 30,
+            smoothing: 0.18,
+            preset: "operatorFollow",
+            easing: "ease-out",
+        } as any,
+    ],
+};
+
+function getPresetDuration(preset: string): number {
+    switch (preset) {
+        case "message": return 22;
+        case "subtle": return 30;
+        case "impact": return 14;
+        case "snap": return 8;
+        case "operatorFollow": return 40;
+        case "establish": return 30;
+        case "reset": return 20;
+        case "interrupt": return 10;
+        default: return 22;
+    }
 }
 
-interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
+function getPresetEasing(preset: string): string {
+    switch (preset) {
+        case "impact": return "expoOut";
+        case "subtle": return "cinematic";
+        default: return "ease-out";
+    }
 }
 
-interface WhatsAppMessage {
-    id: string;
-    from: string;
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-    // React and reply
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    // Timestamp display
-    timestamp?: string;
-}
+// =============================================================================
+// EPISODE CREATION - 100% MANUAL CAMERA CONTROL
+// =============================================================================
 
-/**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
- */
-function generateTimestamp(frame: number, messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
-
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * WhatsApp reducer - handles all WhatsApp events
- */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-    // Only handle APP events for WhatsApp
-    if (event.kind !== "APP") return;
-
-    // Type assertion for APP events with extended payload
-    const appEvent = event as TimelineEvent & {
-        appId: string;
-        conversationId?: string;
-        from?: string;
-        text?: string;
-        message?: Partial<WhatsAppMessage>;
-        // Media-specific fields
-        imageUrl?: string;
-        thumbnailUrl?: string;
-        videoUrl?: string;
-        gifUrl?: string;
-        caption?: string;
-        // Group-specific fields
-        memberId?: string;
-        memberName?: string;
-        addedBy?: string;
-        removedBy?: string;
-        // Voice-specific fields
-        duration?: number;
-        // Read receipt fields
-        messageId?: string;
-        // Navigation fields
-        screen?: string;
+function createManualCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+            },
+        },
+        conversations: {
+            dm_bff: {
+                id: "dm_bff",
+                type: "dm" as const,
+                name: "BFF 💎",
+                avatar: undefined,
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_bff",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW" as const,
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE" as const, primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: DEFAULT_AUDIO_STATE,
     };
 
-    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+    // =========================================================================
+    // TIMELINE WITH MANUAL CAMERA CONTROL
+    // Each camera movement is explicitly authored.
+    // =========================================================================
+    const events: TimelineEvent[] = [
+        // SCENE 1: ESTABLISHING (0s - 5s)
+        camera.anchorFocus(0, "device", "establish"),
+        camera.hold(30, 60),
 
-    // Use string type for event.type to allow extended event types
-    const eventType = event.type as string;
+        // SCENE 2: CASUAL EXCHANGE (5s - 15s)
+        dsl.receive(150, "BFF 💎", "guess what just happened! 🤩"),
+        camera.anchorFocus(150, "lastMessage", "message"),
 
-    // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        // Ensure appState exists for WhatsApp
-        if (!draft.appState) {
-            draft.appState = {};
-        }
-        if (!draft.appState.app_whatsapp) {
-            draft.appState.app_whatsapp = {};
-        }
+        // User types with keyboard
+        dsl.keyboardShow(180),
+        dsl.keyDown(183, "w"), dsl.keyUp(185),
+        dsl.keyDown(187, "h"), dsl.keyUp(189),
+        dsl.keyDown(191, "a"), dsl.keyUp(193),
+        dsl.send(195, "what?? tell me everything!!"),
+        camera.anchorFocus(195, "lastMessage", "message"),
+        dsl.keyboardHide(197),
 
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
-        draft.appState.app_whatsapp.screen = screen;
+        dsl.receive(231, "BFF 💎", "remember that guy from the party?"),
+        camera.anchorFocus(231, "lastMessage", "message"),
 
-        // STANDARD CONTRACT ADHERENCE
-        // Map screen to generic ViewKind
-        if (screen === "chat") {
-            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
-        } else {
-            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
-        }
+        // User types
+        dsl.keyboardShow(245),
+        dsl.keyDown(248, "t"), dsl.keyUp(250),
+        dsl.keyDown(252, "h"), dsl.keyUp(254),
+        dsl.keyDown(256, "e"), dsl.keyUp(258),
+        dsl.send(261, "the tall one with the glasses? 👀"),
+        camera.anchorFocus(261, "lastMessage", "message"),
+        dsl.keyboardHide(263),
 
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
-        }
+        dsl.receive(291, "BFF 💎", "YES!! him!!"),
+        camera.anchorFocus(291, "lastMessage", "snap"),  // Quick snap for excitement
 
-        return;
-    }
+        dsl.typingStart(321, "BFF 💎"),
+        camera.anchorFocus(321, "inputArea", "subtle"),  // Typing anticipation
 
-    // Get conversation ID from event
-    const conversationId = appEvent.conversationId;
-    if (!conversationId) return;
+        dsl.typingEnd(381, "BFF 💎"),
+        dsl.receive(384, "BFF 💎", "he asked for my number!!!"),
+        camera.anchorFocus(384, "lastMessage", "message"),
+        camera.hold(406, 30),
 
-    // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
+        // SCENE 3: EXCITEMENT (15s - 25s)
+        dsl.keyboardShow(435),
+        dsl.keyDown(438, "n"), dsl.keyUp(440),
+        dsl.keyDown(442, "o"), dsl.keyUp(444),
+        dsl.keyDown(446, "!"), dsl.keyUp(448),
+        dsl.send(450, "NO WAY!!! 🎉🎉🎉"),
+        camera.anchorFocus(450, "lastMessage", "snap", 2),  // Snap with shake!
+        dsl.keyboardHide(452),
 
-    switch (eventType) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT": {
-            const msgPayload = appEvent.message || {};
-            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+        dsl.receive(474, "BFF 💎", "I KNOW RIGHT"),
+        camera.anchorFocus(474, "lastMessage", "snap"),
 
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
+        // More typing
+        dsl.keyboardShow(480),
+        dsl.keyDown(483, "d"), dsl.keyUp(485),
+        dsl.keyDown(487, "i"), dsl.keyUp(489),
+        dsl.send(492, "did you give it to him?!"),
+        camera.anchorFocus(492, "lastMessage", "message"),
+        dsl.keyboardHide(494),
 
-            const newMessage: WhatsAppMessage = {
-                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
-                type: msgType,
-                text: appEvent.text || msgPayload.text,
-                at: event.at,
-                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
-                edited: msgPayload.edited,
-                timestamp,  // Dynamic timestamp
-            };
+        dsl.typingStart(522, "BFF 💎"),
+        camera.anchorFocus(522, "inputArea", "subtle"),  // Dramatic pause
 
-            // Handle media-specific fields based on type
-            switch (msgType) {
-                case "image":
-                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "video":
-                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "gif":
-                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
-                    break;
-            }
+        dsl.typingEnd(597, "BFF 💎"),
+        dsl.receive(600, "BFF 💎", "we've been texting all day!! 💕"),
+        camera.anchorFocus(600, "lastMessage", "impact", 5),  // THE REVEAL with impact!
+        camera.hold(614, 45),
 
-            (conversation.messages as any[]).push(newMessage);
-            break;
-        }
+        dsl.keyboardShow(645),
+        dsl.keyDown(648, "s"), dsl.keyUp(650),
+        dsl.keyDown(652, "c"), dsl.keyUp(654),
+        dsl.keyDown(656, "r"), dsl.keyUp(658),
+        dsl.send(660, "SCREAMING"),
+        camera.anchorFocus(660, "lastMessage", "snap"),
 
-        case "TYPING_START": {
-            if (!conversation.typing) conversation.typing = {};
-            if (appEvent.from) {
-                conversation.typing[appEvent.from] = true;
-            }
-            break;
-        }
+        dsl.keyDown(668, "w"), dsl.keyUp(670),
+        dsl.keyDown(672, "h"), dsl.keyUp(674),
+        dsl.keyDown(675, "a"), dsl.keyUp(676),
+        dsl.send(678, "what did he say??"),
+        camera.anchorFocus(678, "lastMessage", "snap"),
+        dsl.keyboardHide(680),
 
-        case "TYPING_END": {
-            if (conversation.typing && appEvent.from) {
-                delete conversation.typing[appEvent.from];
-            }
-            break;
-        }
+        dsl.receive(702, "BFF 💎", "he wants to take me to dinner 🍝"),
+        camera.anchorFocus(702, "lastMessage", "impact", 3),
 
-        case "GROUP_MEMBER_ADDED": {
-            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: addedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: appEvent.memberId || "",
-                name: appEvent.memberName || ""
-            });
-            break;
-        }
+        // SCENE 4: WEBSERIES MOMENT (25s - 35s)
+        dsl.keyboardShow(735),
+        dsl.keyDown(738, "o"), dsl.keyUp(740),
+        dsl.keyDown(742, "m"), dsl.keyUp(744),
+        dsl.keyDown(746, "g"), dsl.keyUp(748),
+        dsl.send(750, "OMG WHEN??? WHERE???"),
+        camera.anchorFocus(750, "lastMessage", "snap", 2),
+        dsl.keyboardHide(752),
 
-        case "GROUP_MEMBER_REMOVED": {
-            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: removedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: { id: string }) => m.id !== appEvent.memberId
-                );
-            }
-            break;
-        }
+        dsl.typingStart(780, "BFF 💎"),
+        camera.anchorFocus(780, "inputArea", "subtle"),
 
-        case "VOICE_MESSAGE_RECEIVED": {
-            (conversation.messages as any[]).push({
-                id: `voice_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
-                type: "voice",
-                duration: appEvent.duration,
-                at: event.at,
-                status: "delivered"
-            } as WhatsAppMessage);
-            break;
-        }
+        dsl.typingEnd(825, "BFF 💎"),
+        dsl.receive(828, "BFF 💎", "TOMORROW NIGHT!! at that fancy italian place downtown 🍷✨"),
+        // THE BIG MOMENT - PUNCH + GLIDE!
+        ...camera.punchGlide(828, "lastMessage"),
+        camera.hold(872, 45),
 
-        case "MESSAGE_READ": {
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
-                if (msg) {
-                    msg.status = "read";
-                }
-            }
-            break;
-        }
+        dsl.keyboardShow(905),
+        dsl.keyDown(908, "y"), dsl.keyUp(910),
+        dsl.keyDown(912, "o"), dsl.keyUp(914),
+        dsl.keyDown(916, "u"), dsl.keyUp(918),
+        dsl.send(921, "you're gonna look SO good"),
+        camera.anchorFocus(921, "lastMessage", "message"),
+        dsl.keyboardHide(923),
 
-        case "REACTION_ADDED": {
-            // Find the message and add/update the reaction
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
-                if (msg) {
-                    // Initialize reactions array if needed
-                    if (!msg.reactions) {
-                        msg.reactions = [];
-                    }
+        dsl.receive(951, "BFF 💎", "i have nothing to wear 😩"),
+        camera.anchorFocus(951, "lastMessage", "message"),
 
-                    const emoji = (appEvent as any).emoji || "❤️";
-                    const fromMe = (appEvent as any).fromMe || false;
+        dsl.keyboardShow(970),
+        dsl.keyDown(973, "s"), dsl.keyUp(975),
+        dsl.keyDown(977, "h"), dsl.keyUp(979),
+        dsl.keyDown(981, "o"), dsl.keyUp(983),
+        dsl.keyDown(984, "p"), dsl.keyUp(985),
+        dsl.send(987, "shopping spree TONIGHT"),
+        camera.anchorFocus(987, "lastMessage", "snap"),
 
-                    // Check if this emoji already exists
-                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
-                    if (existing) {
-                        existing.count += 1;
-                        if (fromMe) existing.fromMe = true;
-                    } else {
-                        msg.reactions.push({
-                            emoji,
-                            count: 1,
-                            fromMe,
-                        });
-                    }
-                }
-            }
-            break;
-        }
+        dsl.keyDown(995, "i"), dsl.keyUp(997),
+        dsl.keyDown(1000, "k"), dsl.keyUp(1002),
+        dsl.keyDown(1005, "n"), dsl.keyUp(1007),
+        dsl.keyDown(1008, "o"), dsl.keyUp(1009),
+        dsl.send(1011, "i know the perfect dress for you 💃"),
+        camera.anchorTrack(1011, "lastMessage", 40, 0.18, "operatorFollow"),
+        dsl.keyboardHide(1013),
 
-        case "INPUT_CHANGE": {
-            // "OS-Level Input Management"
-            // The OS has dispatched this event with the raw text from the keyboard.
-            // We update the local conversation draft state.
-            const text = (appEvent as any).payload?.text;
-            if (conversation) {
-                (conversation as any).draftText = text;
-            }
-            break;
-        }
-    }
+        // SCENE 5: RESOLUTION (35s - 45s)
+        dsl.receive(1056, "BFF 💎", "you're the best friend ever 😭💕"),
+        camera.anchorTrack(1056, "lastMessage", 35, 0.18, "operatorFollow"),
+
+        dsl.keyboardShow(1085),
+        dsl.keyDown(1088, "a"), dsl.keyUp(1090),
+        dsl.keyDown(1092, "l"), dsl.keyUp(1094),
+        dsl.keyDown(1096, "w"), dsl.keyUp(1098),
+        dsl.send(1101, "always got your back babe ❤️"),
+        camera.anchorFocus(1101, "lastMessage", "message"),
+        dsl.keyboardHide(1103),
+
+        dsl.receive(1137, "BFF 💎", "mall at 6?"),
+        camera.anchorFocus(1137, "lastMessage", "message"),
+
+        dsl.keyboardShow(1150),
+        dsl.keyDown(1153, "s"), dsl.keyUp(1155),
+        dsl.keyDown(1157, "e"), dsl.keyUp(1159),
+        dsl.keyDown(1161, "e"), dsl.keyUp(1163),
+        dsl.send(1167, "see you then! 🛍️"),
+        camera.anchorFocus(1167, "lastMessage", "snap"),
+        dsl.keyboardHide(1169),
+
+        dsl.receive(1212, "BFF 💎", "love you!!! 💎"),
+        camera.anchorFocus(1212, "lastMessage", "message"),
+
+        dsl.keyboardShow(1240),
+        dsl.keyDown(1243, "l"), dsl.keyUp(1245),
+        dsl.keyDown(1247, "o"), dsl.keyUp(1249),
+        dsl.keyDown(1251, "v"), dsl.keyUp(1253),
+        dsl.keyDown(1254, "e"), dsl.keyUp(1255),
+        dsl.send(1257, "love you more!! 💕💕💕"),
+        camera.anchorFocus(1257, "lastMessage", "message"),
+        dsl.keyboardHide(1259),
+        camera.hold(1279, 45),
+
+        // Final reset
+        camera.anchorFocus(1326, "device", "reset"),
+    ];
+
+    return { initialWorld, events };
 }
 
-// Register the reducer with the core engine
-ReducerRegistry.registerAppReducer(APP_IDS.WHATSAPP, whatsappReducer);
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const ManualCameraShowcase: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+
+        // Ensure built-in system anchors are registered
+        // This pushes to Global AnchorRegistry (simulating engine context)
+        registerBuiltInAnchorProviders();
+
+        return pm;
+    }, []);
+
+    const episode = useMemo(() => createManualCameraEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    // Determine current scene/preset for display
+    const getSceneLabel = (t: number): string => {
+        if (t < 150) return "SCENE 1: ESTABLISHING";
+        if (t < 450) return "SCENE 2: CASUAL EXCHANGE";
+        if (t < 750) return "SCENE 3: EXCITEMENT 🎉";
+        if (t < 1056) return "SCENE 4: WEBSERIES MOMENT 🎬";
+        return "SCENE 5: RESOLUTION 💕";
+    };
+
+    const getPresetLabel = (t: number): string => {
+        // Find most recent camera event
+        const cameraEvents = episode.events.filter(e => (e as any).kind === "CAMERA" && e.at <= t);
+        if (cameraEvents.length === 0) return "";
+
+        const lastCamera = cameraEvents[cameraEvents.length - 1] as any;
+        const type = lastCamera.type;
+        const preset = lastCamera.preset || "";
+        const shake = lastCamera.shake ? `, shake: ${lastCamera.shake}` : "";
+
+        if (type === "ANCHOR_FOCUS") return `anchorFocus("${lastCamera.anchor}", "${preset}"${shake})`;
+        if (type === "ANCHOR_TRACK") return `anchorTrack("${lastCamera.anchor}", ${lastCamera.duration}f, ${lastCamera.smoothing})`;
+        if (type === "HOLD") return `hold(${lastCamera.duration}f)`;
+        return type;
+    };
+
+    return (
+        <AbsoluteFill style={{
+            backgroundColor: "#0a0a1a",
+            justifyContent: "center",
+            alignItems: "center"
+        }}>
+            {/* Demo label */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                left: 40,
+                color: "#ffffff80",
+                fontSize: 24,
+                fontFamily: "system-ui, sans-serif",
+                fontWeight: 500,
+                zIndex: 100,
+            }}>
+                🎬 MANUAL Camera DSL Demo
+            </div>
+
+            {/* Scene indicator */}
+            <div style={{
+                position: "absolute",
+                top: 80,
+                left: 40,
+                color: "#00ff88",
+                fontSize: 18,
+                fontFamily: "monospace",
+                zIndex: 100,
+            }}>
+                {getSceneLabel(t)}
+            </div>
+
+            {/* Preset indicator */}
+            <div style={{
+                position: "absolute",
+                top: 110,
+                left: 40,
+                color: "#ffaa00",
+                fontSize: 14,
+                fontFamily: "monospace",
+                zIndex: 100,
+                maxWidth: 500,
+            }}>
+                {getPresetLabel(t)}
+            </div>
+
+            {/* 100% Manual badge */}
+            <div style={{
+                position: "absolute",
+                top: 40,
+                right: 40,
+                color: "#ff8800",
+                fontSize: 14,
+                fontFamily: "monospace",
+                backgroundColor: "#ff880020",
+                padding: "8px 16px",
+                borderRadius: 8,
+                border: "1px solid #ff880040",
+                zIndex: 100,
+            }}>
+                100% MANUAL CAMERA
+            </div>
+
+            <div style={{
+                transform: `scale(${scale})`,
+                transformOrigin: "center center"
+            }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={false}  // 👈 DISABLED! All camera is manual.
+                    directorDebug={false}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+export default ManualCameraShowcase;
+````
+
+## File: packages/apps-twitter/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-twitter
+ * 
+ * Twitter/X app for Tokovo video generation.
+ */
+
+import { definePlugin, AppMetadata } from "@tokovo/core";
+import { twitterReducer, TWITTER_APP_ID } from "./runtime";
+import { TwitterUI } from "./ui";
+import { twitterColors } from "./config";
+import { TwitterBehavior } from "./behaviors";
+
+// Exports
+export * from "./config";
+export * from "./components";
+export * from "./runtime";
+export * from "./ui";
+export { TWITTER_APP_ID };
+
+// Export behaviors (Semantic Camera System)
+export * from "./behaviors";
+
+// Metadata
+export const TwitterMetadata: AppMetadata = {
+    id: TWITTER_APP_ID,
+    name: "X",
+    icon: "https://abs.twimg.com/responsive-web/client-web/icon-ios.b1fc727a.png", // Stand-in
+    color: twitterColors.brand.black,
+    version: "1.0.0",
+};
+
+// Define the Unified Plugin
+export const Twitter = definePlugin({
+    id: TWITTER_APP_ID,
+    name: "Twitter/X",
+    version: "1.0.0",
+
+    // 1. Metadata
+    metadata: TwitterMetadata,
+
+    // 2. Views
+    appView: TwitterUI as any,
+
+    // 3. Logic
+    reducer: twitterReducer,
+
+    // 4. Notifications
+    // notificationAdapter: undefined, // TODO: Implement
+
+    // 5. Camera Framing
+    anchors: {}, // TODO: Implement provider
+
+    // 6. Assets
+    sounds: {},
+
+    // 7. Event Types
+    eventTypes: [
+        "TWEET_RECEIVED", "TWEET_POSTED", "TWEET_LIKED", "TWEET_RETWEETED"
+    ],
+
+    // 8. Behavior
+    behavior: TwitterBehavior,
+});
+
+// Default Export
+export default Twitter;
 ````
 
 ## File: packages/apps-whatsapp/src/types.ts
@@ -41455,120 +38158,6 @@ export interface WhatsAppState {
     // Navigation state
     screen?: string;
 }
-````
-
-## File: packages/core/src/app-metadata.ts
-````typescript
-/**
- * App Metadata Registry
- * 
- * Stores static metadata for applications (Icon, Color, Name).
- * Used by OS components (Notifications, App Library, Home Screen) to render app identity.
- * 
- * This decouples "Branding" from the "Renderer".
- */
-
-import React from "react";
-
-export interface AppMetadata {
-    /** Display name (e.g. "WhatsApp") */
-    displayName: string;
-
-    /** Primary brand color (e.g. "#25D366") */
-    themeColor: string;
-
-    /** 
-     * App Icon
-     * Can be a string (asset URL/emoji) or a React Component.
-     * Recommendation: Use React Component for SVG consistency.
-     */
-    icon: React.ReactNode | string;
-
-    /**
-     * Optional: Short name for tight spaces (e.g. "Messages")
-     */
-    shortName?: string;
-
-    /**
-     * Layout Strategy
-     * Tells the OS what kind of strategy logic to use.
-     */
-    viewStrategy?: import("./types").ViewKind;
-
-    /**
-     * Design Width (Logical Resolution)
-     * The width this app was designed for (e.g. 393 for iPhone 14/15/16 Pro).
-     * The Renderer will automatically scale the app to fit the physical target width.
-     * Default: 393
-     */
-    designWidth?: number;
-}
-
-class AppMetadataRegistryClass {
-    private _metadata = new Map<string, AppMetadata>();
-
-    /**
-     * Register metadata for an app
-     */
-    register(appId: string, metadata: AppMetadata) {
-        this._metadata.set(appId, metadata);
-    }
-
-    /**
-     * Get metadata for an app.
-     * Returns a default fallback if not found.
-     */
-    get(appId: string): AppMetadata {
-        const data = this._metadata.get(appId);
-        if (!data) {
-            // Fallback for unknown apps
-            return {
-                displayName: appId,
-                themeColor: "#8E8E93",
-                icon: "📱",
-            };
-        }
-        return data;
-    }
-
-    /**
-     * Check if metadata exists
-     */
-    has(appId: string): boolean {
-        return this._metadata.has(appId);
-    }
-}
-
-export const AppMetadataRegistry = new AppMetadataRegistryClass();
-
-// Register Default Apps
-AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT"
-});
-
-AppMetadataRegistry.register("app_instagram", {
-    displayName: "Instagram",
-    themeColor: "#E1306C", // Instagram Gradient-ish
-    icon: "📸",
-    viewStrategy: "FEED" // Default to FEED, though logic might checking state
-});
-
-AppMetadataRegistry.register("app_gmail", {
-    displayName: "Gmail",
-    themeColor: "#EA4335",
-    icon: "📧",
-    viewStrategy: "FEED" // Warning: Gmail is list-based, effectively FEED layout structure
-});
-
-AppMetadataRegistry.register("app_twitter", {
-    displayName: "X",
-    themeColor: "#000000",
-    icon: "✖️",
-    viewStrategy: "FEED"
-});
 ````
 
 ## File: packages/core/package.json
@@ -42654,6 +39243,424 @@ export const navigation = {
 };
 ````
 
+## File: packages/ir/src/schemas.ts
+````typescript
+import { z } from "zod";
+import { Trace } from "./trace";
+
+// =============================================================================
+// TRACE SCHEMA
+// =============================================================================
+
+export const TraceSchema = z.object({
+    source: z.object({
+        file: z.string(),
+        line: z.number(),
+        column: z.number().optional(),
+    }).optional(),
+    episodeId: z.string().optional(),
+    deviceId: z.string().optional(),
+    beat: z.number().optional(),
+    trackId: z.string().optional(),
+    sceneOpIndex: z.number().optional(),
+});
+
+// =============================================================================
+// SHARED OP BASE
+// =============================================================================
+
+const TimelineOpBaseSchema = z.object({
+    at: z.number(),
+    trace: TraceSchema,
+});
+
+// =============================================================================
+// DEVICE & APP OPS
+// =============================================================================
+
+export const DeviceUnlockedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("DeviceUnlocked"),
+    deviceId: z.string(),
+});
+
+export const AppOpenedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("AppOpened"),
+    deviceId: z.string(),
+    appId: z.string(),
+});
+
+export const ConversationOpenedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("ConversationOpened"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+});
+
+export const ScreenNavigatedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("ScreenNavigated"),
+    deviceId: z.string(),
+    appId: z.string(),
+    screen: z.string(),
+    conversationId: z.string().optional(),
+    transition: z.enum(["push", "pop", "present", "dismiss"]).optional(),
+});
+
+// =============================================================================
+// TYPING OPS
+// =============================================================================
+
+export const TypingStartedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("TypingStarted"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    actor: z.string(),
+});
+
+export const TypingEndedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("TypingEnded"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    actor: z.string(),
+});
+
+// =============================================================================
+// MESSAGE OPS
+// =============================================================================
+
+const MessagePayloadSchema = z.object({
+    id: z.string(),
+    text: z.string().optional(),
+    from: z.string(),
+    type: z.enum(["text", "image", "video", "gif", "voice", "system", "deleted", "screenshot_alert", "call_missed"]).optional(),
+    timestamp: z.string().optional(),
+    // Media
+    imageUrl: z.string().optional(),
+    videoUrl: z.string().optional(),
+    thumbnailUrl: z.string().optional(),
+    gifUrl: z.string().optional(),
+    caption: z.string().optional(),
+    duration: z.number().optional(),
+    height: z.number().optional(),
+    // Interactions
+    reactions: z.array(z.object({
+        emoji: z.string(),
+        count: z.number(),
+        fromMe: z.boolean().optional(),
+    })).optional(),
+    replyTo: z.object({
+        messageId: z.string(),
+        text: z.string(),
+        from: z.string(),
+        type: z.string().optional(),
+    }).optional(),
+    edited: z.boolean().optional(),
+});
+
+export const MessageReceivedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("MessageReceived"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    message: MessagePayloadSchema,
+});
+
+export const MessageSentOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("MessageSent"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    message: MessagePayloadSchema,
+});
+
+export const MessageReadOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("MessageRead"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    messageId: z.string(),
+});
+
+export const MessageDeletedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("MessageDeleted"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    messageId: z.string(),
+});
+
+export const ReactionAddedOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("ReactionAdded"),
+    deviceId: z.string(),
+    appId: z.string(),
+    conversationId: z.string(),
+    messageId: z.string(),
+    reaction: z.object({
+        emoji: z.string(),
+        count: z.number(),
+        fromMe: z.boolean().optional(),
+    }),
+});
+
+// =============================================================================
+// CAMERA OPS
+// =============================================================================
+
+const EasingSchema = z.enum(["linear", "ease-in", "ease-out", "ease-in-out", "cinematic"]);
+
+export const TimelineCameraZoomOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("CameraZoom"),
+    scale: z.number(),
+    duration: z.number(),
+    originX: z.number().optional(),
+    originY: z.number().optional(),
+    easing: EasingSchema.optional(),
+});
+
+export const TimelineCameraShakeOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("CameraShake"),
+    deviceId: z.string(),
+    intensity: z.number().optional(),
+    frequency: z.number().optional(),
+    decay: z.number().optional(),
+    duration: z.number(),
+});
+
+export const TimelinePOVSwitchOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("POVSwitch"),
+    deviceId: z.string(),
+    transition: z.enum(["cut", "crossfade", "wipe"]).optional(),
+});
+
+export const TimelineSplitPOVOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("SplitPOV"),
+    devices: z.array(z.string()),
+    layout: z.enum(["horizontal", "vertical", "pip", "split-diagonal"]),
+});
+
+export const TimelineAnchorFocusOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("AnchorFocus"),
+    anchor: z.string(),
+    preset: z.string().optional(),
+    shake: z.number().optional(),
+    align: z.object({ x: z.number(), y: z.number() }).optional(),
+    duration: z.number(),
+    easing: EasingSchema.optional(),
+});
+
+export const TimelineAnchorTrackOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("AnchorTrack"),
+    anchor: z.string(),
+    duration: z.number(),
+    smoothing: z.number().optional(),
+    preset: z.string().optional(),
+    align: z.object({ x: z.number(), y: z.number() }).optional(),
+    easing: EasingSchema.optional(),
+});
+
+// =============================================================================
+// KEYBOARD OPS
+// =============================================================================
+
+export const KeyboardTypeOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("KeyboardType"),
+    text: z.string(),
+});
+
+export const KeyboardInputOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("KeyboardInput"),
+    type: z.enum(["keyDown", "keyUp"]),
+    key: z.string(),
+});
+
+export const CustomOpSchema = TimelineOpBaseSchema.extend({
+    kind: z.literal("Custom"),
+    deviceId: z.string().optional(),
+    appId: z.string().optional(),
+    eventType: z.string(),
+    payload: z.record(z.string(), z.any()).optional(),
+});
+
+// =============================================================================
+// MASTER SCHEMA
+// =============================================================================
+
+export const TimelineOpSchema = z.discriminatedUnion("kind", [
+    DeviceUnlockedOpSchema,
+    AppOpenedOpSchema,
+    ConversationOpenedOpSchema,
+    TypingStartedOpSchema,
+    TypingEndedOpSchema,
+    MessageReceivedOpSchema,
+    MessageSentOpSchema,
+    MessageReadOpSchema,
+    MessageDeletedOpSchema,
+    ReactionAddedOpSchema,
+    ScreenNavigatedOpSchema,
+    TimelineCameraZoomOpSchema,
+    TimelineCameraShakeOpSchema,
+    TimelinePOVSwitchOpSchema,
+    TimelineSplitPOVOpSchema,
+    TimelineAnchorFocusOpSchema,
+    TimelineAnchorTrackOpSchema,
+    KeyboardTypeOpSchema,
+    KeyboardInputOpSchema,
+    CustomOpSchema,
+]);
+
+export function validateTimelineOp(op: unknown) {
+    return TimelineOpSchema.parse(op);
+}
+
+// =============================================================================
+// SCENE IR SCHEMAS
+// =============================================================================
+
+export const DurationExprSchema = z.union([
+    z.string().regex(/^[\d.]+(s|ms|frames)$/),
+    z.string(),
+    z.number()
+]);
+
+// Helper for Recursive Types (ConcurrentOp)
+const BaseSceneOpSchema = z.union([
+    z.object({ kind: z.literal("Wait"), duration: DurationExprSchema }),
+    z.object({ kind: z.literal("TypingStart"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("TypingEnd"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("SendMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
+    z.object({ kind: z.literal("ReceiveMessage"), actor: z.string(), text: z.string(), conversationId: z.string(), meta: MessagePayloadSchema.optional() }),
+    z.object({ kind: z.literal("ReadMessage"), ref: z.any() }), // Todo: RefSchema
+    z.object({ kind: z.literal("DeleteMessage"), ref: z.any() }),
+
+    // Media ops
+    z.object({ kind: z.literal("SendImage"), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveImage"), actor: z.string(), imageUrl: z.string(), conversationId: z.string(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendVideo"), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveVideo"), actor: z.string(), videoUrl: z.string(), conversationId: z.string(), duration: z.number(), caption: z.string().optional(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendGif"), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveGif"), actor: z.string(), gifUrl: z.string(), conversationId: z.string(), height: z.number().optional(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("SendVoice"), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
+    z.object({ kind: z.literal("ReceiveVoice"), actor: z.string(), conversationId: z.string(), duration: z.number(), skipAutoTiming: z.boolean().optional() }),
+
+    // Camera/POV
+    z.object({ kind: z.literal("POVSwitch"), deviceId: z.string(), transition: z.enum(["cut", "crossfade", "wipe"]).optional() }),
+    z.object({ kind: z.literal("SplitPOV"), devices: z.array(z.string()), layout: z.any() }),
+    z.object({ kind: z.literal("CameraZoom"), scale: z.number(), duration: DurationExprSchema.optional(), originX: z.number().optional(), originY: z.number().optional(), easing: EasingSchema.optional() }),
+    z.object({ kind: z.literal("CameraShake"), deviceId: z.string(), intensity: z.number().optional(), frequency: z.number().optional(), decay: z.number().optional(), duration: DurationExprSchema.optional() }),
+    z.object({ kind: z.literal("AnchorFocus"), anchor: z.string(), preset: z.string().optional(), shake: z.number().optional(), duration: DurationExprSchema.optional(), easing: EasingSchema.optional() }),
+    z.object({ kind: z.literal("AnchorTrack"), anchor: z.string(), duration: DurationExprSchema.optional(), smoothing: z.number().optional(), easing: EasingSchema.optional() }),
+
+    // Navigation
+    z.object({ kind: z.literal("NavigateScreen"), screen: z.enum(["chats-list", "chat", "settings", "status", "calls"]) }),
+    z.object({ kind: z.literal("OpenChat"), conversationId: z.string() }),
+    z.object({ kind: z.literal("GoBack") }),
+
+    // Reserved
+    z.object({ kind: z.literal("AddReaction"), ref: z.any(), actor: z.string(), emoji: z.string() }),
+    z.object({ kind: z.literal("VoiceNoteSent"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
+    z.object({ kind: z.literal("VoiceNoteReceived"), actor: z.string(), conversationId: z.string(), durationMs: z.number() }),
+    z.object({ kind: z.literal("MissedCall"), actor: z.string(), conversationId: z.string() }),
+    z.object({ kind: z.literal("OnlineStatusChanged"), actor: z.string(), status: z.enum(["online", "offline", "typing", "last_seen"]) }),
+    z.object({ kind: z.literal("ScreenshotTaken"), conversationId: z.string() }),
+    z.object({ kind: z.literal("BlockedUser"), actor: z.string() }),
+
+    // Keyboard
+    z.object({ kind: z.literal("ShowKeyboard"), deviceId: z.string() }),
+    z.object({ kind: z.literal("HideKeyboard"), deviceId: z.string() }),
+    z.object({ kind: z.literal("SimulateTyping"), deviceId: z.string(), text: z.string() }),
+    z.object({ kind: z.literal("ClearKeyboardText"), deviceId: z.string() })
+]);
+
+// Recursive Schema for Concurrent Op
+export const SceneOpSchema: z.ZodType<any> = z.lazy(() =>
+    z.union([
+        BaseSceneOpSchema,
+        z.object({ kind: z.literal("Concurrent"), tracks: z.array(z.array(SceneOpSchema)) })
+    ])
+);
+
+export const BeatSchema = z.object({
+    name: z.string(),
+    ops: z.array(SceneOpSchema),
+    meta: z.object({
+        isImprov: z.boolean().optional(),
+        rhythm: z.enum(["fast", "normal", "slow"]).optional(),
+        intensity: z.number().optional()
+    }).optional()
+});
+
+export const DeviceSceneSchema = z.object({
+    deviceId: z.string(),
+    profileId: z.string(),
+    appId: z.string(),
+    conversations: z.array(z.object({
+        id: z.string(),
+        name: z.string().optional(),
+        avatar: z.string().optional(),
+        type: z.enum(["dm", "group"]).optional()
+    })),
+    beats: z.array(BeatSchema)
+});
+
+export const SceneIRSchema = z.object({
+    episodeId: z.string(),
+    meta: z.object({
+        fps: z.number(),
+        durationInFrames: z.number().optional()
+    }),
+    devices: z.array(DeviceSceneSchema),
+    cameraTrack: z.array(z.object({
+        at: DurationExprSchema,
+        op: SceneOpSchema
+    })).optional(),
+    scenes: z.array(z.object({
+        name: z.string(),
+        deviceBeats: z.record(z.string(), z.array(BeatSchema))
+    })).optional()
+});
+
+// =============================================================================
+// NOTIFICATION SCHEMAS
+// =============================================================================
+
+export const NotificationActionSchema = z.object({
+    id: z.string(),
+    label: z.string(),
+    icon: z.string().optional(),
+    destructive: z.boolean().optional(),
+});
+
+export const NotificationIRSchema = z.object({
+    id: z.string(),
+    appId: z.string(),
+    channelId: z.string().optional(),
+    title: z.string(),
+    body: z.string(),
+    icon: z.string().optional(),
+    preview: z.object({
+        kind: z.enum(["text", "image", "video"]),
+        value: z.string(),
+        aspectRatio: z.number().optional(),
+    }).optional(),
+    payload: z.any().optional(),
+    category: z.enum(["message", "call", "system", "reminder"]).optional(),
+    threadKey: z.string().optional(),
+    groupKey: z.string().optional(),
+    peopleIds: z.array(z.string()).optional(),
+    actions: z.array(NotificationActionSchema).optional(),
+    replyable: z.boolean().optional(),
+});
+
+// =============================================================================
+// HELPER FOR GENERIC VALIDATION
+// =============================================================================
+
+export function validateNotificationIR(data: unknown) {
+    return NotificationIRSchema.parse(data);
+}
+````
+
 ## File: packages/renderer/src/anchor-providers/notification.ts
 ````typescript
 /**
@@ -42884,458 +39891,6 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
         </div>
     );
 };
-````
-
-## File: apps/video-runner/src/FullCinematicShowcaseVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import {
-    replay,
-    WorldState,
-    TimelineEvent,
-    createEventIndex,
-    DEFAULT_BUS_CONFIG
-} from "@tokovo/core";
-import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer
-import "@tokovo/devices";
-
-// Import Spotify to register plugin and widgets
-import "@tokovo/apps-spotify";
-
-/**
- * Full Cinematic Showcase - DSL Style
- * 
- * Demonstrates production-grade episode authoring:
- * - DSL helpers abstract away raw event structure
- * - Camera movements synchronized with story beats
- * - Production audio with buses and ducking
- * - Spotify background music (Now Playing widget)
- * - Notification system with grouping
- */
-
-// =============================================================================
-// DSL HELPERS
-// =============================================================================
-
-const dsl = {
-    // Messages
-    receiveMessage: (at: number, convoId: string, from: string, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: convoId,
-        from,
-        text,
-    } as any),
-
-    sendMessage: (at: number, convoId: string, text: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "MESSAGE_RECEIVED",
-        conversationId: convoId,
-        from: "me",
-        text,
-    } as any),
-
-    typingStart: (at: number, convoId: string, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_START",
-        conversationId: convoId,
-        from,
-    } as any),
-
-    typingEnd: (at: number, convoId: string, from: string): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_whatsapp",
-        type: "TYPING_END",
-        conversationId: convoId,
-        from,
-    } as any),
-
-    // Camera
-    zoom: (at: number, scale: number, duration: number, opts: { originX?: number; originY?: number; easing?: string } = {}): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ZOOM",
-        scale,
-        duration,
-        originX: opts.originX ?? 0.5,
-        originY: opts.originY ?? 0.5,
-        easing: opts.easing ?? "ease-out",
-    } as any),
-
-    pan: (at: number, x: number, y: number, duration: number, easing = "ease-out"): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "PAN",
-        translateX: x,
-        translateY: y,
-        duration,
-        easing,
-    } as any),
-
-    shake: (at: number, intensity: number, duration: number, decay = 0.5): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "SHAKE",
-        intensity,
-        frequency: 18,
-        decay,
-        duration,
-    } as any),
-
-    reset: (at: number, duration: number): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "RESET",
-        duration,
-        easing: "ease-out",
-    } as any),
-
-    // Spotify - Background Music
-    spotifyPlay: (at: number, track: { name: string; artist: string; albumArt?: string }): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: "app_spotify",
-        type: "PLAY_TRACK",
-        track,
-    } as any),
-
-    spotifyBackground: (at: number, deviceId: string, track: { name: string; artist: string }): TimelineEvent => ({
-        at,
-        kind: "DEVICE",
-        deviceId,
-        type: "START_BACKGROUND_APP",
-        appId: "app_spotify",
-        indicator: "music",
-        label: `${track.name} - ${track.artist}`,
-    } as any),
-
-    // Notifications
-    notification: (at: number, deviceId: string, opts: { appId: string; title: string; body: string; mode?: string; threadId?: string; icon?: string }): TimelineEvent => ({
-        at,
-        kind: "DEVICE",
-        deviceId,
-        type: "SHOW_NOTIFICATION",
-        appId: opts.appId,
-        title: opts.title,
-        body: opts.body,
-        mode: opts.mode ?? "headsup",
-        threadId: opts.threadId,
-        icon: opts.icon,
-    } as any),
-
-    // Audio
-    playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "PLAY_SOUND",
-        soundId,
-        volume,
-        loop: opts.loop,
-        duration: opts.duration,
-        instanceId: opts.instanceId,
-    } as any),
-
-    stopSound: (at: number, instanceId: string): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "STOP_SOUND",
-        instanceId,
-    } as any),
-};
-
-// =============================================================================
-// DEMO TRACK
-// =============================================================================
-
-const DEMO_TRACK = {
-    name: "Blinding Lights",
-    artist: "The Weeknd",
-    album: "After Hours",
-    albumArt: "https://i.scdn.co/image/ab67616d0000b2738863bc11d2aa12b54f5aeb36",
-};
-
-// =============================================================================
-// EPISODE DEFINITION
-// =============================================================================
-
-function createFullCinematicEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const initialWorld: WorldState = {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-                backgroundApps: [],
-            },
-        },
-        conversations: {
-            dm_ex: {
-                id: "dm_ex",
-                type: "dm",
-                name: "Ex 💔",
-                messages: [],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_ex",
-            },
-            app_spotify: {
-                screen: "player",
-                isMinimized: true,
-            },
-        },
-        camera: {
-            baseView: "APP_VIEW",
-            activeDeviceId: "phone",
-            layout: { mode: "SINGLE", primaryDeviceId: "phone" },
-            activeEffects: [],
-            transform: {
-                translateX: 0, translateY: 0, scale: 1, rotation: 0,
-                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: {
-            activeSounds: {},
-            buses: DEFAULT_BUS_CONFIG,
-        },
-    };
-
-    // -------------------------------------------------------------------------
-    // TIMELINE (DSL STYLE)
-    // -------------------------------------------------------------------------
-    const events: TimelineEvent[] = [
-        // =====================================================================
-        // ACT 0: SPOTIFY STARTS (background music)
-        // =====================================================================
-        dsl.spotifyPlay(0, DEMO_TRACK),
-        dsl.spotifyBackground(0, "phone", DEMO_TRACK),
-
-        // =====================================================================
-        // ACT 1: ESTABLISHING (0-3s)
-        // =====================================================================
-        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),
-        dsl.pan(1, 0, -150, 75, "ease-in-out"),
-        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),
-
-        // =====================================================================
-        // ACT 2: FIRST MESSAGE (3s)
-        // =====================================================================
-        dsl.receiveMessage(90, "dm_ex", "Ex 💔", "We need to talk."),
-        dsl.playSound(90, "whatsapp_received", 0.9),
-        dsl.pan(90, 0, 50, 45),
-        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),
-
-        // =====================================================================
-        // ACT 3: INSTAGRAM NOTIFICATION (4s) - demo grouping
-        // =====================================================================
-        dsl.notification(120, "phone", {
-            appId: "app_instagram",
-            title: "mike_photos",
-            body: "Liked your photo ❤️",
-            threadId: "ig_likes",
-            icon: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
-        }),
-
-        // =====================================================================
-        // ACT 4: TYPING ANTICIPATION (5s)
-        // =====================================================================
-        dsl.typingStart(150, "dm_ex", "Ex 💔"),
-        dsl.playSound(150, "whatsapp_typing", 0.4, { loop: true, duration: 90, instanceId: "typing" }),
-        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),
-
-        // =====================================================================
-        // ACT 5: THE REVEAL (8s)
-        // =====================================================================
-        dsl.typingEnd(240, "dm_ex", "Ex 💔"),
-        dsl.stopSound(240, "typing"),
-        dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
-        dsl.playSound(240, "whatsapp_received", 1.0),
-        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),
-
-        // =====================================================================
-        // ACT 6: ANOTHER IG NOTIFICATION (9s) - grouped with previous
-        // =====================================================================
-        dsl.notification(270, "phone", {
-            appId: "app_instagram",
-            title: "sarah_travels",
-            body: "Also liked your photo ❤️",
-            threadId: "ig_likes",
-        }),
-
-        // =====================================================================
-        // ACT 7: BREATHING ROOM (10s)
-        // =====================================================================
-        dsl.zoom(300, 0.92, 60),
-
-        // =====================================================================
-        // ACT 8: RAPID FIRE (12-16s)
-        // =====================================================================
-        dsl.receiveMessage(360, "dm_ex", "Ex 💔", "Hello?"),
-        dsl.playSound(360, "whatsapp_received", 0.8),
-        dsl.zoom(360, 1.06, 8, { originX: 0.35, originY: 0.8 }),
-
-        dsl.sendMessage(385, "dm_ex", "What do you mean?"),
-        dsl.playSound(385, "whatsapp_sent", 0.7),
-        dsl.zoom(385, 1.09, 8, { originX: 0.65, originY: 0.82 }),
-
-        dsl.receiveMessage(410, "dm_ex", "Ex 💔", "You know exactly what I mean."),
-        dsl.playSound(410, "whatsapp_received", 0.9),
-        dsl.zoom(410, 1.13, 6, { originX: 0.35 }),
-
-        dsl.sendMessage(430, "dm_ex", "I don't understand..."),
-        dsl.playSound(430, "whatsapp_sent", 0.7),
-        dsl.zoom(430, 1.16, 6, { originX: 0.65 }),
-
-        // =====================================================================
-        // ACT 9: THE BOMB (16s)
-        // =====================================================================
-        dsl.receiveMessage(480, "dm_ex", "Ex 💔", "It's over."),
-        dsl.playSound(480, "notification", 1.0),
-        dsl.shake(480, 12, 20, 0.5),
-        dsl.zoom(480, 1.25, 12, { originX: 0.4, originY: 0.88 }),
-
-        // =====================================================================
-        // ACT 10: AFTERMATH (18-24s)
-        // =====================================================================
-        dsl.sendMessage(540, "dm_ex", "..."),
-        dsl.playSound(540, "whatsapp_sent", 0.5),
-        dsl.zoom(540, 1.0, 90),
-        dsl.reset(660, 30),
-    ];
-
-    return { initialWorld, events };
-}
-
-// =============================================================================
-// VIDEO COMPONENT
-// =============================================================================
-
-export const FullCinematicShowcaseVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    const episode = useMemo(() => createFullCinematicEpisode(), []);
-    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
-
-    return (
-        <AbsoluteFill style={{ backgroundColor: "#0a0a1a", justifyContent: "center", alignItems: "center" }}>
-            <AudioLayer world={world} t={t} />
-            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/compiler": "workspace:*",
-        "@tokovo/apps-phone": "workspace:*",
-        "@tokovo/apps-spotify": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
-## File: packages/apps-phone/src/index.ts
-````typescript
-/**
- * @tokovo/apps-phone
- * 
- * Phone Call Simulation Package
- * 
- * Features:
- * - Incoming call screens (iOS/Android variants)
- * - Active call screens with controls
- * - Dynamic Island widget (iOS)
- * - Notification banner (overlay mode)
- * - Platform-specific UI (iOS 16, 17, Android Pixel, Samsung)
- */
-
-// Export plugin
-export { PhonePlugin, registerPhonePlugin } from "./plugin";
-
-// Export UI
-export { PhoneApp } from "./ui";
-
-// Export runtime
-export { phoneReducer } from "./runtime";
-
-// Export behaviors (Semantic Camera System)
-export * from "./behaviors";
-
-// Auto-register on import
-// Auto-register on import
-import { registerPhonePlugin } from "./plugin";
-import { AnchorRegistry } from "@tokovo/core";
-import { PhoneAnchorProvider } from "./provider";
-
-registerPhonePlugin();
-AnchorRegistry.register(PhoneAnchorProvider);
-
-import { AppRegistry, APP_IDS } from "@tokovo/core";
-import { PhoneApp } from "./ui";
-AppRegistry.register(APP_IDS.PHONE, PhoneApp as any);
 ````
 
 ## File: packages/apps-whatsapp/src/components/ios/MessageList.tsx
@@ -46233,6 +42788,154 @@ function getPresetDuration(preset: string): number {
 }
 ````
 
+## File: apps/video-runner/package.json
+````json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/compiler": "workspace:*",
+        "@tokovo/apps-phone": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
+````
+
+## File: packages/core/src/app-metadata.ts
+````typescript
+/**
+ * App Metadata Registry
+ * 
+ * Stores static metadata for applications (Icon, Color, Name).
+ * Used by OS components (Notifications, App Library, Home Screen) to render app identity.
+ * 
+ * This decouples "Branding" from the "Renderer".
+ */
+
+import React from "react";
+
+export interface AppMetadata {
+    /** Display name (e.g. "WhatsApp") */
+    displayName: string;
+
+    /** Primary brand color (e.g. "#25D366") */
+    themeColor: string;
+
+    /** 
+     * App Icon
+     * Can be a string (asset URL/emoji) or a React Component.
+     * Recommendation: Use React Component for SVG consistency.
+     */
+    icon: React.ReactNode | string;
+
+    /**
+     * Optional: Short name for tight spaces (e.g. "Messages")
+     */
+    shortName?: string;
+
+    /**
+     * Layout Strategy
+     * Tells the OS what kind of strategy logic to use.
+     */
+    viewStrategy?: import("./types").ViewKind;
+
+    /**
+     * Design Width (Logical Resolution)
+     * The width this app was designed for (e.g. 393 for iPhone 14/15/16 Pro).
+     * The Renderer will automatically scale the app to fit the physical target width.
+     * Default: 393
+     */
+    designWidth?: number;
+}
+
+class AppMetadataRegistryClass {
+    private _metadata = new Map<string, AppMetadata>();
+
+    /**
+     * Register metadata for an app
+     */
+    register(appId: string, metadata: AppMetadata) {
+        this._metadata.set(appId, metadata);
+    }
+
+    /**
+     * Get metadata for an app.
+     * Returns a default fallback if not found.
+     */
+    get(appId: string): AppMetadata {
+        const data = this._metadata.get(appId);
+        if (!data) {
+            // Fallback for unknown apps
+            return {
+                displayName: appId,
+                themeColor: "#8E8E93",
+                icon: "📱",
+            };
+        }
+        return data;
+    }
+
+    /**
+     * Check if metadata exists
+     */
+    has(appId: string): boolean {
+        return this._metadata.has(appId);
+    }
+}
+
+export const AppMetadataRegistry = new AppMetadataRegistryClass();
+
+// Register Default Apps
+AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬",
+    viewStrategy: "CHAT"
+});
+
+
+AppMetadataRegistry.register("app_gmail", {
+    displayName: "Gmail",
+    themeColor: "#EA4335",
+    icon: "📧",
+    viewStrategy: "FEED" // Warning: Gmail is list-based, effectively FEED layout structure
+});
+
+AppMetadataRegistry.register("app_twitter", {
+    displayName: "X",
+    themeColor: "#000000",
+    icon: "✖️",
+    viewStrategy: "FEED"
+});
+````
+
 ## File: packages/dsl/src/events/keyboard.ts
 ````typescript
 /**
@@ -46779,6 +43482,375 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         };
     }, [world, t, focusDeviceId]);
 }
+````
+
+## File: apps/video-runner/src/FullCinematicShowcaseVideo.tsx
+````typescript
+import React, { useMemo } from "react";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    DEFAULT_BUS_CONFIG,
+    PluginManagerClass
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+
+// Import device reducer
+import "@tokovo/devices";
+
+/**
+ * Full Cinematic Showcase - DSL Style
+ * 
+ * Demonstrates production-grade episode authoring:
+ * - DSL helpers abstract away raw event structure
+ * - Camera movements synchronized with story beats
+ * - Production audio with buses and ducking
+ * - Notification system with grouping
+ * 
+ * NOTE: Spotify and Instagram dependencies removed.
+ */
+
+// =============================================================================
+// DSL HELPERS
+// =============================================================================
+
+const dsl = {
+    // Messages
+    receiveMessage: (at: number, convoId: string, from: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from,
+        text,
+    } as any),
+
+    sendMessage: (at: number, convoId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "MESSAGE_RECEIVED",
+        conversationId: convoId,
+        from: "me",
+        text,
+    } as any),
+
+    typingStart: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    typingEnd: (at: number, convoId: string, from: string): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: convoId,
+        from,
+    } as any),
+
+    // Camera
+    zoom: (at: number, scale: number, duration: number, opts: { originX?: number; originY?: number; easing?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        scale,
+        duration,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    pan: (at: number, x: number, y: number, duration: number, easing = "ease-out"): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "PAN",
+        translateX: x,
+        translateY: y,
+        duration,
+        easing,
+    } as any),
+
+    shake: (at: number, intensity: number, duration: number, decay = 0.5): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        intensity,
+        frequency: 18,
+        decay,
+        duration,
+    } as any),
+
+    reset: (at: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        duration,
+        easing: "ease-out",
+    } as any),
+
+    // Audio
+    playSound: (at: number, soundId: string, volume = 1.0, opts: { loop?: boolean; duration?: number; instanceId?: string } = {}): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "PLAY_SOUND",
+        soundId,
+        volume,
+        loop: opts.loop,
+        duration: opts.duration,
+        instanceId: opts.instanceId,
+    } as any),
+
+    stopSound: (at: number, instanceId: string): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "STOP_SOUND",
+        instanceId,
+        volume: 0,
+        duration: 0,
+        loop: false,
+    } as any),
+};
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+function createFullCinematicEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
+    const initialWorld: WorldState = {
+        devices: {
+            phone: {
+                id: "phone",
+                profileId: "iphone16",
+                isLocked: false,
+                foregroundAppId: "app_whatsapp",
+                notifications: [],
+                backgroundApps: [],
+            },
+        },
+        conversations: {
+            dm_ex: {
+                id: "dm_ex",
+                type: "dm",
+                name: "Ex 💔",
+                messages: [],
+                typing: {},
+            },
+        },
+        appState: {
+            app_whatsapp: {
+                screen: "chat",
+                conversationId: "dm_ex",
+            },
+        },
+        camera: {
+            baseView: "APP_VIEW",
+            activeDeviceId: "phone",
+            layout: { mode: "SINGLE", primaryDeviceId: "phone" },
+            activeEffects: [],
+            transform: {
+                translateX: 0, translateY: 0, scale: 1, rotation: 0,
+                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
+            },
+            deviceTransforms: {},
+        },
+        audio: {
+            activeSounds: {},
+            buses: DEFAULT_BUS_CONFIG,
+        },
+    };
+
+    // -------------------------------------------------------------------------
+    // TIMELINE (DSL STYLE)
+    // -------------------------------------------------------------------------
+    const events: TimelineEvent[] = [
+        // =====================================================================
+        // ACT 1: ESTABLISHING (0-3s)
+        // =====================================================================
+        dsl.zoom(0, 1.15, 1, { originY: 1.0 }),
+        dsl.pan(1, 0, -150, 75, "ease-in-out"),
+        dsl.zoom(30, 1.0, 60, { originY: 0.5 }),
+
+        // =====================================================================
+        // ACT 2: FIRST MESSAGE (3s)
+        // =====================================================================
+        dsl.receiveMessage(90, "dm_ex", "Ex 💔", "We need to talk."),
+        dsl.playSound(90, "whatsapp_received", 0.9),
+        dsl.pan(90, 0, 50, 45),
+        dsl.zoom(100, 1.03, 35, { originY: 0.75 }),
+
+        // =====================================================================
+        // ACT 4: TYPING ANTICIPATION (5s)
+        // =====================================================================
+        dsl.typingStart(150, "dm_ex", "Ex 💔"),
+        dsl.playSound(150, "whatsapp_typing", 0.4, { loop: true, duration: 90, instanceId: "typing" }),
+        dsl.zoom(150, 1.05, 75, { originY: 0.88 }),
+
+        // =====================================================================
+        // ACT 5: THE REVEAL (8s)
+        // =====================================================================
+        dsl.typingEnd(240, "dm_ex", "Ex 💔"),
+        dsl.stopSound(240, "typing"),
+        dsl.receiveMessage(240, "dm_ex", "Ex 💔", "I've been thinking about us a lot lately... and I don't think this is working anymore."),
+        dsl.playSound(240, "whatsapp_received", 1.0),
+        dsl.zoom(240, 1.12, 8, { originY: 0.7 }),
+
+        // =====================================================================
+        // ACT 7: BREATHING ROOM (10s)
+        // =====================================================================
+        dsl.zoom(300, 0.92, 60),
+
+        // =====================================================================
+        // ACT 8: RAPID FIRE (12-16s)
+        // =====================================================================
+        dsl.receiveMessage(360, "dm_ex", "Ex 💔", "Hello?"),
+        dsl.playSound(360, "whatsapp_received", 0.8),
+        dsl.zoom(360, 1.06, 8, { originX: 0.35, originY: 0.8 }),
+
+        dsl.sendMessage(385, "dm_ex", "What do you mean?"),
+        dsl.playSound(385, "whatsapp_sent", 0.7),
+        dsl.zoom(385, 1.09, 8, { originX: 0.65, originY: 0.82 }),
+
+        dsl.receiveMessage(410, "dm_ex", "Ex 💔", "You know exactly what I mean."),
+        dsl.playSound(410, "whatsapp_received", 0.9),
+        dsl.zoom(410, 1.13, 6, { originX: 0.35 }),
+
+        dsl.sendMessage(430, "dm_ex", "I don't understand..."),
+        dsl.playSound(430, "whatsapp_sent", 0.7),
+        dsl.zoom(430, 1.16, 6, { originX: 0.65 }),
+
+        // =====================================================================
+        // ACT 9: THE BOMB (16s)
+        // =====================================================================
+        dsl.receiveMessage(480, "dm_ex", "Ex 💔", "It's over."),
+        dsl.playSound(480, "notification", 1.0),
+        dsl.shake(480, 12, 20, 0.5),
+        dsl.zoom(480, 1.25, 12, { originX: 0.4, originY: 0.88 }),
+
+        // =====================================================================
+        // ACT 10: AFTERMATH (18-24s)
+        // =====================================================================
+        dsl.sendMessage(540, "dm_ex", "..."),
+        dsl.playSound(540, "whatsapp_sent", 0.5),
+        dsl.zoom(540, 1.0, 90),
+        dsl.reset(660, 30),
+    ];
+
+    return { initialWorld, events };
+}
+
+// =============================================================================
+// VIDEO COMPONENT
+// =============================================================================
+
+export const FullCinematicShowcaseVideo: React.FC = () => {
+    const frame = useCurrentFrame();
+    const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
+    const episode = useMemo(() => createFullCinematicEpisode(), []);
+    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
+    const world = replay(episode.initialWorld, episode.events, t);
+
+    const scale = Math.min(1080 / iPhone16Profile.dimensions.width, 1920 / iPhone16Profile.dimensions.height);
+
+    return (
+        <AbsoluteFill style={{ backgroundColor: "#0a0a1a", justifyContent: "center", alignItems: "center" }}>
+            <AudioLayer world={world} t={t} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={t}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                    pluginManager={pluginManager}
+                />
+            </div>
+        </AbsoluteFill>
+    );
+};
+````
+
+## File: packages/apps-phone/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-phone
+ * 
+ * Phone Call Simulation Package
+ * Enterprise Standard Implementation
+ */
+
+import { definePlugin, APP_IDS } from "@tokovo/core";
+
+// 1. Logic
+import { phoneReducer } from "./logic/reducer";
+
+// 2. UI
+import { PhoneApp } from "./ui";
+
+// 3. Adapters
+import { PhoneAnchors } from "./adapters/anchors";
+
+// 4. Assets
+import { PhoneMetadata } from "./assets/metadata"; // Need to create this or inline
+
+// 5. Widgets
+import { DynamicIslandCall } from "./widgets/DynamicIsland";
+
+export const PhonePlugin = definePlugin({
+    id: APP_IDS.PHONE,
+    name: "Phone",
+    version: "2.0.0",
+
+    metadata: PhoneMetadata,
+
+    // UI
+    appView: PhoneApp,
+
+    // Logic
+    reducer: phoneReducer,
+
+    // Anchors
+    anchors: PhoneAnchors.framing,
+    getAnchors: PhoneAnchors.getAnchors,
+
+    // Widgets
+    widgets: [
+        {
+            mode: "dynamicIsland",
+            platforms: ["ios"],
+            priority: 100, // High priority
+            component: DynamicIslandCall,
+            expansionModes: ["compact"]
+        }
+    ],
+
+    eventTypes: ["CALL"]
+});
+
+
+export default PhonePlugin;
+
+// Re-export parts for manual usage if needed
+export { phoneReducer, PhoneApp, PhoneAnchors };
 ````
 
 ## File: packages/core/src/camera/index.ts
@@ -47962,406 +45034,6 @@ export function getShotPreset(
 // =============================================================================
 
 export default CAMERA_PRESETS;
-````
-
-## File: packages/core/src/plugin.ts
-````typescript
-/**
- * Plugin System - Self-contained app registration
- * 
- * Apps register themselves as plugins with all their dependencies:
- * - UI components / Screens
- * - State reducers  
- * - Sound effects
- * - Event types they handle
- * - Platform-specific widgets (Dynamic Island, status bar)
- * - Semantic Anchors (Framing)
- * - Metadata (Icon, Name)
- */
-
-import { WorldState, Notification, BackgroundAppState } from "./types";
-import { AppReducer, ReducerRegistry } from "./engine";
-import { Platform } from "./tokens";
-import type { NotificationAdapter } from "./notification-adapter";
-import { AnchorFraming, AnchorRegistry } from "./anchors";
-import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
-import { AppRegistry } from "./app-registry";
-import { SoundRegistry } from "./sound-registry";
-import { NotificationAdapterRegistry } from "./notification-adapter";
-
-export type { NotificationAdapter };
-
-// =============================================================================
-// PLUGIN TYPES
-// =============================================================================
-
-/**
- * Props passed to all app view components
- */
-export interface AppViewProps {
-    world: WorldState;
-    t?: number;
-    layout?: any;
-    platform?: "ios" | "android";
-    deviceId?: string;
-}
-
-/**
- * App view component type (generic, will be React.FC in renderer)
- */
-export type AppViewComponent = (props: AppViewProps) => any;
-
-/**
- * Screen Component Type (for Router)
- */
-export type ScreenComponent = AppViewComponent;
-
-// =============================================================================
-// WIDGET TYPES
-// =============================================================================
-
-/** Widget display modes */
-export type WidgetMode =
-    | "dynamicIsland"    // iOS Dynamic Island
-    | "statusBar"        // Android status bar indicator
-    | "lockscreen"       // Lock screen widget
-    | "notification";    // Notification banner
-
-// Platform type is re-exported from tokens.ts
-
-/**
- * Props passed to widget components
- */
-export interface WidgetProps {
-    /** App-specific state from world.appState[appId] */
-    appState: any;
-
-    /** Background app state (e.g., playing track info) */
-    backgroundApp?: BackgroundAppState;
-
-    /** Device profile for dimensions */
-    deviceProfile: {
-        dynamicIsland?: {
-            centerX: number;
-            topY: number;
-            collapsedWidth: number;
-            collapsedHeight: number;
-            expandedWidth: number;
-            expandedHeight: number;
-            cornerRadius: number;
-        };
-        statusBarWidget?: {
-            rightX: number;
-            topY: number;
-            maxWidth: number;
-            height: number;
-        };
-    };
-
-    /** Current frame */
-    currentFrame: number;
-
-    /** Widget expansion mode */
-    expansionMode: "minimal" | "compact" | "expanded";
-
-    /** Platform */
-    platform: Platform;
-}
-
-/**
- * Widget component type
- */
-export type WidgetComponent = (props: WidgetProps) => any;
-
-/**
- * Widget slot definition - describes one widget an app provides
- */
-export interface WidgetSlot {
-    /** Widget rendering mode */
-    mode: WidgetMode;
-
-    /** Which platforms this widget supports */
-    platforms: Platform[];
-
-    /** Priority when multiple widgets compete (higher wins) */
-    priority: number;
-
-    /** React component to render */
-    component: WidgetComponent;
-
-    /** Optional: expansion modes this widget supports */
-    expansionModes?: ("minimal" | "compact" | "expanded")[];
-}
-
-
-
-
-/**
- * Plugin definition - everything an app needs to function
- */
-export interface TokovoPlugin {
-    /** Unique app ID (e.g., "app_whatsapp") */
-    id: string;
-
-    /** 
-     * Metadata used for Notifications, Home Screen, Library.
-     * Replaces manual AppMetadataRegistry calls.
-     */
-    metadata?: Partial<AppMetadata> & { name: string };
-
-    /** Plugin version */
-    version: string;
-
-    // --- DEPRECATED FIELDS (Moved to metadata) ---
-    /** @deprecated Use metadata.icon */
-    icon?: string;
-    /** @deprecated Use metadata.themeColor */
-    primaryColor?: string;
-    /** @deprecated Use metadata.name */
-    name: string;
-    // ---------------------------------------------
-
-    /** 
-     * React component to render the MAIN app view.
-     * If `screens` is provided, this can be omitted (Router will be used).
-     */
-    appView?: AppViewComponent;
-
-    /**
-     * Map of screen definitions for declarative routing.
-     * Used by AppKit Router.
-     */
-    screens?: Record<string, ScreenComponent>;
-
-    /** State reducer for APP events */
-    reducer?: AppReducer;
-
-    /** Event types this plugin handles */
-    eventTypes?: string[];
-
-    /** Sound effect mappings */
-    sounds?: Record<string, string>;
-
-    /** Notification sound */
-    notificationSound?: string;
-
-    /** Default app state */
-    defaultState?: any;
-
-    // === Widgets ===
-
-    /** Platform-specific widgets this app provides */
-    widgets?: WidgetSlot[];
-
-    /** Notification adapter for formatting */
-    notificationAdapter?: NotificationAdapter;
-
-    // === Camera Anchors ===
-
-    /** 
-     * Semantic Framing Configuration.
-     * Defines how looking at "lastMessage" or "input" works.
-     */
-    anchors?: Record<string, AnchorFraming>;
-}
-
-// =============================================================================
-// PLUGIN MANAGER
-// =============================================================================
-
-/**
- * PluginManager - Central registry for all app plugins
- */
-class PluginManagerClass {
-    private plugins = new Map<string, TokovoPlugin>();
-    private viewRegistry = new Map<string, AppViewComponent>();
-
-    /**
-     * Register a plugin
-     */
-    register(plugin: TokovoPlugin): void {
-        if (this.plugins.has(plugin.id)) {
-            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
-        }
-
-        this.plugins.set(plugin.id, plugin);
-
-        // 1. Auto-register Reducer
-        if (plugin.reducer) {
-            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
-        }
-
-        // 2. Auto-register View
-        if (plugin.appView) {
-            this.viewRegistry.set(plugin.id, plugin.appView);
-            // Also register with legacy AppRegistry for compatibility
-            AppRegistry.register(plugin.id, plugin.appView as any);
-        } else if (plugin.screens) {
-            // TODO: If we have AppKit Router, we could synthesize a view here.
-            // For now, we expect consumers to use the Router manually or for the plugin to export a Router wrapper.
-            console.log(`[PluginManager] Plugin ${plugin.name} has screens but no root appView. Router required.`);
-        }
-
-        // 3. Auto-register Widgets
-        if (plugin.widgets && plugin.widgets.length > 0) {
-            // Import at top level or use type-only to avoid circular dependency
-            // eslint-disable-next-line @typescript-eslint/no-var-requires
-            import("./widget-registry").then(({ WidgetRegistry }) => {
-                WidgetRegistry.register(plugin.id, plugin.widgets!);
-                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
-            });
-        }
-
-        // 4. Auto-register Metadata
-        const meta: AppMetadata = {
-            displayName: plugin.metadata?.name || plugin.name,
-            themeColor: plugin.metadata?.themeColor || plugin.primaryColor || "#000000",
-            icon: plugin.metadata?.icon || plugin.icon || "📱",
-            viewStrategy: plugin.metadata?.viewStrategy
-        };
-        AppMetadataRegistry.register(plugin.id, meta);
-
-        // 5. Auto-register Anchors
-        if (plugin.anchors) {
-            // Create a synthetic AnchorProvider
-            AnchorRegistry.register({
-                appId: plugin.id,
-                framing: plugin.anchors,
-                getAnchors: (world, layout, deviceId) => {
-                    // Default generic anchor logic - can be enhanced later or overriden
-                    // This is a simplified fallback if the app doesn't implement a complex provider.
-                    // Ideally, we move the full AnchorProvider logic into an AppKit helper.
-
-                    // For now, return basic device anchor + simple layout mapping
-                    const anchors: any = {
-                        device: { x: 0, y: 0, width: 430, height: 932 } // TODO: Get real device dims
-                    };
-
-                    // Access layout state safely
-                    if (layout && typeof layout === 'object' && 'regions' in layout) {
-                        const regions = (layout as any).regions;
-                        if (regions) {
-                            for (const [key, region] of Object.entries(regions)) {
-                                if ((region as any).rect) {
-                                    anchors[key] = (region as any).rect;
-                                }
-                            }
-                        }
-                    }
-
-                    return { anchors, deviceId, appId: plugin.id };
-                }
-            });
-            console.log(`[PluginManager] Auto-registered anchors for: ${plugin.id}`);
-        }
-
-        // 6. Auto-register Sounds
-        if (plugin.sounds) {
-            const soundMap: Record<string, string> = {};
-            // Prefix keys with plugin ID to avoid collisions if registry is flat? 
-            // SoundRegistry.registerMany usually takes flat keys. 
-            // We should trust the plugin provides unique enough keys or we prefix them.
-            // Current convention seems to be "whatsapp_sent".
-
-            SoundRegistry.registerMany(plugin.sounds);
-        }
-
-        // 7. Auto-register Notification Adapter
-        if (plugin.notificationAdapter) {
-            NotificationAdapterRegistry.register(plugin.notificationAdapter);
-        }
-
-        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
-    }
-
-    /**
-     * Get a plugin by ID
-     */
-    get(id: string): TokovoPlugin | undefined {
-        return this.plugins.get(id);
-    }
-
-    /**
-     * Get app view component
-     */
-    getView(id: string): AppViewComponent | undefined {
-        return this.viewRegistry.get(id);
-    }
-
-    /**
-     * Get all registered plugins
-     */
-    getAll(): TokovoPlugin[] {
-        return Array.from(this.plugins.values());
-    }
-
-    /**
-     * Get all registered app IDs
-     */
-    getAppIds(): string[] {
-        return Array.from(this.plugins.keys());
-    }
-
-    /**
-     * Check if plugin is registered
-     */
-    has(id: string): boolean {
-        return this.plugins.has(id);
-    }
-
-    /**
-     * Get plugin metadata for display
-     */
-    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
-        const plugin = this.plugins.get(id);
-        if (!plugin) return undefined;
-        // Prefer metadata object
-        return {
-            name: plugin.metadata?.name || plugin.name,
-            icon: plugin.metadata?.icon as string || plugin.icon,
-            color: plugin.metadata?.themeColor || plugin.primaryColor,
-        };
-    }
-
-    /**
-     * Get sound for an event from plugin
-     */
-    getSound(pluginId: string, soundKey: string): string | undefined {
-        const plugin = this.plugins.get(pluginId);
-        return plugin?.sounds?.[soundKey];
-    }
-}
-
-export const PluginManager = new PluginManagerClass();
-
-// =============================================================================
-// PLUGIN HELPERS
-// =============================================================================
-
-/**
- * Create a plugin definition with defaults
- */
-export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
-    return {
-        ...config,
-        version: config.version ?? "1.0.0",
-        eventTypes: config.eventTypes ?? [],
-        sounds: config.sounds ?? {},
-        // Ensure metadata is populated from deprecated fields if missing
-        metadata: config.metadata ?? {
-            name: config.name,
-            icon: config.icon,
-            themeColor: config.primaryColor
-        }
-    } as TokovoPlugin;
-}
-
-/**
- * Register multiple plugins at once
- */
-export function registerPlugins(plugins: TokovoPlugin[]): void {
-    plugins.forEach(plugin => PluginManager.register(plugin));
-}
 ````
 
 ## File: packages/device-keyboard/src/components/IOSKeyboard.tsx
@@ -50129,6 +46801,95 @@ export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEn
 export * from "./anchor-providers";
 ````
 
+## File: packages/apps-whatsapp/src/ui.tsx
+````typescript
+import React from "react";
+import { WorldState, AppSurface } from "@tokovo/core";
+
+// Screens
+import { ChatScreen } from "./screens/ios/ChatScreen";
+import { ChatListScreen } from "./screens/ios/ChatListScreen";
+
+import { WhatsAppState } from "./types";
+
+export interface WhatsappChatViewProps {
+    world: WorldState;
+    t: number;
+    deviceId?: string;
+    platform?: "ios" | "android";
+    width?: number;
+    height?: number;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+}
+
+export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
+    world,
+    t,
+    deviceId,
+    platform = "ios",
+    width,
+    height,
+    safeAreaInsets
+}) => {
+    // 1. Resolve App State & Screen
+    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
+    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+
+    // 2. Resolve Dimensions (Resolution Independence)
+    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
+    // If undefined, assume standard logical width (393)
+    const activeWidth = width || 393;
+    const activeHeight = height || 2556;
+
+    // 3. Render Appropriate Screen
+    // Strategy Pattern for Screen Navigation
+    let activeScreenContent;
+
+    switch (currentScreen) {
+        case "list":
+        case "chats":
+            activeScreenContent = (
+                <ChatListScreen
+                    world={world}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+        case "chat":
+        default:
+            activeScreenContent = (
+                <ChatScreen
+                    world={world}
+                    deviceId={deviceId}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+    }
+
+    // 4. Return Content (Hoisted AppSurface handles scaling now)
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
+            {activeScreenContent}
+        </div>
+    );
+};
+
+// Main Entry
+export const ui = {
+    WhatsappChatView
+};
+````
+
 ## File: packages/episodes/src/episodes/bakchodi-gang.ts
 ````typescript
 import { episode, EpisodeDefinition } from "@tokovo/dsl";
@@ -50327,24 +47088,47 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
 });
 ````
 
-## File: packages/apps-whatsapp/src/ui.tsx
+## File: packages/core/src/plugin.ts
 ````typescript
-import React from "react";
-import { WorldState, AppSurface } from "@tokovo/core";
+/**
+ * Plugin System - Self-contained app registration
+ * 
+ * Apps register themselves as plugins with all their dependencies:
+ * - UI components / Screens
+ * - State reducers  
+ * - Sound effects
+ * - Event types they handle
+ * - Platform-specific widgets (Dynamic Island, status bar)
+ * - Semantic Anchors (Framing)
+ * - Metadata (Icon, Name)
+ */
 
-// Screens
-import { ChatScreen } from "./screens/ios/ChatScreen";
-import { ChatListScreen } from "./screens/ios/ChatListScreen";
+import { WorldState, Notification, BackgroundAppState } from "./types";
+import { AppReducer, ReducerRegistry } from "./engine";
+import { Platform } from "./tokens";
+import type { NotificationAdapter } from "./notification-adapter";
+import { AnchorFraming, AnchorRegistry, AnchorSnapshot } from "./anchors";
+import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
+import { AppRegistry } from "./app-registry";
+import { SoundRegistry } from "./sound-registry";
+import { NotificationAdapterRegistry } from "./notification-adapter";
+import { validatePlugin } from "./validation";
 
-import { WhatsAppState } from "./types";
+export type { NotificationAdapter };
 
-export interface WhatsappChatViewProps {
+// =============================================================================
+// PLUGIN TYPES
+// =============================================================================
+
+/**
+ * Props passed to all app view components
+ */
+export interface AppViewProps {
     world: WorldState;
-    t: number;
-    deviceId?: string;
+    t?: number;
+    layout?: any;
     platform?: "ios" | "android";
-    width?: number;
-    height?: number;
+    deviceId?: string;
     safeAreaInsets?: {
         top: number;
         bottom: number;
@@ -50353,106 +47137,444 @@ export interface WhatsappChatViewProps {
     };
 }
 
-export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
-    world,
-    t,
-    deviceId,
-    platform = "ios",
-    width,
-    height,
-    safeAreaInsets
-}) => {
-    // 1. Resolve App State & Screen
-    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+/**
+ * App view component type (generic, will be React.FC in renderer)
+ */
+export type AppViewComponent = (props: AppViewProps) => any;
 
-    // 2. Resolve Dimensions (Resolution Independence)
-    // Design Width: 393 (Standard 1x)
-    const designWidth = 393;
-    const targetWidth = width || 1179; // Default fallback (iPhone 16)
-    const targetHeight = height || 2556;
+/**
+ * Screen Component Type (for Router)
+ */
+export type ScreenComponent = AppViewComponent;
 
-    // 3. Render Appropriate Screen
-    // Strategy Pattern for Screen Navigation
-    let activeScreenContent;
+// =============================================================================
+// WIDGET TYPES
+// =============================================================================
 
-    switch (currentScreen) {
-        case "list":
-        case "chats":
-            activeScreenContent = (
-                <ChatListScreen
-                    world={world}
-                    width={targetWidth}
-                    height={targetHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
-        case "chat":
-        default:
-            activeScreenContent = (
-                <ChatScreen
-                    world={world}
-                    deviceId={deviceId}
-                    width={targetWidth}
-                    height={targetHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
+/** Widget display modes */
+export type WidgetMode =
+    | "dynamicIsland"    // iOS Dynamic Island
+    | "statusBar"        // Android status bar indicator
+    | "lockscreen"       // Lock screen widget
+    | "notification";    // Notification banner
+
+// Platform type is re-exported from tokens.ts
+
+/**
+ * Props passed to widget components
+ */
+export interface WidgetProps {
+    /** App-specific state from world.appState[appId] */
+    appState: any;
+
+    /** Background app state (e.g., playing track info) */
+    backgroundApp?: BackgroundAppState;
+
+    /** Device profile for dimensions */
+    deviceProfile: {
+        dynamicIsland?: {
+            centerX: number;
+            topY: number;
+            collapsedWidth: number;
+            collapsedHeight: number;
+            expandedWidth: number;
+            expandedHeight: number;
+            cornerRadius: number;
+        };
+        statusBarWidget?: {
+            rightX: number;
+            topY: number;
+            maxWidth: number;
+            height: number;
+        };
+    };
+
+    /** Current frame */
+    currentFrame: number;
+
+    /** Widget expansion mode */
+    expansionMode: "minimal" | "compact" | "expanded";
+
+    /** Platform */
+    platform: Platform;
+}
+
+/**
+ * Widget component type
+ */
+export type WidgetComponent = (props: WidgetProps) => any;
+
+/**
+ * Widget slot definition - describes one widget an app provides
+ */
+export interface WidgetSlot {
+    /** Widget rendering mode */
+    mode: WidgetMode;
+
+    /** Which platforms this widget supports */
+    platforms: Platform[];
+
+    /** Priority when multiple widgets compete (higher wins) */
+    priority: number;
+
+    /** React component to render */
+    component: WidgetComponent;
+
+    /** Optional: expansion modes this widget supports */
+    expansionModes?: ("minimal" | "compact" | "expanded")[];
+}
+
+
+
+
+/**
+ * Plugin definition - everything an app needs to function
+ */
+export interface TokovoPlugin {
+    /** Unique app ID (e.g., "app_whatsapp") */
+    id: string;
+
+    /** 
+     * Metadata used for Notifications, Home Screen, Library.
+     * Replaces manual AppMetadataRegistry calls.
+     */
+    metadata?: Partial<AppMetadata> & { name: string };
+
+    /** Plugin version */
+    version: string;
+
+    // --- DEPRECATED FIELDS (Moved to metadata) ---
+    /** @deprecated Use metadata.icon */
+    icon?: string;
+    /** @deprecated Use metadata.themeColor */
+    primaryColor?: string;
+    /** @deprecated Use metadata.name */
+    name: string;
+    // ---------------------------------------------
+
+    /** 
+     * React component to render the MAIN app view.
+     * If `screens` is provided, this can be omitted (Router will be used).
+     */
+    appView?: AppViewComponent;
+
+    /**
+     * Map of screen definitions for declarative routing.
+     * Used by AppKit Router.
+     */
+    screens?: Record<string, ScreenComponent>;
+
+    /** State reducer for APP events */
+    reducer?: AppReducer;
+
+    /** Event types this plugin handles */
+    eventTypes?: string[];
+
+    /** Sound effect mappings */
+    sounds?: Record<string, string>;
+
+    /** Notification sound */
+    notificationSound?: string;
+
+    /** Default app state */
+    defaultState?: any;
+
+    // === Widgets ===
+
+    /** Platform-specific widgets this app provides */
+    widgets?: WidgetSlot[];
+
+    /** Notification adapter for formatting */
+    notificationAdapter?: NotificationAdapter;
+
+    // === Camera Anchors ===
+
+    /** 
+     * Semantic Framing Configuration.
+     * Defines how looking at "lastMessage" or "input" works.
+     */
+    anchors?: Record<string, AnchorFraming>;
+
+    /**
+     * Dynamic Anchor Calculation Logic.
+     * Optional: Provide a custom function to resolve anchor rects at runtime.
+     * If omitted, a default layout-based fallback is used.
+     */
+    getAnchors?: (world: WorldState, layout: unknown, deviceId: string) => AnchorSnapshot;
+}
+
+// =============================================================================
+// PLUGIN MANAGER
+// =============================================================================
+
+/**
+ * PluginManager - Central registry for all app plugins
+ */
+export class PluginManagerClass {
+    private plugins = new Map<string, TokovoPlugin>();
+    private viewRegistry = new Map<string, AppViewComponent>();
+
+    /**
+     * Register a plugin
+     */
+    register(plugin: TokovoPlugin): void {
+        // Enforce Enterprise Validation
+        try {
+            validatePlugin(plugin);
+        } catch (e: any) {
+            console.error(`[PluginManager] Failed to register plugin ${plugin.id}:`, e.message);
+            console.warn("Continuing despite validation error (Migration Mode)");
+        }
+
+        if (this.plugins.has(plugin.id)) {
+            console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+        }
+
+        this.plugins.set(plugin.id, plugin);
+
+        // 1. Auto-register Reducer
+        if (plugin.reducer) {
+            ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+        }
+
+        // 2. Auto-register View
+        if (plugin.appView) {
+            this.viewRegistry.set(plugin.id, plugin.appView);
+            // Also register with legacy AppRegistry for compatibility
+            AppRegistry.register(plugin.id, plugin.appView as any);
+        } else if (plugin.screens) {
+            // TODO: If we have AppKit Router, we could synthesize a view here.
+            // For now, we expect consumers to use the Router manually or for the plugin to export a Router wrapper.
+            console.log(`[PluginManager] Plugin ${plugin.name} has screens but no root appView. Router required.`);
+        }
+
+        // 3. Auto-register Widgets
+        if (plugin.widgets && plugin.widgets.length > 0) {
+            // Import at top level or use type-only to avoid circular dependency
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            import("./widget-registry").then(({ WidgetRegistry }) => {
+                WidgetRegistry.register(plugin.id, plugin.widgets!);
+                console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
+            });
+        }
+
+        // 4. Auto-register Metadata
+        const meta: AppMetadata = {
+            displayName: plugin.metadata?.name || plugin.name,
+            themeColor: plugin.metadata?.themeColor || plugin.primaryColor || "#000000",
+            icon: plugin.metadata?.icon || plugin.icon || "📱",
+            viewStrategy: plugin.metadata?.viewStrategy
+        };
+        AppMetadataRegistry.register(plugin.id, meta);
+
+        // 5. Auto-register Anchors
+        if (plugin.anchors) {
+            // Create a synthetic AnchorProvider
+            AnchorRegistry.register({
+                appId: plugin.id,
+                framing: plugin.anchors,
+                getAnchors: plugin.getAnchors || ((world, layout, deviceId) => {
+                    // Default generic anchor logic - can be enhanced later or overriden
+                    // This is a simplified fallback if the app doesn't implement a complex provider.
+                    // Ideally, we move the full AnchorProvider logic into an AppKit helper.
+
+                    // For now, return basic device anchor + simple layout mapping
+                    const anchors: any = {
+                        device: { x: 0, y: 0, width: 430, height: 932 } // TODO: Get real device dims
+                    };
+
+                    // Access layout state safely
+                    if (layout && typeof layout === 'object' && 'regions' in layout) {
+                        const regions = (layout as any).regions;
+                        if (regions) {
+                            for (const [key, region] of Object.entries(regions)) {
+                                if ((region as any).rect) {
+                                    anchors[key] = (region as any).rect;
+                                }
+                            }
+                        }
+                    }
+
+                    return { anchors, deviceId, appId: plugin.id };
+                })
+            });
+            console.log(`[PluginManager] Auto-registered anchors for: ${plugin.id}`);
+        }
+
+        // 6. Auto-register Sounds
+        if (plugin.sounds) {
+            const soundMap: Record<string, string> = {};
+            // Prefix keys with plugin ID to avoid collisions if registry is flat? 
+            // SoundRegistry.registerMany usually takes flat keys. 
+            // We should trust the plugin provides unique enough keys or we prefix them.
+            // Current convention seems to be "whatsapp_sent".
+
+            SoundRegistry.registerMany(plugin.sounds);
+        }
+
+        // 7. Auto-register Notification Adapter
+        if (plugin.notificationAdapter) {
+            NotificationAdapterRegistry.register(plugin.notificationAdapter);
+        }
+
+        console.log(`[PluginManager] Registered plugin: ${plugin.name} (${plugin.id})`);
     }
 
-    // 4. Wrap in AppSurface (Sandbox)
-    return (
-        <AppSurface
-            designWidth={designWidth}
-            targetWidth={targetWidth}
-            targetHeight={targetHeight}
-            backgroundColor="#000"
-        >
-            {activeScreenContent}
-        </AppSurface>
-    );
-};
+    /**
+     * Get a plugin by ID
+     */
+    get(id: string): TokovoPlugin | undefined {
+        return this.plugins.get(id);
+    }
 
-// Main Entry
-export const ui = {
-    WhatsappChatView
-};
+    /**
+     * Get app view component
+     */
+    getView(id: string): AppViewComponent | undefined {
+        return this.viewRegistry.get(id);
+    }
+
+    /**
+     * Get all registered plugins
+     */
+    getAll(): TokovoPlugin[] {
+        return Array.from(this.plugins.values());
+    }
+
+    /**
+     * Get all registered app IDs
+     */
+    getAppIds(): string[] {
+        return Array.from(this.plugins.keys());
+    }
+
+    /**
+     * Check if plugin is registered
+     */
+    has(id: string): boolean {
+        return this.plugins.has(id);
+    }
+
+    /**
+     * Get plugin metadata for display
+     */
+    getMetadata(id: string): { name: string; icon?: string; color?: string } | undefined {
+        const plugin = this.plugins.get(id);
+        if (!plugin) return undefined;
+        // Prefer metadata object
+        return {
+            name: plugin.metadata?.name || plugin.name,
+            icon: plugin.metadata?.icon as string || plugin.icon,
+            color: plugin.metadata?.themeColor || plugin.primaryColor,
+        };
+    }
+
+    /**
+     * Get sound for an event from plugin
+     */
+    getSound(pluginId: string, soundKey: string): string | undefined {
+        const plugin = this.plugins.get(pluginId);
+        return plugin?.sounds?.[soundKey];
+    }
+}
+
+export const PluginManager = new PluginManagerClass();
+
+// =============================================================================
+// PLUGIN HELPERS
+// =============================================================================
+
+/**
+ * Create a plugin definition with defaults
+ */
+export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name: string }): TokovoPlugin {
+    return {
+        ...config,
+        version: config.version ?? "1.0.0",
+        eventTypes: config.eventTypes ?? [],
+        sounds: config.sounds ?? {},
+        // Ensure metadata is populated from deprecated fields if missing
+        metadata: config.metadata ?? {
+            name: config.name,
+            icon: config.icon,
+            themeColor: config.primaryColor
+        }
+    } as TokovoPlugin;
+}
+
+/**
+ * Register multiple plugins at once
+ */
+export function registerPlugins(plugins: TokovoPlugin[]): void {
+    plugins.forEach(plugin => PluginManager.register(plugin));
+}
 ````
 
-## File: packages/core/src/index.ts
+## File: packages/apps-whatsapp/src/index.ts
 ````typescript
+/**
+ * WhatsApp App Definition
+ * 
+ * Unified Plugin Export
+ */
+
+import { definePlugin, APP_IDS } from "@tokovo/core";
+import { whatsappReducer } from "./runtime";
+import { WhatsappChatView } from "./ui";
+import { WHATSAPP_FRAMING } from "./provider";
+import { WhatsAppMetadata } from "./metadata";
+import { whatsappAdapter } from "./notification-adapter";
+
+// Export Components & Types for direct usage if needed
 export * from "./types";
-// Utils
-export { SeededRNG } from "./utils/rng";
-
-// App Metadata Registry
-export * from "./app-metadata";
-
-// Engine
-export * from "./engine";
-export { AppRegistry } from "./app-registry";
-export type { AppViewProps, AppViewComponent } from "./app-registry";
+export * from "./runtime";
+export * from "./components";
+export * from "./ui";
+export * from "./config";
 export * from "./camera";
-export * from "./sounds";
-export * from "./sound-registry";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./widget-registry";
-export * from "./components/AppSurface";
-export * from "./notification-adapter";
-export * from "./notification-dsl";
-export * from "./transitions";
-export * from "./director-lite";
-export * from "./audio";
-export * from "./anchors";
-export * from "./behavior-registry";
-export * from "./apps-config";
-export * from "./notification-registry";
-export * from "./scheduler/notification-scheduler";
+export * from "./behaviors";
+export * from "./layout";
+
+// Define the Unified Plugin
+export const WhatsApp = definePlugin({
+    id: APP_IDS.WHATSAPP,
+    name: "WhatsApp",
+    version: "2.0.0",
+
+    // 1. Metadata (Icon, Name, Color)
+    metadata: WhatsAppMetadata,
+
+    // 2. Routing / Views
+    // We use the existing Wrapper View which handles internal routing for now.
+    // In V3 we can expose `screens` directly.
+    appView: WhatsappChatView as any,
+
+    // 3. Logic (Reducer)
+    reducer: whatsappReducer,
+
+    // 4. Notifications
+    notificationAdapter: whatsappAdapter,
+
+    // 5. Camera Framing (Anchors)
+    anchors: WHATSAPP_FRAMING,
+
+    // 6. Assets (Sounds)
+    sounds: {
+        "whatsapp_sent": "whatsapp-sent.mp3",
+        "whatsapp_received": "whatsapp-received.mp3",
+        "whatsapp_typing": "typing.mp3",
+    },
+
+    // 7. Event Types
+    eventTypes: [
+        "MESSAGE_RECEIVED", "MESSAGE_SENT",
+        "TYPING_START", "TYPING_END",
+        "MESSAGE_READ", "VOICE_MESSAGE_RECEIVED"
+    ]
+});
+
+// Default Export
+export default WhatsApp;
 ````
 
 ## File: packages/renderer/src/engines/useCameraEngine.ts
@@ -51147,71 +48269,636 @@ function lerp(a: number, b: number, t: number): number {
 }
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
+## File: packages/core/src/index.ts
+````typescript
+export * from "./types";
+// Utils
+export { SeededRNG } from "./utils/rng";
+
+// App Metadata Registry
+export * from "./app-metadata";
+
+// Engine
+export * from "./engine";
+export { AppRegistry } from "./app-registry";
+export type { AppViewProps, AppViewComponent } from "./app-registry";
+export * from "./camera";
+export * from "./sounds";
+export * from "./sound-registry";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./validation"; // [NEW] Runtime Validation
+export * from "./widget-registry";
+export * from "./components/AppSurface";
+export * from "./notification-adapter";
+export * from "./notification-dsl";
+export * from "./transitions";
+export * from "./director-lite";
+export * from "./audio";
+export * from "./anchors";
+export * from "./behavior-registry";
+export * from "./apps-config";
+export * from "./notification-registry";
+export * from "./scheduler/notification-scheduler";
+````
+
+## File: packages/apps-whatsapp/src/config/layout-config.ts
 ````typescript
 /**
- * WhatsApp App Definition
+ * WhatsApp Layout Configuration
  * 
- * Unified Plugin Export
+ * Production-grade configurable message heights, spacing, and animations.
+ * All values are in device pixels (3x scale for retina).
+ * 
+ * DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No heuristics.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
  */
 
-import { definePlugin, APP_IDS } from "@tokovo/core";
-import { whatsappReducer } from "./runtime";
-import { WhatsappChatView } from "./ui";
-import { WHATSAPP_FRAMING } from "./provider";
-import { WhatsAppMetadata } from "./metadata";
-import { whatsappAdapter } from "./notification-adapter";
+// =============================================================================
+// MESSAGE TYPE ENUMERATION
+// =============================================================================
 
-// Export Components & Types for direct usage if needed
-export * from "./types";
-export * from "./runtime";
-export * from "./components";
-export * from "./ui";
-export * from "./config";
-export * from "./camera";
-export * from "./behaviors";
-export * from "./layout";
+export type MessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "typing"
+    | "screenshot_alert"
+    | "call_missed";
 
-// Define the Unified Plugin
-export const WhatsApp = definePlugin({
-    id: APP_IDS.WHATSAPP,
-    name: "WhatsApp",
-    version: "2.0.0",
+export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
 
-    // 1. Metadata (Icon, Name, Color)
-    metadata: WhatsAppMetadata,
+// =============================================================================
+// SPACING CONFIGURATION (SOURCE OF TRUTH)
+// =============================================================================
 
-    // 2. Routing / Views
-    // We use the existing Wrapper View which handles internal routing for now.
-    // In V3 we can expose `screens` directly.
-    appView: WhatsappChatView as any,
+/**
+ * Authoritative Layout Constants.
+ * These are the Source of Truth for both Calculation and Rendering.
+ * All units in device pixels (3x retina).
+ */
+export const LAYOUT_CONSTANTS = {
+    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
+    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
+    LINE_HEIGHT: 66,          // Text line height (22px visual)
+    FONT_SIZE: 51,            // Text font size
+    TIMESTAMP_HEIGHT: 36,     // Footer area height
+    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
 
-    // 3. Logic (Reducer)
-    reducer: whatsappReducer,
+    // Spacing Tiers (The 3-Tier Model)
+    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
+    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
 
-    // 4. Notifications
-    notificationAdapter: whatsappAdapter,
+    // System Spacing
+    GAP_SYSTEM: 24,           // 9px visual
 
-    // 5. Camera Framing (Anchors)
-    anchors: WHATSAPP_FRAMING,
+    // Typography / Metrics
+    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
 
-    // 6. Assets (Sounds)
-    sounds: {
-        "whatsapp_sent": "whatsapp-sent.mp3",
-        "whatsapp_received": "whatsapp-received.mp3",
-        "whatsapp_typing": "typing.mp3",
+    // Typing Indicator
+    TYPING_BUBBLE_HEIGHT: 72, // Inner height
+    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
+};
+
+/**
+ * UI Constants (Header, Input, etc.)
+ * Source of Truth for both React Components and Layout Engine.
+ */
+export const UI_CONSTANTS = {
+    // Header
+    HEADER_CONTENT_HEIGHT: 60,
+    HEADER_AVATAR_SIZE: 37,
+    HEADER_AVATAR_MARGIN_RIGHT: 10,
+    HEADER_PADDING_X: 10,
+    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
+
+    // Input Area
+    INPUT_MIN_HEIGHT: 60, // Standard single line
+};
+
+/**
+ * Simplified Per-Message-Type Configuration
+ */
+export interface MessageTypeConfig {
+    category: MessageCategory;
+    gapBefore?: number; // Force specific gap (used for System messages)
+    gapAfter?: number;  // Force specific gap
+}
+
+export interface SpacingConfig {
+    typeOverrides: Record<MessageType, MessageTypeConfig>;
+    global: GlobalSpacing;
+}
+
+// =============================================================================
+// HEIGHT & WIDTH CONFIGURATION
+// =============================================================================
+
+export interface MessageHeightConfig {
+    /** Base height calculation */
+    base: number;
+    /** For text: Line height */
+    lineHeight?: number;
+    /** For text: Characters per line for wrapping */
+    charsPerLine?: number;
+    /** For media: Height with caption */
+    withCaption?: number;
+}
+
+export interface MessageWidthConfig {
+    /** Max width as percentage of viewport (0-1) */
+    maxPercent: number;
+    /** Minimum width in pixels */
+    min: number;
+    /** Fixed width (optional) */
+    fixed?: number;
+}
+
+export interface MessageSchema {
+    height: MessageHeightConfig;
+    width: MessageWidthConfig;
+}
+
+// =============================================================================
+// HEIGHT ADDITIONS (The "Legos")
+// =============================================================================
+
+export interface HeightAdditions {
+    reaction: number;
+    reply: number;
+    linkPreview: number;
+    senderName: number;
+}
+
+// =============================================================================
+// SCROLL & ANIMATION
+// =============================================================================
+
+export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
+
+export interface ScrollConfig {
+    lockToBottom: boolean;
+    smoothScrollDuration: number;
+    easing: EasingFunction;
+    newMessageScrollDelay: number;
+    overscanTop: number;
+    overscanBottom: number;
+    maxScrollSpeed: number;
+}
+
+export interface AnimationConfig {
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    typingPulseDuration: number;
+    voiceWaveformSpeed: number;
+}
+
+export interface GlobalSpacing {
+    topPadding: number;
+    bottomPadding: number;
+    bubbleMargin: number;
+}
+
+// =============================================================================
+// COMPLETE CONFIG STRUCT
+// =============================================================================
+
+export interface MessageLayoutConfig {
+    messageTypes: Record<MessageType, MessageSchema>;
+    additions: HeightAdditions;
+    scroll: ScrollConfig;
+    animation: AnimationConfig;
+    spacing: SpacingConfig;
+}
+
+// =============================================================================
+// DEFAULT CONFIGURATION (The Values)
+// =============================================================================
+
+const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
+    text: { category: "text" },
+    image: { category: "media" },
+    video: { category: "media" },
+    gif: { category: "media" },
+    voice: { category: "audio" },
+    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    deleted: { category: "text" },
+    // Typing behaves like a sender run-break (e.g. interruption)
+    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
+    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+};
+
+export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
+    messageTypes: {
+        text: {
+            height: {
+                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
+                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
+                // capacity dynamic via measureTextBlock (unitsPerLine)
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 150,
+            },
+        },
+        image: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        video: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        gif: {
+            height: { base: 500 },
+            width: { maxPercent: 0.78, min: 250 },
+        },
+        voice: {
+            height: { base: 180 },
+            width: { fixed: 450, maxPercent: 0.78, min: 450 },
+        },
+        system: {
+            height: { base: 80 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        deleted: {
+            height: { base: 100 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        typing: {
+            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
+            width: { fixed: 150, maxPercent: 0.3, min: 150 },
+        },
+        screenshot_alert: {
+            height: { base: 80 },
+            width: { maxPercent: 0.7, min: 250 },
+        },
+        call_missed: {
+            height: { base: 120 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
     },
+    additions: {
+        reaction: 36,
+        reply: 90,
+        linkPreview: 180,
+        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
+    },
+    scroll: {
+        lockToBottom: true,
+        smoothScrollDuration: 15,
+        easing: "easeOut",
+        newMessageScrollDelay: 3,
+        overscanTop: 200,
+        overscanBottom: 200,
+        maxScrollSpeed: 60,
+    },
+    animation: {
+        messageAppearDuration: 12,
+        messageAppearOffset: 30,
+        typingPulseDuration: 45,
+        voiceWaveformSpeed: 2,
+    },
+    spacing: {
+        typeOverrides: DEFAULT_TYPE_OVERRIDES,
+        global: {
+            topPadding: 48,
+            bottomPadding: 120,
+            bubbleMargin: 36,
+        },
+    },
+};
 
-    // 7. Event Types
-    eventTypes: [
-        "MESSAGE_RECEIVED", "MESSAGE_SENT",
-        "TYPING_START", "TYPING_END",
-        "MESSAGE_READ", "VOICE_MESSAGE_RECEIVED"
-    ]
-});
+// =============================================================================
+// HEIGHT CALCULATION
+// =============================================================================
 
-// Default Export
-export default WhatsApp;
+export interface MessageForHeight {
+    type?: MessageType;
+    text?: string;
+    caption?: string;
+    from?: string;
+    prevFrom?: string;
+    isGroupChat?: boolean;
+    reactions?: unknown[];
+    replyTo?: unknown;
+    linkPreview?: unknown;
+}
+
+export function calculateMessageHeight(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    let height = 0;
+
+    // Base height
+    if (msgType === "text" || msgType === "deleted") {
+        const text = msg.text || "";
+        // Use unified measurement logic
+        const { lines } = measureTextBlock(text, viewportWidth, config);
+        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
+    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
+        // Dynamic Media Height (Option B)
+        // Measure caption to determine how much vertical space to add to base image
+        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
+        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
+        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
+        // Add timestamp footer height + margin (timestamp sits below caption)
+        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
+        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
+    } else {
+        height = typeConfig.height.base;
+    }
+
+    // Additions
+    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
+    if (msg.replyTo) height += config.additions.reply;
+    if (msg.linkPreview) height += config.additions.linkPreview;
+
+    if (shouldShowSenderName({
+        from: msg.from,
+        type: msgType,
+        isGroupChat: msg.isGroupChat,
+        prevFrom: msg.prevFrom
+    })) {
+        height += config.additions.senderName;
+    }
+
+    return height;
+}
+
+// =============================================================================
+// SMART GAP CALCULATION (THE TRUTH TABLE)
+// =============================================================================
+
+export interface MessageForGap {
+    type?: MessageType;
+    from?: string;
+    at?: number;
+    hasReply?: boolean;
+    hasReactions?: boolean;
+    hasLinkPreview?: boolean;
+}
+
+export interface GapContext {
+    prevMessage: MessageForGap;
+    nextMessage: MessageForGap;
+}
+
+export function calculateSmartGap(
+    context: GapContext,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const { prevMessage, nextMessage } = context;
+    const prevType = (prevMessage.type || "text") as MessageType;
+    const nextType = (nextMessage.type || "text") as MessageType;
+
+    // Check type-specific processing (only System messages act as special exceptions now)
+    const prevOverride = config.spacing.typeOverrides[prevType];
+    const nextOverride = config.spacing.typeOverrides[nextType];
+
+    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
+    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
+
+    // Visual Run Logic
+    const sameSender = prevMessage.from === nextMessage.from;
+    const isVisualRun = sameSender &&
+        prevType === "text" &&
+        nextType === "text" &&
+        !prevMessage.hasReply &&
+        !nextMessage.hasReply &&
+        !prevMessage.hasReactions &&
+        !nextMessage.hasReactions &&
+        !prevMessage.hasLinkPreview &&
+        !nextMessage.hasLinkPreview;
+
+    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
+    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
+    return LAYOUT_CONSTANTS.GAP_NORMAL;
+}
+
+// Compatibility Shim
+export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
+    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
+}
+
+// =============================================================================
+// MEASUREMENT HELPERS (Deterministic constants)
+// =============================================================================
+
+export interface TextBlockMetrics {
+    lines: number;
+    bubbleWidth: number;
+    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
+}
+
+/* DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No runtime DOM measurement. Deterministic constants.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
+/**
+ * Deterministic, no-DOM text measurement.
+ * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
+ * not the paragraph total weight or always-full-capacity width.
+ *
+ * Weighted units:
+ * - space: 0.6
+ * - ascii/basic: 1.0
+ * - wide (CJK etc): 1.5
+ * - emoji surrogate pair: 1.8
+ */
+export function measureTextBlock(
+    text: string,
+    viewportWidth: number = 1170, // Default reference width
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): TextBlockMetrics {
+    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
+
+    // 1) Constraints
+    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
+    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+
+    // Safety clamp so we never divide by 0 / go negative on tiny screens
+    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
+
+    // 2) Capacity (INTEGER, consistent everywhere)
+    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
+    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
+
+    // 3) Measure
+    // Split paragraphs by explicit newline. Newline always forces a line break.
+    const paragraphs = text.split("\n");
+
+    let totalLines = 0;
+    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
+
+    for (const paragraph of paragraphs) {
+        // Explicit blank line => counts as 1 line
+        if (paragraph.length === 0) {
+            totalLines += 1;
+            maxLineUnits = Math.max(maxLineUnits, 0);
+            continue;
+        }
+
+        // Wrap simulation in weighted units
+        let lineUnits = 0;
+        let linesInParagraph = 1;
+
+        for (let i = 0; i < paragraph.length; i++) {
+            const code = paragraph.charCodeAt(i);
+
+            // Weight function (deterministic)
+            let w = 1.0;
+
+            // space
+            if (code === 32) {
+                w = 0.6;
+            } else if (code >= 65 && code <= 90) {
+                // Uppercase A-Z
+                w = 1.3;
+            } else {
+                // emoji surrogate pair
+                const isHigh = code >= 0xd800 && code <= 0xdbff;
+                if (isHigh && i + 1 < paragraph.length) {
+                    const next = paragraph.charCodeAt(i + 1);
+                    const isLow = next >= 0xdc00 && next <= 0xdfff;
+                    if (isLow) {
+                        w = 1.8;
+                        i++; // consume low surrogate
+                    } else if (code > 255) {
+                        w = 1.5;
+                    }
+                } else if (code > 255) {
+                    // wide-ish (CJK etc.)
+                    w = 1.5;
+                }
+            }
+
+            // If adding this char overflows the line => wrap
+            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
+            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
+            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
+                maxLineUnits = Math.max(maxLineUnits, lineUnits);
+                linesInParagraph += 1;
+                lineUnits = w;
+            } else {
+                lineUnits += w;
+            }
+
+            // Track widest line as we go
+            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
+            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+        }
+
+        // finalize paragraph
+        totalLines += linesInParagraph;
+        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+    }
+
+    // Ensure at least one line for empty string
+    if (totalLines === 0) totalLines = 1;
+
+    // 4) Convert widest line units -> pixels
+    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
+
+    // Clamp bubble width to: [minWidth, maxBubbleWidth]
+    const bubbleWidth = Math.min(
+        maxBubbleWidth,
+        Math.max(computedWidth, typeConfig.width.min)
+    );
+
+    return { lines: totalLines, bubbleWidth, unitsPerLine };
+}
+
+export function calculateBubbleWidth(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    if (typeConfig.width.fixed) return typeConfig.width.fixed;
+
+    if (msgType === "text" || msgType === "deleted") {
+        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
+        return bubbleWidth;
+    }
+
+    // Media & others: Use standard clamping
+    // Calculates a width based on percentage, but ensures it's at least 'min'
+    // and optionally upper-bounded if we strictly wanted to (not currently in config)
+    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
+    return Math.max(typeConfig.width.min, idealWidth);
+}
+
+// =============================================================================
+// ANIMATION & LAYOUT HELPERS
+// =============================================================================
+
+export function applyEasing(progress: number, easing: EasingFunction): number {
+    switch (easing) {
+        case "linear": return progress;
+        case "easeOut": return 1 - Math.pow(1 - progress, 3);
+        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        case "spring":
+            const c4 = (2 * Math.PI) / 3;
+            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+        default: return progress;
+    }
+}
+
+export function isMessageCentered(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system";
+}
+
+export function doesMessageBreakGrouping(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system" || category === "ephemeral"; // System & Typing break grouping
+}
+
+export interface SenderNameContext {
+    from?: string;
+    type?: string;
+    isGroupChat?: boolean;
+    prevFrom?: string;
+}
+
+export function shouldShowSenderName(ctx: SenderNameContext): boolean {
+    if (!ctx.isGroupChat) return false;
+    if (!ctx.from) return false;
+    if (ctx.from === "me") return false;
+    if (ctx.from === "system") return false;
+    if (ctx.type === "system") return false;
+
+    // Show if previous sender was different (or no previous sender, or generic BREAK token)
+    return ctx.from !== ctx.prevFrom;
+}
 ````
 
 ## File: packages/core/src/engine.ts
@@ -52058,15 +49745,17 @@ import {
     NotificationInstance,
     EventIndex,
     PluginManager,
+    PluginManagerClass,
     APP_IDS,
     NotificationScheduler,
+    AppSurface
 } from "@tokovo/core";
 // import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
 import { DeviceRegistry } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
+// import { CallOverlay } from "./CallOverlay"; // REMOVED: Now using PluginManager.getView(APP_IDS.PHONE)
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
@@ -52093,6 +49782,7 @@ interface TokovoRendererProps {
     eventIndex?: EventIndex;
     directorEnabled?: boolean;
     directorDebug?: boolean;
+    pluginManager?: PluginManagerClass;
 }
 
 // =============================================================================
@@ -52108,7 +49798,11 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     eventIndex,
     directorEnabled = true,
     directorDebug = false,
+    pluginManager,
 }) => {
+    // Resolve Plugin Manager (Injectable > Global Fallback)
+    const pm = pluginManager || PluginManager;
+
     const {
         headsUpDuration = 150,
         showHeadsUpWhenAppOpen = true,
@@ -52181,12 +49875,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 4. SELECT APP VIEW
     // ==========================================================================
-    let AppView = null;
-    if (appId && AppRegistry.views[appId]) {
-        AppView = AppRegistry.views[appId];
-    }
+    const AppView = appId ? pm.getView(appId) : null;
 
-    // ==========================================================================
     // 5. RENDER — Paint the blueprints
     // ==========================================================================
 
@@ -52208,46 +49898,92 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
                     <FrameComponent statusBar={<StatusBarComponent os={device.os} variant={variant} />}>
 
-                        {/* Call View - Plugin-based */}
-                        {hasActiveCall && (() => {
-                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
-                            if (PhoneView) {
-                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
+                        {/* ========================================================================= */}
+                        {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
+                        {/* ========================================================================= */}
+                        {(() => {
+                            // A. Active Call takes precedence
+                            if (hasActiveCall) {
+                                const PhoneView = pm.getView(APP_IDS.PHONE);
+                                if (PhoneView) {
+                                    // Phone App handles its own scaling/surface if needed, or we wrap it?
+                                    // Usually full-screen system apps define their own layout, but let's standardise.
+                                    const meta = pm.get(APP_IDS.PHONE)?.metadata;
+                                    const designWidth = meta?.designWidth || 393; // Default logical width
+
+                                    return (
+                                        <AppSurface
+                                            designWidth={designWidth}
+                                            targetWidth={profile.dimensions.width}
+                                            targetHeight={profile.dimensions.height}
+                                        >
+                                            <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />
+                                        </AppSurface>
+                                    );
+                                }
+                                // Fallback removed (Plugin must exist)
+                                return <div style={{ color: "white", padding: 50 }}>System Error: Phone App Missing</div>;
                             }
-                            return <CallOverlay call={device.call!} currentTime={t} variant={variant} />;
+
+                            // B. Active App (Unlocked)
+                            if (AppView && !device.isLocked) {
+                                const meta = pm.get(appId!)?.metadata;
+                                const designWidth = meta?.designWidth || 393;
+
+                                // Calculate scale factor explicitly to normalize props
+                                const scale = profile.dimensions.width / designWidth;
+
+                                return (
+                                    <AppSurface
+                                        designWidth={designWidth}
+                                        targetWidth={profile.dimensions.width}
+                                        targetHeight={profile.dimensions.height}
+                                        backgroundColor={meta?.themeColor} // Use brand color as splash/bg
+                                    >
+                                        <AppView
+                                            world={world}
+                                            t={t}
+                                            // layout={layout} // Not in AppViewProps standard interface, but might be useful?
+                                            // Ideally apps use hooks: useLayout()
+                                            platform={variant}
+                                            deviceId={deviceId}
+                                            // Normalize Safe Area to Logical Units
+                                            safeAreaInsets={{
+                                                top: (profile.camera?.safeAreaTop || 0) / scale,
+                                                bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                                                left: 0,
+                                                right: 0
+                                            }}
+                                        />
+                                    </AppSurface>
+                                );
+                            }
+
+                            // C. Valid System States (Lockscreen / Home)
+                            if (!device.isLocked && device.homeScreen) {
+                                return <HomeScreenView config={device.homeScreen} variant={variant} />;
+                            }
+
+                            if (device.isLocked) {
+                                return (
+                                    <LockscreenView
+                                        notifications={device.os?.notifications || []}
+                                        layout={layout}
+                                        variant={variant}
+                                    // TODO: Pass Metadata Registry for icon lookup? 
+                                    // LockscreenView already uses it (Step 642).
+                                    />
+                                );
+                            }
+
+                            // D. Blank Screen
+                            return <div style={{ flex: 1, backgroundColor: "black" }} />;
                         })()}
 
-                        {/* App View / Lockscreen / Home Screen */}
-                        {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView
-                                world={world}
-                                t={t}
-                                layout={layout}
-                                platform={variant}
-                                deviceId={deviceId}
-                                width={profile.dimensions.width}
-                                height={profile.dimensions.height}
-                                safeAreaInsets={{
-                                    top: profile.camera?.safeAreaTop || 0,
-                                    bottom: profile.camera?.safeAreaBottom || 0,
-                                    left: 0,
-                                    right: 0
-                                }}
-                            />
-                        ) : !hasActiveCall && device.isLocked ? (
-                            <LockscreenView
-                                notifications={device.os?.notifications || []}
-                                layout={layout}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && device.homeScreen ? (
-                            <HomeScreenView
-                                config={device.homeScreen}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && (
-                            <div style={{ flex: 1, backgroundColor: "black" }} />
-                        )}
+
+                        {/* ========================================================================= */}
+                        {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
+                        {/* ========================================================================= */}
 
                         {/* Lockscreen Notification Overlay */}
                         <NotificationOverlay
@@ -52256,7 +49992,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                             layout={layout}
                         />
 
-                        {/* Heads-Up Notification */}
+                        {/* Heads-Up Notification (Toast) */}
                         {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
                             <HeadsUpNotification
                                 key={activeHeadsUp.id}
@@ -52268,7 +50004,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                             />
                         )}
 
-                        {/* Dynamic Island (iOS) - Only if Shell supports it */}
+                        {/* Dynamic Island (iOS) - Slot Based */}
                         {shell.hasDynamicIsland && !device.isLocked && !hasActiveCall && (
                             <DynamicIsland
                                 device={device}
@@ -52299,615 +50035,13 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 };
 ````
 
-## File: packages/apps-whatsapp/src/config/layout-config.ts
-````typescript
-/**
- * WhatsApp Layout Configuration
- * 
- * Production-grade configurable message heights, spacing, and animations.
- * All values are in device pixels (3x scale for retina).
- * 
- * DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No heuristics.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-// =============================================================================
-// MESSAGE TYPE ENUMERATION
-// =============================================================================
-
-export type MessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "typing"
-    | "screenshot_alert"
-    | "call_missed";
-
-export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
-
-// =============================================================================
-// SPACING CONFIGURATION (SOURCE OF TRUTH)
-// =============================================================================
-
-/**
- * Authoritative Layout Constants.
- * These are the Source of Truth for both Calculation and Rendering.
- * All units in device pixels (3x retina).
- */
-export const LAYOUT_CONSTANTS = {
-    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
-    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
-    LINE_HEIGHT: 66,          // Text line height (22px visual)
-    FONT_SIZE: 51,            // Text font size
-    TIMESTAMP_HEIGHT: 36,     // Footer area height
-    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
-
-    // Spacing Tiers (The 3-Tier Model)
-    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
-    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
-    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
-
-    // System Spacing
-    GAP_SYSTEM: 24,           // 9px visual
-
-    // Typography / Metrics
-    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
-
-    // Typing Indicator
-    TYPING_BUBBLE_HEIGHT: 72, // Inner height
-    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
-};
-
-/**
- * UI Constants (Header, Input, etc.)
- * Source of Truth for both React Components and Layout Engine.
- */
-export const UI_CONSTANTS = {
-    // Header
-    HEADER_CONTENT_HEIGHT: 60,
-    HEADER_AVATAR_SIZE: 37,
-    HEADER_AVATAR_MARGIN_RIGHT: 10,
-    HEADER_PADDING_X: 10,
-    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
-
-    // Input Area
-    INPUT_MIN_HEIGHT: 60, // Standard single line
-};
-
-/**
- * Simplified Per-Message-Type Configuration
- */
-export interface MessageTypeConfig {
-    category: MessageCategory;
-    gapBefore?: number; // Force specific gap (used for System messages)
-    gapAfter?: number;  // Force specific gap
-}
-
-export interface SpacingConfig {
-    typeOverrides: Record<MessageType, MessageTypeConfig>;
-    global: GlobalSpacing;
-}
-
-// =============================================================================
-// HEIGHT & WIDTH CONFIGURATION
-// =============================================================================
-
-export interface MessageHeightConfig {
-    /** Base height calculation */
-    base: number;
-    /** For text: Line height */
-    lineHeight?: number;
-    /** For text: Characters per line for wrapping */
-    charsPerLine?: number;
-    /** For media: Height with caption */
-    withCaption?: number;
-}
-
-export interface MessageWidthConfig {
-    /** Max width as percentage of viewport (0-1) */
-    maxPercent: number;
-    /** Minimum width in pixels */
-    min: number;
-    /** Fixed width (optional) */
-    fixed?: number;
-}
-
-export interface MessageSchema {
-    height: MessageHeightConfig;
-    width: MessageWidthConfig;
-}
-
-// =============================================================================
-// HEIGHT ADDITIONS (The "Legos")
-// =============================================================================
-
-export interface HeightAdditions {
-    reaction: number;
-    reply: number;
-    linkPreview: number;
-    senderName: number;
-}
-
-// =============================================================================
-// SCROLL & ANIMATION
-// =============================================================================
-
-export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
-
-export interface ScrollConfig {
-    lockToBottom: boolean;
-    smoothScrollDuration: number;
-    easing: EasingFunction;
-    newMessageScrollDelay: number;
-    overscanTop: number;
-    overscanBottom: number;
-    maxScrollSpeed: number;
-}
-
-export interface AnimationConfig {
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    typingPulseDuration: number;
-    voiceWaveformSpeed: number;
-}
-
-export interface GlobalSpacing {
-    topPadding: number;
-    bottomPadding: number;
-    bubbleMargin: number;
-}
-
-// =============================================================================
-// COMPLETE CONFIG STRUCT
-// =============================================================================
-
-export interface MessageLayoutConfig {
-    messageTypes: Record<MessageType, MessageSchema>;
-    additions: HeightAdditions;
-    scroll: ScrollConfig;
-    animation: AnimationConfig;
-    spacing: SpacingConfig;
-}
-
-// =============================================================================
-// DEFAULT CONFIGURATION (The Values)
-// =============================================================================
-
-const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
-    text: { category: "text" },
-    image: { category: "media" },
-    video: { category: "media" },
-    gif: { category: "media" },
-    voice: { category: "audio" },
-    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    deleted: { category: "text" },
-    // Typing behaves like a sender run-break (e.g. interruption)
-    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
-    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-};
-
-export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
-    messageTypes: {
-        text: {
-            height: {
-                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
-                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-                // capacity dynamic via measureTextBlock (unitsPerLine)
-            },
-            width: {
-                maxPercent: 0.78,
-                min: 150,
-            },
-        },
-        image: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        video: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        gif: {
-            height: { base: 500 },
-            width: { maxPercent: 0.78, min: 250 },
-        },
-        voice: {
-            height: { base: 180 },
-            width: { fixed: 450, maxPercent: 0.78, min: 450 },
-        },
-        system: {
-            height: { base: 80 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        deleted: {
-            height: { base: 100 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        typing: {
-            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
-            width: { fixed: 150, maxPercent: 0.3, min: 150 },
-        },
-        screenshot_alert: {
-            height: { base: 80 },
-            width: { maxPercent: 0.7, min: 250 },
-        },
-        call_missed: {
-            height: { base: 120 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-    },
-    additions: {
-        reaction: 36,
-        reply: 90,
-        linkPreview: 180,
-        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
-    },
-    scroll: {
-        lockToBottom: true,
-        smoothScrollDuration: 15,
-        easing: "easeOut",
-        newMessageScrollDelay: 3,
-        overscanTop: 200,
-        overscanBottom: 200,
-        maxScrollSpeed: 60,
-    },
-    animation: {
-        messageAppearDuration: 12,
-        messageAppearOffset: 30,
-        typingPulseDuration: 45,
-        voiceWaveformSpeed: 2,
-    },
-    spacing: {
-        typeOverrides: DEFAULT_TYPE_OVERRIDES,
-        global: {
-            topPadding: 48,
-            bottomPadding: 120,
-            bubbleMargin: 36,
-        },
-    },
-};
-
-// =============================================================================
-// HEIGHT CALCULATION
-// =============================================================================
-
-export interface MessageForHeight {
-    type?: MessageType;
-    text?: string;
-    caption?: string;
-    from?: string;
-    prevFrom?: string;
-    isGroupChat?: boolean;
-    reactions?: unknown[];
-    replyTo?: unknown;
-    linkPreview?: unknown;
-}
-
-export function calculateMessageHeight(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    let height = 0;
-
-    // Base height
-    if (msgType === "text" || msgType === "deleted") {
-        const text = msg.text || "";
-        // Use unified measurement logic
-        const { lines } = measureTextBlock(text, viewportWidth, config);
-        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
-    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
-        // Dynamic Media Height (Option B)
-        // Measure caption to determine how much vertical space to add to base image
-        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
-        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
-        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
-        // Add timestamp footer height + margin (timestamp sits below caption)
-        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
-        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
-    } else {
-        height = typeConfig.height.base;
-    }
-
-    // Additions
-    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
-    if (msg.replyTo) height += config.additions.reply;
-    if (msg.linkPreview) height += config.additions.linkPreview;
-
-    if (shouldShowSenderName({
-        from: msg.from,
-        type: msgType,
-        isGroupChat: msg.isGroupChat,
-        prevFrom: msg.prevFrom
-    })) {
-        height += config.additions.senderName;
-    }
-
-    return height;
-}
-
-// =============================================================================
-// SMART GAP CALCULATION (THE TRUTH TABLE)
-// =============================================================================
-
-export interface MessageForGap {
-    type?: MessageType;
-    from?: string;
-    at?: number;
-    hasReply?: boolean;
-    hasReactions?: boolean;
-    hasLinkPreview?: boolean;
-}
-
-export interface GapContext {
-    prevMessage: MessageForGap;
-    nextMessage: MessageForGap;
-}
-
-export function calculateSmartGap(
-    context: GapContext,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const { prevMessage, nextMessage } = context;
-    const prevType = (prevMessage.type || "text") as MessageType;
-    const nextType = (nextMessage.type || "text") as MessageType;
-
-    // Check type-specific processing (only System messages act as special exceptions now)
-    const prevOverride = config.spacing.typeOverrides[prevType];
-    const nextOverride = config.spacing.typeOverrides[nextType];
-
-    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
-    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
-
-    // Visual Run Logic
-    const sameSender = prevMessage.from === nextMessage.from;
-    const isVisualRun = sameSender &&
-        prevType === "text" &&
-        nextType === "text" &&
-        !prevMessage.hasReply &&
-        !nextMessage.hasReply &&
-        !prevMessage.hasReactions &&
-        !nextMessage.hasReactions &&
-        !prevMessage.hasLinkPreview &&
-        !nextMessage.hasLinkPreview;
-
-    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
-    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
-    return LAYOUT_CONSTANTS.GAP_NORMAL;
-}
-
-// Compatibility Shim
-export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
-    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
-}
-
-// =============================================================================
-// MEASUREMENT HELPERS (Deterministic constants)
-// =============================================================================
-
-export interface TextBlockMetrics {
-    lines: number;
-    bubbleWidth: number;
-    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
-}
-
-/* DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No runtime DOM measurement. Deterministic constants.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-/**
- * Deterministic, no-DOM text measurement.
- * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
- * not the paragraph total weight or always-full-capacity width.
- *
- * Weighted units:
- * - space: 0.6
- * - ascii/basic: 1.0
- * - wide (CJK etc): 1.5
- * - emoji surrogate pair: 1.8
- */
-export function measureTextBlock(
-    text: string,
-    viewportWidth: number = 1170, // Default reference width
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): TextBlockMetrics {
-    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
-
-    // 1) Constraints
-    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
-    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-
-    // Safety clamp so we never divide by 0 / go negative on tiny screens
-    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
-
-    // 2) Capacity (INTEGER, consistent everywhere)
-    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
-
-    // 3) Measure
-    // Split paragraphs by explicit newline. Newline always forces a line break.
-    const paragraphs = text.split("\n");
-
-    let totalLines = 0;
-    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
-
-    for (const paragraph of paragraphs) {
-        // Explicit blank line => counts as 1 line
-        if (paragraph.length === 0) {
-            totalLines += 1;
-            maxLineUnits = Math.max(maxLineUnits, 0);
-            continue;
-        }
-
-        // Wrap simulation in weighted units
-        let lineUnits = 0;
-        let linesInParagraph = 1;
-
-        for (let i = 0; i < paragraph.length; i++) {
-            const code = paragraph.charCodeAt(i);
-
-            // Weight function (deterministic)
-            let w = 1.0;
-
-            // space
-            if (code === 32) {
-                w = 0.6;
-            } else if (code >= 65 && code <= 90) {
-                // Uppercase A-Z
-                w = 1.3;
-            } else {
-                // emoji surrogate pair
-                const isHigh = code >= 0xd800 && code <= 0xdbff;
-                if (isHigh && i + 1 < paragraph.length) {
-                    const next = paragraph.charCodeAt(i + 1);
-                    const isLow = next >= 0xdc00 && next <= 0xdfff;
-                    if (isLow) {
-                        w = 1.8;
-                        i++; // consume low surrogate
-                    } else if (code > 255) {
-                        w = 1.5;
-                    }
-                } else if (code > 255) {
-                    // wide-ish (CJK etc.)
-                    w = 1.5;
-                }
-            }
-
-            // If adding this char overflows the line => wrap
-            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
-            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
-            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
-                maxLineUnits = Math.max(maxLineUnits, lineUnits);
-                linesInParagraph += 1;
-                lineUnits = w;
-            } else {
-                lineUnits += w;
-            }
-
-            // Track widest line as we go
-            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
-            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-        }
-
-        // finalize paragraph
-        totalLines += linesInParagraph;
-        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-    }
-
-    // Ensure at least one line for empty string
-    if (totalLines === 0) totalLines = 1;
-
-    // 4) Convert widest line units -> pixels
-    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
-
-    // Clamp bubble width to: [minWidth, maxBubbleWidth]
-    const bubbleWidth = Math.min(
-        maxBubbleWidth,
-        Math.max(computedWidth, typeConfig.width.min)
-    );
-
-    return { lines: totalLines, bubbleWidth, unitsPerLine };
-}
-
-export function calculateBubbleWidth(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    if (typeConfig.width.fixed) return typeConfig.width.fixed;
-
-    if (msgType === "text" || msgType === "deleted") {
-        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
-        return bubbleWidth;
-    }
-
-    // Media & others: Use standard clamping
-    // Calculates a width based on percentage, but ensures it's at least 'min'
-    // and optionally upper-bounded if we strictly wanted to (not currently in config)
-    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
-    return Math.max(typeConfig.width.min, idealWidth);
-}
-
-// =============================================================================
-// ANIMATION & LAYOUT HELPERS
-// =============================================================================
-
-export function applyEasing(progress: number, easing: EasingFunction): number {
-    switch (easing) {
-        case "linear": return progress;
-        case "easeOut": return 1 - Math.pow(1 - progress, 3);
-        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        case "spring":
-            const c4 = (2 * Math.PI) / 3;
-            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
-        default: return progress;
-    }
-}
-
-export function isMessageCentered(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system";
-}
-
-export function doesMessageBreakGrouping(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system" || category === "ephemeral"; // System & Typing break grouping
-}
-
-export interface SenderNameContext {
-    from?: string;
-    type?: string;
-    isGroupChat?: boolean;
-    prevFrom?: string;
-}
-
-export function shouldShowSenderName(ctx: SenderNameContext): boolean {
-    if (!ctx.isGroupChat) return false;
-    if (!ctx.from) return false;
-    if (ctx.from === "me") return false;
-    if (ctx.from === "system") return false;
-    if (ctx.type === "system") return false;
-
-    // Show if previous sender was different (or no previous sender, or generic BREAK token)
-    return ctx.from !== ctx.prevFrom;
-}
-````
-
 ## File: apps/video-runner/src/Root.tsx
 ````typescript
 import React from "react";
 import { Composition } from "remotion";
-import { Video } from "./Video";
 import { AndroidVideo } from "./AndroidVideo";
-import { InstagramVideo } from "./InstagramVideo";
 import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
 import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
-import { WhatsappPsychoticDemoVideo } from "./WhatsappPsychoticDemoVideo";
-import { WhatsappProductionDemoVideo } from "./WhatsappProductionDemoVideo";
-import { WhatsappCompleteShowcaseVideo } from "./WhatsappCompleteShowcaseVideo";
 import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
 import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
 import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
@@ -53018,14 +50152,6 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
             <Composition
-                id="WhatsappCompleteShowcase"
-                component={WhatsappCompleteShowcaseVideo}
-                durationInFrames={1200}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
                 id="MultiAppShowcase"
                 component={MultiAppShowcaseVideo}
                 durationInFrames={900}
@@ -53057,14 +50183,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
-            <Composition
-                id="WhatsappProductionDemo"
-                component={WhatsappProductionDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
+
             <Composition
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}
@@ -53089,26 +50208,11 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
-            <Composition
-                id="TokovoExample"
-                component={Video}
-                durationInFrames={300}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
+
             <Composition
                 id="AndroidNotificationTest"
                 component={AndroidVideo}
                 durationInFrames={150}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="InstagramDMTest"
-                component={InstagramVideo}
-                durationInFrames={300}
                 fps={30}
                 width={1080}
                 height={1920}
@@ -53129,14 +50233,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
-            <Composition
-                id="WhatsappPsychoticDemo"
-                component={WhatsappPsychoticDemoVideo}
-                durationInFrames={600}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
+
             <Composition
                 id="KeyboardTypingShowcase"
                 component={KeyboardTypingShowcase}
@@ -53429,6 +50526,7 @@ export type CallType = "voice" | "video" | "facetime" | "whatsapp" | (string & {
 /** iOS Contact Poster metadata (iOS 17+) */
 export interface CallerMetadata {
     posterImage?: string;
+    posterColor?: string; // Background color if image missing
     posterStyle?: "modern" | "classic" | (string & {});
     posterNameFont?: string;
 }
@@ -54398,6 +51496,7 @@ export type ViewKind =
     | "STORY"
     | "LOCKSCREEN"
     | "HOMESCREEN"
+    | "FULLSCREEN"  // Apps like Phone, Camera
     | "TRANSITION";
 
 export interface LayoutContext {

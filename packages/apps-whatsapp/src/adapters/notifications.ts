@@ -12,23 +12,25 @@ const whatsappAdapter: NotificationAdapter = {
     appId: "app_whatsapp",
 
     format(notification: Notification): FormattedNotification {
+        const ir = notification.ir;
         return {
-            title: notification.title,
-            body: notification.body,
+            title: ir.title,
+            body: ir.body,
             icon: "💬",
             iconBackground: WHATSAPP_GREEN,
             accentColor: WHATSAPP_GREEN,
-            preview: notification.preview,
-            actions: notification.actions || [
+            preview: ir.preview,
+            actions: ir.actions || [
                 { id: "reply", label: "Reply" },
                 { id: "mark_read", label: "Mark as Read" },
             ],
-            sender: notification.metadata?.sender,
+            sender: ir.payload?.sender,
         };
     },
 
     handleAction(actionId: string, notification: Notification) {
         const baseEvents: any[] = [];
+        const threadId = notification.ir.threadKey;
 
         if (actionId === "open" || actionId === "reply") {
             baseEvents.push({
@@ -39,14 +41,14 @@ const whatsappAdapter: NotificationAdapter = {
                 appId: "app_whatsapp",
             });
 
-            if (notification.threadId) {
+            if (threadId) {
                 baseEvents.push({
                     at: Date.now(),
                     kind: "APP",
                     appId: "app_whatsapp",
                     type: "NAVIGATE",
                     screen: "chat",
-                    conversationId: notification.threadId,
+                    conversationId: threadId,
                 });
             }
         }
@@ -57,7 +59,7 @@ const whatsappAdapter: NotificationAdapter = {
     measureHeight(notification: Notification, viewport: { width: number }) {
         // Base height + extra for image preview
         let height = 180;
-        if (notification.preview?.kind === "image") {
+        if (notification.ir.preview?.kind === "image") {
             height += 200;
         }
         return height;
@@ -67,4 +69,4 @@ const whatsappAdapter: NotificationAdapter = {
 // Register adapter
 // NotificationAdapterRegistry.register(whatsappAdapter); -- DEPRECATED
 
-export { whatsappAdapter };
+export { whatsappAdapter as WhatsAppNotificationAdapter };

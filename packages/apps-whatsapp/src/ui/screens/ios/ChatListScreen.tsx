@@ -1,6 +1,8 @@
 import React from "react";
+import { Header } from "../../../components/ios/Header";
 import { WorldState } from "@tokovo/core";
-import { WhatsAppState } from "../../types";
+import { WhatsAppState } from "../../../types";
+import { WhatsAppIcon } from "../../../assets/metadata";
 
 export interface ChatListScreenProps {
     world: WorldState;
