@@ -43,6 +43,14 @@ apps/
           frame.png
           mask.png
       sounds/
+        core/
+          keyboard/
+            typing_loop.wav
+        plugins/
+          whatsapp/
+            received.wav
+            sent.wav
+            typing_loop.wav
         dramatic.mp3
         notification.mp3
         typing.mp3
@@ -51,23 +59,17 @@ apps/
     src/
       showcases/
         NotificationShowcase.tsx
-      AndroidVideo.tsx
       AutoDirectorShowcase.tsx
       BakchodiGangVideo.tsx
       BreakupDramaDSLVideo.tsx
-      CameraShowcaseVideo.tsx
-      CinematicCameraShowcaseVideo.tsx
       FullCinematicShowcaseVideo.tsx
       FullRealityShowcase.tsx
       GandhiTextingVideo.tsx
-      HomeScreenGroupDemoVideo.tsx
       index.ts
       KeyboardTypingShowcase.tsx
       KeyboardVerifyVideo.tsx
       ManualCameraShowcase.tsx
       MultiAppShowcaseVideo.tsx
-      MultiPovDemoVideo.tsx
-      NotificationCallDemoVideo.tsx
       NotificationShowcaseVideo.tsx
       PhoneCallShowcase.tsx
       Root.tsx
@@ -80,12 +82,6 @@ apps/
     package.json
     remotion.config.ts
     tsconfig.json
-docs/
-  CAMERA_AUDIO.md
-  DEVICE_OS.md
-  DSL.md
-  KEYBOARD.md
-  README.md
 packages/
   adapters/
     src/
@@ -187,7 +183,9 @@ packages/
         anchors.ts
         notifications.ts
       assets/
+        audio-rules.ts
         metadata.tsx
+        sounds.ts
       camera/
         index.ts
         whatsapp-director.ts
@@ -195,12 +193,15 @@ packages/
         icons/
           index.tsx
         ios/
+          ChatListHeader.tsx
+          ChatListItem.tsx
           Header.tsx
           Icons.tsx
           InputArea.tsx
           MessageBubble.tsx
           MessageContent.tsx
           MessageList.tsx
+          TabNavigation.tsx
           theme.ts
           TypingIndicator.tsx
         ChatsListScreen.tsx
@@ -305,6 +306,9 @@ packages/
     tsconfig.json
   device-keyboard/
     src/
+      assets/
+        audio-rules.ts
+        sounds.ts
       components/
         IOSKeyboard.tsx
       core/
@@ -386,16 +390,6 @@ packages/
     src/
       episodes/
         bakchodi-gang.ts
-      examples/
-        android-test.json
-        camera-showcase.json
-        homescreen-group-demo.json
-        instagram-test.json
-        multi-pov-demo.json
-        notification-call-demo.json
-        whatsapp-breakup-01.json
-        whatsapp-production-demo.json
-        whatsapp-psychotic-demo.json
       index.ts
       notification-showcase.dsl.ts
       schema.ts
@@ -471,7 +465,6 @@ scripts/
   create-plugin.js
 .gitignore
 .tool-versions
-llms.txt
 package.json
 pnpm-workspace.yaml
 repomix.config.json
@@ -480,295 +473,6 @@ turbo.json
 ```
 
 # Files
-
-## File: apps/video-runner/src/AndroidVideo.tsx
-````typescript
-import React from "react";
-import { useCurrentFrame, useVideoConfig } from "remotion";
-import { replay, WorldState } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { PixelProfile } from "@tokovo/devices";
-import { androidEpisode } from "@tokovo/episodes";
-
-export const AndroidVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const { width, height } = useVideoConfig();
-
-    // Calculate scale to fit device in composition with some padding
-    const padding = 50;
-    const availableWidth = width - padding * 2;
-    const availableHeight = height - padding * 2;
-
-    const scaleX = availableWidth / PixelProfile.dimensions.width;
-    const scaleY = availableHeight / PixelProfile.dimensions.height;
-    const scale = Math.min(scaleX, scaleY);
-
-    // Calculate time t
-    const t = frame;
-
-    // Replay
-    const world = replay(androidEpisode.initialWorld as unknown as WorldState, androidEpisode.events as any, t);
-
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "white", position: "relative" }}>
-            <div style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: `translate(-50%, -50%) scale(${scale})`,
-                width: PixelProfile.dimensions.width,
-                height: PixelProfile.dimensions.height
-            }}>
-                <TokovoRenderer world={world} t={t} />
-            </div>
-        </div>
-    );
-};
-````
-
-## File: apps/video-runner/src/CameraShowcaseVideo.tsx
-````typescript
-import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { cameraShowcase } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * CameraShowcaseVideo
- * Demonstrates the cinematic camera system:
- * - ZOOM with different easing functions
- * - PAN for smooth translation
- * - SHAKE with frequency and decay
- * - FOCUS on specific points
- * - RESET to return to default view
- * - Combo effects (zoom + shake)
- */
-export const CameraShowcaseVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data
-    const episode = cameraShowcase as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/HomeScreenGroupDemoVideo.tsx
-````typescript
-import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { homeScreenGroupDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * HomeScreenGroupDemoVideo
- * Demonstrates Home Screen and WhatsApp Group Chat features:
- * - Configurable home screen with app grid
- * - Dock with badges
- * - WhatsApp group chat with system messages
- * - Group member add/remove events
- */
-export const HomeScreenGroupDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data
-    const episode = homeScreenGroupDemo as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/index.ts
-````typescript
-import { registerRoot } from "remotion";
-import { RemotionRoot } from "./Root";
-
-registerRoot(RemotionRoot);
-````
-
-## File: apps/video-runner/src/MultiPovDemoVideo.tsx
-````typescript
-import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { multiPovDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-import { MultiDeviceRenderer } from "@tokovo/renderer";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * MultiPovDemoVideo
- * Demonstrates the multi-device POV system:
- * - Multiple phones (Alice and Bob)
- * - CUT between devices
- * - SPLIT_HORIZONTAL layout (side by side)
- * - SPLIT_VERTICAL layout (stacked)
- * - PIP layout (picture in picture)
- */
-export const MultiPovDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame;
-
-    // Episode data
-    const episode = multiPovDemo as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
-        }}>
-            <MultiDeviceRenderer
-                world={world}
-                t={t}
-                debug={false}
-                compositionWidth={1080}
-                compositionHeight={1920}
-            />
-        </AbsoluteFill>
-    );
-};
-````
-
-## File: apps/video-runner/src/NotificationCallDemoVideo.tsx
-````typescript
-import React from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { notificationCallDemo } from "@tokovo/episodes";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
-import "@tokovo/devices";
-
-/**
- * NotificationCallDemoVideo
- * Demonstrates all notification and call features:
- * - Lockscreen notifications
- * - Heads-up notifications  
- * - Incoming voice call
- * - Active call with timer
- * - FaceTime call
- */
-export const NotificationCallDemoVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    const t = frame; // Using frame as time unit
-
-    // Episode data
-    const episode = notificationCallDemo as { initialWorld: WorldState; events: TimelineEvent[] };
-
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={t}
-                    debug={false}
-                    notificationConfig={{
-                        headsUpDuration: 150, // 5 seconds
-                        showHeadsUpWhenAppOpen: true
-                    }}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
 
 ## File: apps/video-runner/src/WhatsappMediaShowcaseVideo.tsx
 ````typescript
@@ -7020,6 +6724,236 @@ export function registerWhatsAppPlugin(): void {
 }
 ````
 
+## File: packages/apps-whatsapp/src/TypingBubble.tsx
+````typescript
+import React from "react";
+
+/**
+ * WhatsApp iOS Typing Indicator
+ * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
+ * Uses frame-based animation for proper rendering in video output
+ * 
+ * @param frame - Current frame from Remotion (passed in from renderer)
+ * @param fps - Frames per second (default 30)
+ */
+
+export interface TypingBubbleProps {
+    platform?: string;
+    frame?: number;
+    fps?: number;
+}
+
+import { LAYOUT_CONSTANTS } from "./config/layout-config";
+
+export const TypingBubble: React.FC<TypingBubbleProps> = ({
+    platform = "ios",
+    frame = 0,
+    fps = 30
+}) => {
+    return (
+        <div style={{
+            backgroundColor: "#FFFFFF",
+            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
+            borderRadius: 24,
+            borderTopLeftRadius: 6,
+            alignSelf: "flex-start",
+            width: "fit-content",
+            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+            display: "flex",
+            alignItems: "center",
+            gap: 15,
+            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
+        }}>
+            <TypingDot frame={frame} fps={fps} delayFrames={0} />
+            <TypingDot frame={frame} fps={fps} delayFrames={5} />
+            <TypingDot frame={frame} fps={fps} delayFrames={10} />
+        </div>
+    );
+};
+
+interface TypingDotProps {
+    frame: number;
+    fps: number;
+    delayFrames: number;
+}
+
+/**
+ * Simple interpolation function (avoiding remotion dependency)
+ */
+function interpolate(
+    value: number,
+    inputRange: number[],
+    outputRange: number[],
+): number {
+    // Find the segment
+    let i = 0;
+    for (i = 0; i < inputRange.length - 1; i++) {
+        if (value <= inputRange[i + 1]) break;
+    }
+
+    // Clamp to range
+    if (value <= inputRange[0]) return outputRange[0];
+    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
+
+    // Linear interpolation between points
+    const inputStart = inputRange[i];
+    const inputEnd = inputRange[i + 1];
+    const outputStart = outputRange[i];
+    const outputEnd = outputRange[i + 1];
+
+    const t = (value - inputStart) / (inputEnd - inputStart);
+    return outputStart + (outputEnd - outputStart) * t;
+}
+
+const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
+    // Animation cycle: 36 frames at 30fps = 1.2 seconds
+    const cycleLength = Math.round(1.2 * fps);
+    const adjustedFrame = (frame + delayFrames) % cycleLength;
+
+    // Bounce animation: up for first quarter, down for second quarter
+    const quarterCycle = cycleLength / 4;
+    const translateY = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0, -9, 0, 0]
+    );
+
+    // Opacity: brighten when bouncing up
+    const opacity = interpolate(
+        adjustedFrame,
+        [0, quarterCycle, quarterCycle * 2, cycleLength],
+        [0.4, 1, 0.4, 0.4]
+    );
+
+    return (
+        <div style={{
+            width: 24,
+            height: 24,
+            backgroundColor: "#8696A0",
+            borderRadius: "50%",
+            transform: `translateY(${translateY}px)`,
+            opacity
+        }} />
+    );
+};
+
+export default TypingBubble;
+````
+
+## File: packages/apps-whatsapp/LAYOUT_LOGIC.md
+````markdown
+# WhatsApp Layout Architecture: The "Visual Run" Model
+
+This document details the deterministic layout engine used for the WhatsApp UI.
+It strictly adheres to **Pure Mathematics**, calculating positions without heuristics or randomness.
+
+---
+
+## 1. The Core Equation
+
+The vertical position (`Y`) of any message is derived from the previous message's state:
+
+```math
+Y_{next} = Y_{prev} + Height_{prev} + Gap
+```
+
+Where:
+*   **Y_prev**: Absolute position of previous bubble.
+*   **Height_prev**: Mathematically exact height (Padding + Content).
+*   **Gap**: Deterministic spacing value based on the "Visual Run" truth table.
+
+---
+
+## 2. Visual Run Logic (The Truth Table)
+
+The system detects **Visual Runs**—tight bursts of simple text messages from the same sender.
+
+### The Deterministic Truth Table
+
+| Prev Sender | Next Sender | Types | Attributes (Reply/React) | Result | Gap Constant |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **A** | **A** | Text -> Text | None | **VISUAL RUN** | `GAP_MINIMAL` (6px) |
+| **A** | **B** | Any | Any | **NEW SENDER** | `GAP_NORMAL` (36px) |
+| **A** | **A** | Any -> **Media** | Any | **RUN BREAK** | `GAP_NORMAL` (36px) |
+| **A** | **A** | **Media** -> Any | Any | **RUN BREAK** | `GAP_NORMAL` (36px) |
+| **A** | **A** | Text -> Text | **Has Reply** | **RUN BREAK** | `GAP_NORMAL` (36px) |
+
+Code: `src/config/layout-config.ts` -> `calculateSmartGap`.
+
+---
+
+## 3. Configuration Map (`DEFAULT_LAYOUT_CONFIG`)
+
+This object is the **Brain** of the layout. Here is exactly where every field is used and what it affects.
+
+### A. `messageTypes` (Dimensions)
+*   **Used By**: `chat.ts` -> `calculateMessageHeight`, `calculateBubbleWidth`.
+*   **Fields**:
+    *   `height.base`: The skeleton height (Padding + Footer). defined by `LAYOUT_CONSTANTS`.
+    *   `height.lineHeight`: 66px. Multiplied by number of text lines.
+    *   `width.maxPercent`: 0.78. Limits bubble width to 78% of screen.
+    *   `width.horizontalPadding`: 72px. Adds width to text for accurate wrapping.
+
+### B. `spacing` (The Gapping Logic)
+*   **Used By**: `chat.ts` -> `calculateSmartGap`.
+*   **Fields**:
+    *   `base.minimal`: **6px** (2px visual). Used for "Visual Run" rows.
+    *   `base.normal`: **36px** (12px visual). Used for "Run Breaks" / Diff Senders.
+    *   `global.bubbleMargin`: **36px**. Distance from left/right screen edge.
+    *   `global.topPadding`/`bottomPadding`: Safe areas for scroll.
+
+### C. `additions` (Dynamic Height Modifiers)
+*   **Used By**: `chat.ts` -> `calculateMessageHeight`.
+*   **Logic**: If a feature is present, its height is mathematically added to the `base`.
+*   **Fields**:
+    *   `senderName`: **45px**. Added if `from !== prev.from` (Group Chat).
+    *   `reaction`: **36px**. Added if `msg.reactions.length > 0`.
+    *   `reply`: **90px**. Added if `msg.replyTo` exists.
+    *   `linkPreview`: **180px**. Added if `msg.linkPreview` exists.
+
+### D. `animation` (Motion)
+*   **Used By**: `chat.ts` (Layout State) & `ui.tsx` (CSS).
+*   **Fields**:
+    *   `messageAppearDuration`: **12 frames**. Speed of entry.
+    *   `messageAppearOffset`: **30px**. Slide-up distance.
+
+---
+
+## 4. The "Single Source of Truth" Chain
+
+Visual Consistency is not accidental. It is enforced by this dependency chain:
+
+1.  **`LAYOUT_CONSTANTS`** (The Roots)
+    *   Defines raw pixels: `BUBBLE_PADDING_V = 24`, `LINE_HEIGHT = 66`.
+
+2.  **`DEFAULT_LAYOUT_CONFIG`** (The Brain)
+    *   Consumes Roots: `base: BUBBLE_PADDING_V * 2 + FOOTER`.
+
+3.  **Layout Engine (`chat.ts`)** (The Calculator)
+    *   Consumes Brain: Calculates `Y` positions.
+
+4.  **Theme Engine (`whatsapp-theme.ts`)** (The Paint)
+    *   Consumes Roots: Sets CSS `padding: 24px`.
+
+5.  **UI Renderer (`ui.tsx`)** (The Canvas)
+    *   Consumes Theme: Renders `div` with `padding: 24px`.
+
+**Result:** The Calculator thinks the box is 150px high. The Canvas draws a box 150px high. **Perfect alignment.**
+
+---
+
+## 5. How to Tune (The Knobs)
+
+| Goal | Action |
+| :--- | :--- |
+| **Make Text Bubbles Taller** | Increase `BUBBLE_PADDING_V` or `LINE_HEIGHT` in `LAYOUT_CONSTANTS`. |
+| **Make Gaps Wider** | Increase `GAP_NORMAL` in `LAYOUT_CONSTANTS`. |
+| **Change Font Size** | Change `FONT_SIZE` in `LAYOUT_CONSTANTS`. |
+| **Adjust "Run Break" tightness** | Change `GAP_NORMAL` (affects runs) or `GAP_MINIMAL` (affects bursts). |
+
+Modify `src/config/layout-config.ts`. The rest of the system updates automatically.
+````
+
 ## File: packages/apps-whatsapp/README.md
 ````markdown
 # @tokovo/apps-whatsapp
@@ -9040,135 +8974,6 @@ Core logic for the Tokovo engine.
 }
 ````
 
-## File: packages/devices/src/iphone16/Frame.tsx
-````typescript
-import React from "react";
-import { iPhone16Profile } from "./profile";
-
-export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = iPhone16Profile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 165, // Scaled radius (55 * 3)
-            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Dynamic Island Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150, // Enough space for status bar
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "40px 60px 0 60px"
-            }}>
-                {/* Status Bar Content (Time, Battery, etc.) */}
-                {statusBar}
-            </div>
-
-            {/* Dynamic Island Cutout */}
-            <div style={{
-                position: "absolute",
-                top: 33, // 11 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 378, // 126 * 3
-                height: 111, // 37 * 3
-                backgroundColor: "black",
-                borderRadius: 60, // 20 * 3
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative"
-            }}>
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/devices/src/pixel/Frame.tsx
-````typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column"
-        }}>
-            {/* Status Bar Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                zIndex: 1000,
-                pointerEvents: "none",
-                padding: "30px 40px 0 40px"
-            }}>
-                {statusBar}
-            </div>
-
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#121212", // Dark mode default for Android
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                color: "white"
-            }}>
-
-                {children}
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: packages/devices/README.md
 ````markdown
 # @tokovo/devices
@@ -10312,111 +10117,6 @@ export const mediaShowcaseSceneIR: SceneIR = createEpisode("whatsapp-media-showc
 export { mediaShowcaseSceneIR as default };
 ````
 
-## File: packages/dsl/src/author/device-builder.ts
-````typescript
-/**
- * Device Builder
- * 
- * Fluent API for defining a device's story.
- * Manages conversation context and beat collection.
- */
-
-import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
-import { BeatBuilder } from "./beat-builder";
-
-/**
- * Beat callback function.
- */
-export type BeatFn = (b: BeatBuilder) => void;
-
-/**
- * Device builder collects conversations and beats for a device.
- */
-export class DeviceBuilder {
-    private readonly deviceId: string;
-    private readonly profileId: string;
-    private appId: string = "app_whatsapp"; // Default app
-    private ownerName: string | undefined;  // For multi-POV
-    private readonly conversations: ConversationDef[] = [];
-    private readonly beats: Beat[] = [];
-    private currentConversationId: string | undefined;
-
-    constructor(deviceId: string, profileId: string = "iphone16") {
-        this.deviceId = deviceId;
-        this.profileId = profileId;
-    }
-
-    /**
-     * Set the owner name for this device (for multi-POV stories).
-     * The owner's messages appear on the right side.
-     */
-    owner(name: string): this {
-        this.ownerName = name;
-        return this;
-    }
-
-    /**
-     * Set the app for this device.
-     */
-    app(appId: string): this {
-        this.appId = appId;
-        return this;
-    }
-
-    /**
-     * Define a conversation.
-     * Also sets it as the current conversation for subsequent beats.
-     */
-    conversation(id: string, config?: { name?: string; avatar?: string; type?: "dm" | "group" }): this {
-        const def: ConversationDef = {
-            id,
-            name: config?.name,
-            avatar: config?.avatar,
-            type: config?.type ?? "dm",
-        };
-        this.conversations.push(def);
-        this.currentConversationId = id;
-        return this;
-    }
-
-    /**
-     * Define a beat (named group of actions).
-     */
-    beat(name: string, fn: BeatFn): this {
-        if (!this.currentConversationId) {
-            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
-        }
-
-        const builder = new BeatBuilder(
-            this.deviceId,
-            this.appId,
-            this.currentConversationId
-        );
-        fn(builder);
-
-        this.beats.push({
-            name,
-            ops: builder.getOps(),
-        });
-
-        return this;
-    }
-
-    /**
-     * Build the device scene.
-     */
-    build(): DeviceScene {
-        return {
-            deviceId: this.deviceId,
-            profileId: this.profileId,
-            appId: this.appId,
-            conversations: this.conversations,
-            beats: this.beats,
-        };
-    }
-}
-````
-
 ## File: packages/dsl/src/author/episode-builder.ts
 ````typescript
 /**
@@ -10717,1904 +10417,6 @@ export class SceneDeviceBuilder {
 ## File: packages/dsl/tsconfig.tsbuildinfo
 ````
 {"root":["./src/index.ts","./src/types.ts","./src/author/beat-builder.ts","./src/author/device-builder.ts","./src/author/episode-builder.ts","./src/author/index.ts"],"version":"5.9.3"}
-````
-
-## File: packages/episodes/src/examples/android-test.json
-````json
-{
-    "initialWorld": {
-        "devices": {
-            "bob_phone": {
-                "id": "bob_phone",
-                "profileId": "pixel",
-                "isLocked": true,
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "other",
-                        "text": "Hey Bob!",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 10,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Alice",
-            "body": "Hey Bob!"
-        },
-        {
-            "at": 60,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 70,
-            "kind": "DEVICE",
-            "deviceId": "bob_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/camera-showcase.json
-````json
-{
-    "meta": {
-        "title": "Camera Showcase - Cinematic Demo",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_whatsapp",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_demo": {
-                "id": "conv_demo",
-                "type": "dm",
-                "name": "Camera Director 🎬",
-                "avatar": "",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "Camera Director 🎬",
-                        "text": "Welcome to the Camera Showcase!",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "Show me what you've got!",
-                        "type": "text",
-                        "status": "delivered"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {
-            "activeApp": "whatsapp",
-            "whatsapp": {
-                "screen": "chat",
-                "conversationId": "conv_demo"
-            }
-        },
-        "camera": {
-            "baseView": "APP_VIEW",
-            "activeEffects": [],
-            "transform": {
-                "translateX": 0,
-                "translateY": 0,
-                "scale": 1,
-                "rotation": 0,
-                "originX": 0.5,
-                "originY": 0.5,
-                "shakeX": 0,
-                "shakeY": 0
-            }
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m3",
-                "type": "text",
-                "text": "🎥 First up: ZOOM IN",
-                "status": "read"
-            }
-        },
-        {
-            "at": 60,
-            "kind": "CAMERA",
-            "type": "ZOOM",
-            "scale": 1.5,
-            "originX": 0.2,
-            "originY": 0.2,
-            "duration": 45,
-            "easing": "ease-out"
-        },
-        {
-            "at": 120,
-            "kind": "CAMERA",
-            "type": "RESET",
-            "duration": 30,
-            "easing": "ease-out"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m4",
-                "type": "text",
-                "text": "📱 Now watch this SHAKE!",
-                "status": "read"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "CAMERA",
-            "type": "SHAKE",
-            "intensity": 12,
-            "frequency": 20,
-            "decay": 0.4,
-            "duration": 45
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m5",
-                "type": "text",
-                "text": "👆 Smooth PAN coming up",
-                "status": "read"
-            }
-        },
-        {
-            "at": 270,
-            "kind": "CAMERA",
-            "type": "PAN",
-            "translateX": -100,
-            "translateY": -80,
-            "duration": 60,
-            "easing": "ease-in-out"
-        },
-        {
-            "at": 345,
-            "kind": "CAMERA",
-            "type": "RESET",
-            "duration": 30,
-            "easing": "cinematic"
-        },
-        {
-            "at": 390,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m6",
-                "type": "text",
-                "text": "🎯 FOCUS on the message!",
-                "status": "read"
-            }
-        },
-        {
-            "at": 420,
-            "kind": "CAMERA",
-            "type": "FOCUS",
-            "target": {
-                "type": "point",
-                "x": 0.7,
-                "y": 0.6
-            },
-            "scale": 1.8,
-            "duration": 60,
-            "easing": "ease-out"
-        },
-        {
-            "at": 510,
-            "kind": "CAMERA",
-            "type": "RESET",
-            "duration": 45,
-            "easing": "cinematic"
-        },
-        {
-            "at": 570,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m7",
-                "type": "text",
-                "text": "🔥 COMBO: Zoom + Shake!",
-                "status": "read"
-            }
-        },
-        {
-            "at": 600,
-            "kind": "CAMERA",
-            "type": "ZOOM",
-            "scale": 1.3,
-            "originX": 0.5,
-            "originY": 0.5,
-            "duration": 90,
-            "easing": "ease-out"
-        },
-        {
-            "at": 615,
-            "kind": "CAMERA",
-            "type": "SHAKE",
-            "intensity": 10,
-            "frequency": 18,
-            "decay": 0.5,
-            "duration": 75
-        },
-        {
-            "at": 720,
-            "kind": "CAMERA",
-            "type": "RESET",
-            "duration": 45,
-            "easing": "ease-in-out"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_demo",
-            "from": "Camera Director 🎬",
-            "message": {
-                "id": "m8",
-                "type": "text",
-                "text": "🎬 That's a wrap! You're now a Director.",
-                "status": "read"
-            }
-        },
-        {
-            "at": 810,
-            "kind": "CAMERA",
-            "type": "ZOOM",
-            "scale": 0.9,
-            "duration": 60,
-            "easing": "cinematic"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/homescreen-group-demo.json
-````json
-{
-    "meta": {
-        "title": "Home Screen & Group Chat Complete Demo",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "user_phone": {
-                "id": "user_phone",
-                "profileId": "iphone16",
-                "isLocked": true,
-                "notifications": [],
-                "homeScreen": {
-                    "wallpaper": "linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f64f59 100%)",
-                    "pages": [
-                        {
-                            "apps": [
-                                {
-                                    "appId": "app_facetime",
-                                    "label": "FaceTime",
-                                    "icon": "📹"
-                                },
-                                {
-                                    "appId": "app_calendar",
-                                    "label": "Calendar",
-                                    "icon": "📅"
-                                },
-                                {
-                                    "appId": "app_photos",
-                                    "label": "Photos",
-                                    "icon": "📸"
-                                },
-                                {
-                                    "appId": "app_camera",
-                                    "label": "Camera",
-                                    "icon": "📷"
-                                },
-                                {
-                                    "appId": "app_mail",
-                                    "label": "Mail",
-                                    "icon": "✉️",
-                                    "badge": 12
-                                },
-                                {
-                                    "appId": "app_clock",
-                                    "label": "Clock",
-                                    "icon": "🕐"
-                                },
-                                {
-                                    "appId": "app_maps",
-                                    "label": "Maps",
-                                    "icon": "🗺️"
-                                },
-                                {
-                                    "appId": "app_wallet",
-                                    "label": "Wallet",
-                                    "icon": "💳"
-                                },
-                                {
-                                    "appId": "app_notes",
-                                    "label": "Notes",
-                                    "icon": "📝"
-                                },
-                                {
-                                    "appId": "app_reminders",
-                                    "label": "Reminders",
-                                    "icon": "✅",
-                                    "badge": 3
-                                },
-                                {
-                                    "appId": "app_news",
-                                    "label": "News",
-                                    "icon": "📰"
-                                },
-                                {
-                                    "appId": "app_health",
-                                    "label": "Health",
-                                    "icon": "❤️"
-                                },
-                                {
-                                    "appId": "app_settings",
-                                    "label": "Settings",
-                                    "icon": "⚙️"
-                                },
-                                {
-                                    "appId": "app_music",
-                                    "label": "Music",
-                                    "icon": "🎵"
-                                },
-                                {
-                                    "appId": "app_appstore",
-                                    "label": "App Store",
-                                    "icon": "🛒"
-                                },
-                                {
-                                    "appId": "app_files",
-                                    "label": "Files",
-                                    "icon": "📁"
-                                }
-                            ]
-                        }
-                    ],
-                    "dock": [
-                        {
-                            "appId": "app_phone",
-                            "label": "Phone",
-                            "icon": "📞",
-                            "badge": 2
-                        },
-                        {
-                            "appId": "app_messages",
-                            "label": "Messages",
-                            "icon": "💬",
-                            "badge": 5
-                        },
-                        {
-                            "appId": "app_whatsapp",
-                            "label": "WhatsApp",
-                            "icon": "💬",
-                            "badge": 8
-                        },
-                        {
-                            "appId": "app_instagram",
-                            "label": "Instagram",
-                            "icon": "📷"
-                        }
-                    ]
-                }
-            }
-        },
-        "conversations": {
-            "group_family": {
-                "id": "group_family",
-                "type": "group",
-                "name": "Family Group 👨‍👩‍👧",
-                "members": [
-                    {
-                        "id": "mom",
-                        "name": "Mom"
-                    },
-                    {
-                        "id": "dad",
-                        "name": "Dad"
-                    },
-                    {
-                        "id": "sarah",
-                        "name": "Sarah"
-                    }
-                ],
-                "admins": [
-                    "mom"
-                ],
-                "messages": [
-                    {
-                        "id": "msg1",
-                        "from": "mom",
-                        "text": "Good morning everyone! ☀️",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg2",
-                        "from": "dad",
-                        "text": "Morning! How's everyone doing?",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg3",
-                        "from": "me",
-                        "text": "Hi mom! Hi dad! 👋",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg4",
-                        "from": "sarah",
-                        "text": "Just woke up lol",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg5",
-                        "from": "mom",
-                        "text": "Don't forget we have dinner at 7pm tomorrow!",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg6",
-                        "from": "me",
-                        "text": "I'll be there! Should I bring anything? 🍕",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg7",
-                        "from": "dad",
-                        "text": "Just bring yourself 😊",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "msg8",
-                        "from": "sarah",
-                        "text": "Can I bring a friend?",
-                        "type": "text",
-                        "status": "delivered"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {},
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 0,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Family Group 👨‍👩‍👧",
-            "body": "Mom: Don't forget dinner tomorrow!",
-            "mode": "lockscreen"
-        },
-        {
-            "at": 60,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 90,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "GO_HOME"
-        },
-        {
-            "at": 180,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "group_family",
-            "from": "mom"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "group_family",
-            "from": "mom"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "mom",
-            "text": "Of course Sarah! Who do you want to bring?"
-        },
-        {
-            "at": 360,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "group_family",
-            "from": "sarah"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "group_family",
-            "from": "sarah"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "sarah",
-            "text": "My friend Emma! She's really nice 😊"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "GROUP_MEMBER_ADDED",
-            "conversationId": "group_family",
-            "memberId": "emma",
-            "memberName": "Emma",
-            "addedBy": "Sarah"
-        },
-        {
-            "at": 540,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "group_family",
-            "from": "emma"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "group_family",
-            "from": "emma"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "emma",
-            "text": "Hi everyone! Thanks for having me! 🙏"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "mom",
-            "text": "Welcome Emma! We're happy to have you 💕"
-        },
-        {
-            "at": 720,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "group_family",
-            "from": "me",
-            "text": "Looking forward to it! See you all tomorrow!"
-        },
-        {
-            "at": 780,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "GO_HOME"
-        },
-        {
-            "at": 780,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SET_BADGE",
-            "appId": "app_whatsapp",
-            "count": 0
-        },
-        {
-            "at": 840,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Emma",
-            "body": "Thanks for adding me! 🙏",
-            "mode": "headsup"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/instagram-test.json
-````json
-{
-    "initialWorld": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_instagram",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "instagram_user",
-                        "text": "Hey! Did you see my new post?",
-                        "at": 0
-                    }
-                ]
-            }
-        },
-        "appState": {
-            "app_instagram": {
-                "currentView": "feed",
-                "feed": {
-                    "posts": [
-                        {
-                            "id": "p1",
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "image": "https://picsum.photos/seed/insta1/1080/1080",
-                            "caption": "Living my best life! 🌟 #blessed",
-                            "likes": 1234,
-                            "comments": 42,
-                            "liked": false,
-                            "saved": false
-                        },
-                        {
-                            "id": "p2",
-                            "username": "travel_blogger",
-                            "avatar": "https://i.pravatar.cc/150?u=travel",
-                            "image": "https://picsum.photos/seed/insta2/1080/1080",
-                            "caption": "Sunset vibes 🌅",
-                            "likes": 890,
-                            "comments": 12,
-                            "liked": true,
-                            "saved": true
-                        }
-                    ],
-                    "scrollPosition": 0
-                },
-                "stories": {
-                    "users": [
-                        {
-                            "username": "instagram_user",
-                            "avatar": "https://i.pravatar.cc/150?u=instagram_user",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s1",
-                                    "image": "https://picsum.photos/seed/story1/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        },
-                        {
-                            "username": "friend_1",
-                            "avatar": "https://i.pravatar.cc/150?u=friend1",
-                            "hasUnseen": true,
-                            "stories": [
-                                {
-                                    "id": "s2",
-                                    "image": "https://picsum.photos/seed/story2/1080/1920",
-                                    "seen": false
-                                }
-                            ]
-                        }
-                    ]
-                },
-                "notifications": {
-                    "items": []
-                }
-            }
-        },
-        "camera": {
-            "type": "APP_VIEW",
-            "appId": "app_instagram"
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "stories"
-            }
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "feed"
-            }
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "explore"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "reels"
-            }
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "notifications"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "profile"
-            }
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "post"
-            }
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "CUSTOM",
-            "name": "NAVIGATE",
-            "payload": {
-                "view": "dm"
-            }
-        },
-        {
-            "at": 260,
-            "kind": "APP",
-            "appId": "app_instagram",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "Wow, this app is huge!"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/multi-pov-demo.json
-````json
-{
-    "meta": {
-        "title": "Two Sides of the Story - Multi-POV Demo",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "alice_phone": {
-                "id": "alice_phone",
-                "profileId": "iphone16",
-                "ownerName": "Alice",
-                "isLocked": false,
-                "foregroundAppId": "app_whatsapp",
-                "notifications": []
-            },
-            "bob_phone": {
-                "id": "bob_phone",
-                "profileId": "iphone16",
-                "ownerName": "Bob",
-                "isLocked": false,
-                "foregroundAppId": "app_whatsapp",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "alice_bob_chat": {
-                "id": "alice_bob_chat",
-                "type": "dm",
-                "name": "Alice",
-                "avatar": "",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "Alice",
-                        "text": "Hey, where are you?",
-                        "type": "text",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {
-            "app_whatsapp": {
-                "screen": "chat",
-                "conversationId": "alice_bob_chat"
-            }
-        },
-        "camera": {
-            "baseView": "APP_VIEW",
-            "activeDeviceId": "alice_phone",
-            "layout": {
-                "mode": "SINGLE",
-                "primaryDeviceId": "alice_phone"
-            },
-            "activeEffects": [],
-            "transform": {
-                "translateX": 0,
-                "translateY": 0,
-                "scale": 1,
-                "rotation": 0,
-                "originX": 0.5,
-                "originY": 0.5,
-                "shakeX": 0,
-                "shakeY": 0
-            },
-            "deviceTransforms": {}
-        },
-        "audio": {
-            "activeSounds": {}
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Bob",
-            "message": {
-                "id": "m2",
-                "type": "text",
-                "text": "On my way! 🚗",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 30,
-            "kind": "AUDIO",
-            "type": "PLAY_SOUND",
-            "soundId": "whatsapp_received"
-        },
-        {
-            "at": 90,
-            "kind": "CAMERA",
-            "type": "CUT",
-            "toDeviceId": "bob_phone"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Alice",
-            "message": {
-                "id": "m3",
-                "type": "text",
-                "text": "You said that 20 minutes ago 😤",
-                "status": "read"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "AUDIO",
-            "type": "PLAY_SOUND",
-            "soundId": "whatsapp_received"
-        },
-        {
-            "at": 180,
-            "kind": "CAMERA",
-            "type": "LAYOUT",
-            "mode": "SPLIT_HORIZONTAL",
-            "primaryDeviceId": "alice_phone",
-            "secondaryDeviceId": "bob_phone"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Bob",
-            "message": {
-                "id": "m4",
-                "type": "text",
-                "text": "Traffic is crazy! 😅",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Alice",
-            "message": {
-                "id": "m5",
-                "type": "text",
-                "text": "Send me your location",
-                "status": "read"
-            }
-        },
-        {
-            "at": 360,
-            "kind": "CAMERA",
-            "type": "LAYOUT",
-            "mode": "PIP",
-            "primaryDeviceId": "bob_phone",
-            "secondaryDeviceId": "alice_phone",
-            "pipPosition": "top-right",
-            "pipScale": 0.35
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Bob",
-            "message": {
-                "id": "m6",
-                "type": "text",
-                "text": "📍 Sharing location...",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 510,
-            "kind": "CAMERA",
-            "type": "ZOOM",
-            "scale": 1.3,
-            "originX": 0.5,
-            "originY": 0.6,
-            "duration": 45,
-            "easing": "ease-out"
-        },
-        {
-            "at": 600,
-            "kind": "CAMERA",
-            "type": "LAYOUT",
-            "mode": "SPLIT_VERTICAL",
-            "primaryDeviceId": "alice_phone",
-            "secondaryDeviceId": "bob_phone"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Alice",
-            "message": {
-                "id": "m7",
-                "type": "text",
-                "text": "Wait... that's not the way here 🤔",
-                "status": "read"
-            }
-        },
-        {
-            "at": 720,
-            "kind": "CAMERA",
-            "type": "SHAKE",
-            "deviceId": "alice_phone",
-            "intensity": 8,
-            "frequency": 15,
-            "decay": 0.5,
-            "duration": 30
-        },
-        {
-            "at": 780,
-            "kind": "CAMERA",
-            "type": "LAYOUT",
-            "mode": "SINGLE",
-            "primaryDeviceId": "alice_phone"
-        },
-        {
-            "at": 810,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "alice_bob_chat",
-            "from": "Alice",
-            "message": {
-                "id": "m8",
-                "type": "text",
-                "text": "WHERE ARE YOU GOING?! 😡",
-                "status": "read"
-            }
-        },
-        {
-            "at": 870,
-            "kind": "CAMERA",
-            "type": "ZOOM",
-            "scale": 1.5,
-            "originX": 0.5,
-            "originY": 0.7,
-            "duration": 30,
-            "easing": "ease-out"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/notification-call-demo.json
-````json
-{
-    "name": "Notification & Call Demo",
-    "description": "Comprehensive test of lockscreen, notifications, and call features",
-    "initialWorld": {
-        "devices": {
-            "user_phone": {
-                "id": "user_phone",
-                "profileId": "iphone16",
-                "isLocked": true,
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_main": {
-                "id": "conv_main",
-                "messages": [],
-                "typing": {}
-            }
-        },
-        "appState": {},
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 0,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Sarah",
-            "body": "Hey! Are you free tonight?",
-            "mode": "lockscreen"
-        },
-        {
-            "at": 45,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_instagram",
-            "title": "mike_photos",
-            "body": "Liked your photo ❤️",
-            "mode": "lockscreen"
-        },
-        {
-            "at": 90,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 105,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_main",
-            "from": "other",
-            "text": "Are you there?"
-        },
-        {
-            "at": 150,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_instagram",
-            "title": "Instagram",
-            "body": "3 people liked your story",
-            "mode": "headsup"
-        },
-        {
-            "at": 210,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "INCOMING_CALL",
-            "callerId": "sarah_id",
-            "callerName": "Sarah",
-            "callerAvatar": "https://i.pravatar.cc/300?u=sarah",
-            "isVideo": false
-        },
-        {
-            "at": 270,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "CALL_ANSWERED"
-        },
-        {
-            "at": 390,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "CALL_ENDED"
-        },
-        {
-            "at": 420,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "SHOW_NOTIFICATION",
-            "appId": "app_whatsapp",
-            "title": "Sarah",
-            "body": "That was a great call! Talk later 👋",
-            "mode": "headsup"
-        },
-        {
-            "at": 510,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "INCOMING_CALL",
-            "callerId": "mike_id",
-            "callerName": "Mike",
-            "isVideo": true
-        },
-        {
-            "at": 570,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "CALL_ANSWERED"
-        },
-        {
-            "at": 660,
-            "kind": "DEVICE",
-            "deviceId": "user_phone",
-            "type": "CALL_ENDED"
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/whatsapp-breakup-01.json
-````json
-{
-    "meta": {
-        "title": "WhatsApp Breakup Story - The End",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": true
-            }
-        },
-        "conversations": {
-            "conv_1": {
-                "id": "conv_1",
-                "type": "dm",
-                "name": "Alex ❤️",
-                "avatar": null,
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "me",
-                        "text": "Hey, are you free to talk?",
-                        "type": "text",
-                        "status": "read"
-                    },
-                    {
-                        "id": "m2",
-                        "from": "me",
-                        "text": "There's something I need to tell you...",
-                        "type": "text",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {},
-        "camera": {
-            "type": "APP_VIEW"
-        }
-    },
-    "events": [
-        {
-            "at": 15,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "UNLOCK"
-        },
-        {
-            "at": 30,
-            "kind": "DEVICE",
-            "deviceId": "main_phone",
-            "type": "OPEN_APP",
-            "appId": "app_whatsapp"
-        },
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Yeah I'm here, what's going on?"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "You're scaring me..."
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I've been thinking a lot lately"
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "About us. About where this is going."
-        },
-        {
-            "at": 240,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "What do you mean? I thought everything was fine?"
-        },
-        {
-            "at": 330,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "It's not you. It's really not."
-        },
-        {
-            "at": 360,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I just don't think I can do this anymore"
-        },
-        {
-            "at": 390,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 420,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Are you breaking up with me??"
-        },
-        {
-            "at": 450,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Over TEXT?!"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I didn't know how else to say it"
-        },
-        {
-            "at": 510,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I'm sorry Alex. I really am."
-        },
-        {
-            "at": 540,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "After 2 years? You're doing this over WhatsApp?"
-        },
-        {
-            "at": 630,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I gave you everything 😢"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "I know. And I'm grateful for every moment we had."
-        },
-        {
-            "at": 690,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "me",
-            "text": "But I need to focus on myself right now"
-        },
-        {
-            "at": 720,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️"
-        },
-        {
-            "at": 780,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "..."
-        },
-        {
-            "at": 810,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "I hope you find what you're looking for"
-        },
-        {
-            "at": 840,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_1",
-            "from": "Alex ❤️",
-            "text": "Goodbye."
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/whatsapp-production-demo.json
-````json
-{
-    "meta": {
-        "title": "WhatsApp Production Demo",
-        "description": "Showcases all new WhatsApp features: Chats list, image/video/GIF messages, typing indicator, voice notes",
-        "fps": 30,
-        "durationInFrames": 900
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_whatsapp",
-                "ownerName": "me",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_bestie": {
-                "id": "conv_bestie",
-                "type": "dm",
-                "name": "Best Friend 💕",
-                "avatar": "",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "Best Friend 💕",
-                        "text": "Hey! Look at this sunset 🌅",
-                        "type": "text",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {
-            "activeApp": "whatsapp",
-            "whatsapp": {
-                "screen": "chat",
-                "conversationId": "conv_bestie"
-            }
-        },
-        "camera": {
-            "baseView": "APP_VIEW",
-            "activeEffects": [],
-            "transform": {
-                "translateX": 0,
-                "translateY": 0,
-                "scale": 1,
-                "rotation": 0,
-                "originX": 0.5,
-                "originY": 0.5,
-                "shakeX": 0,
-                "shakeY": 0
-            }
-        },
-        "audio": {
-            "activeSounds": []
-        }
-    },
-    "events": [
-        {
-            "at": 30,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_bestie",
-            "from": "Best Friend 💕",
-            "message": {
-                "id": "m2",
-                "type": "image",
-                "imageUrl": "https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?w=600",
-                "caption": "From the beach today! 🏖️",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 90,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_bestie",
-            "from": "other"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_bestie",
-            "from": "other"
-        },
-        {
-            "at": 150,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_SENT",
-            "conversationId": "conv_bestie",
-            "from": "me",
-            "text": "OMG that's beautiful! 😍",
-            "message": {
-                "id": "m3",
-                "type": "text",
-                "text": "OMG that's beautiful! 😍",
-                "status": "sent"
-            }
-        },
-        {
-            "at": 210,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_bestie",
-            "from": "Best Friend 💕",
-            "message": {
-                "id": "m4",
-                "type": "video",
-                "thumbnailUrl": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600",
-                "duration": 15,
-                "caption": "Watch this wave 🌊",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 300,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_SENT",
-            "conversationId": "conv_bestie",
-            "from": "me",
-            "message": {
-                "id": "m5",
-                "type": "gif",
-                "gifUrl": "https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif",
-                "status": "sent"
-            }
-        },
-        {
-            "at": 390,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_START",
-            "conversationId": "conv_bestie",
-            "from": "other"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "TYPING_END",
-            "conversationId": "conv_bestie",
-            "from": "other"
-        },
-        {
-            "at": 480,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "VOICE_MESSAGE_RECEIVED",
-            "conversationId": "conv_bestie",
-            "from": "Best Friend 💕",
-            "duration": 8
-        },
-        {
-            "at": 600,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_READ",
-            "conversationId": "conv_bestie",
-            "messageId": "m5"
-        },
-        {
-            "at": 660,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_bestie",
-            "from": "Best Friend 💕",
-            "text": "That GIF is perfect 😂",
-            "message": {
-                "id": "m7",
-                "type": "text",
-                "text": "That GIF is perfect 😂",
-                "status": "delivered"
-            }
-        },
-        {
-            "at": 750,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_bestie",
-            "from": "Best Friend 💕",
-            "message": {
-                "id": "m8",
-                "type": "image",
-                "imageUrl": "https://images.unsplash.com/photo-1476673160081-cf065607f449?w=600",
-                "status": "delivered"
-            }
-        }
-    ]
-}
-````
-
-## File: packages/episodes/src/examples/whatsapp-psychotic-demo.json
-````json
-{
-    "meta": {
-        "title": "WhatsApp Features Demo",
-        "fps": 30,
-        "durationInFrames": 600
-    },
-    "initialWorld": {
-        "devices": {
-            "main_phone": {
-                "id": "main_phone",
-                "profileId": "iphone16",
-                "isLocked": false,
-                "foregroundAppId": "app_whatsapp",
-                "notifications": []
-            }
-        },
-        "conversations": {
-            "conv_psycho": {
-                "id": "conv_psycho",
-                "type": "dm",
-                "name": "Toxic Ex 🚩",
-                "avatar": "",
-                "messages": [
-                    {
-                        "id": "m1",
-                        "from": "Toxic Ex 🚩",
-                        "text": "",
-                        "type": "call_missed",
-                        "status": "read"
-                    },
-                    {
-                        "id": "m2",
-                        "from": "Toxic Ex 🚩",
-                        "text": "",
-                        "type": "deleted",
-                        "status": "read"
-                    }
-                ],
-                "typing": {}
-            }
-        },
-        "appState": {
-            "activeApp": "whatsapp",
-            "whatsapp": {
-                "screen": "chat",
-                "conversationId": "conv_psycho"
-            }
-        },
-        "camera": {
-            "baseView": "APP_VIEW",
-            "activeEffects": [],
-            "transform": {
-                "translateX": 0,
-                "translateY": 0,
-                "scale": 1,
-                "rotation": 0,
-                "originX": 0.5,
-                "originY": 0.5,
-                "shakeX": 0,
-                "shakeY": 0
-            }
-        }
-    },
-    "events": [
-        {
-            "at": 60,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_psycho",
-            "from": "Toxic Ex 🚩",
-            "message": {
-                "id": "m3",
-                "type": "voice",
-                "duration": 45,
-                "status": "read"
-            }
-        },
-        {
-            "at": 120,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_RECEIVED",
-            "conversationId": "conv_psycho",
-            "from": "Toxic Ex 🚩",
-            "text": "Took a screenshot!",
-            "message": {
-                "id": "m4",
-                "type": "screenshot_alert",
-                "text": "Took a screenshot!",
-                "status": "read"
-            }
-        },
-        {
-            "at": 180,
-            "kind": "APP",
-            "appId": "app_whatsapp",
-            "type": "MESSAGE_SENT",
-            "conversationId": "conv_psycho",
-            "from": "me",
-            "text": "Why are you doing this?",
-            "message": {
-                "id": "m5",
-                "type": "text",
-                "text": "Why are you doing this?",
-                "status": "sent",
-                "edited": true
-            }
-        }
-    ]
-}
 ````
 
 ## File: packages/episodes/tsconfig.json
@@ -15926,125 +13728,6 @@ packages:
 }
 ````
 
-## File: apps/video-runner/src/BakchodiGangVideo.tsx
-````typescript
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { bakchodiGangEpisode } from "@tokovo/episodes";
-import { compile } from "@tokovo/compiler";
-import {
-    replay,
-    createEventIndex,
-    WorldState,
-    DeviceState,
-    ConversationState,
-    DEFAULT_CAMERA_STATE,
-    DEFAULT_AUDIO_STATE
-} from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import "@tokovo/devices";
-import { SceneIR } from "@tokovo/ir";
-
-// Helper to construct Initial World from Scene IR
-function createInitialWorld(scene: SceneIR): WorldState {
-    const devices: Record<string, DeviceState> = {};
-    const conversations: Record<string, ConversationState> = {};
-    const appStates: Record<string, any> = {};
-
-    for (const dev of scene.devices) {
-        // Create device state
-        devices[dev.deviceId] = {
-            id: dev.deviceId,
-            profileId: dev.profileId ?? "iphone16",
-            isLocked: false,
-            foregroundAppId: dev.appId,
-            notifications: [],
-        } as any;
-
-        // Create conversations
-        for (const conv of dev.conversations) {
-            conversations[conv.id] = {
-                id: conv.id,
-                type: conv.type === "group" ? "group" : "dm",
-                name: conv.name,
-                avatar: conv.avatar,
-                messages: [],
-                typing: {}
-            };
-        }
-
-        // App state
-        appStates[dev.appId] = {
-            screen: "chat",
-            conversationId: dev.conversations[0]?.id
-        };
-    }
-
-    // Ensure audio state fallback
-    const audio = DEFAULT_AUDIO_STATE || { activeSounds: {} };
-
-    return {
-        devices,
-        conversations,
-        appState: appStates,
-        camera: { ...DEFAULT_CAMERA_STATE, activeDeviceId: scene.devices[0]?.deviceId ?? "phone" },
-        audio
-    };
-}
-
-export const BakchodiGangVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-
-    // Compile the DSL into events on the fly
-    const { initialWorld, timelineAndOps } = useMemo(() => {
-        const result = compile(bakchodiGangEpisode);
-        // ENGINE UPDATE: Native V2 support enabled. No adapter needed.
-        const rawOps = result.timeline.ops;
-
-        return {
-            initialWorld: createInitialWorld(bakchodiGangEpisode as unknown as SceneIR),
-            timelineAndOps: rawOps as any[]
-        };
-    }, []);
-
-    const eventIndex = useMemo(() => createEventIndex(timelineAndOps), [timelineAndOps]);
-    const world = replay(initialWorld, timelineAndOps, frame);
-
-    // Calculate scale to fit device in composition
-    const compositionWidth = 1080;
-    const compositionHeight = 1920;
-    const deviceWidth = iPhone16Profile.dimensions.width;
-    const deviceHeight = iPhone16Profile.dimensions.height;
-
-    const scaleX = compositionWidth / deviceWidth;
-    const scaleY = compositionHeight / deviceHeight;
-    const scale = Math.min(scaleX, scaleY);
-
-    return (
-        <AbsoluteFill style={{
-            backgroundColor: "#1a1a2e",
-            justifyContent: "center",
-            alignItems: "center"
-        }}>
-            <div style={{
-                transform: `scale(${scale})`,
-                transformOrigin: "center center"
-            }}>
-                <TokovoRenderer
-                    world={world}
-                    t={frame}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
-                />
-            </div>
-        </AbsoluteFill>
-    );
-};
-````
-
 ## File: apps/video-runner/src/BreakupDramaDSLVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
@@ -16305,6 +13988,15 @@ export const BreakupDramaDSLVideo: React.FC = () => {
         </AbsoluteFill>
     );
 };
+````
+
+## File: apps/video-runner/src/index.ts
+````typescript
+import { registerRoot } from "remotion";
+import { RemotionRoot } from "./Root";
+import "@tokovo/device-keyboard"; // Register keyboard audio rules
+
+registerRoot(RemotionRoot);
 ````
 
 ## File: apps/video-runner/src/KeyboardVerifyVideo.tsx
@@ -18106,1489 +15798,6 @@ export const WhatsappCompleteShowcaseVideo: React.FC = () => {
 };
 ````
 
-## File: docs/CAMERA_AUDIO.md
-````markdown
-# Camera & Audio Systems
-
-> **Location**: `@tokovo/core` (types), `@tokovo/dsl` (events)
-
-The Camera and Audio systems provide cinematic effects that make videos feel professional and immersive.
-
----
-
-## Camera System
-
-### Overview
-
-The camera system supports:
-- **Zoom** - Scale in/out with customizable origin
-- **Pan** - Translate camera position
-- **Shake** - Screen shake for dramatic moments
-- **Focus** - Highlight specific areas
-- **Reset** - Return to default view
-
-### Camera State
-
-```typescript
-interface CameraState {
-    baseView: "APP_VIEW" | "LOCKSCREEN_VIEW" | "HOMESCREEN_VIEW";
-    activeDeviceId: string;
-    layout: CameraLayoutConfig;
-    activeEffects: ActiveEffect[];
-    transform: CameraTransform;
-    deviceTransforms: Record<string, CameraTransform>;
-}
-
-interface CameraTransform {
-    translateX: number;
-    translateY: number;
-    scale: number;
-    rotation: number;
-    originX: number;    // 0-1, center of zoom
-    originY: number;    // 0-1, center of zoom
-    shakeX: number;
-    shakeY: number;
-}
-```
-
-### DSL Events
-
-#### Zoom
-
-```typescript
-// Simple zoom
-dsl.camera.zoom(100, 1.3, 30)  // Zoom to 130% over 30 frames
-
-// Zoom with custom origin
-dsl.camera.zoom(100, 1.3, 30, { 
-    originX: 0.5,   // Center horizontally
-    originY: 0.7    // Focus on lower part of screen
-})
-```
-
-#### Pan
-
-```typescript
-// Pan right and up
-dsl.camera.pan(200, 100, -50, 20)
-
-// Parameters: at, x, y, duration
-```
-
-#### Shake
-
-```typescript
-// Basic shake
-dsl.camera.shake(300, 5, 15)
-
-// With options
-dsl.camera.shake(300, 5, 15, {
-    frequency: 20,  // Shake speed
-    decay: 0.8      // Fade out rate
-})
-```
-
-#### Focus
-
-```typescript
-// Focus on specific point
-dsl.camera.focus(400, 0.5, 0.3, 1.2, 25)
-
-// Parameters: at, x, y, scale, duration
-```
-
-#### Reset
-
-```typescript
-// Return to default view
-dsl.camera.reset(500, 25)
-```
-
-### Use Cases
-
-| Effect | When to Use |
-|--------|-------------|
-| **Zoom** | Reading important message |
-| **Pan** | Following action |
-| **Shake** | Dramatic moment, notification |
-| **Focus** | Highlighting specific UI |
-| **Reset** | Returning to normal view |
-
-### Example
-
-```typescript
-const events = [
-    // Conversation happening...
-    dsl.messages.receive(100, "dm", "Alex", "OMG!! You won't believe this!"),
-    
-    // Zoom in on dramatic message
-    dsl.camera.zoom(110, 1.25, 20, { originY: 0.7 }),
-    
-    // Small shake for impact
-    dsl.camera.shake(130, 3, 12, { decay: 0.9 }),
-    
-    // Hold for a beat, then reset
-    dsl.camera.reset(200, 25),
-];
-```
-
----
-
-## Audio System
-
-### Overview
-
-The audio system manages:
-- **Sound Effects** - UI sounds, notifications
-- **Background Music** - Ambient music beds
-- **Volume Control** - Fade in/out
-- **Bus System** - Music, SFX, UI, Voice channels
-
-### Audio State
-
-```typescript
-interface AudioState {
-    activeSounds: Record<string, ActiveSound>;
-    buses: {
-        music: AudioBusConfig;
-        ui: AudioBusConfig;
-        sfx: AudioBusConfig;
-        voice: AudioBusConfig;
-    };
-    backgroundMusic?: {
-        soundId: string;
-        volume: number;
-        loop: boolean;
-        startFrame: number;
-    };
-}
-
-interface ActiveSound {
-    soundId: string;
-    instanceId: string;
-    volume: number;
-    startFrame: number;
-    bus: AudioBus;
-    envelope?: AudioEnvelope;
-}
-```
-
-### DSL Events
-
-#### Play Sound
-
-```typescript
-// Play notification sound
-dsl.audio.play(100, "whatsapp_received", 0.8)
-
-// Play with default volume
-dsl.audio.play(100, "message_sent")
-
-// Available sounds depend on your asset library
-```
-
-#### Stop Sound
-
-```typescript
-// Stop a specific sound instance
-dsl.audio.stop(200, "bgm_1")
-```
-
-#### Fade Volume
-
-```typescript
-// Fade background music to 30% over 1 second
-dsl.audio.fade(300, "bgm_1", 0.3, 30)
-```
-
-#### Background Music
-
-```typescript
-// Start looping background music
-dsl.audio.backgroundMusic(0, "ambient_tension", {
-    volume: 0.4,
-    loop: true,
-})
-```
-
-### Sound IDs
-
-Common sound effects in Tokovo:
-
-| Sound ID | Description |
-|----------|-------------|
-| `whatsapp_received` | Incoming WhatsApp message |
-| `whatsapp_sent` | Outgoing WhatsApp message |
-| `message_sent` | Generic send sound |
-| `notification` | System notification |
-| `key_click` | Keyboard key press |
-
-### Example
-
-```typescript
-const events = [
-    // Background music starts
-    dsl.audio.backgroundMusic(0, "chill_ambient", { volume: 0.3 }),
-    
-    // Message arrives
-    dsl.messages.receive(100, "dm", "Alex", "Hey!"),
-    dsl.audio.play(100, "whatsapp_received", 0.8),
-    
-    // User types and sends
-    dsl.messages.send(200, "dm", "What's up?"),
-    dsl.audio.play(200, "whatsapp_sent", 0.7),
-    
-    // Dramatic moment - music swells
-    dsl.audio.fade(300, "bgm_1", 0.6, 30),
-    
-    // Shocking revelation
-    dsl.messages.receive(400, "dm", "Alex", "I know what you did."),
-    dsl.audio.play(400, "notification", 1.0),
-    dsl.camera.shake(410, 5, 15),
-    
-    // Music fades out
-    dsl.audio.fade(500, "bgm_1", 0.0, 60),
-];
-```
-
----
-
-## File Locations
-
-| System | Location |
-|--------|----------|
-| Camera Types | `packages/core/src/types.ts` |
-| Camera Engine | `packages/core/src/camera.ts` |
-| Camera DSL | `packages/dsl/src/events/camera.ts` |
-| Audio Types | `packages/core/src/types.ts` |
-| Audio Engine | `packages/core/src/engine.ts` |
-| Audio DSL | `packages/dsl/src/events/audio.ts` |
-| AudioLayer | `packages/renderer/src/AudioLayer.tsx` |
-````
-
-## File: docs/DEVICE_OS.md
-````markdown
-# Device OS Layer
-
-> **Location**: `@tokovo/core` (types), `@tokovo/devices` (StatusBar), `@tokovo/dsl` (events)
-
-The Device OS layer simulates operating system behaviors that make videos indistinguishable from real screen recordings.
-
----
-
-## Overview
-
-The Device OS layer manages:
-- **Clock** - Status bar time display
-- **Battery** - Battery percentage and charging state
-- **Network** - WiFi, 5G, LTE, cellular signal strength
-- **DND** - Do Not Disturb mode (moon icon)
-- **Airplane Mode** - Disables all radios
-- **Low Power Mode** - Yellow battery indicator
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     FullRealityShowcase                     │
-│  initialWorld.devices.phone.os = { clock, battery, ... }   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    dsl.os.setTime(30, ...)                  │
-│                    dsl.os.setBattery(100, 85)               │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Engine (replay)                        │
-│              processOSEvent() updates device.os             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                     TokovoRenderer                          │
-│         <DeviceFrame device={device}>                       │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                       StatusBar                             │
-│           <StatusBar os={device.os} />                      │
-│  ┌─────────┬─────────┬─────────┬─────────┐                 │
-│  │  Time   │ Network │  WiFi   │ Battery │                 │
-│  │  14:45  │   5G    │   |||   │   87%   │                 │
-│  └─────────┴─────────┴─────────┴─────────┘                 │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## DeviceOSState Interface
-
-```typescript
-interface DeviceOSState {
-    // Time
-    clock: number;           // Unix timestamp (ms)
-    
-    // Power
-    battery: number;         // 0-100
-    charging: boolean;
-    lowPowerMode: boolean;
-    
-    // Network
-    network: NetworkType;    // "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service"
-    wifiStrength: number;    // 0-3
-    cellStrength: number;    // 0-4
-    airplaneMode: boolean;
-    
-    // Status
-    dnd: boolean;            // Do Not Disturb
-}
-
-type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "no-service";
-```
-
----
-
-## Initial State
-
-Set device OS state in your episode's `initialWorld`:
-
-```typescript
-const initialWorld: WorldState = {
-    devices: {
-        phone: {
-            id: "phone",
-            profileId: "iphone16",
-            foregroundAppId: "app_whatsapp",
-            notifications: [],
-            
-            // Device OS state
-            os: {
-                clock: new Date().setHours(14, 45, 0, 0),
-                battery: 87,
-                charging: false,
-                network: "wifi",
-                wifiStrength: 3,
-                cellStrength: 4,
-                dnd: false,
-                lowPowerMode: false,
-                airplaneMode: false,
-            },
-        },
-    },
-    // ... rest of world state
-};
-```
-
----
-
-## DSL Events
-
-### Set Time
-
-```typescript
-const startTime = new Date();
-startTime.setHours(14, 45, 0, 0);
-
-// Set initial time
-dsl.os.setTime(0, startTime.getTime())
-
-// Time advances during conversation
-dsl.os.setTime(300, startTime.getTime() + 10000)  // +10 seconds
-```
-
-### Set Battery
-
-```typescript
-// Initial battery
-dsl.os.setBattery(0, 87)
-
-// Battery drains during usage
-dsl.os.setBattery(200, 86)
-dsl.os.setBattery(400, 85)
-
-// Charging
-dsl.os.setBattery(500, 86, true)  // Shows charging bolt
-```
-
-### Set Network
-
-```typescript
-// WiFi with full signal
-dsl.os.setNetwork(0, "wifi", 3)
-
-// Switch to cellular
-dsl.os.setNetwork(100, "5G", 4)
-
-// Lose signal
-dsl.os.setNetwork(200, "no-service")
-```
-
-### Toggle DND
-
-```typescript
-// Enable Do Not Disturb (shows moon icon)
-dsl.os.setDND(0, true)
-
-// Disable
-dsl.os.setDND(100, false)
-```
-
-### Toggle Airplane Mode
-
-```typescript
-// Enable (disables all network)
-dsl.os.setAirplane(0, true)
-
-// Disable
-dsl.os.setAirplane(100, false)
-```
-
----
-
-## StatusBar Component
-
-The StatusBar reads from `device.os` and displays:
-
-| Property | Display |
-|----------|---------|
-| `os.clock` | Formatted time (e.g., "14:45") |
-| `os.battery` | Battery icon with fill level |
-| `os.charging` | Lightning bolt on battery |
-| `os.network` | Network type label (5G, LTE) |
-| `os.wifiStrength` | WiFi signal arcs |
-| `os.cellStrength` | Cell signal bars |
-| `os.dnd` | Moon icon |
-
-### Signal Strength Icons
-
-**WiFi** (3 bars): Arcs opacity based on `wifiStrength` (0-3)
-**Cellular** (4 bars): Bar opacity based on `cellStrength` (0-4)
-
----
-
-## Engine Processing
-
-Events are processed by `processOSEvent()` in the engine:
-
-```typescript
-function processOSEvent(draft: WorldState, event: OSEvent): void {
-    const device = draft.devices[event.deviceId];
-    
-    switch (event.type) {
-        case "SET_TIME":
-            device.os.clock = event.time;
-            break;
-            
-        case "SET_BATTERY":
-            device.os.battery = event.level;
-            device.os.charging = event.charging ?? false;
-            break;
-            
-        case "SET_NETWORK":
-            device.os.network = event.network;
-            break;
-            
-        case "SET_DND":
-            device.os.dnd = event.enabled;
-            break;
-            
-        case "SET_AIRPLANE":
-            device.os.airplaneMode = event.enabled;
-            if (event.enabled) {
-                device.os.network = "no-service";
-            }
-            break;
-    }
-}
-```
-
----
-
-## Realism Tips
-
-### Time Progression
-```typescript
-// Natural time flow during a 40-second video
-dsl.os.setTime(0, TIME.getTime())
-dsl.os.setTime(300, TIME.getTime() + 10000)   // +10s
-dsl.os.setTime(600, TIME.getTime() + 20000)   // +20s
-dsl.os.setTime(900, TIME.getTime() + 33000)   // +33s
-```
-
-### Battery Drain
-```typescript
-// Realistic drain during phone usage
-// ~1% every 30 seconds of active use
-dsl.os.setBattery(0, 87)
-dsl.os.setBattery(300, 86)
-dsl.os.setBattery(600, 85)
-dsl.os.setBattery(900, 84)
-```
-
-### Network Transitions
-```typescript
-// Walk into subway (lose signal)
-dsl.os.setNetwork(0, "wifi", 3)
-dsl.os.setNetwork(200, "wifi", 2)
-dsl.os.setNetwork(400, "wifi", 1)
-dsl.os.setNetwork(500, "no-service")
-
-// Exit subway
-dsl.os.setNetwork(700, "4G", 2)
-dsl.os.setNetwork(800, "4G", 4)
-```
-
----
-
-## Complete Example
-
-```typescript
-const START_TIME = new Date();
-START_TIME.setHours(14, 45, 0, 0);
-
-const events = [
-    // === SCENE START ===
-    // Full battery, WiFi, 2:45 PM
-    
-    // 5 seconds in: time advances
-    dsl.os.setTime(150, START_TIME.getTime() + 5000),
-    
-    // 10 seconds: battery drains
-    dsl.os.setBattery(300, 86),
-    dsl.os.setTime(300, START_TIME.getTime() + 10000),
-    
-    // 20 seconds: switch to data
-    dsl.os.setNetwork(600, "5G", 4),
-    dsl.os.setTime(600, START_TIME.getTime() + 20000),
-    
-    // 30 seconds: DND enabled
-    dsl.os.setDND(900, true),
-    dsl.os.setBattery(900, 85),
-    dsl.os.setTime(900, START_TIME.getTime() + 33000),
-    
-    // === SCENE END ===
-];
-```
-
----
-
-## File Locations
-
-| Purpose | Location |
-|---------|----------|
-| Types | `packages/core/src/types.ts` - DeviceOSState, NetworkType |
-| Engine | `packages/core/src/engine.ts` - processOSEvent() |
-| DSL | `packages/dsl/src/events/os.ts` - Event factories |
-| Component | `packages/devices/src/StatusBar.tsx` - UI rendering |
-| Wiring | `packages/renderer/src/DeviceFrame.tsx` - Passes device to StatusBar |
-````
-
-## File: docs/DSL.md
-````markdown
-# DSL Events Module
-
-> **Location**: `@tokovo/dsl` (packages/dsl)
-
-The DSL module provides a centralized, type-safe API for creating timeline events. Instead of manually constructing event objects, use the DSL for cleaner, more maintainable code.
-
----
-
-## Installation
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-```
-
----
-
-## Quick Start
-
-```typescript
-const events = [
-    // Show keyboard
-    dsl.keyboard.show(0, "phone"),
-    
-    // Type with realistic humanization
-    ...generateTyping(30, "phone", "Hello world!", { speed: "casual" }),
-    
-    // Send message
-    dsl.messages.send(150, "dm_friend", "Hello world!"),
-    
-    // Camera zoom
-    dsl.camera.zoom(200, 1.2, 30),
-    
-    // Play sound
-    dsl.audio.play(200, "message_sent", 0.8),
-    
-    // Device OS updates
-    dsl.os.setBattery(300, 85),
-    dsl.os.setTime(300, Date.now()),
-];
-```
-
----
-
-## Available Modules
-
-| Module | Purpose | Events |
-|--------|---------|--------|
-| `dsl.keyboard` | Virtual keyboard | show, hide, typeChar, backspace, clear |
-| `dsl.messages` | Messaging | send, receive, typingStart, typingEnd, markRead |
-| `dsl.camera` | Camera effects | zoom, pan, shake, focus, reset |
-| `dsl.audio` | Sound effects | play, stop, fade, backgroundMusic |
-| `dsl.os` | Device OS state | setTime, setBattery, setNetwork, setDND |
-| `dsl.touch` | Touch gestures | tap, longPress, drag, scroll |
-
----
-
-## Keyboard Events
-
-### `dsl.keyboard.show(at, deviceId, layout?)`
-
-Shows the virtual keyboard.
-
-```typescript
-dsl.keyboard.show(0, "phone")           // Default qwerty
-dsl.keyboard.show(0, "phone", "emoji")  // Emoji keyboard
-```
-
-### `dsl.keyboard.hide(at, deviceId)`
-
-Hides the keyboard.
-
-```typescript
-dsl.keyboard.hide(300, "phone")
-```
-
-### `dsl.keyboard.typeChar(at, deviceId, char)`
-
-Types a single character (shows key highlight).
-
-```typescript
-dsl.keyboard.typeChar(50, "phone", "H")
-dsl.keyboard.typeChar(55, "phone", "i")
-```
-
-### `dsl.keyboard.backspace(at, deviceId)`
-
-Deletes last character.
-
-```typescript
-dsl.keyboard.backspace(100, "phone")
-```
-
-### `dsl.keyboard.clear(at, deviceId)`
-
-Clears all input text.
-
-```typescript
-dsl.keyboard.clear(200, "phone")
-```
-
----
-
-## Typing Simulation
-
-The `generateTyping` function creates realistic typing sequences with:
-- Variable speed
-- Typos and corrections
-- Natural pauses
-
-### `generateTyping(startFrame, deviceId, text, options?)`
-
-```typescript
-import { generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
-
-// Basic usage
-const events = generateTyping(0, "phone", "Hello!");
-
-// With options
-const events = generateTyping(0, "phone", "Hello world!", {
-    speed: "casual",           // "slow" | "normal" | "casual" | "fast" | "burst"
-    typoPositions: [5, 12],    // Where to make typos
-});
-```
-
-### Typing Speeds
-
-| Speed | Frames/Char | Description |
-|-------|-------------|-------------|
-| `slow` | 12 | Careful, thoughtful typing |
-| `normal` | 8 | Standard typing |
-| `casual` | 6 | Comfortable pace |
-| `fast` | 4 | Quick typing |
-| `burst` | 2 | Very fast |
-
----
-
-## Message Events
-
-### `dsl.messages.send(at, conversationId, text)`
-
-Sends message from device owner ("me").
-
-```typescript
-dsl.messages.send(100, "dm_alex", "Hey!")
-```
-
-### `dsl.messages.receive(at, conversationId, from, text)`
-
-Receives message from another person.
-
-```typescript
-dsl.messages.receive(150, "dm_alex", "Alex 💎", "What's up?")
-```
-
-### `dsl.messages.typingStart(at, conversationId, from)`
-
-Shows typing indicator.
-
-```typescript
-dsl.messages.typingStart(0, "dm_alex", "Alex 💎")
-```
-
-### `dsl.messages.typingEnd(at, conversationId, from)`
-
-Hides typing indicator.
-
-```typescript
-dsl.messages.typingEnd(60, "dm_alex", "Alex 💎")
-```
-
-### Message Status (Tick Progression)
-
-```typescript
-// Mark message as sent (single gray tick)
-dsl.messages.markSent(100, "dm_alex", "msg_1")
-
-// Mark message as delivered (double gray ticks)
-dsl.messages.markDelivered(130, "dm_alex", "msg_1")
-
-// Mark message as read (double blue ticks)
-dsl.messages.markRead(160, "dm_alex", "msg_1")
-```
-
----
-
-## Camera Events
-
-### `dsl.camera.zoom(at, scale, duration, options?)`
-
-Zooms in/out.
-
-```typescript
-dsl.camera.zoom(100, 1.3, 30)                    // Zoom to 130%
-dsl.camera.zoom(100, 1.3, 30, { originY: 0.7 })  // Zoom toward bottom
-```
-
-### `dsl.camera.pan(at, x, y, duration)`
-
-Pans the camera.
-
-```typescript
-dsl.camera.pan(200, 100, -50, 20)  // Move right and up
-```
-
-### `dsl.camera.shake(at, intensity, duration, options?)`
-
-Camera shake effect.
-
-```typescript
-dsl.camera.shake(300, 5, 15)                            // Basic shake
-dsl.camera.shake(300, 5, 15, { frequency: 20, decay: 0.8 })
-```
-
-### `dsl.camera.reset(at, duration)`
-
-Resets camera to default.
-
-```typescript
-dsl.camera.reset(400, 25)
-```
-
----
-
-## Audio Events
-
-### `dsl.audio.play(at, soundId, volume?)`
-
-Plays a sound effect.
-
-```typescript
-dsl.audio.play(100, "message_sent", 0.8)
-dsl.audio.play(150, "whatsapp_received")
-```
-
-### `dsl.audio.stop(at, instanceId)`
-
-Stops a playing sound.
-
-```typescript
-dsl.audio.stop(200, "bgm_1")
-```
-
-### `dsl.audio.fade(at, instanceId, targetVolume, duration)`
-
-Fades volume.
-
-```typescript
-dsl.audio.fade(300, "bgm_1", 0.3, 30)
-```
-
----
-
-## Device OS Events
-
-The Device OS layer controls system-level UI elements like the status bar.
-
-### `dsl.os.setTime(at, timestamp, deviceId?)`
-
-Sets the clock display.
-
-```typescript
-const now = new Date();
-now.setHours(14, 45, 0, 0);
-dsl.os.setTime(0, now.getTime())
-```
-
-### `dsl.os.setBattery(at, level, charging?, deviceId?)`
-
-Sets battery percentage.
-
-```typescript
-dsl.os.setBattery(0, 87)              // 87%
-dsl.os.setBattery(100, 85, true)      // 85%, charging
-```
-
-### `dsl.os.setNetwork(at, network, strength?, deviceId?)`
-
-Sets network type.
-
-```typescript
-dsl.os.setNetwork(0, "wifi", 3)       // WiFi with 3 bars
-dsl.os.setNetwork(0, "5G", 4)         // 5G cellular
-dsl.os.setNetwork(0, "no-service")    // No signal
-```
-
-**Network Types**: `"wifi"` | `"5G"` | `"4G"` | `"LTE"` | `"3G"` | `"no-service"`
-
-### `dsl.os.setDND(at, enabled, deviceId?)`
-
-Toggles Do Not Disturb mode.
-
-```typescript
-dsl.os.setDND(0, true)   // Shows moon icon
-```
-
-### `dsl.os.setAirplane(at, enabled, deviceId?)`
-
-Toggles Airplane mode (disables network).
-
-```typescript
-dsl.os.setAirplane(0, true)  // Disables all radios
-```
-
----
-
-## Touch Events (Gesture Visualization)
-
-### `dsl.touch.tap(at, x, y, deviceId?)`
-
-Shows tap circle at coordinates.
-
-```typescript
-dsl.touch.tap(100, 540, 960)  // Tap at x=540, y=960
-```
-
-### `dsl.touch.longPress(at, x, y, duration, deviceId?)`
-
-Long press gesture.
-
-```typescript
-dsl.touch.longPress(200, 540, 960, 30)  // 1 second hold
-```
-
-### `dsl.touch.drag(at, startX, startY, endX, endY, duration, deviceId?)`
-
-Drag gesture.
-
-```typescript
-dsl.touch.drag(300, 540, 500, 540, 1500, 20)  // Swipe down
-```
-
----
-
-## Complete Example
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-
-// Starting at 2:45 PM
-const START_TIME = new Date();
-START_TIME.setHours(14, 45, 0, 0);
-
-const events = [
-    // Set initial device state
-    dsl.os.setTime(0, START_TIME.getTime()),
-    dsl.os.setBattery(0, 87),
-    
-    // Friend starts typing
-    dsl.messages.typingStart(0, "dm_alex", "Alex 💎"),
-    
-    // Time advances
-    dsl.os.setTime(60, START_TIME.getTime() + 2000),
-    
-    // Friend sends message
-    dsl.messages.typingEnd(60, "dm_alex", "Alex 💎"),
-    dsl.messages.receive(60, "dm_alex", "Alex 💎", "Hey! You free tonight?"),
-    dsl.audio.play(60, "whatsapp_received"),
-    
-    // User types response
-    dsl.keyboard.show(90, "phone"),
-    ...generateTyping(110, "phone", "Yeah! What's up?", { speed: "casual" }),
-    dsl.messages.send(200, "dm_alex", "Yeah! What's up?"),
-    dsl.audio.play(200, "whatsapp_sent"),
-    dsl.keyboard.hide(210, "phone"),
-    
-    // Camera focuses on chat
-    dsl.camera.zoom(220, 1.15, 20, { originY: 0.7 }),
-    
-    // Battery drain over time
-    dsl.os.setBattery(300, 86),
-];
-```
-
----
-
-## Architecture
-
-```
-@tokovo/dsl
-├── events/
-│   ├── index.ts      # Barrel export + dsl object
-│   ├── keyboard.ts   # Keyboard event factories
-│   ├── messages.ts   # Message event factories
-│   ├── camera.ts     # Camera event factories
-│   ├── audio.ts      # Audio event factories
-│   ├── os.ts         # Device OS event factories
-│   ├── touch.ts      # Touch gesture event factories
-│   └── typing.ts     # Typing simulation (generateTyping)
-└── index.ts          # Package entry point
-```
-
-All event factories return properly-typed `TimelineEvent` objects.
-````
-
-## File: docs/KEYBOARD.md
-````markdown
-# Keyboard System
-
-> **Location**: `@tokovo/core` (types), `@tokovo/devices` (IOSKeyboard), `@tokovo/dsl` (events)
-
-The Keyboard system provides production-quality virtual keyboard simulation with realistic typing humanization.
-
----
-
-## Features
-
-- **IOSKeyboard** - Pixel-perfect iOS keyboard UI
-- **Key Pop-ups** - Animated key highlights when typing
-- **Typing Humanizer** - Variable speed, typos, corrections
-- **Multiple Layouts** - QWERTY, emoji, numeric
-
----
-
-## Architecture
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                       DSL Layer                             │
-│   generateTyping(0, "phone", "Hello!", { speed: "casual" }) │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ generates
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                    Timeline Events                          │
-│  KEY_DOWN @ 0, TYPE_CHAR @ 3, KEY_UP @ 5, KEY_DOWN @ 8...   │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      Engine (replay)                        │
-│         processKeyboardEvent() updates device.keyboard      │
-│  { visible, currentKey: "H", inputText: "Hello", ... }      │
-└──────────────────────────┬──────────────────────────────────┘
-                           │
-                           ▼
-┌─────────────────────────────────────────────────────────────┐
-│                      IOSKeyboard                            │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  Q   W   E   R   T   Y   U   I   O   P             │   │
-│  │    A   S   D   F   G  [H]  J   K   L               │   │
-│  │  ⬆    Z   X   C   V   B   N   M    ⌫              │   │
-│  │  123    🌐   ────────────────   return             │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
----
-
-## KeyboardState Interface
-
-```typescript
-interface KeyboardState {
-    visible: boolean;
-    layout: "qwerty" | "emoji" | "numeric";
-    currentKey: string | null;      // Currently pressed key
-    keyPressedAt: number | null;    // Frame when key was pressed
-    inputText: string;              // Text in input field
-    cursorPosition: number;         // Cursor position in text
-    cursorVisible: boolean;
-}
-```
-
----
-
-## DSL Events
-
-### Show/Hide Keyboard
-
-```typescript
-// Show keyboard
-dsl.keyboard.show(0, "phone")
-dsl.keyboard.show(0, "phone", "emoji")  // Emoji layout
-
-// Hide keyboard
-dsl.keyboard.hide(300, "phone")
-```
-
-### Typing Characters
-
-```typescript
-// Low-level: type individual characters
-dsl.keyboard.typeChar(50, "phone", "H")
-dsl.keyboard.typeChar(58, "phone", "e")
-dsl.keyboard.typeChar(66, "phone", "l")
-dsl.keyboard.typeChar(74, "phone", "l")
-dsl.keyboard.typeChar(82, "phone", "o")
-
-// Shows key highlight for each character
-```
-
-### Backspace
-
-```typescript
-// Delete one character
-dsl.keyboard.backspace(100, "phone")
-
-// Multiple backspaces (spacing matters for animation)
-dsl.keyboard.backspace(100, "phone")
-dsl.keyboard.backspace(103, "phone")
-dsl.keyboard.backspace(106, "phone")
-```
-
-### Clear All
-
-```typescript
-// Clear entire input
-dsl.keyboard.clear(200, "phone")
-```
-
----
-
-## Typing Simulation
-
-The `generateTyping` function creates realistic typing sequences.
-
-### Basic Usage
-
-```typescript
-import { generateTyping } from "@tokovo/dsl";
-
-const events = generateTyping(0, "phone", "Hello world!");
-// Generates ~50 events: KEY_DOWN, TYPE_CHAR, KEY_UP for each letter
-```
-
-### With Options
-
-```typescript
-const events = generateTyping(0, "phone", "Hello world!", {
-    speed: "casual",           // Typing speed
-    typoPositions: [5, 12],    // Where to make typos
-});
-```
-
-### Typing Speeds
-
-| Speed | Frames/Letter | Real Time | Use Case |
-|-------|---------------|-----------|----------|
-| `slow` | 12 | 400ms | Thoughtful typing |
-| `normal` | 8 | 267ms | Standard |
-| `casual` | 6 | 200ms | Comfortable |
-| `fast` | 4 | 133ms | Quick response |
-| `burst` | 2 | 67ms | Excited/urgent |
-
-### Typo Simulation
-
-```typescript
-// Type "thinkng" then correct to "thinking"
-const events = generateTyping(0, "phone", "I was thinkng about it", {
-    typoPositions: [10],  // Typo at position 10
-});
-
-// Generates:
-// 1. Type "I was think" (correct)
-// 2. Type "n" (skip the 'i' - typo!)
-// 3. Type "g about it"
-// 4. User must manually add backspace events to "fix" the typo
-```
-
----
-
-## IOSKeyboard Component
-
-Production-quality iOS keyboard with:
-
-- **3x scale** for crisp rendering at 1080x1920
-- **Key pop-ups** - Larger key preview when pressed
-- **Row offsets** - Authentic QWERTY layout staggering
-- **Special keys** - Shift, backspace, return, space, emoji, 123
-
-### Props
-
-```typescript
-interface IOSKeyboardProps {
-    layout?: "qwerty" | "emoji" | "numeric";
-    currentKey?: string | null;     // Key to highlight
-    onKeyPress?: (key: string) => void;
-    inputText?: string;             // For input field display
-    cursorVisible?: boolean;
-}
-```
-
-### Rendering
-
-```tsx
-import { IOSKeyboard } from "@tokovo/devices";
-
-<IOSKeyboard 
-    layout="qwerty"
-    currentKey={keyboard.currentKey}
-    inputText={keyboard.inputText}
-    cursorVisible={true}
-/>
-```
-
----
-
-## Engine Processing
-
-```typescript
-function processKeyboardEvent(draft: WorldState, event: KeyboardEvent): void {
-    const device = draft.devices[event.deviceId];
-    
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-        };
-    }
-    
-    switch (event.type) {
-        case "SHOW":
-            device.keyboard.visible = true;
-            device.keyboard.layout = event.layout || "qwerty";
-            break;
-            
-        case "HIDE":
-            device.keyboard.visible = false;
-            device.keyboard.currentKey = null;
-            break;
-            
-        case "KEY_DOWN":
-            device.keyboard.currentKey = event.key;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-            
-        case "KEY_UP":
-            device.keyboard.currentKey = null;
-            break;
-            
-        case "TYPE_CHAR":
-            const pos = device.keyboard.cursorPosition;
-            const text = device.keyboard.inputText;
-            device.keyboard.inputText = 
-                text.slice(0, pos) + event.char + text.slice(pos);
-            device.keyboard.cursorPosition = pos + 1;
-            device.keyboard.currentKey = event.char;
-            break;
-            
-        case "BACKSPACE":
-            if (device.keyboard.cursorPosition > 0) {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
-                device.keyboard.inputText = 
-                    text.slice(0, pos - 1) + text.slice(pos);
-                device.keyboard.cursorPosition = pos - 1;
-            }
-            device.keyboard.currentKey = "⌫";
-            break;
-            
-        case "CLEAR":
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            break;
-    }
-}
-```
-
----
-
-## Complete Example
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-
-const events = [
-    // Show keyboard
-    dsl.keyboard.show(0, "phone"),
-    
-    // Type a message with natural timing
-    ...generateTyping(30, "phone", "Hey! How are you doing?", {
-        speed: "casual",
-    }),
-    
-    // Pause, realize typo, backspace
-    dsl.keyboard.backspace(200, "phone"),
-    dsl.keyboard.backspace(203, "phone"),
-    dsl.keyboard.backspace(206, "phone"),
-    
-    // Retype correctly
-    ...generateTyping(220, "phone", "you?", { speed: "fast" }),
-    
-    // Send message (clear input after)
-    dsl.messages.send(300, "dm_friend", "Hey! How are you?"),
-    dsl.keyboard.clear(305, "phone"),
-    
-    // Hide keyboard
-    dsl.keyboard.hide(310, "phone"),
-];
-```
-
----
-
-## File Locations
-
-| Purpose | Location |
-|---------|----------|
-| Types | `packages/core/src/types.ts` - KeyboardState |
-| Engine | `packages/core/src/engine.ts` - processKeyboardEvent() |
-| DSL | `packages/dsl/src/events/keyboard.ts` - Event factories |
-| Humanizer | `packages/dsl/src/events/typing.ts` - generateTyping() |
-| Component | `packages/devices/src/keyboards/IOSKeyboard.tsx` - UI |
-
----
-
-## Tips
-
-1. **Always clear after send** - Use `dsl.keyboard.clear()` after sending a message
-2. **Hide when done** - Use `dsl.keyboard.hide()` when user is done typing
-3. **Match speed to emotion** - Use `fast` for excited, `slow` for thoughtful
-4. **Add backspaces for typos** - Manually add typos then corrections for realism
-````
-
-## File: docs/README.md
-````markdown
-# Tokovo Documentation
-
-Welcome to the Tokovo documentation. Tokovo is a programmable phone-simulation engine for cinematic storytelling.
-
----
-
-## Quick Links
-
-| Document | Description |
-|----------|-------------|
-| [DSL](./DSL.md) | Centralized event factories for all timeline events |
-| [Keyboard](./KEYBOARD.md) | Virtual keyboard and typing simulation |
-| [Device OS](./DEVICE_OS.md) | Clock, battery, network, status bar |
-| [Camera & Audio](./CAMERA_AUDIO.md) | Cinematic effects and sound |
-
----
-
-## What's New
-
-### Centralized DSL Module
-
-All event creation is now centralized in `@tokovo/dsl`:
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-
-const events = [
-    dsl.keyboard.show(0, "phone"),
-    ...generateTyping(30, "phone", "Hello world!"),
-    dsl.messages.send(150, "dm_friend", "Hello world!"),
-    dsl.camera.zoom(200, 1.2, 30),
-    dsl.audio.play(200, "message_sent"),
-    dsl.os.setBattery(300, 85),
-];
-```
-
-### Device OS Layer
-
-StatusBar now reads from device state:
-- **Clock** updates via `dsl.os.setTime()`
-- **Battery** drains via `dsl.os.setBattery()`
-- **Network** switches via `dsl.os.setNetwork()`
-- **DND** toggles via `dsl.os.setDND()`
-
-### Production Keyboard
-
-IOSKeyboard with authentic iOS styling:
-- Key pop-ups when pressed
-- Typing humanization (variable speed, typos)
-- QWERTY, emoji, and numeric layouts
-
----
-
-## Package Overview
-
-```
-tokovo/
-├── packages/
-│   ├── core/           # Engine, types, replay()
-│   ├── dsl/            # DSL event factories
-│   ├── devices/        # Device profiles, StatusBar, Keyboard
-│   ├── renderer/       # TokovoRenderer, DeviceFrame
-│   ├── apps-whatsapp/  # WhatsApp chat UI
-│   └── apps-twitter/   # Twitter/X UI
-└── apps/
-    └── video-runner/   # Remotion video app
-```
-
----
-
-## Getting Started
-
-```bash
-# Install dependencies
-pnpm install
-
-# Run development server
-pnpm turbo dev --filter=video-runner
-
-# Open http://localhost:3000
-```
-
----
-
-## Creating an Episode
-
-```typescript
-import { WorldState, TimelineEvent } from "@tokovo/core";
-import { dsl, generateTyping } from "@tokovo/dsl";
-
-function createEpisode() {
-    const initialWorld: WorldState = {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-                os: {
-                    clock: Date.now(),
-                    battery: 87,
-                    network: "wifi",
-                    // ... see DEVICE_OS.md
-                },
-            },
-        },
-        conversations: {
-            dm_friend: {
-                id: "dm_friend",
-                type: "dm",
-                name: "Friend",
-                messages: [],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_friend",
-            },
-        },
-        camera: { /* ... */ },
-        audio: { activeSounds: {} },
-    };
-    
-    const events: TimelineEvent[] = [
-        // Your story events here
-        dsl.keyboard.show(0, "phone"),
-        ...generateTyping(30, "phone", "Hey!", { speed: "casual" }),
-        dsl.messages.send(100, "dm_friend", "Hey!"),
-        dsl.keyboard.hide(110, "phone"),
-    ];
-    
-    return { initialWorld, events };
-}
-```
-
----
-
-## Architecture
-
-```
-Episode JSON/TS
-      │
-      ▼
-┌─────────────────┐
-│   Core Engine   │
-│    replay()     │
-└────────┬────────┘
-         │ WorldState
-         ▼
-┌─────────────────┐
-│  Layout Engine  │
-│  (computed)     │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    Renderer     │
-│   (React/JSX)   │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐
-│    Remotion     │
-│     Video       │
-└─────────────────┘
-```
-
----
-
-## Principles
-
-1. **Deterministic** - At any frame `t`, world state is reproducible
-2. **Composable** - Add devices/apps without modifying core
-3. **Data-driven** - Episodes define everything; no hidden state
-4. **Cinematic** - Optimized for rendering, not interaction
-````
-
 ## File: packages/app-kit/src/index.ts
 ````typescript
 export * from "./router";
@@ -19665,20 +15874,6 @@ export const AppRouter: React.FC<AppRouterProps> = (props) => {
         "typescript": "^5.3.3",
         "@types/react": "^18.2.0"
     }
-}
-````
-
-## File: packages/app-kit/tsconfig.json
-````json
-{
-    "extends": "../../tsconfig.json",
-    "compilerOptions": {
-        "outDir": "./dist",
-        "rootDir": "./src"
-    },
-    "include": [
-        "src/**/*"
-    ]
 }
 ````
 
@@ -22135,6 +18330,25 @@ export const WhatsAppMetadata: Partial<AppMetadata> & { name: string } = {
 };
 ````
 
+## File: packages/apps-whatsapp/src/assets/sounds.ts
+````typescript
+/**
+ * WhatsApp Sound Registry
+ * 
+ * Maps semantic sound IDs to physical file paths in the public directory.
+ * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
+ */
+
+import { SoundRegistry } from "@tokovo/core";
+
+// Register WhatsApp-specific sounds
+SoundRegistry.registerMany({
+    "whatsapp_sent": "plugins/whatsapp/sent.wav",
+    "whatsapp_received": "plugins/whatsapp/received.wav",
+    "whatsapp_typing": "plugins/whatsapp/typing_loop.wav",
+});
+````
+
 ## File: packages/apps-whatsapp/src/camera/index.ts
 ````typescript
 /**
@@ -22502,59 +18716,287 @@ export function createWhatsAppDirector(
 }
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/Icons.tsx
+## File: packages/apps-whatsapp/src/components/ios/ChatListHeader.tsx
 ````typescript
 import React from "react";
-import { Theme } from "./theme";
+import { CameraFillIcon, NewChatIcon, SearchIcon, FilterIcon } from "./Icons";
+import { getTheme } from "./theme";
 
-// Standard icon size for touch targets is ~44x44, icons themselves usually 24x24 or 30x30
+export const ChatListHeader: React.FC<{
+    safeAreaTop?: number;
+}> = ({ safeAreaTop = 47 }) => {
+    const theme = getTheme("ios");
 
-export const ChevronLeftIcon = ({ color }: { color: string }) => (
-    <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
+    return (
+        <div style={{
+            backgroundColor: "rgba(255, 255, 255, 0.92)", // Translucent
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            display: "flex",
+            flexDirection: "column",
+            zIndex: 100,
+            position: "sticky",
+            top: 0,
+            borderBottom: "0.5px solid rgba(0,0,0,0.15)"
+        }}>
+            {/* Top Bar: Edit & Actions */}
+            <div style={{
+                paddingTop: safeAreaTop,
+                paddingLeft: 20,
+                paddingRight: 20,
+                height: 44 + safeAreaTop, // Standard nav bar height + safe area
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                boxSizing: 'border-box'
+            }}>
+                {/* Edit Button */}
+                <div style={{
+                    color: theme.colors.primary,
+                    fontSize: 17,
+                    fontWeight: "400",
+                    cursor: "pointer"
+                }}>
+                    Edit
+                </div>
 
-export const VideoCallIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 28 20" fill="none">
-        <rect x="1" y="3" width="18" height="14" rx="3" stroke={color} strokeWidth="1.8" />
-        <path d="M19 8L26 4V16L19 12V8Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
+                {/* Right Actions */}
+                <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+                    <div style={{ cursor: "pointer" }}>
+                        <CameraFillIcon color={theme.colors.primary} />
+                    </div>
+                    <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(0,0,0,0.05)", // Subtle background for plus
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer"
+                    }}>
+                        <NewChatIcon color={theme.colors.primary} />
+                    </div>
+                </div>
+            </div>
 
-export const PhoneCallIcon = ({ color }: { color: string }) => (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
+            {/* Large Title */}
+            <div style={{
+                padding: "8px 20px 12px 20px",
+                fontSize: 34,
+                fontWeight: "bold",
+                color: "#000",
+                display: "flex",
+                alignItems: "center"
+            }}>
+                Chats
+            </div>
 
-export const PlusCircleIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
-        <circle cx="15" cy="15" r="14" stroke={color} strokeWidth="1.8" />
-        <path d="M15 8V22M8 15H22" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
+            {/* Search Bar */}
+            <div style={{ padding: "0 20px 12px 20px" }}>
+                <div style={{
+                    backgroundColor: "rgba(118, 118, 128, 0.12)",
+                    borderRadius: 10,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 8px"
+                }}>
+                    <SearchIcon color="#8E8E93" />
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        style={{
+                            border: "none",
+                            background: "transparent",
+                            fontSize: 17,
+                            marginLeft: 6,
+                            color: "#000",
+                            outline: "none",
+                            width: "100%",
+                            flex: 1
+                        }}
+                    />
+                </div>
+            </div>
 
-export const CameraFillIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="20" viewBox="0 0 28 24" fill={color}>
-        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
-    </svg>
-);
+            {/* Filter Tabs (Chips) */}
+            <div style={{
+                padding: "0 20px 12px 20px",
+                display: "flex",
+                gap: 8,
+            }}>
+                {["All", "Unread", "Groups"].map((filter, index) => (
+                    <div key={filter} style={{
+                        padding: "6px 14px",
+                        backgroundColor: index === 0 ? "rgba(118, 118, 128, 0.12)" : "transparent",
+                        borderRadius: 16,
+                        fontSize: 15,
+                        fontWeight: index === 0 ? "600" : "400",
+                        color: index === 0 ? "#006ee6" : "#8E8E93", // Active green/blue tint? iOS Whatsapp uses Green for active chip text actually, or default grey bg
+                        cursor: "pointer",
+                        // WhatsApp style: selected is slightly darker grey bg with green text, unselected is plain text? 
+                        // Actually WA iOS: "All", "Unread", "Groups" are chips. Active (All) is usually default. 
+                        // Let's stick to a clean look: Selected = Grey BG + Green/Blue Text. Unselected = Grey Text.
+                    }}>
+                        {filter}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+````
 
-export const MicrophoneFillIcon = ({ color }: { color: string }) => (
-    <svg width="18" height="24" viewBox="0 0 22 30" fill={color}>
-        <rect x="6" y="2" width="10" height="16" rx="5" />
-        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none" />
-        <path d="M11 23V28M8 28H14" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
+## File: packages/apps-whatsapp/src/components/ios/ChatListItem.tsx
+````typescript
+import React from "react";
+import { DoubleCheckIcon } from "./Icons";
+import { UI_CONSTANTS } from "../../config/layout-config";
 
-export const DoubleCheckIcon = ({ read, size = 16 }: { read?: boolean; size?: number }) => (
-    <svg width={size} height={size * 0.6} viewBox="0 0 16 10" fill="none">
-        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
+interface ChatListItemProps {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    lastMessage?: string;
+    timestamp?: string;
+    unreadCount?: number;
+    status?: "sent" | "delivered" | "read";
+    isGroup?: boolean; // For future group icon support
+    isTyping?: boolean; // For "Typing..." state
+    isLast?: boolean; // To hide separator on last item
+}
+
+export const ChatListItem: React.FC<ChatListItemProps> = ({
+    name,
+    avatarUrl,
+    lastMessage,
+    timestamp,
+    unreadCount = 0,
+    status,
+    isTyping,
+    isLast
+}) => {
+    return (
+        <div style={{
+            display: "flex",
+            backgroundColor: "white",
+            cursor: "pointer",
+            height: 76,
+            alignItems: "center",
+        }}>
+            {/* Avatar (Left, Fixed) */}
+            <div style={{
+                width: 76,
+                height: 76,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+            }}>
+                <div style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: "50%",
+                    backgroundColor: "#E0E0E0",
+                    overflow: "hidden",
+                }}>
+                    {avatarUrl ? (
+                        <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#ccc", color: "white", fontSize: 24 }}>
+                            {name.charAt(0)}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Content (Right, with Separator) */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                height: "100%",
+                paddingRight: 16, // Right Margin
+                borderBottom: isLast ? "none" : "0.5px solid #C6C6C8", // Separator
+                minWidth: 0
+            }}>
+                {/* Top Row: Name and Time */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, alignItems: "baseline" }}>
+                    <div style={{
+                        fontWeight: "600",
+                        fontSize: 17,
+                        color: "#000",
+                        letterSpacing: "-0.24px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginRight: 8
+                    }}>
+                        {name}
+                    </div>
+                    <div style={{
+                        fontSize: 14,
+                        color: unreadCount > 0 ? "#007AFF" : "#8E8E93",
+                        flexShrink: 0
+                    }}>
+                        {timestamp}
+                    </div>
+                </div>
+
+                {/* Bottom Row: Message and Status */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{
+                        fontSize: 15,
+                        color: "#8E8E93",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        maxWidth: "90%",
+                        letterSpacing: "-0.24px"
+                    }}>
+                        {isTyping ? (
+                            <span style={{ color: "#007AFF" }}>typing...</span>
+                        ) : (
+                            <>
+                                {status && !unreadCount && (
+                                    <span style={{ display: "flex", alignItems: "center" }}>
+                                        <DoubleCheckIcon read={status === "read"} size={16} />
+                                    </span>
+                                )}
+                                <span>{lastMessage}</span>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Unread Badge */}
+                    {unreadCount > 0 && (
+                        <div style={{
+                            backgroundColor: "#007AFF",
+                            color: "white",
+                            borderRadius: "50%",
+                            minWidth: 20,
+                            height: 20,
+                            padding: "0 5px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 14,
+                            fontWeight: "600",
+                            lineHeight: 1
+                        }}>
+                            {unreadCount}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/apps-whatsapp/src/components/ios/InputArea.tsx
@@ -22882,6 +19324,74 @@ export const MessageContent: React.FC<{ message: MessageData }> = ({ message }) 
         default:
             return <TextContent text="[Unsupported message type]" />;
     }
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/TabNavigation.tsx
+````typescript
+import React from "react";
+import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons";
+import { getTheme } from "./theme";
+
+export const TabNavigation: React.FC<{
+    activeTab?: string;
+    safeAreaBottom?: number;
+}> = ({ activeTab = "chats", safeAreaBottom = 34 }) => {
+    const theme = getTheme("ios");
+    const primaryColor = theme.colors.primary; // Blue usually
+    const inactiveColor = "#8E8E93";
+
+    const tabs = [
+        { id: "updates", label: "Updates", Icon: UpdatesIcon },
+        { id: "calls", label: "Calls", Icon: CallsTabIcon },
+        { id: "communities", label: "Communities", Icon: CommunitiesIcon },
+        { id: "chats", label: "Chats", Icon: ChatsIcon },
+        { id: "settings", label: "Settings", Icon: SettingsIcon },
+    ];
+
+    return (
+        <div style={{
+            backgroundColor: "rgba(250, 250, 250, 0.9)", // Translucent bar
+            backdropFilter: "blur(20px)",
+            borderTop: "0.5px solid rgba(0,0,0,0.3)",
+            display: "flex",
+            justifyContent: "space-between",
+            paddingBottom: safeAreaBottom,
+            paddingTop: 8,
+            paddingLeft: 16,
+            paddingRight: 16,
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000
+        }}>
+            {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const color = isActive ? primaryColor : inactiveColor;
+
+                return (
+                    <div key={tab.id} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        flex: 1
+                    }}>
+                        <tab.Icon color={color} filled={isActive} />
+                        <div style={{
+                            fontSize: 10,
+                            marginTop: 4,
+                            fontWeight: "500",
+                            color: color
+                        }}>
+                            {tab.label}
+                        </div>
+                    </div>
+                );
+            })}
+        </div>
+    );
 };
 ````
 
@@ -23729,425 +20239,6 @@ export const useMessageGrouping = (messages: MessageData[], ownerName: string = 
 };
 ````
 
-## File: packages/apps-whatsapp/src/logic/reducer.ts
-````typescript
-/**
- * WhatsApp Runtime Reducer
- * 
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
- * 
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
- */
-
-import {
-    TimelineEvent,
-    WorldState,
-    ReducerRegistry,
-    APP_IDS
-} from "@tokovo/core";
-
-// Extended message type for WhatsApp-specific features
-type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
-
-interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
-}
-
-interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-interface WhatsAppMessage {
-    id: string;
-    from: string;
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-    // React and reply
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    // Timestamp display
-    timestamp?: string;
-}
-
-/**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
- */
-function generateTimestamp(frame: number, messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
-
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * WhatsApp reducer - handles all WhatsApp events
- */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-    // Only handle APP events for WhatsApp
-    if (event.kind !== "APP") return;
-
-    // Type assertion for APP events with extended payload
-    const appEvent = event as TimelineEvent & {
-        appId: string;
-        conversationId?: string;
-        from?: string;
-        text?: string;
-        message?: Partial<WhatsAppMessage>;
-        // Media-specific fields
-        imageUrl?: string;
-        thumbnailUrl?: string;
-        videoUrl?: string;
-        gifUrl?: string;
-        caption?: string;
-        // Group-specific fields
-        memberId?: string;
-        memberName?: string;
-        addedBy?: string;
-        removedBy?: string;
-        // Voice-specific fields
-        duration?: number;
-        // Read receipt fields
-        messageId?: string;
-        // Navigation fields
-        screen?: string;
-    };
-
-    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
-
-    // Use string type for event.type to allow extended event types
-    const eventType = event.type as string;
-
-    // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        // Ensure appState exists for WhatsApp
-        if (!draft.appState) {
-            draft.appState = {};
-        }
-        if (!draft.appState.app_whatsapp) {
-            draft.appState.app_whatsapp = {};
-        }
-
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
-        draft.appState.app_whatsapp.screen = screen;
-
-        // STANDARD CONTRACT ADHERENCE
-        // Map screen to generic ViewKind
-        if (screen === "chat") {
-            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
-        } else {
-            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
-        }
-
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
-        }
-
-        return;
-    }
-
-    // Get conversation ID from event
-    const conversationId = appEvent.conversationId;
-    if (!conversationId) return;
-
-    // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
-    }
-    const conversation = draft.conversations[conversationId];
-
-    switch (eventType) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT": {
-            const msgPayload = appEvent.message || {};
-            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
-
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
-
-            const newMessage: WhatsAppMessage = {
-                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
-                type: msgType,
-                text: appEvent.text || msgPayload.text,
-                at: event.at,
-                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
-                edited: msgPayload.edited,
-                timestamp,  // Dynamic timestamp
-            };
-
-            // Handle media-specific fields based on type
-            switch (msgType) {
-                case "image":
-                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "video":
-                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
-                    break;
-                case "gif":
-                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
-                    break;
-            }
-
-            (conversation.messages as any[]).push(newMessage);
-            break;
-        }
-
-        case "TYPING_START": {
-            if (!conversation.typing) conversation.typing = {};
-            if (appEvent.from) {
-                conversation.typing[appEvent.from] = true;
-            }
-            break;
-        }
-
-        case "TYPING_END": {
-            if (conversation.typing && appEvent.from) {
-                delete conversation.typing[appEvent.from];
-            }
-            break;
-        }
-
-        case "GROUP_MEMBER_ADDED": {
-            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: addedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: appEvent.memberId || "",
-                name: appEvent.memberName || ""
-            });
-            break;
-        }
-
-        case "GROUP_MEMBER_REMOVED": {
-            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: removedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: { id: string }) => m.id !== appEvent.memberId
-                );
-            }
-            break;
-        }
-
-        case "VOICE_MESSAGE_RECEIVED": {
-            (conversation.messages as any[]).push({
-                id: `voice_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
-                type: "voice",
-                duration: appEvent.duration,
-                at: event.at,
-                status: "delivered"
-            } as WhatsAppMessage);
-            break;
-        }
-
-        case "MESSAGE_READ": {
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
-                if (msg) {
-                    msg.status = "read";
-                }
-            }
-            break;
-        }
-
-        case "REACTION_ADDED": {
-            // Find the message and add/update the reaction
-            if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
-                if (msg) {
-                    // Initialize reactions array if needed
-                    if (!msg.reactions) {
-                        msg.reactions = [];
-                    }
-
-                    const emoji = (appEvent as any).emoji || "❤️";
-                    const fromMe = (appEvent as any).fromMe || false;
-
-                    // Check if this emoji already exists
-                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
-                    if (existing) {
-                        existing.count += 1;
-                        if (fromMe) existing.fromMe = true;
-                    } else {
-                        msg.reactions.push({
-                            emoji,
-                            count: 1,
-                            fromMe,
-                        });
-                    }
-                }
-            }
-            break;
-        }
-
-        case "INPUT_CHANGE": {
-            // "OS-Level Input Management"
-            // The OS has dispatched this event with the raw text from the keyboard.
-            // We update the local conversation draft state.
-            const text = (appEvent as any).payload?.text;
-            if (conversation) {
-                (conversation as any).draftText = text;
-            }
-            break;
-        }
-    }
-}
-````
-
-## File: packages/apps-whatsapp/src/ui/screens/ios/ChatListScreen.tsx
-````typescript
-import React from "react";
-import { Header } from "../../../components/ios/Header";
-import { WorldState } from "@tokovo/core";
-import { WhatsAppState } from "../../../types";
-import { WhatsAppIcon } from "../../../assets/metadata";
-
-export interface ChatListScreenProps {
-    world: WorldState;
-    safeAreaInsets?: {
-        top: number;
-        bottom: number;
-        left: number;
-        right: number;
-    };
-    width: number;
-    height: number;
-}
-
-export const ChatListScreen: React.FC<ChatListScreenProps> = ({
-    world,
-    safeAreaInsets,
-    width,
-    height
-}) => {
-    // 1. Calculate Safe Areas (Resolution Independence)
-    const designWidth = 393;
-    const targetWidth = width || 1179;
-    const scale = targetWidth / designWidth;
-
-    const physicalSafeTop = safeAreaInsets?.top ?? 177;
-    const safeAreaTop = physicalSafeTop / scale;
-
-    return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            backgroundColor: "#FFFFFF",
-            position: "relative",
-            paddingTop: safeAreaTop
-        }}>
-            {/* Header */}
-            <div style={{
-                padding: "16px 20px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                borderBottom: "1px solid #EFEFEF"
-            }}>
-                <div style={{ fontSize: 32, fontWeight: "bold", color: "#000" }}>Chats</div>
-                <div style={{ color: "#007AFF", fontSize: 17 }}>Edit</div>
-            </div>
-
-            {/* List */}
-            <div style={{ padding: "0 20px" }}>
-                {/* Mock Item 1 */}
-                <div style={{
-                    display: "flex",
-                    padding: "12px 0",
-                    borderBottom: "1px solid #F0F0F0",
-                    gap: 12
-                }}>
-                    <div style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: "#E0E0E0" }} />
-                    <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <div style={{ fontWeight: 600, fontSize: 17 }}>Berozgaar Engineers 🛠️</div>
-                            <div style={{ color: "#8E8E93", fontSize: 15 }}>10:42 AM</div>
-                        </div>
-                        <div style={{ color: "#8E8E93", fontSize: 15, marginTop: 4 }}>
-                            Sameer: Meeee! 🙋‍♂️ I'm free!
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/ui/screens/ios/ChatScreen.tsx
 ````typescript
 import React from "react";
@@ -24262,95 +20353,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 };
 ````
 
-## File: packages/apps-whatsapp/src/ui/index.tsx
-````typescript
-import React from "react";
-import { WorldState, AppSurface } from "@tokovo/core";
-
-// Screens
-import { ChatScreen } from "./screens/ios/ChatScreen";
-import { ChatListScreen } from "./screens/ios/ChatListScreen";
-
-import { WhatsAppState } from "../types";
-
-export interface WhatsappChatViewProps {
-    world: WorldState;
-    t?: number;
-    deviceId?: string;
-    platform?: "ios" | "android";
-    width?: number;
-    height?: number;
-    safeAreaInsets?: {
-        top: number;
-        bottom: number;
-        left: number;
-        right: number;
-    };
-}
-
-export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
-    world,
-    t,
-    deviceId,
-    platform = "ios",
-    width,
-    height,
-    safeAreaInsets
-}) => {
-    // 1. Resolve App State & Screen
-    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const currentScreen = appState?.screen || "chat"; // Default to chat for now
-
-    // 2. Resolve Dimensions (Resolution Independence)
-    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
-    // If undefined, assume standard logical width (393)
-    const activeWidth = width || 393;
-    const activeHeight = height || 2556;
-
-    // 3. Render Appropriate Screen
-    // Strategy Pattern for Screen Navigation
-    let activeScreenContent;
-
-    switch (currentScreen) {
-        case "list":
-        case "chats":
-            activeScreenContent = (
-                <ChatListScreen
-                    world={world}
-                    width={activeWidth}
-                    height={activeHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
-        case "chat":
-        default:
-            activeScreenContent = (
-                <ChatScreen
-                    world={world}
-                    deviceId={deviceId}
-                    width={activeWidth}
-                    height={activeHeight}
-                    safeAreaInsets={safeAreaInsets}
-                />
-            );
-            break;
-    }
-
-    // 4. Return Content (Hoisted AppSurface handles scaling now)
-    return (
-        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
-            {activeScreenContent}
-        </div>
-    );
-};
-
-// Main Entry
-export const ui = {
-    WhatsappChatView
-};
-````
-
 ## File: packages/apps-whatsapp/src/behaviors.ts
 ````typescript
 /**
@@ -24441,236 +20443,6 @@ export function getWhatsAppIntent(eventType: string): CameraIntent | undefined {
 }
 ````
 
-## File: packages/apps-whatsapp/src/TypingBubble.tsx
-````typescript
-import React from "react";
-
-/**
- * WhatsApp iOS Typing Indicator
- * Three bouncing grey dots - Remotion compatible (no CSS @keyframes)
- * Uses frame-based animation for proper rendering in video output
- * 
- * @param frame - Current frame from Remotion (passed in from renderer)
- * @param fps - Frames per second (default 30)
- */
-
-export interface TypingBubbleProps {
-    platform?: string;
-    frame?: number;
-    fps?: number;
-}
-
-import { LAYOUT_CONSTANTS } from "./config/layout-config";
-
-export const TypingBubble: React.FC<TypingBubbleProps> = ({
-    platform = "ios",
-    frame = 0,
-    fps = 30
-}) => {
-    return (
-        <div style={{
-            backgroundColor: "#FFFFFF",
-            padding: `${LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V}px 36px`,
-            borderRadius: 24,
-            borderTopLeftRadius: 6,
-            alignSelf: "flex-start",
-            width: "fit-content",
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-            display: "flex",
-            alignItems: "center",
-            gap: 15,
-            height: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT // Inner height
-        }}>
-            <TypingDot frame={frame} fps={fps} delayFrames={0} />
-            <TypingDot frame={frame} fps={fps} delayFrames={5} />
-            <TypingDot frame={frame} fps={fps} delayFrames={10} />
-        </div>
-    );
-};
-
-interface TypingDotProps {
-    frame: number;
-    fps: number;
-    delayFrames: number;
-}
-
-/**
- * Simple interpolation function (avoiding remotion dependency)
- */
-function interpolate(
-    value: number,
-    inputRange: number[],
-    outputRange: number[],
-): number {
-    // Find the segment
-    let i = 0;
-    for (i = 0; i < inputRange.length - 1; i++) {
-        if (value <= inputRange[i + 1]) break;
-    }
-
-    // Clamp to range
-    if (value <= inputRange[0]) return outputRange[0];
-    if (value >= inputRange[inputRange.length - 1]) return outputRange[outputRange.length - 1];
-
-    // Linear interpolation between points
-    const inputStart = inputRange[i];
-    const inputEnd = inputRange[i + 1];
-    const outputStart = outputRange[i];
-    const outputEnd = outputRange[i + 1];
-
-    const t = (value - inputStart) / (inputEnd - inputStart);
-    return outputStart + (outputEnd - outputStart) * t;
-}
-
-const TypingDot: React.FC<TypingDotProps> = ({ frame, fps, delayFrames }) => {
-    // Animation cycle: 36 frames at 30fps = 1.2 seconds
-    const cycleLength = Math.round(1.2 * fps);
-    const adjustedFrame = (frame + delayFrames) % cycleLength;
-
-    // Bounce animation: up for first quarter, down for second quarter
-    const quarterCycle = cycleLength / 4;
-    const translateY = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0, -9, 0, 0]
-    );
-
-    // Opacity: brighten when bouncing up
-    const opacity = interpolate(
-        adjustedFrame,
-        [0, quarterCycle, quarterCycle * 2, cycleLength],
-        [0.4, 1, 0.4, 0.4]
-    );
-
-    return (
-        <div style={{
-            width: 24,
-            height: 24,
-            backgroundColor: "#8696A0",
-            borderRadius: "50%",
-            transform: `translateY(${translateY}px)`,
-            opacity
-        }} />
-    );
-};
-
-export default TypingBubble;
-````
-
-## File: packages/apps-whatsapp/LAYOUT_LOGIC.md
-````markdown
-# WhatsApp Layout Architecture: The "Visual Run" Model
-
-This document details the deterministic layout engine used for the WhatsApp UI.
-It strictly adheres to **Pure Mathematics**, calculating positions without heuristics or randomness.
-
----
-
-## 1. The Core Equation
-
-The vertical position (`Y`) of any message is derived from the previous message's state:
-
-```math
-Y_{next} = Y_{prev} + Height_{prev} + Gap
-```
-
-Where:
-*   **Y_prev**: Absolute position of previous bubble.
-*   **Height_prev**: Mathematically exact height (Padding + Content).
-*   **Gap**: Deterministic spacing value based on the "Visual Run" truth table.
-
----
-
-## 2. Visual Run Logic (The Truth Table)
-
-The system detects **Visual Runs**—tight bursts of simple text messages from the same sender.
-
-### The Deterministic Truth Table
-
-| Prev Sender | Next Sender | Types | Attributes (Reply/React) | Result | Gap Constant |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **A** | **A** | Text -> Text | None | **VISUAL RUN** | `GAP_MINIMAL` (6px) |
-| **A** | **B** | Any | Any | **NEW SENDER** | `GAP_NORMAL` (36px) |
-| **A** | **A** | Any -> **Media** | Any | **RUN BREAK** | `GAP_NORMAL` (36px) |
-| **A** | **A** | **Media** -> Any | Any | **RUN BREAK** | `GAP_NORMAL` (36px) |
-| **A** | **A** | Text -> Text | **Has Reply** | **RUN BREAK** | `GAP_NORMAL` (36px) |
-
-Code: `src/config/layout-config.ts` -> `calculateSmartGap`.
-
----
-
-## 3. Configuration Map (`DEFAULT_LAYOUT_CONFIG`)
-
-This object is the **Brain** of the layout. Here is exactly where every field is used and what it affects.
-
-### A. `messageTypes` (Dimensions)
-*   **Used By**: `chat.ts` -> `calculateMessageHeight`, `calculateBubbleWidth`.
-*   **Fields**:
-    *   `height.base`: The skeleton height (Padding + Footer). defined by `LAYOUT_CONSTANTS`.
-    *   `height.lineHeight`: 66px. Multiplied by number of text lines.
-    *   `width.maxPercent`: 0.78. Limits bubble width to 78% of screen.
-    *   `width.horizontalPadding`: 72px. Adds width to text for accurate wrapping.
-
-### B. `spacing` (The Gapping Logic)
-*   **Used By**: `chat.ts` -> `calculateSmartGap`.
-*   **Fields**:
-    *   `base.minimal`: **6px** (2px visual). Used for "Visual Run" rows.
-    *   `base.normal`: **36px** (12px visual). Used for "Run Breaks" / Diff Senders.
-    *   `global.bubbleMargin`: **36px**. Distance from left/right screen edge.
-    *   `global.topPadding`/`bottomPadding`: Safe areas for scroll.
-
-### C. `additions` (Dynamic Height Modifiers)
-*   **Used By**: `chat.ts` -> `calculateMessageHeight`.
-*   **Logic**: If a feature is present, its height is mathematically added to the `base`.
-*   **Fields**:
-    *   `senderName`: **45px**. Added if `from !== prev.from` (Group Chat).
-    *   `reaction`: **36px**. Added if `msg.reactions.length > 0`.
-    *   `reply`: **90px**. Added if `msg.replyTo` exists.
-    *   `linkPreview`: **180px**. Added if `msg.linkPreview` exists.
-
-### D. `animation` (Motion)
-*   **Used By**: `chat.ts` (Layout State) & `ui.tsx` (CSS).
-*   **Fields**:
-    *   `messageAppearDuration`: **12 frames**. Speed of entry.
-    *   `messageAppearOffset`: **30px**. Slide-up distance.
-
----
-
-## 4. The "Single Source of Truth" Chain
-
-Visual Consistency is not accidental. It is enforced by this dependency chain:
-
-1.  **`LAYOUT_CONSTANTS`** (The Roots)
-    *   Defines raw pixels: `BUBBLE_PADDING_V = 24`, `LINE_HEIGHT = 66`.
-
-2.  **`DEFAULT_LAYOUT_CONFIG`** (The Brain)
-    *   Consumes Roots: `base: BUBBLE_PADDING_V * 2 + FOOTER`.
-
-3.  **Layout Engine (`chat.ts`)** (The Calculator)
-    *   Consumes Brain: Calculates `Y` positions.
-
-4.  **Theme Engine (`whatsapp-theme.ts`)** (The Paint)
-    *   Consumes Roots: Sets CSS `padding: 24px`.
-
-5.  **UI Renderer (`ui.tsx`)** (The Canvas)
-    *   Consumes Theme: Renders `div` with `padding: 24px`.
-
-**Result:** The Calculator thinks the box is 150px high. The Canvas draws a box 150px high. **Perfect alignment.**
-
----
-
-## 5. How to Tune (The Knobs)
-
-| Goal | Action |
-| :--- | :--- |
-| **Make Text Bubbles Taller** | Increase `BUBBLE_PADDING_V` or `LINE_HEIGHT` in `LAYOUT_CONSTANTS`. |
-| **Make Gaps Wider** | Increase `GAP_NORMAL` in `LAYOUT_CONSTANTS`. |
-| **Change Font Size** | Change `FONT_SIZE` in `LAYOUT_CONSTANTS`. |
-| **Adjust "Run Break" tightness** | Change `GAP_NORMAL` (affects runs) or `GAP_MINIMAL` (affects bursts). |
-
-Modify `src/config/layout-config.ts`. The rest of the system updates automatically.
-````
-
 ## File: packages/compiler/package.json
 ````json
 {
@@ -24694,288 +20466,6 @@ Modify `src/config/layout-config.ts`. The rest of the system updates automatical
         "typescript": "^5.0.0"
     }
 }
-````
-
-## File: packages/core/src/audio/auto-sound.ts
-````typescript
-/**
- * Auto-Sound Rules - Automatically derive sounds from app/device events
- * 
- * Converts semantic events (MESSAGE_RECEIVED, TYPING_START) into sound cues.
- * This is what makes the audio feel "automatic" and cinematic.
- */
-
-import { TimelineEvent, SoundCue, AudioBus } from "../types";
-import { createSoundCue, createUISoundCue } from "./mixer";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface AutoSoundRule {
-    // Match conditions
-    match: {
-        kind: string;
-        type?: string;
-        appId?: string;
-        from?: string | "*";  // "*" = any sender
-    };
-
-    // Sound output
-    sound: string;
-    bus: AudioBus;
-
-    // Optional overrides
-    volume?: number;
-    loop?: boolean;
-    duration?: number;
-    duckMusic?: boolean;
-    priority?: number;
-}
-
-// =============================================================================
-// DEFAULT RULES
-// =============================================================================
-
-export const AUTO_SOUND_RULES: AutoSoundRule[] = [
-    // WhatsApp message sounds
-    {
-        match: { kind: "APP", type: "MESSAGE_RECEIVED", from: "me" },
-        sound: "whatsapp_sent",
-        bus: "ui",
-        duckMusic: true,
-    },
-    {
-        match: { kind: "APP", type: "MESSAGE_RECEIVED", from: "*" },
-        sound: "whatsapp_received",
-        bus: "ui",
-        duckMusic: true,
-    },
-
-    // Typing sounds
-    {
-        match: { kind: "APP", type: "TYPING_START" },
-        sound: "whatsapp_typing",
-        bus: "sfx",
-        loop: true,
-        duration: 90,  // 3 seconds max
-        volume: 0.4,
-    },
-
-    // Device sounds
-    {
-        match: { kind: "DEVICE", type: "NOTIFICATION" },
-        sound: "notification",
-        bus: "ui",
-        duckMusic: true,
-    },
-    {
-        match: { kind: "DEVICE", type: "LOCK" },
-        sound: "lock",
-        bus: "sfx",
-    },
-    {
-        match: { kind: "DEVICE", type: "UNLOCK" },
-        sound: "unlock",
-        bus: "sfx",
-    },
-
-    // Call sounds
-    {
-        match: { kind: "DEVICE", type: "CALL_INCOMING" },
-        sound: "ringtone",
-        bus: "ui",
-        loop: true,
-        priority: 90,
-        duckMusic: true,
-    },
-    {
-        match: { kind: "DEVICE", type: "CALL_END" },
-        sound: "call_end",
-        bus: "ui",
-    },
-];
-
-// =============================================================================
-// MATCHING LOGIC
-// =============================================================================
-
-/**
- * Check if a rule matches an event
- */
-function matchesRule(event: TimelineEvent, rule: AutoSoundRule): boolean {
-    // Check kind
-    if (event.kind !== rule.match.kind) {
-        return false;
-    }
-
-    // Check type
-    if (rule.match.type && (event as any).type !== rule.match.type) {
-        return false;
-    }
-
-    // Check appId
-    if (rule.match.appId && (event as any).appId !== rule.match.appId) {
-        return false;
-    }
-
-    // Check from
-    if (rule.match.from) {
-        const eventFrom = (event as any).from;
-        if (rule.match.from === "*") {
-            // Match any sender EXCEPT "me"
-            if (eventFrom === "me") {
-                return false;
-            }
-        } else if (eventFrom !== rule.match.from) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-// =============================================================================
-// DERIVATION FUNCTIONS
-// =============================================================================
-
-/**
- * Derive audio cue from an event (if any rule matches)
- */
-export function deriveAudioFromEvent(
-    event: TimelineEvent,
-    rules: AutoSoundRule[] = AUTO_SOUND_RULES
-): SoundCue | null {
-    // Find matching rule
-    const rule = rules.find((r) => matchesRule(event, r));
-    if (!rule) {
-        return null;
-    }
-
-    // Create sound cue based on rule
-    if (rule.duckMusic) {
-        return createUISoundCue(rule.sound, event.at, {
-            volume: rule.volume,
-            loop: rule.loop,
-            duration: rule.duration,
-            priority: rule.priority,
-            deviceId: (event as any).deviceId,
-        });
-    }
-
-    return createSoundCue(rule.sound, event.at, {
-        bus: rule.bus,
-        volume: rule.volume,
-        loop: rule.loop,
-        duration: rule.duration,
-        priority: rule.priority,
-        deviceId: (event as any).deviceId,
-    });
-}
-
-/**
- * Process all events and derive audio cues
- */
-export function deriveAllAudio(
-    events: TimelineEvent[],
-    rules: AutoSoundRule[] = AUTO_SOUND_RULES
-): SoundCue[] {
-    const cues: SoundCue[] = [];
-
-    for (const event of events) {
-        const cue = deriveAudioFromEvent(event, rules);
-        if (cue) {
-            cues.push(cue);
-        }
-    }
-
-    return cues;
-}
-
-/**
- * Create custom auto-sound rules for a specific app
- */
-export function createAppRules(
-    appId: string,
-    rules: Partial<AutoSoundRule>[]
-): AutoSoundRule[] {
-    return rules.map((rule) => ({
-        match: {
-            kind: "APP",
-            appId,
-            ...rule.match,
-        },
-        sound: rule.sound || "notification",
-        bus: rule.bus || "ui",
-        volume: rule.volume,
-        loop: rule.loop,
-        duration: rule.duration,
-        duckMusic: rule.duckMusic,
-        priority: rule.priority,
-    }));
-}
-````
-
-## File: packages/core/src/audio/index.ts
-````typescript
-/**
- * Audio System - Production-grade audio mixing for Tokovo
- * 
- * Exports all audio-related modules:
- * - Mixer: Bus routing, ducking, envelopes
- * - Policies: Spam gate, concurrency, priority
- * - Auto-Sound: Derive sounds from events
- * - Music Bed: Background music with crossfade
- */
-
-// Mixer
-export {
-    computeSoundVolume,
-    computeBusStates,
-    computeBusDuckMultiplier,
-    applyEnvelope,
-    createSoundCue,
-    createUISoundCue,
-    createVoiceSoundCue,
-    type BusState,
-    type MixerContext,
-} from "./mixer";
-
-// Policies
-export {
-    SpamGate,
-    enforceBusConcurrency,
-    getDefaultPriority,
-    sortByPriority,
-    shouldInterrupt,
-    checkAllPolicies,
-    DEFAULT_POLICY_CONFIG,
-    PRIORITY_LEVELS,
-    type PolicyConfig,
-    type PolicyResult,
-} from "./policies";
-
-// Auto-Sound
-export {
-    deriveAudioFromEvent,
-    deriveAllAudio,
-    createAppRules,
-    AUTO_SOUND_RULES,
-    type AutoSoundRule,
-} from "./auto-sound";
-
-// Music Bed
-export {
-    computeCrossfade,
-    createMusicBed,
-    createTenseMusicBed,
-    createDramaticMusicBed,
-    createCalmMusicBed,
-    getMusicByMood,
-    suggestMood,
-    type CrossfadeState,
-    type MoodTag,
-} from "./music-bed";
 ````
 
 ## File: packages/core/src/audio/mixer.ts
@@ -27055,49 +22545,6 @@ export const IOSPrediction = {
 };
 ````
 
-## File: packages/device-keyboard/src/index.ts
-````typescript
-export * from "./KeyboardSurface";
-export * from "./core/registry";
-export * from "./components/IOSKeyboard";
-export * from "./reducer";
-
-import { ReducerRegistry } from "@tokovo/core";
-import { keyboardReducer } from "./reducer";
-
-// Register the keyboard reducer automatically when this package is imported
-ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
-// Export for direct access if needed, but Surface is preferred
-````
-
-## File: packages/device-keyboard/package.json
-````json
-{
-    "name": "@tokovo/device-keyboard",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "react": "18.2.0",
-        "lucide-react": "^0.263.1"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "remotion": "4.0.265"
-    },
-    "peerDependencies": {
-        "remotion": ">=4.0.0"
-    }
-}
-````
-
 ## File: packages/device-keyboard/tsconfig.json
 ````json
 {
@@ -27110,6 +22557,77 @@ ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
         "src/**/*"
     ]
 }
+````
+
+## File: packages/devices/src/iphone16/Frame.tsx
+````typescript
+import React from "react";
+import { iPhone16Profile } from "./profile";
+
+export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = iPhone16Profile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 165, // Scaled radius (55 * 3)
+            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+        }}>
+            {/* Dynamic Island Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 150, // Enough space for status bar
+                zIndex: 1000,
+                pointerEvents: "none",
+                display: "flex",
+                justifyContent: "space-between",
+                padding: "40px 60px 0 60px"
+            }}>
+                {/* Status Bar Content (Time, Battery, etc.) */}
+                {statusBar}
+            </div>
+
+            {/* Dynamic Island Cutout */}
+            <div style={{
+                position: "absolute",
+                top: 33, // 11 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 378, // 126 * 3
+                height: 111, // 37 * 3
+                backgroundColor: "black",
+                borderRadius: 60, // 20 * 3
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "white",
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                // Strict clipping for transformed children (AppSurface)
+                overflow: "hidden",
+                borderRadius: 55 * 3, // Match the physical scaled radius
+                clipPath: "inset(0px round " + (55 * 3) + "px)", // Force browser masking
+                transform: "translateZ(0)", // New stacking context
+                willChange: "transform",
+            }}>
+                {children}
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/devices/src/iphone16/shell.ts
@@ -27137,6 +22655,76 @@ export const iPhone16Shell = DeviceRegistry.get("iphone16")!;
  * Keyboards barrel export
  */
 export { IOSKeyboard } from "./IOSKeyboard";
+````
+
+## File: packages/devices/src/pixel/Frame.tsx
+````typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+        }}>
+            {/* Status Bar Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                zIndex: 1000,
+                pointerEvents: "none",
+                padding: "30px 40px 0 40px"
+            }}>
+                {statusBar}
+            </div>
+
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white",
+                // Strict clipping
+                overflow: "hidden",
+                borderRadius: 60, // Match outer
+                clipPath: "inset(0px round 60px)",
+                transform: "translateZ(0)",
+                willChange: "transform",
+            }}>
+
+                {children}
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/devices/src/registry.ts
@@ -28337,6 +23925,117 @@ export const audio = {
         return audio.backgroundMusic("dramatic", { volume: 0.3, mood: "dramatic", ...options });
     },
 };
+````
+
+## File: packages/dsl/src/author/device-builder.ts
+````typescript
+/**
+ * Device Builder
+ * 
+ * Fluent API for defining a device's story.
+ * Manages conversation context and beat collection.
+ */
+
+import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+
+/**
+ * Beat callback function.
+ */
+export type BeatFn = (b: BeatBuilder) => void;
+
+/**
+ * Device builder collects conversations and beats for a device.
+ */
+export class DeviceBuilder {
+    private readonly deviceId: string;
+    private readonly profileId: string;
+    private appId: string = "app_whatsapp"; // Default app
+    private ownerName: string | undefined;  // For multi-POV
+    private readonly conversations: ConversationDef[] = [];
+    private readonly beats: Beat[] = [];
+    private currentConversationId: string | undefined;
+
+    constructor(deviceId: string, profileId: string = "iphone16") {
+        this.deviceId = deviceId;
+        this.profileId = profileId;
+    }
+
+    /**
+     * Set the owner name for this device (for multi-POV stories).
+     * The owner's messages appear on the right side.
+     */
+    owner(name: string): this {
+        this.ownerName = name;
+        return this;
+    }
+
+    /**
+     * Set the app for this device.
+     */
+    app(appId: string): this {
+        this.appId = appId;
+        return this;
+    }
+
+    /**
+     * Define a conversation.
+     * Also sets it as the current conversation for subsequent beats.
+     */
+    conversation(id: string, config?: {
+        name?: string;
+        avatar?: string;
+        type?: "dm" | "group";
+        initialMessages?: Array<{ text: string; from: string; at?: string }>;
+    }): this {
+        const def: ConversationDef = {
+            id,
+            name: config?.name,
+            avatar: config?.avatar,
+            type: config?.type ?? "dm",
+            initialMessages: config?.initialMessages,
+        };
+        this.conversations.push(def);
+        this.currentConversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat (named group of actions).
+     */
+    beat(name: string, fn: BeatFn): this {
+        if (!this.currentConversationId) {
+            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
+        }
+
+        const builder = new BeatBuilder(
+            this.deviceId,
+            this.appId,
+            this.currentConversationId
+        );
+        fn(builder);
+
+        this.beats.push({
+            name,
+            ops: builder.getOps(),
+        });
+
+        return this;
+    }
+
+    /**
+     * Build the device scene.
+     */
+    build(): DeviceScene {
+        return {
+            deviceId: this.deviceId,
+            profileId: this.profileId,
+            appId: this.appId,
+            conversations: this.conversations,
+            beats: this.beats,
+        };
+    }
+}
 ````
 
 ## File: packages/dsl/src/author/spotify-builder.ts
@@ -31106,586 +26805,6 @@ fs.writeFileSync(path.join(targetDir, 'src/index.ts'), indexContent);
 console.log("Done! Run 'npx turbo build' to verify.");
 ````
 
-## File: llms.txt
-````
-# Tokovo - LLM Complete Reference
-
-> A programmable phone-simulation engine for cinematic video storytelling.
-> Version: 1.0.0
-> Last Updated: 2024-12-14
-
----
-
-## QUICK START
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-import { replay, WorldState, TimelineEvent } from "@tokovo/core";
-
-// Create episode
-const episode = {
-    initialWorld: { /* WorldState */ },
-    events: [
-        dsl.messages.receive(60, "dm_alice", "Alice", "Hey!"),
-        dsl.keyboard.show(90, "phone"),
-        ...generateTyping(100, "phone", "Hi there!"),
-        dsl.messages.send(180, "dm_alice", "Hi there!"),
-        dsl.camera.zoom(200, 1.2, 30),
-    ]
-};
-
-// Render at frame N
-const worldAtFrame = replay(episode.initialWorld, episode.events, frameN);
-```
-
----
-
-## ARCHITECTURE OVERVIEW
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        TOKOVO ENGINE                            │
-├─────────────────────────────────────────────────────────────────┤
-│  Episode (JSON/TS)                                               │
-│       │                                                          │
-│       ▼                                                          │
-│  ┌─────────────────┐                                             │
-│  │   Core Engine   │  replay(initialWorld, events, frame)       │
-│  │   @tokovo/core  │                                             │
-│  └────────┬────────┘                                             │
-│           │ WorldState at frame N                                │
-│           ▼                                                      │
-│  ┌─────────────────┐                                             │
-│  │    Renderer     │  TokovoRenderer                             │
-│  │ @tokovo/renderer│                                             │
-│  └────────┬────────┘                                             │
-│           │                                                      │
-│           ▼                                                      │
-│  ┌─────────────────┐                                             │
-│  │    Remotion     │  Video output                               │
-│  │                 │                                             │
-│  └─────────────────┘                                             │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Core Principles
-
-1. **Deterministic** - At any frame `t`, world state is reproducible
-2. **Composable** - Add devices/apps without modifying core
-3. **Data-driven** - Episodes define everything; no hidden state
-4. **Cinematic** - Optimized for rendering, not interaction
-
----
-
-## PACKAGES
-
-| Package | Description | Key Exports |
-|---------|-------------|-------------|
-| `@tokovo/core` | Engine, types, state management | `replay()`, `WorldState`, `TimelineEvent`, `PluginManager` |
-| `@tokovo/dsl` | Event factories for authoring | `dsl`, `generateTyping` |
-| `@tokovo/renderer` | React rendering layer | `TokovoRenderer`, `AudioLayer`, `DeviceFrame` |
-| `@tokovo/devices` | Device profiles, StatusBar, Keyboard | `iPhone16Profile`, `IOSKeyboard`, `StatusBar` |
-| `@tokovo/apps-whatsapp` | WhatsApp chat UI | `WhatsAppApp` |
-| `@tokovo/apps-phone` | Phone call simulation | `PhoneApp` |
-| `@tokovo/apps-twitter` | Twitter/X UI | `TwitterApp` |
-| `@tokovo/apps-instagram` | Instagram UI | `InstagramApp` |
-| `@tokovo/apps-spotify` | Spotify UI | `SpotifyApp` |
-| `@tokovo/compiler` | Scene compilation | `compile()` |
-| `@tokovo/ir` | Intermediate representation | Scene IR types |
-
----
-
-## DSL EVENTS REFERENCE
-
-### Import
-
-```typescript
-import { dsl, generateTyping, TYPING_SPEEDS } from "@tokovo/dsl";
-```
-
-### All Event Types
-
-| Module | Method | Signature |
-|--------|--------|-----------|
-| **keyboard** | `show` | `(at, deviceId, layout?)` |
-| | `hide` | `(at, deviceId)` |
-| | `typeChar` | `(at, deviceId, char)` |
-| | `backspace` | `(at, deviceId)` |
-| | `clear` | `(at, deviceId)` |
-| **messages** | `send` | `(at, conversationId, text)` |
-| | `receive` | `(at, conversationId, from, text)` |
-| | `typingStart` | `(at, conversationId, from)` |
-| | `typingEnd` | `(at, conversationId, from)` |
-| | `sendImage` | `(at, conversationId, imageUrl, caption?)` |
-| | `receiveImage` | `(at, conversationId, from, imageUrl, caption?)` |
-| | `markSent` | `(at, conversationId, messageId)` |
-| | `markDelivered` | `(at, conversationId, messageId)` |
-| | `markRead` | `(at, conversationId, messageId)` |
-| **camera** | `zoom` | `(at, scale, duration, opts?)` |
-| | `pan` | `(at, translateX, translateY, duration)` |
-| | `shake` | `(at, intensity, duration, opts?)` |
-| | `reset` | `(at, duration)` |
-| **audio** | `play` | `(at, soundId, volume?, opts?)` |
-| | `stop` | `(at, instanceId)` |
-| | `fade` | `(at, instanceId, toVolume, duration)` |
-| | `backgroundMusic` | `(at, soundId, volume?, loop?)` |
-| **os** | `setTime` | `(at, timestamp, deviceId?)` |
-| | `setBattery` | `(at, level, charging?, deviceId?)` |
-| | `setNetwork` | `(at, network, strength?, deviceId?)` |
-| | `setDND` | `(at, enabled, deviceId?)` |
-| | `setLowPower` | `(at, enabled, deviceId?)` |
-| | `setAirplane` | `(at, enabled, deviceId?)` |
-| **touch** | `tap` | `(at, x, y, deviceId?)` |
-| | `longPress` | `(at, x, y, duration, deviceId?)` |
-| | `drag` | `(at, startX, startY, endX, endY, duration)` |
-| | `scroll` | `(at, y, velocity?, deviceId?)` |
-| **call** | `incoming` | `(at, callerId, callerName, opts?)` |
-| | `answer` | `(at, deviceId?)` |
-| | `decline` | `(at, deviceId?)` |
-| | `end` | `(at, deviceId?)` |
-| | `toggleMute` | `(at, deviceId?)` |
-| | `toggleSpeaker` | `(at, deviceId?)` |
-| | `toggleHold` | `(at, deviceId?)` |
-
-### Typing Simulation
-
-```typescript
-generateTyping(startFrame, deviceId, text, options?)
-```
-
-**Options:**
-- `speed`: `"slow"` | `"normal"` | `"casual"` | `"fast"` | `"burst"`
-- `typoPositions`: `number[]` - indices where typos occur
-
-**Typing Speeds:**
-| Speed | Frames/Char |
-|-------|-------------|
-| slow | 12 |
-| normal | 8 |
-| casual | 6 |
-| fast | 4 |
-| burst | 2 |
-
----
-
-## WORLD STATE STRUCTURE
-
-```typescript
-interface WorldState {
-    devices: Record<string, DeviceState>;
-    conversations: Record<string, ConversationState>;
-    appState: Record<string, any>;
-    camera: CameraState;
-    audio: AudioState;
-}
-
-interface DeviceState {
-    id: string;
-    profileId: string;                 // "iphone16", "pixel8", etc.
-    isLocked: boolean;
-    foregroundAppId: string;           // "app_whatsapp", "app_phone", etc.
-    notifications: Notification[];
-    os: DeviceOSState;
-    keyboard?: KeyboardState;
-    call?: CallState;
-}
-
-interface DeviceOSState {
-    clock: number;                     // Unix timestamp ms
-    battery: number;                   // 0-100
-    charging: boolean;
-    network: NetworkType;              // "wifi", "5G", "4G", "LTE", "3G", "no-service"
-    wifiStrength: number;              // 0-3
-    cellStrength: number;              // 0-4
-    dnd: boolean;                      // Do Not Disturb
-    lowPowerMode: boolean;
-    airplaneMode: boolean;
-}
-
-interface CallState {
-    status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo: boolean;
-    callType: "voice" | "video" | "facetime";
-    displayMode: "fullscreen" | "overlay" | "minimized";
-    startedAt?: number;               // Frame when call started
-    answeredAt?: number;              // Frame when answered
-    isMuted?: boolean;
-    isSpeakerOn?: boolean;
-    isOnHold?: boolean;
-    callerMetadata?: {
-        posterImage?: string;         // Full-screen contact poster (iOS 17+)
-        posterStyle?: string;
-        posterNameFont?: string;
-    };
-}
-
-interface ConversationState {
-    id: string;
-    type: "dm" | "group";
-    name: string;
-    messages: Message[];
-    typing: Record<string, boolean>;
-}
-```
-
----
-
-## APPS (PLUGINS)
-
-### WhatsApp (`@tokovo/apps-whatsapp`)
-
-**App ID:** `app_whatsapp`
-
-**Screens:**
-- `chat` - Chat view with messages
-- `chatList` - List of conversations
-
-**Features:**
-- Message bubbles (text, image, voice)
-- Typing indicators
-- Read receipts (ticks)
-- Group chats
-- Emoji reactions
-
-**Usage:**
-```typescript
-foregroundAppId: "app_whatsapp"
-appState: {
-    app_whatsapp: {
-        screen: "chat",
-        conversationId: "dm_friend"
-    }
-}
-```
-
-### Phone (`@tokovo/apps-phone`)
-
-**App ID:** `app_phone`
-
-**Features:**
-- Incoming call screens (iOS 17 Contact Poster, Classic slide-to-answer)
-- Active call with controls (mute, speaker, keypad)
-- Dynamic Island widget
-- Notification banner mode
-- Platform variants (iOS/Android)
-
-**Usage:**
-```typescript
-dsl.call.incoming(0, "alice", "Alice Johnson", {
-    displayMode: "fullscreen",
-    posterImage: "https://example.com/alice.jpg"
-});
-dsl.call.answer(120);
-dsl.call.toggleMute(180);
-dsl.call.end(300);
-```
-
-### Twitter/X (`@tokovo/apps-twitter`)
-
-**App ID:** `app_twitter`
-
-**Features:**
-- Tweet composition
-- Timeline feed
-- Profile views
-- Like/Retweet animations
-
-### Instagram (`@tokovo/apps-instagram`)
-
-**App ID:** `app_instagram`
-
-**Features:**
-- Feed posts
-- Stories
-- DMs
-- Reels
-
-### Spotify (`@tokovo/apps-spotify`)
-
-**App ID:** `app_spotify`
-
-**Features:**
-- Now Playing
-- Playlists
-- Mini player
-
----
-
-## DEVICES
-
-### Device Profiles
-
-| Profile ID | Device | Dimensions | Platform |
-|------------|--------|------------|----------|
-| `iphone16` | iPhone 16 Pro | 1290×2796 | iOS |
-| `iphone15` | iPhone 15 Pro | 1290×2796 | iOS |
-| `iphone14` | iPhone 14 | 1170×2532 | iOS |
-| `pixel8` | Pixel 8 | 1080×2400 | Android |
-| `pixel7` | Pixel 7 | 1080×2400 | Android |
-| `s24` | Samsung S24 | 1080×2340 | Android |
-
-### Status Bar Elements
-
-- Clock (dynamic via `dsl.os.setTime`)
-- Battery (level + charging indicator)
-- Network (WiFi bars / cellular signal)
-- DND indicator (moon icon)
-
-### Keyboard
-
-- QWERTY layout
-- Emoji keyboard
-- Numeric keypad
-- Key pop-ups on press
-- Realistic typing simulation
-
----
-
-## CAMERA SYSTEM
-
-### Effects
-
-| Effect | Description | Parameters |
-|--------|-------------|------------|
-| `zoom` | Scale view | `scale`, `duration`, `originX`, `originY` |
-| `pan` | Translate view | `translateX`, `translateY`, `duration` |
-| `shake` | Handheld effect | `intensity`, `duration`, `frequency`, `decay` |
-| `reset` | Return to default | `duration` |
-
-### Example
-
-```typescript
-// Dramatic reveal
-dsl.camera.zoom(0, 1.3, 30, { originY: 0.8 }),    // Zoom into message
-dsl.camera.shake(100, 5, 15),                     // Impact shake
-dsl.camera.reset(150, 25),                        // Smooth reset
-```
-
----
-
-## AUDIO SYSTEM
-
-### Sound IDs
-
-| Category | Sound IDs |
-|----------|-----------|
-| WhatsApp | `whatsapp_sent`, `whatsapp_received` |
-| Phone | `ringtone`, `call_end`, `dial_tone` |
-| System | `notification`, `keyboard_click` |
-
-### Buses
-
-- `music` - Background music
-- `sfx` - Sound effects
-- `voice` - Voice/calls
-- `ui` - UI sounds
-
----
-
-## COMPLETE EXAMPLE
-
-```typescript
-import { dsl, generateTyping } from "@tokovo/dsl";
-import { WorldState, TimelineEvent, DEFAULT_BUS_CONFIG } from "@tokovo/core";
-
-const DEVICE_ID = "phone";
-const CONVO_ID = "dm_friend";
-
-function createEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const START_TIME = new Date();
-    START_TIME.setHours(14, 45, 0, 0);
-
-    const initialWorld: WorldState = {
-        devices: {
-            [DEVICE_ID]: {
-                id: DEVICE_ID,
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-                os: {
-                    clock: START_TIME.getTime(),
-                    battery: 87,
-                    charging: false,
-                    network: "wifi",
-                    wifiStrength: 3,
-                    cellStrength: 4,
-                    dnd: false,
-                    lowPowerMode: false,
-                    airplaneMode: false,
-                },
-            },
-        },
-        conversations: {
-            [CONVO_ID]: {
-                id: CONVO_ID,
-                type: "dm",
-                name: "Friend",
-                messages: [
-                    { id: "msg_1", type: "text", from: "Friend", text: "Hey!", status: "read" },
-                ],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: { screen: "chat", conversationId: CONVO_ID },
-        },
-        camera: {
-            baseView: "APP_VIEW",
-            activeDeviceId: DEVICE_ID,
-            layout: { mode: "SINGLE", primaryDeviceId: DEVICE_ID },
-            activeEffects: [],
-            transform: {
-                translateX: 0, translateY: 0, scale: 1, rotation: 0,
-                originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: { activeSounds: {}, buses: DEFAULT_BUS_CONFIG },
-    };
-
-    const events: TimelineEvent[] = [
-        // Scene 1: Friend typing
-        dsl.messages.typingStart(0, CONVO_ID, "Friend"),
-        dsl.camera.zoom(20, 1.1, 20, { originY: 0.7 }),
-        
-        // Message arrives
-        dsl.messages.typingEnd(60, CONVO_ID, "Friend"),
-        dsl.messages.receive(60, CONVO_ID, "Friend", "What are you up to?"),
-        dsl.audio.play(60, "whatsapp_received"),
-        
-        // Scene 2: User responds
-        dsl.camera.reset(80, 15),
-        dsl.keyboard.show(90, DEVICE_ID),
-        ...generateTyping(110, DEVICE_ID, "Not much, just chilling", { speed: "casual" }),
-        dsl.messages.send(200, CONVO_ID, "Not much, just chilling"),
-        dsl.audio.play(200, "whatsapp_sent"),
-        dsl.keyboard.hide(210, DEVICE_ID),
-        
-        // Battery drains
-        dsl.os.setBattery(250, 86),
-        dsl.os.setTime(250, START_TIME.getTime() + 10000),
-    ];
-
-    return { initialWorld, events };
-}
-```
-
----
-
-## VIDEO COMPONENT TEMPLATE
-
-```tsx
-import React, { useMemo } from "react";
-import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
-
-export const MyVideo: React.FC = () => {
-    const frame = useCurrentFrame();
-    
-    const episode = useMemo(() => createEpisode(), []);
-    const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
-    const world = replay(episode.initialWorld, episode.events, frame);
-    
-    return (
-        <AbsoluteFill style={{ backgroundColor: "#0a0a0f" }}>
-            <AudioLayer world={world} t={frame} />
-            <TokovoRenderer
-                world={world}
-                t={frame}
-                eventIndex={eventIndex}
-                directorEnabled={true}
-            />
-        </AbsoluteFill>
-    );
-};
-```
-
----
-
-## FILE STRUCTURE
-
-```
-tokovo/
-├── apps/
-│   ├── docs/              # Nextra documentation site
-│   └── video-runner/      # Remotion video app
-├── packages/
-│   ├── core/              # Engine, types, replay()
-│   ├── dsl/               # Event factories
-│   ├── renderer/          # TokovoRenderer, DeviceFrame
-│   ├── devices/           # Device profiles, StatusBar, Keyboard
-│   ├── apps-whatsapp/     # WhatsApp plugin
-│   ├── apps-phone/        # Phone call plugin
-│   ├── apps-twitter/      # Twitter plugin
-│   ├── apps-instagram/    # Instagram plugin
-│   ├── apps-spotify/      # Spotify plugin
-│   ├── compiler/          # Scene compiler
-│   ├── ir/                # Intermediate representation
-│   └── adapters/          # Platform adapters
-└── docs/                  # Markdown documentation
-```
-
----
-
-## COMMON PATTERNS
-
-### Typo and Correction
-
-```typescript
-...generateTyping(0, "phone", "helo"),           // Type with typo
-dsl.keyboard.backspace(50, "phone"),              // Backspace
-...generateTyping(55, "phone", "Hello!"),         // Retype correctly
-```
-
-### Incoming Call Flow
-
-```typescript
-dsl.call.incoming(0, "caller_id", "Caller Name", { posterImage: "url" }),
-dsl.call.answer(120),
-dsl.call.toggleMute(180),
-dsl.call.toggleSpeaker(210),
-dsl.call.end(300),
-```
-
-### Message Exchange
-
-```typescript
-dsl.messages.typingStart(0, "dm_id", "Friend"),
-dsl.messages.typingEnd(60, "dm_id", "Friend"),
-dsl.messages.receive(60, "dm_id", "Friend", "Hey!"),
-dsl.keyboard.show(90, "phone"),
-...generateTyping(100, "phone", "Hi!"),
-dsl.messages.send(180, "dm_id", "Hi!"),
-```
-
-### Dramatic Camera Work
-
-```typescript
-dsl.camera.zoom(0, 1.2, 30, { originY: 0.8 }),    // Zoom in
-dsl.camera.shake(100, 8, 20),                     // Impact
-dsl.camera.pan(150, 50, 0, 25),                   // Pan right
-dsl.camera.reset(200, 30),                        // Reset
-```
-
----
-
-## API REFERENCE LINKS
-
-- Core Types: `@tokovo/core/src/types.ts`
-- DSL Events: `@tokovo/dsl/src/events/`
-- Device Profiles: `@tokovo/devices/src/profiles/`
-- Renderer: `@tokovo/renderer/src/TokovoRenderer.tsx`
-
----
-
-> Generated for LLM consumption. Use this document to understand Tokovo capabilities.
-````
-
 ## File: repomix.config.json
 ````json
 {
@@ -32479,6 +27598,25 @@ export const phoneCallShowcaseConfig = {
 };
 ````
 
+## File: packages/app-kit/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "lib": [
+            "dom",
+            "dom.iterable",
+            "esnext"
+        ]
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
 ## File: packages/apps-phone/src/components/ios/ActiveCallIOS.tsx
 ````typescript
 /**
@@ -33198,6 +28336,45 @@ export const PhoneApp: React.FC<AppViewProps> = ({ world, deviceId, platform, t 
 };
 ````
 
+## File: packages/apps-whatsapp/src/assets/audio-rules.ts
+````typescript
+import { AutoSoundRule } from "@tokovo/core";
+import { APP_IDS } from "@tokovo/core";
+
+export const whatsappAudioRules: AutoSoundRule[] = [
+    // === V2 EVENTS ===
+    {
+        match: { kind: "MessageSent", appId: APP_IDS.WHATSAPP },
+        action: "PLAY_ONE_SHOT",
+        sound: "whatsapp_sent",
+        bus: "ui",
+        duckMusic: true
+    },
+    {
+        match: { kind: "MessageReceived", appId: APP_IDS.WHATSAPP },
+        action: "PLAY_ONE_SHOT",
+        sound: "whatsapp_received",
+        bus: "ui",
+        duckMusic: true
+    },
+    {
+        match: { kind: "TypingStarted", appId: APP_IDS.WHATSAPP },
+        action: "START_LOOP",
+        sound: "whatsapp_typing",
+        bus: "sfx",
+        volume: 0.4,
+        idTemplate: "typing_{conversationId}_{actor}" // V2 uses "actor" instead of "from"
+    },
+    {
+        match: { kind: "TypingEnded", appId: APP_IDS.WHATSAPP },
+        action: "STOP_SOUND",
+        stopId: "typing_{conversationId}_{actor}"
+    },
+
+
+];
+````
+
 ## File: packages/apps-whatsapp/src/components/ios/Header.tsx
 ````typescript
 import { UI_CONSTANTS } from "../../config/layout-config";
@@ -33296,6 +28473,391 @@ export const Header: React.FC<{
             </div>
         </div>
     );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/Icons.tsx
+````typescript
+import React from "react";
+import { Theme } from "./theme";
+
+// Standard icon size for touch targets is ~44x44, icons themselves usually 24x24 or 30x30
+
+export const ChevronLeftIcon = ({ color }: { color: string }) => (
+    <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const VideoCallIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 28 20" fill="none">
+        <rect x="1" y="3" width="18" height="14" rx="3" stroke={color} strokeWidth="1.8" />
+        <path d="M19 8L26 4V16L19 12V8Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PhoneCallIcon = ({ color }: { color: string }) => (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PlusCircleIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="14" stroke={color} strokeWidth="1.8" />
+        <path d="M15 8V22M8 15H22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const CameraFillIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="20" viewBox="0 0 28 24" fill={color}>
+        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
+    </svg>
+);
+
+export const MicrophoneFillIcon = ({ color }: { color: string }) => (
+    <svg width="18" height="24" viewBox="0 0 22 30" fill={color}>
+        <rect x="6" y="2" width="10" height="16" rx="5" />
+        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none" />
+        <path d="M11 23V28M8 28H14" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const DoubleCheckIcon = ({ read, size = 16 }: { read?: boolean; size?: number }) => (
+    <svg width={size} height={size * 0.6} viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ==========================================
+// UI ICONS
+// ==========================================
+
+export const SearchIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 21L16.65 16.65" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const FilterIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const ArchiveIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M20.5 5H3.5C2.67157 5 2 5.67157 2 6.5V8H22V6.5C22 5.67157 21.3284 5 20.5 5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 8V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 12L12 14L14 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 14V10" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const NewChatIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 5V19M5 12H19" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    // Note: iOS standard is often a square with pencil, but plus is used too. Keeping plus for simplicity or circle-plus.
+    // iOS WhatsApp top-right is actually a square with a pencil (Compose).
+);
+
+export const ComposeIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ==========================================
+// TAB BAR ICONS
+// ==========================================
+
+export const UpdatesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth={filled ? "0" : "2"} fill={filled ? color : "none"} />
+        {filled ? (
+            <path d="M12 6V12L16 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        ) : null}
+        {!filled ? (<circle cx="12" cy="12" r="2" fill={color} />) : null}
+        {/* Simplified conceptual icon for Updates/Status */}
+    </svg>
+);
+
+export const CallsTabIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M22 16.92V19.92C22 20.4706 21.5532 20.916 21.0028 20.916C20.6725 20.916 16.6 20 16.6 20C16.6 20 13 18.5 10 15.5C7 12.5 5.5 8.9 5.5 8.9C5.5 8.9 4.6 4.8 4.6 4.47C4.6 3.92 5.04543 3.47 5.59259 3.47H8.59259C8.97495 3.47 9.32432 3.72221 9.44477 4.08354C9.55998 4.42878 9.8 5 9.8 5C9.8 5 10.3 6.3 10.5 6.7C10.7 7.1 10.5 7.6 10.2 7.9L8.90001 9.2C8.90001 9.2 10.6 13.9 14.3 17.6C18 21.3 22.8 23 22.8 23L24.1 21.7C24.4 21.4 24.9 21.2 25.3 21.4C25.7 21.6 27 22.1 27 22.1C27 22.1 27.5 22.3 27.9 22.5C28.2 22.6 28.5 22.9 28.5 23.3V26.3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const CommunitiesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.01 6.11683 19.0101 7.005C19.0103 7.89318 18.7127 8.75618 18.1682 9.45788C17.6237 10.1596 16.861 10.6601 16 10.88" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const ChatsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11H21 11.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    // Just using a single chat bubble for simplicity, standard "Chats" icon is two bubbles often.
+);
+
+export const SettingsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M19.4 15C19.78 14.53 20 13.92 20 13.25V10.75C20 10.08 19.78 9.47 19.4 9L21.06 6.13C21.36 5.61 21.19 4.95 20.67 4.65L18.5 3.4C17.98 3.1 17.32 3.27 17.02 3.79L15.35 6.66C14.77 6.42 14.16 6.27 13.52 6.22L13.16 2.94C13.09 2.34 12.59 1.9 12 1.9H9.5C8.91 1.9 8.41 2.34 8.34 2.94L7.98 6.22C7.34 6.27 6.73 6.42 6.15 6.66L4.48 3.79C4.18 3.27 3.52 3.1 3 3.4L0.830002 4.65C0.310002 4.95 0.140002 5.61 0.440002 6.13L2.1 9C1.72 9.47 1.5 10.08 1.5 10.75V13.25C1.5 13.92 1.72 14.53 2.1 15L0.440002 17.87C0.140002 18.39 0.310002 19.05 0.830002 19.35L3 20.6C3.52 20.9 4.18 20.73 4.48 20.21L6.15 17.34C6.73 17.58 7.34 17.73 7.98 17.78L8.34 21.06C8.41 21.66 8.91 22.1 9.5 22.1H12C12.59 22.1 13.09 21.66 13.16 21.06L13.52 17.78C14.16 17.73 14.77 17.58 15.35 17.34L17.02 20.21C17.32 20.73 17.98 20.9 18.5 20.6L20.67 19.35C21.19 19.05 21.36 18.39 21.06 17.87L19.4 15Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+````
+
+## File: packages/apps-whatsapp/src/ui/screens/ios/ChatListScreen.tsx
+````typescript
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { ArchiveIcon } from "../../../components/ios/Icons";
+import { ChatListHeader } from "../../../components/ios/ChatListHeader";
+import { TabNavigation } from "../../../components/ios/TabNavigation";
+import { ChatListItem } from "../../../components/ios/ChatListItem";
+import { UI_CONSTANTS } from "../../../config/layout-config";
+
+export interface ChatListScreenProps {
+    world: WorldState;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+    width: number;
+    height: number;
+}
+
+export const ChatListScreen: React.FC<ChatListScreenProps> = ({
+    world,
+    safeAreaInsets,
+    width,
+    height
+}) => {
+    // 1. Calculate Safe Areas (Resolution Independence)
+    // Receive logical dimensions from parent
+    const designWidth = 393;
+    const targetWidth = width || 1179;
+    const scale = targetWidth / designWidth;
+
+    const physicalSafeTop = safeAreaInsets?.top ?? 177;
+    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
+
+    const safeAreaTop = physicalSafeTop / scale;
+    const safeAreaBottom = physicalSafeBottom / scale;
+
+    // 2. Data Preparation
+    const conversations = Object.values(world.conversations || {}).sort((a, b) => {
+        // Sort by last message timestamp (descending) mechanism to be added
+        // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
+        return 0;
+        // TODO: Add proper sorting when timestamp logic is solidified in core/episodes
+    });
+
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            backgroundColor: "#FFFFFF",
+            position: "relative",
+        }}>
+            {/* Header (Sticky) */}
+            <ChatListHeader safeAreaTop={safeAreaTop} />
+
+            {/* Scrollable Content */}
+            <div style={{
+                flex: 1,
+                overflowY: "auto",
+                // Padding bottom for Tab Bar
+                paddingBottom: 85 + safeAreaBottom,
+                backgroundColor: "#FFFFFF",
+                WebkitOverflowScrolling: "touch", // Smooth scrolling
+            }}>
+                {/* Archived Row */}
+                <div style={{
+                    display: "flex",
+                    height: 56, // Slightly shorter than chat row
+                    alignItems: "center",
+                    paddingLeft: 20,
+                    paddingRight: 16,
+                    cursor: "pointer",
+                }}>
+                    {/* Icon */}
+                    <div style={{
+                        width: 30, // Smaller visual weight
+                        display: "flex",
+                        justifyContent: "center",
+                        marginRight: 24 // Align with text start of chat items (which is 76 + ? actually chat item avatar is 60, left margin 20? No. 
+                        // Chat Item: Left padding 0 (in container), Avatar 76 width centered. 
+                        // So center of avatar is at 38px. 
+                        // Archived text should probably align with Name? 
+                        // Let's standard iOS: "Archived" appears on left? 
+                        // Actually standard WhatsApp: "Archived" is a specific row.
+                        // Let's simpler: Icon + Text.
+                    }}>
+                        {/* No Icon for standard row, just text "Archived" and number on right? 
+                           WhatsApp iOS 2024: Top row is "Archived" with an Archive Box icon on the very left (margin) or right?
+                           Actually it's "Archived" text on left, number on right.
+                           LET'S DO: Archive Icon (Grey) + "Archived" Text.
+                        */}
+                        <ArchiveIcon color="#8E8E93" />
+                    </div>
+
+                    <div style={{
+                        flex: 1,
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        borderBottom: "0.5px solid #C6C6C8",
+                        fontSize: 17,
+                        fontWeight: "600",
+                        color: "#000",
+                        marginLeft: 12
+                    }}>
+                        <span>Archived</span>
+                        <span style={{ color: "#8E8E93", fontWeight: "400", marginRight: 8 }}>1</span>
+                    </div>
+                </div>
+
+                {/* Conversations List */}
+                <div style={{ paddingLeft: 16 }}> {/* Left padding for inset separators */}
+                    {conversations.length > 0 ? conversations.map((conv, i) => {
+                        // Runtime cast to access standard or plugin-specific fields
+                        const rawMessages = conv.messages as any[];
+                        const lastMsg = rawMessages && rawMessages.length > 0
+                            ? rawMessages[rawMessages.length - 1]
+                            : null;
+
+                        return (
+                            <ChatListItem
+                                key={conv.id}
+                                id={conv.id}
+                                name={conv.name || "Unknown"}
+                                avatarUrl={conv.avatar}
+                                lastMessage={lastMsg?.text || (lastMsg?.imageUrl ? "Photo" : lastMsg ? "Media" : "")}
+                                timestamp={lastMsg?.timestamp || "Yesterday"}
+                                unreadCount={conv.unreadCount || 0}
+                                status={lastMsg?.from === "me" ? "read" : undefined} // Mock status logic
+                                isTyping={conv.typing && Object.values(conv.typing).some(Boolean)}
+                                // Is last item?
+                                isLast={i === conversations.length - 1}
+                            />
+                        );
+                    }) : (
+                        // Empty State
+                        <div style={{ padding: 40, textAlign: "center", color: "#999" }}>
+                            No conversations yet
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Tab Navigation (Fixed Bottom) */}
+            <TabNavigation activeTab="chats" safeAreaBottom={safeAreaBottom} />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/ui/index.tsx
+````typescript
+import React from "react";
+import { WorldState, AppSurface } from "@tokovo/core";
+
+// Screens
+import { ChatScreen } from "./screens/ios/ChatScreen";
+import { ChatListScreen } from "./screens/ios/ChatListScreen";
+
+import { WhatsAppState } from "../types";
+
+export interface WhatsappChatViewProps {
+    world: WorldState;
+    t?: number;
+    deviceId?: string;
+    platform?: "ios" | "android";
+    width?: number;
+    height?: number;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+}
+
+export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
+    world,
+    t,
+    deviceId,
+    platform = "ios",
+    width,
+    height,
+    safeAreaInsets
+}) => {
+    // 1. Resolve App State & Screen
+    const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
+    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+
+    // 2. Resolve Dimensions (Resolution Independence)
+    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
+    // If undefined, assume standard logical width (393)
+    const activeWidth = width || 393;
+    const activeHeight = height || 2556;
+
+    // 3. Render Appropriate Screen
+    // Strategy Pattern for Screen Navigation
+    let activeScreenContent;
+
+    switch (currentScreen) {
+        case "list":
+        case "chats":
+        case "chats-list":
+            activeScreenContent = (
+                <ChatListScreen
+                    world={world}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+        case "chat":
+        default:
+            activeScreenContent = (
+                <ChatScreen
+                    world={world}
+                    deviceId={deviceId}
+                    width={activeWidth}
+                    height={activeHeight}
+                    safeAreaInsets={safeAreaInsets}
+                />
+            );
+            break;
+    }
+
+    // 4. Return Content (Hoisted AppSurface handles scaling now)
+    return (
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
+            {activeScreenContent}
+        </div>
+    );
+};
+
+// Main Entry
+export const ui = {
+    WhatsappChatView
 };
 ````
 
@@ -33782,6 +29344,320 @@ export const WhatsAppAnchorProvider: AnchorProvider = {
         "@types/react": "18.2.0"
     }
 }
+````
+
+## File: packages/core/src/audio/auto-sound.ts
+````typescript
+/**
+ * Auto-Sound Rules - Automatically derive sounds from app/device events
+ * 
+ * Converts semantic events (MESSAGE_RECEIVED, TYPING_START) into sound cues or actions.
+ * This is what makes the audio feel "automatic" and cinematic.
+ */
+
+import { TimelineEvent, SoundCue, AudioBus } from "../types";
+import { createSoundCue, createUISoundCue } from "./mixer";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type AutoSoundAction = "PLAY_ONE_SHOT" | "START_LOOP" | "STOP_SOUND";
+
+export interface AutoSoundRule {
+    // Match conditions
+    match: {
+        kind: string;
+        type?: string;
+        appId?: string;
+        from?: string | "*";  // "*" = any sender
+    };
+
+    // Action config
+    action: AutoSoundAction;
+
+    // For PLAY/START action
+    sound?: string;
+    bus?: AudioBus;
+
+    // For STOP action (references the ID created by START_LOOP)
+    stopId?: string;
+
+    // Dynamic ID Template (e.g., "typing_{conversationId}_{from}")
+    // Useful for linking START and STOP actions
+    idTemplate?: string;
+
+    // Optional overrides
+    volume?: number;
+    loop?: boolean;
+    // Dynamic Duration (e.g. for typing loops based on text length)
+    durationFrom?: {
+        key: string;       // Event property to read (e.g. "text.length")
+        factor?: number;   // Multiplier (default 1)
+        min?: number;      // Minimum duration
+    };
+    duration?: number;
+    duckMusic?: boolean;
+    priority?: number;
+}
+
+// =============================================================================
+// REGISTRY
+// =============================================================================
+
+class AutoSoundRegistryClass {
+    // Index by kind for O(1) matching
+    private rulesByKind = new Map<string, AutoSoundRule[]>();
+    // Keep flat list for legacy `getAll` (though we should deprecate usage)
+    private allRules: AutoSoundRule[] = [];
+
+    /**
+     * Register new auto-sound rules (used by plugins)
+     */
+    register(newRules: AutoSoundRule[]) {
+        for (const rule of newRules) {
+            const kind = rule.match.kind;
+            if (!this.rulesByKind.has(kind)) {
+                this.rulesByKind.set(kind, []);
+            }
+            this.rulesByKind.get(kind)!.push(rule);
+        }
+        this.allRules.push(...newRules);
+    }
+
+    /**
+     * Get rules for a specific event kind (Optimization)
+     */
+    getRulesForKind(kind: string): AutoSoundRule[] {
+        return this.rulesByKind.get(kind) || [];
+    }
+
+    /**
+     * Get all registered rules
+     */
+    getAll(): AutoSoundRule[] {
+        return this.allRules;
+    }
+
+    /**
+     * Clear registry (useful for hot reload/testing)
+     */
+    clear() {
+        this.rulesByKind.clear();
+        this.allRules = [];
+    }
+}
+
+export const AutoSoundRegistry = new AutoSoundRegistryClass();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Check if a rule matches an event
+ */
+function matchesRule(event: TimelineEvent, rule: AutoSoundRule): boolean {
+    // Check kind
+    if (event.kind !== rule.match.kind) {
+        // console.log("Mismatch kind", event.kind, rule.match.kind);
+        return false;
+    }
+
+    // Check type
+    if (rule.match.type && (event as any).type !== rule.match.type) {
+        return false;
+    }
+
+    // Check appId
+    if (rule.match.appId && (event as any).appId !== rule.match.appId) {
+        return false;
+    }
+
+    // Check from
+    if (rule.match.from) {
+        const eventFrom = (event as any).from;
+        if (rule.match.from === "*") {
+            // Match any sender EXCEPT "me"
+            if (eventFrom === "me") return false;
+        } else if (eventFrom !== rule.match.from) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Resolve dynamic ID template
+ */
+function resolveIdTemplate(template: string, event: any): string {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+        return event[key] || "unknown";
+    });
+}
+
+function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((o, key) => (o && typeof o[key] !== 'undefined') ? o[key] : undefined, obj);
+}
+
+
+// =============================================================================
+// DERIVATION FUNCTIONS
+// =============================================================================
+
+export interface AudioInstruction {
+    action: AutoSoundAction;
+    soundId?: string;     // The asset ID
+    instanceId?: string;  // The runtime ID (for stopping)
+    cue?: SoundCue;       // The full cue object (for playing)
+}
+
+/**
+ * Derive audio instructions from an event
+ */
+export function deriveAudioInstructions(
+    event: TimelineEvent,
+    rules: AutoSoundRule[] = AutoSoundRegistry.getAll()
+): AudioInstruction[] {
+    const instructions: AudioInstruction[] = [];
+
+    // Check SILENT override from DSL
+    if ((event as any).silent) {
+        return [];
+    }
+
+
+
+    for (const rule of rules) {
+        if (matchesRule(event, rule)) {
+            console.log("[AutoSound] Match!", { kind: event.kind, rule });
+            // dynamic ID resolution
+            const instanceId = rule.idTemplate
+                ? resolveIdTemplate(rule.idTemplate, event)
+                : rule.stopId // For STOP actions, use the target ID
+                    ? resolveIdTemplate(rule.stopId, event)
+                    : `auto_${event.at}_${rule.sound}`;
+
+            if (rule.action === "STOP_SOUND") {
+                instructions.push({
+                    action: "STOP_SOUND",
+                    instanceId: instanceId
+                });
+                continue;
+            }
+
+            // For PLAY or START_LOOP
+            if (!rule.sound) continue;
+
+            // Calculate Duration
+            let duration = rule.duration;
+            if (rule.durationFrom) {
+                const val = getNestedValue(event, rule.durationFrom.key);
+                if (typeof val === "number") {
+                    duration = Math.max(
+                        rule.durationFrom.min || 0,
+                        val * (rule.durationFrom.factor || 1)
+                    );
+                } else if (typeof val === "string") {
+                    duration = Math.max(
+                        rule.durationFrom.min || 0,
+                        val.length * (rule.durationFrom.factor || 1)
+                    );
+                }
+            }
+
+            const baseCue = rule.duckMusic
+                ? createUISoundCue(rule.sound, event.at, {
+                    volume: rule.volume,
+                    loop: rule.action === "START_LOOP" || rule.loop,
+                    duration: duration,
+                    priority: rule.priority,
+                    deviceId: (event as any).deviceId
+                })
+                : createSoundCue(rule.sound, event.at, {
+                    bus: rule.bus || "sfx",
+                    volume: rule.volume,
+                    loop: rule.action === "START_LOOP" || rule.loop,
+                    duration: duration,
+                    priority: rule.priority,
+                    deviceId: (event as any).deviceId
+                });
+
+            instructions.push({
+                action: rule.action,
+                soundId: rule.sound,
+                instanceId: instanceId,
+                cue: baseCue
+            });
+        }
+    }
+
+
+    return instructions;
+}
+````
+
+## File: packages/core/src/audio/index.ts
+````typescript
+/**
+ * Audio System - Production-grade audio mixing for Tokovo
+ * 
+ * Exports all audio-related modules:
+ * - Mixer: Bus routing, ducking, envelopes
+ * - Policies: Spam gate, concurrency, priority
+ * - Auto-Sound: Derive sounds from events
+ * - Music Bed: Background music with crossfade
+ */
+
+// Mixer
+export {
+    computeSoundVolume,
+    computeBusStates,
+    computeBusDuckMultiplier,
+    applyEnvelope,
+    createSoundCue,
+    createUISoundCue,
+    createVoiceSoundCue,
+    type BusState,
+    type MixerContext,
+} from "./mixer";
+
+// Policies
+export {
+    SpamGate,
+    enforceBusConcurrency,
+    getDefaultPriority,
+    sortByPriority,
+    shouldInterrupt,
+    checkAllPolicies,
+    DEFAULT_POLICY_CONFIG,
+    PRIORITY_LEVELS,
+    type PolicyConfig,
+    type PolicyResult,
+} from "./policies";
+
+// Auto-Sound
+export {
+    AutoSoundRegistry,
+    deriveAudioInstructions,
+    type AutoSoundRule,
+    type AutoSoundAction,
+    type AudioInstruction,
+} from "./auto-sound";
+
+// Music Bed
+export {
+    computeCrossfade,
+    createMusicBed,
+    createTenseMusicBed,
+    createDramaticMusicBed,
+    createCalmMusicBed,
+    getMusicByMood,
+    suggestMood,
+    type CrossfadeState,
+    type MoodTag,
+} from "./music-bed";
 ````
 
 ## File: packages/core/src/components/AppSurface.tsx
@@ -34648,6 +30524,83 @@ export function validatePlugin(plugin: TokovoPlugin): void {
                 );
             }
         }
+    }
+}
+````
+
+## File: packages/device-keyboard/src/assets/audio-rules.ts
+````typescript
+import { AutoSoundRule } from "@tokovo/core";
+
+export const keyboardAudioRules: AutoSoundRule[] = [
+    // === V2 OPS ===
+    // Matches "KeyboardType" events from new DSL
+    // DISABLED: Rely on discrete KeyDown clicks instead of loops for manual typing
+    // {
+    //     match: { kind: "KeyboardType" },
+    //     action: "START_LOOP",
+    //     sound: "keyboard_typing_loop",
+    //     volume: 0.8,
+    //     durationFrom: {
+    //         key: "text.length",
+    //         factor: 4, // 4 frames per char
+    //         min: 15    // Min 15 frames
+    //     },
+    //     idTemplate: "typing_loop_{at}"
+    // },
+    {
+        match: { kind: "KeyboardInput", type: "keyDown" },
+        action: "PLAY_ONE_SHOT",
+        sound: "keyboard_click",
+        volume: 0.6
+    },
+
+
+];
+````
+
+## File: packages/device-keyboard/src/assets/sounds.ts
+````typescript
+/**
+ * Device Keyboard Sound Registry
+ * 
+ * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
+ */
+
+import { SoundRegistry } from "@tokovo/core";
+
+// Register Keyboard sounds
+SoundRegistry.registerMany({
+    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+    "keyboard_click": "typing.mp3",
+});
+````
+
+## File: packages/device-keyboard/package.json
+````json
+{
+    "name": "@tokovo/device-keyboard",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "react": "18.2.0",
+        "lucide-react": "^0.263.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "remotion": "4.0.265"
+    },
+    "peerDependencies": {
+        "remotion": ">=4.0.0"
     }
 }
 ````
@@ -35762,26 +31715,6 @@ export class Tracer {
         "typescript": "^5.0.0"
     }
 }
-````
-
-## File: packages/episodes/src/index.ts
-````typescript
-import exampleEpisode from "./examples/whatsapp-breakup-01.json";
-import androidEpisode from "./examples/android-test.json";
-import instagramEpisode from "./examples/instagram-test.json";
-import notificationCallDemo from "./examples/notification-call-demo.json";
-import homeScreenGroupDemo from "./examples/homescreen-group-demo.json";
-import whatsappPsychoticDemo from "./examples/whatsapp-psychotic-demo.json";
-import cameraShowcase from "./examples/camera-showcase.json";
-import multiPovDemo from "./examples/multi-pov-demo.json";
-import whatsappProductionDemo from "./examples/whatsapp-production-demo.json";
-
-// DSL-based episodes
-export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
-export { bakchodiGangEpisode } from "./episodes/bakchodi-gang";
-
-export * from "./schema";
-export { exampleEpisode, androidEpisode, instagramEpisode, notificationCallDemo, homeScreenGroupDemo, whatsappPsychoticDemo, cameraShowcase, multiPovDemo, whatsappProductionDemo };
 ````
 
 ## File: packages/renderer/src/anchor-providers/index.ts
@@ -37387,491 +33320,97 @@ export const AutoDirectorShowcase: React.FC = () => {
 export default AutoDirectorShowcase;
 ````
 
-## File: apps/video-runner/src/CinematicCameraShowcaseVideo.tsx
+## File: apps/video-runner/src/BakchodiGangVideo.tsx
 ````typescript
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
+import { bakchodiGangEpisode } from "@tokovo/episodes";
+import { compile } from "@tokovo/compiler";
+import {
+    replay,
+    createEventIndex,
+    WorldState,
+    DeviceState,
+    ConversationState,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_AUDIO_STATE
+} from "@tokovo/core";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
-
-// Import device reducer to ensure it's registered
 import "@tokovo/devices";
+import { SceneIR } from "@tokovo/ir";
 
-/**
- * Cinematic Camera Showcase Video
- * 
- * Demonstrates the NEW cinematic camera system with DSL-style episode definition:
- * - Camera primitives: hold, follow, pushIn, pullOut, snap, shake, reset
- * - Device-first camera profiles
- * - Cinematic easing functions
- * - Orchestrated camera movements synced to story beats
- * 
- * DirectorLite ENABLED - camera automatically reacts to message events.
- */
+// Helper to construct Initial World from Scene IR
+function createInitialWorld(scene: SceneIR): WorldState {
+    const devices: Record<string, DeviceState> = {};
+    const conversations: Record<string, ConversationState> = {};
+    const appStates: Record<string, any> = {};
 
-// =============================================================================
-// EPISODE DEFINITION (DSL-style)
-// =============================================================================
+    for (const dev of scene.devices) {
+        // Create device state
+        devices[dev.deviceId] = {
+            id: dev.deviceId,
+            profileId: dev.profileId ?? "iphone16",
+            isLocked: false,
+            foregroundAppId: dev.appId,
+            notifications: [],
+        } as any;
 
-function createCinematicCameraEpisode(): { initialWorld: WorldState; events: TimelineEvent[] } {
-    const fps = 30;
+        // Create conversations
+        for (const conv of dev.conversations) {
+            conversations[conv.id] = {
+                id: conv.id,
+                type: conv.type === "group" ? "group" : "dm",
+                name: conv.name,
+                avatar: conv.avatar,
+                messages: (conv as any).initialMessages?.map((m: any, idx: number) => ({
+                    id: `init_${conv.id}_${idx}`,
+                    from: m.from,
+                    text: m.text,
+                    type: "text",
+                    timestamp: m.at, // UI uses this string
+                    at: 0
+                })) || [],
+                typing: {}
+            };
+        }
 
-    // =========================================================================
-    // INITIAL WORLD STATE
-    // =========================================================================
-    const initialWorld: WorldState = {
-        devices: {
-            phone: {
-                id: "phone",
-                profileId: "iphone16",
-                isLocked: false,
-                foregroundAppId: "app_whatsapp",
-                notifications: [],
-            },
-        },
-        conversations: {
-            dm_ex: {
-                id: "dm_ex",
-                type: "dm" as const,
-                name: "Ex 💔",
-                avatar: undefined,
-                messages: [],
-                typing: {},
-            },
-        },
-        appState: {
-            app_whatsapp: {
-                screen: "chat",
-                conversationId: "dm_ex",
-            },
-        },
-        camera: {
-            baseView: "APP_VIEW" as const,
-            activeDeviceId: "phone",
-            layout: {
-                mode: "SINGLE" as const,
-                primaryDeviceId: "phone",
-            },
-            activeEffects: [],
-            transform: {
-                translateX: 0,
-                translateY: 0,
-                scale: 1,
-                rotation: 0,
-                originX: 0.5,
-                originY: 0.5,
-                shakeX: 0,
-                shakeY: 0,
-            },
-            deviceTransforms: {},
-        },
-        audio: { activeSounds: {} },
+        // App state
+        appStates[dev.appId] = {
+            screen: "chat",
+            conversationId: dev.conversations[0]?.id
+        };
+    }
+
+    // Ensure audio state fallback
+    const audio = DEFAULT_AUDIO_STATE || { activeSounds: {} };
+
+    return {
+        devices,
+        conversations,
+        appState: appStates,
+        camera: { ...DEFAULT_CAMERA_STATE, activeDeviceId: scene.devices[0]?.deviceId ?? "phone" },
+        audio
     };
-
-    // =========================================================================
-    // TIMELINE EVENTS - CINEMATIC CAMERA MOVEMENTS
-    // 
-    // Film techniques used:
-    // - MACRO PAN: Slow vertical pan from bottom to top (establishing shot)
-    // - TRACKING: Camera follows subject with smooth lag
-    // - PUSH IN: Dolly zoom toward subject for emphasis
-    // - PULL OUT: Widen frame for context/breathing room
-    // - SNAP: Quick cut to new framing
-    // - SHAKE: Dramatic emphasis on impact moments
-    // - DRIFT: Subtle continuous movement to keep frame alive
-    // =========================================================================
-    const events: TimelineEvent[] = [
-        // -----------------------------------------------------------------
-        // BEAT 1: ESTABLISHING SHOT (0s - 3s)
-        // MACRO PAN from bottom of screen to top - cinema style reveal
-        // Start zoomed to bottom, slowly pan up to reveal empty chat
-        // -----------------------------------------------------------------
-        {
-            at: 0,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.15,
-            originX: 0.5,
-            originY: 1.0,  // Start at very bottom
-            duration: 1,
-            easing: "linear",
-        } as any,
-        // Slow pan up (moving origin from bottom to center)
-        {
-            at: 1,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: -150,  // Pan upward
-            duration: 75,      // 2.5 seconds - slow cinematic
-            easing: "ease-in-out",
-        } as any,
-        // Simultaneously pull out slightly for reveal
-        {
-            at: 30,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.0,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 60,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 2: FIRST MESSAGE - SOFT TRACKING (3s - 5s)
-        // Message arrives, camera smoothly tracks to it with lag
-        // -----------------------------------------------------------------
-        {
-            at: 90,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "We need to talk.",
-        } as any,
-        // Subtle drift toward message (tracking shot)
-        {
-            at: 90,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: 50,  // Drift down toward new message
-            duration: 45,
-            easing: "ease-out",
-        } as any,
-        // Gentle push in to emphasize
-        {
-            at: 100,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.03,
-            originX: 0.5,
-            originY: 0.75,  // Focus on message area
-            duration: 35,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 3: TYPING ANTICIPATION (5s - 8s)
-        // Camera slowly drifts and tightens during typing
-        // Creates tension through subtle movement
-        // -----------------------------------------------------------------
-        {
-            at: 150,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_START",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        // Very slow push toward typing indicator
-        {
-            at: 150,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.05,
-            originX: 0.5,
-            originY: 0.88,  // Near bottom where typing appears
-            duration: 75,    // Slow 2.5s push
-            easing: "ease-out",
-        } as any,
-        // Micro drift to keep frame alive
-        {
-            at: 165,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 5,   // Tiny horizontal drift
-            translateY: 15,  // Subtle downward drift
-            duration: 60,
-            easing: "linear",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 4: THE REVEAL (8s - 10s)
-        // Long message drops - SNAP to it, then push in hard
-        // -----------------------------------------------------------------
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "TYPING_END",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-        } as any,
-        {
-            at: 240,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "I've been thinking about us a lot lately... and I don't think this is working anymore.",
-        } as any,
-        // Quick snap/cut to message
-        {
-            at: 240,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.12,
-            originX: 0.5,
-            originY: 0.7,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
-        // Hold tight on message
-        {
-            at: 260,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.12,
-            originX: 0.5,
-            originY: 0.72,
-            duration: 30,
-            easing: "linear",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 5: BREATHING ROOM (10s - 12s)
-        // Pull out wide - give the viewer context
-        // Slow dolly out movement
-        // -----------------------------------------------------------------
-        {
-            at: 300,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 0.92,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 60,
-            easing: "ease-in-out",
-        } as any,
-        // Reset pan
-        {
-            at: 300,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: 0,
-            duration: 45,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 6: RAPID FIRE ESCALATION (12s - 16s)
-        // Quick cuts between speakers, tightening each time
-        // Camera gets progressively more aggressive
-        // -----------------------------------------------------------------
-        {
-            at: 360,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "Hello?",
-        } as any,
-        // Quick snap right (their message)
-        {
-            at: 360,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.06,
-            originX: 0.35,  // Left side where their messages appear
-            originY: 0.8,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
-
-        {
-            at: 385,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "What do you mean?",
-        } as any,
-        // Snap to right (my message)
-        {
-            at: 385,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.09,
-            originX: 0.65,  // Right side where my messages appear
-            originY: 0.82,
-            duration: 8,
-            easing: "ease-out",
-        } as any,
-        // Micro shake for tension
-        {
-            at: 388,
-            kind: "CAMERA",
-            type: "SHAKE",
-            intensity: 2,
-            frequency: 20,
-            decay: 0.8,
-            duration: 6,
-        } as any,
-
-        {
-            at: 410,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "You know exactly what I mean.",
-        } as any,
-        // Tighter snap left
-        {
-            at: 410,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.13,
-            originX: 0.35,
-            originY: 0.85,
-            duration: 6,
-            easing: "ease-out",
-        } as any,
-
-        {
-            at: 430,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "I don't understand...",
-        } as any,
-        // Snap right, even tighter
-        {
-            at: 430,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.16,
-            originX: 0.65,
-            originY: 0.87,
-            duration: 6,
-            easing: "ease-out",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 7: THE BOMB DROP (16s - 18s)
-        // "It's over" - DRAMATIC IMPACT
-        // Hard shake + extreme tight + hold
-        // -----------------------------------------------------------------
-        {
-            at: 480,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "Ex 💔",
-            text: "It's over.",
-        } as any,
-        // Heavy shake for impact
-        {
-            at: 480,
-            kind: "CAMERA",
-            type: "SHAKE",
-            intensity: 12,
-            frequency: 18,
-            decay: 0.5,
-            duration: 20,
-        } as any,
-        // Extreme tight on the message
-        {
-            at: 480,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.25,
-            originX: 0.4,
-            originY: 0.88,
-            duration: 12,
-            easing: "ease-out",
-        } as any,
-        // Hold the frame - let it linger
-        {
-            at: 510,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.25,
-            originX: 0.4,
-            originY: 0.88,
-            duration: 30,
-            easing: "linear",
-        } as any,
-
-        // -----------------------------------------------------------------
-        // BEAT 8: AFTERMATH (18s - 22s)
-        // Slow pull out, user responds with "..."
-        // Camera drifts back to neutral - breathing
-        // -----------------------------------------------------------------
-        {
-            at: 540,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            conversationId: "dm_ex",
-            from: "me",
-            text: "...",
-        } as any,
-        // Very slow pull out
-        {
-            at: 540,
-            kind: "CAMERA",
-            type: "ZOOM",
-            scale: 1.0,
-            originX: 0.5,
-            originY: 0.5,
-            duration: 90,
-            easing: "ease-in-out",
-        } as any,
-        // Slow upward pan (reverse of opening)
-        {
-            at: 570,
-            kind: "CAMERA",
-            type: "PAN",
-            translateX: 0,
-            translateY: -50,
-            duration: 60,
-            easing: "ease-out",
-        } as any,
-        // Final reset
-        {
-            at: 630,
-            kind: "CAMERA",
-            type: "RESET",
-            duration: 30,
-            easing: "ease-out",
-        } as any,
-    ];
-
-    return { initialWorld, events };
 }
 
-// =============================================================================
-// VIDEO COMPONENT
-// =============================================================================
-
-export const CinematicCameraShowcaseVideo: React.FC = () => {
+export const BakchodiGangVideo: React.FC = () => {
     const frame = useCurrentFrame();
-    const t = frame;
 
-    // Get episode data
-    const episode = useMemo(() => createCinematicCameraEpisode(), []);
+    // Compile the DSL into events on the fly
+    const { initialWorld, timelineAndOps } = useMemo(() => {
+        const result = compile(bakchodiGangEpisode);
+        // ENGINE UPDATE: Native V2 support enabled. No adapter needed.
+        const rawOps = result.timeline.ops;
 
-    // Create event index for DirectorLite
-    const eventIndex = useMemo(
-        () => createEventIndex(episode.events),
-        [episode.events]
-    );
+        return {
+            initialWorld: createInitialWorld(bakchodiGangEpisode as unknown as SceneIR),
+            timelineAndOps: rawOps as any[]
+        };
+    }, []);
 
-    // Replay world state at current time
-    const world = replay(episode.initialWorld, episode.events, t);
+    const eventIndex = useMemo(() => createEventIndex(timelineAndOps), [timelineAndOps]);
+    const world = replay(initialWorld, timelineAndOps, frame);
 
     // Calculate scale to fit device in composition
     const compositionWidth = 1080;
@@ -37885,7 +33424,7 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
 
     return (
         <AbsoluteFill style={{
-            backgroundColor: "#0a0a1a",
+            backgroundColor: "#1a1a2e",
             justifyContent: "center",
             alignItems: "center"
         }}>
@@ -37895,13 +33434,14 @@ export const CinematicCameraShowcaseVideo: React.FC = () => {
             }}>
                 <TokovoRenderer
                     world={world}
-                    t={t}
+                    t={frame}
                     debug={false}
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
                 />
             </div>
+            <AudioLayer world={world} t={frame} />
         </AbsoluteFill>
     );
 };
@@ -38522,6 +34062,945 @@ export const Twitter = definePlugin({
 export default Twitter;
 ````
 
+## File: packages/apps-whatsapp/src/config/layout-config.ts
+````typescript
+/**
+ * WhatsApp Layout Configuration
+ * 
+ * Production-grade configurable message heights, spacing, and animations.
+ * All values are in device pixels (3x scale for retina).
+ * 
+ * DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No heuristics.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
+// =============================================================================
+// MESSAGE TYPE ENUMERATION
+// =============================================================================
+
+export type MessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "typing"
+    | "screenshot_alert"
+    | "call_missed";
+
+export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
+
+// =============================================================================
+// SPACING CONFIGURATION (SOURCE OF TRUTH)
+// =============================================================================
+
+/**
+ * Authoritative Layout Constants.
+ * These are the Source of Truth for both Calculation and Rendering.
+ * All units in device pixels (3x retina).
+ */
+export const LAYOUT_CONSTANTS = {
+    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
+    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
+    LINE_HEIGHT: 66,          // Text line height (22px visual)
+    FONT_SIZE: 51,            // Text font size
+    TIMESTAMP_HEIGHT: 36,     // Footer area height
+    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
+
+    // Spacing Tiers (The 3-Tier Model)
+    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
+    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
+
+    // System Spacing
+    GAP_SYSTEM: 24,           // 9px visual
+
+    // Typography / Metrics
+    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
+
+    // Typing Indicator
+    TYPING_BUBBLE_HEIGHT: 72, // Inner height
+    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
+};
+
+/**
+ * UI Constants (Header, Input, etc.)
+ * Source of Truth for both React Components and Layout Engine.
+ */
+export const UI_CONSTANTS = {
+    // Header
+    HEADER_CONTENT_HEIGHT: 60,
+    HEADER_AVATAR_SIZE: 37,
+    HEADER_AVATAR_MARGIN_RIGHT: 10,
+    HEADER_PADDING_X: 10,
+    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
+
+    // Input Area
+    INPUT_MIN_HEIGHT: 60, // Standard single line
+};
+
+/**
+ * Simplified Per-Message-Type Configuration
+ */
+export interface MessageTypeConfig {
+    category: MessageCategory;
+    gapBefore?: number; // Force specific gap (used for System messages)
+    gapAfter?: number;  // Force specific gap
+}
+
+export interface SpacingConfig {
+    typeOverrides: Record<MessageType, MessageTypeConfig>;
+    global: GlobalSpacing;
+}
+
+// =============================================================================
+// HEIGHT & WIDTH CONFIGURATION
+// =============================================================================
+
+export interface MessageHeightConfig {
+    /** Base height calculation */
+    base: number;
+    /** For text: Line height */
+    lineHeight?: number;
+    /** For text: Characters per line for wrapping */
+    charsPerLine?: number;
+    /** For media: Height with caption */
+    withCaption?: number;
+}
+
+export interface MessageWidthConfig {
+    /** Max width as percentage of viewport (0-1) */
+    maxPercent: number;
+    /** Minimum width in pixels */
+    min: number;
+    /** Fixed width (optional) */
+    fixed?: number;
+}
+
+export interface MessageSchema {
+    height: MessageHeightConfig;
+    width: MessageWidthConfig;
+}
+
+// =============================================================================
+// HEIGHT ADDITIONS (The "Legos")
+// =============================================================================
+
+export interface HeightAdditions {
+    reaction: number;
+    reply: number;
+    linkPreview: number;
+    senderName: number;
+}
+
+// =============================================================================
+// SCROLL & ANIMATION
+// =============================================================================
+
+export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
+
+export interface ScrollConfig {
+    lockToBottom: boolean;
+    smoothScrollDuration: number;
+    easing: EasingFunction;
+    newMessageScrollDelay: number;
+    overscanTop: number;
+    overscanBottom: number;
+    maxScrollSpeed: number;
+}
+
+export interface AnimationConfig {
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    typingPulseDuration: number;
+    voiceWaveformSpeed: number;
+}
+
+export interface GlobalSpacing {
+    topPadding: number;
+    bottomPadding: number;
+    bubbleMargin: number;
+}
+
+// =============================================================================
+// COMPLETE CONFIG STRUCT
+// =============================================================================
+
+export interface MessageLayoutConfig {
+    messageTypes: Record<MessageType, MessageSchema>;
+    additions: HeightAdditions;
+    scroll: ScrollConfig;
+    animation: AnimationConfig;
+    spacing: SpacingConfig;
+}
+
+// =============================================================================
+// DEFAULT CONFIGURATION (The Values)
+// =============================================================================
+
+const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
+    text: { category: "text" },
+    image: { category: "media" },
+    video: { category: "media" },
+    gif: { category: "media" },
+    voice: { category: "audio" },
+    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    deleted: { category: "text" },
+    // Typing behaves like a sender run-break (e.g. interruption)
+    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
+    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+};
+
+export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
+    messageTypes: {
+        text: {
+            height: {
+                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
+                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
+                // capacity dynamic via measureTextBlock (unitsPerLine)
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 150,
+            },
+        },
+        image: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        video: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        gif: {
+            height: { base: 500 },
+            width: { maxPercent: 0.78, min: 250 },
+        },
+        voice: {
+            height: { base: 180 },
+            width: { fixed: 450, maxPercent: 0.78, min: 450 },
+        },
+        system: {
+            height: { base: 80 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        deleted: {
+            height: { base: 100 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        typing: {
+            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
+            width: { fixed: 150, maxPercent: 0.3, min: 150 },
+        },
+        screenshot_alert: {
+            height: { base: 80 },
+            width: { maxPercent: 0.7, min: 250 },
+        },
+        call_missed: {
+            height: { base: 120 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+    },
+    additions: {
+        reaction: 36,
+        reply: 90,
+        linkPreview: 180,
+        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
+    },
+    scroll: {
+        lockToBottom: true,
+        smoothScrollDuration: 15,
+        easing: "easeOut",
+        newMessageScrollDelay: 3,
+        overscanTop: 200,
+        overscanBottom: 200,
+        maxScrollSpeed: 60,
+    },
+    animation: {
+        messageAppearDuration: 12,
+        messageAppearOffset: 30,
+        typingPulseDuration: 45,
+        voiceWaveformSpeed: 2,
+    },
+    spacing: {
+        typeOverrides: DEFAULT_TYPE_OVERRIDES,
+        global: {
+            topPadding: 48,
+            bottomPadding: 120,
+            bubbleMargin: 36,
+        },
+    },
+};
+
+// =============================================================================
+// HEIGHT CALCULATION
+// =============================================================================
+
+export interface MessageForHeight {
+    type?: MessageType;
+    text?: string;
+    caption?: string;
+    from?: string;
+    prevFrom?: string;
+    isGroupChat?: boolean;
+    reactions?: unknown[];
+    replyTo?: unknown;
+    linkPreview?: unknown;
+}
+
+export function calculateMessageHeight(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    let height = 0;
+
+    // Base height
+    if (msgType === "text" || msgType === "deleted") {
+        const text = msg.text || "";
+        // Use unified measurement logic
+        const { lines } = measureTextBlock(text, viewportWidth, config);
+        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
+    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
+        // Dynamic Media Height (Option B)
+        // Measure caption to determine how much vertical space to add to base image
+        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
+        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
+        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
+        // Add timestamp footer height + margin (timestamp sits below caption)
+        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
+        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
+    } else {
+        height = typeConfig.height.base;
+    }
+
+    // Additions
+    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
+    if (msg.replyTo) height += config.additions.reply;
+    if (msg.linkPreview) height += config.additions.linkPreview;
+
+    if (shouldShowSenderName({
+        from: msg.from,
+        type: msgType,
+        isGroupChat: msg.isGroupChat,
+        prevFrom: msg.prevFrom
+    })) {
+        height += config.additions.senderName;
+    }
+
+    return height;
+}
+
+// =============================================================================
+// SMART GAP CALCULATION (THE TRUTH TABLE)
+// =============================================================================
+
+export interface MessageForGap {
+    type?: MessageType;
+    from?: string;
+    at?: number;
+    hasReply?: boolean;
+    hasReactions?: boolean;
+    hasLinkPreview?: boolean;
+}
+
+export interface GapContext {
+    prevMessage: MessageForGap;
+    nextMessage: MessageForGap;
+}
+
+export function calculateSmartGap(
+    context: GapContext,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const { prevMessage, nextMessage } = context;
+    const prevType = (prevMessage.type || "text") as MessageType;
+    const nextType = (nextMessage.type || "text") as MessageType;
+
+    // Check type-specific processing (only System messages act as special exceptions now)
+    const prevOverride = config.spacing.typeOverrides[prevType];
+    const nextOverride = config.spacing.typeOverrides[nextType];
+
+    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
+    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
+
+    // Visual Run Logic
+    const sameSender = prevMessage.from === nextMessage.from;
+    const isVisualRun = sameSender &&
+        prevType === "text" &&
+        nextType === "text" &&
+        !prevMessage.hasReply &&
+        !nextMessage.hasReply &&
+        !prevMessage.hasReactions &&
+        !nextMessage.hasReactions &&
+        !prevMessage.hasLinkPreview &&
+        !nextMessage.hasLinkPreview;
+
+    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
+    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
+    return LAYOUT_CONSTANTS.GAP_NORMAL;
+}
+
+// Compatibility Shim
+export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
+    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
+}
+
+// =============================================================================
+// MEASUREMENT HELPERS (Deterministic constants)
+// =============================================================================
+
+export interface TextBlockMetrics {
+    lines: number;
+    bubbleWidth: number;
+    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
+}
+
+/* DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No runtime DOM measurement. Deterministic constants.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
+/**
+ * Deterministic, no-DOM text measurement.
+ * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
+ * not the paragraph total weight or always-full-capacity width.
+ *
+ * Weighted units:
+ * - space: 0.6
+ * - ascii/basic: 1.0
+ * - wide (CJK etc): 1.5
+ * - emoji surrogate pair: 1.8
+ */
+export function measureTextBlock(
+    text: string,
+    viewportWidth: number = 1170, // Default reference width
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): TextBlockMetrics {
+    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
+
+    // 1) Constraints
+    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
+    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+
+    // Safety clamp so we never divide by 0 / go negative on tiny screens
+    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
+
+    // 2) Capacity (INTEGER, consistent everywhere)
+    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
+    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
+
+    // 3) Measure
+    // Split paragraphs by explicit newline. Newline always forces a line break.
+    const paragraphs = text.split("\n");
+
+    let totalLines = 0;
+    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
+
+    for (const paragraph of paragraphs) {
+        // Explicit blank line => counts as 1 line
+        if (paragraph.length === 0) {
+            totalLines += 1;
+            maxLineUnits = Math.max(maxLineUnits, 0);
+            continue;
+        }
+
+        // Wrap simulation in weighted units
+        let lineUnits = 0;
+        let linesInParagraph = 1;
+
+        for (let i = 0; i < paragraph.length; i++) {
+            const code = paragraph.charCodeAt(i);
+
+            // Weight function (deterministic)
+            let w = 1.0;
+
+            // space
+            if (code === 32) {
+                w = 0.6;
+            } else if (code >= 65 && code <= 90) {
+                // Uppercase A-Z
+                w = 1.3;
+            } else {
+                // emoji surrogate pair
+                const isHigh = code >= 0xd800 && code <= 0xdbff;
+                if (isHigh && i + 1 < paragraph.length) {
+                    const next = paragraph.charCodeAt(i + 1);
+                    const isLow = next >= 0xdc00 && next <= 0xdfff;
+                    if (isLow) {
+                        w = 1.8;
+                        i++; // consume low surrogate
+                    } else if (code > 255) {
+                        w = 1.5;
+                    }
+                } else if (code > 255) {
+                    // wide-ish (CJK etc.)
+                    w = 1.5;
+                }
+            }
+
+            // If adding this char overflows the line => wrap
+            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
+            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
+            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
+                maxLineUnits = Math.max(maxLineUnits, lineUnits);
+                linesInParagraph += 1;
+                lineUnits = w;
+            } else {
+                lineUnits += w;
+            }
+
+            // Track widest line as we go
+            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
+            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+        }
+
+        // finalize paragraph
+        totalLines += linesInParagraph;
+        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+    }
+
+    // Ensure at least one line for empty string
+    if (totalLines === 0) totalLines = 1;
+
+    // 4) Convert widest line units -> pixels
+    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
+
+    // Clamp bubble width to: [minWidth, maxBubbleWidth]
+    const bubbleWidth = Math.min(
+        maxBubbleWidth,
+        Math.max(computedWidth, typeConfig.width.min)
+    );
+
+    return { lines: totalLines, bubbleWidth, unitsPerLine };
+}
+
+export function calculateBubbleWidth(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    if (typeConfig.width.fixed) return typeConfig.width.fixed;
+
+    if (msgType === "text" || msgType === "deleted") {
+        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
+        return bubbleWidth;
+    }
+
+    // Media & others: Use standard clamping
+    // Calculates a width based on percentage, but ensures it's at least 'min'
+    // and optionally upper-bounded if we strictly wanted to (not currently in config)
+    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
+    return Math.max(typeConfig.width.min, idealWidth);
+}
+
+// =============================================================================
+// ANIMATION & LAYOUT HELPERS
+// =============================================================================
+
+export function applyEasing(progress: number, easing: EasingFunction): number {
+    switch (easing) {
+        case "linear": return progress;
+        case "easeOut": return 1 - Math.pow(1 - progress, 3);
+        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        case "spring":
+            const c4 = (2 * Math.PI) / 3;
+            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+        default: return progress;
+    }
+}
+
+export function isMessageCentered(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system";
+}
+
+export function doesMessageBreakGrouping(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system" || category === "ephemeral"; // System & Typing break grouping
+}
+
+export interface SenderNameContext {
+    from?: string;
+    type?: string;
+    isGroupChat?: boolean;
+    prevFrom?: string;
+}
+
+export function shouldShowSenderName(ctx: SenderNameContext): boolean {
+    if (!ctx.isGroupChat) return false;
+    if (!ctx.from) return false;
+    if (ctx.from === "me") return false;
+    if (ctx.from === "system") return false;
+    if (ctx.type === "system") return false;
+
+    // Show if previous sender was different (or no previous sender, or generic BREAK token)
+    return ctx.from !== ctx.prevFrom;
+}
+````
+
+## File: packages/apps-whatsapp/src/logic/reducer.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+// Extended message type for WhatsApp-specific features
+type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+interface WhatsAppMessage {
+    id: string;
+    from: string;
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+    // React and reply
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
+    // Timestamp display
+    timestamp?: string;
+}
+
+/**
+ * Generate a timestamp string from frame number.
+ * Simulates time progression starting from 10:42.
+ * Each message increments by 1-3 minutes for realism.
+ */
+function generateTimestamp(frame: number, messageIndex: number): string {
+    // Base time: 10:42
+    const baseHour = 10;
+    const baseMinute = 42;
+
+    // Add 1-2 minutes per message for realistic progression
+    const totalMinutes = baseMinute + messageIndex * 2;
+    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        // Voice-specific fields
+        duration?: number;
+        // Read receipt fields
+        messageId?: string;
+        // Navigation fields
+        screen?: string;
+        // Device context
+        deviceId?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
+        // Ensure appState exists for WhatsApp
+        if (!draft.appState) {
+            draft.appState = {};
+        }
+        if (!draft.appState.app_whatsapp) {
+            draft.appState.app_whatsapp = {};
+        }
+
+        // Update the current screen
+        const screen = appEvent.screen || "chat";
+        draft.appState.app_whatsapp.screen = screen;
+
+        // STANDARD CONTRACT ADHERENCE
+        // Map screen to generic ViewKind
+        if (screen === "chat") {
+            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
+        } else {
+            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
+        }
+
+        // If navigating to a specific conversation
+        if (appEvent.conversationId) {
+            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
+            const msgPayload = appEvent.message || {};
+            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            // Generate timestamp based on message index
+            const messageIndex = conversation.messages.length;
+            const timestamp = generateTimestamp(event.at, messageIndex);
+
+            const newMessage: WhatsAppMessage = {
+                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
+                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                type: msgType,
+                text: appEvent.text || msgPayload.text,
+                at: event.at,
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+                timestamp,  // Dynamic timestamp
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            (conversation.messages as any[]).push(newMessage);
+
+
+            break;
+        }
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            if (appEvent.from) {
+                conversation.typing[appEvent.from] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            if (conversation.typing && appEvent.from) {
+                delete conversation.typing[appEvent.from];
+            }
+            break;
+        }
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            (conversation.messages as any[]).push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            } as WhatsAppMessage);
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
+                }
+            }
+            break;
+        }
+
+        case "INPUT_CHANGE": {
+            // "OS-Level Input Management"
+            // The OS has dispatched this event with the raw text from the keyboard.
+            // We update the local conversation draft state.
+            const text = (appEvent as any).payload?.text;
+            if (conversation) {
+                (conversation as any).draftText = text;
+            }
+            break;
+        }
+    }
+}
+````
+
 ## File: packages/apps-whatsapp/src/types.ts
 ````typescript
 export type WhatsAppMessageType = "text" | "image" | "video" | "voice" | "system" | "gif";
@@ -38597,6 +35076,27 @@ export interface WhatsAppState {
 }
 ````
 
+## File: packages/device-keyboard/src/index.ts
+````typescript
+export * from "./KeyboardSurface";
+export * from "./core/registry";
+import "./assets/sounds"; // Register sounds checked
+export * from "./components/IOSKeyboard";
+export * from "./reducer";
+
+import { ReducerRegistry } from "@tokovo/core";
+import { keyboardReducer } from "./reducer";
+
+import { keyboardAudioRules } from "./assets/audio-rules";
+import { AutoSoundRegistry } from "@tokovo/core";
+
+// Register the keyboard reducer automatically when this package is imported
+ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
+
+// Register audio rules
+AutoSoundRegistry.register(keyboardAudioRules);
+````
+
 ## File: packages/device-keyboard/src/KeyboardSurface.tsx
 ````typescript
 import React from "react";
@@ -38666,171 +35166,6 @@ function normalizePlatform(p: string): string {
     if (p.startsWith("iphone") || p === "ios") return "ios";
     if (p.startsWith("pixel") || p === "android") return "android";
     return p;
-}
-````
-
-## File: packages/device-keyboard/src/reducer.ts
-````typescript
-import {
-    WorldState,
-    TimelineEvent,
-    ReducerRegistry,
-    FeatureReducer
-} from "@tokovo/core";
-
-/**
- * processKeyboardEvent
- * 
- * Handles all KEYBOARD specific events.
- * Manages the virtual keyboard state in `device.keyboard`.
- * Automatically injects INPUT_CHANGE events into the foreground app.
- */
-export const keyboardReducer: FeatureReducer = (
-    draft: WorldState,
-    event: TimelineEvent,
-    index: number
-) => {
-    // Shared Device Access
-    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
-
-    // Initialize keyboard state if needed
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-            visibilityChangedAt: 0
-        };
-    }
-
-    // Handle V2 Ops
-    if (event.kind === "KeyboardType") {
-        const e = event as import("@tokovo/ir").KeyboardTypeOp;
-        // Append text (simulating typing)
-        const textToAppend = e.text;
-        const pos = device.keyboard.cursorPosition;
-        const currentText = device.keyboard.inputText;
-        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
-
-        device.keyboard.inputText = newText;
-        device.keyboard.cursorPosition = pos + textToAppend.length;
-
-        // AUTOMATION: Inject into App
-        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-        return;
-    }
-
-    if (event.kind === "KeyboardInput") {
-        const e = event as import("@tokovo/ir").KeyboardInputOp;
-        if (e.type === "keyDown") {
-            device.keyboard.currentKey = e.key;
-            device.keyboard.keyPressedAt = event.at;
-        } else {
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
-        }
-        return;
-    }
-
-    // Handle Legacy Ops
-    if (event.kind !== "KEYBOARD") return;
-
-    switch (event.type) {
-        case "SHOW":
-            device.keyboard.visible = true;
-            device.keyboard.layout = (event as any).layout || "qwerty";
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            device.keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "HIDE":
-            device.keyboard.visible = false;
-            device.keyboard.currentKey = null;
-            device.keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "KEY_DOWN":
-            device.keyboard.currentKey = (event as any).key;
-            device.keyboard.keyPressedAt = event.at;
-            break;
-
-        case "KEY_UP":
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
-            break;
-
-        case "TYPE_CHAR": {
-            const char = (event as any).char;
-            // Add character to input
-            const pos = device.keyboard.cursorPosition;
-            const text = device.keyboard.inputText;
-            const newText = text.slice(0, pos) + char + text.slice(pos);
-            device.keyboard.inputText = newText;
-            device.keyboard.cursorPosition = pos + 1;
-            device.keyboard.currentKey = char;
-            device.keyboard.keyPressedAt = event.at;
-
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            break;
-        }
-
-        case "BACKSPACE": {
-            if (device.keyboard.cursorPosition > 0) {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
-                const newText = text.slice(0, pos - 1) + text.slice(pos);
-                device.keyboard.inputText = newText;
-                device.keyboard.cursorPosition = pos - 1;
-
-                // AUTOMATION: Inject into App
-                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            }
-            device.keyboard.currentKey = "⌫";
-            device.keyboard.keyPressedAt = event.at;
-            break;
-        }
-
-        case "SET_TEXT": {
-            const text = (event as any).text;
-            device.keyboard.inputText = text;
-            device.keyboard.cursorPosition = text.length;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, text, event.at);
-            break;
-        }
-
-        case "CLEAR":
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, "", event.at);
-            break;
-    }
-};
-
-/**
- * Helper to push input changes to the active app
- */
-function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
-    if (!appId) return;
-    const reducer = ReducerRegistry.getAppReducer(appId);
-    if (reducer) {
-        reducer(draft, { // Use legacy event format expected by apps
-            kind: "APP",
-            type: "INPUT_CHANGE",
-            appId,
-            payload: { text },
-            at
-        } as any);
-    }
 }
 ````
 
@@ -39654,6 +35989,15 @@ export const navigation = {
         animationDuration: options?.duration
     } as any)
 };
+````
+
+## File: packages/episodes/src/index.ts
+````typescript
+// DSL-based episodes
+export { notificationShowcaseEpisode } from "./notification-showcase.dsl";
+export * from "./episodes/bakchodi-gang";
+
+export * from "./schema";
 ````
 
 ## File: packages/ir/src/schemas.ts
@@ -43201,46 +39545,6 @@ function getPresetDuration(preset: string): number {
 }
 ````
 
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/compiler": "workspace:*",
-        "@tokovo/apps-phone": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-twitter": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
 ## File: packages/core/src/app-metadata.ts
 ````typescript
 /**
@@ -43347,348 +39651,6 @@ AppMetadataRegistry.register("app_twitter", {
     icon: "✖️",
     viewStrategy: "FEED"
 });
-````
-
-## File: packages/dsl/src/events/keyboard.ts
-````typescript
-/**
- * Keyboard Event Factories
- * 
- * Low-level event creators for keyboard simulation.
- * Used by showcases and DSL builders.
- */
-
-import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/**
- * Keyboard event factories
- */
-export const keyboard = {
-    /**
-     * Show the virtual keyboard
-     */
-    show: (at: number, deviceId: string, layout: KeyboardLayout = "qwerty"): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SHOW",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        layout,
-    } as TimelineEvent),
-
-    /**
-     * Hide the virtual keyboard
-     */
-    hide: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "HIDE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Type a single character (V2)
-     */
-    typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardType",
-        trace: createTrace(Tracer.capture()),
-        text: char,
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Delete last character (backspace)
-     */
-    backspace: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "BACKSPACE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Set text directly
-     */
-    setText: (at: number, deviceId: string, text: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SET_TEXT",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        text,
-    } as TimelineEvent),
-
-    /**
-     * Clear all text
-     */
-    clear: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "CLEAR",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Key down (for visual highlight) (V2)
-     */
-    keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardInput",
-        type: "keyDown",
-        trace: createTrace(Tracer.capture()),
-        key,
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Key up (end visual highlight) (V2)
-     */
-    keyUp: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardInput",
-        type: "keyUp",
-        trace: createTrace(Tracer.capture()),
-        key: "", // Key up clears current key
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Generate a realistic typing sequence
-     */
-    /**
-     * Generate a realistic, smart typing sequence
-     * 
-     * - Automatically switches layouts (123, ABC)
-     * - Uses seeded RNG for deterministic variance
-     */
-    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
-        const trace = createTrace(Tracer.capture());
-        const events: TimelineEvent[] = [];
-        let t = at;
-
-        // Deterministic RNG
-        const seed = options?.seed || 123456;
-        // Simple hash of text to vary seed if not provided, for different texts
-        const textHash = text.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
-        const rng = new SeededRNG(seed + textHash);
-
-        const speedMap = { fast: 2, normal: 3, slow: 5 };
-        const baseSpeed = speedMap[options?.speed || "normal"];
-        const variance = options?.variance || 0;
-
-        // Smart Layout State
-        let currentLayout: "qwerty" | "numbers" = "qwerty"; // default
-
-        // Helpers
-        const isNumberOrSymbol = (char: string) => /[0-9\-/:;()$&@"\.,?!']/.test(char);
-        const getLayoutForChar = (char: string): "qwerty" | "numbers" => {
-            if (char === " ") return currentLayout; // Space works on likely both, or we assume stickiness
-            return isNumberOrSymbol(char) ? "numbers" : "qwerty";
-        };
-
-        for (const char of text) {
-            const requiredLayout = getLayoutForChar(char);
-
-            // Switch Layout if needed
-            if (requiredLayout !== currentLayout) {
-                const switchKey = currentLayout === "qwerty" ? "123" : "ABC";
-
-                // Press Switch Key
-                events.push(keyboard.keyDown(t, deviceId, switchKey));
-                t += Math.floor(baseSpeed * 0.5);
-
-                // Switch Action
-                events.push({
-                    at: t,
-                    kind: "KEYBOARD",
-                    type: "SHOW", // SHOW updates layout too
-                    trace,
-                    deviceId,
-                    layout: requiredLayout
-                } as any);
-
-                // Release Switch Key
-                events.push(keyboard.keyUp(t, deviceId));
-
-                currentLayout = requiredLayout;
-                t += baseSpeed + rng.nextInt(0, variance);
-            }
-
-            // Normal Key Press
-            // Press
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "KEY_DOWN",
-                trace,
-                deviceId,
-                key: char
-            } as TimelineEvent);
-
-            // Commit char (Input Change happens here)
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "TYPE_CHAR",
-                trace,
-                deviceId,
-                char
-            } as TimelineEvent);
-
-            t += Math.floor(baseSpeed * 0.5);
-
-            // Release
-            events.push({
-                at: t,
-                kind: "KEYBOARD",
-                type: "KEY_UP",
-                trace,
-                deviceId
-            } as TimelineEvent);
-
-            // Delay next char
-            t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
-        }
-
-        return events;
-    }
-};
-````
-
-## File: packages/dsl/src/events/messages.ts
-````typescript
-/**
- * Message Event Factories
- * 
- * Low-level event creators for messaging (WhatsApp, etc).
- */
-
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/** Message status for tick progression */
-export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
-
-/**
- * Message event factories
- */
-export const messages = {
-    /**
-     * Send a message (from device owner)
-     */
-    send: (at: number, conversationId: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageSent", // V2 IR
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
-
-    /**
-     * Receive a message (from someone else)
-     */
-    receive: (at: number, conversationId: string, from: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageReceived", // V2 IR
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
-
-    /**
-     * Start typing indicator
-     */
-    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingStarted",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
-
-    /**
-     * Stop typing indicator
-     */
-    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingEnded",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
-
-    /**
-     * Send an image
-     */
-    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageSent",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
-
-    /**
-     * Receive an image
-     */
-    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageReceived",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
-
-    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
-    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
-        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
-    } as any)
-};
 ````
 
 ## File: packages/renderer/src/engines/useLayoutEngine.ts
@@ -44200,6 +40162,47 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
         </AbsoluteFill>
     );
 };
+````
+
+## File: apps/video-runner/package.json
+````json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/compiler": "workspace:*",
+        "@tokovo/apps-phone": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-twitter": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
 ## File: packages/apps-phone/src/index.ts
@@ -45894,6 +41897,191 @@ import { KeyboardRegistry } from "../core/registry";
 KeyboardRegistry.register("ios", IOSKeyboard);
 ````
 
+## File: packages/device-keyboard/src/reducer.ts
+````typescript
+import {
+    WorldState,
+    TimelineEvent,
+    ReducerRegistry,
+    FeatureReducer
+} from "@tokovo/core";
+
+/**
+ * processKeyboardEvent
+ * 
+ * Handles all KEYBOARD specific events.
+ * Manages the virtual keyboard state in `device.keyboard`.
+ * Automatically injects INPUT_CHANGE events into the foreground app.
+ */
+export const keyboardReducer: FeatureReducer = (
+    draft: WorldState,
+    event: TimelineEvent,
+    index: number
+) => {
+    // Shared Device Access
+    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // Initialize keyboard state if needed
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+            visibilityChangedAt: 0
+        };
+    }
+
+    // Handle V2 Ops
+    if (event.kind === "KeyboardType") {
+        const e = event as import("@tokovo/ir").KeyboardTypeOp;
+        // Append text (simulating typing)
+        const textToAppend = e.text;
+        const pos = device.keyboard.cursorPosition;
+        const currentText = device.keyboard.inputText;
+        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
+
+        device.keyboard.inputText = newText;
+        device.keyboard.cursorPosition = pos + textToAppend.length;
+
+        // AUTOMATION: Inject into App
+        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+
+        // AUDIO: Handled by AutoSound Rules
+        return;
+    }
+
+    if (event.kind === "KeyboardInput") {
+        const e = event as import("@tokovo/ir").KeyboardInputOp;
+        if (e.type === "keyDown") {
+            device.keyboard.currentKey = e.key;
+            device.keyboard.keyPressedAt = event.at;
+
+            // Handle Backspace logic for V2
+            if (e.key === "Backspace") {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    device.keyboard.inputText = newText;
+                    device.keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+
+            // AUDIO: Handled by AutoSound Rules
+        } else {
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+        }
+        return;
+    }
+
+    // Handle Legacy Ops
+    if (event.kind !== "KEYBOARD") return;
+
+    switch (event.type) {
+        case "SHOW":
+            device.keyboard.visible = true;
+            device.keyboard.layout = (event as any).layout || "qwerty";
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            device.keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "HIDE":
+            device.keyboard.visible = false;
+            device.keyboard.currentKey = null;
+            device.keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "KEY_DOWN":
+            device.keyboard.currentKey = (event as any).key;
+            device.keyboard.keyPressedAt = event.at;
+            // AUDIO: Handled by AutoSound Rules
+            break;
+
+        case "KEY_UP":
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR": {
+            const char = (event as any).char;
+            // Add character to input
+            const pos = device.keyboard.cursorPosition;
+            const text = device.keyboard.inputText;
+            const newText = text.slice(0, pos) + char + text.slice(pos);
+            device.keyboard.inputText = newText;
+            device.keyboard.cursorPosition = pos + 1;
+            device.keyboard.currentKey = char;
+            device.keyboard.keyPressedAt = event.at;
+
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "BACKSPACE": {
+            if (device.keyboard.cursorPosition > 0) {
+                const pos = device.keyboard.cursorPosition;
+                const text = device.keyboard.inputText;
+                const newText = text.slice(0, pos - 1) + text.slice(pos);
+                device.keyboard.inputText = newText;
+                device.keyboard.cursorPosition = pos - 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            }
+            device.keyboard.currentKey = "⌫";
+            device.keyboard.keyPressedAt = event.at;
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "SET_TEXT": {
+            const text = (event as any).text;
+            device.keyboard.inputText = text;
+            device.keyboard.cursorPosition = text.length;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, text, event.at);
+            break;
+        }
+
+        case "CLEAR":
+            device.keyboard.inputText = "";
+            device.keyboard.cursorPosition = 0;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, "", event.at);
+            break;
+    }
+};
+
+/**
+ * Helper to push input changes to the active app
+ */
+function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
+    if (!appId) return;
+    const reducer = ReducerRegistry.getAppReducer(appId);
+    if (reducer) {
+        reducer(draft, { // Use legacy event format expected by apps
+            kind: "APP",
+            type: "INPUT_CHANGE",
+            appId,
+            payload: { text },
+            at
+        } as any);
+    }
+}
+````
+
 ## File: packages/dsl/src/events/index.ts
 ````typescript
 /**
@@ -45977,6 +42165,663 @@ export const dsl = {
     os,
     notification,
 };
+````
+
+## File: packages/dsl/src/events/keyboard.ts
+````typescript
+/**
+ * Keyboard Event Factories
+ * 
+ * Low-level event creators for keyboard simulation.
+ * Used by showcases and DSL builders.
+ */
+
+import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+/**
+ * Keyboard event factories
+ */
+export const keyboard = {
+    /**
+     * Show the virtual keyboard
+     */
+    show: (at: number, deviceId: string, layout: KeyboardLayout = "qwerty"): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SHOW",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        layout,
+    } as TimelineEvent),
+
+    /**
+     * Hide the virtual keyboard
+     */
+    hide: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Type a single character (V2)
+     */
+    typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardType",
+        trace: createTrace(Tracer.capture()),
+        text: char,
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Delete last character (backspace)
+     */
+    backspace: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyDown",
+        trace: createTrace(Tracer.capture()),
+        key: "Backspace",
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Set text directly
+     */
+    setText: (at: number, deviceId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SET_TEXT",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        text,
+    } as TimelineEvent),
+
+    /**
+     * Clear all text
+     */
+    clear: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "CLEAR",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Key down (for visual highlight) (V2)
+     */
+    keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyDown",
+        trace: createTrace(Tracer.capture()),
+        key,
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Key up (end visual highlight) (V2)
+     */
+    keyUp: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyUp",
+        trace: createTrace(Tracer.capture()),
+        key: "", // Key up clears current key
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Generate a realistic typing sequence
+     */
+    /**
+     * Generate a realistic, smart typing sequence
+     * 
+     * - Automatically switches layouts (123, ABC)
+     * - Uses seeded RNG for deterministic variance
+     */
+    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
+        const trace = createTrace(Tracer.capture());
+        const events: TimelineEvent[] = [];
+        let t = at;
+
+        // Deterministic RNG
+        const seed = options?.seed || 123456;
+        // Simple hash of text to vary seed if not provided, for different texts
+        const textHash = text.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+        const rng = new SeededRNG(seed + textHash);
+
+        const speedMap = { fast: 2, normal: 3, slow: 5 };
+        const baseSpeed = speedMap[options?.speed || "normal"];
+        const variance = options?.variance || 0;
+
+        // Smart Layout State
+        let currentLayout: "qwerty" | "numbers" = "qwerty"; // default
+
+        // Helpers
+        const isNumberOrSymbol = (char: string) => /[0-9\-/:;()$&@"\.,?!']/.test(char);
+        const getLayoutForChar = (char: string): "qwerty" | "numbers" => {
+            if (char === " ") return currentLayout; // Space works on likely both, or we assume stickiness
+            return isNumberOrSymbol(char) ? "numbers" : "qwerty";
+        };
+
+        for (const char of text) {
+            const requiredLayout = getLayoutForChar(char);
+
+            // Switch Layout if needed
+            if (requiredLayout !== currentLayout) {
+                const switchKey = currentLayout === "qwerty" ? "123" : "ABC";
+
+                // Press Switch Key
+                events.push(keyboard.keyDown(t, deviceId, switchKey));
+                t += Math.floor(baseSpeed * 0.5);
+
+                // Switch Action
+                events.push({
+                    at: t,
+                    kind: "KEYBOARD",
+                    type: "SHOW", // SHOW updates layout too
+                    trace,
+                    deviceId,
+                    layout: requiredLayout
+                } as any);
+
+                // Release Switch Key
+                events.push(keyboard.keyUp(t, deviceId));
+
+                currentLayout = requiredLayout;
+                t += baseSpeed + rng.nextInt(0, variance);
+            }
+
+            // Normal Key Press
+            // Press - V2
+            events.push(keyboard.keyDown(t, deviceId, char));
+
+            // Commit char (Input Change happens here) - V2
+            events.push(keyboard.typeChar(t, deviceId, char));
+
+            t += Math.floor(baseSpeed * 0.5);
+
+            // Release - V2
+            events.push(keyboard.keyUp(t, deviceId));
+
+            // Delay next char
+            t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
+        }
+
+        return events;
+    }
+};
+````
+
+## File: packages/dsl/src/events/messages.ts
+````typescript
+/**
+ * Message Event Factories
+ * 
+ * Low-level event creators for messaging (WhatsApp, etc).
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+/** Message status for tick progression */
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
+
+/**
+ * Message event factories
+ */
+export const messages = {
+    /**
+     * Send a message (from device owner)
+     */
+    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
+        at,
+        kind: "MessageSent", // V2 IR
+        deviceId: options.deviceId || "primary",
+        trace: createTrace(Tracer.capture()),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
+
+    /**
+     * Receive a message (from someone else)
+     */
+    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
+        at,
+        kind: "MessageReceived", // V2 IR
+        deviceId: options.deviceId || "primary",
+        trace: createTrace(Tracer.capture()),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
+
+    /**
+     * Start typing indicator
+     */
+    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "TypingStarted",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
+
+    /**
+     * Stop typing indicator
+     */
+    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "TypingEnded",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
+
+    /**
+     * Send an image
+     */
+    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "MessageSent",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
+
+    /**
+     * Receive an image
+     */
+    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "MessageReceived",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
+
+    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
+    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
+        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
+    } as any)
+};
+````
+
+## File: packages/ir/src/timeline.ts
+````typescript
+/**
+ * Timeline IR - Execution Contract
+ * 
+ * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
+ * 
+ * RULES:
+ * - All waits resolved to frames
+ * - Fully deterministic
+ * - No adapter-specific fields
+ * - Sorted by canonical ordering
+ * - Every op carries Trace
+ */
+
+import { Trace } from "./trace";
+
+// =============================================================================
+// TIMELINE OPERATIONS
+// =============================================================================
+
+/**
+ * Base interface for all timeline operations.
+ */
+interface TimelineOpBase {
+    /** Frame number when this operation occurs */
+    readonly at: number;
+
+    /** Operation kind (discriminator) */
+    readonly kind: string;
+
+    /** Debug trace */
+    readonly trace: Trace;
+}
+
+/**
+ * Device unlocked.
+ */
+export interface DeviceUnlockedOp extends TimelineOpBase {
+    readonly kind: "DeviceUnlocked";
+    readonly deviceId: string;
+}
+
+/**
+ * App opened.
+ */
+export interface AppOpenedOp extends TimelineOpBase {
+    readonly kind: "AppOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+}
+
+/**
+ * Conversation navigated to.
+ */
+export interface ConversationOpenedOp extends TimelineOpBase {
+    readonly kind: "ConversationOpened";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+}
+
+/**
+ * Typing indicator started.
+ */
+export interface TypingStartedOp extends TimelineOpBase {
+    readonly kind: "TypingStarted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Typing indicator ended.
+ */
+export interface TypingEndedOp extends TimelineOpBase {
+    readonly kind: "TypingEnded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly actor: string;
+}
+
+/**
+ * Message received.
+ */
+export interface MessageReceivedOp extends TimelineOpBase {
+    readonly kind: "MessageReceived";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly from: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
+        // Interactions
+        readonly reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
+        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
+        readonly edited?: boolean;
+    };
+}
+
+/**
+ * Message sent (by device owner).
+ */
+export interface MessageSentOp extends TimelineOpBase {
+    readonly kind: "MessageSent";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly message: {
+        readonly id: string;
+        readonly text?: string;
+        readonly type?: "text" | "image" | "video" | "gif" | "voice";
+        readonly timestamp?: string;
+        // Media fields
+        readonly imageUrl?: string;
+        readonly videoUrl?: string;
+        readonly thumbnailUrl?: string;
+        readonly gifUrl?: string;
+        readonly caption?: string;
+        readonly duration?: number;
+        readonly height?: number;
+        // Interactions
+        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
+        readonly edited?: boolean;
+    };
+}
+
+/**
+ * Message marked as read.
+ */
+export interface MessageReadOp extends TimelineOpBase {
+    readonly kind: "MessageRead";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Message deleted.
+ */
+export interface MessageDeletedOp extends TimelineOpBase {
+    readonly kind: "MessageDeleted";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+}
+
+/**
+ * Screen navigated within app.
+ */
+export interface ScreenNavigatedOp extends TimelineOpBase {
+    readonly kind: "ScreenNavigated";
+    readonly deviceId: string;
+    readonly appId: string;
+    /** 
+     * Screen identifier. 
+     * Standard: "chats-list" | "chat" | "settings" | "status" | "calls"
+     * Open for extension: "feed" | "reels" | "profile" | etc.
+     */
+    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls" | (string & {});
+    readonly conversationId?: string;  // For "chat" screen
+    readonly transition?: "push" | "pop" | "present" | "dismiss";
+}
+
+/**
+ * Reaction added to a message.
+ */
+export interface ReactionAddedOp extends TimelineOpBase {
+    readonly kind: "ReactionAdded";
+    readonly deviceId: string;
+    readonly appId: string;
+    readonly conversationId: string;
+    readonly messageId: string;
+    readonly reaction: {
+        readonly emoji: string;
+        readonly count: number;
+        readonly fromMe?: boolean;
+    };
+}
+
+/**
+ * Camera zoom effect (Resolved).
+ */
+export interface TimelineCameraZoomOp extends TimelineOpBase {
+    readonly kind: "CameraZoom";
+    readonly scale: number;
+    readonly duration: number; // Resolved frames
+    readonly originX?: number;
+    readonly originY?: number;
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Camera shake effect (Resolved).
+ */
+export interface TimelineCameraShakeOp extends TimelineOpBase {
+    readonly kind: "CameraShake";
+    readonly deviceId: string;
+    readonly intensity?: number;
+    readonly frequency?: number;
+    readonly decay?: number;
+    readonly duration: number; // Resolved frames
+}
+
+/**
+ * POV switch (Resolved).
+ */
+export interface TimelinePOVSwitchOp extends TimelineOpBase {
+    readonly kind: "POVSwitch";
+    readonly deviceId: string;
+    readonly transition?: "cut" | "crossfade" | "wipe";
+}
+
+/**
+ * Split POV (Resolved).
+ */
+export interface TimelineSplitPOVOp extends TimelineOpBase {
+    readonly kind: "SplitPOV";
+    readonly devices: string[];
+    readonly layout: "horizontal" | "vertical" | "pip" | "split-diagonal";
+}
+
+/**
+ * Anchor focus effect (Resolved).
+ */
+export interface TimelineAnchorFocusOp extends TimelineOpBase {
+    readonly kind: "AnchorFocus";
+    readonly anchor: string;
+    readonly preset?: string;
+    readonly shake?: number;
+    readonly align?: { x: number; y: number };
+    readonly duration: number; // Resolved frames
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * Anchor track effect (Resolved).
+ */
+export interface TimelineAnchorTrackOp extends TimelineOpBase {
+    readonly kind: "AnchorTrack";
+    readonly anchor: string;
+    readonly duration: number; // Resolved frames
+    readonly smoothing?: number;
+    readonly preset?: string;
+    readonly align?: { x: number; y: number };
+    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
+}
+
+/**
+ * High-level intention to type text.
+ */
+export interface KeyboardTypeOp extends TimelineOpBase {
+    readonly kind: "KeyboardType";
+    readonly text: string;
+}
+
+/**
+ * Low-level key interaction.
+ */
+export interface KeyboardInputOp extends TimelineOpBase {
+    readonly kind: "KeyboardInput";
+    readonly type: "keyDown" | "keyUp";
+    readonly key: string;
+}
+
+/**
+ * Union of all timeline operations.
+ */
+export type TimelineOp =
+    | DeviceUnlockedOp
+    | AppOpenedOp
+    | ConversationOpenedOp
+    | TypingStartedOp
+    | TypingEndedOp
+    | MessageReceivedOp
+    | MessageSentOp
+    | MessageReadOp
+    | MessageDeletedOp
+    | ReactionAddedOp
+    | ScreenNavigatedOp
+    | TimelineCameraZoomOp
+    | TimelineCameraShakeOp
+    | TimelinePOVSwitchOp
+    | TimelineSplitPOVOp
+    | TimelineAnchorFocusOp
+    | TimelineAnchorTrackOp
+    | KeyboardTypeOp
+    | KeyboardInputOp
+    | CustomOp;
+
+/**
+ * Custom Operation - Escape hatch for plugin-specific events.
+ * Allows plugins to define new event types without forking the IR.
+ */
+export interface CustomOp extends TimelineOpBase {
+    readonly kind: "Custom";
+    readonly deviceId?: string;
+    readonly appId?: string;
+    readonly eventType: string;
+    readonly payload?: Record<string, any>;
+}
+
+// =============================================================================
+// TIMELINE IR (COMPLETE)
+// =============================================================================
+
+/**
+ * Complete Timeline IR for an episode.
+ */
+export interface TimelineIR {
+    readonly episodeId: string;
+    readonly fps: number;
+    readonly durationInFrames: number;
+    readonly ops: TimelineOp[];
+}
 ````
 
 ## File: packages/ir/src/scene.ts
@@ -46605,6 +43450,11 @@ export interface ConversationDef {
     readonly name?: string;
     readonly avatar?: string;
     readonly type?: "dm" | "group";
+    readonly initialMessages?: Array<{
+        text: string;
+        from: string; // "me" or other
+        at?: string; // "5m ago", "12:30", etc.
+    }>;
 }
 
 /**
@@ -46646,338 +43496,6 @@ export interface EpisodeMeta extends EpisodeConfig {
 
     /** Duration hint (calculated if not specified) */
     readonly durationInFrames?: number;
-}
-````
-
-## File: packages/ir/src/timeline.ts
-````typescript
-/**
- * Timeline IR - Execution Contract
- * 
- * Timeline IR is PLATFORM-AGNOSTIC but TIME-SPECIFIC.
- * 
- * RULES:
- * - All waits resolved to frames
- * - Fully deterministic
- * - No adapter-specific fields
- * - Sorted by canonical ordering
- * - Every op carries Trace
- */
-
-import { Trace } from "./trace";
-
-// =============================================================================
-// TIMELINE OPERATIONS
-// =============================================================================
-
-/**
- * Base interface for all timeline operations.
- */
-interface TimelineOpBase {
-    /** Frame number when this operation occurs */
-    readonly at: number;
-
-    /** Operation kind (discriminator) */
-    readonly kind: string;
-
-    /** Debug trace */
-    readonly trace: Trace;
-}
-
-/**
- * Device unlocked.
- */
-export interface DeviceUnlockedOp extends TimelineOpBase {
-    readonly kind: "DeviceUnlocked";
-    readonly deviceId: string;
-}
-
-/**
- * App opened.
- */
-export interface AppOpenedOp extends TimelineOpBase {
-    readonly kind: "AppOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-}
-
-/**
- * Conversation navigated to.
- */
-export interface ConversationOpenedOp extends TimelineOpBase {
-    readonly kind: "ConversationOpened";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-}
-
-/**
- * Typing indicator started.
- */
-export interface TypingStartedOp extends TimelineOpBase {
-    readonly kind: "TypingStarted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Typing indicator ended.
- */
-export interface TypingEndedOp extends TimelineOpBase {
-    readonly kind: "TypingEnded";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly actor: string;
-}
-
-/**
- * Message received.
- */
-export interface MessageReceivedOp extends TimelineOpBase {
-    readonly kind: "MessageReceived";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text?: string;
-        readonly from: string;
-        readonly type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted" | "screenshot_alert" | "call_missed";
-        readonly timestamp?: string;
-        // Media fields
-        readonly imageUrl?: string;
-        readonly videoUrl?: string;
-        readonly thumbnailUrl?: string;
-        readonly gifUrl?: string;
-        readonly caption?: string;
-        readonly duration?: number;
-        readonly height?: number;
-        // Interactions
-        readonly reactions?: Array<{ emoji: string; count: number; fromMe?: boolean }>;
-        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
-        readonly edited?: boolean;
-    };
-}
-
-/**
- * Message sent (by device owner).
- */
-export interface MessageSentOp extends TimelineOpBase {
-    readonly kind: "MessageSent";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly message: {
-        readonly id: string;
-        readonly text?: string;
-        readonly type?: "text" | "image" | "video" | "gif" | "voice";
-        readonly timestamp?: string;
-        // Media fields
-        readonly imageUrl?: string;
-        readonly videoUrl?: string;
-        readonly thumbnailUrl?: string;
-        readonly gifUrl?: string;
-        readonly caption?: string;
-        readonly duration?: number;
-        readonly height?: number;
-        // Interactions
-        readonly replyTo?: { messageId: string; text: string; from: string; type?: string };
-        readonly edited?: boolean;
-    };
-}
-
-/**
- * Message marked as read.
- */
-export interface MessageReadOp extends TimelineOpBase {
-    readonly kind: "MessageRead";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Message deleted.
- */
-export interface MessageDeletedOp extends TimelineOpBase {
-    readonly kind: "MessageDeleted";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-}
-
-/**
- * Screen navigated within app.
- */
-export interface ScreenNavigatedOp extends TimelineOpBase {
-    readonly kind: "ScreenNavigated";
-    readonly deviceId: string;
-    readonly appId: string;
-    /** 
-     * Screen identifier. 
-     * Standard: "chats-list" | "chat" | "settings" | "status" | "calls"
-     * Open for extension: "feed" | "reels" | "profile" | etc.
-     */
-    readonly screen: "chats-list" | "chat" | "settings" | "status" | "calls" | (string & {});
-    readonly conversationId?: string;  // For "chat" screen
-    readonly transition?: "push" | "pop" | "present" | "dismiss";
-}
-
-/**
- * Reaction added to a message.
- */
-export interface ReactionAddedOp extends TimelineOpBase {
-    readonly kind: "ReactionAdded";
-    readonly deviceId: string;
-    readonly appId: string;
-    readonly conversationId: string;
-    readonly messageId: string;
-    readonly reaction: {
-        readonly emoji: string;
-        readonly count: number;
-        readonly fromMe?: boolean;
-    };
-}
-
-/**
- * Camera zoom effect (Resolved).
- */
-export interface TimelineCameraZoomOp extends TimelineOpBase {
-    readonly kind: "CameraZoom";
-    readonly scale: number;
-    readonly duration: number; // Resolved frames
-    readonly originX?: number;
-    readonly originY?: number;
-    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
-}
-
-/**
- * Camera shake effect (Resolved).
- */
-export interface TimelineCameraShakeOp extends TimelineOpBase {
-    readonly kind: "CameraShake";
-    readonly deviceId: string;
-    readonly intensity?: number;
-    readonly frequency?: number;
-    readonly decay?: number;
-    readonly duration: number; // Resolved frames
-}
-
-/**
- * POV switch (Resolved).
- */
-export interface TimelinePOVSwitchOp extends TimelineOpBase {
-    readonly kind: "POVSwitch";
-    readonly deviceId: string;
-    readonly transition?: "cut" | "crossfade" | "wipe";
-}
-
-/**
- * Split POV (Resolved).
- */
-export interface TimelineSplitPOVOp extends TimelineOpBase {
-    readonly kind: "SplitPOV";
-    readonly devices: string[];
-    readonly layout: "horizontal" | "vertical" | "pip" | "split-diagonal";
-}
-
-/**
- * Anchor focus effect (Resolved).
- */
-export interface TimelineAnchorFocusOp extends TimelineOpBase {
-    readonly kind: "AnchorFocus";
-    readonly anchor: string;
-    readonly preset?: string;
-    readonly shake?: number;
-    readonly align?: { x: number; y: number };
-    readonly duration: number; // Resolved frames
-    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
-}
-
-/**
- * Anchor track effect (Resolved).
- */
-export interface TimelineAnchorTrackOp extends TimelineOpBase {
-    readonly kind: "AnchorTrack";
-    readonly anchor: string;
-    readonly duration: number; // Resolved frames
-    readonly smoothing?: number;
-    readonly preset?: string;
-    readonly align?: { x: number; y: number };
-    readonly easing?: "linear" | "ease-in" | "ease-out" | "ease-in-out" | "cinematic";
-}
-
-/**
- * High-level intention to type text.
- */
-export interface KeyboardTypeOp extends TimelineOpBase {
-    readonly kind: "KeyboardType";
-    readonly text: string;
-}
-
-/**
- * Low-level key interaction.
- */
-export interface KeyboardInputOp extends TimelineOpBase {
-    readonly kind: "KeyboardInput";
-    readonly type: "keyDown" | "keyUp";
-    readonly key: string;
-}
-
-/**
- * Union of all timeline operations.
- */
-export type TimelineOp =
-    | DeviceUnlockedOp
-    | AppOpenedOp
-    | ConversationOpenedOp
-    | TypingStartedOp
-    | TypingEndedOp
-    | MessageReceivedOp
-    | MessageSentOp
-    | MessageReadOp
-    | MessageDeletedOp
-    | ReactionAddedOp
-    | ScreenNavigatedOp
-    | TimelineCameraZoomOp
-    | TimelineCameraShakeOp
-    | TimelinePOVSwitchOp
-    | TimelineSplitPOVOp
-    | TimelineAnchorFocusOp
-    | TimelineAnchorTrackOp
-    | KeyboardTypeOp
-    | KeyboardInputOp
-    | CustomOp;
-
-/**
- * Custom Operation - Escape hatch for plugin-specific events.
- * Allows plugins to define new event types without forking the IR.
- */
-export interface CustomOp extends TimelineOpBase {
-    readonly kind: "Custom";
-    readonly deviceId?: string;
-    readonly appId?: string;
-    readonly eventType: string;
-    readonly payload?: Record<string, any>;
-}
-
-// =============================================================================
-// TIMELINE IR (COMPLETE)
-// =============================================================================
-
-/**
- * Complete Timeline IR for an episode.
- */
-export interface TimelineIR {
-    readonly episodeId: string;
-    readonly fps: number;
-    readonly durationInFrames: number;
-    readonly ops: TimelineOp[];
 }
 ````
 
@@ -47212,204 +43730,6 @@ export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEn
 
 // Anchor system exports
 export * from "./anchor-providers";
-````
-
-## File: packages/episodes/src/episodes/bakchodi-gang.ts
-````typescript
-import { episode, EpisodeDefinition } from "@tokovo/dsl";
-
-
-export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", ep => {
-    ep.config({
-        title: "Berozgaar Engineers 🛠️",
-        fps: 30,
-    });
-
-    ep.device("RahulPhone", "iphone16", d => {
-        d.app("app_whatsapp");
-        d.conversation("group_engineers", {
-            name: "Berozgaar Engineers 🛠️",
-            type: "group",
-            avatar: "/avatars/group_be.png" // We assume this exists or fallback
-        });
-
-        // ACT 1: The Scheme
-        d.beat("the_scheme", b => {
-            b.wait("1s");
-            b.camera(c => c.focus("profile", { duration: "10s", preset: "dramatic" }));
-
-            // Vicky enters with a bang
-            b.receive("Vicky", "Oye BC log! Utho bhenchod! Ek faadu scheme haath lagi hai! 💰💰");
-            b.wait("0.5s");
-            b.receive("Vicky", "21 din mein paisa double BC. Trust me bro. Is baar pakka! 🤑");
-
-            // READING SCAN EFFECT (Cinematic Left-to-Right)
-            // 1. Cut to start of message (Left) - Zoomed in ("dramatic")
-            // b.camera(c => c.focus("lastMessage", { align: { x: 0.15, y: 0.5 }, preset: "dramatic", duration: "5s" }));
-            // // 2. Smoothly scan to end (Right)
-            // b.camera(c => c.focus("lastMessage", { align: { x: 0.85, y: 0.5 }, preset: "dramatic", duration: "2.5s", easing: "linear" }));
-
-            // Start with a dramatic profile focus to establish the "character"
-            b.wait("2s");
-
-            // Then cut to standard view
-            // b.camera(c => c.reset({ duration: "0.5s" }));
-
-            // Rahul (Me) is skeptical
-            b.typing("me").for("1.5s");
-            b.send("Fir shuru ho gaya tu MC? 😂");
-            b.send("Pichli baar Laxmi Chit Fund mein mera 500 duba tha bhadwe.");
-            b.send("Tu sudhrega nahi na bsdike?");
-
-            // Sameer the innocent
-            b.wait("1s");
-            b.typing("Sameer").for("2s");
-            b.receive("Sameer", "Vicky bhai, is this legit? 🤔");
-            b.wait("0.5s");
-            b.receive("Sameer", "Priya bhi invest karegi kya? I need to know...");
-
-            // Camera focus on Sameer's dumb message - SEMANTIC FOCUS
-            b.camera(c => {
-                c.punchGlide("lastMessage", { intensity: 1.5 });
-            });
-
-            // Rahul roasts Sameer
-            b.wait("0.5s");
-            b.send("Abey Saale Simp ke chode! 🤬");
-            b.send("Priya ke chakkar mein tu apni kidney bech dega BC.");
-            b.send("Gandu aadmi.");
-        });
-
-        // ACT 2: The Pitch
-        d.beat("the_pitch", b => {
-            b.wait("1s");
-            b.receive("Vicky", "Arre suno toh gandu log! Crypto hai bhai. Future hai ye!");
-            b.typing("Vicky").for("1s");
-            b.receive("Vicky", "'DogeElonMars' coin. 🚀 To the moon BC!");
-            b.receive("Vicky", "Elon Musk ne tweet kiya hai (shayad).");
-
-            // Semantic Track - Follow the flow
-            b.camera(c => {
-                c.track("lastMessage", { duration: "5s", smoothing: 0.1 });
-            });
-            b.react(b.send("Elon Musk ne tweet kiya hai (shayad)."), "me", "🤣");
-
-            b.wait("0.5s");
-            b.send("Elon Musk teri gaand maarega kisi din BC.");
-            b.send("Chup chap naukri dhund le bsdike.");
-        });
-
-        // ACT 3: The Entry
-        d.beat("priya_entry", b => {
-            b.wait("2s");
-
-            // Reset camera before entry
-            b.camera(c => {
-                c.reset({ duration: "0.5s" });
-            });
-
-            // Priya enters
-            b.receive("Priya", "Hey guys! What's going on? 😊");
-
-            // Everyone stops - Focus on her message
-            b.camera(c => {
-                c.focus("lastMessage", { duration: "0.4s" });
-            });
-
-            // Sameer instantly replies
-            b.typing("Sameer").for("0.1s"); // Fast typing
-            b.receive("Sameer", "Hey Priya! 😍 Vicky was just telling us how he's going to become a billionaire.");
-
-            b.wait("1s");
-            b.send("Lol. Vicky billionaire nahi, bhikari banega BC.");
-            b.send("Aur hum sabko Panvel le jayega ye chutiya.");
-        });
-
-        // ACT 4: The Roast
-        d.beat("the_roast", b => {
-            b.receive("Vicky", "Abey saalon, mazak uda lo. Randi rona band karo.");
-            b.receive("Vicky", "Jab main Lambo mein aunga na...");
-
-            b.wait("1s");
-            b.send("Toh main Uber samajh ke baith jaunga. 🚗");
-
-            // Group laugh
-            b.typing("Priya").for("1s");
-            b.receive("Priya", "Haha guys chill! 😂");
-            b.receive("Priya", "Btw, anyone up for coffee? ☕");
-        });
-
-        // ACT 5: The Conclusion
-        d.beat("conclusion", b => {
-            // Sameer jumps in
-            b.receive("Sameer", "Meeee! 🙋‍♂️ I'm free!");
-            b.receive("Sameer", "(Currently unemployed anyway loool)");
-
-            b.wait("1s");
-            b.receive("Vicky", "Coffee ka paisa nahi hai BC. कंगाल hu main.");
-            b.receive("Vicky", "Scheme mein laga diya sab. 🥲 Lag gaye lode.");
-
-            // Final camera pull out
-            b.camera(c => {
-                c.reset({ duration: "1s" });
-            });
-        });
-
-        // ACT 6: Navigation Test
-        d.beat("navigation_test", b => {
-            // Navigate to Chat List
-            b.goBack({ duration: "0.5s" });
-            b.wait("1s");
-
-            // Navigate back to this chat
-            b.openChat("group_engineers", { duration: "0.5s" });
-            b.wait("1s");
-
-            // Navigate to Chat List again
-            b.showScreen("chats-list", { duration: "0.5s" });
-            b.wait("1s");
-        });
-
-        // ACT 7: ARCHITECTURE VERIFICATION
-        d.beat("camera_test", b => {
-            // Return to chat
-            b.openChat("group_engineers");
-            b.wait("1s");
-
-            b.send("--- ARCHITECTURE CHECK ---");
-            b.wait("0.5s");
-
-            // 1. INPUT AREA (Sticky Anchor)
-            // Should frame the bottom bar perfectly without scrolling
-            b.send("Testing Input Area (Sticky)...");
-            b.camera(c => c.focus("inputArea", { duration: "1s", preset: "subtle" }));
-            b.wait("1.5s");
-            // Simulate typing to ensure anchor is stable
-            b.typing("me").for("2s");
-            b.wait("1s");
-
-            // 2. LAST MESSAGE (Scrolled Anchor)
-            // Should jump to the latest message, compensating for scroll
-            b.send("Testing Last Message (Scrolled)...");
-            b.camera(c => c.focus("lastMessage", { duration: "1s", preset: "dramatic" }));
-            b.wait("2s");
-
-            // 3. TRACKING TEST
-            b.send("Testing Tracking (New Message)...");
-            // Setup tracking BEFORE message arrives
-            b.camera(c => c.track("lastMessage", { duration: "4s", preset: "operatorFollow" }));
-            b.wait("0.5s");
-            b.receive("Vicky", "Tracking kaam kar raha hai kya? 🎥");
-            b.wait("1s");
-            b.receive("Sameer", "Woh camera mere peeche aa raha hai! 🏃‍♂️");
-
-            // 4. RESET
-            b.camera(c => c.reset({ duration: "1s" }));
-            b.wait("1s");
-            b.send("VERIFICATION COMPLETE. ✅");
-        });
-    });
-});
 ````
 
 ## File: packages/core/src/plugin.ts
@@ -47832,6 +44152,244 @@ export function definePlugin(config: Partial<TokovoPlugin> & { id: string; name:
 export function registerPlugins(plugins: TokovoPlugin[]): void {
     plugins.forEach(plugin => PluginManager.register(plugin));
 }
+````
+
+## File: packages/episodes/src/episodes/bakchodi-gang.ts
+````typescript
+import { episode, EpisodeDefinition } from "@tokovo/dsl";
+
+
+export const bakchodiGangEpisode = episode("bakchodi-gang", ep => {
+    ep.config({
+        title: "Berozgaar Engineers 🛠️",
+        fps: 30,
+    });
+
+    ep.device("RahulPhone", "iphone16", d => {
+        d.app("app_whatsapp");
+        // Primary Group Chat
+        d.conversation("group_engineers", {
+            name: "Berozgaar Engineers 🛠️",
+            type: "group",
+            avatar: "/avatars/group_be.png"
+        });
+
+        // Filler Conversations for Chat List
+        d.conversation("mom", {
+            name: "Mom ❤️",
+            avatar: "/avatars/mom.png",
+            initialMessages: [{ text: "Beta khana khaya?", from: "mom", at: "5m ago" }]
+        });
+
+        d.conversation("landlord", {
+            name: "Landlord (Khadus)",
+            avatar: "/avatars/landlord.png",
+            initialMessages: [{ text: "Rent due tomorrow. No excuses.", from: "landlord", at: " yesterday" }]
+        });
+
+        d.conversation("ex_gf", {
+            name: "Neha (Do Not Text)",
+            avatar: "/avatars/neha.png",
+            initialMessages: [{ text: "I want my hoodie back.", from: "ex_gf", at: "2d ago" }]
+        });
+
+        d.conversation("work_group", {
+            name: "Office Official 🏢",
+            type: "group",
+            avatar: "/avatars/office.png",
+            initialMessages: [{ text: "HR: Please fill the survey by EOD.", from: "hr", at: "3d ago" }]
+        });
+
+        d.conversation("pizza_hut", {
+            name: "Pizza Hut Offer",
+            avatar: "/avatars/pizza.png",
+            initialMessages: [{ text: "Buy 1 Get 1 Free! Order Now 🍕", from: "pizza_hut", at: "1w ago" }]
+        });
+
+        // ACT 1: The Scheme
+        d.beat("the_scheme", b => {
+            // Start at Chat List
+            b.showScreen("chats-list");
+            b.wait("2s");
+
+            // Open the Group Chat
+            b.openChat("group_engineers");
+            b.wait("1s");
+
+            b.camera(c => c.focus("profile", { duration: "10s", preset: "dramatic" }));
+
+            // Vicky enters with a bang
+            b.receive("Vicky", "Oye BC log! Utho bhenchod! Ek faadu scheme haath lagi hai! 💰💰");
+            b.wait("0.5s");
+            b.receive("Vicky", "21 din mein paisa double BC. Trust me bro. Is baar pakka! 🤑");
+
+            // READING SCAN EFFECT (Cinematic Left-to-Right)
+            // 1. Cut to start of message (Left) - Zoomed in ("dramatic")
+            // b.camera(c => c.focus("lastMessage", { align: { x: 0.15, y: 0.5 }, preset: "dramatic", duration: "5s" }));
+            // // 2. Smoothly scan to end (Right)
+            // b.camera(c => c.focus("lastMessage", { align: { x: 0.85, y: 0.5 }, preset: "dramatic", duration: "2.5s", easing: "linear" }));
+
+            // Start with a dramatic profile focus to establish the "character"
+            b.wait("2s");
+
+            // Then cut to standard view
+            // b.camera(c => c.reset({ duration: "0.5s" }));
+
+            // Rahul (Me) is skeptical
+            b.typing("me").for("1.5s");
+            b.send("Fir shuru ho gaya tu MC? 😂");
+            b.send("Pichli baar Laxmi Chit Fund mein mera 500 duba tha bhadwe.");
+            b.send("Tu sudhrega nahi na bsdike?");
+
+            // Sameer the innocent
+            b.wait("1s");
+            b.typing("Sameer").for("2s");
+            b.receive("Sameer", "Vicky bhai, is this legit? 🤔");
+            b.wait("0.5s");
+            b.receive("Sameer", "Priya bhi invest karegi kya? I need to know...");
+
+            // Camera focus on Sameer's dumb message - SEMANTIC FOCUS
+            b.camera(c => {
+                c.punchGlide("lastMessage", { intensity: 1.5 });
+            });
+
+            // Rahul roasts Sameer
+            b.wait("0.5s");
+            b.send("Abey Saale Simp ke chode! 🤬");
+            b.send("Priya ke chakkar mein tu apni kidney bech dega BC.");
+            b.send("Gandu aadmi.");
+        });
+
+        // ACT 2: The Pitch
+        d.beat("the_pitch", b => {
+            b.wait("1s");
+            b.receive("Vicky", "Arre suno toh gandu log! Crypto hai bhai. Future hai ye!");
+            b.typing("Vicky").for("1s");
+            b.receive("Vicky", "'DogeElonMars' coin. 🚀 To the moon BC!");
+            b.receive("Vicky", "Elon Musk ne tweet kiya hai (shayad).");
+
+            // Semantic Track - Follow the flow
+            b.camera(c => {
+                c.track("lastMessage", { duration: "5s", smoothing: 0.1 });
+            });
+            b.react(b.send("Elon Musk ne tweet kiya hai (shayad)."), "me", "🤣");
+
+            b.wait("0.5s");
+            b.send("Elon Musk teri gaand maarega kisi din BC.");
+            b.send("Chup chap naukri dhund le bsdike.");
+        });
+
+        // ACT 3: The Entry
+        d.beat("priya_entry", b => {
+            b.wait("2s");
+
+            // Reset camera before entry
+            b.camera(c => {
+                c.reset({ duration: "0.5s" });
+            });
+
+            // Priya enters
+            b.receive("Priya", "Hey guys! What's going on? 😊");
+
+            // Everyone stops - Focus on her message
+            b.camera(c => {
+                c.focus("lastMessage", { duration: "0.4s" });
+            });
+
+            // Sameer instantly replies
+            b.typing("Sameer").for("0.1s"); // Fast typing
+            b.receive("Sameer", "Hey Priya! 😍 Vicky was just telling us how he's going to become a billionaire.");
+
+            b.wait("1s");
+            b.send("Lol. Vicky billionaire nahi, bhikari banega BC.");
+            b.send("Aur hum sabko Panvel le jayega ye chutiya.");
+        });
+
+        // ACT 4: The Roast
+        d.beat("the_roast", b => {
+            b.receive("Vicky", "Abey saalon, mazak uda lo. Randi rona band karo.");
+            b.receive("Vicky", "Jab main Lambo mein aunga na...");
+
+            b.wait("1s");
+            b.send("Toh main Uber samajh ke baith jaunga. 🚗");
+
+            // Group laugh
+            b.typing("Priya").for("1s");
+            b.receive("Priya", "Haha guys chill! 😂");
+            b.receive("Priya", "Btw, anyone up for coffee? ☕");
+        });
+
+        // ACT 5: The Conclusion
+        d.beat("conclusion", b => {
+            // Sameer jumps in
+            b.receive("Sameer", "Meeee! 🙋‍♂️ I'm free!");
+            b.receive("Sameer", "(Currently unemployed anyway loool)");
+
+            b.wait("1s");
+            b.receive("Vicky", "Coffee ka paisa nahi hai BC. कंगाल hu main.");
+            b.receive("Vicky", "Scheme mein laga diya sab. 🥲 Lag gaye lode.");
+
+            // Final camera pull out
+            b.camera(c => {
+                c.reset({ duration: "1s" });
+            });
+        });
+
+        // ACT 6: Navigation Test
+        d.beat("navigation_test", b => {
+            // Navigate to Chat List
+            b.goBack({ duration: "0.5s" });
+            b.wait("1s");
+
+            // Navigate back to this chat
+            b.openChat("group_engineers", { duration: "0.5s" });
+            b.wait("1s");
+
+            // Navigate to Chat List again
+            b.showScreen("chats-list", { duration: "0.5s" });
+            b.wait("1s");
+        });
+
+        // ACT 7: ARCHITECTURE VERIFICATION
+        d.beat("camera_test", b => {
+            // Return to chat
+            b.openChat("group_engineers");
+            b.wait("1s");
+
+            b.send("--- ARCHITECTURE CHECK ---");
+            b.wait("0.5s");
+
+            // 1. INPUT AREA (Sticky Anchor)
+            // Should frame the bottom bar perfectly without scrolling
+            b.send("Testing Input Area (Sticky)...");
+            b.camera(c => c.focus("inputArea", { duration: "1s", preset: "subtle" }));
+            b.wait("1.5s");
+            // Simulate typing to ensure anchor is stable
+            b.typing("me").for("2s");
+            b.wait("1s");
+
+            // 2. LAST MESSAGE (Scrolled Anchor)
+            // Should jump to the latest message, compensating for scroll
+            b.send("Testing Last Message (Scrolled)...");
+            b.camera(c => c.focus("lastMessage", { duration: "1s", preset: "dramatic" }));
+            b.wait("2s");
+
+            // 3. TRACKING TEST
+            b.send("Testing Tracking (New Message)...");
+            // Setup tracking BEFORE message arrives
+            b.camera(c => c.track("lastMessage", { duration: "4s", preset: "operatorFollow" }));
+            b.wait("0.5s");
+            b.receive("Vicky", "Tracking kaam kar raha hai kya? 🎥");
+            b.wait("1s");
+            b.receive("Sameer", "Woh camera mere peeche aa raha hai! 🏃‍♂️");
+
+            // 4. RESET
+            b.camera(c => c.reset({ duration: "1s" }));
+            b.wait("1s");
+            b.send("VERIFICATION COMPLETE. ✅");
+        });
+    });
+});
 ````
 
 ## File: packages/renderer/src/engines/useCameraEngine.ts
@@ -48526,601 +45084,43 @@ function lerp(a: number, b: number, t: number): number {
 }
 ````
 
-## File: packages/apps-whatsapp/src/config/layout-config.ts
+## File: packages/core/src/index.ts
 ````typescript
-/**
- * WhatsApp Layout Configuration
- * 
- * Production-grade configurable message heights, spacing, and animations.
- * All values are in device pixels (3x scale for retina).
- * 
- * DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No heuristics.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-// =============================================================================
-// MESSAGE TYPE ENUMERATION
-// =============================================================================
-
-export type MessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "typing"
-    | "screenshot_alert"
-    | "call_missed";
-
-export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
-
-// =============================================================================
-// SPACING CONFIGURATION (SOURCE OF TRUTH)
-// =============================================================================
-
-/**
- * Authoritative Layout Constants.
- * These are the Source of Truth for both Calculation and Rendering.
- * All units in device pixels (3x retina).
- */
-export const LAYOUT_CONSTANTS = {
-    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
-    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
-    LINE_HEIGHT: 66,          // Text line height (22px visual)
-    FONT_SIZE: 51,            // Text font size
-    TIMESTAMP_HEIGHT: 36,     // Footer area height
-    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
-
-    // Spacing Tiers (The 3-Tier Model)
-    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
-    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
-    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
-
-    // System Spacing
-    GAP_SYSTEM: 24,           // 9px visual
-
-    // Typography / Metrics
-    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
-
-    // Typing Indicator
-    TYPING_BUBBLE_HEIGHT: 72, // Inner height
-    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
-};
-
-/**
- * UI Constants (Header, Input, etc.)
- * Source of Truth for both React Components and Layout Engine.
- */
-export const UI_CONSTANTS = {
-    // Header
-    HEADER_CONTENT_HEIGHT: 60,
-    HEADER_AVATAR_SIZE: 37,
-    HEADER_AVATAR_MARGIN_RIGHT: 10,
-    HEADER_PADDING_X: 10,
-    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
-
-    // Input Area
-    INPUT_MIN_HEIGHT: 60, // Standard single line
-};
-
-/**
- * Simplified Per-Message-Type Configuration
- */
-export interface MessageTypeConfig {
-    category: MessageCategory;
-    gapBefore?: number; // Force specific gap (used for System messages)
-    gapAfter?: number;  // Force specific gap
-}
-
-export interface SpacingConfig {
-    typeOverrides: Record<MessageType, MessageTypeConfig>;
-    global: GlobalSpacing;
-}
-
-// =============================================================================
-// HEIGHT & WIDTH CONFIGURATION
-// =============================================================================
-
-export interface MessageHeightConfig {
-    /** Base height calculation */
-    base: number;
-    /** For text: Line height */
-    lineHeight?: number;
-    /** For text: Characters per line for wrapping */
-    charsPerLine?: number;
-    /** For media: Height with caption */
-    withCaption?: number;
-}
-
-export interface MessageWidthConfig {
-    /** Max width as percentage of viewport (0-1) */
-    maxPercent: number;
-    /** Minimum width in pixels */
-    min: number;
-    /** Fixed width (optional) */
-    fixed?: number;
-}
-
-export interface MessageSchema {
-    height: MessageHeightConfig;
-    width: MessageWidthConfig;
-}
-
-// =============================================================================
-// HEIGHT ADDITIONS (The "Legos")
-// =============================================================================
-
-export interface HeightAdditions {
-    reaction: number;
-    reply: number;
-    linkPreview: number;
-    senderName: number;
-}
-
-// =============================================================================
-// SCROLL & ANIMATION
-// =============================================================================
-
-export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
-
-export interface ScrollConfig {
-    lockToBottom: boolean;
-    smoothScrollDuration: number;
-    easing: EasingFunction;
-    newMessageScrollDelay: number;
-    overscanTop: number;
-    overscanBottom: number;
-    maxScrollSpeed: number;
-}
-
-export interface AnimationConfig {
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    typingPulseDuration: number;
-    voiceWaveformSpeed: number;
-}
-
-export interface GlobalSpacing {
-    topPadding: number;
-    bottomPadding: number;
-    bubbleMargin: number;
-}
-
-// =============================================================================
-// COMPLETE CONFIG STRUCT
-// =============================================================================
-
-export interface MessageLayoutConfig {
-    messageTypes: Record<MessageType, MessageSchema>;
-    additions: HeightAdditions;
-    scroll: ScrollConfig;
-    animation: AnimationConfig;
-    spacing: SpacingConfig;
-}
-
-// =============================================================================
-// DEFAULT CONFIGURATION (The Values)
-// =============================================================================
-
-const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
-    text: { category: "text" },
-    image: { category: "media" },
-    video: { category: "media" },
-    gif: { category: "media" },
-    voice: { category: "audio" },
-    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    deleted: { category: "text" },
-    // Typing behaves like a sender run-break (e.g. interruption)
-    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
-    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-};
-
-export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
-    messageTypes: {
-        text: {
-            height: {
-                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
-                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-                // capacity dynamic via measureTextBlock (unitsPerLine)
-            },
-            width: {
-                maxPercent: 0.78,
-                min: 150,
-            },
-        },
-        image: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        video: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        gif: {
-            height: { base: 500 },
-            width: { maxPercent: 0.78, min: 250 },
-        },
-        voice: {
-            height: { base: 180 },
-            width: { fixed: 450, maxPercent: 0.78, min: 450 },
-        },
-        system: {
-            height: { base: 80 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        deleted: {
-            height: { base: 100 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        typing: {
-            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
-            width: { fixed: 150, maxPercent: 0.3, min: 150 },
-        },
-        screenshot_alert: {
-            height: { base: 80 },
-            width: { maxPercent: 0.7, min: 250 },
-        },
-        call_missed: {
-            height: { base: 120 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-    },
-    additions: {
-        reaction: 36,
-        reply: 90,
-        linkPreview: 180,
-        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
-    },
-    scroll: {
-        lockToBottom: true,
-        smoothScrollDuration: 15,
-        easing: "easeOut",
-        newMessageScrollDelay: 3,
-        overscanTop: 200,
-        overscanBottom: 200,
-        maxScrollSpeed: 60,
-    },
-    animation: {
-        messageAppearDuration: 12,
-        messageAppearOffset: 30,
-        typingPulseDuration: 45,
-        voiceWaveformSpeed: 2,
-    },
-    spacing: {
-        typeOverrides: DEFAULT_TYPE_OVERRIDES,
-        global: {
-            topPadding: 48,
-            bottomPadding: 120,
-            bubbleMargin: 36,
-        },
-    },
-};
-
-// =============================================================================
-// HEIGHT CALCULATION
-// =============================================================================
-
-export interface MessageForHeight {
-    type?: MessageType;
-    text?: string;
-    caption?: string;
-    from?: string;
-    prevFrom?: string;
-    isGroupChat?: boolean;
-    reactions?: unknown[];
-    replyTo?: unknown;
-    linkPreview?: unknown;
-}
-
-export function calculateMessageHeight(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    let height = 0;
-
-    // Base height
-    if (msgType === "text" || msgType === "deleted") {
-        const text = msg.text || "";
-        // Use unified measurement logic
-        const { lines } = measureTextBlock(text, viewportWidth, config);
-        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
-    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
-        // Dynamic Media Height (Option B)
-        // Measure caption to determine how much vertical space to add to base image
-        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
-        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
-        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
-        // Add timestamp footer height + margin (timestamp sits below caption)
-        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
-        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
-    } else {
-        height = typeConfig.height.base;
-    }
-
-    // Additions
-    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
-    if (msg.replyTo) height += config.additions.reply;
-    if (msg.linkPreview) height += config.additions.linkPreview;
-
-    if (shouldShowSenderName({
-        from: msg.from,
-        type: msgType,
-        isGroupChat: msg.isGroupChat,
-        prevFrom: msg.prevFrom
-    })) {
-        height += config.additions.senderName;
-    }
-
-    return height;
-}
-
-// =============================================================================
-// SMART GAP CALCULATION (THE TRUTH TABLE)
-// =============================================================================
-
-export interface MessageForGap {
-    type?: MessageType;
-    from?: string;
-    at?: number;
-    hasReply?: boolean;
-    hasReactions?: boolean;
-    hasLinkPreview?: boolean;
-}
-
-export interface GapContext {
-    prevMessage: MessageForGap;
-    nextMessage: MessageForGap;
-}
-
-export function calculateSmartGap(
-    context: GapContext,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const { prevMessage, nextMessage } = context;
-    const prevType = (prevMessage.type || "text") as MessageType;
-    const nextType = (nextMessage.type || "text") as MessageType;
-
-    // Check type-specific processing (only System messages act as special exceptions now)
-    const prevOverride = config.spacing.typeOverrides[prevType];
-    const nextOverride = config.spacing.typeOverrides[nextType];
-
-    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
-    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
-
-    // Visual Run Logic
-    const sameSender = prevMessage.from === nextMessage.from;
-    const isVisualRun = sameSender &&
-        prevType === "text" &&
-        nextType === "text" &&
-        !prevMessage.hasReply &&
-        !nextMessage.hasReply &&
-        !prevMessage.hasReactions &&
-        !nextMessage.hasReactions &&
-        !prevMessage.hasLinkPreview &&
-        !nextMessage.hasLinkPreview;
-
-    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
-    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
-    return LAYOUT_CONSTANTS.GAP_NORMAL;
-}
-
-// Compatibility Shim
-export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
-    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
-}
-
-// =============================================================================
-// MEASUREMENT HELPERS (Deterministic constants)
-// =============================================================================
-
-export interface TextBlockMetrics {
-    lines: number;
-    bubbleWidth: number;
-    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
-}
-
-/* DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No runtime DOM measurement. Deterministic constants.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-/**
- * Deterministic, no-DOM text measurement.
- * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
- * not the paragraph total weight or always-full-capacity width.
- *
- * Weighted units:
- * - space: 0.6
- * - ascii/basic: 1.0
- * - wide (CJK etc): 1.5
- * - emoji surrogate pair: 1.8
- */
-export function measureTextBlock(
-    text: string,
-    viewportWidth: number = 1170, // Default reference width
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): TextBlockMetrics {
-    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
-
-    // 1) Constraints
-    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
-    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-
-    // Safety clamp so we never divide by 0 / go negative on tiny screens
-    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
-
-    // 2) Capacity (INTEGER, consistent everywhere)
-    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
-
-    // 3) Measure
-    // Split paragraphs by explicit newline. Newline always forces a line break.
-    const paragraphs = text.split("\n");
-
-    let totalLines = 0;
-    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
-
-    for (const paragraph of paragraphs) {
-        // Explicit blank line => counts as 1 line
-        if (paragraph.length === 0) {
-            totalLines += 1;
-            maxLineUnits = Math.max(maxLineUnits, 0);
-            continue;
-        }
-
-        // Wrap simulation in weighted units
-        let lineUnits = 0;
-        let linesInParagraph = 1;
-
-        for (let i = 0; i < paragraph.length; i++) {
-            const code = paragraph.charCodeAt(i);
-
-            // Weight function (deterministic)
-            let w = 1.0;
-
-            // space
-            if (code === 32) {
-                w = 0.6;
-            } else if (code >= 65 && code <= 90) {
-                // Uppercase A-Z
-                w = 1.3;
-            } else {
-                // emoji surrogate pair
-                const isHigh = code >= 0xd800 && code <= 0xdbff;
-                if (isHigh && i + 1 < paragraph.length) {
-                    const next = paragraph.charCodeAt(i + 1);
-                    const isLow = next >= 0xdc00 && next <= 0xdfff;
-                    if (isLow) {
-                        w = 1.8;
-                        i++; // consume low surrogate
-                    } else if (code > 255) {
-                        w = 1.5;
-                    }
-                } else if (code > 255) {
-                    // wide-ish (CJK etc.)
-                    w = 1.5;
-                }
-            }
-
-            // If adding this char overflows the line => wrap
-            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
-            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
-            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
-                maxLineUnits = Math.max(maxLineUnits, lineUnits);
-                linesInParagraph += 1;
-                lineUnits = w;
-            } else {
-                lineUnits += w;
-            }
-
-            // Track widest line as we go
-            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
-            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-        }
-
-        // finalize paragraph
-        totalLines += linesInParagraph;
-        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-    }
-
-    // Ensure at least one line for empty string
-    if (totalLines === 0) totalLines = 1;
-
-    // 4) Convert widest line units -> pixels
-    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
-
-    // Clamp bubble width to: [minWidth, maxBubbleWidth]
-    const bubbleWidth = Math.min(
-        maxBubbleWidth,
-        Math.max(computedWidth, typeConfig.width.min)
-    );
-
-    return { lines: totalLines, bubbleWidth, unitsPerLine };
-}
-
-export function calculateBubbleWidth(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    if (typeConfig.width.fixed) return typeConfig.width.fixed;
-
-    if (msgType === "text" || msgType === "deleted") {
-        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
-        return bubbleWidth;
-    }
-
-    // Media & others: Use standard clamping
-    // Calculates a width based on percentage, but ensures it's at least 'min'
-    // and optionally upper-bounded if we strictly wanted to (not currently in config)
-    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
-    return Math.max(typeConfig.width.min, idealWidth);
-}
-
-// =============================================================================
-// ANIMATION & LAYOUT HELPERS
-// =============================================================================
-
-export function applyEasing(progress: number, easing: EasingFunction): number {
-    switch (easing) {
-        case "linear": return progress;
-        case "easeOut": return 1 - Math.pow(1 - progress, 3);
-        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        case "spring":
-            const c4 = (2 * Math.PI) / 3;
-            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
-        default: return progress;
-    }
-}
-
-export function isMessageCentered(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system";
-}
-
-export function doesMessageBreakGrouping(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system" || category === "ephemeral"; // System & Typing break grouping
-}
-
-export interface SenderNameContext {
-    from?: string;
-    type?: string;
-    isGroupChat?: boolean;
-    prevFrom?: string;
-}
-
-export function shouldShowSenderName(ctx: SenderNameContext): boolean {
-    if (!ctx.isGroupChat) return false;
-    if (!ctx.from) return false;
-    if (ctx.from === "me") return false;
-    if (ctx.from === "system") return false;
-    if (ctx.type === "system") return false;
-
-    // Show if previous sender was different (or no previous sender, or generic BREAK token)
-    return ctx.from !== ctx.prevFrom;
-}
+export * from "./types";
+// Utils
+export { SeededRNG } from "./utils/rng";
+
+// App Metadata Registry
+export * from "./app-metadata";
+
+// Engine
+export * from "./engine";
+export { AppRegistry } from "./app-registry";
+export type { AppViewProps, AppViewComponent } from "./app-registry";
+export * from "./camera";
+export * from "./sounds";
+export * from "./sound-registry";
+export * from "./constants";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./plugin";
+export * from "./validation"; // [NEW] Runtime Validation
+export * from "./widget-registry";
+export * from "./components/AppSurface";
+export * from "./notification-adapter";
+export * from "./notification-dsl";
+export * from "./audio/mixer";
+export * from "./audio/auto-sound";
+export * from "./audio/music-bed";
+export * from "./audio/policies";
+export * from "./transitions";
+export * from "./director-lite";
+export * from "./audio";
+export * from "./anchors";
+export * from "./behavior-registry";
+export * from "./apps-config";
+export * from "./notification-registry";
+export * from "./scheduler/notification-scheduler";
 ````
 
 ## File: packages/apps-whatsapp/src/index.ts
@@ -49130,11 +45130,18 @@ import { whatsappReducer } from "./logic/reducer";
 import { ui } from "./ui";
 import { WhatsAppAnchors } from "./adapters/anchors";
 import { WhatsAppMetadata } from "./assets/metadata";
+import "./assets/sounds"; // Register sounds
 import { WhatsAppNotificationAdapter } from "./adapters/notifications";
 
 // Export Internal Parts (Enterprise Standard)
 export * from "./logic/reducer";
 export * from "./ui";
+import { whatsappAudioRules } from "./assets/audio-rules";
+import { AutoSoundRegistry } from "@tokovo/core";
+
+// Register Audio Rules
+AutoSoundRegistry.register(whatsappAudioRules);
+
 export * from "./types";
 export * from "./adapters/anchors";
 export * from "./adapters/notifications";
@@ -49173,41 +45180,6 @@ export const WhatsAppPlugin = definePlugin({
 export const WhatsApp = WhatsAppPlugin;
 
 export default WhatsAppPlugin;
-````
-
-## File: packages/core/src/index.ts
-````typescript
-export * from "./types";
-// Utils
-export { SeededRNG } from "./utils/rng";
-
-// App Metadata Registry
-export * from "./app-metadata";
-
-// Engine
-export * from "./engine";
-export { AppRegistry } from "./app-registry";
-export type { AppViewProps, AppViewComponent } from "./app-registry";
-export * from "./camera";
-export * from "./sounds";
-export * from "./sound-registry";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./validation"; // [NEW] Runtime Validation
-export * from "./widget-registry";
-export * from "./components/AppSurface";
-export * from "./notification-adapter";
-export * from "./notification-dsl";
-export * from "./transitions";
-export * from "./director-lite";
-export * from "./audio";
-export * from "./anchors";
-export * from "./behavior-registry";
-export * from "./apps-config";
-export * from "./notification-registry";
-export * from "./scheduler/notification-scheduler";
 ````
 
 ## File: packages/core/src/engine.ts
@@ -49334,8 +45306,8 @@ function processCameraEvent(
     switch (event.type) {
         case "SET_VIEW":
             // Legacy support - just update base view
-            draft.camera.baseView = event.view.type;
-            draft.camera.appId = event.view.appId;
+            draft.camera.baseView = (event as any).view.type;
+            draft.camera.appId = (event as any).view.appId;
             break;
 
         case "CUT":
@@ -49344,28 +45316,28 @@ function processCameraEvent(
             draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
 
             // Switch to new device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId;
-                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            if ((event as any).toDeviceId) {
+                draft.camera.activeDeviceId = (event as any).toDeviceId;
+                draft.camera.layout.primaryDeviceId = (event as any).toDeviceId;
             }
 
             // Update base view if specified
-            if (event.toView) {
-                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            if ((event as any).toView) {
+                draft.camera.baseView = (event as any).toView === "app" ? "APP_VIEW" : "TRANSITION";
             }
             break;
 
         case "LAYOUT":
             // Change view layout mode
             draft.camera.layout = {
-                mode: event.mode,
-                primaryDeviceId: event.primaryDeviceId,
-                secondaryDeviceId: event.secondaryDeviceId,
-                pipPosition: event.pipPosition,
-                pipScale: event.pipScale,
+                mode: (event as any).mode,
+                primaryDeviceId: (event as any).primaryDeviceId,
+                secondaryDeviceId: (event as any).secondaryDeviceId,
+                pipPosition: (event as any).pipPosition,
+                pipScale: (event as any).pipScale,
             };
             // Update active device to match primary
-            draft.camera.activeDeviceId = event.primaryDeviceId;
+            draft.camera.activeDeviceId = (event as any).primaryDeviceId;
             break;
 
         case "ZOOM":
@@ -49376,7 +45348,7 @@ function processCameraEvent(
         case "ANCHOR_TRACK":
         case "RESET": {
             // Create active effect and add to list
-            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            const activeEffect = createActiveEffect(event as any, `effect_${eventIndex}_${event.at}`);
             if (activeEffect) {
                 draft.camera.activeEffects.push(activeEffect);
             }
@@ -49409,30 +45381,30 @@ function processAudioEvent(
     switch (event.type) {
         case "PLAY_SOUND": {
             // Generate instance ID if not provided
-            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+            const instanceId = (event as any).instanceId || `sound_${eventIndex}_${event.at}`;
 
             draft.audio.activeSounds[instanceId] = {
-                soundId: event.soundId,
+                soundId: (event as any).soundId,
                 startFrame: event.at,
-                volume: event.volume ?? 1,
-                loop: event.loop ?? false,
-                deviceId: event.deviceId,
-                duration: event.duration,
+                volume: (event as any).volume ?? 1,
+                loop: (event as any).loop ?? false,
+                deviceId: (event as any).deviceId,
+                duration: (event as any).duration,
             };
             break;
         }
 
         case "STOP_SOUND": {
-            delete draft.audio.activeSounds[event.instanceId];
+            delete draft.audio.activeSounds[(event as any).instanceId];
             break;
         }
 
         case "FADE_VOLUME": {
-            const sound = draft.audio.activeSounds[event.instanceId];
+            const sound = draft.audio.activeSounds[(event as any).instanceId];
             if (sound) {
                 // Store target volume - renderer will interpolate
-                (sound as any).fadeTarget = event.toVolume;
-                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeTarget = (event as any).toVolume;
+                (sound as any).fadeDuration = (event as any).duration;
                 (sound as any).fadeStartFrame = event.at;
             }
             break;
@@ -49440,15 +45412,73 @@ function processAudioEvent(
 
         case "BACKGROUND_MUSIC": {
             draft.audio.backgroundMusic = {
-                soundId: event.soundId,
-                volume: event.volume ?? 0.5,
-                loop: event.loop ?? true,
+                soundId: (event as any).soundId,
+                volume: (event as any).volume ?? 0.5,
+                loop: (event as any).loop ?? true,
                 startFrame: event.at,
             };
             break;
         }
     }
 }
+
+// Import AutoSound derivation
+import { deriveAudioInstructions, AutoSoundRegistry } from "./audio/auto-sound";
+
+/**
+ * Handle AutoSound derivation from any event type
+ */
+export function handleAutoSounds(
+    draft: WorldState,
+    event: TimelineEvent,
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.5, maxConcurrent: 1 },
+                ui: { baseGain: 0.7, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 8 },
+                voice: { baseGain: 1, maxConcurrent: 2 },
+            },
+        };
+    }
+
+    // OPTIMIZATION: Only fetch rules relevant to this event kind
+    const rules = AutoSoundRegistry.getRulesForKind(event.kind);
+    // Log periodically to debug
+    if (Math.random() < 0.001) {
+        console.log("[Engine] handleAutoSounds active. Rules count:", rules.length);
+    }
+
+    // We pass the rules explicitly to ensure we are using the latest registry state
+    const instructions = deriveAudioInstructions(event, rules);
+
+    for (const instruction of instructions) {
+        const instanceId = instruction.instanceId || `auto_${eventIndex}_${event.at}`;
+
+        if (instruction.action === "PLAY_ONE_SHOT" || instruction.action === "START_LOOP") {
+            if (instruction.cue && instruction.soundId) {
+                draft.audio.activeSounds[instanceId] = {
+                    soundId: instruction.soundId,
+                    startFrame: event.at,
+                    volume: instruction.cue.volume,
+                    loop: instruction.cue.loop ?? false,
+                    deviceId: instruction.cue.deviceId,
+                    duration: instruction.cue.duration,
+                    bus: instruction.cue.bus as any,
+                } as any;
+            }
+        } else if (instruction.action === "STOP_SOUND") {
+            if (instruction.instanceId) {
+                delete draft.audio.activeSounds[instruction.instanceId];
+            }
+        }
+    }
+}
+
 
 
 /**
@@ -49860,7 +45890,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                     device.os.notifications.push(notification);
                 }
             }
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "MessageSent") {
@@ -49869,7 +45900,7 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             const legacyEvent: any = {
                 at: e.at,
                 kind: "APP",
-                type: "MESSAGE_RECEIVED", // Sent messages are treated as received from 'me' in current engine
+                type: "MESSAGE_SENT", // CORRECTED: Distinguish Sent from Received
                 appId: e.appId,
                 conversationId: e.conversationId,
                 from: "me",
@@ -49877,7 +45908,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 message: { ...e.message, from: "me" }
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "TypingStarted") {
@@ -49892,7 +45924,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 from: e.actor
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "TypingEnded") {
@@ -49907,7 +45940,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 from: e.actor
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         // Handle V2 Camera Ops (e.g., CameraZoom, CameraPan)
@@ -49930,7 +45964,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 translateX: (event as any).translateX || ((event as any).originX ? ((event as any).originX - 0.5) * 1000 : 0)
             };
             processCameraEvent(draft, legacyEvent, index);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         // === V1 LEGACY HANDLERS ===
@@ -49975,6 +46010,10 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 processCallEvent(draft, event as any);
                 break;
         }
+
+        // === AUTO SOUND DERIVATION ===
+        // Process every event for potential audio triggers (Declarative Audio System)
+        handleAutoSounds(draft, event, index);
     };
 
     // Apply events to build state
@@ -50348,13 +46387,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 ````typescript
 import React from "react";
 import { Composition } from "remotion";
-import { AndroidVideo } from "./AndroidVideo";
-import { NotificationCallDemoVideo } from "./NotificationCallDemoVideo";
-import { HomeScreenGroupDemoVideo } from "./HomeScreenGroupDemoVideo";
-import { CameraShowcaseVideo } from "./CameraShowcaseVideo";
-import { CinematicCameraShowcaseVideo } from "./CinematicCameraShowcaseVideo";
 import { FullCinematicShowcaseVideo } from "./FullCinematicShowcaseVideo";
-import { MultiPovDemoVideo } from "./MultiPovDemoVideo";
 import { BreakupDramaDSLVideo } from "./BreakupDramaDSLVideo";
 import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
@@ -50385,8 +46418,8 @@ export const RemotionRoot: React.FC = () => {
                 component={AutoDirectorShowcase}
                 durationInFrames={450}
                 fps={30}
-                width={1920}
-                height={1080}
+                width={1080}
+                height={1920}
             />
             <Composition
                 id="NotificationShowcase2"
@@ -50453,14 +46486,6 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
             <Composition
-                id="CinematicCameraShowcase"
-                component={CinematicCameraShowcaseVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
                 id="MultiAppShowcase"
                 component={MultiAppShowcaseVideo}
                 durationInFrames={900}
@@ -50497,47 +46522,6 @@ export const RemotionRoot: React.FC = () => {
                 id="BreakupDramaDSL"
                 component={BreakupDramaDSLVideo}
                 durationInFrames={420}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="MultiPovDemo"
-                component={MultiPovDemoVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="CameraShowcase"
-                component={CameraShowcaseVideo}
-                durationInFrames={900}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-
-            <Composition
-                id="AndroidNotificationTest"
-                component={AndroidVideo}
-                durationInFrames={150}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="NotificationCallDemo"
-                component={NotificationCallDemoVideo}
-                durationInFrames={720}
-                fps={30}
-                width={1080}
-                height={1920}
-            />
-            <Composition
-                id="HomeScreenGroupDemo"
-                component={HomeScreenGroupDemoVideo}
-                durationInFrames={900}
                 fps={30}
                 width={1080}
                 height={1920}
@@ -51060,8 +47044,10 @@ export interface ConversationState {
     admins?: string[];               // Member IDs who are admins
 
     messages: Message[];
+    unreadCount?: number;
     typing?: Record<string, boolean>;
 }
+
 
 export interface GroupMember {
     id: string;
@@ -51069,6 +47055,9 @@ export interface GroupMember {
     avatar?: string;
     phone?: string;
 }
+
+// (TimelineEvent definition removed - it is defined later)
+
 
 export interface Message {
     id: string;
@@ -51641,7 +47630,7 @@ export interface WorldState {
 }
 
 // Event Union
-export type TimelineEvent =
+export type TimelineEvent = (
     // Device events - core
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
 
@@ -51795,7 +47784,11 @@ export type TimelineEvent =
 
     // NATIVE V2 OPS (from @tokovo/ir)
     // This makes the engine polyglot, supporting both V1 and V2 events natively
-    | TimelineOp;
+    | TimelineOp
+) & {
+    silent?: boolean;
+    trace?: any;
+};
 
 // --- Layout System Types ---
 
