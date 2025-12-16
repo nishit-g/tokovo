@@ -9,6 +9,12 @@ import { WhatsAppNotificationAdapter } from "./adapters/notifications";
 // Export Internal Parts (Enterprise Standard)
 export * from "./logic/reducer";
 export * from "./ui";
+import { whatsappAudioRules } from "./assets/audio-rules";
+import { AutoSoundRegistry } from "@tokovo/core";
+
+// Register Audio Rules
+AutoSoundRegistry.register(whatsappAudioRules);
+
 export * from "./types";
 export * from "./adapters/anchors";
 export * from "./adapters/notifications";

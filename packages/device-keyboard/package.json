@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
         "@tokovo/devices": "workspace:*",
         "react": "18.2.0",
         "lucide-react": "^0.263.1"

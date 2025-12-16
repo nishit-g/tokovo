@@ -120,8 +120,8 @@ function processCameraEvent(
     switch (event.type) {
         case "SET_VIEW":
             // Legacy support - just update base view
-            draft.camera.baseView = event.view.type;
-            draft.camera.appId = event.view.appId;
+            draft.camera.baseView = (event as any).view.type;
+            draft.camera.appId = (event as any).view.appId;
             break;
 
         case "CUT":
@@ -130,28 +130,28 @@ function processCameraEvent(
             draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
 
             // Switch to new device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId;
-                draft.camera.layout.primaryDeviceId = event.toDeviceId;
+            if ((event as any).toDeviceId) {
+                draft.camera.activeDeviceId = (event as any).toDeviceId;
+                draft.camera.layout.primaryDeviceId = (event as any).toDeviceId;
             }
 
             // Update base view if specified
-            if (event.toView) {
-                draft.camera.baseView = event.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            if ((event as any).toView) {
+                draft.camera.baseView = (event as any).toView === "app" ? "APP_VIEW" : "TRANSITION";
             }
             break;
 
         case "LAYOUT":
             // Change view layout mode
             draft.camera.layout = {
-                mode: event.mode,
-                primaryDeviceId: event.primaryDeviceId,
-                secondaryDeviceId: event.secondaryDeviceId,
-                pipPosition: event.pipPosition,
-                pipScale: event.pipScale,
+                mode: (event as any).mode,
+                primaryDeviceId: (event as any).primaryDeviceId,
+                secondaryDeviceId: (event as any).secondaryDeviceId,
+                pipPosition: (event as any).pipPosition,
+                pipScale: (event as any).pipScale,
             };
             // Update active device to match primary
-            draft.camera.activeDeviceId = event.primaryDeviceId;
+            draft.camera.activeDeviceId = (event as any).primaryDeviceId;
             break;
 
         case "ZOOM":
@@ -162,7 +162,7 @@ function processCameraEvent(
         case "ANCHOR_TRACK":
         case "RESET": {
             // Create active effect and add to list
-            const activeEffect = createActiveEffect(event, `effect_${eventIndex}_${event.at}`);
+            const activeEffect = createActiveEffect(event as any, `effect_${eventIndex}_${event.at}`);
             if (activeEffect) {
                 draft.camera.activeEffects.push(activeEffect);
             }
@@ -195,30 +195,30 @@ function processAudioEvent(
     switch (event.type) {
         case "PLAY_SOUND": {
             // Generate instance ID if not provided
-            const instanceId = event.instanceId || `sound_${eventIndex}_${event.at}`;
+            const instanceId = (event as any).instanceId || `sound_${eventIndex}_${event.at}`;
 
             draft.audio.activeSounds[instanceId] = {
-                soundId: event.soundId,
+                soundId: (event as any).soundId,
                 startFrame: event.at,
-                volume: event.volume ?? 1,
-                loop: event.loop ?? false,
-                deviceId: event.deviceId,
-                duration: event.duration,
+                volume: (event as any).volume ?? 1,
+                loop: (event as any).loop ?? false,
+                deviceId: (event as any).deviceId,
+                duration: (event as any).duration,
             };
             break;
         }
 
         case "STOP_SOUND": {
-            delete draft.audio.activeSounds[event.instanceId];
+            delete draft.audio.activeSounds[(event as any).instanceId];
             break;
         }
 
         case "FADE_VOLUME": {
-            const sound = draft.audio.activeSounds[event.instanceId];
+            const sound = draft.audio.activeSounds[(event as any).instanceId];
             if (sound) {
                 // Store target volume - renderer will interpolate
-                (sound as any).fadeTarget = event.toVolume;
-                (sound as any).fadeDuration = event.duration;
+                (sound as any).fadeTarget = (event as any).toVolume;
+                (sound as any).fadeDuration = (event as any).duration;
                 (sound as any).fadeStartFrame = event.at;
             }
             break;
@@ -226,15 +226,73 @@ function processAudioEvent(
 
         case "BACKGROUND_MUSIC": {
             draft.audio.backgroundMusic = {
-                soundId: event.soundId,
-                volume: event.volume ?? 0.5,
-                loop: event.loop ?? true,
+                soundId: (event as any).soundId,
+                volume: (event as any).volume ?? 0.5,
+                loop: (event as any).loop ?? true,
                 startFrame: event.at,
             };
             break;
         }
     }
 }
+
+// Import AutoSound derivation
+import { deriveAudioInstructions, AutoSoundRegistry } from "./audio/auto-sound";
+
+/**
+ * Handle AutoSound derivation from any event type
+ */
+export function handleAutoSounds(
+    draft: WorldState,
+    event: TimelineEvent,
+    eventIndex: number
+): void {
+    // Ensure audio state exists
+    if (!draft.audio) {
+        draft.audio = {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 0.5, maxConcurrent: 1 },
+                ui: { baseGain: 0.7, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 8 },
+                voice: { baseGain: 1, maxConcurrent: 2 },
+            },
+        };
+    }
+
+    // OPTIMIZATION: Only fetch rules relevant to this event kind
+    const rules = AutoSoundRegistry.getRulesForKind(event.kind);
+    // Log periodically to debug
+    if (Math.random() < 0.001) {
+        console.log("[Engine] handleAutoSounds active. Rules count:", rules.length);
+    }
+
+    // We pass the rules explicitly to ensure we are using the latest registry state
+    const instructions = deriveAudioInstructions(event, rules);
+
+    for (const instruction of instructions) {
+        const instanceId = instruction.instanceId || `auto_${eventIndex}_${event.at}`;
+
+        if (instruction.action === "PLAY_ONE_SHOT" || instruction.action === "START_LOOP") {
+            if (instruction.cue && instruction.soundId) {
+                draft.audio.activeSounds[instanceId] = {
+                    soundId: instruction.soundId,
+                    startFrame: event.at,
+                    volume: instruction.cue.volume,
+                    loop: instruction.cue.loop ?? false,
+                    deviceId: instruction.cue.deviceId,
+                    duration: instruction.cue.duration,
+                    bus: instruction.cue.bus as any,
+                } as any;
+            }
+        } else if (instruction.action === "STOP_SOUND") {
+            if (instruction.instanceId) {
+                delete draft.audio.activeSounds[instruction.instanceId];
+            }
+        }
+    }
+}
+
 
 
 /**
@@ -646,7 +704,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                     device.os.notifications.push(notification);
                 }
             }
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "MessageSent") {
@@ -663,7 +722,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 message: { ...e.message, from: "me" }
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "TypingStarted") {
@@ -678,7 +738,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 from: e.actor
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         if (event.kind === "TypingEnded") {
@@ -693,7 +754,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 from: e.actor
             };
             reducer?.(draft, legacyEvent);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         // Handle V2 Camera Ops (e.g., CameraZoom, CameraPan)
@@ -716,7 +778,8 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 translateX: (event as any).translateX || ((event as any).originX ? ((event as any).originX - 0.5) * 1000 : 0)
             };
             processCameraEvent(draft, legacyEvent, index);
-            return;
+            // return; // AutoSound runs after
+
         }
 
         // === V1 LEGACY HANDLERS ===
@@ -761,6 +824,10 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
                 processCallEvent(draft, event as any);
                 break;
         }
+
+        // === AUTO SOUND DERIVATION ===
+        // Process every event for potential audio triggers (Declarative Audio System)
+        handleAutoSounds(draft, event, index);
     };
 
     // Apply events to build state

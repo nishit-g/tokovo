@@ -9,4 +9,5 @@ import { SoundRegistry } from "@tokovo/core";
 // Register Keyboard sounds
 SoundRegistry.registerMany({
     "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+    "keyboard_click": "typing.mp3",
 });

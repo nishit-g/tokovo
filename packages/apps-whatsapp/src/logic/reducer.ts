@@ -213,33 +213,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
             (conversation.messages as any[]).push(newMessage);
 
-            // AUDIO INJECTION: Play sound based on message direction
-            if (!draft.audio) {
-                draft.audio = {
-                    activeSounds: {},
-                    buses: {
-                        music: { baseGain: 0.5, maxConcurrent: 1 },
-                        ui: { baseGain: 1.0, maxConcurrent: 5 },
-                        sfx: { baseGain: 1.0, maxConcurrent: 10 },
-                        voice: { baseGain: 1.0, maxConcurrent: 1 }
-                    }
-                };
-            }
-            if (!draft.audio.activeSounds) draft.audio.activeSounds = {};
 
-            const soundId = eventType === "MESSAGE_SENT" ? "whatsapp_sent" : "whatsapp_received";
-            const soundInstanceId = `snd_${event.at}_${eventType}`;
-
-            // Safe device ID access
-            const targetDeviceId = appEvent.deviceId || (event as any).deviceId;
-
-            draft.audio.activeSounds[soundInstanceId] = {
-                soundId,
-                startFrame: event.at,
-                volume: 1,
-                loop: false,
-                deviceId: targetDeviceId
-            };
             break;
         }
 
@@ -247,32 +221,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             if (!conversation.typing) conversation.typing = {};
             if (appEvent.from) {
                 conversation.typing[appEvent.from] = true;
-
-                // AUDIO INJECTION: Start typing loop
-                if (!draft.audio) {
-                    draft.audio = {
-                        activeSounds: {},
-                        buses: {
-                            music: { baseGain: 0.5, maxConcurrent: 1 },
-                            ui: { baseGain: 1.0, maxConcurrent: 5 },
-                            sfx: { baseGain: 1.0, maxConcurrent: 10 },
-                            voice: { baseGain: 1.0, maxConcurrent: 1 }
-                        }
-                    };
-                }
-                if (!draft.audio.activeSounds) draft.audio.activeSounds = {};
-
-                // Use consistent ID so we can stop it later
-                const typingSoundId = `typing_${conversationId}_${appEvent.from}`;
-                const targetDeviceId = appEvent.deviceId || (event as any).deviceId;
-
-                draft.audio.activeSounds[typingSoundId] = {
-                    soundId: "whatsapp_typing",
-                    startFrame: event.at,
-                    volume: 1,
-                    loop: true,
-                    deviceId: targetDeviceId
-                };
             }
             break;
         }
@@ -280,12 +228,6 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         case "TYPING_END": {
             if (conversation.typing && appEvent.from) {
                 delete conversation.typing[appEvent.from];
-
-                // AUDIO INJECTION: Stop typing loop
-                if (draft.audio && draft.audio.activeSounds) {
-                    const typingSoundId = `typing_${conversationId}_${appEvent.from}`;
-                    delete draft.audio.activeSounds[typingSoundId];
-                }
             }
             break;
         }

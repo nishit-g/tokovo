@@ -487,12 +487,16 @@ export interface ConversationState {
     typing?: Record<string, boolean>;
 }
 
+
 export interface GroupMember {
     id: string;
     name: string;
     avatar?: string;
     phone?: string;
 }
+
+// (TimelineEvent definition removed - it is defined later)
+
 
 export interface Message {
     id: string;
@@ -1065,7 +1069,7 @@ export interface WorldState {
 }
 
 // Event Union
-export type TimelineEvent =
+export type TimelineEvent = (
     // Device events - core
     | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
 
@@ -1219,7 +1223,11 @@ export type TimelineEvent =
 
     // NATIVE V2 OPS (from @tokovo/ir)
     // This makes the engine polyglot, supporting both V1 and V2 events natively
-    | TimelineOp;
+    | TimelineOp
+) & {
+    silent?: boolean;
+    trace?: any;
+};
 
 // --- Layout System Types ---
 

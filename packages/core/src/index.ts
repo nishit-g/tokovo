@@ -21,6 +21,10 @@ export * from "./widget-registry";
 export * from "./components/AppSurface";
 export * from "./notification-adapter";
 export * from "./notification-dsl";
+export * from "./audio/mixer";
+export * from "./audio/auto-sound";
+export * from "./audio/music-bed";
+export * from "./audio/policies";
 export * from "./transitions";
 export * from "./director-lite";
 export * from "./audio";
@@ -29,6 +33,4 @@ export * from "./behavior-registry";
 export * from "./apps-config";
 export * from "./notification-registry";
 export * from "./scheduler/notification-scheduler";
-
-
 

@@ -17,6 +17,7 @@
         "@tokovo/apps-twitter": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
         "@tokovo/dsl": "workspace:*",
         "@tokovo/episodes": "workspace:*",
         "@tokovo/ir": "workspace:*",

@@ -18,13 +18,14 @@ export const messages = {
     /**
      * Send a message (from device owner)
      */
-    send: (at: number, conversationId: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
+    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
         at,
         kind: "MessageSent", // V2 IR
-        deviceId,
+        deviceId: options.deviceId || "primary",
         trace: createTrace(Tracer.capture()),
-        appId,
+        appId: options.appId || "app_whatsapp",
         conversationId,
+        silent: options.silent,
         message: {
             id: `msg_${Math.random().toString(36).substr(2, 9)}`,
             from: "me",
@@ -37,13 +38,14 @@ export const messages = {
     /**
      * Receive a message (from someone else)
      */
-    receive: (at: number, conversationId: string, from: string, text: string, appId = "app_whatsapp", deviceId = "primary") => ({
+    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
         at,
         kind: "MessageReceived", // V2 IR
-        deviceId,
+        deviceId: options.deviceId || "primary",
         trace: createTrace(Tracer.capture()),
-        appId,
+        appId: options.appId || "app_whatsapp",
         conversationId,
+        silent: options.silent,
         message: {
             id: `msg_${Math.random().toString(36).substr(2, 9)}`,
             from,

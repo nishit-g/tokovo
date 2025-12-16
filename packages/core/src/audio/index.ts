@@ -37,11 +37,11 @@ export {
 
 // Auto-Sound
 export {
-    deriveAudioFromEvent,
-    deriveAllAudio,
-    createAppRules,
-    AUTO_SOUND_RULES,
+    AutoSoundRegistry,
+    deriveAudioInstructions,
     type AutoSoundRule,
+    type AutoSoundAction,
+    type AudioInstruction,
 } from "./auto-sound";
 
 // Music Bed

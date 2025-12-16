@@ -20,15 +20,9 @@ importers:
       '@remotion/cli':
         specifier: 4.0.380
         version: 4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@tokovo/apps-instagram':
-        specifier: workspace:*
-        version: link:../../packages/apps-instagram
       '@tokovo/apps-phone':
         specifier: workspace:*
         version: link:../../packages/apps-phone
-      '@tokovo/apps-spotify':
-        specifier: workspace:*
-        version: link:../../packages/apps-spotify
       '@tokovo/apps-twitter':
         specifier: workspace:*
         version: link:../../packages/apps-twitter
@@ -41,6 +35,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../../packages/device-keyboard
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../../packages/devices
@@ -95,23 +92,26 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
-  packages/apps-instagram:
+  packages/app-kit:
     dependencies:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       immer:
-        specifier: ^10.0.0
+        specifier: ^10.0.3
         version: 10.2.0
       react:
-        specifier: ^18.0.0
+        specifier: ^18.2.0
         version: 18.2.0
     devDependencies:
       '@types/react':
-        specifier: ^18.0.0
+        specifier: ^18.2.0
         version: 18.2.0
       typescript:
-        specifier: ^5.0.0
+        specifier: ^5.3.3
         version: 5.9.3
 
   packages/apps-phone:
@@ -131,28 +131,6 @@ importers:
     devDependencies:
       '@types/react':
         specifier: ^18.2.0
-        version: 18.2.0
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
-  packages/apps-spotify:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      immer:
-        specifier: ^10.0.0
-        version: 10.2.0
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@types/react':
-        specifier: 18.2.0
         version: 18.2.0
       typescript:
         specifier: ^5.0.0
@@ -245,6 +223,9 @@ importers:
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../devices
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       lucide-react:
         specifier: ^0.263.1
         version: 0.263.1(react@18.2.0)
