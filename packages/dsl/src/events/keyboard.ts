@@ -33,14 +33,13 @@ export const keyboard = {
     } as TimelineEvent),
 
     /**
-     * Type a single character
+     * Type a single character (V2)
      */
     typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
         at,
-        kind: "KEYBOARD",
-        type: "TYPE_CHAR",
+        kind: "KeyboardType",
+        text: char,
         deviceId,
-        char,
     } as TimelineEvent),
 
     /**
@@ -75,26 +74,24 @@ export const keyboard = {
     } as TimelineEvent),
 
     /**
-     * Key down (for visual highlight)
+     * Key down (for visual highlight) (V2)
      */
     keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
         at,
-        kind: "KEYBOARD",
-        type: "KEY_DOWN",
-        deviceId,
+        kind: "KeyboardInput",
+        type: "keyDown",
         key,
+        deviceId,
     } as TimelineEvent),
 
     /**
-     * Key up (end visual highlight)
-     */
-    /**
-     * Key up (end visual highlight)
+     * Key up (end visual highlight) (V2)
      */
     keyUp: (at: number, deviceId: string): TimelineEvent => ({
         at,
-        kind: "KEYBOARD",
-        type: "KEY_UP",
+        kind: "KeyboardInput",
+        type: "keyUp",
+        key: "", // Key up clears current key
         deviceId,
     } as TimelineEvent),
 

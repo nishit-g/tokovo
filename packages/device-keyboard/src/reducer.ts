@@ -17,10 +17,7 @@ export const keyboardReducer: FeatureReducer = (
     event: TimelineEvent,
     index: number
 ) => {
-    // Only handle KEYBOARD events
-    if (event.kind !== "KEYBOARD") return;
-
-    // Keyboard events target a specific device
+    // Shared Device Access
     const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
     const device = draft.devices[deviceId];
     if (!device) return;
@@ -35,8 +32,41 @@ export const keyboardReducer: FeatureReducer = (
             inputText: "",
             cursorPosition: 0,
             cursorVisible: true,
+            visibilityChangedAt: 0
         };
     }
+
+    // Handle V2 Ops
+    if (event.kind === "KeyboardType") {
+        const e = event as import("@tokovo/ir").KeyboardTypeOp;
+        // Append text (simulating typing)
+        const textToAppend = e.text;
+        const pos = device.keyboard.cursorPosition;
+        const currentText = device.keyboard.inputText;
+        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
+
+        device.keyboard.inputText = newText;
+        device.keyboard.cursorPosition = pos + textToAppend.length;
+
+        // AUTOMATION: Inject into App
+        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+        return;
+    }
+
+    if (event.kind === "KeyboardInput") {
+        const e = event as import("@tokovo/ir").KeyboardInputOp;
+        if (e.type === "keyDown") {
+            device.keyboard.currentKey = e.key;
+            device.keyboard.keyPressedAt = event.at;
+        } else {
+            device.keyboard.currentKey = null;
+            device.keyboard.keyPressedAt = null;
+        }
+        return;
+    }
+
+    // Handle Legacy Ops
+    if (event.kind !== "KEYBOARD") return;
 
     switch (event.type) {
         case "SHOW":

@@ -260,6 +260,23 @@ export interface TimelineAnchorTrackOp extends TimelineOpBase {
 }
 
 /**
+ * High-level intention to type text.
+ */
+export interface KeyboardTypeOp extends TimelineOpBase {
+    readonly kind: "KeyboardType";
+    readonly text: string;
+}
+
+/**
+ * Low-level key interaction.
+ */
+export interface KeyboardInputOp extends TimelineOpBase {
+    readonly kind: "KeyboardInput";
+    readonly type: "keyDown" | "keyUp";
+    readonly key: string;
+}
+
+/**
  * Union of all timeline operations.
  */
 export type TimelineOp =
@@ -280,6 +297,8 @@ export type TimelineOp =
     | TimelineSplitPOVOp
     | TimelineAnchorFocusOp
     | TimelineAnchorTrackOp
+    | KeyboardTypeOp
+    | KeyboardInputOp
     | CustomOp;
 
 /**

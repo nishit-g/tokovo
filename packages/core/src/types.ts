@@ -1174,6 +1174,13 @@ export type TimelineEvent =
     | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
     | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
     | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
+    // === V2 KEYBOARD OPS ===
+    | { at: number; kind: "KeyboardType"; text: string; deviceId?: string }
+    | { at: number; kind: "KeyboardInput"; type: "keyDown" | "keyUp"; key: string; deviceId?: string }
+
+    // === LEGACY KEYBOARD (Deprecated) ===
+    | { at: number; kind: "KEYBOARD"; type: "SHOW" | "HIDE" | "TYPE_CHAR" | "BACKSPACE" | "SET_TEXT" | "CLEAR" | "KEY_DOWN" | "KEY_UP"; deviceId?: string; layout?: KeyboardLayout; char?: string; text?: string; key?: string }
+
     | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
     | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
     | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }

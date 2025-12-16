@@ -318,8 +318,8 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const bgColor = variant === "light" ? "rgba(209, 211, 217, 0.96)" : "rgba(28, 28, 30, 0.94)";
     const backdropFilter = "blur(50px)";
 
-    const inputLen = keyboard.inputText.length;
-    const suggestions = getSuggestions(inputLen, variant);
+    // Derived State (View-Layer Prediction)
+    const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
 
     return (
         <div style={{
@@ -432,18 +432,8 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     );
 };
 
-// Mock Predictive Logic
-function getSuggestions(seed: number, variant: "light" | "dark"): string[] {
-    const common = ["the", "I", "a", "to", "and", "in", "it", "you", "of", "for"];
-    const context = ["love", "peace", "truth", "soul", "mind", "life", "world"];
-
-    // Deterministic pseudo-random based on input length
-    const i1 = (seed * 3) % common.length;
-    const i2 = (seed * 7 + 1) % context.length;
-    const i3 = (seed * 2 + 5) % common.length;
-
-    return [common[i1], context[i2], common[i3]];
-}
+// Use Real Prediction Logic
+import { IOSPrediction } from "../implementations/ios/prediction";
 
 export default IOSKeyboard;
 // Strategy Registration
