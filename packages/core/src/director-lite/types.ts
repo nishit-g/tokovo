@@ -9,8 +9,9 @@
 // LAYOUT
 // =============================================================================
 
-import { LayoutRect } from "../types";
-export { LayoutRect };
+import type { LayoutRect } from "../types";
+export type { LayoutRect };
+// Trigger rebuild
 
 export interface DirectorLayoutModel {
     deviceId: string;
