@@ -9,7 +9,7 @@ import { SoundRegistry } from "@tokovo/core";
 
 // Register WhatsApp-specific sounds
 SoundRegistry.registerMany({
-    "whatsapp_sent": "plugins/whatsapp/sent.wav",
-    "whatsapp_received": "plugins/whatsapp/received.wav",
-    "whatsapp_typing": "plugins/whatsapp/typing_loop.wav",
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
 });

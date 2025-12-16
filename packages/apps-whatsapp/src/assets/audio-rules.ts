@@ -6,21 +6,21 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     {
         match: { kind: "MessageSent", appId: APP_IDS.WHATSAPP },
         action: "PLAY_ONE_SHOT",
-        sound: "whatsapp_sent",
+        sound: "app_whatsapp.message_out",
         bus: "ui",
         duckMusic: true
     },
     {
         match: { kind: "MessageReceived", appId: APP_IDS.WHATSAPP },
         action: "PLAY_ONE_SHOT",
-        sound: "whatsapp_received",
+        sound: "app_whatsapp.message_in",
         bus: "ui",
         duckMusic: true
     },
     {
         match: { kind: "TypingStarted", appId: APP_IDS.WHATSAPP },
         action: "START_LOOP",
-        sound: "whatsapp_typing",
+        sound: "app_whatsapp.typing_loop",
         bus: "sfx",
         volume: 0.4,
         idTemplate: "typing_{conversationId}_{actor}" // V2 uses "actor" instead of "from"
