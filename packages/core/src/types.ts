@@ -258,6 +258,7 @@ export type CallType = "voice" | "video" | "facetime" | "whatsapp" | (string & {
 /** iOS Contact Poster metadata (iOS 17+) */
 export interface CallerMetadata {
     posterImage?: string;
+    posterColor?: string; // Background color if image missing
     posterStyle?: "modern" | "classic" | (string & {});
     posterNameFont?: string;
 }
@@ -1227,6 +1228,7 @@ export type ViewKind =
     | "STORY"
     | "LOCKSCREEN"
     | "HOMESCREEN"
+    | "FULLSCREEN"  // Apps like Phone, Camera
     | "TRANSITION";
 
 export interface LayoutContext {

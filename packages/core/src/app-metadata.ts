@@ -30,11 +30,17 @@ export interface AppMetadata {
 
     /**
      * Layout Strategy
-     * Tells the OS what kind of view this app renders by default.
-     * Can be a static ViewKind or a function (handled via Registry in V3).
-     * For now, we support static default.
+     * Tells the OS what kind of strategy logic to use.
      */
     viewStrategy?: import("./types").ViewKind;
+
+    /**
+     * Design Width (Logical Resolution)
+     * The width this app was designed for (e.g. 393 for iPhone 14/15/16 Pro).
+     * The Renderer will automatically scale the app to fit the physical target width.
+     * Default: 393
+     */
+    designWidth?: number;
 }
 
 class AppMetadataRegistryClass {

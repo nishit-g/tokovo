@@ -36,10 +36,10 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     const currentScreen = appState?.screen || "chat"; // Default to chat for now
 
     // 2. Resolve Dimensions (Resolution Independence)
-    // Design Width: 393 (Standard 1x)
-    const designWidth = 393;
-    const targetWidth = width || 1179; // Default fallback (iPhone 16)
-    const targetHeight = height || 2556;
+    // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
+    // If undefined, assume standard logical width (393)
+    const activeWidth = width || 393;
+    const activeHeight = height || 2556;
 
     // 3. Render Appropriate Screen
     // Strategy Pattern for Screen Navigation
@@ -51,8 +51,8 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
             activeScreenContent = (
                 <ChatListScreen
                     world={world}
-                    width={targetWidth}
-                    height={targetHeight}
+                    width={activeWidth}
+                    height={activeHeight}
                     safeAreaInsets={safeAreaInsets}
                 />
             );
@@ -63,24 +63,19 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
                 <ChatScreen
                     world={world}
                     deviceId={deviceId}
-                    width={targetWidth}
-                    height={targetHeight}
+                    width={activeWidth}
+                    height={activeHeight}
                     safeAreaInsets={safeAreaInsets}
                 />
             );
             break;
     }
 
-    // 4. Wrap in AppSurface (Sandbox)
+    // 4. Return Content (Hoisted AppSurface handles scaling now)
     return (
-        <AppSurface
-            designWidth={designWidth}
-            targetWidth={targetWidth}
-            targetHeight={targetHeight}
-            backgroundColor="#000"
-        >
+        <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
             {activeScreenContent}
-        </AppSurface>
+        </div>
     );
 };
 

@@ -17,13 +17,14 @@ import {
     PluginManager,
     APP_IDS,
     NotificationScheduler,
+    AppSurface
 } from "@tokovo/core";
 // import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
 import { DeviceRegistry } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./NotificationOverlay";
 import { HeadsUpNotification } from "./HeadsUpNotification";
-import { CallOverlay } from "./CallOverlay";  // Fallback if no plugin registered
+// import { CallOverlay } from "./CallOverlay"; // REMOVED: Now using PluginManager.getView(APP_IDS.PHONE)
 import { LockscreenView } from "./LockscreenView";
 import { HomeScreenView } from "./HomeScreenView";
 import { VisualDebugger } from "./VisualDebugger";
@@ -138,12 +139,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // ==========================================================================
     // 4. SELECT APP VIEW
     // ==========================================================================
-    let AppView = null;
-    if (appId && AppRegistry.views[appId]) {
-        AppView = AppRegistry.views[appId];
-    }
+    const AppView = appId ? PluginManager.getView(appId) : null;
 
-    // ==========================================================================
     // 5. RENDER — Paint the blueprints
     // ==========================================================================
 
@@ -165,46 +162,92 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
                     <FrameComponent statusBar={<StatusBarComponent os={device.os} variant={variant} />}>
 
-                        {/* Call View - Plugin-based */}
-                        {hasActiveCall && (() => {
-                            const PhoneView = PluginManager.getView(APP_IDS.PHONE);
-                            if (PhoneView) {
-                                return <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />;
+                        {/* ========================================================================= */}
+                        {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
+                        {/* ========================================================================= */}
+                        {(() => {
+                            // A. Active Call takes precedence
+                            if (hasActiveCall) {
+                                const PhoneView = PluginManager.getView(APP_IDS.PHONE);
+                                if (PhoneView) {
+                                    // Phone App handles its own scaling/surface if needed, or we wrap it?
+                                    // Usually full-screen system apps define their own layout, but let's standardise.
+                                    const meta = PluginManager.get(APP_IDS.PHONE)?.metadata;
+                                    const designWidth = meta?.designWidth || 393; // Default logical width
+
+                                    return (
+                                        <AppSurface
+                                            designWidth={designWidth}
+                                            targetWidth={profile.dimensions.width}
+                                            targetHeight={profile.dimensions.height}
+                                        >
+                                            <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />
+                                        </AppSurface>
+                                    );
+                                }
+                                // Fallback removed (Plugin must exist)
+                                return <div style={{ color: "white", padding: 50 }}>System Error: Phone App Missing</div>;
                             }
-                            return <CallOverlay call={device.call!} currentTime={t} variant={variant} />;
+
+                            // B. Active App (Unlocked)
+                            if (AppView && !device.isLocked) {
+                                const meta = PluginManager.get(appId!)?.metadata;
+                                const designWidth = meta?.designWidth || 393;
+
+                                // Calculate scale factor explicitly to normalize props
+                                const scale = profile.dimensions.width / designWidth;
+
+                                return (
+                                    <AppSurface
+                                        designWidth={designWidth}
+                                        targetWidth={profile.dimensions.width}
+                                        targetHeight={profile.dimensions.height}
+                                        backgroundColor={meta?.themeColor} // Use brand color as splash/bg
+                                    >
+                                        <AppView
+                                            world={world}
+                                            t={t}
+                                            // layout={layout} // Not in AppViewProps standard interface, but might be useful?
+                                            // Ideally apps use hooks: useLayout()
+                                            platform={variant}
+                                            deviceId={deviceId}
+                                            // Normalize Safe Area to Logical Units
+                                            safeAreaInsets={{
+                                                top: (profile.camera?.safeAreaTop || 0) / scale,
+                                                bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                                                left: 0,
+                                                right: 0
+                                            }}
+                                        />
+                                    </AppSurface>
+                                );
+                            }
+
+                            // C. Valid System States (Lockscreen / Home)
+                            if (!device.isLocked && device.homeScreen) {
+                                return <HomeScreenView config={device.homeScreen} variant={variant} />;
+                            }
+
+                            if (device.isLocked) {
+                                return (
+                                    <LockscreenView
+                                        notifications={device.os?.notifications || []}
+                                        layout={layout}
+                                        variant={variant}
+                                    // TODO: Pass Metadata Registry for icon lookup? 
+                                    // LockscreenView already uses it (Step 642).
+                                    />
+                                );
+                            }
+
+                            // D. Blank Screen
+                            return <div style={{ flex: 1, backgroundColor: "black" }} />;
                         })()}
 
-                        {/* App View / Lockscreen / Home Screen */}
-                        {!hasActiveCall && AppView && !device.isLocked ? (
-                            <AppView
-                                world={world}
-                                t={t}
-                                layout={layout}
-                                platform={variant}
-                                deviceId={deviceId}
-                                width={profile.dimensions.width}
-                                height={profile.dimensions.height}
-                                safeAreaInsets={{
-                                    top: profile.camera?.safeAreaTop || 0,
-                                    bottom: profile.camera?.safeAreaBottom || 0,
-                                    left: 0,
-                                    right: 0
-                                }}
-                            />
-                        ) : !hasActiveCall && device.isLocked ? (
-                            <LockscreenView
-                                notifications={device.os?.notifications || []}
-                                layout={layout}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && device.homeScreen ? (
-                            <HomeScreenView
-                                config={device.homeScreen}
-                                variant={variant}
-                            />
-                        ) : !hasActiveCall && (
-                            <div style={{ flex: 1, backgroundColor: "black" }} />
-                        )}
+
+                        {/* ========================================================================= */}
+                        {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
+                        {/* ========================================================================= */}
 
                         {/* Lockscreen Notification Overlay */}
                         <NotificationOverlay
@@ -213,7 +256,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                             layout={layout}
                         />
 
-                        {/* Heads-Up Notification */}
+                        {/* Heads-Up Notification (Toast) */}
                         {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
                             <HeadsUpNotification
                                 key={activeHeadsUp.id}
@@ -225,7 +268,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                             />
                         )}
 
-                        {/* Dynamic Island (iOS) - Only if Shell supports it */}
+                        {/* Dynamic Island (iOS) - Slot Based */}
                         {shell.hasDynamicIsland && !device.isLocked && !hasActiveCall && (
                             <DynamicIsland
                                 device={device}
