@@ -9,7 +9,7 @@ import { NotificationAdapter, NotificationAdapterRegistry, Notification, Formatt
 const INSTAGRAM_GRADIENT = "linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)";
 const INSTAGRAM_PINK = "#E1306C";
 
-const instagramAdapter: NotificationAdapter = {
+const InstagramNotificationAdapter: NotificationAdapter = {
     appId: "app_instagram",
 
     format(notification: Notification): FormattedNotification {
@@ -53,6 +53,6 @@ const instagramAdapter: NotificationAdapter = {
 };
 
 // Register adapter
-NotificationAdapterRegistry.register(instagramAdapter);
+NotificationAdapterRegistry.register(InstagramNotificationAdapter);
 
-export { instagramAdapter };
+export { InstagramNotificationAdapter };

@@ -5,16 +5,16 @@ import {
     WorldState,
     TimelineEvent,
     createEventIndex,
-    DEFAULT_BUS_CONFIG
+    DEFAULT_BUS_CONFIG,
+    PluginManagerClass
 } from "@tokovo/core";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { Spotify } from "@tokovo/apps-spotify";
 
 // Import device reducer
 import "@tokovo/devices";
-
-// Import Spotify to register plugin and widgets
-import "@tokovo/apps-spotify";
 
 /**
  * Full Cinematic Showcase - DSL Style
@@ -337,9 +337,20 @@ function createFullCinematicEpisode(): { initialWorld: WorldState; events: Timel
 // VIDEO COMPONENT
 // =============================================================================
 
+import { Instagram } from "@tokovo/apps-instagram";
+
 export const FullCinematicShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
+
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        pm.register(Spotify);
+        pm.register(Instagram);
+        return pm;
+    }, []);
 
     const episode = useMemo(() => createFullCinematicEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
@@ -358,6 +369,7 @@ export const FullCinematicShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

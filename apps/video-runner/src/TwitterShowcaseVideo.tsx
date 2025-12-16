@@ -1,11 +1,12 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { Twitter } from "@tokovo/apps-twitter";
 
-// Import Twitter app to ensure reducer is registered
-import "@tokovo/apps-twitter";
+// Import device reducer to ensure it's registered
+import "@tokovo/devices";
 
 /**
  * Twitter/X Showcase Video
@@ -53,7 +54,15 @@ function createTwitterShowcaseEpisode(): { initialWorld: WorldState; events: Tim
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
     };
 
     // Timeline events
@@ -182,6 +191,13 @@ export const TwitterShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(Twitter);
+        return pm;
+    }, []);
+
     // Get episode data
     const episode = useMemo(() => createTwitterShowcaseEpisode(), []);
 
@@ -221,6 +237,7 @@ export const TwitterShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

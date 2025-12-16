@@ -1,12 +1,23 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import {
+    replay,
+    WorldState,
+    TimelineEvent,
+    createEventIndex,
+    PluginManagerClass
+} from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { Twitter } from "@tokovo/apps-twitter";
 
-// Import apps to ensure reducers are registered
-import "@tokovo/apps-twitter";
-import "@tokovo/apps-whatsapp";
+// Import device reducer
+import "@tokovo/devices";
+
+// Legacy imports removed in favor of explicit registration
+// import "@tokovo/apps-twitter";
+// import "@tokovo/apps-whatsapp";
 
 /**
  * Multi-App Showcase Video
@@ -63,7 +74,15 @@ function createMultiAppShowcaseEpisode(): { initialWorld: WorldState; events: Ti
             },
             deviceTransforms: {},
         },
-        audio: { activeSounds: {} },
+        audio: {
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
+        },
     };
 
     // Timeline events - Multi-app flow
@@ -273,6 +292,14 @@ function createMultiAppShowcaseEpisode(): { initialWorld: WorldState; events: Ti
 export const MultiAppShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(Twitter);
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
     const { initialWorld, events } = useMemo(() => createMultiAppShowcaseEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(events), [events]);
 
@@ -306,6 +333,7 @@ export const MultiAppShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

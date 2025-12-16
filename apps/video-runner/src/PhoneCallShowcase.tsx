@@ -4,18 +4,17 @@ import {
     replay,
     WorldState,
     TimelineEvent,
+    PluginManagerClass
 } from "@tokovo/core";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { PhonePlugin } from "@tokovo/apps-phone";
 
 // Import device reducer
 import "@tokovo/devices";
 
 // Import DSL event factories
 import { dsl } from "@tokovo/dsl";
-
-// Import phone plugin
-import "@tokovo/apps-phone";
 
 /**
  * Phone Call Showcase
@@ -60,6 +59,8 @@ function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineE
                     dnd: false,
                     lowPowerMode: false,
                     airplaneMode: false,
+                    notifications: [],
+                    notificationHistory: [],
                 },
             },
         },
@@ -78,10 +79,25 @@ function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineE
                 mode: "SINGLE" as const,
                 primaryDeviceId: DEVICE_ID,
             },
+            transform: {
+                translateX: 0,
+                translateY: 0,
+                scale: 1,
+                rotation: 0,
+                originX: 0.5,
+                originY: 0.5,
+                shakeX: 0,
+                shakeY: 0,
+            },
         },
         audio: {
-            masterVolume: 1,
-            activeSounds: [],
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            },
         },
     };
 
@@ -124,6 +140,13 @@ function createPhoneCallEpisode(): { initialWorld: WorldState; events: TimelineE
 export const PhoneCallShowcase: React.FC = () => {
     const frame = useCurrentFrame();
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(PhonePlugin);
+        return pm;
+    }, []);
+
     // Create episode
     const episode = useMemo(() => createPhoneCallEpisode(), []);
 
@@ -152,9 +175,9 @@ export const PhoneCallShowcase: React.FC = () => {
             >
                 <TokovoRenderer
                     world={worldState}
-                    deviceId={DEVICE_ID}
-                    deviceProfile={iPhone16Profile}
-                    currentFrame={frame}
+                    t={frame}
+                    pluginManager={pluginManager}
+                    debug={true}
                 />
             </div>
         </AbsoluteFill>

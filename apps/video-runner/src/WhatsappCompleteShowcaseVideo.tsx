@@ -1,11 +1,22 @@
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, PluginManagerClass } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
 
 // Import device reducer to ensure it's registered
 import "@tokovo/devices";
+
+// ... (episodeData definition remains, but I need to patch audio buses if I access it)
+// Ideally I should patch the episodeData separately or include it in this huge block.
+// Since episodeData is local const, I can replace the whole file content or just the Component.
+// But episodeData is 180 lines.
+// I will just replace the component and imports for now, and patch audio data in a separate call if needed.
+
+// ... (skipping episodeData in this thought block, will target Imports + Component)
+
+// I will target imports first.
 
 /**
  * WhatsApp Complete Showcase Video
@@ -95,7 +106,13 @@ const episodeData = {
             }
         },
         audio: {
-            activeSounds: {}
+            activeSounds: {},
+            buses: {
+                music: { baseGain: 1, maxConcurrent: 1 },
+                ui: { baseGain: 1, maxConcurrent: 5 },
+                sfx: { baseGain: 1, maxConcurrent: 5 },
+                voice: { baseGain: 1, maxConcurrent: 1 },
+            }
         }
     },
     events: [
@@ -203,6 +220,13 @@ export const WhatsappCompleteShowcaseVideo: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+        return pm;
+    }, []);
+
     // Create event index for DirectorLite
     const eventIndex = useMemo(
         () => createEventIndex(episodeData.events),
@@ -239,6 +263,7 @@ export const WhatsappCompleteShowcaseVideo: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={true}
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

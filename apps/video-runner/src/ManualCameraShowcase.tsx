@@ -17,15 +17,18 @@
 
 import React, { useMemo } from "react";
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE } from "@tokovo/core";
+import { replay, WorldState, TimelineEvent, createEventIndex, DEFAULT_AUDIO_STATE, PluginManagerClass } from "@tokovo/core";
 import { TokovoRenderer, registerBuiltInAnchorProviders } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsApp } from "@tokovo/apps-whatsapp";
 
 // Import device reducer to ensure it's registered
 import "@tokovo/devices";
 
 // Register anchor providers for semantic camera system
-registerBuiltInAnchorProviders();
+// Note: We will do this inside the component to ensure it's tied to the engine lifecycle if possible,
+// though currently it relies on Global Registry side-effects.
+// registerBuiltInAnchorProviders();
 
 // =============================================================================
 // DSL HELPERS
@@ -410,6 +413,18 @@ export const ManualCameraShowcase: React.FC = () => {
     const frame = useCurrentFrame();
     const t = frame;
 
+    // Create ISOLATED Engine (PluginManager)
+    const pluginManager = useMemo(() => {
+        const pm = new PluginManagerClass();
+        pm.register(WhatsApp);
+
+        // Ensure built-in system anchors are registered
+        // This pushes to Global AnchorRegistry (simulating engine context)
+        registerBuiltInAnchorProviders();
+
+        return pm;
+    }, []);
+
     const episode = useMemo(() => createManualCameraEpisode(), []);
     const eventIndex = useMemo(() => createEventIndex(episode.events), [episode.events]);
     const world = replay(episode.initialWorld, episode.events, t);
@@ -516,6 +531,7 @@ export const ManualCameraShowcase: React.FC = () => {
                     eventIndex={eventIndex}
                     directorEnabled={false}  // 👈 DISABLED! All camera is manual.
                     directorDebug={false}
+                    pluginManager={pluginManager}
                 />
             </div>
         </AbsoluteFill>

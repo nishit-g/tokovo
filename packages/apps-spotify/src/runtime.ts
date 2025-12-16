@@ -154,31 +154,5 @@ export function spotifyReducer(
 // REGISTER PLUGIN
 // =============================================================================
 
-import { SpotifyDynamicIslandWidget, SpotifyStatusBarWidget } from "./widgets";
-
-// Register Spotify as a plugin with widgets
-PluginManager.register({
-    id: "app_spotify",
-    name: "Spotify",
-    version: "1.0.0",
-    icon: "♪",
-    primaryColor: "#1DB954",
-    reducer: spotifyReducer,
-
-    // Platform-specific widgets
-    widgets: [
-        {
-            mode: "dynamicIsland",
-            platforms: ["ios"],
-            priority: 80,  // Music gets high priority
-            component: SpotifyDynamicIslandWidget as any,
-            expansionModes: ["minimal", "compact", "expanded"],
-        },
-        {
-            mode: "statusBar",
-            platforms: ["android"],
-            priority: 80,
-            component: SpotifyStatusBarWidget as any,
-        },
-    ],
-});
+// REMOVED: Legacy side-effect registration.
+// Plugin is now exported via index.ts using Unified Architecture.
