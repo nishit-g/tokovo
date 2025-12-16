@@ -19,7 +19,8 @@ import {
     DirectorDebug,
     LayoutRect,
 } from "./types";
-import { Rule, RULES_BY_SIGNAL } from "./rules";
+import { ViralDramaV1 } from "./rules";
+import { DirectorStrategy, Rule } from "./strategy";
 import { applyEasing } from "../camera";
 import { ActiveCameraEffect } from "../types";
 
@@ -35,6 +36,8 @@ export interface DeriveContext {
     debug?: boolean;
     // Manual camera skip: if any active effects from timeline, skip director
     manualCameraEffects?: ActiveCameraEffect[];
+    // Strategy (Defaults to ViralDramaV1)
+    strategy?: DirectorStrategy;
 }
 
 /**
@@ -51,6 +54,7 @@ export function deriveDirectorEffects(ctx: DeriveContext): DirectorOutput {
         seed = 0,
         debug: debugEnabled = false,
         manualCameraEffects = [],
+        strategy = ViralDramaV1,
     } = ctx;
 
     // Policy A: Skip director if any manual camera event is active
@@ -97,7 +101,7 @@ export function deriveDirectorEffects(ctx: DeriveContext): DirectorOutput {
         const prevAt = lastSeenByKey.get(cooldownKey) ?? -Infinity;
 
         // Get rules for this signal type (O(1) lookup)
-        const rules = RULES_BY_SIGNAL[signal.type] || [];
+        const rules = strategy.getRules(signal.type);
 
         for (const rule of rules) {
             const startFrame = signal.at;

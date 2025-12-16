@@ -14,6 +14,7 @@ export * from "./semantic";
 
 // Trace model
 export * from "./trace";
+export * from "./schemas";
 
 // Scene IR (semantic)
 export * from "./scene";

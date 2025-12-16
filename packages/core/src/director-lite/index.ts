@@ -9,6 +9,7 @@ export * from "./types";
 export { deriveDirectorEffects } from "./derive";
 export type { DeriveContext } from "./derive";
 export { extractSignals } from "./signals";
-export { RULES, RULES_BY_SIGNAL } from "./rules";
-export type { Rule } from "./rules";
+export { ViralDramaV1, RULES, RULES_BY_SIGNAL } from "./rules";
+export type { Rule } from "./strategy";
+export * from "./strategy";
 

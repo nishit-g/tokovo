@@ -4,44 +4,19 @@
  * ViralDramaV1 - The only style. Opinionated. Ships.
  * Pre-indexed by signal type for O(1) lookup.
  * 
- * UPDATE: Now uses semantic anchors (FocusAnchor) instead of pixel targets.
+ * NOW IMPLEMENTS: DirectorStrategy
  */
 
-import { SignalType, EffectCategory } from "./types";
+import { SignalType } from "./types";
+import { DirectorStrategy, Rule } from "./strategy";
 
-export interface Rule {
-    id: string;
-    signal: SignalType;
-    /** 
-     * Effect type:
-     * - FocusAnchor: NEW semantic anchor-based (PREFERRED)
-     * - PushIn, ZoomToRect, PullBack: Legacy pixel-based (DEPRECATED)
-     * - MicroShake: Camera shake effect
-     */
-    effect: "FocusAnchor" | "MicroShake" | "PushIn" | "ZoomToRect" | "PullBack";
-    category: EffectCategory;
-    priority: number;
-    cooldownFrames: number;
-    durationFrames: number;
-
-    // === NEW: Anchor-based targeting (PREFERRED) ===
-    /** Semantic anchor to focus on */
-    anchor?: string;  // SemanticAnchorId
-    /** Shot preset (matches SHOT_PRESETS in camera/presets.ts) */
-    preset?: string;  // ShotPresetId
-
-    // === Legacy ===
-    targetType?: "message" | "inputArea" | "lastMessage";  // DEPRECATED
-    scale?: number;
-    intensity?: number;
-}
+// Re-export Rule for backward compatibility if needed, but prefer strategy.ts
+export type { Rule } from "./strategy";
 
 /**
  * ViralDramaV1 - Baked rules for dramatic chat videos.
- * 
- * NOW USING SEMANTIC ANCHORS!
  */
-export const RULES: Rule[] = [
+const RULES: Rule[] = [
     {
         id: "typing-push",
         signal: "TypingStarted",
@@ -101,9 +76,8 @@ export const RULES: Rule[] = [
 
 /**
  * Pre-indexed rules by signal type for O(1) lookup.
- * Built once at module load.
  */
-export const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
+const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
     (acc, rule) => {
         if (!acc[rule.signal]) acc[rule.signal] = [];
         acc[rule.signal].push(rule);
@@ -111,3 +85,13 @@ export const RULES_BY_SIGNAL: Record<SignalType, Rule[]> = RULES.reduce(
     },
     {} as Record<SignalType, Rule[]>
 );
+
+/**
+ * The Default Strategy
+ */
+export const ViralDramaV1: DirectorStrategy = {
+    getRules: (signal: SignalType) => RULES_BY_SIGNAL[signal] || []
+};
+
+// Legacy Export (Deprecated)
+export { RULES, RULES_BY_SIGNAL };
