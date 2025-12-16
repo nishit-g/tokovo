@@ -655,7 +655,7 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
             const legacyEvent: any = {
                 at: e.at,
                 kind: "APP",
-                type: "MESSAGE_RECEIVED", // Sent messages are treated as received from 'me' in current engine
+                type: "MESSAGE_SENT", // CORRECTED: Distinguish Sent from Received
                 appId: e.appId,
                 conversationId: e.conversationId,
                 from: "me",

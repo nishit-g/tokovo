@@ -11,7 +11,7 @@ import {
     DEFAULT_CAMERA_STATE,
     DEFAULT_AUDIO_STATE
 } from "@tokovo/core";
-import { TokovoRenderer } from "@tokovo/renderer";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import "@tokovo/devices";
 import { SceneIR } from "@tokovo/ir";
@@ -117,6 +117,7 @@ export const BakchodiGangVideo: React.FC = () => {
                     directorDebug={false}
                 />
             </div>
+            <AudioLayer world={world} t={frame} />
         </AbsoluteFill>
     );
 };

@@ -1,5 +1,6 @@
 export * from "./KeyboardSurface";
 export * from "./core/registry";
+import "./assets/sounds"; // Register sounds checked
 export * from "./components/IOSKeyboard";
 export * from "./reducer";
 

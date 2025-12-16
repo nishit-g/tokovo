@@ -36,6 +36,22 @@ export const keyboardReducer: FeatureReducer = (
         };
     }
 
+    // AUDIO INJECTION HELPER
+    const ensureAudio = () => {
+        if (!draft.audio) {
+            draft.audio = {
+                activeSounds: {},
+                buses: {
+                    music: { baseGain: 0.5, maxConcurrent: 1 },
+                    ui: { baseGain: 1.0, maxConcurrent: 5 },
+                    sfx: { baseGain: 1.0, maxConcurrent: 10 },
+                    voice: { baseGain: 1.0, maxConcurrent: 1 }
+                }
+            };
+        }
+        if (!draft.audio.activeSounds) draft.audio.activeSounds = {};
+    };
+
     // Handle V2 Ops
     if (event.kind === "KeyboardType") {
         const e = event as import("@tokovo/ir").KeyboardTypeOp;
@@ -50,6 +66,26 @@ export const keyboardReducer: FeatureReducer = (
 
         // AUTOMATION: Inject into App
         injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+
+        // AUDIO: Smart Session
+        // Calculate duration based on text length (simulating 500 CPM ~ 8 chars/sec ~ 4 frames/char)
+        const framesPerChar = 4;
+        const duration = Math.max(15, textToAppend.length * framesPerChar); // Min 15 frames (0.5s)
+
+        ensureAudio();
+        const soundId = `kb_loop_${event.at}`;
+
+        // Register typing loop with explicit duration - will stop automatically!
+        if (draft.audio && draft.audio.activeSounds) {
+            draft.audio.activeSounds[soundId] = {
+                soundId: "keyboard_typing_loop",
+                startFrame: event.at,
+                volume: 0.8,
+                loop: true,
+                duration: duration,
+                deviceId
+            };
+        }
         return;
     }
 
@@ -58,6 +94,20 @@ export const keyboardReducer: FeatureReducer = (
         if (e.type === "keyDown") {
             device.keyboard.currentKey = e.key;
             device.keyboard.keyPressedAt = event.at;
+
+            // AUDIO: Click
+            ensureAudio();
+            const soundId = `kb_click_${event.at}_${e.key}`;
+            if (draft.audio && draft.audio.activeSounds) {
+                draft.audio.activeSounds[soundId] = {
+                    soundId: "keyboard_click",
+                    startFrame: event.at,
+                    volume: 0.6,
+                    loop: false,
+                    deviceId
+                };
+            }
+
         } else {
             device.keyboard.currentKey = null;
             device.keyboard.keyPressedAt = null;
@@ -86,6 +136,19 @@ export const keyboardReducer: FeatureReducer = (
         case "KEY_DOWN":
             device.keyboard.currentKey = (event as any).key;
             device.keyboard.keyPressedAt = event.at;
+
+            // AUDIO: Click
+            ensureAudio();
+            const soundId = `kb_click_${event.at}`;
+            if (draft.audio && draft.audio.activeSounds) {
+                draft.audio.activeSounds[soundId] = {
+                    soundId: "keyboard_click",
+                    startFrame: event.at,
+                    volume: 0.6,
+                    loop: false,
+                    deviceId
+                };
+            }
             break;
 
         case "KEY_UP":
@@ -106,6 +169,19 @@ export const keyboardReducer: FeatureReducer = (
 
             // AUTOMATION: Inject into App
             injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+
+            // AUDIO: Click
+            ensureAudio();
+            const clickId = `kb_click_${event.at}_${char}`;
+            if (draft.audio && draft.audio.activeSounds) {
+                draft.audio.activeSounds[clickId] = {
+                    soundId: "keyboard_click",
+                    startFrame: event.at,
+                    volume: 0.6,
+                    loop: false,
+                    deviceId
+                };
+            }
             break;
         }
 
@@ -122,6 +198,19 @@ export const keyboardReducer: FeatureReducer = (
             }
             device.keyboard.currentKey = "⌫";
             device.keyboard.keyPressedAt = event.at;
+
+            // AUDIO: Click
+            ensureAudio();
+            const clickId = `kb_click_${event.at}_bs`;
+            if (draft.audio && draft.audio.activeSounds) {
+                draft.audio.activeSounds[clickId] = {
+                    soundId: "keyboard_click",
+                    startFrame: event.at,
+                    volume: 0.6,
+                    loop: false,
+                    deviceId
+                };
+            }
             break;
         }
 

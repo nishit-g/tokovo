@@ -3,6 +3,7 @@ import { whatsappReducer } from "./logic/reducer";
 import { ui } from "./ui";
 import { WhatsAppAnchors } from "./adapters/anchors";
 import { WhatsAppMetadata } from "./assets/metadata";
+import "./assets/sounds"; // Register sounds
 import { WhatsAppNotificationAdapter } from "./adapters/notifications";
 
 // Export Internal Parts (Enterprise Standard)
