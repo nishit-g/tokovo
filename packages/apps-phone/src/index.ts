@@ -24,5 +24,10 @@ export { phoneReducer } from "./runtime";
 export * from "./behaviors";
 
 // Auto-register on import
+// Auto-register on import
 import { registerPhonePlugin } from "./plugin";
+import { AnchorRegistry } from "@tokovo/core";
+import { PhoneAnchorProvider } from "./provider";
+
 registerPhonePlugin();
+AnchorRegistry.register(PhoneAnchorProvider);

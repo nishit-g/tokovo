@@ -38,6 +38,24 @@ function getDeviceProfile(profileId?: string): { dimensions: { width: number; he
 export const NotificationAnchorProvider: AnchorProvider = {
     appId: APP_ID,
 
+    framing: {
+        headsUpNotification: {
+            anchorPoint: { x: 0.5, y: 0.1 },
+            paddingPx: 16,
+            targetFill: 0.35,
+        },
+        dynamicIsland: {
+            anchorPoint: { x: 0.5, y: 0.05 },
+            paddingPx: 8,
+            targetFill: 0.15,
+        },
+        device: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 0,
+            targetFill: 1.0,
+        }
+    },
+
     getAnchors(
         world: WorldState,
         layout: unknown,

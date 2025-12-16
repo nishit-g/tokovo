@@ -5,7 +5,5 @@
  * Apps are the ONLY source of truth for what can be focused.
  */
 
-export * from "./whatsapp";
-export * from "./phone";
 export * from "./notification";
 export * from "./registry";

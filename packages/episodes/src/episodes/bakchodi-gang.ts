@@ -149,7 +149,46 @@ export const bakchodiGangEpisode: EpisodeDefinition = episode("bakchodi-gang", e
 
             // Navigate to Chat List again
             b.showScreen("chats-list", { duration: "0.5s" });
-            b.wait("1s"); // fixed type error
+            b.wait("1s");
+        });
+
+        // ACT 7: ARCHITECTURE VERIFICATION
+        d.beat("camera_test", b => {
+            // Return to chat
+            b.openChat("group_engineers");
+            b.wait("1s");
+
+            b.send("--- ARCHITECTURE CHECK ---");
+            b.wait("0.5s");
+
+            // 1. INPUT AREA (Sticky Anchor)
+            // Should frame the bottom bar perfectly without scrolling
+            b.send("Testing Input Area (Sticky)...");
+            b.camera(c => c.focus("inputArea", { duration: "1s", preset: "subtle" }));
+            b.wait("1.5s");
+            // Simulate typing to ensure anchor is stable
+            b.typing("me").for("2s");
+            b.wait("1s");
+
+            // 2. LAST MESSAGE (Scrolled Anchor)
+            // Should jump to the latest message, compensating for scroll
+            b.send("Testing Last Message (Scrolled)...");
+            b.camera(c => c.focus("lastMessage", { duration: "1s", preset: "dramatic" }));
+            b.wait("2s");
+
+            // 3. TRACKING TEST
+            b.send("Testing Tracking (New Message)...");
+            // Setup tracking BEFORE message arrives
+            b.camera(c => c.track("lastMessage", { duration: "4s", preset: "operatorFollow" }));
+            b.wait("0.5s");
+            b.receive("Vicky", "Tracking kaam kar raha hai kya? 🎥");
+            b.wait("1s");
+            b.receive("Sameer", "Woh camera mere peeche aa raha hai! 🏃‍♂️");
+
+            // 4. RESET
+            b.camera(c => c.reset({ duration: "1s" }));
+            b.wait("1s");
+            b.send("VERIFICATION COMPLETE. ✅");
         });
     });
 });

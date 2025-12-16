@@ -33,49 +33,38 @@ dsl.camera.anchorFocus(60, "lastMessage", "dramatic")
 
 ```mermaid
 graph TB
-    subgraph "Layer 1: Anchor Providers"
-        WA[WhatsApp Provider]
-        PH[Phone Provider]
-        TW[Twitter Provider]
-        NT[Notification Provider]
+    subgraph "Layer 1: App Packages"
+        WA[apps-whatsapp]
+        PH[apps-phone]
+        TW[apps-twitter]
     end
     
-    subgraph "Layer 2: Intent Resolution"
-        DIR[Director/DSL]
-        FB[Fallback Chains]
-        HY[Hysteresis 3f]
+    subgraph "Layer 2: Registry & Resolution"
+        REG[AnchorRegistry]
+        RES[resolveAnchor]
     end
     
-    subgraph "Layer 3: Shot Presets"
-        V1[v1 Locked Presets]
-        V2[v2 Feature-flagged]
+    subgraph "Layer 3: Framing Integration"
         FR[Anchor Framing]
+        MATH[Camera Math]
     end
     
-    subgraph "Layer 4: Camera Math"
-        ENG["useCameraEngine (665 lines)"]
-        CTL[CameraController]
-    end
-    
-    WA --> DIR
-    PH --> DIR
-    TW --> DIR
-    NT --> DIR
-    DIR --> FB --> HY --> V1
-    HY --> V2
-    V1 --> FR
-    V2 --> FR
-    FR --> ENG
-    ENG --> CTL --> CSS[CSS Transform]
+    WA --> REG
+    PH --> REG
+    TW --> REG
+    REG --> RES
+    RES --> FR
+    FR --> MATH
+    MATH --> CSS
 ```
 
 ### Four Layers
 
 | Layer | Responsibility | Key Files |
 |-------|----------------|-----------|
-| **Anchor Providers** | Define *what* can be focused | `@tokovo/renderer/anchor-providers/*` |
-| **Intent Resolution** | Decide *when* to focus | `@tokovo/core/director-lite/derive.ts` |
-| **Shot Presets** | Define *how* to look | `@tokovo/core/camera/presets.ts` (676 lines) |
+| **App Packages** | Define anchors & framing | `packages/apps-*/src/provider.ts` |
+| **Registry** | Central lookup for providers | `@tokovo/core/src/anchors.ts` |
+| **Resolution** | Fallback & stability logic | `@tokovo/core/src/anchors.ts` |
 | **Camera Math** | Execute transforms | `@tokovo/renderer/engines/useCameraEngine.ts` |
 
 ---
@@ -280,36 +269,17 @@ v2 presets require emotional state model and are not included in the standard sh
 
 ### Anchor Framing Configuration
 
-Each anchor has a **framing config** that defines where it should appear in frame:
+Each anchor has a **framing config** that defines where it should appear in frame. **This is now owned by the App Package**, not hardcoded in the core.
 
 ```typescript
-// From @tokovo/core/camera/presets.ts
-const ANCHOR_FRAMING = {
+// packages/apps-whatsapp/src/provider.ts
+export const WhatsAppFraming = {
   lastMessage: {
     anchorPoint: { x: 0.5, y: 0.75 },  // Lower-third
     paddingPx: 24,
     targetFill: 0.55,
   },
-  inputArea: {
-    anchorPoint: { x: 0.5, y: 0.9 },   // Very bottom
-    paddingPx: 16,
-    targetFill: 0.4,
-  },
-  callPoster: {
-    anchorPoint: { x: 0.5, y: 0.4 },   // Upper portion
-    paddingPx: 32,
-    targetFill: 0.65,
-  },
-  headsUpNotification: {
-    anchorPoint: { x: 0.5, y: 0.1 },   // Top of frame
-    paddingPx: 16,
-    targetFill: 0.35,
-  },
-  device: {
-    anchorPoint: { x: 0.5, y: 0.5 },   // Center (fallback)
-    paddingPx: 0,
-    targetFill: 1.0,
-  },
+  // ...
 };
 ```
 
@@ -334,36 +304,38 @@ const ANCHOR_FALLBACK_CHAINS = {
 To add semantic anchors for a new app:
 
 ```typescript
-// packages/apps-myapp/src/anchor-provider.ts
-import { AnchorProvider, AnchorSnapshot, AnchorRegistry } from "@tokovo/core";
+// packages/apps-myapp/src/provider.ts
+import { AnchorProvider, AnchorSnapshot } from "@tokovo/core";
 
 export const MyAppAnchorProvider: AnchorProvider = {
   appId: "app_myapp",
   
+  // App defines its own framing!
+  framing: {
+      myFeature: {
+          anchorPoint: { x: 0.5, y: 0.5 },
+          paddingPx: 20,
+          targetFill: 0.8
+      }
+  },
+  
   getAnchors(world, layout, deviceId): AnchorSnapshot {
     const anchors: Record<string, LayoutRect> = {};
     
-    // Extract semantic regions from your layout
-    if (layout.kind === "MY_VIEW" && layout.featureRect) {
-      anchors.myFeature = layout.featureRect;
-    }
+    // ... logic to extract anchors
     
-    // Always provide device fallback
-    anchors.device = { x: 0, y: 0, width: 430, height: 932 };
-    
-    return { 
-        anchors: {
-            ...anchors,
-            // Add metadata for sticky elements!
-            myStickyNav: { ...rect, metadata: { sticky: true } }
-        }, 
-        deviceId, 
-        appId: "app_myapp" 
-    };
+    return { anchors, deviceId, appId: "app_myapp" };
   }
 };
+```
 
-// Register at module load
+Then register it in your app's entry point:
+
+```typescript
+// packages/apps-myapp/src/index.ts
+import { AnchorRegistry } from "@tokovo/core";
+import { MyAppAnchorProvider } from "./provider";
+
 AnchorRegistry.register(MyAppAnchorProvider);
 ```
 

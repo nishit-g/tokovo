@@ -800,6 +800,17 @@ export interface DuckRule {
     release: number;           // Frames to recover
 }
 
+// =============================================================================
+// LAYOUT PRIMITIVES
+// =============================================================================
+
+export interface LayoutRect {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
+
 // Sound cue - enhanced active sound with mixing metadata
 export interface SoundCue {
     // Core fields (from ActiveSound)

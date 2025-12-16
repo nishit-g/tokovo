@@ -39,6 +39,29 @@ function getDeviceProfile(profileId?: string): { dimensions: { width: number; he
 export const PhoneAnchorProvider: AnchorProvider = {
     appId: APP_ID,
 
+    framing: {
+        callPoster: {
+            anchorPoint: { x: 0.5, y: 0.4 },
+            paddingPx: 32,
+            targetFill: 0.65,
+        },
+        acceptButton: {
+            anchorPoint: { x: 0.7, y: 0.85 },
+            paddingPx: 40,
+            targetFill: 0.25,
+        },
+        declineButton: {
+            anchorPoint: { x: 0.3, y: 0.85 },
+            paddingPx: 40,
+            targetFill: 0.25,
+        },
+        device: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 0,
+            targetFill: 1.0,
+        }
+    },
+
     getAnchors(
         world: WorldState,
         layout: unknown,

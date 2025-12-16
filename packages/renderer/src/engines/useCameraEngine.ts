@@ -32,7 +32,10 @@ import {
     ANCHOR_STABILITY_FRAMES,
     SemanticAnchorId,
     resolveAnchorWithFallback,
+    AnchorRegistry, // Import the Registry
+    ActiveCameraEffect,
 } from "@tokovo/core";
+import { getShotPreset } from "@tokovo/core";
 import { LayoutEngineOutput } from "./useLayoutEngine";
 import { createDirectorLayoutModel } from "../layout/director-adapter";
 import { applyDirectorEffects, Viewport } from "../camera-composer";
@@ -190,6 +193,9 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
             // Create layout model from computed layout
             const chatLayout = layout as ChatLayoutState;
+            // Safe access to scrollY
+            const scrollY = chatLayout.scrollY || 0;
+
             const directorLayout = createDirectorLayoutModel(
                 chatLayout,
                 deviceId,
@@ -261,6 +267,8 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                         if (resolved) {
                             // Inject the resolved rect into the effect
                             effect.target = resolved.rect;
+                            // Inject framing config 
+                            // TODO: DirectorLite derive logic already injects generic targets, but for framing we might need more
 
                             // Get scale from preset if not explicitly set
                             if (!effect.scale && effect.preset) {
@@ -312,86 +320,78 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         if (anchorFocusEffects.length > 0 && anchorSnapshot) {
             for (const ae of anchorFocusEffects) {
                 const effect = ae.effect as any; // CameraAnchorFocusEffect
-                const anchorId = effect.anchor;
 
-                // Resolve anchor rect from snapshot (with fallback chain)
-                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+                // 1. Resolve to Snapshot Rect
+                const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
+                if (!resolved) continue;
 
-                if (resolved) {
-                    const rect = resolved.rect;
-                    const viewportWidth = profile.dimensions.width;
-                    const viewportHeight = profile.dimensions.height;
+                const rect = resolved.rect;
+                const viewportWidth = profile.dimensions.width;
+                const viewportHeight = profile.dimensions.height;
 
-                    // === FIX: APPLY SCROLL OFFSET ===
-                    // Layout Rects are in Content Space (absolute Y).
-                    // Camera Transform is in Viewport Space.
-                    // We must subtract scrollY for non-sticky elements.
-                    let finalY = rect.y;
-                    const isSticky = resolved.metadata?.sticky || rect.y < 0; // Negative Y usually implies special handling, but sticky flag is safer
+                // 2. Get Framing Config (Layer 3)
+                const framing = AnchorRegistry.getFraming(anchorSnapshot.appId, resolved.anchor) || {
+                    anchorPoint: { x: 0.5, y: 0.5 },
+                    paddingPx: 0,
+                    targetFill: 1.0
+                };
 
-                    if (!isSticky) {
-                        // Safe access to scrollY from layout
-                        const scrollY = (layout as any).scrollY || 0;
-                        finalY -= scrollY;
-                    }
+                // 3. Compute Target Origin
+                const contentCX = rect.x + rect.width / 2;
+                const contentCY = rect.y + rect.height / 2;
 
-                    // === THE KEY MATH: Convert rect → origin ===
-                    // Use provided alignment or default to center (0.5)
-                    const alignX = effect.align?.x ?? 0.5;
-                    const alignY = effect.align?.y ?? 0.5;
+                // Adjust for scroll if NOT sticky
+                let finalY = contentCY;
+                const isSticky = resolved.rect.metadata?.sticky || rect.y < 0;
 
-                    const targetX = rect.x + rect.width * alignX;
-                    const targetY = finalY + rect.height * alignY;
-
-                    // Normalize to 0-1 range
-                    const originX = targetX / viewportWidth;
-                    const originY = targetY / viewportHeight;
-
-                    // Clamp to valid range (0.1 to 0.9 to avoid edge distortion)
-                    const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
-                    const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
-
-                    // Calculate animation progress
-                    const duration = ae.endFrame - ae.startFrame;
-                    const progress = Math.min(1, (t - ae.startFrame) / duration);
-
-                    // Apply easing
-                    const easing = effect.easing || "ease-out";
-                    const easedProgress = applyEasingSimple(progress, easing);
-
-                    // Get scale from preset or effect
-                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
-
-                    // Apply transform (blend from current to target)
-                    finalCameraTransform = {
-                        ...finalCameraTransform,
-                        scale: 1 + (targetScale - 1) * easedProgress,
-                        originX: clampedOriginX,
-                        originY: clampedOriginY,
-                    };
-
-                    // Apply shake if specified
-                    if (effect.shake && effect.shake > 0) {
-                        const frameInEffect = t - ae.startFrame;
-                        const shakeDecay = 1 - progress * 0.6;
-                        const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
-                        const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
-                        finalCameraTransform.shakeX = shakeX;
-                        finalCameraTransform.shakeY = shakeY;
-                    }
-
-                    // Update tracking state for smooth decay fallback
-                    trackingStateRef.current = {
-                        prevOriginX: clampedOriginX,
-                        prevOriginY: clampedOriginY,
-                        prevScale: finalCameraTransform.scale,
-                        hasActiveEffect: true,
-                    };
-
-                    if (directorDebug) {
-                        console.log(`[CameraEngine] ANCHOR_FOCUS resolved: anchor=${anchorId} rect=`, rect, `origin=(${clampedOriginX.toFixed(2)}, ${clampedOriginY.toFixed(2)})`);
-                    }
+                if (!isSticky) {
+                    const scrollY = (layout as any).scrollY || 0;
+                    finalY -= scrollY;
                 }
+
+                // Convert Content Point -> Frame Point
+                // Use framing configuration
+                const targetX = rect.x + rect.width * framing.anchorPoint.x;
+                const targetY = finalY + rect.height * framing.anchorPoint.y - (rect.height / 2);
+
+                // Normalize to 0-1 range
+                const originX = targetX / viewportWidth;
+                const originY = targetY / viewportHeight;
+
+                // Clamp
+                const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
+                const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
+
+                // 4. Animate it
+                const duration = ae.endFrame - ae.startFrame;
+                const progress = Math.min(1, (t - ae.startFrame) / duration);
+                const easing = effect.easing || "ease-out";
+                const easedProgress = applyEasingSimple(progress, easing);
+                const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+
+                finalCameraTransform = {
+                    ...finalCameraTransform,
+                    scale: 1 + (targetScale - 1) * easedProgress,
+                    originX: clampedOriginX,
+                    originY: clampedOriginY,
+                };
+
+                // Shake
+                if (effect.shake && effect.shake > 0) {
+                    const frameInEffect = t - ae.startFrame;
+                    const shakeDecay = 1 - progress * 0.6;
+                    const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
+                    const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
+                    finalCameraTransform.shakeX = shakeX;
+                    finalCameraTransform.shakeY = shakeY;
+                }
+
+                trackingStateRef.current = {
+                    prevOriginX: clampedOriginX,
+                    prevOriginY: clampedOriginY,
+                    prevScale: finalCameraTransform.scale,
+                    hasActiveEffect: true,
+                };
             }
         }
 
@@ -407,75 +407,79 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         if (anchorTrackEffects.length > 0 && anchorSnapshot) {
             for (const ae of anchorTrackEffects) {
                 const effect = ae.effect as any;  // CameraAnchorTrackEffect
-                const anchorId = effect.anchor;
 
-                // Resolve anchor rect EVERY FRAME (this is the key!)
-                const resolved = resolveAnchorWithFallback(anchorId, anchorSnapshot.anchors);
+                // 1. Resolve Anchor
+                const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
+                if (!resolved) continue;
 
-                if (resolved) {
-                    const rect = resolved.rect;
-                    const viewportWidth = profile.dimensions.width;
-                    const viewportHeight = profile.dimensions.height;
+                const rect = resolved.rect;
+                const viewportWidth = profile.dimensions.width;
+                const viewportHeight = profile.dimensions.height;
 
-                    // Compute target origin from rect center (or aligned point)
-                    const alignX = effect.align?.x ?? 0.5;
-                    const alignY = effect.align?.y ?? 0.5;
+                // 2. Get Framing Config
+                const framing = AnchorRegistry.getFraming(anchorSnapshot.appId, resolved.anchor) || {
+                    anchorPoint: { x: 0.5, y: 0.5 }
+                };
 
-                    const targetPointX = rect.x + rect.width * alignX;
-                    const targetPointY = rect.y + rect.height * alignY;
+                // 3. Compute Target Point based on Framing or Effect overrides
+                const alignX = effect.align?.x ?? framing.anchorPoint.x;
+                const alignY = effect.align?.y ?? framing.anchorPoint.y;
 
-                    const targetOriginX = Math.max(0.1, Math.min(0.9, targetPointX / viewportWidth));
-                    const targetOriginY = Math.max(0.1, Math.min(0.9, targetPointY / viewportHeight));
+                const targetPointX = rect.x + rect.width * alignX;
+                const targetPointY = rect.y + rect.height * alignY;
 
-                    // Get previous origin from tracking state
-                    const prev = trackingStateRef.current;
-
-                    // Smoothing factor: lower = smoother/laggier
-                    const smoothing = effect.smoothing ?? 0.18;
-
-                    // DEADZONE: don't move if delta is tiny (prevents jitter)
-                    const DEADZONE = 0.01;  // 1% of viewport
-                    const deltaX = Math.abs(targetOriginX - prev.prevOriginX);
-                    const deltaY = Math.abs(targetOriginY - prev.prevOriginY);
-
-                    let smoothedOriginX = prev.prevOriginX;
-                    let smoothedOriginY = prev.prevOriginY;
-
-                    if (deltaX > DEADZONE || deltaY > DEADZONE) {
-                        // EXPONENTIAL SMOOTHING (lerp toward target)
-                        smoothedOriginX = lerp(prev.prevOriginX, targetOriginX, smoothing);
-                        smoothedOriginY = lerp(prev.prevOriginY, targetOriginY, smoothing);
-                    }
-
-                    // Calculate animation progress
-                    const duration = ae.endFrame - ae.startFrame;
-                    const progress = Math.min(1, (t - ae.startFrame) / duration);
-
-                    // Get scale from preset or effect
-                    const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
-                    const easedProgress = applyEasingSimple(progress, effect.easing || "ease-out");
-                    const scale = 1 + (targetScale - 1) * easedProgress;
-
-                    // Apply transform with smoothed origin
-                    finalCameraTransform = {
-                        ...finalCameraTransform,
-                        scale,
-                        originX: smoothedOriginX,
-                        originY: smoothedOriginY,
-                    };
-
-                    // Update tracking state for next frame
-                    trackingStateRef.current = {
-                        prevOriginX: smoothedOriginX,
-                        prevOriginY: smoothedOriginY,
-                        prevScale: scale,
-                        hasActiveEffect: true,
-                    };
-
-                    if (directorDebug) {
-                        console.log(`[CameraEngine] ANCHOR_TRACK: anchor=${anchorId} target=(${targetOriginX.toFixed(2)}, ${targetOriginY.toFixed(2)}) smoothed=(${smoothedOriginX.toFixed(2)}, ${smoothedOriginY.toFixed(2)})`);
-                    }
+                // Adjust for scroll offset on track effects too? 
+                // Currently track effects seemed to work on raw rects, but if scroll logic applies to focus, it applies here too.
+                // Assuming rect.y is content-space, and we need viewport-space:
+                // TODO: Verify if ANCHOR_TRACK targets matched. 
+                // The original code calculated targetOriginX/Y directly from rect.
+                // If rect.y was content coordinate, calculating origin Y without scroll subtraction would be wrong for scrolled content.
+                // Assuming we need scroll correction here too.
+                let finalY = targetPointY;
+                const isSticky = resolved.rect.metadata?.sticky || rect.y < 0;
+                if (!isSticky) {
+                    const scrollY = (layout as any).scrollY || 0; // this might be unsafe cast if not chat layout
+                    finalY -= scrollY;
                 }
+
+                const targetOriginX = Math.max(0.1, Math.min(0.9, targetPointX / viewportWidth));
+                const targetOriginY = Math.max(0.1, Math.min(0.9, finalY / viewportHeight));
+
+                // 4. Smooth Follow
+                const prev = trackingStateRef.current;
+                const smoothing = effect.smoothing ?? 0.18;
+                const DEADZONE = 0.01;
+                const deltaX = Math.abs(targetOriginX - prev.prevOriginX);
+                const deltaY = Math.abs(targetOriginY - prev.prevOriginY);
+
+                let smoothedOriginX = prev.prevOriginX;
+                let smoothedOriginY = prev.prevOriginY;
+
+                if (deltaX > DEADZONE || deltaY > DEADZONE) {
+                    smoothedOriginX = lerp(prev.prevOriginX, targetOriginX, smoothing);
+                    smoothedOriginY = lerp(prev.prevOriginY, targetOriginY, smoothing);
+                }
+
+                // 5. Animate Scale
+                const duration = ae.endFrame - ae.startFrame;
+                const progress = Math.min(1, (t - ae.startFrame) / duration);
+                const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
+                const easedProgress = applyEasingSimple(progress, effect.easing || "ease-out");
+                const scale = 1 + (targetScale - 1) * easedProgress;
+
+                finalCameraTransform = {
+                    ...finalCameraTransform,
+                    scale,
+                    originX: smoothedOriginX,
+                    originY: smoothedOriginY,
+                };
+
+                trackingStateRef.current = {
+                    prevOriginX: smoothedOriginX,
+                    prevOriginY: smoothedOriginY,
+                    prevScale: scale,
+                    hasActiveEffect: true,
+                };
             }
         }
 

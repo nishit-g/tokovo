@@ -24,7 +24,8 @@ import {
     CameraResetEffect,
 } from "../types";
 
-import { getAnchorFraming } from "./presets";
+import { AnchorRegistry } from "../anchors";
+
 
 // =============================================================================
 // EASING FUNCTIONS
@@ -397,7 +398,36 @@ export class CameraController {
 
         // Get framing config from Layer 3 (Presets) - NOT hardcoded here!
         // Semantic interpretation ("lastMessage should be lower-third") lives in presets.ts
-        const framing = getAnchorFraming(effect.anchor);
+        // UPDATE: Now lives in AnchorRegistry (App-owned)
+        // We assume the app has registered its provider.
+        // NOTE: CameraController runs in core, so it might not see all providers if not registered.
+        // For render-time logic, useCameraEngine handles this primarily.
+        // This applyAnchorFocus is mostly for "preview" or if we run this locally.
+
+        // We need an appId to look up framing. 
+        // CameraEffect doesn't always have appId, but AnchorSnapshot does.
+        // Since we don't have the full snapshot here, we can iterate all providers 
+        // OR we just use a default if we can't find it.
+        // Ideally, we shouldn't be resolving framing HERE in the pure math layer if we depend on Registry.
+        // BUT, for now, let's try to find it.
+
+        // Strategy: Iterate registered apps to find one that answers for this anchor.
+        // Slow but works for now.
+        let framing;
+        const registry = AnchorRegistry; // Helper to avoid import if possible? No, we need it.
+        for (const appId of registry.getRegisteredApps()) {
+            const f = registry.getFraming(appId, effect.anchor);
+            if (f) {
+                framing = f;
+                break;
+            }
+        }
+
+        if (!framing) {
+            // Fallback default
+            framing = { anchorPoint: { x: 0.5, y: 0.5 } };
+        }
+
         transform.originX = framing.anchorPoint.x;
         transform.originY = framing.anchorPoint.y;
     }

@@ -4,89 +4,59 @@
  * Core types for the Semantic Anchor-Driven Camera System.
  *
  * ARCHITECTURE:
- * - Apps expose WHAT can be focused (anchors)
- * - Director decides WHEN to focus (signals → intents)
- * - Presets define HOW it looks (scale, easing, shake)
- * - Camera math executes (pure transforms)
+ * - Apps expose WHAT can be focused (anchors) and HOW they should be framed.
+ * - Director decides WHEN to focus (signals → intents).
+ * - Camera math executes (pure transforms).
  *
  * RULES:
  * - Anchors are in device-viewport space
  * - No timestamp — anchors are "what exists right now given (world, layout)"
- * - SemanticAnchorId is extensible for plugins
- * - Hysteresis: 3 frames stability required before switching
+ * - SemanticAnchorId is purely string-based (open for extension)
  */
 
 import { WorldState } from "./types";
 import { LayoutRect } from "./types";
 
-// Re-export LayoutRect for convenience
-// LayoutRect is imported from types.ts
-
 // =============================================================================
-// ANCHOR IDS
+// ANCHOR IDENTIFIERS
 // =============================================================================
 
 /**
- * Core semantic anchors — type-safe, always available
+ * Core semantic anchors — always available fallback.
  */
-export type CoreSemanticAnchorId =
-    | "lastMessage"
-    | "typingIndicator"
-    | "inputArea"
-    | "device"; // Always available fallback
+export type CoreSemanticAnchorId = "device";
 
 /**
- * Extensible anchor ID — plugins can add custom anchors as strings
- *
- * Pattern: Core anchors are type-safe, extensions are strings.
- * This avoids core churn when adding new app-specific anchors.
+ * Semantic Anchor ID - Open string type.
+ * Apps define their own IDs (e.g. "lastMessage", "callPoster").
  */
 export type SemanticAnchorId = CoreSemanticAnchorId | (string & {});
 
 // =============================================================================
-// APP-SPECIFIC ANCHOR TYPES (for type-safety in known apps)
+// ANCHOR FRAMING (Configuration)
 // =============================================================================
 
-/** WhatsApp-specific anchors */
-export type WhatsAppAnchorId =
-    | CoreSemanticAnchorId
-    | "reactionBubble"
-    | "voiceNote"
-    | "imagePreview";
+/**
+ * Framing instruction for how to position anchor in frame.
+ * Defined by the App that owns the anchor.
+ */
+export interface AnchorFraming {
+    /** Anchor point within frame: normalized 0-1 (x, y) */
+    anchorPoint: { x: number; y: number };
 
-/** Phone app anchors */
-export type PhoneAnchorId =
-    | CoreSemanticAnchorId
-    | "callPoster"
-    | "acceptButton"
-    | "declineButton"
-    | "callTimer"
-    | "muteButton";
+    /** Padding around anchor in pixels */
+    paddingPx?: number;
 
-/** Notification anchors */
-export type NotificationAnchorId =
-    | CoreSemanticAnchorId
-    | "headsUpNotification"
-    | "dynamicIsland"
-    | "notificationStack";
-
-/** Twitter/X anchors */
-export type TwitterAnchorId =
-    | CoreSemanticAnchorId
-    | "focusedTweet"
-    | "replyBox"
-    | "profileCard"
-    | "likeButton";
+    /** Target fill: how much of frame the anchor should occupy (0-1) */
+    targetFill?: number;
+}
 
 // =============================================================================
-// ANCHOR SNAPSHOT
+// ANCHOR SNAPSHOT (Runtime State)
 // =============================================================================
 
 /**
  * Snapshot of available anchors at the current moment.
- *
- * IMPORTANT: No timestamp! Anchors are computed from (world, layout) and
- * represent "what exists right now". The camera evaluation owns frame time.
  */
 export interface AnchorSnapshot {
     /** Available anchors mapped to their rects */
@@ -105,35 +75,19 @@ export interface AnchorSnapshot {
 
 /**
  * Interface that apps implement to expose semantic anchors.
- *
- * Apps are the ONLY source of truth for what can be focused.
- * Camera never understands UI semantics — just rectangles.
- *
- * @example
- * ```typescript
- * const WhatsAppAnchorProvider: AnchorProvider = {
- *   appId: "app_whatsapp",
- *   getAnchors(world, layout) {
- *     return {
- *       anchors: { lastMessage: rect, typingIndicator: rect },
- *       deviceId: "phone",
- *       appId: "app_whatsapp"
- *     };
- *   }
- * };
- * ```
  */
 export interface AnchorProvider {
     /** App ID this provider handles */
     appId: string;
 
+    /** 
+     * Static framing configuration for this app's anchors.
+     * The camera engine uses this to decide how to frame the rects.
+     */
+    framing: Record<SemanticAnchorId, AnchorFraming>;
+
     /**
      * Extract anchors from current world/layout state.
-     *
-     * @param world - Current world state
-     * @param layout - Computed layout state
-     * @param deviceId - Device being rendered
-     * @returns Snapshot of available anchors
      */
     getAnchors(
         world: WorldState,
@@ -148,7 +102,6 @@ export interface AnchorProvider {
 
 /**
  * Registry of anchor providers by app ID.
- * Apps self-register their providers at module load time.
  */
 export class AnchorRegistryClass {
     private providers = new Map<string, AnchorProvider>();
@@ -163,9 +116,10 @@ export class AnchorRegistryClass {
         return this.providers.get(appId);
     }
 
-    /** Check if a provider exists */
-    has(appId: string): boolean {
-        return this.providers.has(appId);
+    /** Get framing config for a specific anchor across all providers */
+    getFraming(appId: string, anchorId: SemanticAnchorId): AnchorFraming | undefined {
+        const provider = this.providers.get(appId);
+        return provider?.framing[anchorId];
     }
 
     /** Get all registered app IDs */
@@ -181,31 +135,15 @@ export const AnchorRegistry = new AnchorRegistryClass();
 // HYSTERESIS (Anchor Stability)
 // =============================================================================
 
-/**
- * Number of frames an anchor must be stable before switching to it.
- * Prevents camera jitter from volatile anchors (typing dots, reactions).
- */
 export const ANCHOR_STABILITY_FRAMES = 3;
 
-/**
- * State for tracking anchor stability.
- * Used by intent resolution to implement hysteresis.
- */
 export interface AnchorStabilityState {
-    /** Currently focused anchor (after hysteresis) */
     currentAnchor: SemanticAnchorId | null;
-
-    /** Candidate anchor being evaluated */
     candidateAnchor: SemanticAnchorId | null;
-
-    /** How many frames candidate has been stable */
     stableFrames: number;
-
-    /** Frame when we last switched targets */
     lastSwitchFrame: number;
 }
 
-/** Default stability state */
 export const DEFAULT_ANCHOR_STABILITY: AnchorStabilityState = {
     currentAnchor: null,
     candidateAnchor: null,
@@ -214,7 +152,7 @@ export const DEFAULT_ANCHOR_STABILITY: AnchorStabilityState = {
 };
 
 // =============================================================================
-// FALLBACK CHAINS
+// FALLBACK CHAINS (Deprecated/Legacy support if needed, but intended to be removed)
 // =============================================================================
 
 /**
@@ -225,37 +163,15 @@ export const DEFAULT_ANCHOR_STABILITY: AnchorStabilityState = {
 export const FALLBACK_CHAINS: Partial<
     Record<SemanticAnchorId, SemanticAnchorId[]>
 > = {
-    // Chat anchors
-    typingIndicator: ["inputArea", "lastMessage", "device"],
-    lastMessage: ["inputArea", "device"],
-    reactionBubble: ["lastMessage", "device"],
-    inputArea: ["lastMessage", "device"],
-
-    // Notification anchors
-    headsUpNotification: ["dynamicIsland", "device"],
-    dynamicIsland: ["device"],
-
-    // Call anchors
-    callPoster: ["device"],
-    acceptButton: ["callPoster", "device"],
-    declineButton: ["callPoster", "device"],
-
-    // Feed anchors
-    focusedTweet: ["device"],
-    replyBox: ["focusedTweet", "device"],
+    // We keep this temporarily generic or empty, as apps should handle their own fallback logic internally
+    // or we move this to the app providers too.
+    // For now, retaining core logic to avoid breaking everything.
 };
 
-/**
- * Resolve an anchor with fallback chain.
- *
- * @param targetAnchor - Primary anchor to find
- * @param anchors - Available anchors
- * @returns Resolved anchor ID and rect, or null if all fallbacks exhausted
- */
 export function resolveAnchorWithFallback(
     targetAnchor: SemanticAnchorId,
     anchors: AnchorSnapshot["anchors"]
-): { anchor: SemanticAnchorId; rect: LayoutRect } | null {
+): { anchor: SemanticAnchorId; rect: LayoutRect & { metadata?: { sticky?: boolean } } } | null {
     // Try primary anchor first
     if (anchors[targetAnchor]) {
         return { anchor: targetAnchor, rect: anchors[targetAnchor]! };

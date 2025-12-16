@@ -12,21 +12,11 @@ import {
 } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
-import { WhatsAppAnchorProvider } from "./whatsapp";
-import { PhoneAnchorProvider } from "./phone";
 import { NotificationAnchorProvider } from "./notification";
 
-// =============================================================================
-// AUTO-REGISTER PROVIDERS
-// =============================================================================
-
-/**
- * Register all built-in anchor providers.
- * Call this once at app startup.
- */
 export function registerBuiltInAnchorProviders(): void {
-    AnchorRegistry.register(WhatsAppAnchorProvider);
-    AnchorRegistry.register(PhoneAnchorProvider);
+    // Apps self-register when imported
+    // Only Notification provider is left here (for now)
     AnchorRegistry.register(NotificationAnchorProvider);
 }
 
