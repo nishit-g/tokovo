@@ -74,4 +74,5 @@ export const dsl = {
     touch,
     call,
     navigation,
+    os,
 };
