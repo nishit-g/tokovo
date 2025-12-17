@@ -24,3 +24,9 @@ export { BehaviorRegistry } from "./behavior";
 // App Metadata Registry
 export { AppMetadataRegistry } from "./metadata";
 export type { AppMetadata } from "./metadata";
+
+// Layout Registry
+export { LayoutRegistry } from "./layout";
+export type { LayoutStrategy, LayoutContext, LayoutState } from "./layout";
+
+// Note: AnchorRegistry is exported from ../anchors (not duplicated here)

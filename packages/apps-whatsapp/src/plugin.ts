@@ -3,20 +3,21 @@
  * 
  * Self-contained plugin with all tiers:
  * - Tier A: id, version, displayName, reducer, views
- * - Tier B: lowering handler
+ * - Tier B: lowering handler, layouts
  * - Tier C: DSL extension (b.use() pattern)
  * 
  * @see docs/FUCKING_MESS.md Section 6
  */
 
 import { APP_IDS, PluginManager } from "@tokovo/core";
-import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
+import type { TokovoPluginContract, PluginViews, PluginLayoutStrategy } from "@tokovo/core/src/types/plugin-contract";
 import { whatsappReducer } from "./logic/reducer";
 import { WhatsappChatView } from "./ui";
 import { whatsappLowering } from "./lowering";
 import { whatsappV2Lowering } from "./v2/lowering";
 import { whatsappDsl, WhatsAppDslApi } from "./dsl-extension";
 import { whatsappAudioRules } from "./assets/audio-rules";
+import { computeChatLayout } from "./layout";
 
 // =============================================================================
 // PLUGIN VIEWS
@@ -90,6 +91,14 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     // === TIER B: Lowering ===
     lowering: whatsappLowering,
     v2Lowering: whatsappV2Lowering,
+
+    // === TIER B: Layouts ===
+    layouts: [
+        {
+            viewKind: "CHAT",
+            computeLayout: computeChatLayout as any,  // Type cast for LayoutContext compatibility
+        },
+    ],
 
     // === TIER C: DSL ===
     dsl: whatsappDsl,

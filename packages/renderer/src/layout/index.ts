@@ -1,6 +1,13 @@
+/**
+ * Layout System - Plugin-agnostic layout computation
+ *
+ * Uses LayoutRegistry to delegate layout computation to plugins.
+ * Provides fallbacks for common view kinds when no plugin is registered.
+ */
+
+import { LayoutRegistry } from "@tokovo/core";
 import { LayoutContext, LayoutState } from "./types";
 import { defaultLayoutConfig } from "./config";
-import { computeChatLayout } from "@tokovo/apps-whatsapp";
 import { computeFeedLayout } from "./strategies/feed";
 import { computeStoryLayout } from "./strategies/story";
 import { computeLockscreenLayout } from "./strategies/lockscreen";
@@ -9,6 +16,14 @@ import { computeTransitionLayout } from "./strategies/transition";
 export * from "./types";
 export * from "./config";
 
+/**
+ * Compute layout using LayoutRegistry with fallbacks.
+ *
+ * Priority:
+ * 1. App-specific layout from LayoutRegistry
+ * 2. Generic viewKind layout from LayoutRegistry
+ * 3. Built-in fallback layouts
+ */
 export function computeLayout(ctx: LayoutContext): LayoutState {
     // Deep merge provided config with defaults
     const config = {
@@ -22,9 +37,20 @@ export function computeLayout(ctx: LayoutContext): LayoutState {
     };
     const fullCtx = { ...ctx, config };
 
+    // 1. Try app-specific layout from registry
+    const appStrategy = LayoutRegistry.get(ctx.activeAppId, ctx.viewKind);
+    if (appStrategy) {
+        return appStrategy.computeLayout(fullCtx);
+    }
+
+    // 2. Try generic viewKind layout from registry
+    const viewStrategy = LayoutRegistry.getByViewKind(ctx.viewKind);
+    if (viewStrategy) {
+        return viewStrategy.computeLayout(fullCtx);
+    }
+
+    // 3. Fallback to built-in layouts
     switch (ctx.viewKind) {
-        case "CHAT":
-            return computeChatLayout(fullCtx);
         case "FEED":
             return computeFeedLayout(fullCtx);
         case "STORY":
@@ -34,7 +60,7 @@ export function computeLayout(ctx: LayoutContext): LayoutState {
         case "TRANSITION":
             return computeTransitionLayout(fullCtx);
         default:
-            // Fallback to empty transition state
+            // Default fallback
             return {
                 kind: "TRANSITION",
                 deviceTranslateX: 0,

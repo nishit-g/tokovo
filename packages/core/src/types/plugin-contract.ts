@@ -10,7 +10,7 @@
  */
 
 import { RuntimeEvent, AppEventPayloads } from "./runtime-event";
-
+import type { Platform } from "../tokens";
 // =============================================================================
 // PLUGIN REDUCER
 // =============================================================================
@@ -91,6 +91,24 @@ export interface LoweringHandler {
         op: import("@tokovo/ir").TimelineOp,
         ctx: LowerContext
     ) => RuntimeEvent[];
+}
+
+// =============================================================================
+// TIER B: LAYOUTS
+// =============================================================================
+
+/**
+ * Layout strategy - computes layout for a view
+ */
+export interface PluginLayoutStrategy {
+    /** View kind this strategy handles (e.g., "CHAT", "FEED") */
+    viewKind: string;
+
+    /** Optional platform filter */
+    platforms?: Platform[];
+
+    /** Compute layout for the given context */
+    computeLayout: (ctx: unknown) => unknown;
 }
 
 // =============================================================================
@@ -211,6 +229,9 @@ export interface TokovoPluginContract<AppId extends string = string> {
 
     // === TIER B: Lowering (OPTIONAL) ===
     lowering?: LoweringHandler;
+
+    // === TIER B: Layouts (OPTIONAL) ===
+    layouts?: PluginLayoutStrategy[];
 
     // === TIER C: DSL (OPTIONAL) ===
     dsl?: DslExtension;

@@ -310,7 +310,22 @@ export class PluginManagerClass {
             console.log(`[PluginManager] Auto-registered anchors for: ${plugin.id}`);
         }
 
-        // 6. Auto-register Sounds
+        // 6. Auto-register Layouts
+        if ((plugin as any).layouts && (plugin as any).layouts.length > 0) {
+            import("../registries/layout").then(({ LayoutRegistry }) => {
+                for (const layout of (plugin as any).layouts) {
+                    LayoutRegistry.register({
+                        appId: plugin.id,
+                        viewKind: layout.viewKind,
+                        platforms: layout.platforms,
+                        computeLayout: layout.computeLayout,
+                    });
+                }
+                console.log(`[PluginManager] Registered ${(plugin as any).layouts.length} layouts for: ${plugin.id}`);
+            });
+        }
+
+        // 7. Auto-register Sounds
         if (plugin.sounds) {
             const soundMap: Record<string, string> = {};
             // Prefix keys with plugin ID to avoid collisions if registry is flat? 
