@@ -5,6 +5,19 @@
  * Routing fields (deviceId, appId) at top-level.
  * App-specific data (conversationId, etc.) in payload.
  * 
+ * ## Module Augmentation Pattern
+ * 
+ * Apps should extend the AppTrackEventRegistry interface:
+ * 
+ * ```typescript
+ * // In @tokovo/apps-whatsapp/src/types.ts:
+ * declare module "@tokovo/ir" {
+ *     interface AppTrackEventRegistry {
+ *         app_whatsapp: WhatsAppTrackEvent;
+ *     }
+ * }
+ * ```
+ * 
  * @see docs-v2/DSL_REVAMP.md#trackevent-schema
  */
 
@@ -39,28 +52,23 @@ export interface TrackEventBase {
 }
 
 // =============================================================================
-// TYPED TRACK EVENTS
+// MODULE AUGMENTATION INTERFACE
 // =============================================================================
 
 /**
- * WhatsApp app track event
+ * Registry for app-specific track events.
+ * 
+ * Plugins extend this interface via module augmentation.
+ * This allows type-safe app events without hardcoding in IR.
  */
-export type WhatsAppTrackEvent = TrackEventBase & {
-    kind: "APP";
-    appId: "app_whatsapp";
-} & (
-        | { type: "MESSAGE_RECEIVED"; payload: WhatsAppPayloads["MESSAGE_RECEIVED"] }
-        | { type: "MESSAGE_SENT"; payload: WhatsAppPayloads["MESSAGE_SENT"] }
-        | { type: "TYPING_START"; payload: WhatsAppPayloads["TYPING_START"] }
-        | { type: "TYPING_END"; payload: WhatsAppPayloads["TYPING_END"] }
-        | { type: "IMAGE_RECEIVED"; payload: WhatsAppPayloads["IMAGE_RECEIVED"] }
-        | { type: "IMAGE_SENT"; payload: WhatsAppPayloads["IMAGE_SENT"] }
-        | { type: "VIDEO_RECEIVED"; payload: WhatsAppPayloads["VIDEO_RECEIVED"] }
-        | { type: "VOICE_RECEIVED"; payload: WhatsAppPayloads["VOICE_RECEIVED"] }
-        | { type: "GIF_RECEIVED"; payload: WhatsAppPayloads["GIF_RECEIVED"] }
-        | { type: "REACT"; payload: WhatsAppPayloads["REACT"] }
-        | { type: "READ"; payload: WhatsAppPayloads["READ"] }
-    );
+export interface AppTrackEventRegistry {
+    // Plugins add their types here via module augmentation
+    // Example: app_whatsapp: WhatsAppTrackEvent;
+}
+
+// =============================================================================
+// TYPED TRACK EVENTS (System)
+// =============================================================================
 
 /**
  * Camera track event
@@ -122,6 +130,31 @@ export type MarkerTrackEvent = TrackEventBase & {
     );
 
 // =============================================================================
+// LEGACY: WhatsApp (for backward compatibility)
+// Will be moved to @tokovo/apps-whatsapp in future
+// =============================================================================
+
+/**
+ * @deprecated Use module augmentation instead. This will be moved to apps-whatsapp.
+ */
+export type WhatsAppTrackEvent = TrackEventBase & {
+    kind: "APP";
+    appId: "app_whatsapp";
+} & (
+        | { type: "MESSAGE_RECEIVED"; payload: WhatsAppPayloads["MESSAGE_RECEIVED"] }
+        | { type: "MESSAGE_SENT"; payload: WhatsAppPayloads["MESSAGE_SENT"] }
+        | { type: "TYPING_START"; payload: WhatsAppPayloads["TYPING_START"] }
+        | { type: "TYPING_END"; payload: WhatsAppPayloads["TYPING_END"] }
+        | { type: "IMAGE_RECEIVED"; payload: WhatsAppPayloads["IMAGE_RECEIVED"] }
+        | { type: "IMAGE_SENT"; payload: WhatsAppPayloads["IMAGE_SENT"] }
+        | { type: "VIDEO_RECEIVED"; payload: WhatsAppPayloads["VIDEO_RECEIVED"] }
+        | { type: "VOICE_RECEIVED"; payload: WhatsAppPayloads["VOICE_RECEIVED"] }
+        | { type: "GIF_RECEIVED"; payload: WhatsAppPayloads["GIF_RECEIVED"] }
+        | { type: "REACT"; payload: WhatsAppPayloads["REACT"] }
+        | { type: "READ"; payload: WhatsAppPayloads["READ"] }
+    );
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -130,13 +163,20 @@ export type MarkerTrackEvent = TrackEventBase & {
  * 
  * This is the canonical event type for the v2 DSL.
  * All tracks compile to TrackEvent[].
+ * 
+ * Includes:
+ * - System events (Camera, Audio, OS, Marker)
+ * - App events from AppTrackEventRegistry (via module augmentation)
+ * - Legacy WhatsAppTrackEvent (deprecated, for backward compatibility)
  */
 export type TrackEvent =
-    | WhatsAppTrackEvent
     | CameraTrackEvent
     | AudioTrackEvent
     | OSTrackEvent
-    | MarkerTrackEvent;
+    | MarkerTrackEvent
+    | WhatsAppTrackEvent  // LEGACY - will be removed when apps use augmentation
+    | AppTrackEventRegistry[keyof AppTrackEventRegistry];
+
 
 // =============================================================================
 // TYPE GUARDS

@@ -1,6 +1,9 @@
 /**
  * Shared Design Tokens & UI Primitives
- * Ensures consistent styling across WhatsApp, Instagram, and future apps
+ * Platform-agnostic tokens for iOS and Android rendering.
+ * 
+ * NOTE: App-specific configs (whatsapp, instagram, etc.) in appConfigs
+ * are legacy and should be moved to their respective plugin packages.
  */
 
 // =============================================================================
@@ -24,12 +27,8 @@ export const iOSTokens = {
         secondaryBackground: "#F2F2F7",
         separator: "rgba(60, 60, 67, 0.36)",
 
-        // App-specific
-        whatsappGreen: "#25D366",
-        whatsappTeal: "#128C7E",
-        instagramPink: "#E4405F",
-        instagramPurple: "#833AB4",
-        iMessageBlue: "#007AFF",
+        // @deprecated - App colors should be in plugin packages
+        // These are left for backward compatibility
     },
 
     // Typography (in 3x scale for Remotion)
@@ -91,8 +90,7 @@ export const androidTokens = {
         secondaryBackground: "#F8F9FA",
         separator: "rgba(0, 0, 0, 0.12)",
 
-        whatsappGreen: "#25D366",
-        instagramPink: "#E4405F",
+        // @deprecated - App colors should be in plugin packages
     },
 
     // Typography (Material 3, in 3x scale)

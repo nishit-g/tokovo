@@ -102,6 +102,14 @@ export const DEFAULTS = {
 // APP IDENTIFIERS
 // =============================================================================
 
+/**
+ * @deprecated Apps should define their own IDs. Core should not hardcode app IDs.
+ * 
+ * Example in plugin:
+ *   export const WHATSAPP_APP_ID = "app_whatsapp";
+ * 
+ * This constant is kept for backward compatibility but will be removed.
+ */
 export const APP_IDS = {
     WHATSAPP: "app_whatsapp",
     INSTAGRAM: "app_instagram",
@@ -139,14 +147,21 @@ export const EVENT_KINDS = {
 // SOUND IDENTIFIERS
 // =============================================================================
 
+/**
+ * @deprecated Apps should register their own sound IDs via AutoSoundRegistry.
+ * 
+ * Example in plugin index.ts:
+ *   AutoSoundRegistry.register(myAppAudioRules);
+ * 
+ * This constant is kept for backward compatibility but will be removed.
+ */
 export const SOUND_IDS = {
-    WHATSAPP_RECEIVED: "whatsapp_received",
-    WHATSAPP_SENT: "whatsapp_sent",
+    // LEGACY - Use SoundRegistry pattern instead.
     NOTIFICATION: "notification",
     RINGTONE: "ringtone",
-    TYPING: "typing",
     CAMERA_SHUTTER: "camera_shutter",
 } as const;
+
 
 // =============================================================================
 // HELPER FUNCTIONS
