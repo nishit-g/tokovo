@@ -1,45 +1,40 @@
 /**
  * @tokovo/ir
- * 
+ *
  * Intermediate Representations for Tokovo DSL.
- * 
- * Three layers:
- * - Scene IR: Semantic truth (no frames, no platform)
- * - Timeline IR: Execution contract (frames, deterministic)
- * - Semantic: Story intelligence (mood, intensity, pacing)
+ *
+ * V2 Track-based IR (RECOMMENDED):
+ * - TrackEvent: Typed track event union
+ * - TrackEpisodeIR: Episode intermediate representation
+ * - Payloads: Strongly-typed payload maps
+ *
+ * Legacy (DEPRECATED):
+ * - SceneIR: Beat-based semantic IR
+ * - TimelineOp: Timeline operations
  */
 
-// Semantic types (import first - used by scene.ts)
-export * from "./semantic";
+// =============================================================================
+// TRACE (Always available)
+// =============================================================================
 
-// Trace model
 export * from "./trace";
-export * from "./schemas";
-
-// Scene IR (semantic)
-export * from "./scene";
-
-// Timeline IR (execution)
-export * from "./timeline";
-
-// Ordering contract
-export * from "./ordering";
-
-// Validation
-export * from "./validate";
-
-// Narrative constraints
-export * from "./constraints";
 
 // =============================================================================
-// V2 Track Types
+// V2 TRACK-BASED IR (RECOMMENDED)
 // =============================================================================
 
-// Track payloads (typed payload maps)
-export * from "./track-payloads";
+export * from "./v2";
 
-// Track events (typed event union)
-export * from "./track-event";
+// =============================================================================
+// UTILITIES
+// =============================================================================
 
-// Track episode IR (DSL output)
-export * from "./track-episode-ir";
+export * from "./utils";
+
+// =============================================================================
+// LEGACY (DEPRECATED - Will be removed in v3)
+// =============================================================================
+
+// Re-export legacy for backward compatibility
+// These can be imported from "@tokovo/ir/legacy" when we add subpath exports
+export * from "./legacy";
