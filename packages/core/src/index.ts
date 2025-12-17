@@ -1,41 +1,101 @@
-// === ENTERPRISE TYPES (New) ===
-export * from "./types/index";
+/**
+ * @tokovo/core - Enterprise Core Package
+ * 
+ * @description Central exports for the Tokovo engine runtime.
+ * Organized by domain with clean barrel exports.
+ */
 
+// =============================================================================
+// TYPES - All type definitions
+// =============================================================================
 export * from "./types";
-// Utils
-export { SeededRNG } from "./utils/rng";
 
-// App Metadata Registry
-export * from "./app-metadata";
+// Legacy types.ts (for backward compatibility during migration)
+export * from "./types.ts";
 
-// Engine
+// =============================================================================
+// ENGINE - Replay loop and handlers
+// =============================================================================
 export * from "./engine";
+
+// =============================================================================
+// CAMERA - Camera effects and transforms
+// =============================================================================
+export * from "./camera";
+
+// =============================================================================
+// AUDIO - Sound system
+// =============================================================================
+export * from "./audio";
+export * from "./sounds";
+
+// =============================================================================
+// REGISTRIES - All registration systems
+// =============================================================================
+// Note: Don't use export * from registries - it re-exports and causes conflicts
+// Export factory only, then individual registries
+export { createRegistry } from "./registries/factory";
+export type { Registry } from "./registries/factory";
+
 export { AppRegistry } from "./app-registry";
 export type { AppViewProps, AppViewComponent } from "./app-registry";
-export * from "./camera";
-export * from "./sounds";
 export * from "./sound-registry";
-export * from "./constants";
-export * from "./typeGuards";
-export * from "./eventUtils";
-export * from "./plugin";
-export * from "./validation"; // [NEW] Runtime Validation
 export * from "./widget-registry";
-export * from "./components/AppSurface";
+export * from "./behavior-registry";
+export * from "./app-metadata";
+
+// =============================================================================
+// NOTIFICATIONS - Notification system
+// =============================================================================
+// Note: Types already exported from ./types, only export logic here
 export * from "./notification-adapter";
 export * from "./notification-dsl";
-export * from "./audio/mixer";
-export * from "./audio/auto-sound";
-export * from "./audio/music-bed";
-export * from "./audio/policies";
-export * from "./transitions";
-export * from "./director-lite";
-export * from "./audio";
-export * from "./anchors";
-export * from "./behavior-registry";
-export * from "./apps-config";
 export * from "./notification-registry";
 export * from "./scheduler/notification-scheduler";
 
-// === ENTERPRISE PIPELINE (New) ===
+// =============================================================================
+// PLUGIN - Plugin system
+// =============================================================================
+export * from "./plugin";
+
+// =============================================================================
+// UTILS - Utilities
+// =============================================================================
+export * from "./utils/rng";
+export * from "./typeGuards";
+export * from "./eventUtils";
+export * from "./validation";
+
+// =============================================================================
+// DIRECTOR LITE - Automatic camera
+// =============================================================================
+export * from "./director-lite";
+
+// =============================================================================
+// ANCHORS - Semantic positioning
+// =============================================================================
+export * from "./anchors";
+
+// =============================================================================
+// CONSTANTS & TOKENS
+// =============================================================================
+export * from "./constants";
+export * from "./tokens";
+// Note: apps-config has conflicting getAppConfig with tokens, skip it
+// export * from "./apps-config";
+
+// =============================================================================
+// TRANSITIONS
+// =============================================================================
+export * from "./transitions";
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+export * from "./components/AppSurface";
+
+// =============================================================================
+// EPISODE PREPARATION (V1)
+// =============================================================================
 export * from "./prepare";
+
