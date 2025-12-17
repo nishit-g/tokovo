@@ -10,6 +10,7 @@
         "@tokovo/core": "workspace:*",
         "@tokovo/dsl": "workspace:*",
         "@tokovo/ir": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
         "zod": "^3.0.0"
     },
     "devDependencies": {

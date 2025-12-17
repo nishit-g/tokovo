@@ -44,6 +44,10 @@ import { whatsappAudioRules } from "./assets/audio-rules";
 // Auto-register audio rules when this module is imported
 AutoSoundRegistry.register(whatsappAudioRules);
 
+// === V2 Track DSL ===
+export { WhatsAppTrackBuilder, WhatsAppPointBuilder, WhatsAppSpanBuilder, createWhatsAppTrackBuilder } from "./v2/track";
+export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./v2/track";
+
 // === Legacy Alias ===
 export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
 

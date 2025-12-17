@@ -19,6 +19,7 @@ import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
 import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
 import { UltimateCapabilitiesShowcase, ultimateShowcaseConfig } from "./UltimateCapabilitiesShowcase";
+import { TrackDemoVideo, trackDemoMeta } from "./TrackDemoVideo";
 import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
 import { compile } from "@tokovo/compiler";
@@ -44,6 +45,15 @@ export const RemotionRoot: React.FC = () => {
                 fps={ultimateShowcaseConfig.fps}
                 width={ultimateShowcaseConfig.width}
                 height={ultimateShowcaseConfig.height}
+            />
+            {/* NEW: Track Demo V2 - shows new track-based DSL */}
+            <Composition
+                id={trackDemoMeta.id}
+                component={trackDemoMeta.component}
+                durationInFrames={trackDemoMeta.durationInFrames}
+                fps={trackDemoMeta.fps}
+                width={trackDemoMeta.width}
+                height={trackDemoMeta.height}
             />
             <Composition
                 id="AutoDirectorShowcase"

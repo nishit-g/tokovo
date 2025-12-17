@@ -9,7 +9,7 @@
  */
 
 // Episode builder
-export { episode, EpisodeBuilder, DeviceOptions, TrackBuilder, TrackFn } from "./episode";
+export { episode, EpisodeBuilder } from "./episode";
 
 // Track builders
 export { CameraTrackBuilder, CameraPointBuilder, CameraSpanBuilder } from "./camera-track";
