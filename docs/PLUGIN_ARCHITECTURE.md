@@ -482,7 +482,265 @@ export default WhatsAppPlugin;
 
 ---
 
+### 5.1 Enterprise Plugin Contract (v2.0)
+
+> **Status:** NEW - Enterprise-Grade  
+> **Introduced:** December 2024  
+> **Minimum Compatibility:** v2.0.0  
+
+The **Enterprise Plugin Contract** provides a tiered, type-safe plugin system designed for:
+- Compile-time event validation
+- Unified lowering pipeline
+- DSL extensions without prototype mutation
+- Asset validation at build time
+
+#### Old vs New Comparison
+
+| Aspect | `definePlugin()` (Legacy) | `TokovoPluginContract` (Enterprise) |
+|--------|---------------------------|-------------------------------------|
+| Type Safety | Loose, `any` casts | Strict generics with `AppId` parameter |
+| Event Schema | Implicit | Explicit `RuntimeEvent` with `payload` field |
+| Lowering | Manual in engine | Plugin provides `lowering()` handler |
+| DSL Extension | Prototype mutation | `b.use("app_id")` pattern |
+| Assets | Runtime registration | Compile-time manifest |
+| Tiers | Single tier | A/B/C/D tier system |
+
+#### The Tier System
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     PLUGIN CAPABILITY TIERS                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  TIER A: Runtime (Required)                                      │
+│  ├─ id          : "app_whatsapp"                                │
+│  ├─ version     : "2.0.0"                                       │
+│  ├─ displayName : "WhatsApp"                                    │
+│  ├─ reducer     : Handle events → mutate state                  │
+│  ├─ views       : UI components per platform                    │
+│  ├─ assets      : Sounds, icons, images manifest                │
+│  └─ createInitialState() : Factory for plugin state             │
+│                                                                  │
+│  TIER B: Lowering (Optional)                                     │
+│  └─ lowering    : TimelineOp → RuntimeEvent[]                   │
+│                                                                  │
+│  TIER C: DSL Extension (Optional)                                │
+│  └─ dsl         : b.use("app_whatsapp").send(...)               │
+│                                                                  │
+│  TIER D: Compiler (Future)                                       │
+│  └─ compile     : Custom compilation hooks                       │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### Enterprise Plugin Definition
+
+```typescript
+// packages/apps-whatsapp/src/plugin.ts
+
+import { APP_IDS, PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
+import { whatsappReducer } from "./logic/reducer";
+import { WhatsappChatView } from "./ui";
+import { whatsappLowering } from "./lowering";
+import { whatsappDsl, WhatsAppDslApi } from "./dsl-extension";
+import { whatsappAudioRules } from "./assets/audio-rules";
+
+// =============================================================================
+// PLUGIN VIEWS (Platform strategies)
+// =============================================================================
+
+const whatsappViews: PluginViews = {
+    AppRoot: WhatsappChatView,
+    strategies: {
+        ios: { ChatScreen: WhatsappChatView },
+        android: { ChatScreen: WhatsappChatView },
+    },
+};
+
+// =============================================================================
+// PLUGIN ASSETS (Compile-time validated)
+// =============================================================================
+
+const whatsappAssets = {
+    sounds: {
+        "message_in": "/audio/app_whatsapp/message_in.mp3",
+        "message_out": "/audio/app_whatsapp/message_out.mp3",
+    },
+    icons: {
+        "app_icon": "/icons/whatsapp.svg",
+    },
+};
+
+// =============================================================================
+// INITIAL STATE FACTORY
+// =============================================================================
+
+function createWhatsAppInitialState() {
+    return {
+        currentScreen: "chats" as const,
+        conversations: {},
+        currentConversationId: null as string | null,
+    };
+}
+
+// =============================================================================
+// ENTERPRISE PLUGIN CONTRACT
+// =============================================================================
+
+export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & { 
+    appView: any; 
+    name: string; 
+} = {
+    // === TIER A: Identity ===
+    id: APP_IDS.WHATSAPP as "app_whatsapp",
+    version: "2.0.0",
+    displayName: "WhatsApp",
+    name: "WhatsApp",  // Legacy field for PluginManager compatibility
+
+    // === TIER A: Runtime ===
+    reducer: whatsappReducer,
+    views: whatsappViews,
+    appView: WhatsappChatView,  // Legacy field for PluginManager compatibility
+
+    // === TIER A: Assets ===
+    assets: whatsappAssets,
+    audioRules: whatsappAudioRules,
+
+    // === TIER A: Initial State ===
+    createInitialState: createWhatsAppInitialState,
+
+    // === TIER B: Lowering ===
+    lowering: whatsappLowering,
+
+    // === TIER C: DSL ===
+    dsl: whatsappDsl,
+};
+```
+
+#### The `RuntimeEvent` Schema
+
+All events flowing through the enterprise pipeline use the `RuntimeEvent` schema with **all app-specific data in the `payload` field**:
+
+```typescript
+// @tokovo/core/src/types/runtime-event.ts
+
+interface AppRuntimeEvent<
+    AppId extends string = string,
+    Type extends string = string,
+    Payload = unknown
+> {
+    at: number;              // Frame number
+    kind: "APP";             // Event category
+    appId: AppId;            // e.g., "app_whatsapp"
+    type: Type;              // e.g., "MESSAGE_RECEIVED"
+    deviceId?: string;       // Target device
+    payload: Payload;        // ALL app-specific data here
+    _trace?: EventTrace;     // Debug info
+    _signal?: EventSignal;   // For DirectorLite
+}
+
+// Example WhatsApp event:
+const event: AppRuntimeEvent<"app_whatsapp", "MESSAGE_RECEIVED"> = {
+    at: 90,
+    kind: "APP",
+    appId: "app_whatsapp",
+    type: "MESSAGE_RECEIVED",
+    payload: {
+        conversationId: "dm_sarah",
+        from: "Sarah ❤️",
+        text: "Hey! Are you free tonight?",
+        type: "text",
+    }
+};
+```
+
+#### The Lowering Handler (Tier B)
+
+Converts `TimelineOp` (compiler output) to `RuntimeEvent[]`:
+
+```typescript
+// packages/apps-whatsapp/src/lowering.ts
+
+import type { RuntimeEvent } from "@tokovo/core";
+
+export function whatsappLowering(
+    op: any,
+    context: LoweringContext
+): RuntimeEvent[] {
+    const events: RuntimeEvent[] = [];
+    const { deviceId, conversationId, frame } = context;
+
+    switch (op.kind) {
+        case "MessageReceived":
+            events.push({
+                at: frame,
+                kind: "APP",
+                appId: "app_whatsapp",
+                type: "MESSAGE_RECEIVED",
+                deviceId,
+                payload: {
+                    conversationId,
+                    from: op.from,
+                    text: op.text,
+                    type: op.messageType || "text",
+                },
+            });
+            break;
+        // ... more cases
+    }
+
+    return events;
+}
+```
+
+#### The DSL Extension (Tier C)
+
+Uses the `b.use()` pattern - **NO prototype mutation**:
+
+```typescript
+// packages/apps-whatsapp/src/dsl-extension.ts
+
+export interface WhatsAppDslApi {
+    receive(from: string, text: string, options?: MessageOptions): MessageRef;
+    send(text: string, options?: MessageOptions): MessageRef;
+    typing(actor: string): { for(duration: DurationExpr): void };
+    react(ref: MessageRef, actor: string, emoji: string): void;
+    receiveImage(from: string, url: string, options?: ImageOptions): MessageRef;
+}
+
+export const whatsappDsl: DslExtension<WhatsAppDslApi> = {
+    extensionId: "app_whatsapp",
+    
+    create: (context: DslContext): WhatsAppDslApi => ({
+        receive: (from, text, options) => { /* implementation */ },
+        send: (text, options) => { /* implementation */ },
+        typing: (actor) => ({ for: (duration) => { /* implementation */ } }),
+        // ... etc
+    }),
+};
+
+// Usage in DSL:
+d.beat("opening", b => {
+    const wa = b.use("app_whatsapp");  // Get typed API
+    wa.receive("Sarah ❤️", "Hey!");
+    wa.typing("me").for("2s");
+    wa.send("Hi Sarah!");
+});
+```
+
+#### Migration from `definePlugin()` to `TokovoPluginContract`
+
+1. **Add `name` and `appView` for backward compatibility** with old PluginManager
+2. **Move event logic to `lowering()`** for type-safe event transformation
+3. **Create DSL extension** using `b.use()` pattern instead of prototype mutation
+4. **Define initial state factory** via `createInitialState()`
+5. **Declare assets** in compile-time manifest
+
+---
+
 ## 6. UI Strategy Pattern
+
 
 The **UI Strategy Pattern** enables platform-specific rendering with easy extensibility for custom themes.
 
