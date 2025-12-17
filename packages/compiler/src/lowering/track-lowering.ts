@@ -57,47 +57,40 @@ function lowerAppEvent(event: WhatsAppTrackEvent): RuntimeEvent[] {
 
     switch (event.type) {
         case "MESSAGE_RECEIVED":
+            // Reducer expects type: MESSAGE_RECEIVED and reads appEvent.text, appEvent.from, appEvent.conversationId
             return [{
                 ...base,
-                type: "RECEIVE_MESSAGE",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                    from: event.payload.from,
-                    text: event.payload.text,
-                    silent: event.payload.silent,
-                },
-            } as AppRuntimeEvent];
+                type: "MESSAGE_RECEIVED",
+                conversationId: event.payload.conversationId,
+                from: event.payload.from,
+                text: event.payload.text,
+            } as any];
 
         case "MESSAGE_SENT":
+            // Reducer expects type: MESSAGE_SENT 
             return [{
                 ...base,
-                type: "SEND_MESSAGE",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                    text: event.payload.text,
-                    silent: event.payload.silent,
-                },
-            } as AppRuntimeEvent];
+                type: "MESSAGE_SENT",
+                conversationId: event.payload.conversationId,
+                text: event.payload.text,
+            } as any];
 
         case "TYPING_START":
+            // Reducer uses appEvent.from for typing indicators
             return [{
                 ...base,
                 type: "TYPING_START",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                    actor: event.payload.actor,
-                },
-            } as AppRuntimeEvent];
+                conversationId: event.payload.conversationId,
+                from: event.payload.actor,  // Reducer reads appEvent.from
+            } as any];
 
         case "TYPING_END":
             return [{
                 ...base,
                 type: "TYPING_END",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                    actor: event.payload.actor,
-                },
-            } as AppRuntimeEvent];
+                conversationId: event.payload.conversationId,
+                from: event.payload.actor,
+            } as any];
 
         case "IMAGE_RECEIVED":
             return [{
