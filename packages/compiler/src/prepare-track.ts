@@ -96,8 +96,9 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     for (const device of ir.devices) {
         devices[device.id] = {
             id: device.id,
-            profileId: device.profile,  // Renderer expects profileId
-            app: device.app,
+            profileId: device.profile,
+            foregroundAppId: device.app,  // CRITICAL: Renderer checks this!
+            isLocked: false,              // Device must be unlocked
             platform: device.profile.includes("pixel") ? "android" : "ios",
         };
     }
