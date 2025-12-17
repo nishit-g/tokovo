@@ -330,5 +330,5 @@ export function runEpisode(
 // RE-EXPORT TYPES
 // =============================================================================
 
-export { CompiledEpisode, PrepareOptions } from "./types/compiled-episode";
-export { RuntimeEvent } from "./types/runtime-event";
+export type { CompiledEpisode, PrepareOptions, AssetManifest } from "./types/compiled-episode";
+export type { RuntimeEvent, AppRuntimeEvent, DeviceRuntimeEvent, CameraRuntimeEvent, AudioRuntimeEvent, KeyboardRuntimeEvent } from "./types/runtime-event";

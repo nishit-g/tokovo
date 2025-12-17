@@ -69,10 +69,15 @@ const eventIndex = createEventIndex(compiledEpisode.events as any);
 
 console.log("[EnterpriseDemo] Using enterprise pipeline:", {
     id: compiledEpisode.id,
-    events: compiledEpisode.events.length,
+    eventsCount: compiledEpisode.events.length,
     fps: compiledEpisode.fps,
     hasInitialWorld: !!compiledEpisode.initialWorld,
+    devices: Object.keys(compiledEpisode.initialWorld?.devices || {}),
+    conversations: Object.keys(compiledEpisode.initialWorld?.conversations || {}),
+    firstEvents: compiledEpisode.events.slice(0, 5),
 });
+
+console.log("[EnterpriseDemo] Full initialWorld:", compiledEpisode.initialWorld);
 
 // =============================================================================
 // VIDEO COMPONENT
@@ -83,7 +88,11 @@ export const EnterpriseDemoVideo: React.FC = () => {
 
     // Step 4: runEpisode() → WorldState at frame (uses our enterprise function)
     const world = useMemo(() => {
-        return runEpisode(compiledEpisode, frame, { mode: "preview" });
+        const w = runEpisode(compiledEpisode, frame, { mode: "preview" });
+        if (frame === 0) {
+            console.log("[EnterpriseDemo] World at frame 0:", w);
+        }
+        return w;
     }, [frame]);
 
     // Calculate scale to fit device
@@ -106,10 +115,10 @@ export const EnterpriseDemoVideo: React.FC = () => {
                 <TokovoRenderer
                     world={world}
                     t={frame}
-                    debug={false}
+                    debug={true}
                     eventIndex={eventIndex}
                     directorEnabled={true}
-                    directorDebug={false}
+                    directorDebug={true}
                 />
             </div>
         </AbsoluteFill>

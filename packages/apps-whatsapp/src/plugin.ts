@@ -63,15 +63,17 @@ function createWhatsAppInitialState() {
 // ENTERPRISE PLUGIN CONTRACT
 // =============================================================================
 
-export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> = {
+export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & { appView: any; name: string } = {
     // === TIER A: Identity ===
     id: APP_IDS.WHATSAPP as "app_whatsapp",
     version: "2.0.0",
     displayName: "WhatsApp",
+    name: "WhatsApp",  // Legacy field for PluginManager
 
     // === TIER A: Runtime ===
     reducer: whatsappReducer as any,
     views: whatsappViews,
+    appView: WhatsappChatView as any,  // Legacy field for PluginManager
 
     // === TIER A: Assets ===
     assets: whatsappAssets,
