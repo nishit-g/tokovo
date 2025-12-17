@@ -21,3 +21,6 @@ export { compile, CompileResult, CompileOptions } from "./compile";
 
 // Passes (for advanced usage)
 export * from "./passes";
+
+// V2 Track Episode Preparation
+export { prepareTrackEpisode, PreparedTrackEpisode } from "./prepare-track";

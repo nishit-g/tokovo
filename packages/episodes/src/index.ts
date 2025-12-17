@@ -5,4 +5,7 @@ export * from "./episodes/bakchodi-gang";
 // Enterprise Pipeline Episode (Uses canonical DSL)
 export { enterpriseDemo } from "./enterprise-demo.episode";
 
+// V2 Track-Based Episodes
+export { trackDemoV2, trackDemoMeta } from "./v2/track-demo.episode";
+
 export * from "./schema";
