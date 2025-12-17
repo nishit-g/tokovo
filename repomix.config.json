@@ -35,7 +35,9 @@
     "customPatterns": [
       "*.md",
       "*.mp3",
-      "apps/docs"
+      "apps/docs",
+      "docs",
+      "docs-v2"
     ]
   },
   "security": {

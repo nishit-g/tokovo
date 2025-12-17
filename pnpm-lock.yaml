@@ -88,16 +88,6 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
-  packages/adapters:
-    dependencies:
-      '@tokovo/ir':
-        specifier: workspace:*
-        version: link:../ir
-    devDependencies:
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
   packages/app-kit:
     dependencies:
       '@tokovo/core':
@@ -169,6 +159,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       react:
         specifier: ^18.2.0
         version: 18.2.0

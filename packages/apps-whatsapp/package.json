@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
         "react": "^18.2.0"
     },
     "devDependencies": {
