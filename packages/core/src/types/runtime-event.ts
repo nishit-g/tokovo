@@ -11,7 +11,39 @@
 // EVENT KINDS & BASE TYPES
 // =============================================================================
 
-export type RuntimeEventKind = "APP" | "DEVICE" | "CAMERA" | "AUDIO" | "KEYBOARD";
+/**
+ * All supported event kinds in the enterprise system.
+ * This includes both the core kinds and legacy/V2 kinds for compatibility.
+ */
+export type RuntimeEventKind =
+    | "APP"
+    | "DEVICE"
+    | "CAMERA"
+    | "AUDIO"
+    | "KEYBOARD"
+    // Extended kinds for full compatibility
+    | "OS"
+    | "TOUCH"
+    | "CALL"
+    | "TRANSITION"
+    | "HIGHLIGHT"
+    // V2 Native ops (from @tokovo/ir)
+    | "MessageReceived"
+    | "MessageSent"
+    | "TypingStarted"
+    | "TypingEnded"
+    | "KeyboardType"
+    | "KeyboardInput"
+    | "AppOpened"
+    | "DeviceUnlocked"
+    | "ConversationOpened"
+    | "ScreenNavigated"
+    | "CameraZoom"
+    | "CameraShake"
+    | "POVSwitch"
+    | "SplitPOV"
+    | "AnchorFocus"
+    | "AnchorTrack";
 
 /**
  * Event trace for debugging - links back to DSL source
@@ -42,6 +74,8 @@ export interface BaseRuntimeEvent {
     kind: RuntimeEventKind;
     _trace?: EventTrace;
     _signal?: EventSignal;
+    silent?: boolean;
+    trace?: any;
 }
 
 // =============================================================================
@@ -75,7 +109,19 @@ export type DeviceEventType =
     | "GO_HOME"
     | "SHOW_NOTIFICATION"
     | "DISMISS_NOTIFICATION"
-    | "TAP_NOTIFICATION";
+    | "TAP_NOTIFICATION"
+    | "UPDATE_NOTIFICATION"
+    | "SWIPE_NOTIFICATION"
+    | "REPLY_NOTIFICATION"
+    | "TOGGLE_NOTIFICATION_PANEL"
+    | "CLEAR_ALL_NOTIFICATIONS"
+    | "SET_DYNAMIC_ISLAND"
+    | "SET_BADGE"
+    | "INCOMING_CALL"
+    | "CALL_ANSWERED"
+    | "CALL_ENDED"
+    | "START_BACKGROUND_APP"
+    | "STOP_BACKGROUND_APP";
 
 export interface DeviceEventPayload {
     appId?: string;
@@ -115,7 +161,10 @@ export type CameraEventType =
     | "RESET"
     | "ANCHOR_FOCUS"
     | "ANCHOR_TRACK"
-    | "SET_LAYOUT";
+    | "SET_LAYOUT"
+    | "SET_VIEW"
+    | "LAYOUT"
+    | "HOLD";
 
 export interface CameraZoomPayload {
     scale: number;
@@ -166,7 +215,11 @@ export type AudioEventType =
     | "START_LOOP"
     | "STOP"
     | "DUCK"
-    | "CROSSFADE";
+    | "CROSSFADE"
+    | "PLAY_SOUND"
+    | "STOP_SOUND"
+    | "FADE_VOLUME"
+    | "BACKGROUND_MUSIC";
 
 export interface AudioPlayPayload {
     soundId: string;
@@ -204,12 +257,16 @@ export type KeyboardEventType =
     | "HIDE"
     | "KEY_DOWN"
     | "KEY_UP"
-    | "TYPE_CHAR";
+    | "TYPE_CHAR"
+    | "BACKSPACE"
+    | "SET_TEXT"
+    | "CLEAR";
 
 export interface KeyboardPayload {
     key?: string;
     char?: string;
     text?: string;
+    layout?: string;
 }
 
 export interface KeyboardRuntimeEvent<
@@ -223,6 +280,117 @@ export interface KeyboardRuntimeEvent<
 }
 
 // =============================================================================
+// OS EVENT
+// =============================================================================
+
+export type OSEventType =
+    | "SET_TIME"
+    | "SET_BATTERY"
+    | "DRAIN_BATTERY"
+    | "SET_NETWORK"
+    | "SET_DND"
+    | "SET_LOW_POWER"
+    | "SET_AIRPLANE";
+
+export interface OSRuntimeEvent extends BaseRuntimeEvent {
+    kind: "OS";
+    type: OSEventType;
+    deviceId?: string;
+    time?: number;
+    level?: number;
+    charging?: boolean;
+    rate?: number;
+    network?: string;
+    strength?: number;
+    enabled?: boolean;
+}
+
+// =============================================================================
+// TOUCH EVENT
+// =============================================================================
+
+export type TouchEventType =
+    | "TAP"
+    | "LONG_PRESS"
+    | "DRAG"
+    | "SCROLL";
+
+export interface TouchRuntimeEvent extends BaseRuntimeEvent {
+    kind: "TOUCH";
+    type: TouchEventType;
+    deviceId?: string;
+    x?: number;
+    y?: number;
+    startX?: number;
+    startY?: number;
+    endX?: number;
+    endY?: number;
+    duration?: number;
+    velocity?: number;
+}
+
+// =============================================================================
+// CALL EVENT
+// =============================================================================
+
+export type CallEventType =
+    | "INCOMING"
+    | "ANSWER"
+    | "DECLINE"
+    | "END"
+    | "TOGGLE_MUTE"
+    | "TOGGLE_SPEAKER"
+    | "TOGGLE_HOLD";
+
+export interface CallRuntimeEvent extends BaseRuntimeEvent {
+    kind: "CALL";
+    type: CallEventType;
+    deviceId?: string;
+    callerId?: string;
+    callerName?: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+}
+
+// =============================================================================
+// TRANSITION EVENT
+// =============================================================================
+
+export interface TransitionRuntimeEvent extends BaseRuntimeEvent {
+    kind: "TRANSITION";
+    type: string;
+    from: string;
+    to: string;
+    duration: number;
+    easing?: string;
+}
+
+// =============================================================================
+// HIGHLIGHT EVENT
+// =============================================================================
+
+export interface HighlightRuntimeEvent extends BaseRuntimeEvent {
+    kind: "HIGHLIGHT";
+    type: "MESSAGE" | "ELEMENT" | "CLEAR";
+    messageId?: string;
+    conversationId?: string;
+    selector?: string;
+    targetId?: string;
+    style?: string;
+    duration?: number;
+    color?: string;
+}
+
+// =============================================================================
+// V2 NATIVE OPS (from @tokovo/ir)
+// =============================================================================
+
+import type { TimelineOp } from "@tokovo/ir";
+
+// Re-export TimelineOp as a valid RuntimeEvent variant
+export type V2NativeOp = TimelineOp & { at: number };
+
+// =============================================================================
 // UNION TYPE
 // =============================================================================
 
@@ -231,7 +399,13 @@ export type RuntimeEvent =
     | DeviceRuntimeEvent
     | CameraRuntimeEvent
     | AudioRuntimeEvent
-    | KeyboardRuntimeEvent;
+    | KeyboardRuntimeEvent
+    | OSRuntimeEvent
+    | TouchRuntimeEvent
+    | CallRuntimeEvent
+    | TransitionRuntimeEvent
+    | HighlightRuntimeEvent
+    | V2NativeOp;
 
 // =============================================================================
 // TYPE AUGMENTATION (Plugins extend this)

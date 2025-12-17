@@ -999,166 +999,22 @@ export interface WorldState {
     touches?: TouchState[];
 }
 
-// Event Union
-export type TimelineEvent = (
-    // Device events - core
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "LOCK" | "UNLOCK" | "OPEN_APP" | "CLOSE_APP" | "GO_HOME"; appId?: AppId }
+// =============================================================================
+// EVENT TYPE - UNIFIED
+// =============================================================================
 
-    // === NOTIFICATION EVENTS (IR-compliant) ===
-    // === NOTIFICATION EVENTS (IR-compliant) ===
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SHOW_NOTIFICATION";
-
-        // IR Fields (Simplified for Event)
-        id: string; // REQUIRED now
-        appId: string;
-        title: string;
-        body: string;
-        icon?: string;
-
-        // Meta
-        category?: NotificationIR["category"];
-        threadKey?: string;
-        groupKey?: string;
-
-        // Actions
-        actions?: NotificationIR["actions"];
-        replyable?: boolean;
-
-        // Valid overrides
-        priority?: NotificationInstance["importance"];
-        mode?: NotificationInstance["mode"];
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "UPDATE_NOTIFICATION";
-        notificationId: string;
-        patch: Partial<{ title: string; body: string; preview: NotificationIR["preview"]; metadata: Record<string, any> }>;
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "DISMISS_NOTIFICATION";
-        notificationId?: string;        // Specific notification
-        groupKey?: string;               // Entire group
-        all?: boolean;                   // All notifications
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "TAP_NOTIFICATION";
-        notificationId: string;
-        actionId?: string;               // Button action ID or "open" (default)
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SWIPE_NOTIFICATION";
-        notificationId: string;
-        direction: "left" | "right";
-        action: "dismiss" | "archive" | "snooze" | "mark_read";
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "REPLY_NOTIFICATION";
-        notificationId: string;
-        text: string;
-    }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "TOGGLE_NOTIFICATION_PANEL";
-        open: boolean;
-    }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CLEAR_ALL_NOTIFICATIONS" }
-    | {
-        at: number; kind: "DEVICE"; deviceId: string; type: "SET_DYNAMIC_ISLAND";
-        visible: boolean;
-        mode?: DynamicIslandMode;
-    }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "SET_BADGE"; appId: string; count: number }
-
-    // Call events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "INCOMING_CALL"; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ANSWERED" }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "CALL_ENDED" }
-
-    // Background app events
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "START_BACKGROUND_APP"; appId: string; indicator?: "music" | "call" | "recording" | "location"; label?: string }
-    | { at: number; kind: "DEVICE"; deviceId: string; type: "STOP_BACKGROUND_APP"; appId: string }
-    // App events - messaging
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_RECEIVED" | "TYPING_START" | "TYPING_END"; conversationId: ConversationId; from: string; text?: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_READ"; conversationId: ConversationId; messageId: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "MESSAGE_STATUS"; conversationId: ConversationId; messageId: string; status: "sending" | "sent" | "delivered" | "read" | "failed" }
-    // App events - voice message
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_RECEIVED"; conversationId: ConversationId; from: string; duration: number }
-    | { at: number; kind: "APP"; appId: AppId; type: "VOICE_MESSAGE_PLAY"; conversationId: ConversationId; messageId: string }
-    // App events - group
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_ADDED"; conversationId: ConversationId; memberId: string; memberName: string; addedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_MEMBER_REMOVED"; conversationId: ConversationId; memberId: string; memberName: string; removedBy: string }
-    | { at: number; kind: "APP"; appId: AppId; type: "GROUP_ADMIN_CHANGE"; conversationId: ConversationId; memberId: string; isAdmin: boolean }
-    // App events - custom
-    | { at: number; kind: "APP"; appId: AppId; type: "CUSTOM"; name: string; payload?: any }
-    // Camera events - CINEMATIC SYSTEM (deviceId optional - defaults to all/active device)
-    | { at: number; kind: "CAMERA"; type: "ZOOM"; deviceId?: string; scale: number; originX?: number; originY?: number; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "PAN"; deviceId?: string; translateX: number; translateY: number; relative?: boolean; duration: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "SHAKE"; deviceId?: string; intensity: number; frequency: number; decay?: number; duration: number; seed?: number }
-    | { at: number; kind: "CAMERA"; type: "FOCUS"; deviceId?: string; target: FocusTarget; scale?: number; duration: number; easing?: EasingType; holdDuration?: number }
-    | { at: number; kind: "CAMERA"; type: "CUT"; toDeviceId?: string; toView?: string; fadeMs?: number }
-    | { at: number; kind: "CAMERA"; type: "RESET"; deviceId?: string; duration: number; easing?: EasingType }
-    // ANCHOR-DRIVEN CAMERA - Semantic anchor system
-    | { at: number; kind: "CAMERA"; type: "ANCHOR_FOCUS"; deviceId?: string; anchor: string; preset?: string; scale?: number; duration: number; easing?: EasingType; shake?: number }
-    | { at: number; kind: "CAMERA"; type: "ANCHOR_TRACK"; deviceId?: string; anchor: string; duration: number; smoothing?: number; preset?: string; scale?: number; easing?: EasingType }
-    | { at: number; kind: "CAMERA"; type: "HOLD"; duration: number }
-    | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraViewConfig }  // Legacy support
-    // Camera events - MULTI-DEVICE / POV
-    | { at: number; kind: "CAMERA"; type: "LAYOUT"; mode: ViewLayoutMode; primaryDeviceId: string; secondaryDeviceId?: string; pipPosition?: PIPPosition; pipScale?: number; duration?: number; easing?: EasingType }
-    // Audio events - SOUND SYSTEM
-    | { at: number; kind: "AUDIO"; type: "PLAY_SOUND"; soundId: string; instanceId?: string; volume?: number; duration?: number; loop?: boolean; deviceId?: string }
-    | { at: number; kind: "AUDIO"; type: "STOP_SOUND"; instanceId: string }
-    | { at: number; kind: "AUDIO"; type: "FADE_VOLUME"; instanceId: string; toVolume: number; duration: number }
-    | { at: number; kind: "AUDIO"; type: "BACKGROUND_MUSIC"; soundId: string; volume?: number; loop?: boolean }
-    // Keyboard events - TYPING SIMULATION
-    | { at: number; kind: "KEYBOARD"; type: "SHOW"; deviceId?: string; layout?: KeyboardLayout }
-    | { at: number; kind: "KEYBOARD"; type: "HIDE"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "KEY_DOWN"; deviceId?: string; key: string }
-    | { at: number; kind: "KEYBOARD"; type: "KEY_UP"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "TYPE_CHAR"; deviceId?: string; char: string }
-    | { at: number; kind: "KEYBOARD"; type: "BACKSPACE"; deviceId?: string }
-    | { at: number; kind: "KEYBOARD"; type: "SET_TEXT"; deviceId?: string; text: string }
-    | { at: number; kind: "KEYBOARD"; type: "CLEAR"; deviceId?: string }
-    // Transition events - SCREEN ANIMATIONS
-    | { at: number; kind: "TRANSITION"; type: TransitionType; from: string; to: string; duration: number; easing?: EasingType }
-    // Highlight events - MESSAGE EMPHASIS
-    | { at: number; kind: "HIGHLIGHT"; type: "MESSAGE"; messageId: string; conversationId?: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "ELEMENT"; selector: string; style: HighlightStyle; duration: number; color?: string }
-    | { at: number; kind: "HIGHLIGHT"; type: "CLEAR"; targetId?: string }
-    // OS events - DEVICE SIMULATION
-    | { at: number; kind: "OS"; type: "SET_TIME"; deviceId?: string; time: number }
-    | { at: number; kind: "OS"; type: "SET_BATTERY"; deviceId?: string; level: number; charging?: boolean }
-    | { at: number; kind: "OS"; type: "DRAIN_BATTERY"; deviceId?: string; rate: number } // rate = % per second
-    // === V2 KEYBOARD OPS ===
-    | { at: number; kind: "KeyboardType"; text: string; deviceId?: string }
-    | { at: number; kind: "KeyboardInput"; type: "keyDown" | "keyUp"; key: string; deviceId?: string }
-
-    // === LEGACY KEYBOARD (Deprecated) ===
-    | { at: number; kind: "KEYBOARD"; type: "SHOW" | "HIDE" | "TYPE_CHAR" | "BACKSPACE" | "SET_TEXT" | "CLEAR" | "KEY_DOWN" | "KEY_UP"; deviceId?: string; layout?: KeyboardLayout; char?: string; text?: string; key?: string }
-
-    | { at: number; kind: "OS"; type: "SET_NETWORK"; deviceId?: string; network: NetworkType; strength?: number }
-    | { at: number; kind: "OS"; type: "SET_DND"; deviceId?: string; enabled: boolean }
-    | { at: number; kind: "OS"; type: "SET_LOW_POWER"; deviceId?: string; enabled: boolean }
-    | { at: number; kind: "OS"; type: "SET_AIRPLANE"; deviceId?: string; enabled: boolean }
-    // Touch events - GESTURE VISUALIZATION
-    | { at: number; kind: "TOUCH"; type: "TAP"; deviceId?: string; x: number; y: number; duration?: number }
-    | { at: number; kind: "TOUCH"; type: "LONG_PRESS"; deviceId?: string; x: number; y: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "DRAG"; deviceId?: string; startX: number; startY: number; endX: number; endY: number; duration: number }
-    | { at: number; kind: "TOUCH"; type: "SCROLL"; deviceId?: string; y: number; velocity?: number }
-    // Call events - PHONE CALL SIMULATION
-    | { at: number; kind: "CALL"; type: "INCOMING"; deviceId?: string; callerId: string; callerName: string; callerAvatar?: string; isVideo?: boolean; callType?: CallType; displayMode?: CallDisplayMode; callerMetadata?: CallerMetadata }
-    | { at: number; kind: "CALL"; type: "ANSWER"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "DECLINE"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "END"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "TOGGLE_MUTE"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "TOGGLE_SPEAKER"; deviceId?: string }
-    | { at: number; kind: "CALL"; type: "TOGGLE_HOLD"; deviceId?: string }
-
-    // NATIVE V2 OPS (from @tokovo/ir)
-    // This makes the engine polyglot, supporting both V1 and V2 events natively
-    | TimelineOp
-) & {
-    silent?: boolean;
-    trace?: any;
-};
+/**
+ * TimelineEvent is now an alias for RuntimeEvent.
+ * 
+ * This completes the enterprise type unification:
+ * - All events use { at, kind, type, payload } shape
+ * - All app-specific data goes in `payload` field
+ * - No more "from/text location mismatch" bugs
+ * 
+ * @see docs/FUCKING_MESS.md Section 4
+ */
+import type { RuntimeEvent } from "./types/runtime-event";
+export type TimelineEvent = RuntimeEvent;
 
 // --- Layout System Types ---
 

@@ -343,11 +343,11 @@ function processOSEvent(
 
     switch (event.type) {
         case "SET_TIME":
-            device.os.clock = event.time;
+            device.os.clock = event.time ?? Date.now();
             break;
 
         case "SET_BATTERY":
-            device.os.battery = Math.max(0, Math.min(100, event.level));
+            device.os.battery = Math.max(0, Math.min(100, event.level ?? 100));
             if ((event as any).charging !== undefined) {
                 device.os.charging = (event as any).charging;
             }
@@ -355,12 +355,12 @@ function processOSEvent(
 
         case "DRAIN_BATTERY":
             // Rate is % per second at 30fps
-            const drain = (event as any).rate / 30;
+            const drain = ((event as any).rate ?? 0) / 30;
             device.os.battery = Math.max(0, device.os.battery - drain);
             break;
 
         case "SET_NETWORK":
-            device.os.network = event.network;
+            device.os.network = (event.network ?? "wifi") as any;
             if ((event as any).strength !== undefined) {
                 if (event.network === "wifi") {
                     device.os.wifiStrength = (event as any).strength;
@@ -371,11 +371,11 @@ function processOSEvent(
             break;
 
         case "SET_DND":
-            device.os.dnd = event.enabled;
+            device.os.dnd = event.enabled ?? false;
             break;
 
         case "SET_LOW_POWER":
-            device.os.lowPowerMode = (event as any).enabled;
+            device.os.lowPowerMode = (event as any).enabled ?? false;
             break;
 
             break;
@@ -572,8 +572,8 @@ function processTouchEvent(
         case "TAP":
             draft.touches.push({
                 id: touchId,
-                x: event.x,
-                y: event.y,
+                x: event.x ?? 0,
+                y: event.y ?? 0,
                 startedAt: event.at,
                 type: "tap",
             });
@@ -582,8 +582,8 @@ function processTouchEvent(
         case "LONG_PRESS":
             draft.touches.push({
                 id: touchId,
-                x: event.x,
-                y: event.y,
+                x: event.x ?? 0,
+                y: event.y ?? 0,
                 startedAt: event.at,
                 type: "long_press",
             });
@@ -592,12 +592,12 @@ function processTouchEvent(
         case "DRAG":
             draft.touches.push({
                 id: touchId,
-                x: (event as any).startX,
-                y: (event as any).startY,
+                x: (event as any).startX ?? 0,
+                y: (event as any).startY ?? 0,
                 startedAt: event.at,
                 type: "drag",
-                endX: (event as any).endX,
-                endY: (event as any).endY,
+                endX: (event as any).endX ?? 0,
+                endY: (event as any).endY ?? 0,
             });
             break;
     }

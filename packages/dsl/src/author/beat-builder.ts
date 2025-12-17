@@ -46,6 +46,18 @@ import { TypingBuilder, MessageHandle, TrackFn, TrackBuilder } from "../types";
 import { CameraBuilder } from "./camera-builder";
 
 /**
+ * App-scoped DSL API returned by b.use("appId")
+ */
+export interface AppScopedDsl {
+    /** Receive a message in the specified conversation */
+    receive(conversationId: string, opts: { from: string; text: string; messageId?: string }): { messageId: string };
+    /** Send a message in the specified conversation */
+    send(conversationId: string, opts: { text: string; messageId?: string }): { messageId: string };
+    /** Show typing indicator */
+    typing(conversationId: string, actor: string, duration?: string): void;
+}
+
+/**
  * Message options for semantic annotations.
  */
 export interface MessageOptions {
@@ -103,6 +115,79 @@ export class BeatBuilder {
         this.deviceId = deviceId;
         this.appId = appId;
         this.conversationId = conversationId;
+    }
+
+    /**
+     * Get an app-scoped DSL API.
+     * 
+     * @example
+     * const wa = b.use("app_whatsapp");
+     * wa.receive("dm_sarah", { from: "Sarah", text: "Hey!" });
+     * wa.send("dm_sarah", { text: "Hi there!" });
+     * 
+     * @param appId - The app ID to scope operations to (stored for context, used by compiler)
+     * @returns App-scoped DSL API
+     */
+    use(appId: string): AppScopedDsl {
+        const beatBuilder = this;
+        // Store appId in context for compiler to use when lowering
+        const scopedConversationId = (convId: string) => `${appId}:${convId}`;
+
+        return {
+            receive: (conversationId: string, opts: { from: string; text: string; messageId?: string }) => {
+                const msgId = opts.messageId || `msg_${beatBuilder.messageCounter++}`;
+                // Use standard ReceiveMessageOp shape (actor/text pattern)
+                const op: ReceiveMessageOp = {
+                    kind: "ReceiveMessage",
+                    actor: opts.from,
+                    text: opts.text,
+                    conversationId,
+                    meta: {
+                        id: msgId,
+                        from: opts.from,
+                        text: opts.text,
+                        type: "text",
+                    } as any,
+                };
+                beatBuilder.ops.push(op);
+                return { messageId: msgId };
+            },
+            send: (conversationId: string, opts: { text: string; messageId?: string }) => {
+                const msgId = opts.messageId || `msg_${beatBuilder.messageCounter++}`;
+                // Use standard SendMessageOp shape
+                const op: SendMessageOp = {
+                    kind: "SendMessage",
+                    actor: "me",
+                    text: opts.text,
+                    conversationId,
+                    meta: {
+                        id: msgId,
+                        from: "me",
+                        text: opts.text,
+                        type: "text",
+                    } as any,
+                };
+                beatBuilder.ops.push(op);
+                return { messageId: msgId };
+            },
+            typing: (conversationId: string, actor: string, duration?: string) => {
+                const startOp: TypingStartOp = {
+                    kind: "TypingStart",
+                    actor,
+                    conversationId,
+                };
+                beatBuilder.ops.push(startOp);
+                if (duration) {
+                    beatBuilder.ops.push({ kind: "Wait", duration } as WaitOp);
+                    const endOp: TypingEndOp = {
+                        kind: "TypingEnd",
+                        actor,
+                        conversationId,
+                    };
+                    beatBuilder.ops.push(endOp);
+                }
+            },
+        };
     }
 
     /**

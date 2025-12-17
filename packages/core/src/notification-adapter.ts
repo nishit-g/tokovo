@@ -87,7 +87,7 @@ class NotificationAdapterRegistryClass {
             kind: "DEVICE",
             deviceId: notification.deviceId || "phone",
             type: "OPEN_APP",
-            appId: notification.ir.appId,
+            payload: { appId: notification.ir.appId },
         }] as TimelineEvent[];
     }
 }

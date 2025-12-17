@@ -11,6 +11,22 @@ import { CompiledEpisode, PrepareOptions, AssetManifest } from "./types/compiled
 import { RuntimeEvent } from "./types/runtime-event";
 import { TokovoPluginContract } from "./types/plugin-contract";
 import { WorldState, DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, DEFAULT_OS_STATE } from "./types";
+import { replay } from "./engine";
+
+// Type for compile function (optional peer dependency)
+type CompileFunction = (episode: any) => { timeline: { ops: any[] } };
+
+// Compile function is injected at runtime or provided by caller
+let compileEpisode: CompileFunction | null = null;
+
+/**
+ * Set the compile function for internal use.
+ * Call this from the entry point that has access to @tokovo/compiler.
+ */
+export function setCompiler(compileFn: CompileFunction): void {
+    compileEpisode = compileFn;
+}
+
 
 // =============================================================================
 // PLUGIN REGISTRY
@@ -310,15 +326,43 @@ export interface EpisodeInput {
 }
 
 /**
+ * EpisodeDefinition - DSL episode output (from episode() call)
+ */
+export interface EpisodeDefinition {
+    episodeId: string;
+    fps?: number;
+    durationInFrames?: number;
+    devices: Array<{
+        deviceId: string;
+        platform?: "ios" | "android";
+        appId?: string;
+        profileId?: string;
+        conversations?: any[];
+        beats?: any[];
+    }>;
+}
+
+/**
+ * Check if input is an EpisodeDefinition (from DSL)
+ */
+function isEpisodeDefinition(input: EpisodeInput | EpisodeDefinition): input is EpisodeDefinition {
+    return 'episodeId' in input && Array.isArray((input as any).devices);
+}
+
+/**
  * prepareEpisode - The single entry point for creating a CompiledEpisode
  * 
- * @param input - Episode input (events, scene definition, etc.)
+ * Accepts EITHER:
+ * - EpisodeDefinition (from DSL) - compiles internally
+ * - EpisodeInput (legacy) - uses pre-compiled events
+ * 
+ * @param input - Episode definition or pre-compiled input
  * @param plugins - Array of plugins to register
  * @param options - Prepare options
  * @returns CompiledEpisode ready for rendering
  */
 export function prepareEpisode(
-    input: EpisodeInput,
+    input: EpisodeInput | EpisodeDefinition,
     plugins: TokovoPluginContract[] = [],
     options: PrepareOptions = {}
 ): CompiledEpisode {
@@ -328,35 +372,73 @@ export function prepareEpisode(
     // 1. Build plugin registry
     const registry = buildPluginRegistry(plugins);
 
-    // 2. Create or use initial world
-    const sceneIR: SceneIRLike = input.sceneIR || { id: input.id };
-    const initialWorld = input.initialWorld || deriveInitialWorld(sceneIR, registry);
+    // 2. Handle EpisodeDefinition vs EpisodeInput
+    let episodeInput: EpisodeInput;
 
-    // 3. Sort events
-    const sortedEvents = sortEvents(input.events);
+    if (isEpisodeDefinition(input)) {
+        // NEW: Compile internally
+        if (!compileEpisode) {
+            throw new Error(
+                "[prepareEpisode] EpisodeDefinition passed but @tokovo/compiler not available. " +
+                "Either install @tokovo/compiler or pass pre-compiled EpisodeInput."
+            );
+        }
 
-    // 4. Validate
+        console.log("[prepareEpisode] Compiling episode internally...");
+        const { timeline } = compileEpisode(input);
+
+        episodeInput = {
+            id: input.episodeId,
+            fps: input.fps || 30,
+            durationInFrames: input.durationInFrames || 600,
+            events: timeline.ops as RuntimeEvent[],
+            sceneIR: {
+                id: input.episodeId,
+                fps: input.fps,
+                durationInFrames: input.durationInFrames,
+                devices: input.devices.map(d => ({
+                    id: d.deviceId,
+                    platform: d.platform,
+                    appId: d.appId,
+                    profileId: d.profileId,
+                    conversations: d.conversations,
+                })),
+            },
+        };
+    } else {
+        // Legacy: Already compiled
+        episodeInput = input;
+    }
+
+    // 3. Create or use initial world
+    const sceneIR: SceneIRLike = episodeInput.sceneIR || { id: episodeInput.id };
+    const initialWorld = episodeInput.initialWorld || deriveInitialWorld(sceneIR, registry);
+
+    // 4. Sort events
+    const sortedEvents = sortEvents(episodeInput.events);
+
+    // 5. Validate
     validateEpisode({ events: sortedEvents, initialWorld }, effectiveOptions);
 
-    // 5. Collect assets
+    // 6. Collect assets
     const assets = collectAssets(registry);
 
-    // 6. Build compiled episode
+    // 7. Build compiled episode
     const compiled: CompiledEpisode = {
-        id: input.id,
-        title: input.title,
-        durationInFrames: input.durationInFrames,
-        fps: input.fps,
+        id: episodeInput.id,
+        title: episodeInput.title,
+        durationInFrames: episodeInput.durationInFrames,
+        fps: episodeInput.fps,
         initialWorld,
         events: sortedEvents,
         assets,
     };
 
-    // 7. Add debug info
+    // 8. Add debug info
     if (includeDebug) {
         compiled.debug = {
             buildTimestamp: Date.now(),
-            sourceEpisodeId: input.id,
+            sourceEpisodeId: episodeInput.id,
         };
     }
 
@@ -385,17 +467,13 @@ export function runEpisode(
     frame: number,
     options: RunOptions = { mode: "preview" }
 ): WorldState {
-    // Import replay from engine (circular dep protection)
-    const { replay } = require("./engine");
-
     // Get events up to current frame
     const eventsToApply = episode.events.filter(e => e.at <= frame);
 
-    // Run replay with mode
-    return replay(episode.initialWorld, eventsToApply, frame, {
-        mode: options.mode,
-        onError: options.onError,
-    });
+    // Run replay
+    // Note: RuntimeEvent and TimelineEvent are structurally compatible
+    // The type systems diverged historically but both work with replay()
+    return replay(episode.initialWorld, eventsToApply as any, frame);
 }
 
 // =============================================================================
