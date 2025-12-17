@@ -18,6 +18,7 @@ import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
 import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
+import { UltimateCapabilitiesShowcase, ultimateShowcaseConfig } from "./UltimateCapabilitiesShowcase";
 import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
 import { compile } from "@tokovo/compiler";
@@ -35,6 +36,15 @@ PluginManager.register(WhatsApp);
 export const RemotionRoot: React.FC = () => {
     return (
         <>
+            {/* NEW: Ultimate Capabilities Showcase - shows ALL features */}
+            <Composition
+                id={ultimateShowcaseConfig.id}
+                component={UltimateCapabilitiesShowcase}
+                durationInFrames={ultimateShowcaseConfig.durationInFrames}
+                fps={ultimateShowcaseConfig.fps}
+                width={ultimateShowcaseConfig.width}
+                height={ultimateShowcaseConfig.height}
+            />
             <Composition
                 id="AutoDirectorShowcase"
                 component={AutoDirectorShowcase}
