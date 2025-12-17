@@ -1,35 +1,54 @@
 /**
  * Track Lowering - Convert TrackEvent to RuntimeEvent
- * 
- * @description Transforms the v2 track-based events to the runtime event format.
- * This is the bridge between the new DSL and the existing engine.
- * 
+ *
+ * @description Transforms v2 track-based events to runtime event format.
+ * APP events are delegated to plugins - compiler is app-agnostic.
+ *
  * @see docs-v2/DSL_REVAMP.md#compilation
  */
 
 import type {
     TrackEvent,
     TrackEpisodeIR,
-    WhatsAppTrackEvent,
     CameraTrackEvent,
     AudioTrackEvent,
     OSTrackEvent,
     MarkerTrackEvent,
 } from "@tokovo/ir";
-import type { RuntimeEvent, AppRuntimeEvent } from "@tokovo/core";
+import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
 
 // =============================================================================
-// LOWERING FUNCTIONS
+// TYPES
+// =============================================================================
+
+/**
+ * Plugin lowering interface - plugins implement this to lower their events.
+ */
+export interface PluginLowering {
+    appId: string;
+    lower(event: TrackEvent): RuntimeEvent[];
+}
+
+/**
+ * Lowering context with registered plugin lowerers.
+ */
+export interface LoweringContext {
+    pluginLowerers: Map<string, PluginLowering>;
+}
+
+// =============================================================================
+// PLUGIN-AGNOSTIC LOWERING
 // =============================================================================
 
 /**
  * Lower a single TrackEvent to RuntimeEvent(s).
- * Some events (spans) may produce multiple RuntimeEvents.
+ * APP events are delegated to the appropriate plugin.
  */
-export function lowerTrackEvent(event: TrackEvent): RuntimeEvent[] {
+export function lowerTrackEvent(
+    event: TrackEvent,
+    ctx: LoweringContext
+): RuntimeEvent[] {
     switch (event.kind) {
-        case "APP":
-            return lowerAppEvent(event as WhatsAppTrackEvent);
         case "CAMERA":
             return lowerCameraEvent(event as CameraTrackEvent);
         case "AUDIO":
@@ -39,90 +58,102 @@ export function lowerTrackEvent(event: TrackEvent): RuntimeEvent[] {
         case "MARKER":
             return lowerMarkerEvent(event as MarkerTrackEvent);
         default:
-            console.warn(`Unknown track event kind:`, (event as any).kind);
-            return [];
+            // APP events - delegate to plugin
+            return lowerAppEvent(event, ctx);
     }
+}
+/**
+ * Lower APP events by delegating to the appropriate plugin.
+ * Falls back to built-in WhatsApp lowering for backward compatibility.
+ */
+function lowerAppEvent(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[] {
+    const appId = (event as { appId?: string }).appId;
+    if (!appId) {
+        console.warn(`[lowering] APP event missing appId:`, event);
+        return [];
+    }
+
+    // Try plugin lowerer first
+    const pluginLowerer = ctx.pluginLowerers.get(appId);
+    if (pluginLowerer) {
+        return pluginLowerer.lower(event);
+    }
+
+    // Fallback: built-in WhatsApp lowering for backward compatibility
+    if (appId === "app_whatsapp") {
+        return lowerWhatsAppEvent(event);
+    }
+
+    console.warn(`[lowering] No plugin lowerer for appId: ${appId}`);
+    return [];
 }
 
 /**
- * Lower WhatsApp app events.
+ * Built-in WhatsApp lowering (fallback until plugin adopts lowering interface).
  */
-function lowerAppEvent(event: WhatsAppTrackEvent): RuntimeEvent[] {
+function lowerWhatsAppEvent(event: TrackEvent): RuntimeEvent[] {
+    const e = event as any;
     const base = {
-        at: event.at,
+        at: e.at,
         kind: "APP" as const,
-        appId: event.appId,
-        deviceId: event.deviceId,
+        appId: e.appId,
+        deviceId: e.deviceId,
     };
 
-    switch (event.type) {
+    switch (e.type) {
         case "MESSAGE_RECEIVED":
-            // Reducer expects type: MESSAGE_RECEIVED and reads appEvent.text, appEvent.from, appEvent.conversationId
             return [{
                 ...base,
                 type: "MESSAGE_RECEIVED",
-                conversationId: event.payload.conversationId,
-                from: event.payload.from,
-                text: event.payload.text,
+                conversationId: e.payload.conversationId,
+                from: e.payload.from,
+                text: e.payload.text,
             } as any];
 
         case "MESSAGE_SENT":
-            // Reducer expects type: MESSAGE_SENT 
             return [{
                 ...base,
                 type: "MESSAGE_SENT",
-                conversationId: event.payload.conversationId,
-                text: event.payload.text,
+                conversationId: e.payload.conversationId,
+                text: e.payload.text,
             } as any];
 
         case "TYPING_START":
-            // Reducer uses appEvent.from for typing indicators
             return [{
                 ...base,
                 type: "TYPING_START",
-                conversationId: event.payload.conversationId,
-                from: event.payload.actor,  // Reducer reads appEvent.from
+                conversationId: e.payload.conversationId,
+                from: e.payload.actor,
             } as any];
 
         case "TYPING_END":
             return [{
                 ...base,
                 type: "TYPING_END",
-                conversationId: event.payload.conversationId,
-                from: event.payload.actor,
+                conversationId: e.payload.conversationId,
+                from: e.payload.actor,
             } as any];
 
         case "IMAGE_RECEIVED":
             return [{
                 ...base,
                 type: "RECEIVE_IMAGE",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                    from: event.payload.from,
-                    url: event.payload.url,
-                    caption: event.payload.caption,
-                    height: event.payload.height,
-                },
-            } as AppRuntimeEvent];
+                payload: e.payload,
+            } as any];
 
         case "REACT":
             return [{
                 ...base,
                 type: "REACT",
-                payload: {
-                    messageRef: event.payload.messageRef,
-                    emoji: event.payload.emoji,
-                },
-            } as AppRuntimeEvent];
+                payload: e.payload,
+            } as any];
 
         case "READ":
             return [{
                 ...base,
                 type: "READ_MESSAGES",
-                payload: {
-                    conversationId: event.payload.conversationId,
-                },
-            } as AppRuntimeEvent];
+                payload: { conversationId: e.payload.conversationId },
+            } as any];
 
         default:
             return [];
@@ -141,11 +172,7 @@ function lowerCameraEvent(event: CameraTrackEvent): RuntimeEvent[] {
 
     switch (event.type) {
         case "SET":
-            return [{
-                ...base,
-                type: "SET_VIEW",
-                payload: event.payload,
-            } as any];
+            return [{ ...base, type: "SET_VIEW", payload: event.payload } as any];
 
         case "ANIMATE_START":
             return [{
@@ -202,12 +229,9 @@ function lowerCameraEvent(event: CameraTrackEvent): RuntimeEvent[] {
                 ...base,
                 type: "RESET",
                 duration: event.duration ?? 30,
-                payload: {
-                    easing: event.payload.easing,
-                },
+                payload: { easing: event.payload.easing },
             } as any];
 
-        // End events are handled by duration, not separate events
         case "ANIMATE_END":
         case "TRACK_END":
         case "SHAKE_END":
@@ -222,10 +246,7 @@ function lowerCameraEvent(event: CameraTrackEvent): RuntimeEvent[] {
  * Lower audio events.
  */
 function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
-    const base = {
-        at: event.at,
-        kind: "AUDIO" as const,
-    };
+    const base = { at: event.at, kind: "AUDIO" as const };
 
     switch (event.type) {
         case "BGM_START":
@@ -244,9 +265,7 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
             return [{
                 ...base,
                 type: "FADE_OUT",
-                payload: {
-                    duration: event.payload.fadeOut ?? 30,
-                },
+                payload: { duration: event.payload.fadeOut ?? 30 },
             } as any];
 
         case "PLAY":
@@ -264,9 +283,7 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
             return [{
                 ...base,
                 type: "STOP",
-                payload: {
-                    soundId: event.payload.soundId,
-                },
+                payload: { soundId: event.payload.soundId },
             } as any];
 
         case "CROSSFADE":
@@ -274,27 +291,18 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
                 ...base,
                 type: "CROSSFADE",
                 duration: event.payload.duration,
-                payload: {
-                    soundId: event.payload.soundId,
-                    volume: event.payload.volume,
-                },
+                payload: { soundId: event.payload.soundId, volume: event.payload.volume },
             } as any];
 
         case "FADE_OUT":
             return [{
                 ...base,
                 type: "FADE_OUT",
-                payload: {
-                    duration: event.payload.duration,
-                },
+                payload: { duration: event.payload.duration },
             } as any];
 
         case "STOP_ALL":
-            return [{
-                ...base,
-                type: "STOP_ALL",
-                payload: {},
-            } as any];
+            return [{ ...base, type: "STOP_ALL", payload: {} } as any];
 
         default:
             return [];
@@ -305,11 +313,7 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
  * Lower OS events.
  */
 function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
-    const base = {
-        at: event.at,
-        kind: "OS" as const,
-        deviceId: event.deviceId,
-    };
+    const base = { at: event.at, kind: "OS" as const, deviceId: event.deviceId };
 
     switch (event.type) {
         case "SET_STATE":
@@ -317,32 +321,16 @@ function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
         case "SET_BATTERY":
         case "SET_NETWORK":
         case "SET_DND":
-            return [{
-                ...base,
-                type: "SET_STATE",
-                payload: event.payload,
-            } as any];
+            return [{ ...base, type: "SET_STATE", payload: event.payload } as any];
 
         case "NOTIFICATION_SHOW":
-            return [{
-                ...base,
-                type: "SHOW_NOTIFICATION",
-                payload: event.payload,
-            } as any];
+            return [{ ...base, type: "SHOW_NOTIFICATION", payload: event.payload } as any];
 
         case "NOTIFICATION_DISMISS":
-            return [{
-                ...base,
-                type: "DISMISS_NOTIFICATION",
-                payload: event.payload,
-            } as any];
+            return [{ ...base, type: "DISMISS_NOTIFICATION", payload: event.payload } as any];
 
         case "NOTIFICATION_DISMISS_ALL":
-            return [{
-                ...base,
-                type: "DISMISS_ALL_NOTIFICATIONS",
-                payload: {},
-            } as any];
+            return [{ ...base, type: "DISMISS_ALL_NOTIFICATIONS", payload: {} } as any];
 
         default:
             return [];
@@ -350,11 +338,9 @@ function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
 }
 
 /**
- * Lower marker events (for debugging, not processed by engine).
+ * Lower marker events (debugging only).
  */
-function lowerMarkerEvent(event: MarkerTrackEvent): RuntimeEvent[] {
-    // Markers are for debugging/tooling, not runtime
-    // We could emit them as special events for dev tools
+function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
     return [];
 }
 
@@ -365,21 +351,48 @@ function lowerMarkerEvent(event: MarkerTrackEvent): RuntimeEvent[] {
 /**
  * Lower all track events to runtime events.
  */
-export function lowerTrackEvents(events: TrackEvent[]): RuntimeEvent[] {
+export function lowerTrackEvents(
+    events: TrackEvent[],
+    ctx: LoweringContext
+): RuntimeEvent[] {
     const runtimeEvents: RuntimeEvent[] = [];
-
     for (const event of events) {
-        const lowered = lowerTrackEvent(event);
-        runtimeEvents.push(...lowered);
+        runtimeEvents.push(...lowerTrackEvent(event, ctx));
+    }
+    return runtimeEvents.sort((a, b) => a.at - b.at);
+}
+
+/**
+ * Create lowering context from plugins.
+ * Plugins with a `v2Lowering` property will be used for APP event delegation.
+ */
+export function createLoweringContext(plugins: TokovoPlugin[]): LoweringContext {
+    const pluginLowerers = new Map<string, PluginLowering>();
+
+    for (const plugin of plugins) {
+        // Check if plugin has V2 lowering capability
+        const pluginWithV2Lowering = plugin as TokovoPlugin & {
+            v2Lowering?: { lower: (event: TrackEvent) => RuntimeEvent[] };
+        };
+
+        if (pluginWithV2Lowering.v2Lowering) {
+            pluginLowerers.set(plugin.id, {
+                appId: plugin.id,
+                lower: pluginWithV2Lowering.v2Lowering.lower,
+            });
+        }
     }
 
-    // Sort by frame (already sorted by declaration order in TrackEpisodeIR)
-    return runtimeEvents.sort((a, b) => a.at - b.at);
+    return { pluginLowerers };
 }
 
 /**
  * Lower a full TrackEpisodeIR to runtime events.
  */
-export function lowerEpisode(ir: TrackEpisodeIR): RuntimeEvent[] {
-    return lowerTrackEvents(ir.events);
+export function lowerEpisode(
+    ir: TrackEpisodeIR,
+    plugins: TokovoPlugin[]
+): RuntimeEvent[] {
+    const ctx = createLoweringContext(plugins);
+    return lowerTrackEvents(ir.events, ctx);
 }

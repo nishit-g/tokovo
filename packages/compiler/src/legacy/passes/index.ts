@@ -3,8 +3,10 @@
  */
 
 export { normalize } from "./normalize";
-export { resolveRefs, ResolvedOp } from "./resolve-refs";
+export { resolveRefs } from "./resolve-refs";
+export type { ResolvedOp } from "./resolve-refs";
 export { ensureUnlocked, ensureAppOpened, ensureConversationOpened } from "./virtual-device";
 export { lowerToTimeline } from "./time-lowering";
-export { validateTimeline, ValidationResult } from "./validate";
+export { validateTimeline } from "./validate";
+export type { ValidationResult } from "./validate";
 export { sort } from "./sort";

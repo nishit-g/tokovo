@@ -14,6 +14,7 @@ import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/p
 import { whatsappReducer } from "./logic/reducer";
 import { WhatsappChatView } from "./ui";
 import { whatsappLowering } from "./lowering";
+import { whatsappV2Lowering } from "./v2/lowering";
 import { whatsappDsl, WhatsAppDslApi } from "./dsl-extension";
 import { whatsappAudioRules } from "./assets/audio-rules";
 
@@ -63,7 +64,11 @@ function createWhatsAppInitialState() {
 // ENTERPRISE PLUGIN CONTRACT
 // =============================================================================
 
-export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & { appView: any; name: string } = {
+export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
+    appView: any;
+    name: string;
+    v2Lowering: typeof whatsappV2Lowering;
+} = {
     // === TIER A: Identity ===
     id: APP_IDS.WHATSAPP as "app_whatsapp",
     version: "2.0.0",
@@ -84,6 +89,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & { appView:
 
     // === TIER B: Lowering ===
     lowering: whatsappLowering,
+    v2Lowering: whatsappV2Lowering,
 
     // === TIER C: DSL ===
     dsl: whatsappDsl,

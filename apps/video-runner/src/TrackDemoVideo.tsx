@@ -16,7 +16,7 @@ import React, { useMemo } from "react";
 import { useCurrentFrame, AbsoluteFill } from "remotion";
 import { runEpisode, createEventIndex, setCompiler } from "@tokovo/core";
 import { compile } from "@tokovo/compiler";
-import { prepareTrackEpisode } from "@tokovo/compiler/src/prepare-track";
+import { prepareTrackEpisode } from "@tokovo/compiler";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";

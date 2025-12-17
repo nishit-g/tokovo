@@ -1,16 +1,16 @@
 /**
  * Prepare Track Episode - Converts TrackEpisodeIR to engine-ready format
- * 
+ *
  * @description The glue between v2 DSL and the runtime engine.
  * Takes TrackEpisodeIR from episode().build() and produces
  * a CompiledEpisode ready for runEpisode().
- * 
+ *
  * @see docs-v2/DSL_REVAMP.md
  */
 
-import type { TrackEpisodeIR, TrackEvent } from "@tokovo/ir";
+import type { TrackEpisodeIR } from "@tokovo/ir";
 import type { RuntimeEvent, WorldState, TokovoPlugin } from "@tokovo/core";
-import { lowerEpisode } from "./lowering/track-lowering";
+import { lowerEpisode } from "./lowering";
 
 // =============================================================================
 // TYPES
@@ -46,8 +46,8 @@ export function prepareTrackEpisode(
     ir: TrackEpisodeIR,
     plugins: TokovoPlugin[]
 ): PreparedTrackEpisode {
-    // Lower TrackEvent[] to RuntimeEvent[]
-    const runtimeEvents = lowerEpisode(ir) as RuntimeEvent[];
+    // Lower TrackEvent[] to RuntimeEvent[] (delegates APP events to plugins)
+    const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
 
     // Build initial world state from device configs
     const initialWorld = buildInitialWorld(ir);
@@ -112,7 +112,7 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
                 name: conv.name,
                 avatar: conv.avatar || "",
                 type: conv.type || "dm",
-                participants: conv.participants || [],
+                participants: (conv as any).participants || [],
                 messages: [],
                 typing: null,
                 unreadCount: 0,
