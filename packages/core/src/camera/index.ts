@@ -587,4 +587,7 @@ export * from "./timeline";
 // Presets
 export * from "./presets";
 
+// V2 Camera Types
+export * from "./driver";
+export * from "./resolver";
 

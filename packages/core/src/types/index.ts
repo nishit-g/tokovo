@@ -12,3 +12,6 @@ export * from "./compiled-episode";
 
 // Plugin Contract - Tiered plugin system
 export * from "./plugin-contract";
+
+// Anchor types - V2 camera positioning
+export * from "./anchor";
