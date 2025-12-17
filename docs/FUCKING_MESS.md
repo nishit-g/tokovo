@@ -943,6 +943,762 @@ export const RemotionRoot = () => {
 
 ---
 
+# SECTION 11: NOTIFICATION SYSTEM
+
+## 11.1 The Problem
+
+Notifications are **cross-app interruptions**. WhatsApp message arrives while user is on Twitter.
+This is a DEVICE event, not an APP event.
+
+## 11.2 The RuntimeEvent
+
+```typescript
+interface NotificationEvent {
+  at: number;
+  kind: "DEVICE";
+  deviceId: string;
+  type: "SHOW_NOTIFICATION";
+  payload: {
+    id: string;
+    appId: string;          // Source app (app_whatsapp)
+    title: string;
+    body: string;
+    threadKey?: string;     // For grouping (e.g., "whatsapp_chat_sarah")
+    priority: "HIGH" | "DEFAULT" | "LOW";
+    actions?: Array<{ label: string; action: string }>;
+  };
+}
+```
+
+## 11.3 The Scheduler (Core)
+
+Core owns the **NotificationScheduler**:
+- FIFO queue
+- 10-frame gap between banners
+- 150-frame (5s) display duration
+- Grouping by `threadKey`
+
+## 11.4 The Adapter (Plugin)
+
+Plugins provide **NotificationAdapter**:
+```typescript
+// In WhatsApp plugin
+notificationAdapter: {
+  format: (event: NotificationEvent): FormattedNotification => ({
+    icon: staticFile("icons/whatsapp.svg"),
+    color: "#25D366",
+    title: event.payload.title,
+    body: event.payload.body,
+  })
+}
+```
+
+---
+
+# SECTION 12: DIRECTORLITE → EVENTS
+
+## 12.1 The Problem
+
+DirectorLite currently mutates camera state directly:
+```typescript
+// WRONG: Direct mutation
+world.camera.transform.scale = 1.08;
+```
+
+This breaks determinism and bypasses the event system.
+
+## 12.2 The Solution
+
+DirectorLite must EMIT CameraEvents, not mutate:
+```typescript
+// DirectorLite watches signals
+onSignal("NewMessage", (signal, ctx) => {
+  ctx.emit({
+    at: ctx.frame,
+    kind: "CAMERA",
+    type: "ZOOM",
+    payload: {
+      scale: 1.08,
+      duration: 15,
+      easing: "easeOut",
+      anchorId: "lastMessage",  // 👈 Reference anchor, not coordinates
+    }
+  });
+});
+```
+
+## 12.3 The Priority System
+
+Camera has 3 drivers with strict priority:
+1. **Manual DSL** (highest): `b.camera.zoom(1.5)` 
+2. **Semantic**: `b.camera.focus("lastMessage")`
+3. **DirectorLite** (lowest): Auto-reacts to signals
+
+If MANUAL or SEMANTIC is active, DirectorLite is SUSPENDED.
+
+---
+
+# SECTION 13: ANCHOR REGISTRY
+
+## 13.1 The Problem
+
+Camera needs to focus on "the last message", but:
+- Position changes based on previous messages
+- Content is dynamic
+
+## 13.2 The Solution: Anchor Providers
+
+Plugins register **anchor providers**:
+```typescript
+// In WhatsApp plugin
+anchors: {
+  providers: {
+    "lastMessage": (world, deviceId) => {
+      const msgs = world.apps[deviceId]?.app_whatsapp?.messages || [];
+      const lastMsg = msgs[msgs.length - 1];
+      if (!lastMsg) return null;
+      // Return bounding box
+      return { x: 0.5, y: lastMsg.offsetY / DEVICE_HEIGHT, width: 1, height: 0.1 };
+    },
+    "inputArea": () => ({ x: 0.5, y: 0.95, width: 1, height: 0.1 }),
+    "header": () => ({ x: 0.5, y: 0.05, width: 1, height: 0.1 }),
+  }
+}
+```
+
+## 13.3 Camera Resolution
+
+When camera needs to focus:
+```typescript
+// 1. DSL says:
+b.camera.focus("lastMessage");
+
+// 2. Compiler emits:
+{ kind: "CAMERA", type: "FOCUS", payload: { anchorId: "lastMessage" } }
+
+// 3. Runtime resolves:
+const anchor = pluginRegistry.resolveAnchor("lastMessage", world, deviceId);
+const { x, y } = anchor;
+
+// 4. Apply camera transform
+world.camera.transform = { originX: x, originY: y, scale: 1.2 };
+```
+
+---
+
+# SECTION 14: PLATFORM STRATEGIES
+
+## 14.1 The Problem
+
+Same plugin (WhatsApp) must render differently on iOS vs Android.
+
+## 14.2 The Solution: UI Strategies
+
+```typescript
+// Plugin defines strategies
+views: {
+  strategies: {
+    ios: {
+      ChatList: IosChatListScreen,
+      Chat: IosChatScreen,
+      Header: IosHeader,
+      MessageBubble: IosMessageBubble,
+    },
+    android: {
+      ChatList: AndroidChatListScreen,
+      Chat: AndroidChatScreen,
+      Header: AndroidHeader,
+      MessageBubble: AndroidMessageBubble,
+    }
+  },
+  AppRoot: ({ world, deviceId }) => {
+    const platform = world.devices[deviceId].platform; // "ios" | "android"
+    const Strategy = views.strategies[platform];
+    return <Strategy.ChatList world={world} />;
+  }
+}
+```
+
+## 14.3 Device Profiles
+
+Devices carry platform info:
+```typescript
+interface DeviceProfile {
+  id: string;
+  platform: "ios" | "android";
+  model: "iphone_16_pro" | "pixel_8" | ...;
+  width: number;
+  height: number;
+  hasNotch: boolean;
+  hasDynamicIsland: boolean;
+}
+```
+
+---
+
+# SECTION 15: SEMANTIC SIGNALS
+
+## 15.1 The Problem
+
+DirectorLite needs to know "something important happened" without parsing every event.
+
+## 15.2 The Solution: Signals
+
+Events emit **signals** as metadata:
+```typescript
+// RuntimeEvent with signal
+{
+  at: 60,
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  payload: { from: "Sarah", text: "I love you" },
+  _signal: {
+    type: "NewMessage",
+    mood: "romantic",     // emotional context
+    intensity: 0.9,       // 0-1 importance
+    pacing: "slow",       // timing hint
+  }
+}
+```
+
+## 15.3 DirectorLite Rules
+
+DirectorLite subscribes to signals:
+```typescript
+const directorRules = [
+  {
+    match: { type: "NewMessage", intensity: { gte: 0.7 } },
+    action: "ZOOM",
+    scale: 1.1,
+    duration: 20,
+    anchorId: "lastMessage"
+  },
+  {
+    match: { type: "TypingStarted", mood: "tense" },
+    action: "SHAKE",
+    intensity: 0.2
+  }
+];
+```
+
+---
+
+# SECTION 16: HYPER-DETAILED IMPLEMENTATION PHASES
+
+## PHASE 0: PREPARATION (Day 0)
+
+### Checkpoint 0.1: Clean Slate
+- [ ] Commit all current changes
+- [ ] Create branch `feat/enterprise-pipeline`
+- [ ] Document current broken tests (so we know what to fix)
+
+### Checkpoint 0.2: Dependencies
+- [ ] Verify `@tokovo/ir` exports all needed types
+- [ ] Verify `@tokovo/core` has clean package.json
+- [ ] Remove any circular dependencies
+
+---
+
+## PHASE 1: TYPES FOUNDATION (Day 1)
+
+### Checkpoint 1.1: RuntimeEvent Types
+**File**: `@tokovo/core/src/types/runtime-event.ts`
+
+```typescript
+// Create these types:
+export type RuntimeEventKind = "APP" | "DEVICE" | "CAMERA" | "AUDIO" | "KEYBOARD";
+
+export interface BaseEvent {
+  at: number;
+  kind: RuntimeEventKind;
+  _trace?: EventTrace;
+  _signal?: EventSignal;
+}
+
+export interface AppEvent<AppId extends string, Type extends string, P> extends BaseEvent {
+  kind: "APP";
+  appId: AppId;
+  type: Type;
+  deviceId?: string;
+  payload: P;
+}
+
+// ... all event interfaces
+```
+
+**Verification**:
+- [ ] All events have `payload` field
+- [ ] No `[k: string]: any`
+- [ ] Type augmentation interface exists
+
+### Checkpoint 1.2: CompiledEpisode Type
+**File**: `@tokovo/core/src/types/compiled-episode.ts`
+
+```typescript
+export interface CompiledEpisode {
+  id: string;
+  durationInFrames: number;
+  fps: number;
+  initialWorld: WorldState;
+  events: RuntimeEvent[];
+  assets: AssetManifest;
+  layout?: LayoutConfig;
+  debug?: DebugInfo;
+}
+```
+
+**Verification**:
+- [ ] Type exported from package
+- [ ] No references to IR types
+
+### Checkpoint 1.3: Plugin Contract Types
+**Files**: 
+- `@tokovo/core/src/types/plugin.ts`
+- `@tokovo/core/src/types/plugin-tiers.ts`
+
+```typescript
+export interface TokovoPlugin<AppId extends string = string> {
+  // Tier A (required)
+  id: AppId;
+  version: string;
+  displayName: string;
+  reducer: PluginReducer;
+  views: PluginViews;
+  
+  // Tier B (optional)
+  lowering?: LoweringHandler;
+  
+  // Tier C (optional)
+  dsl?: DslExtension;
+  
+  // Assets
+  assets?: AssetManifest;
+  audioRules?: AutoSoundRule[];
+  anchors?: AnchorRegistry;
+  notificationAdapter?: NotificationAdapter;
+}
+```
+
+**Verification**:
+- [ ] Plugin interface has optional tiers
+- [ ] No prototype mutation in DSL type
+
+---
+
+## PHASE 2: CORE FUNCTIONS (Day 2)
+
+### Checkpoint 2.1: prepareEpisode()
+**File**: `@tokovo/core/src/prepare.ts`
+
+```typescript
+export function prepareEpisode(
+  input: SceneIR | EpisodeFactory,
+  plugins: TokovoPlugin[],
+  options?: PrepareOptions
+): CompiledEpisode {
+  // 1. Extract SceneIR
+  const sceneIR = typeof input === "function" ? input() : input;
+  
+  // 2. Build registries
+  const registry = buildPluginRegistry(plugins);
+  
+  // 3. Compile
+  const timelineIR = compile(sceneIR, registry);
+  
+  // 4. Lower
+  const events = lower(timelineIR, registry);
+  
+  // 5. Derive audio
+  const audioEvents = deriveAudioEvents(events, registry);
+  
+  // 6. Merge and sort
+  const allEvents = sortEvents([...events, ...audioEvents]);
+  
+  // 7. Derive initial world
+  const initialWorld = deriveInitialWorld(sceneIR, registry);
+  
+  // 8. Validate
+  validateEpisode({ events: allEvents, initialWorld }, options);
+  
+  // 9. Return
+  return {
+    id: sceneIR.id,
+    durationInFrames: sceneIR.durationInFrames,
+    fps: sceneIR.fps,
+    initialWorld,
+    events: allEvents,
+    assets: collectAssets(registry),
+  };
+}
+```
+
+**Verification**:
+- [ ] Function compiles without error
+- [ ] Returns typed CompiledEpisode
+- [ ] Validation throws on error in strict mode
+
+### Checkpoint 2.2: deriveInitialWorld()
+**File**: `@tokovo/core/src/derive-world.ts`
+
+```typescript
+export function deriveInitialWorld(sceneIR: SceneIR, registry: PluginRegistry): WorldState {
+  const world = createEmptyWorld();
+  
+  for (const device of sceneIR.devices) {
+    // Add device
+    world.devices[device.id] = createDeviceState(device);
+    
+    // Let plugins initialize their state
+    for (const plugin of registry.plugins) {
+      if (plugin.createInitialState) {
+        world.apps[device.id] = world.apps[device.id] || {};
+        world.apps[device.id][plugin.id] = plugin.createInitialState();
+      }
+    }
+    
+    // Add conversations
+    for (const conv of device.conversations || []) {
+      world.conversations[conv.id] = createConversationState(conv);
+    }
+  }
+  
+  return world;
+}
+```
+
+**Verification**:
+- [ ] No manual initialWorld needed in episodes
+- [ ] Plugin initial states work
+
+### Checkpoint 2.3: run() function
+**File**: `@tokovo/core/src/run.ts`
+
+```typescript
+export function run(episode: CompiledEpisode, frame: number, mode: "preview" | "render"): WorldState {
+  // Get events up to current frame
+  const eventsToApply = episode.events.filter(e => e.at <= frame);
+  
+  // Apply via replay
+  return replay(episode.initialWorld, eventsToApply, {
+    mode,
+    plugins: getRegisteredPlugins(),
+  });
+}
+```
+
+**Verification**:
+- [ ] Works with CompiledEpisode only
+- [ ] Mode controls error handling
+
+---
+
+## PHASE 3: PLUGIN MIGRATION (Day 3-4)
+
+### Checkpoint 3.1: WhatsApp Plugin Contract
+**File**: `@tokovo/apps-whatsapp/src/plugin.ts`
+
+```typescript
+import { TokovoPlugin } from "@tokovo/core";
+import { whatsappReducer } from "./logic/reducer";
+import { WhatsAppAppRoot } from "./ui/AppRoot";
+import { whatsappLowering } from "./lowering";
+import { whatsappDsl } from "./dsl";
+import { whatsappAssets } from "./assets";
+import { whatsappAudioRules } from "./assets/audio-rules";
+import { whatsappAnchors } from "./anchors";
+
+export const WhatsAppPlugin: TokovoPlugin<"app_whatsapp"> = {
+  id: "app_whatsapp",
+  version: "1.0.0",
+  displayName: "WhatsApp",
+  
+  // Tier A
+  reducer: whatsappReducer,
+  views: {
+    AppRoot: WhatsAppAppRoot,
+    strategies: { ios: iosViews, android: androidViews },
+  },
+  
+  // Tier B
+  lowering: whatsappLowering,
+  
+  // Tier C
+  dsl: whatsappDsl,
+  
+  // Assets
+  assets: whatsappAssets,
+  audioRules: whatsappAudioRules,
+  anchors: whatsappAnchors,
+};
+```
+
+**Verification**:
+- [ ] Plugin compiles
+- [ ] All required exports exist
+- [ ] Reducer uses `event.payload.x` not `event.x`
+
+### Checkpoint 3.2: WhatsApp Lowering
+**File**: `@tokovo/apps-whatsapp/src/lowering.ts`
+
+```typescript
+export const whatsappLowering: LoweringHandler = {
+  handles: ["MessageReceived", "MessageSent", "TypingStarted", "TypingEnded"],
+  
+  lower: (op: TimelineOp, ctx: LowerContext): RuntimeEvent[] => {
+    switch (op.kind) {
+      case "MessageReceived":
+        return [{
+          at: op.at,
+          kind: "APP",
+          appId: "app_whatsapp",
+          type: "MESSAGE_RECEIVED",
+          payload: {
+            from: op.actor,
+            text: op.text,
+            conversationId: op.conversationId,
+            message: op.message,
+          },
+          _trace: op.trace,
+        }];
+      // ... other cases
+    }
+  }
+};
+```
+
+**Verification**:
+- [ ] All TimelineOp kinds handled
+- [ ] Payload contains all fields
+- [ ] Trace preserved
+
+### Checkpoint 3.3: WhatsApp DSL (b.use pattern)
+**File**: `@tokovo/apps-whatsapp/src/dsl.ts`
+
+```typescript
+export const whatsappDsl: DslExtension = {
+  createApi: (builder: BeatBuilder) => ({
+    receive: (from: string, text: string, options?: MessageOptions) => {
+      builder.ops.push({
+        kind: "ReceiveMessage",
+        actor: from,
+        text,
+        conversationId: builder.conversationId,
+        ...options,
+      });
+      return builder;
+    },
+    send: (text: string, options?: MessageOptions) => {
+      builder.ops.push({
+        kind: "SendMessage",
+        actor: "me",
+        text,
+        conversationId: builder.conversationId,
+        ...options,
+      });
+      return builder;
+    },
+    typing: (from: string, duration: string) => {
+      builder.ops.push({ kind: "TypingStart", actor: from });
+      builder.wait(duration);
+      builder.ops.push({ kind: "TypingEnd", actor: from });
+      return builder;
+    },
+  }),
+};
+```
+
+**Verification**:
+- [ ] No prototype mutation
+- [ ] Returns builder for chaining
+- [ ] TypeScript infers API correctly
+
+### Checkpoint 3.4: Twitter Plugin (Same Pattern)
+- [ ] Create `TwitterPlugin` following same structure
+- [ ] Verify both plugins work
+
+---
+
+## PHASE 4: EPISODE MIGRATION (Day 5)
+
+### Checkpoint 4.1: Update WhatsApp Showcase
+**File**: `packages/episodes/src/whatsapp-showcase.episode.ts`
+
+```typescript
+import { defineEpisode, BeatBuilder } from "@tokovo/dsl";
+
+export const whatsappShowcase = defineEpisode("whatsapp-showcase", ep => {
+  ep.duration("30s");
+  ep.fps(30);
+  
+  ep.device("phone", d => {
+    d.platform("ios");
+    d.app("app_whatsapp");
+    d.conversation("dm_sarah", { name: "Sarah ❤️", avatar: "..." });
+    
+    d.beat("intro", b => {
+      b.use("app_whatsapp").receive("Sarah", "Hey babe!");
+      b.wait("1s");
+      b.use("app_whatsapp").typing("me", "2s");
+      b.use("app_whatsapp").send("Hey! What's up?");
+    });
+  });
+});
+```
+
+**Verification**:
+- [ ] Episode uses `b.use()` pattern
+- [ ] No manual initialWorld
+- [ ] No inline adapter
+
+### Checkpoint 4.2: Video Runner Integration
+**File**: `apps/video-runner/src/WhatsAppShowcase.tsx`
+
+```typescript
+import { prepareEpisode, run } from "@tokovo/core";
+import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
+import { whatsappShowcase } from "@tokovo/episodes";
+import { useCurrentFrame } from "remotion";
+
+const episode = prepareEpisode(whatsappShowcase, [WhatsAppPlugin]);
+
+export const WhatsAppShowcase: React.FC = () => {
+  const frame = useCurrentFrame();
+  const world = run(episode, frame, "preview");
+  
+  return <TokovoRenderer world={world} />;
+};
+```
+
+**Verification**:
+- [ ] Works with prepared episode
+- [ ] No inline adapters
+- [ ] No manual event transformations
+
+---
+
+## PHASE 5: VERIFICATION (Day 6)
+
+### Checkpoint 5.1: Type Safety Verification
+```bash
+# Run full type check
+pnpm typecheck
+
+# Expected: 0 errors
+```
+
+- [ ] No `any` types in core pipeline
+- [ ] Plugin payloads fully typed
+- [ ] Event payloads fully typed
+
+### Checkpoint 5.2: Determinism Test
+```typescript
+// Run same episode twice, compare output
+const world1 = run(episode, 100, "render");
+const world2 = run(episode, 100, "render");
+assert.deepEqual(world1, world2);
+```
+
+- [ ] Identical WorldState
+- [ ] Identical audio schedule
+- [ ] No Math.random()
+
+### Checkpoint 5.3: Error Handling
+```typescript
+// In render mode, errors throw
+expect(() => {
+  run(brokenEpisode, 50, "render");
+}).toThrow(PluginError);
+
+// In preview mode, errors are collected
+const world = run(brokenEpisode, 50, "preview");
+expect(world._errors).toHaveLength(1);
+```
+
+- [ ] Fail-fast in render mode
+- [ ] Continue in preview mode
+
+### Checkpoint 5.4: Full Pipeline Test
+```bash
+# Render the showcase
+pnpm render whatsapp-showcase
+
+# Expected: Video renders without errors
+```
+
+- [ ] Audio plays correctly
+- [ ] Messages appear
+- [ ] Camera moves
+- [ ] No console errors
+
+---
+
+## PHASE 6: TEMPLATES & DX (Day 7+)
+
+### Checkpoint 6.1: Plugin Template
+**File**: `packages/plugin-template/`
+
+```bash
+tokovo create plugin my-app
+# Generates:
+# packages/apps-myapp/
+#   src/
+#     plugin.ts
+#     reducer.ts
+#     lowering.ts
+#     dsl.ts
+#     types.ts
+#     assets/
+#     ui/
+```
+
+### Checkpoint 6.2: Episode Template
+**File**: `packages/episode-template/`
+
+```bash
+tokovo create episode my-demo
+# Generates:
+# packages/episodes/src/my-demo.episode.ts
+```
+
+### Checkpoint 6.3: Auto-Discovery
+**File**: `apps/video-runner/src/Root.tsx`
+
+```typescript
+const episodes = await discoverEpisodes("packages/episodes/src/*.episode.ts");
+const plugins = await discoverPlugins("packages/apps-*/src/plugin.ts");
+```
+
+- [ ] New episodes auto-register
+- [ ] New plugins auto-register
+- [ ] No manual Root.tsx changes
+
+---
+
+# SECTION 17: DEFINITION OF DONE (FINAL)
+
+| # | Requirement | Phase | Status |
+|---|-------------|-------|--------|
+| 1 | `RuntimeEvent` with `payload` field | 1 | ⬜ |
+| 2 | `CompiledEpisode` type exists | 1 | ⬜ |
+| 3 | `TokovoPlugin` contract with tiers | 1 | ⬜ |
+| 4 | `prepareEpisode()` single entry point | 2 | ⬜ |
+| 5 | `deriveInitialWorld()` auto-generates | 2 | ⬜ |
+| 6 | WhatsApp migrated to plugin contract | 3 | ⬜ |
+| 7 | DSL uses `b.use()` pattern | 3 | ⬜ |
+| 8 | Reducer uses `event.payload.x` | 3 | ⬜ |
+| 9 | Type augmentation in plugin packages | 3 | ⬜ |
+| 10 | Episodes use `prepareEpisode()` only | 4 | ⬜ |
+| 11 | No inline adapters in video components | 4 | ⬜ |
+| 12 | Full type check passes | 5 | ⬜ |
+| 13 | Determinism test passes | 5 | ⬜ |
+| 14 | Fail-fast in render mode | 5 | ⬜ |
+| 15 | WhatsApp showcase renders | 5 | ⬜ |
+| 16 | Plugin template works | 6 | ⬜ |
+| 17 | Episode auto-discovery | 6 | ⬜ |
+
+---
+
 # FINAL TRUTH
 
 You don't need more features.
@@ -950,7 +1706,13 @@ You don't need more features.
 You need **one canonical truth**:
 
 ```
-CompiledEpisode + RuntimeEvent schema + strict pipeline + plugin contract
+CompiledEpisode + RuntimeEvent(payload) + strict pipeline + plugin tiers + no prototype mutation
 ```
 
-Everything else becomes composable.
+When ALL checkboxes are ✅, Tokovo becomes a **platform**.
+
+Plugin authors will ship apps.
+Episode authors will create stories.
+You will never debug pipeline issues again.
+
+**This is the enterprise standard. Ship it.**
