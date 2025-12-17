@@ -23,6 +23,18 @@ import {
     APP_IDS
 } from "@tokovo/core";
 
+// Import group operation types
+import {
+    GROUP_EVENT_TYPES,
+    isWhatsAppGroupEvent,
+    isGroupMemberAddPayload,
+    isGroupMemberRemovePayload,
+    isGroupAdminChangePayload,
+    GroupMemberAddPayload,
+    GroupMemberRemovePayload,
+    GroupAdminChangePayload,
+} from "../ir/group-ops";
+
 // Extended message type for WhatsApp-specific features
 type WhatsAppMessageType =
     | "text"
@@ -97,6 +109,12 @@ function generateTimestamp(frame: number, messageIndex: number): string {
  * WhatsApp reducer - handles all WhatsApp events
  */
 export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Handle CustomOp events with WhatsApp namespace
+    if (event.kind === "Custom") {
+        handleCustomOp(draft, event as any);
+        return;
+    }
+
     // Only handle APP events for WhatsApp
     if (event.kind !== "APP") return;
 
@@ -331,6 +349,163 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             const text = (appEvent as any).payload?.text;
             if (conversation) {
                 (conversation as any).draftText = text;
+            }
+            break;
+        }
+    }
+}
+
+// =============================================================================
+// CUSTOM OP HANDLERS (WhatsApp-namespaced events)
+// =============================================================================
+
+interface CustomOpEvent {
+    at: number;
+    kind: "Custom";
+    deviceId?: string;
+    appId?: string;
+    eventType: string;
+    payload?: Record<string, any>;
+}
+
+/**
+ * Handle CustomOp events with WhatsApp namespace.
+ * Uses the event factory pattern from ir/group-ops.ts
+ */
+function handleCustomOp(draft: WorldState, event: CustomOpEvent): void {
+    // Only handle whatsapp-namespaced events
+    if (!event.eventType?.startsWith("whatsapp.")) return;
+    if (event.appId && event.appId !== APP_IDS.WHATSAPP) return;
+
+    const payload = event.payload;
+    if (!payload) return;
+
+    const conversationId = payload.conversationId;
+    if (!conversationId) return;
+
+    // Ensure conversation exists
+    if (!draft.conversations[conversationId]) {
+        (draft.conversations as any)[conversationId] = {
+            id: conversationId,
+            messages: [],
+            type: "group"  // CustomOps are typically group operations
+        };
+    }
+    const conversation = draft.conversations[conversationId];
+
+    switch (event.eventType) {
+        case GROUP_EVENT_TYPES.MEMBER_ADDED: {
+            if (!isGroupMemberAddPayload(event.eventType, payload)) break;
+
+            // Add member if not already present
+            if (!conversation.members) conversation.members = [];
+            if (!conversation.members.find(m => m.id === payload.member.id)) {
+                conversation.members.push({
+                    id: payload.member.id,
+                    name: payload.member.name,
+                    avatar: payload.member.avatar,
+                });
+            }
+
+            // Add system message
+            const addedByName = payload.addedBy === "me" ? "You" : payload.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${payload.member.id}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedByName} added ${payload.member.name}`,
+                targetMember: payload.member.name,
+                actorName: payload.addedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.MEMBER_REMOVED: {
+            if (!isGroupMemberRemovePayload(event.eventType, payload)) break;
+
+            // Remove member from list
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    m => m.id !== payload.memberId
+                );
+            }
+
+            // Add system message
+            const wasMe = payload.memberId === "me";
+            const removedByName = payload.removedBy === "me" ? "You" : payload.removedBy;
+
+            const text = wasMe
+                ? "You left the group"
+                : `${removedByName} removed ${payload.memberName}`;
+
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${payload.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text,
+                targetMember: payload.memberName,
+                actorName: payload.removedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.ADMIN_CHANGED: {
+            if (!isGroupAdminChangePayload(event.eventType, payload)) break;
+
+            // Update admin list
+            if (!conversation.admins) conversation.admins = [];
+
+            if (payload.action === "promote") {
+                if (!conversation.admins.includes(payload.memberId)) {
+                    conversation.admins.push(payload.memberId);
+                }
+            } else {
+                conversation.admins = conversation.admins.filter(
+                    id => id !== payload.memberId
+                );
+            }
+
+            // Optionally add system message for admin changes
+            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
+            const memberName = payload.memberName || payload.memberId;
+            const action = payload.action === "promote" ? "made" : "removed";
+            const role = payload.action === "promote" ? "an admin" : "as admin";
+
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_admin_${payload.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "admin_change",
+                text: `${changedByName} ${action} ${memberName} ${role}`,
+                targetMember: memberName,
+                actorName: payload.changedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.INFO_UPDATED: {
+            // Handle group info updates (name, avatar, description)
+            const field = payload.field;
+            const newValue = payload.newValue;
+            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
+
+            if (field === "name") {
+                conversation.name = newValue;
+                (conversation.messages as any[]).push({
+                    id: `sys_${event.at}_name_changed`,
+                    from: "system",
+                    type: "system",
+                    systemType: "group_name_changed",
+                    text: `${changedByName} changed the group name to "${newValue}"`,
+                    at: event.at,
+                });
+            } else if (field === "avatar") {
+                conversation.avatar = newValue;
             }
             break;
         }

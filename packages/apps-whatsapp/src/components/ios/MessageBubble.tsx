@@ -9,11 +9,32 @@ interface MessageBubbleProps {
     isMe: boolean;
     isFirst: boolean;
     isLast: boolean;
+    /** Group chat mode - enables sender name display */
+    isGroupChat?: boolean;
+    /** Sender name to display (for group chats) */
+    senderName?: string;
+    /** Sender name color (for group chats) */
+    senderColor?: string;
+    /** Whether to show sender name for this specific message */
+    showSenderName?: boolean;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe, isFirst, isLast }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+    message,
+    isMe,
+    isFirst,
+    isLast,
+    isGroupChat = false,
+    senderName,
+    senderColor,
+    showSenderName = false,
+}) => {
     const theme = getTheme("ios");
     const isSystem = message.type === "system";
+
+    // Determine if we should show sender name for this bubble
+    // Only show for "other" messages in group chats, at the start of a run
+    const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
 
     if (isSystem) {
         // System messages render outside the bubble flow directly
@@ -52,6 +73,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isMe, isF
                 flexDirection: "column",
                 minWidth: 80
             }}>
+                {/* Sender Name (Group Chats Only) */}
+                {shouldShowSender && (
+                    <span style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: senderColor || "#00A884",
+                        marginBottom: 2,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                )}
+
                 {/* Content Layer */}
                 <MessageContent message={message} />
 
