@@ -1,8 +1,8 @@
 import React from "react";
-import { NotificationInstance, AppMetadataRegistry, NotificationViewRegistry } from "@tokovo/core";
-import { AndroidNotificationStrategy } from "./strategies/AndroidNotificationStrategy";
-import { IOSNotificationStrategy } from "./strategies/IOSNotificationStrategy";
-import { AppSurface } from "./components/AppSurface";
+import { NotificationInstance, AppMetadataRegistry, NotificationViewRegistry, AppSurface } from "@tokovo/core";
+import { AndroidNotificationStrategy } from "../strategies/AndroidNotificationStrategy";
+import { IOSNotificationStrategy } from "../strategies/IOSNotificationStrategy";
+
 
 interface HeadsUpNotificationProps {
     notification: NotificationInstance;

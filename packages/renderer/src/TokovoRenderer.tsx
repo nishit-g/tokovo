@@ -23,13 +23,12 @@ import {
 // import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
 import { DeviceRegistry } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
-import { NotificationOverlay } from "./NotificationOverlay";
-import { HeadsUpNotification } from "./HeadsUpNotification";
+import { NotificationOverlay } from "./overlays";
+import { HeadsUpNotification } from "./os";
 // import { CallOverlay } from "./CallOverlay"; // REMOVED: Now using PluginManager.getView(APP_IDS.PHONE)
-import { LockscreenView } from "./LockscreenView";
-import { HomeScreenView } from "./HomeScreenView";
+import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
-import { DynamicIsland } from "./DynamicIsland";
+import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
 import { KeyboardSurface } from "@tokovo/device-keyboard";

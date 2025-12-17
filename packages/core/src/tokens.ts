@@ -205,6 +205,10 @@ export const sharedStyles = {
 
 // =============================================================================
 // APP-SPECIFIC CONFIG
+// @deprecated These configs are being migrated to their respective app packages.
+//             - WhatsApp: @tokovo/apps-whatsapp/src/tokens/config.ts
+//             - Instagram: @tokovo/apps-instagram/src/tokens/config.ts (future)
+//             These exports are kept for backward compatibility.
 // =============================================================================
 
 export const appConfigs = {
