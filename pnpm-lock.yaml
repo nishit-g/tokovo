@@ -298,6 +298,9 @@ importers:
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       zod:
         specifier: ^3.0.0
         version: 3.25.76

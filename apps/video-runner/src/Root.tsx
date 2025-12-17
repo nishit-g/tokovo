@@ -17,6 +17,7 @@ import { ManualCameraShowcase } from "./ManualCameraShowcase";
 import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
+import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
 import { PluginManager } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
 
@@ -163,6 +164,11 @@ export const RemotionRoot: React.FC = () => {
                 fps={30}
                 width={1080}
                 height={1920}
+            />
+
+            {/* === ENTERPRISE PIPELINE DEMO (New) === */}
+            <Composition
+                {...enterpriseDemoConfig}
             />
 
         </>

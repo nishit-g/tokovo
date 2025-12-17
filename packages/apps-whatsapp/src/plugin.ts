@@ -1,56 +1,109 @@
 /**
- * WhatsApp Plugin Definition
+ * WhatsApp Plugin - Enterprise Contract
  * 
- * Self-contained plugin registration for the WhatsApp app.
- * Registers reducer, view, sounds, and metadata with the PluginManager.
+ * Self-contained plugin with all tiers:
+ * - Tier A: id, version, displayName, reducer, views
+ * - Tier B: lowering handler
+ * - Tier C: DSL extension (b.use() pattern)
+ * 
+ * @see docs/FUCKING_MESS.md Section 6
  */
 
-import { definePlugin, PluginManager, APP_IDS, TokovoPlugin, AppViewComponent } from "@tokovo/core";
+import { APP_IDS, PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
 import { whatsappReducer } from "./logic/reducer";
 import { WhatsappChatView } from "./ui";
+import { whatsappLowering } from "./lowering";
+import { whatsappDsl, WhatsAppDslApi } from "./dsl-extension";
+import { whatsappAudioRules } from "./assets/audio-rules";
 
-/**
- * WhatsApp Plugin Configuration
- */
-export const WhatsAppPlugin: TokovoPlugin = definePlugin({
-    id: APP_IDS.WHATSAPP,
-    name: "WhatsApp",
-    version: "1.0.0",
+// =============================================================================
+// PLUGIN VIEWS
+// =============================================================================
 
-    // Branding
-    icon: "whatsapp-icon.png",
-    primaryColor: "#25D366",
-
-    // Core functionality - cast to match AppViewComponent signature
-    appView: WhatsappChatView as unknown as AppViewComponent,
-    reducer: whatsappReducer,
-
-    // Event types this plugin handles
-    eventTypes: [
-        "MESSAGE_RECEIVED",
-        "MESSAGE_SENT",
-        "TYPING_START",
-        "TYPING_END",
-        "MESSAGE_READ",
-        "VOICE_MESSAGE_RECEIVED",
-        "VOICE_MESSAGE_PLAY",
-        "GROUP_MEMBER_ADDED",
-        "GROUP_MEMBER_REMOVED",
-    ],
-
-    // Sound effects
-    sounds: {
-        "message_in": "whatsapp-received.mp3",
-        "message_out": "whatsapp-sent.mp3",
-        "typing": "whatsapp-typing.mp3",
+const whatsappViews: PluginViews = {
+    AppRoot: WhatsappChatView as any,
+    // Platform strategies will be added when Android views are ready
+    strategies: {
+        ios: {
+            ChatScreen: WhatsappChatView as any,
+        },
     },
+};
 
-    notificationSound: "whatsapp-notification.mp3",
-});
+// =============================================================================
+// PLUGIN ASSETS
+// =============================================================================
 
-/**
- * Register the WhatsApp plugin
- */
-export function registerWhatsAppPlugin(): void {
-    PluginManager.register(WhatsAppPlugin);
+const whatsappAssets = {
+    sounds: {
+        "message_in": "/audio/app_whatsapp/message_in.mp3",
+        "message_out": "/audio/app_whatsapp/message_out.mp3",
+        "typing_loop": "/audio/app_whatsapp/typing_loop.mp3",
+        "notification": "/audio/app_whatsapp/notification.mp3",
+    },
+    icons: {
+        "app_icon": "/icons/whatsapp.svg",
+    },
+};
+
+// =============================================================================
+// INITIAL STATE
+// =============================================================================
+
+function createWhatsAppInitialState() {
+    return {
+        currentScreen: "chats" as const,
+        conversations: {},
+        currentConversationId: null as string | null,
+    };
 }
+
+// =============================================================================
+// ENTERPRISE PLUGIN CONTRACT
+// =============================================================================
+
+export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> = {
+    // === TIER A: Identity ===
+    id: APP_IDS.WHATSAPP as "app_whatsapp",
+    version: "2.0.0",
+    displayName: "WhatsApp",
+
+    // === TIER A: Runtime ===
+    reducer: whatsappReducer as any,
+    views: whatsappViews,
+
+    // === TIER A: Assets ===
+    assets: whatsappAssets,
+    audioRules: whatsappAudioRules as any,
+
+    // === TIER A: Initial State ===
+    createInitialState: createWhatsAppInitialState,
+
+    // === TIER B: Lowering ===
+    lowering: whatsappLowering,
+
+    // === TIER C: DSL ===
+    dsl: whatsappDsl,
+};
+
+// =============================================================================
+// LEGACY EXPORTS (for backward compatibility)
+// =============================================================================
+
+// Re-export as old name for existing consumers
+export { WhatsAppPluginV2 as WhatsAppPlugin };
+
+// Legacy registration function
+export function registerWhatsAppPlugin(): void {
+    PluginManager.register(WhatsAppPluginV2 as any);
+}
+
+// Type export for b.use()
+export type { WhatsAppDslApi };
+
+// =============================================================================
+// DEFAULT EXPORT
+// =============================================================================
+
+export default WhatsAppPluginV2;

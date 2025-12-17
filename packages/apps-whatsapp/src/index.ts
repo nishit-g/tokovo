@@ -1,66 +1,51 @@
-import { APP_IDS, definePlugin } from "@tokovo/core";
-import { whatsappReducer } from "./logic/reducer";
-import { ui } from "./ui";
-import { WhatsAppAnchors } from "./adapters/anchors";
-import { WhatsAppMetadata } from "./assets/metadata";
-import "./assets/sounds"; // Register sounds
-import { WhatsAppNotificationAdapter } from "./adapters/notifications";
+/**
+ * WhatsApp Package - Main Exports
+ * 
+ * This is the public API for the WhatsApp plugin.
+ */
 
-// Export Internal Parts (Enterprise Standard)
+// === ENTERPRISE PLUGIN (Primary Export) ===
+export { WhatsAppPluginV2 as WhatsAppPlugin, WhatsAppPluginV2, registerWhatsAppPlugin } from "./plugin";
+export type { WhatsAppDslApi } from "./plugin";
+
+// === Core Exports ===
+export * from "./types";
 export * from "./logic/reducer";
 export * from "./ui";
-import { whatsappAudioRules } from "./assets/audio-rules";
-import { AutoSoundRegistry } from "@tokovo/core";
 
-// Register Audio Rules
-AutoSoundRegistry.register(whatsappAudioRules);
-
-// Core exports
-export * from "./types";
+// === Adapters ===
 export * from "./adapters/anchors";
 export * from "./adapters/notifications";
+
+// === Layout ===
 export * from "./layout";
 
-// Module Augmentation for type safety
+// === Module Augmentation ===
 export * from "./augment";
 
-// UI Strategy Pattern
+// === UI Strategy ===
 export * from "./ui/ui-strategy";
 export * from "./ui/strategies";
 
-// Import strategies to auto-register
+// === Audio Rules ===
+export { whatsappAudioRules } from "./assets/audio-rules";
+
+// === Lowering (for compiler) ===
+export { whatsappLowering } from "./lowering";
+
+// === DSL (for b.use() pattern) ===
+export { whatsappDsl } from "./dsl-extension";
+
+// === Register on import (side effects) ===
 import "./ui/strategies";
+import { AutoSoundRegistry } from "@tokovo/core";
+import { whatsappAudioRules } from "./assets/audio-rules";
 
-// Define Plugin
-export const WhatsAppPlugin = definePlugin({
-    id: APP_IDS.WHATSAPP,
-    name: "WhatsApp",
-    version: "2.0.0", // Bumped for Enterprise Refactor
+// Auto-register audio rules when this module is imported
+AutoSoundRegistry.register(whatsappAudioRules);
 
-    // Metadata
-    metadata: WhatsAppMetadata,
+// === Legacy Alias ===
+export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
 
-    // UI & Logic
-    appView: ui.WhatsappChatView,
-    reducer: whatsappReducer,
-
-    // Adapters (Enterprise Standard)
-    anchors: WhatsAppAnchors.framing,
-    getAnchors: WhatsAppAnchors.getAnchors,
-    notificationAdapter: WhatsAppNotificationAdapter,
-
-    // Events (Standard IR events + Custom)
-    // Core events like MESSAGE_RECEIVED are handled, but we declare custom ones if any.
-    // Currently WhatsApp uses mostly standard events.
-    eventTypes: [
-        "GROUP_MEMBER_ADDED",
-        "GROUP_MEMBER_REMOVED",
-        "VOICE_MESSAGE_RECEIVED" // Should be standard or namespaced?
-        // Note: VOICE_MESSAGE_RECEIVED might fail namespacing if not in CORE_EVENTS.
-        // It likely should be `whatsapp.VOICE_MESSAGE_RECEIVED`.
-    ]
-});
-
-export const WhatsApp = WhatsAppPlugin;
-
-export default WhatsAppPlugin;
+// === Default Export ===
+export { default } from "./plugin";
