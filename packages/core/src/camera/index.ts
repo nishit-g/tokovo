@@ -24,7 +24,10 @@ import {
     CameraResetEffect,
 } from "../types";
 
-import { AnchorRegistry } from "../anchors";
+// NOTE: AnchorRegistry has been refactored to function-based API.
+// For anchor resolution, use resolveAnchor() from ../anchors
+// Here we use fallback framing since we don't have access to layout state.
+import { resolveAnchor } from "../anchors";
 
 
 // =============================================================================
@@ -406,27 +409,12 @@ export class CameraController {
 
         // We need an appId to look up framing. 
         // CameraEffect doesn't always have appId, but AnchorSnapshot does.
-        // Since we don't have the full snapshot here, we can iterate all providers 
-        // OR we just use a default if we can't find it.
-        // Ideally, we shouldn't be resolving framing HERE in the pure math layer if we depend on Registry.
-        // BUT, for now, let's try to find it.
+        // Since we don't have the full snapshot here, we use fallback.
+        // NOTE: Actual anchor resolution happens in renderer's useCameraEngine
+        // which has access to world state and layout.
 
-        // Strategy: Iterate registered apps to find one that answers for this anchor.
-        // Slow but works for now.
-        let framing;
-        const registry = AnchorRegistry; // Helper to avoid import if possible? No, we need it.
-        for (const appId of registry.getRegisteredApps()) {
-            const f = registry.getFraming(appId, effect.anchor);
-            if (f) {
-                framing = f;
-                break;
-            }
-        }
-
-        if (!framing) {
-            // Fallback default
-            framing = { anchorPoint: { x: 0.5, y: 0.5 } };
-        }
+        // Use fallback framing for camera math layer
+        const framing = { anchorPoint: { x: 0.5, y: 0.5 } };
 
         transform.originX = framing.anchorPoint.x;
         transform.originY = framing.anchorPoint.y;

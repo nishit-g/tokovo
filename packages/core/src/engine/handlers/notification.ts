@@ -6,7 +6,7 @@
 
 import type { WorldState, NotificationInstance } from "../../types";
 import type { DeviceEvent, HandlerContext } from "./types";
-import { AppMetadataRegistry } from "../../app-metadata";
+import { AppMetadataRegistry } from "../../registries/metadata";
 
 // Default OS state for notification initialization
 const DEFAULT_OS_STATE = {

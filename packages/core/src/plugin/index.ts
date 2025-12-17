@@ -1,7 +1,7 @@
 /**
- * Plugin Module Index
+ * Plugin Module - Plugin system
  * 
- * @description Consolidated plugin system exports.
+ * @description Plugin registration and contracts.
  */
 
 // Plugin contract types
@@ -17,4 +17,4 @@ export type {
 } from "../types/plugin-contract";
 
 // Plugin registration and utilities
-export * from "../plugin";
+export * from "./plugin";

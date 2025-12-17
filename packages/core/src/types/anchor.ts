@@ -42,7 +42,7 @@ export type AnchorProvider = (
 ) => Rect | null;
 
 // =============================================================================
-// ANCHOR REGISTRY
+// ANCHOR REGISTRY TYPE (for function-based anchor registration)
 // =============================================================================
 
 /**
@@ -50,7 +50,12 @@ export type AnchorProvider = (
  * 
  * Supports wildcard patterns like "message:*" where * matches any suffix.
  */
-export type AnchorRegistry = Record<string, AnchorProvider>;
+export type AnchorMap = Record<string, AnchorProvider>;
+
+/**
+ * @deprecated Use AnchorMap instead. AnchorRegistry is now a class in anchors/registry.ts
+ */
+export type AnchorRegistryMap = AnchorMap;
 
 // =============================================================================
 // SEMANTIC ANCHOR IDS

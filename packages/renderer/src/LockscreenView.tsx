@@ -197,7 +197,7 @@ const NotificationCard: React.FC<{
     // Since this is a React component, we might need to handle the case where "icon" is a string or component.
     // Ideally we pass it as a prop or context, but for now we look it up.
     // Note: In strict React, side-effect imports inside render are bad, but this is a static registry.
-    const { AppMetadataRegistry } = require("@tokovo/core/src/app-metadata");
+    const { AppMetadataRegistry } = require("@tokovo/core");
     const meta = AppMetadataRegistry.get(ir.appId);
 
     const appIcon = typeof meta.icon === "string" ? (

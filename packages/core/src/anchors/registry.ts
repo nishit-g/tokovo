@@ -7,39 +7,63 @@
  * @see docs-v2/DSL_REVAMP.md#anchors-system
  */
 
-import type { AnchorProvider, AnchorRegistry, Rect } from "../types/anchor";
+import type { AnchorProvider as AnchorProviderFunc, AnchorMap, Rect } from "../types/anchor";
 import type { WorldState } from "../types";
+
+// =============================================================================
+// TYPES FOR CLASS-BASED API (used by renderer)
+// =============================================================================
+
+export interface AnchorFraming {
+    anchorPoint: { x: number; y: number };
+    paddingPx?: number;
+    targetFill?: number;
+}
+
+export interface AnchorSnapshot {
+    anchors: Record<string, { x: number; y: number; width: number; height: number }>;
+    deviceId: string;
+    appId: string;
+}
+
+export interface AnchorProvider {
+    appId: string;
+    framing: Record<string, AnchorFraming>;
+    getAnchors(world: WorldState, layout: unknown, deviceId: string): AnchorSnapshot;
+}
 
 // =============================================================================
 // GLOBAL REGISTRY
 // =============================================================================
 
-const globalRegistry: Map<string, AnchorProvider> = new Map();
+const globalProviderRegistry: Map<string, AnchorProvider> = new Map();
+const globalFuncRegistry: Map<string, AnchorProviderFunc> = new Map();
 
 /**
- * Register anchors from a plugin.
+ * Register anchors from a plugin (function-based API).
  */
-export function registerAnchors(pluginId: string, anchors: AnchorRegistry): void {
+export function registerAnchors(pluginId: string, anchors: AnchorMap): void {
     for (const [anchorId, provider] of Object.entries(anchors)) {
         const fullId = `${pluginId}:${anchorId}`;
-        globalRegistry.set(fullId, provider);
+        globalFuncRegistry.set(fullId, provider);
         // Also register short form for convenience
-        globalRegistry.set(anchorId, provider);
+        globalFuncRegistry.set(anchorId, provider);
     }
 }
 
 /**
- * Get all registered anchors.
+ * Get all registered anchors (function-based).
  */
-export function getRegisteredAnchors(): Map<string, AnchorProvider> {
-    return new Map(globalRegistry);
+export function getRegisteredAnchors(): Map<string, AnchorProviderFunc> {
+    return new Map(globalFuncRegistry);
 }
 
 /**
  * Clear all registered anchors (for testing).
  */
 export function clearAnchors(): void {
-    globalRegistry.clear();
+    globalProviderRegistry.clear();
+    globalFuncRegistry.clear();
 }
 
 // =============================================================================
@@ -48,11 +72,6 @@ export function clearAnchors(): void {
 
 /**
  * Resolve an anchor ID to a Rect.
- * 
- * Supports:
- * - Exact match: "lastMessage"
- * - Plugin-qualified: "app_whatsapp:lastMessage"
- * - Wildcard patterns: "message:msg_001" matches "message:*"
  */
 export function resolveAnchor(
     anchorId: string,
@@ -60,13 +79,13 @@ export function resolveAnchor(
     deviceId: string
 ): Rect | null {
     // Try exact match first
-    const exactProvider = globalRegistry.get(anchorId);
+    const exactProvider = globalFuncRegistry.get(anchorId);
     if (exactProvider) {
         return exactProvider(world, deviceId);
     }
 
     // Try wildcard patterns (e.g., "message:msg_001" matches "message:*")
-    for (const [pattern, provider] of globalRegistry.entries()) {
+    for (const [pattern, provider] of globalFuncRegistry.entries()) {
         if (pattern.endsWith(":*")) {
             const prefix = pattern.slice(0, -2);
             if (anchorId.startsWith(prefix + ":")) {
@@ -83,10 +102,10 @@ export function resolveAnchor(
  * Check if an anchor is registered.
  */
 export function hasAnchor(anchorId: string): boolean {
-    if (globalRegistry.has(anchorId)) return true;
+    if (globalFuncRegistry.has(anchorId)) return true;
 
     // Check wildcard patterns
-    for (const pattern of globalRegistry.keys()) {
+    for (const pattern of globalFuncRegistry.keys()) {
         if (pattern.endsWith(":*")) {
             const prefix = pattern.slice(0, -2);
             if (anchorId.startsWith(prefix + ":")) {
@@ -97,3 +116,38 @@ export function hasAnchor(anchorId: string): boolean {
 
     return false;
 }
+
+// =============================================================================
+// CLASS-BASED REGISTRY (for renderer compatibility)
+// =============================================================================
+
+class AnchorRegistryClass {
+    register(provider: AnchorProvider): void {
+        globalProviderRegistry.set(provider.appId, provider);
+        console.log(`[AnchorRegistry] Registered provider for: ${provider.appId}`);
+    }
+
+    get(appId: string): AnchorProvider | undefined {
+        return globalProviderRegistry.get(appId);
+    }
+
+    getRegisteredApps(): string[] {
+        return Array.from(globalProviderRegistry.keys());
+    }
+
+    getFraming(appId: string, anchorId: string): AnchorFraming | undefined {
+        const provider = globalProviderRegistry.get(appId);
+        return provider?.framing[anchorId];
+    }
+
+    has(appId: string): boolean {
+        return globalProviderRegistry.has(appId);
+    }
+
+    clear(): void {
+        globalProviderRegistry.clear();
+    }
+}
+
+export const AnchorRegistry = new AnchorRegistryClass();
+

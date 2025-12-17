@@ -10,7 +10,7 @@
  * @see docs-v2/DSL_REVAMP.md#anchors-system
  */
 
-import type { AnchorRegistry, Rect } from "@tokovo/core";
+import type { AnchorMap, Rect } from "@tokovo/core";
 import type { WorldState } from "@tokovo/core";
 
 // =============================================================================
@@ -33,7 +33,7 @@ const MESSAGE_HEIGHT = 40;  // Approximate per message
 /**
  * WhatsApp anchors for camera operations.
  */
-export const WhatsAppAnchors: AnchorRegistry = {
+export const WhatsAppAnchors: AnchorMap = {
     /**
      * The most recent message in the active conversation.
      */

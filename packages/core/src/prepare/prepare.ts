@@ -7,11 +7,11 @@
  * @see docs/FUCKING_MESS.md Section 3
  */
 
-import { CompiledEpisode, PrepareOptions, AssetManifest } from "./types/compiled-episode";
-import { RuntimeEvent } from "./types/runtime-event";
-import { TokovoPluginContract } from "./types/plugin-contract";
-import { WorldState, DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, DEFAULT_OS_STATE } from "./types";
-import { replay } from "./engine";
+import { CompiledEpisode, PrepareOptions, AssetManifest } from "../types/compiled-episode";
+import { RuntimeEvent } from "../types/runtime-event";
+import { TokovoPluginContract } from "../types/plugin-contract";
+import { WorldState, DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, DEFAULT_OS_STATE } from "../types";
+import { replay } from "../engine";
 
 // Type for compile function (optional peer dependency)
 type CompileFunction = (episode: any) => { timeline: { ops: any[] } };
@@ -480,5 +480,5 @@ export function runEpisode(
 // RE-EXPORT TYPES
 // =============================================================================
 
-export type { CompiledEpisode, PrepareOptions, AssetManifest } from "./types/compiled-episode";
-export type { RuntimeEvent, AppRuntimeEvent, DeviceRuntimeEvent, CameraRuntimeEvent, AudioRuntimeEvent, KeyboardRuntimeEvent } from "./types/runtime-event";
+export type { CompiledEpisode, PrepareOptions, AssetManifest } from "../types/compiled-episode";
+export type { RuntimeEvent, AppRuntimeEvent, DeviceRuntimeEvent, CameraRuntimeEvent, AudioRuntimeEvent, KeyboardRuntimeEvent } from "../types/runtime-event";

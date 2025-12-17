@@ -24,7 +24,7 @@ import {
 } from "@tokovo/core";
 import { computeLayout, LayoutState, ViewKind, LayoutContext } from "../layout";
 import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
-import { AppMetadataRegistry } from "@tokovo/core/src/app-metadata";
+import { AppMetadataRegistry } from "@tokovo/core";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
@@ -124,7 +124,7 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
         } else if (appId) {
             // GENERIC LAYOUT RESOLUTION
             // 1. Check App Metadata for default strategy
-            const { AppMetadataRegistry } = require("@tokovo/core/src/app-metadata"); // Dynamic require to avoid cycle if any, or just import at top
+            const { AppMetadataRegistry } = require("@tokovo/core"); // Dynamic require to avoid cycle if any, or just import at top
             const meta = AppMetadataRegistry.get(appId);
             viewKind = meta.viewStrategy || "TRANSITION";
 

@@ -1,22 +1,26 @@
 /**
- * Registries Index - Consolidated registry exports
+ * Registries Module - All registration systems
  * 
- * @description Central export for all registries.
+ * @description Consolidated registry pattern.
  */
 
-// Factory for simple registries
+// Factory for creating type-safe registries
 export { createRegistry } from "./factory";
 export type { Registry } from "./factory";
 
-// Re-export existing registries from their original locations
-// (They will be moved here in future cleanup)
-export { AppRegistry } from "../app-registry";
-export type { AppViewProps, AppViewComponent } from "../app-registry";
+// App Registry
+export { AppRegistry } from "./app";
+export type { AppViewProps, AppViewComponent } from "./app";
 
-export { SoundRegistry } from "../sound-registry";
+// Sound Registry
+export { SoundRegistry } from "./sound";
 
-export { WidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "../widget-registry";
+// Widget Registry
+export { WidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget";
 
-export { BehaviorRegistry } from "../behavior-registry";
+// Behavior Registry
+export { BehaviorRegistry } from "./behavior";
 
-export { AppMetadataRegistry } from "../app-metadata";
+// App Metadata Registry
+export { AppMetadataRegistry } from "./metadata";
+export type { AppMetadata } from "./metadata";

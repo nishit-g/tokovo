@@ -4,7 +4,7 @@
  * Handles animated transitions between screens/apps.
  */
 
-import { TransitionType, EasingType } from "./types";
+import { TransitionType, EasingType } from "../types";
 
 // =============================================================================
 // TRANSITION STATE

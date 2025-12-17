@@ -15,8 +15,8 @@
  * @see docs/FUCKING_MESS.md
  */
 
-import type { WorldState } from "./types";
-import type { DeviceRuntimeEvent, AppRuntimeEvent } from "./types/runtime-event";
+import type { WorldState } from "../../types";
+import type { DeviceRuntimeEvent, AppRuntimeEvent } from "../../types/runtime-event";
 
 // =============================================================================
 // TYPE GUARDS

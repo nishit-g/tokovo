@@ -4,7 +4,7 @@
  * Fluent API for creating notification timeline events.
  */
 
-import { TimelineEvent, NotificationPriority, NotificationDeliverWhen } from "./types";
+import { TimelineEvent, NotificationPriority, NotificationDeliverWhen } from "../types";
 
 // =============================================================================
 // NOTIFICATION DSL

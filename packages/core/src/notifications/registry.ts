@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { NotificationInstance } from "./types";
+import { NotificationInstance } from "../types";
 
 export interface NotificationViewProps {
     notification: NotificationInstance;

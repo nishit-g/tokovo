@@ -11,16 +11,17 @@
  * - Metadata (Icon, Name)
  */
 
-import { WorldState, Notification, BackgroundAppState } from "./types";
-import { AppReducer, ReducerRegistry } from "./engine";
-import { Platform } from "./tokens";
-import type { NotificationAdapter } from "./notification-adapter";
-import { AnchorFraming, AnchorRegistry, AnchorSnapshot } from "./anchors";
-import { AppMetadata, AppMetadataRegistry } from "./app-metadata";
-import { AppRegistry } from "./app-registry";
-import { SoundRegistry } from "./sound-registry";
-import { NotificationAdapterRegistry } from "./notification-adapter";
-import { validatePlugin } from "./validation";
+import { WorldState, Notification, BackgroundAppState } from "../types";
+import { AppReducer, ReducerRegistry } from "../engine";
+import { Platform } from "../tokens";
+import type { NotificationAdapter } from "../notifications/adapter";
+import { registerAnchors } from "../anchors";
+import type { AnchorFraming, AnchorSnapshot } from "../types/anchor";
+import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
+import { AppRegistry } from "../registries/app";
+import { SoundRegistry } from "../registries/sound";
+import { NotificationAdapterRegistry } from "../notifications/adapter";
+import { validatePlugin } from "../utils/validation";
 
 export type { NotificationAdapter };
 
@@ -260,7 +261,7 @@ export class PluginManagerClass {
         if (plugin.widgets && plugin.widgets.length > 0) {
             // Import at top level or use type-only to avoid circular dependency
             // eslint-disable-next-line @typescript-eslint/no-var-requires
-            import("./widget-registry").then(({ WidgetRegistry }) => {
+            import("../registries/widget").then(({ WidgetRegistry }) => {
                 WidgetRegistry.register(plugin.id, plugin.widgets!);
                 console.log(`[PluginManager] Registered ${plugin.widgets!.length} widgets for: ${plugin.id}`);
             });
@@ -278,7 +279,7 @@ export class PluginManagerClass {
         // 5. Auto-register Anchors
         if (plugin.anchors) {
             // Create a synthetic AnchorProvider
-            AnchorRegistry.register({
+            registerAnchors(plugin.id, {
                 appId: plugin.id,
                 framing: plugin.anchors,
                 getAnchors: plugin.getAnchors || ((world, layout, deviceId) => {

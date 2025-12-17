@@ -8,8 +8,8 @@
  */
 
 import React from "react";
-import { WorldState, AppId } from "./types";
-import { LayoutState } from "./types";
+import { WorldState, AppId } from "../types";
+import { LayoutState } from "../types";
 
 /**
  * Props that all app view components receive

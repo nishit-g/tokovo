@@ -1,17 +1,17 @@
 /**
- * Utils Module Index
+ * Utils Module - Utilities
  * 
- * @description Consolidated utility exports.
+ * @description All utility functions.
  */
 
 // Type guards
-export * from "../typeGuards";
+export * from "./type-guards";
 
 // Event utilities
-export * from "../eventUtils";
+export * from "./event-utils";
 
 // Validation
-export * from "../validation";
+export * from "./validation";
 
 // RNG
 export { SeededRNG } from "./rng";

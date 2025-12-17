@@ -4,7 +4,7 @@
  * Apps provide adapters to format and handle notifications.
  */
 
-import { Notification, TimelineEvent } from "./types";
+import { Notification, TimelineEvent } from "../types";
 
 // =============================================================================
 // FORMATTED NOTIFICATION
