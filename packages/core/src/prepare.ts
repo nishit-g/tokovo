@@ -224,6 +224,78 @@ function collectAssets(registry: PluginRegistry): AssetManifest {
 }
 
 // =============================================================================
+// VALIDATE ASSETS
+// =============================================================================
+
+interface AssetValidationResult {
+    valid: boolean;
+    missing: Array<{ type: "sound" | "icon" | "image"; id: string; path: string }>;
+    warnings: string[];
+}
+
+/**
+ * Validate that all declared assets exist
+ * 
+ * In preview mode: logs warnings for missing assets
+ * In render mode with strict: throws error if assets missing
+ */
+function validateAssets(
+    assets: AssetManifest,
+    options: PrepareOptions
+): AssetValidationResult {
+    const missing: AssetValidationResult["missing"] = [];
+    const warnings: string[] = [];
+
+    // Check sounds
+    for (const [id, path] of Object.entries(assets.sounds || {})) {
+        // Basic path validation - in browser, we can't check file existence
+        // But we can validate path format
+        if (!path || typeof path !== "string") {
+            missing.push({ type: "sound", id, path: path ?? "undefined" });
+        } else if (!path.startsWith("/") && !path.startsWith("http")) {
+            warnings.push(`Sound '${id}' has invalid path format: ${path}`);
+        }
+    }
+
+    // Check icons
+    for (const [id, path] of Object.entries(assets.icons || {})) {
+        if (!path || typeof path !== "string") {
+            missing.push({ type: "icon", id, path: path ?? "undefined" });
+        }
+    }
+
+    // Check images
+    for (const [id, path] of Object.entries(assets.images || {})) {
+        if (!path || typeof path !== "string") {
+            missing.push({ type: "image", id, path: path ?? "undefined" });
+        }
+    }
+
+    // Log warnings in preview mode
+    if (missing.length > 0 || warnings.length > 0) {
+        if (options.mode === "preview") {
+            for (const m of missing) {
+                console.warn(`[Asset] Missing ${m.type}: ${m.id} (${m.path})`);
+            }
+            for (const w of warnings) {
+                console.warn(`[Asset] ${w}`);
+            }
+        } else if (options.strict && missing.length > 0) {
+            // In render mode with strict, throw error
+            throw new Error(
+                `Missing assets:\\n${missing.map(m => `  ${m.type}: ${m.id}`).join("\\n")}`
+            );
+        }
+    }
+
+    return {
+        valid: missing.length === 0,
+        missing,
+        warnings,
+    };
+}
+
+// =============================================================================
 // PREPARE EPISODE
 // =============================================================================
 
