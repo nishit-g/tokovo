@@ -96,9 +96,9 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     for (const device of ir.devices) {
         devices[device.id] = {
             id: device.id,
-            profile: device.profile,
+            profileId: device.profile,  // Renderer expects profileId
             app: device.app,
-            platform: "ios", // Default
+            platform: device.profile.includes("pixel") ? "android" : "ios",
         };
     }
 
@@ -144,10 +144,16 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         activeEffects: [],
     };
 
-    // Default audio state
+    // Default audio state - MUST match AudioState expected by mixer
     const audio = {
-        bgm: null,
-        sounds: [],
+        activeSounds: {},  // Required by computeBusStates
+        buses: {
+            music: { baseGain: 1.0 },
+            ui: { baseGain: 1.0 },
+            sfx: { baseGain: 1.0 },
+            voice: { baseGain: 1.0 },
+            master: { baseGain: 1.0 },
+        },
         muted: false,
     };
 
