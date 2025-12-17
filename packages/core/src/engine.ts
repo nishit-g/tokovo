@@ -603,12 +603,64 @@ function processTouchEvent(
     }
 }
 
+// =============================================================================
+// REPLAY CONTEXT - Enterprise Error Handling
+// =============================================================================
+
+/**
+ * Context for replay execution with mode-based error handling.
+ * 
+ * @see docs/FUCKING_MESS.md Section 7 Gap #9
+ */
+export interface ReplayContext {
+    /** 
+     * Execution mode:
+     * - "preview": Log errors and continue (Remotion Studio)
+     * - "render": Fail fast (production render)
+     */
+    mode: "preview" | "render";
+
+    /** Collected errors (preview mode only) */
+    errors?: Array<{
+        event: TimelineEvent;
+        error: Error;
+        frame: number;
+    }>;
+}
+
+/**
+ * Plugin error wrapper for better debugging
+ */
+export class PluginError extends Error {
+    constructor(
+        public pluginId: string,
+        public event: TimelineEvent,
+        public cause: Error
+    ) {
+        super(`[${pluginId}] Reducer failed at frame ${event.at}: ${cause.message}`);
+        this.name = "PluginError";
+    }
+}
+
+// Default context for backwards compatibility
+const DEFAULT_REPLAY_CONTEXT: ReplayContext = { mode: "preview" };
+
 /**
  * Replay function - computes WorldState at time t by applying all events
  * 
  * This is called every frame by Remotion. Performance is critical.
+ * 
+ * @param initial - Initial world state
+ * @param events - Events to apply
+ * @param t - Target frame number
+ * @param ctx - Optional context with mode for error handling
  */
-export function replay(initial: WorldState, events: TimelineEvent[], t: number): WorldState {
+export function replay(
+    initial: WorldState,
+    events: TimelineEvent[],
+    t: number,
+    ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT
+): WorldState {
     if (!initial) {
         console.warn("[Engine] Replay called with undefined initial state");
         return {
@@ -830,10 +882,35 @@ export function replay(initial: WorldState, events: TimelineEvent[], t: number):
         handleAutoSounds(draft, event, index);
     };
 
-    // Apply events to build state
+    // Apply events to build state with mode-based error handling
     const stateAfterEvents = relevant.reduce((state, event, index) => {
         return produce(state, draft => {
-            handleEvent(draft, event, index);
+            try {
+                handleEvent(draft, event, index);
+            } catch (error) {
+                const pluginId = (event as any).appId || event.kind;
+
+                if (ctx.mode === "render") {
+                    // PRODUCTION RENDER: Fail fast - output must be correct
+                    throw new PluginError(
+                        pluginId,
+                        event,
+                        error instanceof Error ? error : new Error(String(error))
+                    );
+                } else {
+                    // DEV/PREVIEW: Log and continue
+                    console.error(`[Engine] Event handler failed at frame ${event.at}:`, event, error);
+
+                    // Collect errors for debugging
+                    if (ctx.errors) {
+                        ctx.errors.push({
+                            event,
+                            error: error instanceof Error ? error : new Error(String(error)),
+                            frame: event.at
+                        });
+                    }
+                }
+            }
         });
     }, initialWithCamera);
 

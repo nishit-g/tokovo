@@ -18,8 +18,16 @@ import { NotificationShowcase } from "./showcases/NotificationShowcase";
 import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
 import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
-import { PluginManager } from "@tokovo/core";
+import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { compile } from "@tokovo/compiler";
+
+// =============================================================================
+// ENTERPRISE INITIALIZATION
+// =============================================================================
+
+// Wire compiler for internal compilation in prepareEpisode()
+setCompiler(compile);
 
 // Register Plugins
 PluginManager.register(WhatsApp);
