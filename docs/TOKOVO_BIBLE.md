@@ -82,11 +82,15 @@ Tokovo is a **video authoring platform** for creating cinematic phone UI simulat
            └───────────────┘ └───────────────┘ └───────────────┘
 ```
 
-## Data Flow
+## Data Flow (Internalized)
 
 ```
-DSL → SceneIR → compile() → TimelineOps → lower() → RuntimeEvents → replay() → WorldState → render()
+Episode DSL → prepareEpisode() → CompiledEpisode → runEpisode(t) → WorldState → render()
+             └─ internally: compile → lower → deriveAudio → validate
 ```
+
+> ⚠️ **Note**: The compile/lower/validate steps are internal to `prepareEpisode()`. 
+> Never call `compile()` or `lower()` directly unless debugging.
 
 ---
 
@@ -109,15 +113,58 @@ interface WorldState {
 
 ## RuntimeEvent
 
-An **immutable fact** that happened at a specific frame:
+An **immutable fact** that happened at a specific frame. **Events are typed by kind**:
 
 ```typescript
-interface RuntimeEvent {
-    at: number;           // Frame number
-    kind: "APP" | "DEVICE" | "CAMERA" | "AUDIO" | "KEYBOARD";
-    type: string;         // Event subtype
-    payload: unknown;     // Event data
-    _trace?: Trace;       // Source location (for debugging)
+type RuntimeEvent =
+  | AppEvent
+  | DeviceEvent
+  | CameraEvent
+  | AudioEvent
+  | KeyboardEvent;
+
+// App events MUST include appId for routing
+interface AppEvent {
+    at: number;
+    kind: "APP";
+    appId: string;           // ← REQUIRED for reducer routing
+    type: string;
+    payload: unknown;
+    _trace?: Trace;
+}
+
+// Other events
+interface DeviceEvent {
+    at: number;
+    kind: "DEVICE";
+    deviceId?: string;
+    type: string;
+    payload?: unknown;
+    _trace?: Trace;
+}
+
+interface CameraEvent {
+    at: number;
+    kind: "CAMERA";
+    type: string;
+    payload: unknown;
+    _trace?: Trace;
+}
+
+interface AudioEvent {
+    at: number;
+    kind: "AUDIO";
+    type: string;
+    payload: unknown;
+    _trace?: Trace;
+}
+
+interface KeyboardEvent {
+    at: number;
+    kind: "KEYBOARD";
+    type: string;
+    payload?: unknown;
+    _trace?: Trace;
 }
 ```
 
@@ -185,50 +232,90 @@ import { episode, d, b } from "@tokovo/dsl";
 
 export const myEpisode = episode("demo", ep => {
     ep.device("phone", d => {
-        d.app("app_whatsapp");
+        d.profile("iphone16");
+        d.app("app_whatsapp");  // Set foreground app
         d.conversation("dm_sarah", { name: "Sarah ❤️", type: "dm" });
         
         d.beat("intro", b => {
-            b.receive("Sarah", "Hey!");
+            // Current API: Generic messaging (implicit app context)
+            b.receive("Sarah", "Hey! Are you free tonight?");
             b.typing("me", "1s");
-            b.send("Hi there!");
+            b.send("Yes! What's up?");
+            
+            // Camera (global)
+            b.zoom(1.2, { duration: "0.5s" });
+            b.shake({ intensity: 5 });
         });
     });
 });
 ```
 
-### Stage 2: Compile
+> 🚧 **Future API** (not yet implemented):
+> ```typescript
+> const wa = b.use("app_whatsapp");
+> wa.receive("dm_sarah", { from: "Sarah", text: "Hey!" });
+> ```
+
+### Stage 2: Compile + Prepare
 
 ```typescript
 import { compile } from "@tokovo/compiler";
-
-const { timeline, validation } = compile(myEpisode);
-// timeline.ops = TimelineOp[] with frame numbers
-```
-
-### Stage 3: Prepare
-
-```typescript
 import { prepareEpisode } from "@tokovo/core";
+import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
 
+// Step 1: Compile DSL to TimelineOps
+const { timeline } = compile(myEpisode);
+
+// Step 2: Prepare (lower, derive world, validate)
 const compiled = prepareEpisode(
-    { id: "demo", events: timeline.ops, sceneIR: myEpisode, ... },
+    {
+        id: myEpisode.episodeId,
+        fps: 30,
+        durationInFrames: 600,
+        events: timeline.ops,
+        sceneIR: myEpisode,
+    },
     [WhatsAppPluginV2],
-    { mode: "preview", strict: false }
+    { mode: "preview" }
 );
 ```
 
-### Stage 4: Replay
+> 🚧 **Future API** (planned): `prepareEpisode(myEpisode, plugins, options)` — compile internally
+
+### Stage 3: Replay (Per-Frame)
 
 ```typescript
 import { runEpisode } from "@tokovo/core";
 
 // In your Remotion component:
 const frame = useCurrentFrame();
-const world = useMemo(() => runEpisode(compiled, frame), [frame]);
+
+// runEpisode is called every frame - it's deterministic and fast
+const world = runEpisode(compiled, frame);
 ```
 
-### Stage 5: Render
+### Stage 4: Render
+
+```typescript
+import { TokovoRenderer } from "@tokovo/renderer";
+
+return <TokovoRenderer world={world} t={frame} />;
+```
+
+### Stage 3: Replay (Per-Frame)
+
+```typescript
+import { runEpisode } from "@tokovo/core";
+
+// In your Remotion component:
+const frame = useCurrentFrame();
+
+// runEpisode is called every frame - it's deterministic and fast
+// compile/prepare are memoized at module level
+const world = runEpisode(compiled, frame);
+```
+
+### Stage 4: Render
 
 ```typescript
 import { TokovoRenderer } from "@tokovo/renderer";
@@ -295,8 +382,6 @@ d.beat("post", b => {
 
 ---
 
-# 6. DSL Reference
-
 ## Episode Structure
 
 ```typescript
@@ -308,22 +393,21 @@ episode("id", ep => {
         d.profile("iphone16");     // Device profile
         d.app("app_whatsapp");     // Foreground app
         
-        d.conversation("id", { name, type, avatar });
+        d.conversation("dm_sarah", { name: "Sarah", type: "dm" });
         
-        d.beat("name", b => {
-            // Message events
-            b.receive("from", "text");
-            b.send("text");
-            b.typing("who", "duration");
+        d.beat("intro", b => {
+            // Messages (implicit app context from d.app())
+            b.receive("Sarah", "Hey! Are you free?");
+            b.typing("me", "1s");
+            b.send("Yes! What's up?");
             
-            // Camera events
+            // Camera (global)
             b.zoom(1.2, { duration: "0.5s" });
-            b.pan({ x: 100, y: 0 });
-            b.shake({ intensity: 5 });
+            b.shake({ intensity: 5, duration: "0.3s" });
+            b.focus("lastMessage", { scale: 1.15 });
             
-            // Audio events
-            b.sfx("sound_id");
-            b.music("track", { volume: 0.5 });
+            // Audio (global)
+            b.sfx("whoosh");
         });
     });
 });
@@ -393,17 +477,71 @@ d.beat("drama", b => {
 });
 ```
 
-## Anchors
+## Anchor System (Registry-Based)
 
-Anchors are semantic identifiers for UI elements:
+Anchors are **semantic identifiers** resolved at runtime via the **Anchor Registry**.
+
+### How Anchors Work
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  PLUGIN (provides anchors)                                      │
+│  ──────────────────────────────────────────────────────────────│
+│  anchors: {                                                     │
+│    providers: {                                                 │
+│      "lastMessage": (world, layout) => boundingBox,             │
+│      "inputArea": (world, layout) => boundingBox,               │
+│    }                                                            │
+│  }                                                              │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  CAMERA ENGINE (resolves anchors)                               │
+│  ──────────────────────────────────────────────────────────────│
+│  resolveAnchor("lastMessage") → { x, y, width, height }         │
+│  → Camera zooms to bounding box                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Plugin Anchor Definition
 
 ```typescript
-// In app view:
-<div data-anchor="message_sarah_3">...</div>
-
-// In DSL:
-b.focus("message_sarah_3"); // Camera finds and zooms to this element
+// In your plugin
+export const WhatsAppPlugin: TokovoPluginContract = {
+    id: "app_whatsapp",
+    // ...
+    anchors: {
+        providers: {
+            "lastMessage": (world, layout) => {
+                const lastMsg = getLastMessage(world);
+                return layout.messageRects[lastMsg.id];
+            },
+            "inputArea": (world, layout) => layout.inputAreaRect,
+            "typingIndicator": (world, layout) => layout.typingRect,
+        },
+        framing: {
+            "lastMessage": { anchorPoint: { x: 0.5, y: 0.7 }, targetFill: 0.6 },
+            "inputArea": { anchorPoint: { x: 0.5, y: 0.9 } },
+        },
+    },
+};
 ```
+
+### DSL Usage
+
+```typescript
+d.beat("drama", b => {
+    // Focus on semantic anchor (resolved at runtime)
+    b.focus("lastMessage", { scale: 1.2, duration: "0.5s" });
+    
+    // Track anchor (smooth follow)
+    b.anchorTrack("inputArea", { smoothing: 0.15 });
+});
+```
+
+> ⚠️ **Note**: Anchors are NOT DOM attributes. They're world-driven bounding boxes
+> provided by plugins via the Anchor Registry.
 
 ---
 
@@ -420,17 +558,29 @@ b.focus("message_sarah_3"); // Camera finds and zooms to this element
 
 ## Auto Sound
 
-Plugins can declare audio rules:
+Plugins can declare audio rules. **Rules must include appId for proper scoping**:
 
 ```typescript
 audioRules: [
     {
-        matchEvent: { kind: "APP", type: "MESSAGE_RECEIVED" },
+        // ✅ CORRECT: Include appId to prevent cross-app collisions
+        matchEvent: { kind: "APP", appId: "app_whatsapp", type: "MESSAGE_RECEIVED" },
         sound: "message_in",
         volume: 1.0,
     },
+    {
+        matchEvent: { kind: "APP", appId: "app_whatsapp", type: "MESSAGE_SENT" },
+        sound: "message_out",
+        volume: 0.8,
+    },
 ]
 ```
+
+> ⚠️ **Never do this**:
+> ```typescript
+> // ❌ WRONG: Missing appId causes cross-app collisions
+> matchEvent: { kind: "APP", type: "MESSAGE_RECEIVED" }
+> ```
 
 ---
 
@@ -442,29 +592,76 @@ audioRules: [
 pnpm create-episode my-drama
 ```
 
+## Episode File (`*.episode.ts`)
+
+```typescript
+// packages/episodes/src/my-drama.episode.ts
+import { episode } from "@tokovo/dsl";
+
+export const myDrama = episode("my-drama", ep => {
+    ep.fps(30);
+    ep.duration("30s");
+    
+    ep.device("phone", d => {
+        d.profile("iphone16");
+        d.app("app_whatsapp");
+        
+        d.beat("intro", b => {
+            const wa = b.use("app_whatsapp");
+            // ... your story
+        });
+    });
+});
+```
+
 ## Video Component
 
 ```typescript
 // apps/video-runner/src/MyDramaVideo.tsx
 import { useCurrentFrame } from "remotion";
+import { compile } from "@tokovo/compiler";
 import { prepareEpisode, runEpisode } from "@tokovo/core";
 import { TokovoRenderer } from "@tokovo/renderer";
 import { myDrama } from "@tokovo/episodes";
 import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
 
-const compiled = prepareEpisode(myDrama, [WhatsAppPluginV2]);
+// Compile and prepare at module level (runs once)
+const { timeline } = compile(myDrama);
+const compiled = prepareEpisode(
+    {
+        id: myDrama.episodeId,
+        fps: 30,
+        durationInFrames: 600,
+        events: timeline.ops,
+        sceneIR: myDrama,
+    },
+    [WhatsAppPluginV2],
+    { mode: "preview" }
+);
 
 export const MyDramaVideo: React.FC = () => {
     const frame = useCurrentFrame();
-    const world = useMemo(() => runEpisode(compiled, frame), [frame]);
+    
+    // runEpisode runs every frame - it's deterministic and cheap
+    const world = runEpisode(compiled, frame);
     
     return <TokovoRenderer world={world} t={frame} />;
 };
 ```
 
-## Register in Root.tsx
+## Registration
+
+### Recommended: Auto-Discovery
+
+Episodes named `*.episode.ts` are automatically discovered and registered.
+No manual `Root.tsx` changes needed.
+
+### Legacy: Manual Registration
+
+> ⚠️ Only use if auto-discovery is disabled.
 
 ```typescript
+// apps/video-runner/src/Root.tsx
 <Composition
     id="MyDrama"
     component={MyDramaVideo}
