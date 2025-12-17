@@ -1,59 +1,121 @@
 /**
  * @tokovo/dsl
- * 
- * Author DSL for writing cinematic chat stories.
- * 
- * Usage:
- * ```ts
- * import { episode } from "@tokovo/dsl";
- * 
- * const sceneIR = episode("my-story", ep => {
- *   ep.device("Phone", d => {
- *     d.conversation("dm_alice")
- *     d.beat("intro", b => {
- *       b.receive("Alice", "Hey!")
- *     })
- *   })
- * })
+ *
+ * Domain Specific Language for authoring Tokovo episodes.
+ *
+ * The DSL provides a fluent API for creating episode timelines
+ * with track-based authoring for camera, audio, OS, and app events.
+ *
+ * @example
+ * ```typescript
+ * import { episode, CameraTrackBuilder } from "@tokovo/dsl";
+ *
+ * const ir = episode("demo", { fps: 30, duration: "30s" })
+ *   .device("phone", "iphone16", { app: "app_whatsapp" })
+ *   .camera(cam => cam.at("0s").set({ scale: 1 }))
+ *   .audio(audio => audio.span("0s", "30s").bgm("lofi_chill"))
+ *   .build();
  * ```
  */
 
-// Types
-export * from "./types";
-export * from "./tracer";
+// =============================================================================
+// CORE: Track-based DSL (RECOMMENDED)
+// =============================================================================
 
-// Author API (high-level builders)
-export * from "./author";
+export {
+    episode,
+    EpisodeBuilder,
+    CameraTrackBuilder,
+    CameraPointBuilder,
+    CameraSpanBuilder,
+    AudioTrackBuilder,
+    AudioPointBuilder,
+    AudioSpanBuilder,
+    OSTrackBuilder,
+    OSPointBuilder,
+} from "./core";
 
-// Events API (low-level factories) - selective exports to avoid conflicts
+export type {
+    DeviceOptions,
+    TrackBuilder,
+    TrackFn,
+    CameraSetOptions,
+    CameraAnimateOptions,
+    CameraFocusOptions,
+    CameraTrackOptions,
+    CameraShakeOptions,
+    CameraResetOptions,
+    BgmOptions,
+    PlayOptions,
+    CrossfadeOptions,
+    FadeOutOptions,
+    NetworkType,
+    OSStateOptions,
+    BatteryOptions,
+    NetworkOptions,
+    NotificationOptions,
+} from "./core";
+
+// =============================================================================
+// UTILS: Time parsing
+// =============================================================================
+
+export {
+    parseTimeToFrames,
+    parseDurationToFrames,
+    framesToSeconds,
+    framesToTimeString,
+} from "./utils";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type {
+    TypingBuilder,
+    MessageHandle,
+    EpisodeConfig,
+    EpisodeDefinition,
+} from "./types";
+
+// =============================================================================
+// TRACER: Debug utility
+// =============================================================================
+
+export { Tracer } from "./tracer";
+
+// =============================================================================
+// HELPERS: Event factories (import from "@tokovo/dsl/helpers")
+// =============================================================================
+
+// Re-export common helpers at top level for convenience
 export {
     keyboard,
-    messages,
-    camera,
-    audioEvents,
-    dsl,
     generateTyping,
     getTypingEndFrame,
     TYPING_SPEEDS,
-    type TypingSpeed,
-    type TypingOptions,
-    type PlayOptions,
-    type FadeOptions,
-} from "./events";
+    messages,
+    dsl,
+} from "./helpers";
 
-// Renamed camera options to avoid conflicts with author/camera-builder
 export type {
-    ZoomOptions as EventZoomOptions,
-    PanOptions as EventPanOptions,
-    ShakeOptions as EventShakeOptions
-} from "./events";
+    TypingSpeed,
+    TypingOptions,
+} from "./helpers";
 
 // =============================================================================
-// V2 Track-based DSL
+// BACKWARD COMPATIBILITY: v2 namespace
 // =============================================================================
 
-// Re-export v2 with namespace to avoid conflicts
-export * as v2 from "./v2";
+// Re-export core as v2 for backward compatibility
+export * as v2 from "./core";
 
-// Also export the main episode function directly (with different name)
-export { episode as trackEpisode } from "./v2";
+// Alias for backward compatibility
+export { episode as trackEpisode } from "./core";
+
+// =============================================================================
+// LEGACY: Beat-based DSL (DEPRECATED)
+// =============================================================================
+
+// Legacy exports are available via "@tokovo/dsl/legacy"
+// Do not import legacy directly - it shows deprecation warnings

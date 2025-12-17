@@ -1,42 +1,20 @@
 /**
  * V2 DSL - Track-based episode authoring
- * 
- * @description The new track-based DSL that replaces beats.
- * Each track (camera, audio, os, app) is independent and uses
- * explicit timing with at() and span().
- * 
- * @see docs-v2/DSL_REVAMP.md
+ *
+ * BACKWARD COMPATIBILITY: This module re-exports from core.
+ * New code should import from "@tokovo/dsl" directly.
+ *
+ * @deprecated Import from "@tokovo/dsl" instead
  */
 
-// Episode builder
-export { episode, EpisodeBuilder } from "./episode";
+// Re-export everything from core
+export * from "../core";
 
-// Track builders
-export { CameraTrackBuilder, CameraPointBuilder, CameraSpanBuilder } from "./camera-track";
-export type {
-    CameraSetOptions,
-    CameraAnimateOptions,
-    CameraFocusOptions,
-    CameraTrackOptions,
-    CameraShakeOptions,
-    CameraResetOptions,
-} from "./camera-track";
+// Re-export utilities
+export {
+    parseTimeToFrames,
+    parseDurationToFrames,
+    framesToSeconds,
+    framesToTimeString,
+} from "../utils";
 
-export { AudioTrackBuilder, AudioPointBuilder, AudioSpanBuilder } from "./audio-track";
-export type {
-    BgmOptions,
-    PlayOptions,
-    CrossfadeOptions,
-    FadeOutOptions,
-} from "./audio-track";
-
-export { OSTrackBuilder, OSPointBuilder } from "./os-track";
-export type {
-    OSStateOptions,
-    BatteryOptions,
-    NetworkOptions,
-    NotificationOptions,
-} from "./os-track";
-
-// Utilities
-export { parseTimeToFrames, parseDurationToFrames, framesToSeconds, framesToTimeString } from "./utils/time";
