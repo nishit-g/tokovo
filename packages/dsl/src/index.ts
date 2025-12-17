@@ -47,3 +47,13 @@ export type {
     PanOptions as EventPanOptions,
     ShakeOptions as EventShakeOptions
 } from "./events";
+
+// =============================================================================
+// V2 Track-based DSL
+// =============================================================================
+
+// Re-export v2 with namespace to avoid conflicts
+export * as v2 from "./v2";
+
+// Also export the main episode function directly (with different name)
+export { episode as trackEpisode } from "./v2";

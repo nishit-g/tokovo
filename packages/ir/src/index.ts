@@ -30,3 +30,16 @@ export * from "./validate";
 
 // Narrative constraints
 export * from "./constraints";
+
+// =============================================================================
+// V2 Track Types
+// =============================================================================
+
+// Track payloads (typed payload maps)
+export * from "./track-payloads";
+
+// Track events (typed event union)
+export * from "./track-event";
+
+// Track episode IR (DSL output)
+export * from "./track-episode-ir";
