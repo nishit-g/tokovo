@@ -1,17 +1,17 @@
 /**
- * Behavior Registry
+ * Behavior Registry - App-specific camera behaviors
  *
- * Central registry for app-specific camera behaviors.
+ * @description Uses createRegistry factory for DRY pattern.
  * Apps self-register their behaviors at module load time.
  */
 
-import type { ShotPresetId } from "./camera/presets";
+import { createRegistry } from "./factory";
+import type { ShotPresetId } from "../camera/presets";
+import type { SemanticAnchorId } from "../types/anchor";
 
 // =============================================================================
-// CAMERA INTENT TYPES (Re-exported for convenience)
+// TYPES
 // =============================================================================
-
-import type { SemanticAnchorId } from "./anchors";
 
 export type CameraIntent =
     | { type: "FOCUS"; anchor: SemanticAnchorId; preset?: ShotPresetId }
@@ -25,55 +25,55 @@ export interface AppBehavior {
 }
 
 // =============================================================================
-// BEHAVIOR REGISTRY
+// REGISTRY
 // =============================================================================
 
-class BehaviorRegistryClass {
-    private behaviors = new Map<string, AppBehavior>();
+// Create the registry using factory
+const _registry = createRegistry<string, AppBehavior>("Behavior");
 
+/**
+ * BehaviorRegistry - Maps app IDs to camera behaviors
+ */
+export const BehaviorRegistry = {
     /**
      * Register an app behavior
      */
     register(behavior: AppBehavior): void {
-        this.behaviors.set(behavior.appId, behavior);
-    }
+        _registry.register(behavior.appId, behavior);
+    },
 
     /**
      * Get behavior for an app
      */
-    get(appId: string): AppBehavior | undefined {
-        return this.behaviors.get(appId);
-    }
+    get: _registry.get,
 
     /**
      * Check if behavior exists
      */
-    has(appId: string): boolean {
-        return this.behaviors.has(appId);
-    }
+    has: _registry.has,
 
     /**
      * Get intent for an app event
      */
     getIntent(appId: string, eventType: string): CameraIntent | undefined {
-        const behavior = this.behaviors.get(appId);
+        const behavior = _registry.get(appId);
         return behavior?.eventMappings[eventType];
-    }
+    },
 
     /**
      * Get all registered app IDs
      */
-    getRegisteredApps(): string[] {
-        return Array.from(this.behaviors.keys());
-    }
+    getRegisteredApps: _registry.keys,
 
     /**
      * Clear all registrations (for testing)
      */
-    clear(): void {
-        this.behaviors.clear();
-    }
-}
+    clear: _registry.clear,
 
-/** Global behavior registry */
-export const BehaviorRegistry = new BehaviorRegistryClass();
+    /**
+     * Get count
+     */
+    get size() {
+        return _registry.size;
+    },
+};

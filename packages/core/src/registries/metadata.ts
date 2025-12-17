@@ -1,13 +1,17 @@
 /**
- * App Metadata Registry
+ * App Metadata Registry - Stores static metadata for applications
  * 
- * Stores static metadata for applications (Icon, Color, Name).
- * Used by OS components (Notifications, App Library, Home Screen) to render app identity.
- * 
- * This decouples "Branding" from the "Renderer".
+ * @description Uses createRegistry factory for DRY pattern.
+ * Used by OS components (Notifications, App Library, Home Screen).
  */
 
 import React from "react";
+import { createRegistry } from "./factory";
+import type { ViewKind } from "../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 export interface AppMetadata {
     /** Display name (e.g. "WhatsApp") */
@@ -17,74 +21,85 @@ export interface AppMetadata {
     themeColor: string;
 
     /** 
-     * App Icon
-     * Can be a string (asset URL/emoji) or a React Component.
-     * Recommendation: Use React Component for SVG consistency.
+     * App Icon - string (URL/emoji) or React Component
      */
     icon: React.ReactNode | string;
 
-    /**
-     * Optional: Short name for tight spaces (e.g. "Messages")
-     */
+    /** Short name for tight spaces */
     shortName?: string;
 
-    /**
-     * Layout Strategy
-     * Tells the OS what kind of strategy logic to use.
-     */
-    viewStrategy?: import("./types").ViewKind;
+    /** Layout Strategy */
+    viewStrategy?: ViewKind;
 
-    /**
-     * Design Width (Logical Resolution)
-     * The width this app was designed for (e.g. 393 for iPhone 14/15/16 Pro).
-     * The Renderer will automatically scale the app to fit the physical target width.
-     * Default: 393
-     */
+    /** Design Width (default: 393) */
     designWidth?: number;
 }
 
-class AppMetadataRegistryClass {
-    private _metadata = new Map<string, AppMetadata>();
+// =============================================================================
+// DEFAULT FALLBACK
+// =============================================================================
 
+const DEFAULT_METADATA: AppMetadata = {
+    displayName: "Unknown App",
+    themeColor: "#8E8E93",
+    icon: "[App]",
+};
+
+// =============================================================================
+// REGISTRY
+// =============================================================================
+
+// Create the registry using factory
+const _registry = createRegistry<string, AppMetadata>("AppMetadata");
+
+/**
+ * AppMetadataRegistry - Maps app IDs to their metadata
+ */
+export const AppMetadataRegistry = {
     /**
      * Register metadata for an app
      */
-    register(appId: string, metadata: AppMetadata) {
-        this._metadata.set(appId, metadata);
-    }
+    register: _registry.register,
 
     /**
-     * Get metadata for an app.
-     * Returns a default fallback if not found.
+     * Get metadata for an app (with fallback)
      */
     get(appId: string): AppMetadata {
-        const data = this._metadata.get(appId);
-        if (!data) {
-            // Fallback for unknown apps
-            return {
-                displayName: appId,
-                themeColor: "#8E8E93",
-                icon: "📱",
-            };
-        }
-        return data;
-    }
+        return _registry.get(appId) || {
+            ...DEFAULT_METADATA,
+            displayName: appId,
+        };
+    },
 
     /**
      * Check if metadata exists
      */
-    has(appId: string): boolean {
-        return this._metadata.has(appId);
-    }
-}
+    has: _registry.has,
 
-export const AppMetadataRegistry = new AppMetadataRegistryClass();
+    /**
+     * Get all app IDs
+     */
+    keys: _registry.keys,
+
+    /**
+     * Get all metadata entries
+     */
+    entries: _registry.entries,
+
+    /**
+     * Clear all metadata (for testing)
+     */
+    clear: _registry.clear,
+
+    /**
+     * Get count
+     */
+    get size() {
+        return _registry.size;
+    },
+};
 
 // =============================================================================
 // NOTE: Apps should register themselves via side effects when imported.
-// DO NOT add app-specific registrations here - they belong in plugin packages!
-// 
-// Example (in packages/apps-whatsapp/src/index.ts):
-//   import { AppMetadataRegistry } from "@tokovo/core";
-//   AppMetadataRegistry.register("app_whatsapp", { displayName: "WhatsApp", ... });
+// DO NOT add app-specific registrations here!
 // =============================================================================

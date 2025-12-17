@@ -1,52 +1,62 @@
 /**
  * Sound Registry - Manages mapping between Sound IDs and file paths
  * 
- * Enables apps to register their own sound assets dynamically.
- * Paths should be relative to the public/ folder (e.g., "sounds/myapp/alert.mp3").
+ * @description Uses createRegistry factory for DRY pattern.
+ * Paths should be relative to the public/ folder.
  */
 
-class SoundRegistryClass {
-    private _paths = new Map<string, string>();
+import { createRegistry } from "./factory";
 
+// Create the registry using factory
+const _registry = createRegistry<string, string>("Sound");
+
+/**
+ * SoundRegistry - Maps sound IDs to file paths
+ */
+export const SoundRegistry = {
     /**
      * Register a sound ID to a file path
      * @param soundId Unique identifier (e.g., "whatsapp_sent")
      * @param path Relative path in public folder (e.g., "sounds/whatsapp/sent.mp3")
      */
-    register(soundId: string, path: string): void {
-        if (this._paths.has(soundId)) {
-            console.warn(`[SoundRegistry] Overwriting sound path for: ${soundId}`);
-        }
-        this._paths.set(soundId, path);
-    }
+    register: _registry.register,
 
     /**
      * Register multiple sounds at once
      */
     registerMany(sounds: Record<string, string>): void {
-        Object.entries(sounds).forEach(([id, path]) => this.register(id, path));
-    }
+        Object.entries(sounds).forEach(([id, path]) => _registry.register(id, path));
+    },
 
     /**
      * Get the file path for a sound ID
      */
-    getPath(soundId: string): string | undefined {
-        return this._paths.get(soundId);
-    }
+    getPath: _registry.get,
 
     /**
      * Check if a sound is registered
      */
-    has(soundId: string): boolean {
-        return this._paths.has(soundId);
-    }
+    has: _registry.has,
 
     /**
-     * Debug: Get all registered sounds
+     * Get all registered sounds
      */
-    getAll(): Record<string, string> {
-        return Object.fromEntries(this._paths);
-    }
-}
+    getAll: _registry.entries,
 
-export const SoundRegistry = new SoundRegistryClass();
+    /**
+     * Get all sound IDs
+     */
+    keys: _registry.keys,
+
+    /**
+     * Clear all sounds (for testing)
+     */
+    clear: _registry.clear,
+
+    /**
+     * Get count of registered sounds
+     */
+    get size() {
+        return _registry.size;
+    },
+};

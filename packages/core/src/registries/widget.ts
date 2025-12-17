@@ -1,12 +1,12 @@
 /**
  * Widget Registry - Manages platform-specific widgets from plugins
  * 
- * Apps register widgets (Dynamic Island, status bar, etc.) and the registry
- * resolves which widget to render based on priority and platform.
+ * @description Resolves which widget to render based on priority and platform.
+ * Note: Complex resolution logic - not using createRegistry factory.
  */
 
-import { WidgetSlot, WidgetMode, WidgetComponent } from "./plugin";
-import { Platform } from "./tokens";
+import type { WidgetSlot, WidgetMode, WidgetComponent } from "../plugin/plugin";
+import type { Platform } from "../tokens";
 
 // =============================================================================
 // WIDGET REGISTRY
@@ -28,7 +28,6 @@ class WidgetRegistryClass {
 
     /**
      * Get widget for mode + platform with priority resolution
-     * Returns highest priority widget from active apps
      */
     resolve(
         mode: WidgetMode,
@@ -42,11 +41,9 @@ class WidgetRegistryClass {
             if (!appWidgets) continue;
 
             for (const widget of appWidgets) {
-                // Check mode and platform match
                 if (widget.mode !== mode) continue;
                 if (!widget.platforms.includes(platform)) continue;
 
-                // Higher priority wins
                 if (!best || widget.priority > best.priority) {
                     best = { appId, widget, priority: widget.priority };
                 }
@@ -77,7 +74,6 @@ class WidgetRegistryClass {
             }
         }
 
-        // Sort by priority (highest first)
         return results.sort((a, b) => b.widget.priority - a.widget.priority);
     }
 
@@ -107,6 +103,13 @@ class WidgetRegistryClass {
      */
     clear(): void {
         this.slots.clear();
+    }
+
+    /**
+     * Get count
+     */
+    get size(): number {
+        return this.slots.size;
     }
 }
 
