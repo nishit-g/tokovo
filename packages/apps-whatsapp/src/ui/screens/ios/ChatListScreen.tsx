@@ -5,6 +5,7 @@ import { ChatListHeader } from "../../../components/ios/ChatListHeader";
 import { TabNavigation } from "../../../components/ios/TabNavigation";
 import { ChatListItem } from "../../../components/ios/ChatListItem";
 import { UI_CONSTANTS } from "../../../config/layout-config";
+import { WhatsAppConversation } from "../../../types";
 
 export interface ChatListScreenProps {
     world: WorldState;
@@ -36,8 +37,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
     const safeAreaTop = physicalSafeTop / scale;
     const safeAreaBottom = physicalSafeBottom / scale;
 
-    // 2. Data Preparation
-    const conversations = Object.values(world.conversations || {}).sort((a, b) => {
+    // 2. Data Preparation - Cast to WhatsApp conversation type
+    const conversations = (Object.values(world.conversations || {}) as WhatsAppConversation[]).sort((a, b) => {
         // Sort by last message timestamp (descending) mechanism to be added
         // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
         return 0;

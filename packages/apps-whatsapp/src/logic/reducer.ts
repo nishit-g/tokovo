@@ -23,6 +23,15 @@ import {
     APP_IDS
 } from "@tokovo/core";
 
+// Import WhatsApp-specific types (all app types now live in plugin)
+import {
+    WhatsAppMessage,
+    WhatsAppConversation,
+    WhatsAppState,
+    WhatsAppMessageType,
+    WhatsAppGroupMember,
+} from "../types";
+
 // Import group operation types
 import {
     GROUP_EVENT_TYPES,
@@ -35,56 +44,28 @@ import {
     GroupAdminChangePayload,
 } from "../ir/group-ops";
 
-// Extended message type for WhatsApp-specific features
-type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
+// =============================================================================
+// TYPE-SAFE ACCESSORS
+// =============================================================================
 
-interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
+/**
+ * Get WhatsApp conversations from WorldState with type safety.
+ */
+function getConversations(draft: WorldState): Record<string, WhatsAppConversation> {
+    return draft.conversations as Record<string, WhatsAppConversation>;
 }
 
-interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-interface WhatsAppMessage {
-    id: string;
-    from: string;
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-    // React and reply
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    // Timestamp display
-    timestamp?: string;
+/**
+ * Get or create WhatsApp app state with type safety.
+ */
+function getAppState(draft: WorldState): WhatsAppState {
+    if (!draft.appState) {
+        draft.appState = {};
+    }
+    if (!draft.appState.app_whatsapp) {
+        draft.appState.app_whatsapp = {};
+    }
+    return draft.appState.app_whatsapp as WhatsAppState;
 }
 
 /**
@@ -153,29 +134,18 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
     // Handle navigation events (no conversation required)
     if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        // Ensure appState exists for WhatsApp
-        if (!draft.appState) {
-            draft.appState = {};
-        }
-        if (!draft.appState.app_whatsapp) {
-            draft.appState.app_whatsapp = {};
-        }
+        const appState = getAppState(draft);
 
         // Update the current screen
         const screen = appEvent.screen || "chat";
-        draft.appState.app_whatsapp.screen = screen;
+        appState.screen = screen;
 
-        // STANDARD CONTRACT ADHERENCE
         // Map screen to generic ViewKind
-        if (screen === "chat") {
-            (draft.appState.app_whatsapp as any).viewMode = "CHAT";
-        } else {
-            (draft.appState.app_whatsapp as any).viewMode = "TRANSITION"; // or "LIST" if we had it
-        }
+        appState.viewMode = screen === "chat" ? "CHAT" : "TRANSITION";
 
         // If navigating to a specific conversation
         if (appEvent.conversationId) {
-            draft.appState.app_whatsapp.conversationId = appEvent.conversationId;
+            appState.conversationId = appEvent.conversationId;
         }
 
         return;
@@ -185,11 +155,17 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     const conversationId = appEvent.conversationId;
     if (!conversationId) return;
 
+    // Get conversations with type safety
+    const conversations = getConversations(draft);
+
     // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = { id: conversationId, messages: [] };
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = {
+            id: conversationId,
+            messages: []
+        } as WhatsAppConversation;
     }
-    const conversation = draft.conversations[conversationId];
+    const conversation = conversations[conversationId];
 
     switch (eventType) {
         case "MESSAGE_RECEIVED":
@@ -304,7 +280,9 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
 
         case "MESSAGE_READ": {
             if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId);
+                // Cast to WhatsAppMessage[] since core's messages is now unknown[]
+                const messages = conversation.messages as WhatsAppMessage[];
+                const msg = messages.find(m => m.id === appEvent.messageId);
                 if (msg) {
                     msg.status = "read";
                 }
@@ -315,7 +293,8 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         case "REACTION_ADDED": {
             // Find the message and add/update the reaction
             if (appEvent.messageId) {
-                const msg = conversation.messages.find(m => m.id === appEvent.messageId) as any;
+                const messages = conversation.messages as WhatsAppMessage[];
+                const msg = messages.find(m => m.id === appEvent.messageId) as any;
                 if (msg) {
                     // Initialize reactions array if needed
                     if (!msg.reactions) {
@@ -383,15 +362,18 @@ function handleCustomOp(draft: WorldState, event: CustomOpEvent): void {
     const conversationId = payload.conversationId;
     if (!conversationId) return;
 
+    // Get conversations with type safety
+    const conversations = getConversations(draft);
+
     // Ensure conversation exists
-    if (!draft.conversations[conversationId]) {
-        (draft.conversations as any)[conversationId] = {
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = {
             id: conversationId,
             messages: [],
             type: "group"  // CustomOps are typically group operations
-        };
+        } as WhatsAppConversation;
     }
-    const conversation = draft.conversations[conversationId];
+    const conversation = conversations[conversationId];
 
     switch (event.eventType) {
         case GROUP_EVENT_TYPES.MEMBER_ADDED: {

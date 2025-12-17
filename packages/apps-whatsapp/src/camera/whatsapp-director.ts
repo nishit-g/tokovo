@@ -19,8 +19,10 @@ import {
     composeTimeline,
     TimelineStep,
     CameraTarget,
+    ChatLayoutState,
+    ChatMessageLayout,
 } from "@tokovo/core";
-import { ChatLayoutState, ChatMessageLayout, Message } from "@tokovo/core";
+import { WhatsAppMessage } from "../types";
 
 // =============================================================================
 // DIRECTOR TYPES
@@ -113,7 +115,7 @@ export class WhatsAppDirector {
      * - If rapid exchange: fast follow with less zoom
      */
     onNewMessage(
-        msg: Message,
+        msg: WhatsAppMessage,
         context: DirectorContext
     ): CameraPrimitiveRecommendation | null {
         // Check cooldown

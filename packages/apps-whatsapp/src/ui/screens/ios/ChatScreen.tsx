@@ -5,7 +5,7 @@ import { Header } from "../../../components/ios/Header";
 import { MessageList } from "../../../components/ios/MessageList";
 import { InputArea } from "../../../components/ios/InputArea";
 import { TypingIndicator } from "../../../components/ios/TypingIndicator";
-import { WhatsAppState, MessageData } from "../../../types";
+import { WhatsAppState, MessageData, WhatsAppConversation } from "../../../types";
 
 export interface ChatScreenProps {
     world: WorldState;
@@ -30,7 +30,9 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     // 1. Resolve App State
     const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
     const conversationId = appState?.conversationId || Object.keys(world.conversations || {})[0];
-    const conversation = world.conversations?.[conversationId];
+
+    // Cast to WhatsApp conversation type
+    const conversation = world.conversations?.[conversationId] as WhatsAppConversation | undefined;
 
     // 2. Prepare Data
     const contactName = conversation?.name || "Unknown";

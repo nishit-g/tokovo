@@ -14,7 +14,7 @@ import {
     type GapContext,           // Type import
 } from "./config";
 import { UI_CONSTANTS } from "./config";
-import { MessageData } from "./types";
+import { MessageData, WhatsAppMessage, WhatsAppConversation } from "./types";
 
 // =============================================================================
 // PRODUCTION-GRADE CHAT LAYOUT STRATEGY (PLUGIN)
@@ -49,12 +49,13 @@ export function computeChatLayout(
         };
     }
 
-    const conversation = world.conversations[activeConversationId];
+    // Cast to WhatsApp conversation type
+    const conversation = world.conversations[activeConversationId] as WhatsAppConversation;
     // Filter messages visible at time t
-    const messages = conversation.messages.filter(m => m.at === undefined || m.at <= t);
+    const messages = (conversation.messages as WhatsAppMessage[]).filter((m: WhatsAppMessage) => m.at === undefined || m.at <= t);
 
     // Detect if this is a group chat (more than 2 unique senders)
-    const uniqueSenders = new Set(messages.map(m => m.from));
+    const uniqueSenders = new Set(messages.map((m: WhatsAppMessage) => m.from));
     const isGroupChat = uniqueSenders.size > 2;
 
     const messageLayouts: Record<string, ChatMessageLayout> = {};

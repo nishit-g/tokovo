@@ -471,99 +471,25 @@ export interface AppFolder {
     name: string;
     apps: AppIcon[];
 }
-
-export interface ConversationState {
-    id: ConversationId;
-    type?: "dm" | "group";
-    name?: string;                   // Contact or group name
-    avatar?: string;
-
-    // Group-specific
-    members?: GroupMember[];
-    admins?: string[];               // Member IDs who are admins
-
-    messages: Message[];
-    unreadCount?: number;
-    typing?: Record<string, boolean>;
-}
-
-
-export interface GroupMember {
-    id: string;
-    name: string;
-    avatar?: string;
-    phone?: string;
-}
-
-// (TimelineEvent definition removed - it is defined later)
-
-
-export interface Message {
-    id: string;
-    from: string;                    // "me" or member ID
-    text?: string;
-    type?: "text" | "image" | "video" | "gif" | "voice" | "system" | "deleted";
-    at?: number;                     // Timestamp frame
-
-    // System message
-    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed";
-    targetMember?: string;
-    actorName?: string;
-
-    // Voice message
-    duration?: number;
-    isPlaying?: boolean;
-    playProgress?: number;
-
-    // Image message
-    imageUrl?: string;
-
-    // Video message
-    videoUrl?: string;
-    thumbnailUrl?: string;
-
-    // GIF message
-    gifUrl?: string;
-
-    // Caption for media messages
-    caption?: string;
-
-    // Layout hints
-    height?: number;
-
-    // Future features
-    reactions?: Reaction[];
-    replyTo?: ReplyTo;
-    linkPreview?: LinkPreview;
-
-    // Read status
-    status?: "sending" | "sent" | "delivered" | "read";
-}
-
 // =============================================================================
-// FUTURE FEATURES - Message Extensions
+// APP DATA - REMOVED FROM CORE
+// =============================================================================
+//
+// The following types have been REMOVED from core:
+// - ConversationState
+// - GroupMember  
+// - Message
+// - Reaction
+// - ReplyTo
+// - LinkPreview
+//
+// These are app-specific concepts. Each plugin defines its own types.
+// WorldState.conversations is now Record<string, unknown>.
+// WorldState.appState is Record<string, unknown>.
+//
+// Apps cast to their own types when accessing this data.
 // =============================================================================
 
-export interface Reaction {
-    emoji: string;
-    from: string;
-    at?: number;
-}
-
-export interface ReplyTo {
-    messageId: string;
-    text?: string;
-    from: string;
-    type?: "text" | "image" | "video" | "gif" | "voice";
-}
-
-export interface LinkPreview {
-    url: string;
-    title?: string;
-    description?: string;
-    image?: string;
-    siteName?: string;
-}
 
 // =============================================================================
 // CAMERA SYSTEM TYPES
@@ -1059,11 +985,16 @@ export interface TouchState {
 
 export interface WorldState {
     devices: Record<DeviceId, DeviceState>;
-    conversations: Record<ConversationId, ConversationState>;
-    appState: Record<AppId, any>;
+
+    // App-specific data - apps cast to their own types
+    conversations: Record<string, unknown>;
+    appState: Record<string, unknown>;
+
+    // Engine primitives
     camera: CameraState;
     audio: AudioState;
-    config?: VideoConfig;                   // Global video configuration
+    config?: VideoConfig;
+
     /** Active touch points for visualization */
     touches?: TouchState[];
 }

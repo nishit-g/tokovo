@@ -6,7 +6,7 @@
  */
 
 import { definePlugin, PluginManager, APP_IDS, TokovoPlugin, AppViewComponent } from "@tokovo/core";
-import { whatsappReducer } from "./runtime";
+import { whatsappReducer } from "./logic/reducer";
 import { WhatsappChatView } from "./ui";
 
 /**

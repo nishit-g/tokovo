@@ -15,10 +15,21 @@ import { AutoSoundRegistry } from "@tokovo/core";
 // Register Audio Rules
 AutoSoundRegistry.register(whatsappAudioRules);
 
+// Core exports
 export * from "./types";
 export * from "./adapters/anchors";
 export * from "./adapters/notifications";
 export * from "./layout";
+
+// Module Augmentation for type safety
+export * from "./augment";
+
+// UI Strategy Pattern
+export * from "./ui/ui-strategy";
+export * from "./ui/strategies";
+
+// Import strategies to auto-register
+import "./ui/strategies";
 
 // Define Plugin
 export const WhatsAppPlugin = definePlugin({

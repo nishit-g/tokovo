@@ -1,5 +1,10 @@
 import React from "react";
-import { getAppConfig, Platform, getTokens } from "@tokovo/core";
+import { getAppConfig, Platform } from "@tokovo/core";
+
+// Stub for getTokens (to be implemented properly)
+const getTokens = (_platform: Platform) => ({
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+});
 
 // ============================================================================
 // IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style

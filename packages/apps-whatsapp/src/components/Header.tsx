@@ -5,8 +5,13 @@
  */
 
 import React from "react";
-import { Platform, getAppConfig, getTokens } from "@tokovo/core";
+import { Platform, getAppConfig } from "@tokovo/core";
 import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./icons";
+
+// Stub for getTokens (to be implemented properly)
+const getTokens = (_platform: Platform) => ({
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+});
 
 export interface HeaderProps {
     contactName: string;
