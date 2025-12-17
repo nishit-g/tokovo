@@ -6,7 +6,7 @@
  * App-specific sounds are registered by the apps themselves.
  */
 
-import { SoundRegistry } from "./sound-registry";
+import { SoundRegistry } from "../registries/sound";
 
 // Register Core Sounds (Generic UI, OS, Ambient)
 SoundRegistry.registerMany({
