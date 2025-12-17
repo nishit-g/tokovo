@@ -20,6 +20,7 @@ import { GandhiTextingVideo } from "./GandhiTextingVideo";
 import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
 import { UltimateCapabilitiesShowcase, ultimateShowcaseConfig } from "./UltimateCapabilitiesShowcase";
 import { TrackDemoVideo, trackDemoConfig } from "./TrackDemoVideo";
+import { BakchodiBrosVideo, bakchodiConfig } from "./BakchodiBrosVideo";
 import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
 import { compile } from "@tokovo/compiler";
@@ -45,6 +46,15 @@ export const RemotionRoot: React.FC = () => {
                 fps={trackDemoConfig.fps}
                 width={trackDemoConfig.width}
                 height={trackDemoConfig.height}
+            />
+            {/* Bakchodi Bros - Two Indian friends doing bakchodi */}
+            <Composition
+                id={bakchodiConfig.id}
+                component={BakchodiBrosVideo}
+                durationInFrames={bakchodiConfig.durationInFrames}
+                fps={bakchodiConfig.fps}
+                width={bakchodiConfig.width}
+                height={bakchodiConfig.height}
             />
             {/* Ultimate Capabilities Showcase - shows ALL features */}
             <Composition
