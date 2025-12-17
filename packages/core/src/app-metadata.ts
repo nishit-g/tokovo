@@ -80,25 +80,11 @@ class AppMetadataRegistryClass {
 
 export const AppMetadataRegistry = new AppMetadataRegistryClass();
 
-// Register Default Apps
-AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT"
-});
-
-
-AppMetadataRegistry.register("app_gmail", {
-    displayName: "Gmail",
-    themeColor: "#EA4335",
-    icon: "📧",
-    viewStrategy: "FEED" // Warning: Gmail is list-based, effectively FEED layout structure
-});
-
-AppMetadataRegistry.register("app_twitter", {
-    displayName: "X",
-    themeColor: "#000000",
-    icon: "✖️",
-    viewStrategy: "FEED"
-});
+// =============================================================================
+// NOTE: Apps should register themselves via side effects when imported.
+// DO NOT add app-specific registrations here - they belong in plugin packages!
+// 
+// Example (in packages/apps-whatsapp/src/index.ts):
+//   import { AppMetadataRegistry } from "@tokovo/core";
+//   AppMetadataRegistry.register("app_whatsapp", { displayName: "WhatsApp", ... });
+// =============================================================================

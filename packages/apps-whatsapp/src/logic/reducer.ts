@@ -170,61 +170,78 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     switch (eventType) {
         case "MESSAGE_RECEIVED":
         case "MESSAGE_SENT": {
+            // V2 ENTERPRISE: Read from event.payload first
+            // V1 LEGACY: Fallback to root-level fields for backward compatibility
+            const payload = (appEvent as any).payload || {};
             const msgPayload = appEvent.message || {};
-            const msgType = (msgPayload.type || "text") as WhatsAppMessageType;
+
+            // Extract fields: V2 payload takes priority, then root, then message object
+            const fromUser = eventType === "MESSAGE_SENT"
+                ? "me"
+                : (payload.from || appEvent.from || "unknown");
+            const textContent = payload.text || appEvent.text || msgPayload.text;
+            const msgType = (payload.messageType || msgPayload.type || "text") as WhatsAppMessageType;
+            const msgId = payload.messageId || msgPayload.id || `msg_${event.at}_${fromUser}`;
 
             // Generate timestamp based on message index
             const messageIndex = conversation.messages.length;
             const timestamp = generateTimestamp(event.at, messageIndex);
 
             const newMessage: WhatsAppMessage = {
-                id: msgPayload.id || `msg_${event.at}_${appEvent.from}`,
-                from: eventType === "MESSAGE_SENT" ? "me" : (appEvent.from || "unknown"),
+                id: msgId,
+                from: fromUser,
                 type: msgType,
-                text: appEvent.text || msgPayload.text,
+                text: textContent,
                 at: event.at,
                 status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
                 edited: msgPayload.edited,
-                timestamp,  // Dynamic timestamp
+                timestamp,
             };
 
             // Handle media-specific fields based on type
             switch (msgType) {
                 case "image":
-                    newMessage.imageUrl = msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    newMessage.imageUrl = payload.url || msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
                     break;
                 case "video":
                     newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = msgPayload.caption || appEvent.caption;
+                    newMessage.videoUrl = payload.url || msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = payload.durationSeconds || msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
                     break;
                 case "gif":
-                    newMessage.gifUrl = msgPayload.gifUrl || appEvent.gifUrl;
+                    newMessage.gifUrl = payload.url || msgPayload.gifUrl || appEvent.gifUrl;
                     break;
             }
 
             (conversation.messages as any[]).push(newMessage);
 
-
             break;
         }
 
+
         case "TYPING_START": {
             if (!conversation.typing) conversation.typing = {};
-            if (appEvent.from) {
-                conversation.typing[appEvent.from] = true;
+            // V2: payload.actor, V1: root-level from
+            const typingPayload = (appEvent as any).payload || {};
+            const actor = typingPayload.actor || appEvent.from;
+            if (actor) {
+                conversation.typing[actor] = true;
             }
             break;
         }
 
         case "TYPING_END": {
-            if (conversation.typing && appEvent.from) {
-                delete conversation.typing[appEvent.from];
+            // V2: payload.actor, V1: root-level from
+            const typingPayload = (appEvent as any).payload || {};
+            const actor = typingPayload.actor || appEvent.from;
+            if (conversation.typing && actor) {
+                delete conversation.typing[actor];
             }
             break;
         }
+
 
         case "GROUP_MEMBER_ADDED": {
             const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;

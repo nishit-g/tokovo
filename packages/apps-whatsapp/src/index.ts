@@ -38,11 +38,20 @@ export { whatsappDsl } from "./dsl-extension";
 
 // === Register on import (side effects) ===
 import "./ui/strategies";
-import { AutoSoundRegistry } from "@tokovo/core";
+import { AutoSoundRegistry, AppMetadataRegistry } from "@tokovo/core";
 import { whatsappAudioRules } from "./assets/audio-rules";
 
 // Auto-register audio rules when this module is imported
 AutoSoundRegistry.register(whatsappAudioRules);
+
+// Self-register app metadata (separation of concerns - apps own their branding)
+AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬",
+    viewStrategy: "CHAT",
+});
+
 
 // === V2 Track DSL ===
 export { WhatsAppTrackBuilder, WhatsAppPointBuilder, WhatsAppSpanBuilder, createWhatsAppTrackBuilder } from "./v2/track";
