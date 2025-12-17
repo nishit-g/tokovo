@@ -15,15 +15,21 @@
 
 import React, { useMemo } from "react";
 import { useCurrentFrame, AbsoluteFill } from "remotion";
-import { prepareEpisode, runEpisode, createEventIndex } from "@tokovo/core";
+import { prepareEpisode, runEpisode, createEventIndex, setCompiler } from "@tokovo/core";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
+import { compile } from "@tokovo/compiler";
 import { ultimateShowcaseEpisode } from "@tokovo/episodes/src/ultimate-capabilities-showcase.episode";
 
 // Import device reducers (needed for engine)
 import "@tokovo/devices";
 import "@tokovo/device-keyboard";
+
+// =============================================================================
+// WIRE COMPILER FIRST (must happen before prepareEpisode)
+// =============================================================================
+setCompiler(compile);
 
 // =============================================================================
 // CONFIG
@@ -42,7 +48,7 @@ export const ultimateShowcaseConfig = {
 // =============================================================================
 
 // THE ONLY WAY: prepareEpisode accepts SceneIR directly
-// - setCompiler(compile) was called in Root.tsx
+// - setCompiler(compile) was called above
 // - prepareEpisode detects it's an EpisodeDefinition (has episodeId)
 // - Compiles internally, no manual compile() needed
 const compiledEpisode = prepareEpisode(
