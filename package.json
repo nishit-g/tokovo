@@ -6,11 +6,15 @@
         "build": "turbo run build",
         "dev": "turbo run dev",
         "lint": "turbo run lint",
-        "format": "prettier --write \"**/*.{ts,tsx,md}\""
+        "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+        "create-plugin": "npx ts-node templates/scripts/create-plugin.ts",
+        "create-episode": "npx ts-node templates/scripts/create-episode.ts"
     },
     "devDependencies": {
         "turbo": "latest",
-        "prettier": "latest"
+        "prettier": "latest",
+        "ts-node": "^10.9.0",
+        "@types/node": "^20.0.0"
     },
     "packageManager": "pnpm@9.0.0",
     "engines": {

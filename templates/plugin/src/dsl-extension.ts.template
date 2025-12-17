@@ -1,0 +1,131 @@
+/**
+ * {{APP_DISPLAY_NAME}} DSL Extension
+ * 
+ * Provides b.use("app_{{APP_ID}}").receive() / .send() / .typing() API
+ * Part of Tier C plugin contract.
+ * 
+ * Uses the b.use() pattern - NO prototype mutation.
+ * 
+ * @see docs/PLUGIN_ARCHITECTURE.md Section 5.1
+ */
+
+// =============================================================================
+// DSL API INTERFACE
+// =============================================================================
+
+export interface {{APP_NAME}}DslApi {
+    /**
+     * Receive a message from someone else
+     */
+    receive(from: string, text: string, options?: MessageOptions): MessageRef;
+
+    /**
+     * Send a message (from "me")
+     */
+    send(text: string, options?: MessageOptions): MessageRef;
+
+    /**
+     * Start typing indicator
+     */
+    typing(actor: string): { for(duration: string): void };
+
+    /**
+     * Navigate to a screen
+     */
+    navigate(screen: string): void;
+}
+
+// =============================================================================
+// SUPPORTING TYPES
+// =============================================================================
+
+interface MessageOptions {
+    type?: "text" | "image" | "video";
+    imageUrl?: string;
+}
+
+interface MessageRef {
+    _type: "MessageRef";
+    id: string;
+}
+
+interface DslContext {
+    addOp: (op: any) => void;
+    generateId: () => string;
+    deviceId: string;
+    conversationId?: string;
+}
+
+interface DslExtension<T> {
+    extensionId: string;
+    create: (context: DslContext) => T;
+}
+
+// =============================================================================
+// DSL EXTENSION
+// =============================================================================
+
+export const {{APP_ID}}Dsl: DslExtension<{{APP_NAME}}DslApi> = {
+    extensionId: "app_{{APP_ID}}",
+
+    create: (context: DslContext): {{APP_NAME}}DslApi => {
+        const { addOp, generateId, deviceId, conversationId } = context;
+
+        return {
+            receive: (from: string, text: string, options?: MessageOptions): MessageRef => {
+                const id = generateId();
+                addOp({
+                    kind: "MessageReceived",
+                    from,
+                    text,
+                    messageType: options?.type || "text",
+                    imageUrl: options?.imageUrl,
+                    messageId: id,
+                    conversationId,
+                });
+                return { _type: "MessageRef", id };
+            },
+
+            send: (text: string, options?: MessageOptions): MessageRef => {
+                const id = generateId();
+                addOp({
+                    kind: "MessageSent",
+                    text,
+                    messageType: options?.type || "text",
+                    imageUrl: options?.imageUrl,
+                    messageId: id,
+                    conversationId,
+                });
+                return { _type: "MessageRef", id };
+            },
+
+            typing: (actor: string) => ({
+                for: (duration: string) => {
+                    addOp({
+                        kind: "TypingStarted",
+                        actor,
+                        conversationId,
+                    });
+                    addOp({
+                        kind: "Wait",
+                        duration,
+                    });
+                    addOp({
+                        kind: "TypingEnded",
+                        actor,
+                        conversationId,
+                    });
+                },
+            }),
+
+            navigate: (screen: string) => {
+                addOp({
+                    kind: "NavigateScreen",
+                    screen,
+                });
+            },
+        };
+    },
+};
+
+export default {{APP_ID}}Dsl;

@@ -1,0 +1,141 @@
+/**
+ * {{APP_DISPLAY_NAME}} Reducer
+ * 
+ * The Brain - handles events and mutates state.
+ * Uses Immer via WorldState draft pattern.
+ * 
+ * @see docs/PLUGIN_ARCHITECTURE.md Section 3 (Mind 1: The Logician)
+ */
+
+import { WorldState } from "@tokovo/core";
+import { {{APP_NAME}}Message, {{APP_NAME}}Conversation } from "../types";
+
+// =============================================================================
+// TYPE-SAFE ACCESSORS
+// =============================================================================
+
+function getConversations(draft: WorldState): Record<string, {{APP_NAME}}Conversation> {
+    return draft.conversations as Record<string, {{APP_NAME}}Conversation>;
+}
+
+function getOrCreateConversation(
+    draft: WorldState,
+    conversationId: string
+): {{APP_NAME}}Conversation {
+    const conversations = getConversations(draft);
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = {
+            id: conversationId,
+            messages: [],
+            typing: {},
+        };
+    }
+    return conversations[conversationId];
+}
+
+// =============================================================================
+// HELPER: Generate Message ID
+// =============================================================================
+
+let messageCounter = 0;
+function generateMessageId(conversationId: string): string {
+    return `msg_${conversationId}_${++messageCounter}`;
+}
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export function {{APP_ID}}Reducer(draft: WorldState, event: any): void {
+    // Only handle APP events for this plugin
+    if (event.kind !== "APP" || event.appId !== "app_{{APP_ID}}") {
+        // Also handle legacy event formats
+        if (!["MessageReceived", "MessageSent", "TypingStarted", "TypingEnded"].includes(event.kind)) {
+            return;
+        }
+    }
+
+    const type = event.type || event.kind;
+    const payload = event.payload || event;
+
+    switch (type) {
+        // =================================================================
+        // MESSAGE RECEIVED
+        // =================================================================
+        case "MESSAGE_RECEIVED":
+        case "MessageReceived": {
+            const conversationId = payload.conversationId;
+            if (!conversationId) break;
+
+            const conversation = getOrCreateConversation(draft, conversationId);
+            const message: {{APP_NAME}}Message = {
+                id: payload.messageId || generateMessageId(conversationId),
+                from: payload.from,
+                type: payload.type || "text",
+                text: payload.text,
+                at: event.at,
+            };
+            conversation.messages.push(message);
+            break;
+        }
+
+        // =================================================================
+        // MESSAGE SENT
+        // =================================================================
+        case "MESSAGE_SENT":
+        case "MessageSent": {
+            const conversationId = payload.conversationId;
+            if (!conversationId) break;
+
+            const conversation = getOrCreateConversation(draft, conversationId);
+            const message: {{APP_NAME}}Message = {
+                id: payload.messageId || generateMessageId(conversationId),
+                from: "me",
+                type: payload.type || "text",
+                text: payload.text,
+                at: event.at,
+            };
+            conversation.messages.push(message);
+            break;
+        }
+
+        // =================================================================
+        // TYPING START
+        // =================================================================
+        case "TYPING_START":
+        case "TypingStarted": {
+            const conversationId = payload.conversationId;
+            if (!conversationId) break;
+
+            const conversation = getOrCreateConversation(draft, conversationId);
+            const actor = payload.actor || payload.from;
+            if (actor) {
+                conversation.typing = conversation.typing || {};
+                conversation.typing[actor] = true;
+            }
+            break;
+        }
+
+        // =================================================================
+        // TYPING END
+        // =================================================================
+        case "TYPING_END":
+        case "TypingEnded": {
+            const conversationId = payload.conversationId;
+            if (!conversationId) break;
+
+            const conversation = getOrCreateConversation(draft, conversationId);
+            const actor = payload.actor || payload.from;
+            if (actor && conversation.typing) {
+                delete conversation.typing[actor];
+            }
+            break;
+        }
+
+        default:
+            // Unknown event type - ignore
+            break;
+    }
+}
+
+export default {{APP_ID}}Reducer;

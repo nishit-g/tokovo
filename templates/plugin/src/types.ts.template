@@ -1,0 +1,92 @@
+/**
+ * {{APP_DISPLAY_NAME}} Types
+ * 
+ * All app-specific types for {{APP_DISPLAY_NAME}}.
+ * Core knows NOTHING about these - plugins own their data.
+ */
+
+// =============================================================================
+// MESSAGE TYPES
+// =============================================================================
+
+export type {{APP_NAME}}MessageType = 
+    | "text"
+    | "image"
+    | "video"
+    | "system";
+
+export interface {{APP_NAME}}Message {
+    id: string;
+    from: string;
+    type: {{APP_NAME}}MessageType;
+    text?: string;
+    imageUrl?: string;
+    timestamp?: string;
+    at?: number;
+}
+
+// =============================================================================
+// CONVERSATION TYPES
+// =============================================================================
+
+export interface {{APP_NAME}}Conversation {
+    id: string;
+    name?: string;
+    avatar?: string;
+    messages: {{APP_NAME}}Message[];
+    typing?: Record<string, boolean>;
+}
+
+// =============================================================================
+// APP STATE
+// =============================================================================
+
+export interface {{APP_NAME}}State {
+    currentScreen: "main" | "detail" | "settings";
+    currentConversationId?: string;
+}
+
+// =============================================================================
+// AUGMENTATION
+// =============================================================================
+
+import { WorldState } from "@tokovo/core";
+
+/**
+ * Get all {{APP_DISPLAY_NAME}} conversations with type safety.
+ */
+export function get{{APP_NAME}}Conversations(
+    world: WorldState
+): Record<string, {{APP_NAME}}Conversation> {
+    return world.conversations as Record<string, {{APP_NAME}}Conversation>;
+}
+
+/**
+ * Get a single conversation.
+ */
+export function get{{APP_NAME}}Conversation(
+    world: WorldState,
+    conversationId: string
+): {{APP_NAME}}Conversation | undefined {
+    return world.conversations[conversationId] as {{APP_NAME}}Conversation | undefined;
+}
+
+/**
+ * Get messages from a conversation.
+ */
+export function get{{APP_NAME}}Messages(
+    world: WorldState,
+    conversationId: string
+): {{APP_NAME}}Message[] {
+    const conv = get{{APP_NAME}}Conversation(world, conversationId);
+    return (conv?.messages || []) as {{APP_NAME}}Message[];
+}
+
+/**
+ * Get {{APP_DISPLAY_NAME}} app state.
+ */
+export function get{{APP_Name}}AppState(
+    world: WorldState
+): {{APP_NAME}}State | undefined {
+    return world.appState?.["app_{{APP_ID}}"] as {{APP_NAME}}State | undefined;
+}

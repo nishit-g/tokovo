@@ -1,0 +1,104 @@
+/**
+ * {{APP_DISPLAY_NAME}} Plugin - Enterprise Contract
+ * 
+ * Self-contained plugin with all tiers:
+ * - Tier A: id, version, displayName, reducer, views
+ * - Tier B: lowering handler
+ * - Tier C: DSL extension (b.use() pattern)
+ * 
+ * @see docs/PLUGIN_ARCHITECTURE.md Section 5.1
+ */
+
+import { APP_IDS, PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
+import { {{APP_ID}}Reducer } from "./logic/reducer";
+import { {{APP_NAME}}View } from "./ui";
+import { {{APP_ID}}Lowering } from "./lowering";
+import { {{APP_ID}}Dsl, {{APP_NAME}}DslApi } from "./dsl-extension";
+
+// =============================================================================
+// PLUGIN VIEWS
+// =============================================================================
+
+const {{APP_ID}}Views: PluginViews = {
+    AppRoot: {{APP_NAME}}View as any,
+    strategies: {
+        ios: {
+            MainScreen: {{APP_NAME}}View as any,
+        },
+        android: {
+            MainScreen: {{APP_NAME}}View as any,
+        },
+    },
+};
+
+// =============================================================================
+// PLUGIN ASSETS
+// =============================================================================
+
+const {{APP_ID}}Assets = {
+    sounds: {
+        // Add sound mappings here
+        // "notification": "/audio/app_{{APP_ID}}/notification.mp3",
+    },
+    icons: {
+        "app_icon": "/icons/{{APP_ID}}.svg",
+    },
+};
+
+// =============================================================================
+// INITIAL STATE
+// =============================================================================
+
+function create{{APP_NAME}}InitialState() {
+    return {
+        currentScreen: "main" as const,
+        // Add initial state properties here
+    };
+}
+
+// =============================================================================
+// ENTERPRISE PLUGIN CONTRACT
+// =============================================================================
+
+export const {{APP_NAME}}PluginV2: TokovoPluginContract<"app_{{APP_ID}}"> & { 
+    appView: any; 
+    name: string; 
+} = {
+    // === TIER A: Identity ===
+    id: "app_{{APP_ID}}" as const,
+    version: "2.0.0",
+    displayName: "{{APP_DISPLAY_NAME}}",
+    name: "{{APP_DISPLAY_NAME}}",  // Legacy field for PluginManager
+
+    // === TIER A: Runtime ===
+    reducer: {{APP_ID}}Reducer as any,
+    views: {{APP_ID}}Views,
+    appView: {{APP_NAME}}View as any,  // Legacy field for PluginManager
+
+    // === TIER A: Assets ===
+    assets: {{APP_ID}}Assets,
+
+    // === TIER A: Initial State ===
+    createInitialState: create{{APP_NAME}}InitialState,
+
+    // === TIER B: Lowering ===
+    lowering: {{APP_ID}}Lowering,
+
+    // === TIER C: DSL ===
+    dsl: {{APP_ID}}Dsl,
+};
+
+// =============================================================================
+// LEGACY EXPORTS
+// =============================================================================
+
+export { {{APP_NAME}}PluginV2 as {{APP_NAME}}Plugin };
+
+export function register{{APP_NAME}}Plugin(): void {
+    PluginManager.register({{APP_NAME}}PluginV2 as any);
+}
+
+export type { {{APP_NAME}}DslApi };
+
+export default {{APP_NAME}}PluginV2;
