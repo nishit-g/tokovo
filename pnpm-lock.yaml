@@ -26,12 +26,6 @@ importers:
       '@remotion/cli':
         specifier: 4.0.380
         version: 4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-      '@tokovo/apps-phone':
-        specifier: workspace:*
-        version: link:../../packages/apps-phone
-      '@tokovo/apps-twitter':
-        specifier: workspace:*
-        version: link:../../packages/apps-twitter
       '@tokovo/apps-whatsapp':
         specifier: workspace:*
         version: link:../../packages/apps-whatsapp
@@ -41,9 +35,15 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@tokovo/device-calls':
+        specifier: workspace:*
+        version: link:../../packages/device-calls
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../../packages/device-keyboard
+      '@tokovo/device-notifications':
+        specifier: workspace:*
+        version: link:../../packages/device-notifications
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../../packages/devices
@@ -84,72 +84,6 @@ importers:
       prettier:
         specifier: ^3.0.0
         version: 3.7.3
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
-  packages/app-kit:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      '@tokovo/ir':
-        specifier: workspace:*
-        version: link:../ir
-      immer:
-        specifier: ^10.0.3
-        version: 10.2.0
-      react:
-        specifier: ^18.2.0
-        version: 18.2.0
-    devDependencies:
-      '@types/react':
-        specifier: ^18.2.0
-        version: 18.2.0
-      typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
-
-  packages/apps-phone:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      '@tokovo/devices':
-        specifier: workspace:*
-        version: link:../devices
-      react:
-        specifier: ^18.0.0
-        version: 18.2.0
-      remotion:
-        specifier: ^4.0.0
-        version: 4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
-    devDependencies:
-      '@types/react':
-        specifier: ^18.2.0
-        version: 18.2.0
-      typescript:
-        specifier: ^5.0.0
-        version: 5.9.3
-
-  packages/apps-twitter:
-    dependencies:
-      '@tokovo/core':
-        specifier: workspace:*
-        version: link:../core
-      immer:
-        specifier: ^10.0.0
-        version: 10.2.0
-      react:
-        specifier: 18.2.0
-        version: 18.2.0
-    devDependencies:
-      '@types/node':
-        specifier: ^20.0.0
-        version: 20.19.25
-      '@types/react':
-        specifier: 18.2.0
-        version: 18.2.0
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -209,6 +143,28 @@ importers:
         version: 20.19.25
       '@types/react':
         specifier: 18.2.0
+        version: 18.2.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
+  packages/device-calls:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      '@tokovo/devices':
+        specifier: workspace:*
+        version: link:../devices
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+      remotion:
+        specifier: ^4.0.0
+        version: 4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
+    devDependencies:
+      '@types/react':
+        specifier: ^18.2.0
         version: 18.2.0
       typescript:
         specifier: ^5.0.0
