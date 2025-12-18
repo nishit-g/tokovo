@@ -64,7 +64,9 @@ export { createKeyboardInitialState } from "./runtime/initial-state";
 
 export { KeyboardSurface } from "./views/KeyboardSurface";
 export { KeyboardStrategyRegistry, type KeyboardUIStrategy } from "./views/strategy";
-export * from "./views/ios";
+// Re-export iOS components (themes are in config/)
+export { IOSKeyboard, IOSKey, IOSKeyRow, IOSKeyPopup, IOSPredictionBar } from "./views/ios";
+export { IOSPrediction } from "./views/ios/prediction";
 
 // =============================================================================
 // CAMERA

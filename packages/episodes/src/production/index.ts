@@ -13,5 +13,6 @@
 // Import all production episodes (side-effect: auto-registers via defineEpisode)
 import "./track-demo.episode";
 import "./bakchodi-bros.episode";
+import "./keyboard-typing-demo.episode";
 
 // Add new episodes here as they are created

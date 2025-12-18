@@ -1,9 +1,9 @@
 import React from "react";
-import { KeyboardState, AppSurface } from "@tokovo/core";
-import { KeyboardRegistry } from "./core/registry";
+import { KeyboardState } from "@tokovo/core";
+import { KeyboardStrategyRegistry } from "./strategy";
 
 // Default Implementations
-import "./components/IOSKeyboard";
+import "./ios/IOSKeyboard";
 
 interface KeyboardSurfaceProps {
     keyboard: KeyboardState;
@@ -26,7 +26,8 @@ export const KeyboardSurface: React.FC<KeyboardSurfaceProps> = ({
     width,
     t
 }) => {
-    const View = KeyboardRegistry.get(platform) || KeyboardRegistry.get("ios");
+    const strategy = KeyboardStrategyRegistry.getOrDefault(platform);
+    const View = strategy?.Keyboard;
 
     if (!View) return null;
 
@@ -55,7 +56,7 @@ export const KeyboardSurface: React.FC<KeyboardSurfaceProps> = ({
                 transformOrigin: "bottom left",
                 pointerEvents: "auto", // Re-enable pointer events
             }}>
-                <View keyboard={keyboard} variant={variant} t={t} />
+                <View keyboard={keyboard as any} variant={variant} t={t} />
             </div>
         </div>
     );
