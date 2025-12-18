@@ -1,0 +1,581 @@
+# {{ displayName }} Plugin
+
+> {{ icon }} **Tokovo {{ displayName }} Integration** - Enterprise-grade app simulation
+
+---
+
+## Quick Start
+
+```bash
+# Install dependencies (already in workspace)
+npm install
+
+# Use in an episode
+import { {{ pascalCase name }}TrackBuilder } from "@tokovo/apps-{{ kebabCase name }}";
+```
+
+---
+
+## Table of Contents
+
+1. [Architecture Overview](#architecture-overview)
+2. [The Event Flow Pipeline](#the-event-flow-pipeline)
+3. [Mental Models](#mental-models)
+4. [DSL & IR Deep Dive](#dsl--ir-deep-dive)
+5. [Anchors & Camera System](#anchors--camera-system)
+6. [AppSurface & Scaling](#appsurface--scaling)
+7. [Widgets & Slots](#widgets--slots)
+8. [UI Strategy Pattern](#ui-strategy-pattern)
+9. [Directory Structure](#directory-structure)
+10. [Adding New Features](#adding-new-features)
+
+---
+
+## Architecture Overview
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│ TOKOVO ARCHITECTURE │
+├──────────┬───────────┬───────────┬──────────┬───────────┬─────────────┤
+│ DSL │ IR │ Compiler │ Engine │ Layout │ Renderer │
+│ (Author) │ (Schema) │ (Lowering)│ (Runtime)│ (Position)│ (Render) │
+└──────────┴───────────┴───────────┴──────────┴───────────┴─────────────┘
+↓ ↓ ↓ ↓ ↓ ↓
+"receive()" TrackEvent RuntimeEvent State Positions Pixels
+```
+
+### How Your Plugin Fits In
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ YOUR PLUGIN │
+├─────────────────────────────────────────────────────────────────┤
+│ dsl/ → DSL helpers (TrackBuilder) │
+│ ir/ → Event schemas (payloads.ts) │
+│ lowering/ → IR → RuntimeEvent translation │
+│ runtime/ → Reducer (event → state) │
+│ layout/ → State → positions computation │
+│ views/ → Positions → React components │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## The Event Flow Pipeline
+
+This is THE most important thing to understand.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│ 1. DSL (Author Time) │
+│ b.at(1000).receive({ from: "John", text: "Hello!" }) │
+│ │
+│ ↓ generates │
+│ │
+│ 2. IR Event (Intermediate Representation) │
+│ { kind: "APP", appId: "app_{{ snakeCase name }}", type: "MESSAGE_RECEIVED", │
+│ payload: { from: "John", text: "Hello!", conversationId: "..." }} │
+│ │
+│ ↓ lowering (compiler) │
+│ │
+│ 3. RuntimeEvent (What the engine sees) │
+│ { at: 1000, kind: "APP", appId: "app_{{ snakeCase name }}", │
+│ type: "MESSAGE_RECEIVED", conversationId: "...", from: "John" } │
+│ │
+│ ↓ dispatched by TokovoEngine │
+│ │
+│ 4. Reducer (State Machine) │
+│ reducer(worldState, event) → worldState with new message │
+│ │
+│ ↓ state change │
+│ │
+│ 5. Layout Engine │
+│ computeChatLayout(state) → { messageLayouts, scrollY, ... } │
+│ │
+│ ↓ positions │
+│ │
+│ 6. React Components │
+│
+<MessageBubble y={layout.y} height={layout.height} /> │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Mental Models
+
+### 🧠 DSL → IR: "What happens when"
+
+The DSL is **syntactic sugar**. When you write:
+
+```typescript
+b.at(1000).receive({ from: "John", text: "Hello!" });
+```
+
+It creates an **IR event**:
+
+```typescript
+{
+kind: "APP", // App-level event (vs OS-level)
+appId: "app_{{ snakeCase name }}", // This plugin handles it
+type: "MESSAGE_RECEIVED", // Event type (discriminant for union)
+at: 1000, // Frame number
+payload: { ... } // Type-safe payload
+}
+```
+
+**Think of it as:** "At frame 1000, {{ displayName }} receives a message from John."
+
+---
+
+### 🧠 IR → Lowering: "Translation layer"
+
+Lowering converts IR events to RuntimeEvents.
+
+**Why does it exist?**
+- Legacy support (V1 used TimelineOps with different structure)
+- Plugin-specific transformations
+- Validation and normalization
+
+**V2 lowering is simple** - mostly passthrough:
+
+```typescript
+// lowering/v2/handler.ts
+lower(event) {
+return [{
+at: event.at,
+kind: "APP",
+appId: event.appId,
+type: event.type,
+...event.payload,
+}];
+}
+```
+
+---
+
+### 🧠 Reducer: "State machine"
+
+Reducers are **pure functions**: `(state, event) → state`
+
+```typescript
+// runtime/reducer.ts
+function reducer(draft: WorldState, event: TimelineEvent) {
+// Switch on event type
+switch (event.type) {
+case "MESSAGE_RECEIVED":
+// Push message to conversation
+conversation.messages.push(newMessage);
+break;
+}
+}
+```
+
+**Key principles:**
+1. NEVER mutate input (Immer handles this)
+2. NEVER do async operations
+3. ALWAYS be deterministic (same input = same output)
+
+---
+
+### 🧠 Layout Engine: "Geometry computer"
+
+Given world state, computes **pixel positions** for all elements.
+
+```typescript
+// layout/chat.ts
+function computeChatLayout(ctx: LayoutContext): ChatLayoutState {
+// For each message, compute:
+return {
+messageLayouts: {
+"msg_1": { y: 48, height: 80, opacity: 1 },
+"msg_2": { y: 136, height: 60, opacity: 1 },
+},
+scrollY: 0,
+contentHeight: 300,
+};
+}
+```
+
+**Key principle:** Layout is **deterministic**. Same state = same positions.
+
+---
+
+## DSL & IR Deep Dive
+
+### The DSL Philosophy
+
+DSL = **Domain Specific Language**. It lets authors write episodes naturally:
+
+```typescript
+// ✅ GOOD: Natural, readable
+const wa = new {{ pascalCase name }}TrackBuilder(b);
+wa.at(1000).receive({ from: "John", text: "Hello!" });
+wa.at(2000).typingStart({ from: "John" });
+wa.at(3000).send({ text: "Hi there!" });
+
+// ❌ BAD: Too low-level
+b.track("app").point(1000, {
+kind: "APP", appId: "app_{{ snakeCase name }}", type: "MESSAGE_RECEIVED",
+payload: { from: "John", text: "Hello!", conversationId: "conv_1" }
+});
+```
+
+### IR: The Contract
+
+IR (Intermediate Representation) is the **contract** between DSL and engine.
+
+```typescript
+// ir/payloads.ts
+export interface {{ pascalCase name }}Payloads {
+MESSAGE_RECEIVED: { from: string; text: string; conversationId: string };
+MESSAGE_SENT: { text: string; conversationId: string };
+TYPING_START: { conversationId: string; actor: string };
+TYPING_END: { conversationId: string; actor: string };
+}
+```
+
+**Why type payloads?**
+1. Compile-time checking
+2. IDE autocomplete
+3. Self-documenting
+4. Discriminated unions for exhaustive switches
+
+---
+
+## Anchors & Camera System
+
+### What Are Anchors?
+
+Anchors are **named regions** that the camera can target.
+
+```
+┌─────────────────────────────────────────┐
+│ ┌─── "header" ───────────────────────┐ │
+│ │ Profile Picture Chat Name │ │
+│ └────────────────────────────────────┘ │
+│ │
+│ ┌──── "msg_1" (message) ────┐ │
+│ │ Hello! │ │
+│ └───────────────────────────┘ │
+│ │
+│ ┌──── "msg_2" (message)│
+│ │ Hi there! │
+│ └──────────────────────│
+│ │
+│ ┌──── "typing" ────┐ │
+│ │ • • • │ │
+│ └──────────────────┘ │
+│ │
+│ ┌─── "input" ────────────────────────┐ │
+│ │ Type a message... │ │
+│ └────────────────────────────────────┘ │
+└─────────────────────────────────────────┘
+```
+
+### DSL Usage
+
+```typescript
+// Focus on last message
+b.at(1000).camera.focus("lastMessage");
+
+// Pan to header
+b.at(2000).camera.pan("header");
+
+// Zoom with shake
+b.at(3000).camera.focus("lastMessage", { shot: "CLOSEUP", shake: 0.3 });
+```
+
+### How Anchors Are Computed
+
+```typescript
+// runtime/adapters/anchors.ts
+getAnchors(world, layout, deviceId) {
+const regions = layout.semantic.regions;
+const anchors = {};
+
+// Map regions to anchors
+for (const [key, region] of Object.entries(regions)) {
+anchors[key] = region.rect; // { x, y, width, height }
+}
+
+// Computed aliases
+if (layout.meta?.lastMessageId) {
+anchors["lastMessage"] = regions[layout.meta.lastMessageId].rect;
+}
+
+return { anchors, deviceId, appId: "app_{{ snakeCase name }}" };
+}
+```
+
+### Anchor Framing
+
+Each anchor type has framing parameters:
+
+```typescript
+// How the camera frames each anchor type
+const ANCHOR_FRAMING = {
+message: { anchorPoint: { x: 0.5, y: 0.5 }, paddingPx: 40, targetFill: 0.6 },
+typing: { anchorPoint: { x: 0.35, y: 0.5 }, paddingPx: 30, targetFill: 0.3 },
+profile: { anchorPoint: { x: 0.2, y: 0.15 }, paddingPx: 50, targetFill: 0.4 },
+};
+```
+
+---
+
+## AppSurface & Scaling
+
+### The Problem
+
+- **Design Resolution**: 393px (logical CSS)
+- **Export Resolution**: 1170px @ 3x retina
+- How do we make CSS pixels crisp on high-DPI export?
+
+### The Solution: AppSurface
+
+AppSurface applies a CSS `transform: scale(3)` to map logical → physical.
+
+```tsx
+<AppSurface designWidth={393} // Author in CSS pixels targetWidth={1170} // Export at 3x targetHeight={2532}>
+    <div style=\{{ fontSize: 16 }}>Hello</div> // Renders at 48px physical
+</AppSurface>
+```
+
+### How It Works
+
+```
+┌──────────────────────────────────────────────────────────┐
+│ DESIGN SPACE (393px) PHYSICAL SPACE (1170px) │
+│ ┌─────────────────┐ ┌─────────────────────────┐│
+│ │ fontSize: 16 │ ────► │ fontSize: 48 (crisp!) ││
+│ │ padding: 8 │ scale(3)│ padding: 24 ││
+│ │ width: 100 │ │ width: 300 ││
+│ └─────────────────┘ └─────────────────────────┘│
+└──────────────────────────────────────────────────────────┘
+```
+
+### Layout Config Units
+
+**IMPORTANT**: Layout config uses DEVICE pixels (3x).
+
+```typescript
+// config/layout-config.ts
+const LAYOUT_CONSTANTS = {
+LINE_HEIGHT: 66, // = 22px visible (66 / 3)
+FONT_SIZE: 51, // = 17px visible (51 / 3)
+BUBBLE_PADDING_V: 24, // = 8px visible
+};
+```
+
+**Why?** Layout engine computes positions in export resolution. AppSurface scales React CSS to match.
+
+---
+
+## Widgets & Slots
+
+### What Are Widgets?
+
+Widgets are **DSL-controllable UI elements** beyond messages:
+
+- Status bar (time, battery, signal)
+- Keyboard (visible, typing animation)
+- Notifications (heads-up, lock screen)
+- System UI (control center, action sheets)
+
+### What Are Slots?
+
+Slots are **placeholder regions** where content can be rendered:
+
+```
+┌────────────────────────────────────────┐
+│ [STATUS_BAR slot] │ ← Time, battery, signal
+├────────────────────────────────────────┤
+│ [HEADER slot] │ ← App header
+├────────────────────────────────────────┤
+│ │
+│ [CONTENT slot] │ ← Messages, content
+│ │
+├────────────────────────────────────────┤
+│ [INPUT slot] │ ← Text input
+├────────────────────────────────────────┤
+│ [KEYBOARD slot] │ ← On-screen keyboard
+└────────────────────────────────────────┘
+```
+
+### DSL Control
+
+Every visible element should be controllable:
+
+```typescript
+// Good: DSL controls everything
+b.at(1000).keyboard.show();
+b.at(1500).keyboard.type("Hello");
+b.at(2000).notification.show({ title: "New message", body: "..." });
+
+// Bad: Hard-coded in component
+const [showKeyboard, setShowKeyboard] = useState(false); // ❌ No DSL control!
+```
+
+### Design Principle
+
+> **If it's visible, it comes from WorldState.**
+> **If it changes, it's an Event.**
+
+---
+
+## UI Strategy Pattern
+
+### The Pattern
+
+```typescript
+// Define interface
+interface UIStrategy {
+Header: React.FC<HeaderProps>;
+    MessageBubble: React.FC<MessageBubbleProps>;
+        InputArea: React.FC<InputAreaProps>;
+            tokens: UIThemeTokens;
+            }
+
+            // iOS implementation
+            const IOSStrategy: UIStrategy = {
+            Header: IOSHeader,
+            MessageBubble: IOSMessageBubble,
+            ...
+            };
+
+            // Android implementation
+            const AndroidStrategy: UIStrategy = {
+            Header: AndroidHeader,
+            MessageBubble: AndroidMessageBubble,
+            ...
+            };
+
+            // Usage in screen
+            const strategy = UIStrategyRegistry.forPlatform("ios");
+            <strategy.Header conversation={conv} />
+            ```
+
+            ### Adding a Custom Theme (e.g., Ghibli)
+
+            1. Create `views/themes/ghibli/strategy.tsx`
+            2. Implement UIStrategy interface
+            3. Register with `UIStrategyRegistry.register(GhibliStrategy)`
+            4. Use: `UIStrategyRegistry.get("{{ kebabCase name }}-ghibli")`
+
+            ---
+
+            ## Directory Structure
+
+            ```
+            src/
+            ├── plugin.ts # 🎯 Entry point (plugin contract)
+            ├── index.ts # 📤 Public exports
+            │
+            ├── types/ # 📋 Type definitions
+            │ ├── messages.ts # Message types
+            │ ├── conversation.ts # Conversation types
+            │ ├── state.ts # App state types
+            │ └── index.ts # Barrel export
+            │
+            ├── config/ # ⚙️ Configuration
+            │ ├── layout-config.ts # Heights, widths, spacing
+            │ ├── theme.ts # Colors, tokens
+            │ └── index.ts # Barrel export
+            │
+            ├── runtime/ # 🔄 State management
+            │ ├── reducer.ts # Event → State
+            │ ├── initial-state.ts # State factory
+            │ ├── selectors.ts # State queries
+            │ └── adapters/ # External integrations
+            │ ├── anchors.ts # Camera anchor provider
+            │ └── index.ts # Barrel export
+            │
+            ├── views/ # 🎨 UI Layer
+            │ ├── strategy.ts # UIStrategy interface + Registry
+            │ ├── ios/ # iOS platform
+            │ │ └── strategy.tsx # iOS implementation
+            │ ├── android/ # Android platform
+            │ │ └── strategy.tsx # Android implementation
+            │ └── themes/ # Custom themes
+            │
+            ├── ir/ # 📜 Intermediate Representation
+            │ ├── payloads.ts # Event payload types
+            │ └── index.ts # Barrel export
+            │
+            ├── lowering/ # 🔧 Compiler integration
+            │ ├── v2/handler.ts # V2 lowering
+            │ └── index.ts # Barrel export
+            │
+            ├── dsl/ # ✏️ Authoring DSL
+            │ ├── track-builder.ts # TrackBuilder class
+            │ ├── extension.ts # b.use() API
+            │ └── index.ts # Barrel export
+            │
+            ├── camera/ # 🎬 Director system
+            │ ├── director.ts # Event → Camera intent
+            │ └── index.ts # Barrel export
+            │
+            ├── layout/ # 📐 Layout computation
+            │ ├── chat.ts # Chat layout algorithm
+            │ └── index.ts # Barrel export
+            │
+            └── assets/ # 🎵 Static assets
+            └── audio-rules.ts # Sound triggers
+            ```
+
+            ---
+
+            ## Adding New Features
+
+            ### Adding a New Event Type
+
+            1. **Add payload type** in `ir/payloads.ts`:
+            ```typescript
+            REACTION_ADDED: { messageId: string; emoji: string; fromMe: boolean };
+            ```
+
+            2. **Add DSL method** in `dsl/track-builder.ts`:
+            ```typescript
+            react(opts: { messageId: string; emoji: string }) {
+            // Create IR event
+            }
+            ```
+
+            3. **Handle in reducer** in `runtime/reducer.ts`:
+            ```typescript
+            case "REACTION_ADDED":
+            // Update message.reactions
+            ```
+
+            4. **Update layout** if needed in `layout/chat.ts`
+
+            5. **Update UI** in views components
+
+            ### Adding a New Message Type
+
+            1. Add type to `types/messages.ts`
+            2. Add layout config to `config/layout-config.ts`
+            3. Handle in reducer
+            4. Add UI component
+            5. Optionally add DSL helper
+
+            ---
+
+            ## Design Principles Summary
+
+            | Principle | Why |
+            |-----------|-----|
+            | **State from WorldState** | DSL controls everything |
+            | **Events are atomic** | Deterministic playback |
+            | **Layout is pure** | Same input = same output |
+            | **Strategies are swappable** | Multi-platform support |
+            | **Anchors are semantic** | Camera targets by name |
+            | **Config is centralized** | Single source of truth |
+
+            ---
+
+            **Generated by:** `npx turbo gen plugin`
+
+            **Theme Color:** {{ themeColor }}
+
+            **Icon:** {{ icon }}
