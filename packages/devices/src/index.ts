@@ -1,25 +1,115 @@
+/**
+ * @tokovo/devices
+ * 
+ * Enterprise device profiles and OS features for Tokovo.
+ * 
+ * @example
+ * ```typescript
+ * import { DeviceRegistry, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
+ * 
+ * // Use registered profile
+ * const profile = DeviceRegistry.get("iphone16");
+ * 
+ * // Use DSL for OS events
+ * const device = new DeviceTrackBuilder(30, "phone", getOrder);
+ * device.at("2s").lock();
+ * device.at("5s").unlock();
+ * device.at("10s").openApp("app_whatsapp");
+ * ```
+ */
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
 export * from "./types";
-export * from "./registry";
-export * from "./iphone16/profile";
-export * from "./iphone16/Frame";
-export * from "./iphone16/shell";
-export * from "./pixel/profile";
-export * from "./pixel/Frame";
-export * from "./pixel/Frame";
-export * from "./reducer";
-export * from "./StatusBar";
+export type { FrameProps, FrameComponent } from "./registries";
+export type { StatusBarStrategyProps, StatusBarStrategyComponent, StatusBarNotificationIcon } from "./registries";
+export type { DeviceTrackEvent, DeviceEventType } from "./ir";
+
+// =============================================================================
+// REGISTRIES
+// =============================================================================
+
+export {
+    DeviceRegistry,
+    FrameRegistry,
+    StatusBarStrategyRegistry,
+} from "./registries";
+
+// =============================================================================
+// DSL
+// =============================================================================
+
+export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl";
+
+// =============================================================================
+// IR
+// =============================================================================
+
+export { isDeviceEvent } from "./ir";
+
+// =============================================================================
+// LOWERING
+// =============================================================================
+
+export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering";
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export { deviceReducer } from "./reducer";
+
+// =============================================================================
+// VIEWS
+// =============================================================================
+
+export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar";
+
+// =============================================================================
+// STRATEGIES
+// =============================================================================
+
+export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
+
+// =============================================================================
+// DEVICE PROFILES
+// =============================================================================
+
+export { iPhone16Profile } from "./iphone16/profile";
+export { iPhone16Frame } from "./iphone16/Frame";
+export { iPhone16Shell } from "./iphone16/shell";
+
+export { PixelProfile } from "./pixel/profile";
+export { PixelFrame } from "./pixel/Frame";
+
+// =============================================================================
+// KEYBOARDS (Legacy export)
+// =============================================================================
+
 export * from "./keyboards";
 
-// Device profile registry for dynamic lookup
-import { DeviceProfile } from "./types";
-import { iPhone16Profile } from "./iphone16/profile";
-import { PixelProfile } from "./pixel/profile";
+// =============================================================================
+// PLUGIN
+// =============================================================================
 
-const deviceProfileRegistry: Record<string, DeviceProfile> = {
-    "iphone16": iPhone16Profile,
-    "pixel": PixelProfile,
-    "pixel9": PixelProfile,
-};
+export { DevicesPlugin, registerDevicesPlugin, type DevicesPluginContract } from "./plugin";
+
+// =============================================================================
+// AUTO-REGISTRATION
+// =============================================================================
+
+import { registerDevicesPlugin } from "./plugin";
+registerDevicesPlugin();
+
+// =============================================================================
+// DYNAMIC LOOKUP HELPER
+// =============================================================================
+
+import { DeviceRegistry } from "./registries";
+import { iPhone16Profile } from "./iphone16/profile";
+import type { DeviceProfile } from "./types";
 
 /**
  * Get device profile by ID
@@ -27,5 +117,5 @@ const deviceProfileRegistry: Record<string, DeviceProfile> = {
  * @returns DeviceProfile or default iPhone16Profile if not found
  */
 export function getDeviceProfile(profileId: string): DeviceProfile {
-    return deviceProfileRegistry[profileId] || iPhone16Profile;
+    return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
 }

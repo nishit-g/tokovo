@@ -38,7 +38,6 @@ export const PixelProfile: DeviceProfile = {
         ppi: 512,
         cornerRadius: 24, // Approximation
     },
-    statusBarHeight: 90,
     camera: PixelCamera,
     pixelDensity: 3,
 
@@ -48,5 +47,13 @@ export const PixelProfile: DeviceProfile = {
         topY: 24,
         maxWidth: 200,
         height: 66,
+    },
+
+    // Device OS sounds
+    sounds: {
+        "device.notification": "os/android/notification.ogg",
+        "device.lock": "os/android/lock.ogg",
+        "device.unlock": "os/android/unlock.ogg",
+        "device.keyboard": "os/android/keyboard.ogg",
     },
 };

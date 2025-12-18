@@ -23,11 +23,9 @@ import {
     HeadsUpNotification,
     NotificationInstance
 } from "@tokovo/device-notifications";
-// import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
-import { DeviceRegistry } from "@tokovo/devices";
+import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./overlays";
-// import { CallOverlay } from "./CallOverlay"; // REMOVED: Now using PluginManager.getView(APP_IDS.PHONE)
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
 import { DynamicIsland } from "./os";
@@ -151,11 +149,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     // 5. RENDER — Paint the blueprints
     // ==========================================================================
 
-    // Resolve Device Shell
-    const shell = DeviceRegistry.get(device.profileId) || DeviceRegistry.get("iphone16");
-    if (!shell) return null; // Should not happen with fallback
-
-    const { FrameComponent, StatusBarComponent } = shell;
+    // Resolve Device Frame from registry (with fallback to iPhone16)
+    const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
 
     return (
         <div style={{
@@ -167,7 +162,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             <div style={cameraStyle}>
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <FrameComponent statusBar={<StatusBarComponent os={device.os} variant={variant} />}>
+                    <FrameComponent statusBar={<StatusBar os={device.os} variant={variant} />}>
 
                         {/* ========================================================================= */}
                         {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
@@ -278,7 +273,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         )}
 
                         {/* Dynamic Island (iOS) - Slot Based */}
-                        {shell.hasDynamicIsland && !device.isLocked && !hasActiveCall && (
+                        {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
                             <DynamicIsland
                                 device={device}
                                 deviceProfile={profile}
