@@ -31,7 +31,7 @@ export { HomeScreenView } from "./screens";
 // ===========================================================================
 export { DynamicIsland } from "./os";
 export { NotificationShade } from "./os";
-export { HeadsUpNotification } from "./os";
+// HeadsUpNotification is now in @tokovo/device-notifications
 
 // ===========================================================================
 // LAYOUT SYSTEM

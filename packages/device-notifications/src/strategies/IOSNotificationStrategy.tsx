@@ -1,15 +1,18 @@
 
 import React from 'react';
 import { AppMetadataRegistry, NotificationViewRegistry } from "@tokovo/core";
-import { NotificationStrategyProps } from "./types";
+import type { NotificationInstance } from "../types";
+
+interface NotificationStrategyProps {
+    notification: NotificationInstance;
+}
 
 export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ notification }) => {
-    // Support both structures: notification.ir (legacy) or flat notification object (new)
-    const ir = notification.ir || notification;
-    const appMeta = AppMetadataRegistry.get(ir.appId);
+    // Use flat notification structure - no more ir fallback
+    const appMeta = AppMetadataRegistry.get(notification.appId);
 
     // Check registry for custom view (App Content)
-    const CustomView = NotificationViewRegistry.get(ir.appId);
+    const CustomView = NotificationViewRegistry.get(notification.appId);
 
     return (
         <div style={{
@@ -73,9 +76,9 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                 ) : (
                     // SMART CONTENT RENDERER
                     (() => {
-                        const isMessage = ir.category === 'message' || !!ir.icon;
-                        const hasCustomIcon = !!ir.icon;
-                        const isEmoji = hasCustomIcon && /^\p{Emoji}/u.test(ir.icon || "");
+                        const isMessage = notification.category === 'message' || !!notification.icon;
+                        const hasCustomIcon = !!notification.icon;
+                        const isEmoji = hasCustomIcon && /^\p{Emoji}/u.test(notification.icon || "");
 
                         if (isMessage && hasCustomIcon) {
                             return (
@@ -99,15 +102,15 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                                         fontSize: 20,
                                         overflow: "hidden"
                                     }}>
-                                        {isEmoji ? ir.icon : (
+                                        {isEmoji ? notification.icon : (
                                             <span style={{ color: "#999", fontSize: 16, fontWeight: 600 }}>
-                                                {ir.title.charAt(0)}
+                                                {notification.title.charAt(0)}
                                             </span>
                                         )}
                                     </div>
 
                                     <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 15, fontWeight: 600 }}>{ir.title}</div>
+                                        <div style={{ fontSize: 15, fontWeight: 600 }}>{notification.title}</div>
                                         <div style={{
                                             fontSize: 15,
                                             opacity: 0.9,
@@ -117,7 +120,7 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                                             WebkitBoxOrient: "vertical",
                                             overflow: "hidden"
                                         }}>
-                                            {ir.body}
+                                            {notification.body}
                                         </div>
                                     </div>
                                 </div>
@@ -127,8 +130,8 @@ export const IOSNotificationStrategy: React.FC<NotificationStrategyProps> = ({ n
                         // Standard Layout
                         return (
                             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                <div style={{ fontSize: 15, fontWeight: 600 }}>{ir.title}</div>
-                                <div style={{ fontSize: 15, opacity: 0.9, lineHeight: 1.25 }}>{ir.body}</div>
+                                <div style={{ fontSize: 15, fontWeight: 600 }}>{notification.title}</div>
+                                <div style={{ fontSize: 15, opacity: 0.9, lineHeight: 1.25 }}>{notification.body}</div>
                             </div>
                         );
                     })()

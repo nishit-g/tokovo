@@ -99,164 +99,19 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
                 break;
 
             // =================================================================
-            // NOTIFICATION EVENTS (IR-compliant)
+            // NOTIFICATION EVENTS - DELEGATED TO @tokovo/device-notifications
+            // The following cases are intentionally removed/commented out.
+            // See: packages/device-notifications/src/reducer.ts
             // =================================================================
 
-            case "SHOW_NOTIFICATION": {
-                const e = event as any;
-                const notification: Notification = {
-                    id: generateNotificationId(e),
-                    deviceId: e.deviceId,
-                    appId: e.appId,
-                    title: e.title,
-                    body: e.body,
-                    at: e.at,
-                    deliveredAt: e.at,
-                    state: e.mode === "silent" ? "inShade" : "headsUp",
-                    mode: e.mode || "both",
-                    priority: e.priority || "active",
-                    deliverWhen: e.deliverWhen || "always",
-                    groupKey: e.groupKey,
-                    threadId: e.threadId,
-                    icon: e.icon,
-                    preview: e.preview,
-                    actions: e.actions,
-                    replyable: e.replyable,
-                    metadata: e.metadata,
-                    headsUp: e.mode !== "silent" ? {
-                        shownAt: e.at,
-                        duration: IOS_NOTIFICATION_POLICY.headsUpDurationByPriority[(e.priority || "active") as NotificationPriority],
-                    } : undefined,
-                };
-
-                // Add to items
-                device.notificationCenter!.items.push(notification);
-
-                // Legacy array
-                if (!device.notifications) device.notifications = [];
-                device.notifications.push(notification);
-
-                // Set as headsUp if not silent
-                if (notification.state === "headsUp") {
-                    const currentHeadsUp = device.notificationCenter!.headsUp;
-                    if (!currentHeadsUp) {
-                        device.notificationCenter!.headsUp = notification.id;
-                    } else {
-                        // Queue it
-                        device.notificationCenter!.headsUpQueue.push(notification.id);
-                    }
-                }
-
-                // Update groups
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "UPDATE_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    Object.assign(item, e.patch);
-                    item.updatedAt = e.at;
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "DISMISS_NOTIFICATION": {
-                const e = event as any;
-                if (e.all) {
-                    device.notificationCenter!.items.forEach(n => {
-                        n.state = "dismissed";
-                        n.dismissedAt = e.at;
-                    });
-                    device.notificationCenter!.headsUp = null;
-                    device.notificationCenter!.headsUpQueue = [];
-                } else if (e.groupKey) {
-                    device.notificationCenter!.items.filter(n => n.groupKey === e.groupKey).forEach(n => {
-                        n.state = "dismissed";
-                        n.dismissedAt = e.at;
-                    });
-                } else if (e.notificationId) {
-                    const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                    if (item) {
-                        item.state = "dismissed";
-                        item.dismissedAt = e.at;
-                    }
-                    // Clear headsUp if dismissed
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-
-                // Legacy
-                if (device.notifications && e.notificationId) {
-                    const notif = device.notifications.find(n => n.id === e.notificationId);
-                    if (notif) notif.dismissedAt = e.at;
-                }
-                break;
-            }
-
-            case "TAP_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    // Transition: headsUp → inShade (or dismissed)
-                    item.state = "inShade";
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                    // Open the app
-                    device.foregroundAppId = item.appId;
-                }
-                break;
-            }
-
-            case "SWIPE_NOTIFICATION": {
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item && (e.action === "dismiss" || e.direction === "right")) {
-                    item.state = "dismissed";
-                    item.dismissedAt = e.at;
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                device.notificationCenter!.groups = computeGroups(device.notificationCenter!.items);
-                break;
-            }
-
-            case "REPLY_NOTIFICATION": {
-                // App-level handling - reducer just marks as replied
-                const e = event as any;
-                const item = device.notificationCenter!.items.find(n => n.id === e.notificationId);
-                if (item) {
-                    item.metadata = { ...item.metadata, replied: true, replyText: e.text };
-                    item.state = "inShade";
-                    if (device.notificationCenter!.headsUp === e.notificationId) {
-                        device.notificationCenter!.headsUp = device.notificationCenter!.headsUpQueue.shift() || null;
-                    }
-                }
-                break;
-            }
-
-            case "TOGGLE_NOTIFICATION_PANEL": {
-                // Will be used by renderer to show/hide panel
-                // State managed in renderer, but we could add panelOpen to DeviceState if needed
-                break;
-            }
-
-            case "CLEAR_ALL_NOTIFICATIONS": {
-                device.notificationCenter!.items.forEach(n => {
-                    n.state = "dismissed";
-                    n.dismissedAt = event.at;
-                });
-                device.notificationCenter!.headsUp = null;
-                device.notificationCenter!.headsUpQueue = [];
-                device.notificationCenter!.groups = [];
-                break;
-            }
+            // case "SHOW_NOTIFICATION": - handled by device-notifications
+            // case "UPDATE_NOTIFICATION": - handled by device-notifications
+            // case "DISMISS_NOTIFICATION": - handled by device-notifications
+            // case "TAP_NOTIFICATION": - handled by device-notifications
+            // case "SWIPE_NOTIFICATION": - handled by device-notifications
+            // case "REPLY_NOTIFICATION": - handled by device-notifications
+            // case "TOGGLE_NOTIFICATION_PANEL": - handled by device-notifications
+            // case "CLEAR_ALL_NOTIFICATIONS": - handled by device-notifications
 
             case "SET_DYNAMIC_ISLAND": {
                 const e = event as any;

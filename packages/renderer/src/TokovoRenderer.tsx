@@ -12,19 +12,21 @@
 import React from "react";
 import {
     WorldState,
-    NotificationInstance,
     EventIndex,
     PluginManager,
     PluginManagerClass,
     APP_IDS,
-    NotificationScheduler,
     AppSurface
 } from "@tokovo/core";
+import {
+    NotificationScheduler,
+    HeadsUpNotification,
+    NotificationInstance
+} from "@tokovo/device-notifications";
 // import { DeviceFrame } from "./DeviceFrame"; // <-- Now using Registry
 import { DeviceRegistry } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./overlays";
-import { HeadsUpNotification } from "./os";
 // import { CallOverlay } from "./CallOverlay"; // REMOVED: Now using PluginManager.getView(APP_IDS.PHONE)
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";

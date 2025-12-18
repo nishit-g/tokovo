@@ -106,6 +106,20 @@ export {
 } from "./plugin";
 
 // =============================================================================
+// SCHEDULER
+// =============================================================================
+
+export { NotificationScheduler } from "./scheduler";
+
+// =============================================================================
+// VIEWS
+// =============================================================================
+
+export { HeadsUpNotification } from "./views/HeadsUpNotification";
+export { IOSNotificationStrategy } from "./strategies/IOSNotificationStrategy";
+export { AndroidNotificationStrategy } from "./strategies/AndroidNotificationStrategy";
+
+// =============================================================================
 // AUTO-REGISTRATION
 // =============================================================================
 

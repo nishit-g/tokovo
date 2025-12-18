@@ -5,6 +5,7 @@
  */
 
 import { notificationAudioRules, defaultNotificationSounds } from "./assets/audio-rules";
+import { notificationReducer, NOTIFICATION_EVENT_TYPES } from "./reducer";
 
 // =============================================================================
 // PLUGIN CONTRACT
@@ -21,17 +22,7 @@ export const NotificationPlugin = {
         themeColor: "#FF3B30",
     },
 
-    eventTypes: [
-        "NOTIFICATION_SHOW",
-        "NOTIFICATION_DISMISS",
-        "NOTIFICATION_TAP",
-        "NOTIFICATION_SWIPE",
-        "NOTIFICATION_DYNAMIC_ISLAND",
-        "NOTIFICATION_OPEN_PANEL",
-        "NOTIFICATION_CLOSE_PANEL",
-        "NOTIFICATION_CLEAR_ALL",
-        "NOTIFICATION_REPLY",
-    ],
+    eventTypes: NOTIFICATION_EVENT_TYPES,
 
     sounds: defaultNotificationSounds,
 };
@@ -55,9 +46,12 @@ export function registerNotificationPlugin(): void {
         AutoSoundRegistry,
         SoundRegistry
     }) => {
-        // Register reducer for notification events
-        // Note: Core already has notification handling in engine
-        // We just need to register audio rules and sounds
+        // ★ CRITICAL: Register the reducer for each notification event type
+        // Feature reducers are keyed by their event type prefix
+        NOTIFICATION_EVENT_TYPES.forEach(eventType => {
+            ReducerRegistry.registerFeatureReducer(eventType, notificationReducer);
+        });
+        console.log("[NotificationPlugin] Registered reducer for", NOTIFICATION_EVENT_TYPES.length, "event types");
 
         // Register audio rules
         AutoSoundRegistry.register(notificationAudioRules as any);

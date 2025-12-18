@@ -1,15 +1,18 @@
 
 import React from 'react';
 import { AppMetadataRegistry, NotificationViewRegistry } from "@tokovo/core";
-import { NotificationStrategyProps } from "./types";
+import type { NotificationInstance } from "../types";
+
+interface NotificationStrategyProps {
+    notification: NotificationInstance;
+}
 
 export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = ({ notification }) => {
-    // Support both structures: notification.ir (legacy) or flat notification object (new)
-    const ir = notification.ir || notification;
-    const appMeta = AppMetadataRegistry.get(ir.appId);
+    // Use flat notification structure - no more ir fallback
+    const appMeta = AppMetadataRegistry.get(notification.appId);
 
     // Check registry for custom view (App Content)
-    const CustomView = NotificationViewRegistry.get(ir.appId);
+    const CustomView = NotificationViewRegistry.get(notification.appId);
 
     return (
         <div style={{
@@ -34,9 +37,9 @@ export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = 
             }}>
                 {/* App Icon */}
                 <div style={{
-                    width: 34, // Slightly smaller on Android
+                    width: 34,
                     height: 34,
-                    borderRadius: 99, // Circle
+                    borderRadius: 99,
                     background: appMeta.themeColor,
                     display: "flex",
                     justifyContent: "center",
@@ -65,15 +68,12 @@ export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = 
             {/* APP CONTENT LAYER */}
             <div style={{ width: "100%" }}>
                 {CustomView ? (
-                    <CustomView notification={notification} isExpanded={true} />
+                    <CustomView notification={notification as any} isExpanded={true} />
                 ) : (
                     // SMART CONTENT RENDERER
                     (() => {
-                        const hasCustomIcon = !!ir.icon;
-                        const isEmoji = hasCustomIcon && /^\p{Emoji}/u.test(ir.icon || "");
-
-                        // Android style: Avatar usually on right, but for consistency we keep similar layout
-                        // or follow standard Android big text style
+                        const hasCustomIcon = !!notification.icon;
+                        const isEmoji = hasCustomIcon && /^\p{Emoji}/u.test(notification.icon || "");
 
                         if (hasCustomIcon) {
                             return (
@@ -85,8 +85,8 @@ export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = 
                                     marginTop: 6
                                 }}>
                                     <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                                        <div style={{ fontSize: 32, fontWeight: 600 }}>{ir.title}</div>
-                                        <div style={{ fontSize: 30, opacity: 0.9 }}>{ir.body}</div>
+                                        <div style={{ fontSize: 32, fontWeight: 600 }}>{notification.title}</div>
+                                        <div style={{ fontSize: 30, opacity: 0.9 }}>{notification.body}</div>
                                     </div>
 
                                     <div style={{
@@ -101,9 +101,9 @@ export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = 
                                         fontSize: 24,
                                         overflow: "hidden"
                                     }}>
-                                        {isEmoji ? ir.icon : (
+                                        {isEmoji ? notification.icon : (
                                             <span style={{ color: "#ccc", fontSize: 20, fontWeight: 600 }}>
-                                                {ir.title.charAt(0)}
+                                                {notification.title.charAt(0)}
                                             </span>
                                         )}
                                     </div>
@@ -114,8 +114,8 @@ export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = 
                         // Standard Layout
                         return (
                             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                <div style={{ fontSize: 32, fontWeight: 600 }}>{ir.title}</div>
-                                <div style={{ fontSize: 30, opacity: 0.9 }}>{ir.body}</div>
+                                <div style={{ fontSize: 32, fontWeight: 600 }}>{notification.title}</div>
+                                <div style={{ fontSize: 30, opacity: 0.9 }}>{notification.body}</div>
                             </div>
                         );
                     })()

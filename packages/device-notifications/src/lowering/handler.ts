@@ -44,6 +44,7 @@ export function notificationV2Lowering(
     if (event.type === "NOTIFICATION_OPEN_PANEL") {
         return [{
             ...eventData,
+            kind: "DEVICE",
             type: mappedType,
             open: true,
         }];
@@ -52,6 +53,7 @@ export function notificationV2Lowering(
     if (event.type === "NOTIFICATION_CLOSE_PANEL") {
         return [{
             ...eventData,
+            kind: "DEVICE",
             type: mappedType,
             open: false,
         }];
@@ -61,6 +63,7 @@ export function notificationV2Lowering(
     if (event.type === "NOTIFICATION_DYNAMIC_ISLAND") {
         return [{
             ...eventData,
+            kind: "DEVICE",
             type: mappedType,
             visible: event.mode !== "idle",
             mode: event.mode,
@@ -69,6 +72,7 @@ export function notificationV2Lowering(
 
     return [{
         ...eventData,
+        kind: "DEVICE",
         type: mappedType,
     }];
 }

@@ -65,36 +65,101 @@ export interface NotificationIR {
 }
 
 // =============================================================================
-// NOTIFICATION INSTANCE (Runtime State)
+// NOTIFICATION INSTANCE (Runtime State - Canonical Shape)
 // =============================================================================
+
+export type NotificationState = "pending" | "headsUp" | "inShade" | "dismissed";
 
 /**
  * NotificationInstance - Runtime representation with frame timing
+ * 
+ * This is the CANONICAL shape used throughout the system.
+ * Contains all IR fields PLUS runtime timing/state fields.
  */
 export interface NotificationInstance {
+    // === IDENTITY ===
     /** Unique ID */
     id: string;
-
-    /** The IR definition */
-    ir: NotificationIR;
 
     /** Device this notification is on */
     deviceId: string;
 
-    /** Frame when shown */
-    shownAtFrame: number;
+    /** App that owns this notification */
+    appId: string;
+
+    // === CONTENT (from IR) ===
+    /** Notification title */
+    title: string;
+
+    /** Notification body text */
+    body: string;
+
+    /** App icon (URL or emoji) */
+    icon?: string;
+
+    /** Preview content */
+    preview?: {
+        kind: "text" | "image" | "video";
+        value: string;
+        aspectRatio?: number;
+    };
+
+    /** Action buttons */
+    actions?: Array<{
+        id: string;
+        label: string;
+        icon?: string;
+        destructive?: boolean;
+    }>;
+
+    /** Can reply inline */
+    replyable?: boolean;
+
+    /** Category (for smart rendering) */
+    category?: string;
+
+    /** App-specific metadata */
+    metadata?: Record<string, any>;
+
+    // === GROUPING ===
+    /** Group key for stacking */
+    groupKey?: string;
+
+    /** Thread ID for conversations */
+    threadId?: string;
+
+    // === TIMING ===
+    /** Frame when created/delivered */
+    createdAtFrame: number;
+
+    /** Frame when shown as heads-up (computed by scheduler) */
+    shownAtFrame?: number;
+
+    /** Frame when dismissed */
+    dismissedAtFrame?: number;
+
+    // === STATE ===
+    /** Current state */
+    state: NotificationState;
 
     /** Display mode */
     mode: NotificationMode;
 
-    /** Frame when dismissed (undefined = still showing) */
-    dismissedAt?: number;
+    /** Priority level */
+    priority: NotificationPriority;
+
+    /** Delivery condition */
+    deliverWhen?: "always" | "unlocked" | "locked";
 
     /** Has been tapped */
     tapped?: boolean;
 
     /** Animation state */
     animationState?: "entering" | "visible" | "exiting" | "dismissed";
+
+    // === OPTIONAL: Legacy nested structure (for backward compat) ===
+    /** @deprecated - Use top-level fields instead */
+    ir?: NotificationIR;
 }
 
 // =============================================================================

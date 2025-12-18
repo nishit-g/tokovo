@@ -223,8 +223,15 @@ export function replay(
                     draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
                 }
                 const devType = (event as any).type;
-                if (devType && devType.includes("NOTIFICATION")) {
-                    processNotificationEvent(draft, event as any, handlerCtx);
+                if (devType && (devType.includes("NOTIFICATION") || devType.startsWith("SHOW_") || devType.startsWith("DISMISS_") || devType.startsWith("TAP_") || devType.startsWith("SWIPE_") || devType.startsWith("CLEAR_ALL") || devType.includes("DYNAMIC_ISLAND"))) {
+                    // Try feature reducer first (from device-notifications plugin)
+                    const notifReducer = ReducerRegistry.getFeatureReducer(devType);
+                    if (notifReducer) {
+                        notifReducer(draft, event, index);
+                    } else {
+                        // Fallback to legacy handler (mostly no-op now)
+                        processNotificationEvent(draft, event as any, handlerCtx);
+                    }
                 }
                 break;
 

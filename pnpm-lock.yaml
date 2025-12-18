@@ -354,6 +354,9 @@ importers:
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
+      '@tokovo/device-notifications':
+        specifier: workspace:*
+        version: link:../device-notifications
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../devices

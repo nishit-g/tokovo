@@ -1,5 +1,6 @@
 import React from "react";
-import { NotificationInstance, AppSurface } from "@tokovo/core";
+import { AppSurface } from "@tokovo/core";
+import type { NotificationInstance } from "../types";
 import { AndroidNotificationStrategy } from "../strategies/AndroidNotificationStrategy";
 import { IOSNotificationStrategy } from "../strategies/IOSNotificationStrategy";
 
@@ -25,11 +26,9 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     deviceWidth = 1290, // Default to iPhone 16 width
 }) => {
     const isAndroid = variant === "android";
-    // Support both structures: notification.ir (legacy) or flat notification object (new)
-    const ir = notification.ir || notification;
 
     // Calculate animation state
-    const timeSinceAppear = currentTime - notification.shownAtFrame!;
+    const timeSinceAppear = currentTime - (notification.shownAtFrame || 0);
     const appearDuration = 15; // frames for slide-in animation
     const dismissDuration = 15; // frames for slide-out animation
 
@@ -49,7 +48,7 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
         translateY = -120 * (1 - ease); // Slide from above
     } else if (isDismissed) {
         // Slide out animation
-        const dismissStartTime = notification.dismissedAtFrame || (notification.shownAtFrame! + autoDismissAfter);
+        const dismissStartTime = notification.dismissedAtFrame || ((notification.shownAtFrame || 0) + autoDismissAfter);
         const timeSinceDismiss = currentTime - dismissStartTime;
 
         if (timeSinceDismiss < dismissDuration) {
