@@ -13,7 +13,7 @@
  */
 
 import React, { useMemo, useState, useEffect } from "react";
-import { AbsoluteFill, useCurrentFrame, delayRender, continueRender } from "remotion";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, delayRender, continueRender } from "remotion";
 import { runEpisode, createEventIndex } from "@tokovo/core";
 import { prepareTrackEpisode, type PreparedTrackEpisode } from "@tokovo/compiler";
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
@@ -87,16 +87,36 @@ function resolvePlugins(appIds: string[]) {
 // EPISODE RENDERER COMPONENT
 // =============================================================================
 
+// Wrapper that forces remount when episodeId changes
 export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
+    // Get the active composition ID from Remotion
+    const videoConfig = useVideoConfig();
+    const activeCompositionId = (videoConfig as any).id;
+
+    // DEBUG: Log the raw prop value
+    console.log(`[EpisodeRenderer WRAPPER] episodeId="${episodeId}", activeComposition="${activeCompositionId}"`);
+
+    // Only render if this composition is the active one
+    // This prevents Remotion from rendering all compositions simultaneously
+    if (activeCompositionId && activeCompositionId !== episodeId) {
+        return null; // Not the active composition, skip rendering
+    }
+
+    // Key forces complete remount when episodeId changes
+    return <EpisodeRendererInner key={episodeId} episodeId={episodeId} />;
+};
+
+// Inner component that does the actual rendering
+const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
     const frame = useCurrentFrame();
     const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));
     const [prepared, setPrepared] = useState<PreparedTrackEpisode | null>(null);
     const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
     const [error, setError] = useState<Error | null>(null);
 
-    // === PREPARE EPISODE (runs once per episodeId change) ===
+    // === PREPARE EPISODE (runs once on mount) ===
     useEffect(() => {
-        console.log(`[EpisodeRenderer] 🎬 Starting to load: ${episodeId}`);
+        console.log(`[EpisodeRenderer] 🎬 MOUNTING: ${episodeId}`);
         try {
             const ep = episodeRegistry.get(episodeId);
             console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
@@ -215,6 +235,21 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({ episodeId }) =
                     directorEnabled={true}
                     directorDebug={false}
                 />
+            </div>
+            {/* DEBUG: Show which episode is actually rendering */}
+            <div style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                background: "rgba(0,0,0,0.7)",
+                color: "#00ff00",
+                padding: "4px 8px",
+                borderRadius: 4,
+                fontSize: 12,
+                fontFamily: "monospace",
+                zIndex: 9999,
+            }}>
+                📺 {episode?.meta?.id} | {episode?.meta?.title}
             </div>
         </AbsoluteFill>
     );

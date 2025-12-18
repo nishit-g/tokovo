@@ -78,7 +78,7 @@ export default defineEpisode({
             wa.span("21s", "25s").typing("me");
             wa.at("25s").send("Sure! It uses TYPING_SEQUENCE for efficiency 🚀");
 
-            wa.at("27s").read("Alex");
+            wa.at("27s").read();
         })
 
         // === KEYBOARD TRACK (Enterprise Optimized) ===
