@@ -189,9 +189,27 @@ export const keyboardReducer: FeatureReducer = (
             break;
         }
 
+        case "TYPING_SEQUENCE": {
+            // Enterprise pattern: Store schedule, renderer derives key press from frame
+            const e = event as any;
+            keyboard.typingSchedule = {
+                entries: e.schedule,
+                text: e.text,
+                startFrame: e.startFrame,
+                endFrame: e.endFrame,
+            };
+            // Set final text immediately (renderer will animate progressively)
+            keyboard.inputText = e.text;
+            keyboard.cursorPosition = e.text.length;
+            // AUTOMATION: Inject final text into App (apps can derive if needed)
+            injectInputToApp(draft, device.foregroundAppId, e.text, e.endFrame);
+            break;
+        }
+
         case "CLEAR":
             keyboard.inputText = "";
             keyboard.cursorPosition = 0;
+            keyboard.typingSchedule = null;
             // AUTOMATION: Inject into App
             injectInputToApp(draft, device.foregroundAppId, "", event.at);
             break;

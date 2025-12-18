@@ -8,6 +8,28 @@
 import type { KeyboardLayout } from "./layouts";
 
 // =============================================================================
+// TYPING SCHEDULE (Enterprise Pattern)
+// =============================================================================
+
+/**
+ * Entry in the typing schedule - represents one keystroke
+ */
+export interface TypingScheduleEntry {
+    key: string;
+    frame: number;
+}
+
+/**
+ * Active typing sequence - allows renderer to derive state from frame
+ */
+export interface TypingSchedule {
+    entries: TypingScheduleEntry[];
+    text: string;
+    startFrame: number;
+    endFrame: number;
+}
+
+// =============================================================================
 // KEYBOARD STATE
 // =============================================================================
 
@@ -19,11 +41,11 @@ export interface KeyboardState {
     // Layout
     layout: KeyboardLayout;
 
-    // Current Key Press
+    // Current Key Press (legacy - kept for backward compat, derived from schedule in renderer)
     currentKey: string | null;
     keyPressedAt: number | null;
 
-    // Input Text
+    // Input Text (legacy - kept for backward compat, derived from schedule in renderer)
     inputText: string;
     cursorPosition: number;
     cursorVisible: boolean;
@@ -38,6 +60,9 @@ export interface KeyboardState {
 
     // Visual Feedback
     keyPressVisual: KeyPressVisual | null;
+
+    // Enterprise: Typing Schedule (derived state in renderer)
+    typingSchedule: TypingSchedule | null;
 }
 
 export interface KeyPressVisual {
@@ -77,6 +102,9 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
 
     // Visual Feedback
     keyPressVisual: null,
+
+    // Enterprise: Typing Schedule
+    typingSchedule: null,
 };
 
 // =============================================================================

@@ -94,10 +94,17 @@ export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({ episodeId }) =
     const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
     const [error, setError] = useState<Error | null>(null);
 
-    // === PREPARE EPISODE (runs once) ===
+    // === PREPARE EPISODE (runs once per episodeId change) ===
     useEffect(() => {
+        console.log(`[EpisodeRenderer] 🎬 Starting to load: ${episodeId}`);
         try {
             const ep = episodeRegistry.get(episodeId);
+            console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
+                episodeId,
+                found: !!ep,
+                foundId: ep?.meta?.id,
+                title: ep?.meta?.title,
+            });
             if (!ep) {
                 throw new Error(`Episode not found: ${episodeId}`);
             }

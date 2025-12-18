@@ -298,13 +298,51 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const translateY = interpolate(slideProgress, [0, 1], [100, 0]);
     const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
 
+    // =========================================================================
+    // DERIVED STATE (Enterprise Pattern)
+    // =========================================================================
+    // When a TYPING_SEQUENCE is active, derive currentKey and inputText from
+    // the schedule based on current frame. This is more efficient than storing
+    // intermediate state and follows Remotion's "derive from frame" philosophy.
+
+    const schedule = keyboard.typingSchedule;
+
+    // Derive current key from schedule (which key is being pressed at this frame)
+    const derivedCurrentKey = React.useMemo(() => {
+        if (!schedule) return keyboard.currentKey;
+
+        // Find the key that's being pressed at this frame
+        // Key is "pressed" for ~4 frames after its scheduled frame
+        const keyHoldDuration = 4;
+        const activeEntry = schedule.entries.find(
+            entry => frame >= entry.frame && frame < entry.frame + keyHoldDuration
+        );
+
+        return activeEntry?.key ?? null;
+    }, [schedule, frame, keyboard.currentKey]);
+
+    // Derive input text from schedule (what has been typed up to this frame)
+    const derivedInputText = React.useMemo(() => {
+        if (!schedule) return keyboard.inputText;
+
+        // Build text from all characters typed before current frame
+        return schedule.entries
+            .filter(entry => entry.frame <= frame)
+            .map(entry => entry.key)
+            .join("");
+    }, [schedule, frame, keyboard.inputText]);
+
+    // Use derived values
+    const currentKey = derivedCurrentKey;
+    const inputText = derivedInputText;
+
     if (!keyboard.visible && slideProgress === 0) return null;
 
     // Get rows based on layout
     const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
 
-    // Get suggestions - reads directly from reducer state
-    const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
+    // Get suggestions from derived inputText
+    const suggestions = IOSPrediction.getSuggestions(inputText, 42);
 
     return (
         <div style={{
@@ -339,7 +377,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     highlightedIndex={keyboard.highlightedSuggestion ?? 1}
                 />
 
-                {/* Keyboard Rows - reads currentKey directly from reducer state */}
+                {/* Keyboard Rows - now uses derived currentKey */}
                 <div style={{
                     flex: 1,
                     display: "flex",
@@ -351,7 +389,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                         <IOSKeyRow
                             key={index}
                             keys={row}
-                            currentKey={keyboard.currentKey}
+                            currentKey={currentKey}
                             variant={variant}
                             rowIndex={index}
                         />

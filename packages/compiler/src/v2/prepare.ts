@@ -110,6 +110,12 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
                 cursorPosition: 0,
                 cursorVisible: true,
                 visibilityChangedAt: -1, // Quiescent: no transition yet
+                selectionStart: null,
+                selectionEnd: null,
+                suggestions: [],
+                highlightedSuggestion: null,
+                keyPressVisual: null,
+                typingSchedule: null, // Enterprise: derived animation
             },
         };
     }

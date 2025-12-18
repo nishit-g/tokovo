@@ -24,46 +24,41 @@ export function lowerKeyboardEvent(
     event: KeyboardTrackEvent,
     ctx: LoweringContext
 ): RuntimeKeyboardEvent[] {
-    // TYPE events get expanded into individual key events
+    // TYPE events get expanded - use TYPING_SEQUENCE for efficiency
     if (event.type === "TYPE") {
         const { text, speed, variation } = event.payload;
         const baseDelay = getFrameDelay(speed ?? "normal", ctx.fps);
         const duration = (event as { duration?: number }).duration;
 
-        const events: RuntimeKeyboardEvent[] = [];
-
         // Calculate timing
         if (duration && duration > 0) {
-            // Span-based: spread evenly across duration
-            // Each character gets (duration / text.length) frames
+            // Span-based: emit single TYPING_SEQUENCE event
             const charSpan = duration / text.length;
 
-            text.split("").forEach((char, i) => {
+            // Build schedule with frame timing for each character
+            const schedule = text.split("").map((key, i) => {
                 const charStartFrame = Math.round(event.at + i * charSpan);
-                const charAt = variation ? applyVariation(charStartFrame, event.at + i) : charStartFrame;
-
-                // KEY_DOWN
-                events.push({
-                    kind: "APP",
-                    appId: "keyboard",
-                    type: "KEY_DOWN",
-                    key: char,
-                    at: charAt,
-                    deviceId: event.deviceId,
-                });
-
-                // KEY_UP (shortly after)
-                events.push({
-                    kind: "APP",
-                    appId: "keyboard",
-                    type: "KEY_UP",
-                    key: char,
-                    at: charAt + 2,
-                    deviceId: event.deviceId,
-                });
+                return {
+                    key,
+                    frame: variation ? applyVariation(charStartFrame, event.at + i) : charStartFrame,
+                };
             });
+
+            // Single event with schedule - renderer derives state from frame
+            return [{
+                kind: "APP",
+                appId: "keyboard",
+                type: "TYPING_SEQUENCE",
+                schedule,
+                text,
+                startFrame: event.at,
+                endFrame: event.at + duration,
+                at: event.at,
+                deviceId: event.deviceId,
+            }];
         } else {
-            // Point-based: use speed
+            // Point-based: use speed, emit individual events for precise timing
+            const events: RuntimeKeyboardEvent[] = [];
             text.split("").forEach((char, i) => {
                 const charAt = event.at + i * baseDelay;
                 const finalAt = variation ? applyVariation(charAt, event.at + i) : charAt;
@@ -88,9 +83,8 @@ export function lowerKeyboardEvent(
                     deviceId: event.deviceId,
                 });
             });
+            return events;
         }
-
-        return events;
     }
 
     // All other events pass through

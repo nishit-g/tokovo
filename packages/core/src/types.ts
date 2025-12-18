@@ -302,14 +302,29 @@ export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
  * This is DEVICE-level state, shared across all apps.
  * Apps read keyboard.inputText to show what's being typed.
  */
+
+/** Entry in the typing schedule */
+export interface TypingScheduleEntry {
+    key: string;
+    frame: number;
+}
+
+/** Active typing sequence - allows renderer to derive state from frame */
+export interface TypingSchedule {
+    entries: TypingScheduleEntry[];
+    text: string;
+    startFrame: number;
+    endFrame: number;
+}
+
 export interface KeyboardState {
     /** Whether keyboard is visible */
     visible: boolean;
     /** Current keyboard layout */
     layout: KeyboardLayout;
-    /** Currently pressed key (for highlight) */
+    /** Currently pressed key (for highlight) - legacy, derived from schedule in renderer */
     currentKey: string | null;
-    /** Frame when key was pressed (for pop-up timing) */
+    /** Frame when key was pressed (for pop-up timing) - legacy */
     keyPressedAt: number | null;
     /** Frame when visibility last changed (for animations) */
     visibilityChangedAt: number;
@@ -329,6 +344,8 @@ export interface KeyboardState {
     highlightedSuggestion: number | null;
     /** Visual pop-up state */
     keyPressVisual: any | null;
+    /** Enterprise: Typing schedule for derived animation */
+    typingSchedule: TypingSchedule | null;
 }
 
 /** Default keyboard state */
@@ -346,6 +363,7 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
     suggestions: [],
     highlightedSuggestion: null,
     keyPressVisual: null,
+    typingSchedule: null,
 };
 
 // =============================================================================
