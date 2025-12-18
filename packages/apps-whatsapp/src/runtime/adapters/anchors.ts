@@ -1,7 +1,6 @@
 import {
     AnchorProvider,
     AnchorSnapshot,
-    SemanticAnchorId,
     LayoutRect,
     ChatLayoutState,
     APP_IDS
@@ -70,7 +69,7 @@ export const WhatsAppAnchors: AnchorProvider = {
     ): AnchorSnapshot {
         // Cast generic layout to ChatLayoutState
         const chatLayout = layout as ChatLayoutState;
-        const anchors: Partial<Record<SemanticAnchorId, LayoutRect>> = {};
+        const anchors: Record<string, LayoutRect> = {};
 
         // If no layout (e.g. app not active), return empty or device fallback
         if (!chatLayout || !chatLayout.semantic) {

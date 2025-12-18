@@ -11,7 +11,7 @@
  */
 
 import { episode } from "@tokovo/dsl/src/v2";
-import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/v2/track";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
 
 // =============================================================================
 // HELPER

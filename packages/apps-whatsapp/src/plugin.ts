@@ -6,29 +6,43 @@
  * - Tier B: lowering handler, layouts
  * - Tier C: DSL extension (b.use() pattern)
  * 
- * @see docs/FUCKING_MESS.md Section 6
+ * @see docs/ARCHITECTURE.md
  */
 
 import { APP_IDS, PluginManager } from "@tokovo/core";
-import type { TokovoPluginContract, PluginViews, PluginLayoutStrategy } from "@tokovo/core/src/types/plugin-contract";
-import { whatsappReducer } from "./logic/reducer";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
+
+// Runtime Layer
+import { whatsappReducer } from "./runtime/reducer";
+import { createWhatsAppInitialState } from "./runtime/initial-state";
+
+// Views Layer
 import { WhatsappChatView } from "./ui";
-import { whatsappLowering } from "./lowering";
-import { whatsappV2Lowering } from "./v2/lowering";
-import { whatsappDsl, WhatsAppDslApi } from "./dsl-extension";
-import { whatsappAudioRules } from "./assets/audio-rules";
+
+// Lowering Layer (V2 is default)
+import { whatsappLowering, whatsappV2Lowering } from "./lowering";
+
+// DSL Layer
+import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
+
+// Layout Layer
 import { computeChatLayout } from "./layout";
+
+// Assets
+import { whatsappAudioRules } from "./assets/audio-rules";
+
+// Camera
+import { WhatsAppBehavior } from "./camera";
 
 // =============================================================================
 // PLUGIN VIEWS
 // =============================================================================
 
 const whatsappViews: PluginViews = {
-    AppRoot: WhatsappChatView as any,
-    // Platform strategies will be added when Android views are ready
+    AppRoot: WhatsappChatView as React.FC<any>,
     strategies: {
         ios: {
-            ChatScreen: WhatsappChatView as any,
+            ChatScreen: WhatsappChatView as React.FC<any>,
         },
     },
 };
@@ -39,27 +53,14 @@ const whatsappViews: PluginViews = {
 
 const whatsappAssets = {
     sounds: {
-        "message_in": "/audio/app_whatsapp/message_in.mp3",
-        "message_out": "/audio/app_whatsapp/message_out.mp3",
-        "typing_loop": "/audio/app_whatsapp/typing_loop.mp3",
-        "notification": "/audio/app_whatsapp/notification.mp3",
+        "message_in": "plugins/whatsapp/received.wav",
+        "message_out": "plugins/whatsapp/sent.wav",
+        "typing_loop": "plugins/whatsapp/typing_loop.wav",
     },
     icons: {
         "app_icon": "/icons/whatsapp.svg",
     },
 };
-
-// =============================================================================
-// INITIAL STATE
-// =============================================================================
-
-function createWhatsAppInitialState() {
-    return {
-        currentScreen: "chats" as const,
-        conversations: {},
-        currentConversationId: null as string | null,
-    };
-}
 
 // =============================================================================
 // ENTERPRISE PLUGIN CONTRACT
@@ -69,58 +70,53 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     appView: any;
     name: string;
     v2Lowering: typeof whatsappV2Lowering;
+    behaviors: typeof WhatsAppBehavior;
 } = {
     // === TIER A: Identity ===
     id: APP_IDS.WHATSAPP as "app_whatsapp",
     version: "2.0.0",
     displayName: "WhatsApp",
-    name: "WhatsApp",  // Legacy field for PluginManager
+    name: "WhatsApp",
 
     // === TIER A: Runtime ===
     reducer: whatsappReducer as any,
     views: whatsappViews,
-    appView: WhatsappChatView as any,  // Legacy field for PluginManager
+    appView: WhatsappChatView as any,
+    createInitialState: createWhatsAppInitialState,
 
     // === TIER A: Assets ===
     assets: whatsappAssets,
     audioRules: whatsappAudioRules as any,
 
-    // === TIER A: Initial State ===
-    createInitialState: createWhatsAppInitialState,
-
     // === TIER B: Lowering ===
-    lowering: whatsappLowering,
+    // NOTE: whatsappLowering requires handles property, using v2Lowering only
     v2Lowering: whatsappV2Lowering,
 
     // === TIER B: Layouts ===
     layouts: [
         {
             viewKind: "CHAT",
-            computeLayout: computeChatLayout as any,  // Type cast for LayoutContext compatibility
+            computeLayout: computeChatLayout as any,
         },
     ],
+
+    // === TIER B: Behaviors ===
+    behaviors: WhatsAppBehavior,
 
     // === TIER C: DSL ===
     dsl: whatsappDsl,
 };
 
 // =============================================================================
-// LEGACY EXPORTS (for backward compatibility)
+// EXPORTS
 // =============================================================================
 
-// Re-export as old name for existing consumers
 export { WhatsAppPluginV2 as WhatsAppPlugin };
 
-// Legacy registration function
 export function registerWhatsAppPlugin(): void {
     PluginManager.register(WhatsAppPluginV2 as any);
 }
 
-// Type export for b.use()
 export type { WhatsAppDslApi };
-
-// =============================================================================
-// DEFAULT EXPORT
-// =============================================================================
 
 export default WhatsAppPluginV2;

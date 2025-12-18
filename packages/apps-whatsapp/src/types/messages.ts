@@ -1,12 +1,11 @@
 /**
- * WhatsApp Plugin Types
+ * WhatsApp Message Types
  * 
- * All app-specific types are defined here.
- * Core has been cleaned of app-specific bloatware.
+ * All message-related type definitions.
  */
 
 // =============================================================================
-// MESSAGE TYPES
+// MESSAGE TYPE ENUM
 // =============================================================================
 
 export type WhatsAppMessageType =
@@ -20,6 +19,10 @@ export type WhatsAppMessageType =
     | "call_missed"
     | "screenshot_alert";
 
+// =============================================================================
+// BASE MESSAGE
+// =============================================================================
+
 export interface BaseMessage {
     id: string;
     from: string;
@@ -27,6 +30,10 @@ export interface BaseMessage {
     status?: "sending" | "sent" | "delivered" | "read";
     at?: number;
 }
+
+// =============================================================================
+// SPECIFIC MESSAGE TYPES
+// =============================================================================
 
 export interface TextMessage extends BaseMessage {
     type: "text";
@@ -72,6 +79,10 @@ export interface SystemMessage extends BaseMessage {
 export interface DeletedMessage extends BaseMessage {
     type: "deleted";
 }
+
+// =============================================================================
+// DISCRIMINATED UNION
+// =============================================================================
 
 export type MessageData =
     | TextMessage
@@ -130,65 +141,4 @@ export interface WhatsAppMessage extends BaseMessage {
     reactions?: WhatsAppReaction[];
     replyTo?: ReplyToData;
     linkPreview?: LinkPreviewData;
-}
-
-// =============================================================================
-// GROUP MEMBER
-// =============================================================================
-
-export interface WhatsAppGroupMember {
-    id: string;
-    name: string;
-    avatar?: string;
-    phone?: string;
-    colorIndex?: number;
-}
-
-// =============================================================================
-// CONVERSATION STATE
-// =============================================================================
-
-export interface WhatsAppConversation {
-    id: string;
-    type?: "dm" | "group";
-    name?: string;
-    avatar?: string;
-    members?: WhatsAppGroupMember[];
-    admins?: string[];
-    messages: WhatsAppMessage[];
-    unreadCount?: number;
-    typing?: Record<string, boolean>;
-    draftText?: string;
-}
-
-// =============================================================================
-// APP STATE
-// =============================================================================
-
-export interface WhatsAppState {
-    conversationId?: string;
-    screen?: string;
-    viewMode?: "CHAT" | "LIST" | "TRANSITION";
-}
-
-// =============================================================================
-// WORLD STATE HELPERS
-// =============================================================================
-
-/**
- * Cast WorldState.conversations to WhatsApp conversations.
- */
-export function asWhatsAppConversations(
-    conversations: Record<string, unknown>
-): Record<string, WhatsAppConversation> {
-    return conversations as Record<string, WhatsAppConversation>;
-}
-
-/**
- * Cast WorldState.appState.app_whatsapp to WhatsAppState.
- */
-export function asWhatsAppState(
-    appState: Record<string, unknown>
-): WhatsAppState | undefined {
-    return (appState?.app_whatsapp || appState?.whatsapp) as WhatsAppState | undefined;
 }

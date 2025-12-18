@@ -1,50 +1,103 @@
 /**
- * WhatsApp Package - Main Exports
+ * WhatsApp Package - Public API
  * 
- * This is the public API for the WhatsApp plugin.
+ * This is the main entry point for the WhatsApp plugin.
+ * All exports follow the Enterprise Gold Standard structure.
  */
 
-// === ENTERPRISE PLUGIN (Primary Export) ===
-export { WhatsAppPluginV2 as WhatsAppPlugin, WhatsAppPluginV2, registerWhatsAppPlugin } from "./plugin";
-export type { WhatsAppDslApi } from "./plugin";
+// =============================================================================
+// PLUGIN (Primary Export)
+// =============================================================================
 
-// === Core Exports ===
+export {
+    WhatsAppPluginV2,
+    WhatsAppPluginV2 as WhatsAppPlugin,
+    registerWhatsAppPlugin,
+    type WhatsAppDslApi,
+} from "./plugin";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
 export * from "./types";
-export * from "./logic/reducer";
+
+// =============================================================================
+// RUNTIME
+// =============================================================================
+
+export {
+    whatsappReducer,
+    createWhatsAppInitialState,
+    selectAppState,
+    selectConversations,
+    selectCurrentConversation,
+    selectMessages,
+    selectLastMessage,
+    selectTypingMembers,
+} from "./runtime";
+
+// =============================================================================
+// VIEWS
+// =============================================================================
+
 export * from "./ui";
+// Note: ./views re-exports from ./ui, so we don't export it again
 
-// === Adapters ===
-export * from "./adapters/anchors";
-export * from "./adapters/notifications";
+// =============================================================================
+// IR (Intermediate Representation)
+// =============================================================================
 
-// === Layout ===
-export * from "./layout";
+export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
+export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
 
-// === Module Augmentation ===
-export * from "./augment";
+// =============================================================================
+// LOWERING
+// =============================================================================
 
-// === UI Strategy ===
-export * from "./ui/ui-strategy";
-export * from "./ui/strategies";
+export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
 
-// === Audio Rules ===
+// =============================================================================
+// DSL
+// =============================================================================
+
+export {
+    whatsappDsl,
+    WhatsAppTrackBuilder,
+    WhatsAppPointBuilder,
+    WhatsAppSpanBuilder,
+    createWhatsAppTrackBuilder,
+} from "./dsl";
+export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
+
+// =============================================================================
+// LAYOUT
+// =============================================================================
+
+export { computeChatLayout } from "./layout";
+
+// =============================================================================
+// CAMERA
+// =============================================================================
+
+export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
+
+// =============================================================================
+// ASSETS
+// =============================================================================
+
 export { whatsappAudioRules } from "./assets/audio-rules";
 
-// === Lowering (for compiler) ===
-export { whatsappLowering } from "./lowering";
+// =============================================================================
+// SIDE EFFECTS (Auto-registration)
+// =============================================================================
 
-// === DSL (for b.use() pattern) ===
-export { whatsappDsl } from "./dsl-extension";
-
-// === Register on import (side effects) ===
 import "./ui/strategies";
 import { AutoSoundRegistry, AppMetadataRegistry } from "@tokovo/core";
 import { whatsappAudioRules } from "./assets/audio-rules";
 
-// Auto-register audio rules when this module is imported
 AutoSoundRegistry.register(whatsappAudioRules);
 
-// Self-register app metadata (separation of concerns - apps own their branding)
 AppMetadataRegistry.register("app_whatsapp", {
     displayName: "WhatsApp",
     themeColor: "#25D366",
@@ -52,13 +105,14 @@ AppMetadataRegistry.register("app_whatsapp", {
     viewStrategy: "CHAT",
 });
 
+// =============================================================================
+// LEGACY ALIASES
+// =============================================================================
 
-// === V2 Track DSL ===
-export { WhatsAppTrackBuilder, WhatsAppPointBuilder, WhatsAppSpanBuilder, createWhatsAppTrackBuilder } from "./v2/track";
-export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./v2/track";
-
-// === Legacy Alias ===
 export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
 
-// === Default Export ===
+// =============================================================================
+// DEFAULT
+// =============================================================================
+
 export { default } from "./plugin";
