@@ -16,32 +16,5 @@
             "cache": false,
             "persistent": true
         }
-    },
-    "generators": {
-        "plugin": {
-            "description": "Generate a new Tokovo app plugin (e.g., Instagram, Twitter, iMessage)",
-            "prompts": [
-                {
-                    "type": "input",
-                    "name": "name",
-                    "message": "Plugin name (lowercase, e.g., instagram):"
-                },
-                {
-                    "type": "input",
-                    "name": "displayName",
-                    "message": "Display name (e.g., Instagram):"
-                },
-                {
-                    "type": "input",
-                    "name": "themeColor",
-                    "message": "Primary theme color (hex, e.g., #E1306C):"
-                },
-                {
-                    "type": "input",
-                    "name": "icon",
-                    "message": "Emoji icon (e.g., 📸):"
-                }
-            ]
-        }
     }
 }
