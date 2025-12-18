@@ -58,6 +58,8 @@ export function lowerTrackEvent(
             return lowerOSEvent(event as OSTrackEvent);
         case "MARKER":
             return lowerMarkerEvent(event as MarkerTrackEvent);
+        case "DEVICE":
+            return lowerDeviceEvent(event);
         default:
             // APP events - delegate to plugin
             return lowerAppEvent(event, ctx);
@@ -343,6 +345,106 @@ function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
  */
 function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
     return [];
+}
+
+/**
+ * Lower DEVICE events (notifications, dynamic island, etc.)
+ * These come from NotificationTrackBuilder and similar device-level DSLs.
+ */
+function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
+    const e = event as any;
+    const base = {
+        at: e.at,
+        kind: "DEVICE" as const,
+        deviceId: e.deviceId,
+    };
+
+    switch (e.type) {
+        // Notification events
+        case "NOTIFICATION_SHOW":
+            return [{
+                ...base,
+                type: "SHOW_NOTIFICATION",
+                id: e.id,
+                appId: e.appId,
+                title: e.title,
+                body: e.body,
+                mode: e.mode,
+                priority: e.priority,
+                icon: e.icon,
+                preview: e.preview,
+                actions: e.actions,
+                groupKey: e.groupKey,
+                threadId: e.threadId,
+            } as any];
+
+        case "NOTIFICATION_DISMISS":
+            return [{
+                ...base,
+                type: "DISMISS_NOTIFICATION",
+                id: e.id,
+                groupKey: e.groupKey,
+                all: e.all,
+            } as any];
+
+        case "NOTIFICATION_TAP":
+            return [{
+                ...base,
+                type: "TAP_NOTIFICATION",
+                id: e.id,
+                actionId: e.actionId,
+            } as any];
+
+        case "NOTIFICATION_SWIPE":
+            return [{
+                ...base,
+                type: "SWIPE_NOTIFICATION",
+                id: e.id,
+                direction: e.direction,
+                action: e.action,
+            } as any];
+
+        case "NOTIFICATION_DYNAMIC_ISLAND":
+            return [{
+                ...base,
+                type: "SET_DYNAMIC_ISLAND",
+                mode: e.mode,
+                appId: e.appId,
+                content: e.content,
+            } as any];
+
+        case "NOTIFICATION_OPEN_PANEL":
+            return [{
+                ...base,
+                type: "TOGGLE_NOTIFICATION_PANEL",
+                open: true,
+            } as any];
+
+        case "NOTIFICATION_CLOSE_PANEL":
+            return [{
+                ...base,
+                type: "TOGGLE_NOTIFICATION_PANEL",
+                open: false,
+            } as any];
+
+        case "NOTIFICATION_CLEAR_ALL":
+            return [{
+                ...base,
+                type: "CLEAR_ALL_NOTIFICATIONS",
+            } as any];
+
+        case "NOTIFICATION_REPLY":
+            return [{
+                ...base,
+                type: "REPLY_NOTIFICATION",
+                id: e.id,
+                text: e.text,
+            } as any];
+
+        default:
+            console.warn(`[lowering] Unknown DEVICE event type: ${e.type}`);
+            return [];
+    }
 }
 
 // =============================================================================

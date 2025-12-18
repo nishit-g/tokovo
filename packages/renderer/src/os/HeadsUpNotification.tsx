@@ -1,5 +1,5 @@
 import React from "react";
-import { NotificationInstance, AppMetadataRegistry, NotificationViewRegistry, AppSurface } from "@tokovo/core";
+import { NotificationInstance, AppSurface } from "@tokovo/core";
 import { AndroidNotificationStrategy } from "../strategies/AndroidNotificationStrategy";
 import { IOSNotificationStrategy } from "../strategies/IOSNotificationStrategy";
 
@@ -9,7 +9,7 @@ interface HeadsUpNotificationProps {
     currentTime: number;
     variant?: "ios" | "android";
     autoDismissAfter?: number; // frames
-    density?: number;
+    deviceWidth?: number; // Physical device width (e.g., 1290 for iPhone 16)
 }
 
 /**
@@ -22,10 +22,11 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     currentTime,
     variant = "ios",
     autoDismissAfter = 150,
-    density = 3
+    deviceWidth = 1290, // Default to iPhone 16 width
 }) => {
     const isAndroid = variant === "android";
-    const ir = notification.ir;
+    // Support both structures: notification.ir (legacy) or flat notification object (new)
+    const ir = notification.ir || notification;
 
     // Calculate animation state
     const timeSinceAppear = currentTime - notification.shownAtFrame!;
@@ -61,19 +62,15 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
         }
     }
 
-    // Get app branding from Registry
-    const appMeta = AppMetadataRegistry.get(ir.appId);
+    // Position below Dynamic Island
+    // DI ends at ~146px (topY:36 + height:110), add margin for proper spacing  
+    const pillTop = 180; // Below Dynamic Island with some margin
 
-    // Dynamic Island / Pill calculation (simplified)
-    const pillWidth = "92%";
-    const pillTop = 165;
-
-    // Select Strategy
+    // Strategy component
     const Strategy = isAndroid ? AndroidNotificationStrategy : IOSNotificationStrategy;
 
-    // Scale Logic: Enterprise Grade
-    // Use the actual device density to scale Logical -> Physical
-    const SCALE = density;
+    // AppSurface scaling: design at 393px logical, scale to physical device width
+    const DESIGN_WIDTH = 393; // Standard iPhone logical width
 
     return (
         <div style={{
@@ -81,18 +78,15 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
             top: pillTop,
             left: "50%",
             transform: `translateX(-50%) translateY(${translateY}px)`,
-            width: pillWidth, // This is PHYSICAL width (e.g. 92% of 1290)
+            width: "92%", // Use 92% of device width
             opacity,
             zIndex: 200,
             pointerEvents: "none",
-            // AppSurface parent needs to handle the scaled content flow
-            display: "flex",
-            justifyContent: "center"
         }}>
             <AppSurface
-                scale={SCALE}
-                width={`calc(100% / ${SCALE})`} // Logical width = Physical / Scale
-                style={{ transformOrigin: "top center" }} // Center alignment
+                designWidth={DESIGN_WIDTH}
+                targetWidth={deviceWidth * 0.92} // 92% of device width
+                backgroundColor="transparent"
             >
                 <Strategy notification={notification} />
             </AppSurface>

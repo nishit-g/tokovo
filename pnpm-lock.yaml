@@ -245,6 +245,22 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/device-notifications:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      react:
+        specifier: ^18.0.0
+        version: 18.2.0
+    devDependencies:
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.2.0
+      typescript:
+        specifier: ^5.0.0
+        version: 5.9.3
+
   packages/devices:
     dependencies:
       '@tokovo/core':
@@ -300,6 +316,9 @@ importers:
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
+      '@tokovo/device-notifications':
+        specifier: workspace:*
+        version: link:../device-notifications
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl

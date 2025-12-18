@@ -137,4 +137,7 @@ export interface DeviceProfile {
     /** Dynamic Island configuration (iOS only) */
     dynamicIsland?: DynamicIslandConfig;
     statusBarWidget?: StatusBarWidgetConfig;
+
+    /** Device OS sounds (notification, lock, unlock, etc.) */
+    sounds?: Record<string, string>;
 }

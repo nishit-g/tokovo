@@ -181,7 +181,6 @@ export function deriveAudioInstructions(
 
     for (const rule of rules) {
         if (matchesRule(event, rule)) {
-            console.log("[AutoSound] Match!", { kind: event.kind, rule });
             // dynamic ID resolution
             const instanceId = rule.idTemplate
                 ? resolveIdTemplate(rule.idTemplate, event)

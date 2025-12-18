@@ -16,7 +16,10 @@ export const NotificationScheduler = {
      * Compute the current visual state of notifications.
      */
     schedule(device: DeviceState, t: number): { headsUp: NotificationInstance | null } {
-        const notifications = device.os?.notifications || [];
+        // Check both locations for backwards compatibility:
+        // - device.notificationCenter.items (new - from devices reducer)
+        // - device.os.notifications (legacy)
+        const notifications = device.notificationCenter?.items || device.os?.notifications || [];
         const isLocked = device.isLocked;
 
         // Configuration
@@ -35,15 +38,21 @@ export const NotificationScheduler = {
             const mode = n.mode || "both";
             if (mode === "lockscreen") return false;
             // If explicit user dismissal happened, ignore
-            if (n.state === "dismissed" && n.dismissedAtFrame) return false;
-            // If we are locked and it's sensitive, maybe hide? (For now simplify: show if not specific logic)
+            // Support both property names: dismissedAtFrame (old) and dismissedAt (new)
+            const dismissed = n.state === "dismissed" && (n.dismissedAtFrame ?? (n as any).dismissedAt);
+            if (dismissed) return false;
             return true;
         });
 
         if (candidates.length === 0) return { headsUp: null };
 
         // 2. Sort by creation time (FIFO)
-        const sorted = [...candidates].sort((a, b) => a.createdAtFrame - b.createdAtFrame);
+        // Support both property names: createdAtFrame (old) and at/deliveredAt (new)
+        const sorted = [...candidates].sort((a, b) => {
+            const aTime = a.createdAtFrame ?? (a as any).at ?? (a as any).deliveredAt ?? 0;
+            const bTime = b.createdAtFrame ?? (b as any).at ?? (b as any).deliveredAt ?? 0;
+            return aTime - bTime;
+        });
 
         // 3. Simulate the Timeline to find what's active NOW
         // We must replay the schedule from the first candidate to see where they land.
@@ -54,7 +63,8 @@ export const NotificationScheduler = {
             // effectiveStart = max(created, lastEndTime + GAP)
             // The earliest a notification can show is when it was created,
             // OR after the previous one finished + gap.
-            const effectiveStart = Math.max(n.createdAtFrame, lastEndTime > 0 ? lastEndTime + GAP : 0);
+            const createdAt = n.createdAtFrame ?? (n as any).at ?? (n as any).deliveredAt ?? 0;
+            const effectiveStart = Math.max(createdAt, lastEndTime > 0 ? lastEndTime + GAP : 0);
 
             const effectiveEnd = effectiveStart + HEADS_UP_DURATION;
             lastEndTime = effectiveEnd;
@@ -71,7 +81,8 @@ export const NotificationScheduler = {
                 // Since we delayed it, we must lie to the renderer about when it "started" logic-wise.
                 active = {
                     ...n,
-                    shownAtFrame: effectiveStart
+                    shownAtFrame: effectiveStart,
+                    createdAtFrame: createdAt, // Ensure createdAtFrame exists
                 };
                 break;
             }
@@ -80,3 +91,4 @@ export const NotificationScheduler = {
         return { headsUp: active };
     }
 };
+

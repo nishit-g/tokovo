@@ -262,14 +262,16 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         />
 
                         {/* Heads-Up Notification (Toast) */}
-                        {activeHeadsUp && !hasActiveCall && !(profile.dynamicIsland && device.notificationCenter?.headsUp) && (
+                        {/* Note: Dynamic Island notification rendering not implemented yet, 
+                            so we always show HeadsUpNotification when there's an active heads-up */}
+                        {activeHeadsUp && !hasActiveCall && (
                             <HeadsUpNotification
                                 key={activeHeadsUp.id}
                                 notification={activeHeadsUp}
                                 currentTime={t}
                                 variant={variant}
                                 autoDismissAfter={headsUpDuration}
-                                density={profile.pixelDensity || 3}
+                                deviceWidth={profile.dimensions.width}
                             />
                         )}
 

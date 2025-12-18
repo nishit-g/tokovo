@@ -48,4 +48,14 @@ export const iPhone16Profile: DeviceProfile = {
         expandedHeight: 220,    // Expanded height
         cornerRadius: 55,       // Pill corners
     },
+
+    // Device OS sounds
+    sounds: {
+        "device.notification": "os/ios/notification.wav",
+        "device.lock": "os/ios/lock.wav",
+        "device.unlock": "os/ios/unlock.wav",
+        "device.screenshot": "os/ios/screenshot.wav",
+        "device.charging": "os/ios/charging.wav",
+        "device.keyboard": "os/ios/keyboard.wav",
+    },
 };

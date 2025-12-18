@@ -14,5 +14,6 @@
 import "./track-demo.episode";
 import "./bakchodi-bros.episode";
 import "./keyboard-typing-demo.episode";
+import "./notification-demo.episode";
 
 // Add new episodes here as they are created

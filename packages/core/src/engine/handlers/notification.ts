@@ -36,12 +36,21 @@ export function processNotificationEvent(
     const device = draft.devices[deviceId];
     if (!device) return;
 
-    // Ensure OS/Notification state exists
+    // Ensure OS/Notification state exists with fresh mutable arrays
     if (!device.os) {
-        device.os = { ...DEFAULT_OS_STATE };
+        device.os = {
+            ...DEFAULT_OS_STATE,
+            notifications: [],
+            notificationHistory: [],
+        };
     }
-    if (!device.os.notifications) device.os.notifications = [];
-    if (!device.os.notificationHistory) device.os.notificationHistory = [];
+    // Ensure arrays are mutable (create new ones if needed)
+    if (!device.os.notifications || !Array.isArray(device.os.notifications)) {
+        device.os.notifications = [];
+    }
+    if (!device.os.notificationHistory || !Array.isArray(device.os.notificationHistory)) {
+        device.os.notificationHistory = [];
+    }
 
     switch (event.type) {
         case "SHOW_NOTIFICATION": {

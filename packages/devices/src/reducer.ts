@@ -53,9 +53,14 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
         const device = draft[event.deviceId];
         if (!device) return;
 
-        // Initialize notification center if needed
+        // Initialize notification center if needed with fresh mutable arrays
         if (!device.notificationCenter) {
-            device.notificationCenter = { ...DEFAULT_NOTIFICATION_CENTER };
+            device.notificationCenter = {
+                ...DEFAULT_NOTIFICATION_CENTER,
+                items: [],
+                groups: [],
+                headsUpQueue: [],
+            };
         }
 
         switch (event.type) {

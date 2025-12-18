@@ -4,7 +4,8 @@ import { AppMetadataRegistry, NotificationViewRegistry } from "@tokovo/core";
 import { NotificationStrategyProps } from "./types";
 
 export const AndroidNotificationStrategy: React.FC<NotificationStrategyProps> = ({ notification }) => {
-    const ir = notification.ir;
+    // Support both structures: notification.ir (legacy) or flat notification object (new)
+    const ir = notification.ir || notification;
     const appMeta = AppMetadataRegistry.get(ir.appId);
 
     // Check registry for custom view (App Content)
