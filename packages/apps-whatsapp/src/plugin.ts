@@ -71,6 +71,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     name: string;
     v2Lowering: typeof whatsappV2Lowering;
     behaviors: typeof WhatsAppBehavior;
+    sounds: Record<string, string>;
 } = {
     // === TIER A: Identity ===
     id: APP_IDS.WHATSAPP as "app_whatsapp",
@@ -83,6 +84,13 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     views: whatsappViews,
     appView: WhatsappChatView as any,
     createInitialState: createWhatsAppInitialState,
+
+    // === SOUNDS (for SoundRegistry via PluginManager) ===
+    sounds: {
+        "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+        "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+        "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+    },
 
     // === TIER A: Assets ===
     assets: whatsappAssets,

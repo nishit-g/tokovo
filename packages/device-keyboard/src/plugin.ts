@@ -6,7 +6,7 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import { ReducerRegistry, AutoSoundRegistry } from "@tokovo/core";
+import { ReducerRegistry, AutoSoundRegistry, SoundRegistry } from "@tokovo/core";
 
 // Runtime Layer
 import { keyboardReducer } from "./reducer";
@@ -27,6 +27,15 @@ import { keyboardAudioRules } from "./assets/audio-rules";
 
 // DSL
 import { KeyboardTrackBuilder } from "./dsl/track-builder";
+
+// =============================================================================
+// SOUND ASSETS
+// =============================================================================
+
+const keyboardSounds = {
+    "keyboard_click": "core/keyboard/typing_loop.wav",
+    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+};
 
 // =============================================================================
 // PLUGIN CONTRACT
@@ -87,6 +96,7 @@ export function registerKeyboardPlugin(): void {
     ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
     ReducerRegistry.registerAppReducer("keyboard", keyboardReducer);
     AutoSoundRegistry.register(keyboardAudioRules);
+    SoundRegistry.registerMany(keyboardSounds);
 }
 
 export default KeyboardPlugin;

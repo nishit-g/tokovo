@@ -17,9 +17,9 @@ export const keyboardAudioRules: AutoSoundRule[] = [
     //     idTemplate: "typing_loop_{at}"
     // },
     {
-        match: { kind: "KeyboardInput", type: "keyDown" },
+        match: { kind: "APP", appId: "keyboard", type: "KEY_DOWN" },
         action: "PLAY_ONE_SHOT",
-        sound: "keyboard_click",
+        sound: "keyboard_typing_loop",
         volume: 0.6
     },
 
