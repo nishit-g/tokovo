@@ -284,7 +284,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         )}
 
                         {/* Virtual Keyboard (Unified Surface) */}
-                        {device.keyboard?.visible && (
+                        {device.keyboard && (
                             <KeyboardSurface
                                 keyboard={device.keyboard}
                                 platform={variant}

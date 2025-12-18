@@ -28,20 +28,15 @@ export interface KeyboardState {
     cursorPosition: number;
     cursorVisible: boolean;
 
-    // Selection (NEW)
+    // Selection
     selectionStart: number | null;
     selectionEnd: number | null;
 
-    // Typing Animation (NEW)
-    typingQueue: string[];
-    typingSpeed: number;          // chars per minute
-    lastTypedAt: number | null;
-
-    // Autocomplete (NEW)
+    // Autocomplete
     suggestions: string[];
     highlightedSuggestion: number | null;
 
-    // Visual Feedback (NEW)
+    // Visual Feedback
     keyPressVisual: KeyPressVisual | null;
 }
 
@@ -58,7 +53,7 @@ export interface KeyPressVisual {
 export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
     // Visibility
     visible: false,
-    visibilityChangedAt: 0,
+    visibilityChangedAt: -1,
 
     // Layout
     layout: "qwerty",
@@ -75,11 +70,6 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
     // Selection
     selectionStart: null,
     selectionEnd: null,
-
-    // Typing Animation
-    typingQueue: [],
-    typingSpeed: 80,
-    lastTypedAt: null,
 
     // Autocomplete
     suggestions: [],

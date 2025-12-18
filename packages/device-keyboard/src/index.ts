@@ -97,6 +97,7 @@ import { keyboardAudioRules } from "./assets/audio-rules";
 
 // Register on import
 ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
+ReducerRegistry.registerAppReducer("keyboard", keyboardReducer); // NEW: Enable APP event routing
 AutoSoundRegistry.register(keyboardAudioRules);
 
 // Import components to register strategies

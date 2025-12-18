@@ -85,6 +85,7 @@ export const KeyboardPlugin: DeviceKeyboardPlugin = {
 
 export function registerKeyboardPlugin(): void {
     ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
+    ReducerRegistry.registerAppReducer("keyboard", keyboardReducer);
     AutoSoundRegistry.register(keyboardAudioRules);
 }
 

@@ -173,6 +173,7 @@ export function replay(
                 appId: e.appId,
                 conversationId: e.conversationId,
                 from: e.actor,
+                deviceId: e.deviceId, // Pass deviceId for keyboard visibility
                 payload: { actor: e.actor, conversationId: e.conversationId },
             };
             reducer?.(draft, legacyEvent);
@@ -188,6 +189,7 @@ export function replay(
                 appId: e.appId,
                 conversationId: e.conversationId,
                 from: e.actor,
+                deviceId: e.deviceId, // Pass deviceId for keyboard visibility
                 payload: { actor: e.actor, conversationId: e.conversationId },
             };
             reducer?.(draft, legacyEvent);

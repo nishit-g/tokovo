@@ -163,6 +163,7 @@ export class WhatsAppSpanBuilder {
 
     /**
      * Show typing indicator for the span duration.
+     * NOTE: Use keyboard track for actual key animation.
      */
     typing(actor: string = "them"): void {
         this._events.push(
@@ -248,7 +249,7 @@ export class WhatsAppTrackBuilder {
         return new WhatsAppSpanBuilder(
             startFrame,
             endFrame,
-            this._fps as any, // Unused but kept for consistency
+            this._deviceId,  // FIXED: was passing _fps by mistake!
             this._conversationId,
             this._events,
             this._getOrder

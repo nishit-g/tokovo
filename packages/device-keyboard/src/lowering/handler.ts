@@ -32,29 +32,59 @@ export function lowerKeyboardEvent(
 
         const events: RuntimeKeyboardEvent[] = [];
 
+        // Calculate timing
         if (duration && duration > 0) {
             // Span-based: spread evenly across duration
-            const charDelay = Math.floor(duration / text.length);
+            // Each character gets (duration / text.length) frames
+            const charSpan = duration / text.length;
 
             text.split("").forEach((char, i) => {
-                const delay = variation ? applyVariation(charDelay, event.at + i) : charDelay;
+                const charStartFrame = Math.round(event.at + i * charSpan);
+                const charAt = variation ? applyVariation(charStartFrame, event.at + i) : charStartFrame;
+
+                // KEY_DOWN
                 events.push({
-                    kind: "KEYBOARD",
+                    kind: "APP",
+                    appId: "keyboard",
                     type: "KEY_DOWN",
                     key: char,
-                    at: event.at + i * delay,
+                    at: charAt,
+                    deviceId: event.deviceId,
+                });
+
+                // KEY_UP (shortly after)
+                events.push({
+                    kind: "APP",
+                    appId: "keyboard",
+                    type: "KEY_UP",
+                    key: char,
+                    at: charAt + 2,
                     deviceId: event.deviceId,
                 });
             });
         } else {
             // Point-based: use speed
             text.split("").forEach((char, i) => {
-                const delay = variation ? applyVariation(baseDelay, event.at + i) : baseDelay;
+                const charAt = event.at + i * baseDelay;
+                const finalAt = variation ? applyVariation(charAt, event.at + i) : charAt;
+
+                // KEY_DOWN
                 events.push({
-                    kind: "KEYBOARD",
+                    kind: "APP",
+                    appId: "keyboard",
                     type: "KEY_DOWN",
                     key: char,
-                    at: event.at + i * delay,
+                    at: finalAt,
+                    deviceId: event.deviceId,
+                });
+
+                // KEY_UP
+                events.push({
+                    kind: "APP",
+                    appId: "keyboard",
+                    type: "KEY_UP",
+                    key: char,
+                    at: finalAt + 2,
                     deviceId: event.deviceId,
                 });
             });
@@ -66,7 +96,8 @@ export function lowerKeyboardEvent(
     // All other events pass through
     const { payload, ...rest } = event;
     return [{
-        kind: "KEYBOARD",
+        kind: "APP",
+        appId: "keyboard",
         type: event.type,
         ...payload,
         at: event.at,
@@ -79,7 +110,8 @@ export function lowerKeyboardEvent(
 // =============================================================================
 
 interface RuntimeKeyboardEvent {
-    kind: "KEYBOARD";
+    kind: "APP";
+    appId: "keyboard";
     type: string;
     at: number;
     deviceId: string;
@@ -91,7 +123,7 @@ interface RuntimeKeyboardEvent {
 // =============================================================================
 
 export const keyboardV2Lowering = {
-    eventKinds: ["OS"],
+    eventKinds: ["APP"],
     targets: ["keyboard"],
     lower: lowerKeyboardEvent,
 };

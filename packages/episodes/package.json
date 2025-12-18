@@ -11,6 +11,7 @@
         "@tokovo/dsl": "workspace:*",
         "@tokovo/ir": "workspace:*",
         "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
         "zod": "^3.0.0"
     },
     "devDependencies": {

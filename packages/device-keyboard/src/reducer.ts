@@ -15,14 +15,16 @@ import {
 export const keyboardReducer: FeatureReducer = (
     draft: WorldState,
     event: TimelineEvent,
-    index: number
+    index?: number
 ) => {
     // Shared Device Access
-    const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
+    const eventAny = event as any;
+    const deviceId = eventAny.deviceId || Object.keys(draft.devices)[0];
     const device = draft.devices[deviceId];
     if (!device) return;
 
-    // Initialize keyboard state if needed
+    // INITIALIZATION: The "Gold Standard" of robustness.
+    // Ensure device.keyboard always exists if a keyboard event is being processed.
     if (!device.keyboard) {
         device.keyboard = {
             visible: false,
@@ -32,21 +34,28 @@ export const keyboardReducer: FeatureReducer = (
             inputText: "",
             cursorPosition: 0,
             cursorVisible: true,
-            visibilityChangedAt: 0
-        };
+            visibilityChangedAt: -1,
+            suggestions: [],
+            highlightedSuggestion: null,
+            selectionStart: null,
+            selectionEnd: null,
+            keyPressVisual: null,
+        } as any;
     }
+
+    const keyboard = device.keyboard!;
 
     // Handle V2 Ops
     if (event.kind === "KeyboardType") {
         const e = event as import("@tokovo/ir").KeyboardTypeOp;
         // Append text (simulating typing)
         const textToAppend = e.text;
-        const pos = device.keyboard.cursorPosition;
-        const currentText = device.keyboard.inputText;
+        const pos = keyboard.cursorPosition;
+        const currentText = keyboard.inputText;
         const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
 
-        device.keyboard.inputText = newText;
-        device.keyboard.cursorPosition = pos + textToAppend.length;
+        keyboard.inputText = newText;
+        keyboard.cursorPosition = pos + textToAppend.length;
 
         // AUTOMATION: Inject into App
         injectInputToApp(draft, device.foregroundAppId, newText, event.at);
@@ -58,17 +67,17 @@ export const keyboardReducer: FeatureReducer = (
     if (event.kind === "KeyboardInput") {
         const e = event as import("@tokovo/ir").KeyboardInputOp;
         if (e.type === "keyDown") {
-            device.keyboard.currentKey = e.key;
-            device.keyboard.keyPressedAt = event.at;
+            keyboard.currentKey = e.key;
+            keyboard.keyPressedAt = event.at;
 
             // Handle Backspace logic for V2
             if (e.key === "Backspace") {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
                 if (pos > 0) {
                     const newText = text.slice(0, pos - 1) + text.slice(pos);
-                    device.keyboard.inputText = newText;
-                    device.keyboard.cursorPosition = pos - 1;
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
                     // Inject into App
                     injectInputToApp(draft, device.foregroundAppId, newText, event.at);
                 }
@@ -76,51 +85,77 @@ export const keyboardReducer: FeatureReducer = (
 
             // AUDIO: Handled by AutoSound Rules
         } else {
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
         }
         return;
     }
 
-    // Handle Legacy Ops
-    if (event.kind !== "KEYBOARD") return;
+    // Handle V2 Ops & Legacy Ops
+    // We remove the strict kind guard to allow this to act as both a FeatureReducer 
+    // and an AppReducer for kind: "APP", appId: "keyboard".
 
-    switch (event.type) {
+    const eventType = (event as any).type;
+
+    switch (eventType) {
         case "SHOW":
-            device.keyboard.visible = true;
-            device.keyboard.layout = (event as any).layout || "qwerty";
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
-            device.keyboard.visibilityChangedAt = event.at;
+            keyboard.visible = true;
+            keyboard.layout = (event as any).layout || "qwerty";
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
+            keyboard.visibilityChangedAt = event.at;
             break;
 
         case "HIDE":
-            device.keyboard.visible = false;
-            device.keyboard.currentKey = null;
-            device.keyboard.visibilityChangedAt = event.at;
+            keyboard.visible = false;
+            keyboard.currentKey = null;
+            keyboard.visibilityChangedAt = event.at;
             break;
 
-        case "KEY_DOWN":
-            device.keyboard.currentKey = (event as any).key;
-            device.keyboard.keyPressedAt = event.at;
-            // AUDIO: Handled by AutoSound Rules
+        case "KEY_DOWN": {
+            const key = (event as any).key;
+            keyboard.currentKey = key;
+            keyboard.keyPressedAt = event.at;
+
+            // Handle character insertion for printable keys
+            if (key.length === 1) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                const newText = text.slice(0, pos) + key + text.slice(pos);
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos + 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            } else if (key === "Backspace") {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
             break;
+        }
 
         case "KEY_UP":
-            device.keyboard.currentKey = null;
-            device.keyboard.keyPressedAt = null;
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
             break;
 
         case "TYPE_CHAR": {
             const char = (event as any).char;
             // Add character to input
-            const pos = device.keyboard.cursorPosition;
-            const text = device.keyboard.inputText;
+            const pos = keyboard.cursorPosition;
+            const text = keyboard.inputText;
             const newText = text.slice(0, pos) + char + text.slice(pos);
-            device.keyboard.inputText = newText;
-            device.keyboard.cursorPosition = pos + 1;
-            device.keyboard.currentKey = char;
-            device.keyboard.keyPressedAt = event.at;
+            keyboard.inputText = newText;
+            keyboard.cursorPosition = pos + 1;
+            keyboard.currentKey = char;
+            keyboard.keyPressedAt = event.at;
 
             // AUTOMATION: Inject into App
             injectInputToApp(draft, device.foregroundAppId, newText, event.at);
@@ -129,34 +164,34 @@ export const keyboardReducer: FeatureReducer = (
         }
 
         case "BACKSPACE": {
-            if (device.keyboard.cursorPosition > 0) {
-                const pos = device.keyboard.cursorPosition;
-                const text = device.keyboard.inputText;
+            if (keyboard.cursorPosition > 0) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
                 const newText = text.slice(0, pos - 1) + text.slice(pos);
-                device.keyboard.inputText = newText;
-                device.keyboard.cursorPosition = pos - 1;
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos - 1;
 
                 // AUTOMATION: Inject into App
                 injectInputToApp(draft, device.foregroundAppId, newText, event.at);
             }
-            device.keyboard.currentKey = "⌫";
-            device.keyboard.keyPressedAt = event.at;
+            keyboard.currentKey = "⌫";
+            keyboard.keyPressedAt = event.at;
             // AUDIO: Handled by AutoSound Rules
             break;
         }
 
         case "SET_TEXT": {
             const text = (event as any).text;
-            device.keyboard.inputText = text;
-            device.keyboard.cursorPosition = text.length;
+            keyboard.inputText = text;
+            keyboard.cursorPosition = text.length;
             // AUTOMATION: Inject into App
             injectInputToApp(draft, device.foregroundAppId, text, event.at);
             break;
         }
 
         case "CLEAR":
-            device.keyboard.inputText = "";
-            device.keyboard.cursorPosition = 0;
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
             // AUTOMATION: Inject into App
             injectInputToApp(draft, device.foregroundAppId, "", event.at);
             break;

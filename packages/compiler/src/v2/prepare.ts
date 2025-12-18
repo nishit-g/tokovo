@@ -100,6 +100,17 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
             foregroundAppId: device.app,  // CRITICAL: Renderer checks this!
             isLocked: false,              // Device must be unlocked
             platform: device.profile.includes("pixel") ? "android" : "ios",
+            // Initialize keyboard state per device
+            keyboard: {
+                visible: false,
+                layout: "qwerty",
+                currentKey: null,
+                keyPressedAt: null,
+                inputText: "",
+                cursorPosition: 0,
+                cursorVisible: true,
+                visibilityChangedAt: -1, // Quiescent: no transition yet
+            },
         };
     }
 
@@ -158,12 +169,6 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         muted: false,
     };
 
-    // Default keyboard state
-    const keyboard = {
-        isVisible: false,
-        height: 0,
-    };
-
     // Notifications
     const notifications: any[] = [];
 
@@ -173,7 +178,6 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         os,
         camera,
         audio,
-        keyboard,
         notifications,
         apps: {},
     } as unknown as WorldState;

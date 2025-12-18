@@ -297,6 +297,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       '@tokovo/dsl':
         specifier: workspace:*
         version: link:../dsl
@@ -326,9 +329,6 @@ importers:
 
   packages/renderer:
     dependencies:
-      '@tokovo/apps-whatsapp':
-        specifier: workspace:*
-        version: link:../apps-whatsapp
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core

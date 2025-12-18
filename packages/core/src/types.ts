@@ -319,6 +319,16 @@ export interface KeyboardState {
     cursorPosition: number;
     /** Whether cursor should blink */
     cursorVisible: boolean;
+    /** Selection range */
+    selectionStart: number | null;
+    /** Selection range */
+    selectionEnd: number | null;
+    /** Auto-complete suggestions */
+    suggestions: string[];
+    /** Highlighted suggestion index */
+    highlightedSuggestion: number | null;
+    /** Visual pop-up state */
+    keyPressVisual: any | null;
 }
 
 /** Default keyboard state */
@@ -327,10 +337,15 @@ export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
     layout: "qwerty",
     currentKey: null,
     keyPressedAt: null,
-    visibilityChangedAt: 0,
+    visibilityChangedAt: -1,
     inputText: "",
     cursorPosition: 0,
     cursorVisible: true,
+    selectionStart: null,
+    selectionEnd: null,
+    suggestions: [],
+    highlightedSuggestion: null,
+    keyPressVisual: null,
 };
 
 // =============================================================================

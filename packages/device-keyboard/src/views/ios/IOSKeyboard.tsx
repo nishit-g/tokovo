@@ -271,26 +271,29 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const frame = useCurrentFrame();
     const theme = getIOSTheme(variant);
 
-    // Animation
-    const transitionStart = keyboard.visibilityChangedAt || 0;
+    // Animation for slide in/out
+    const transitionStart = keyboard.visibilityChangedAt ?? 0;
     const targetValue = keyboard.visible ? 1 : 0;
     const startValue = keyboard.visible ? 0 : 1;
 
-    const slideProgress = interpolate(
-        frame,
-        [transitionStart, transitionStart + KEYBOARD_ANIMATION.SLIDE_DURATION_FRAMES],
-        [startValue, targetValue],
-        {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-            easing: Easing.bezier(
-                KEYBOARD_ANIMATION.EASING[0],
-                KEYBOARD_ANIMATION.EASING[1],
-                KEYBOARD_ANIMATION.EASING[2],
-                KEYBOARD_ANIMATION.EASING[3]
-            ),
-        }
-    );
+    // Quiescent state: no transition has occurred yet
+    const slideProgress = transitionStart < 0
+        ? (keyboard.visible ? 1 : 0)
+        : interpolate(
+            frame,
+            [transitionStart, transitionStart + KEYBOARD_ANIMATION.SLIDE_DURATION_FRAMES],
+            [startValue, targetValue],
+            {
+                extrapolateLeft: "clamp",
+                extrapolateRight: "clamp",
+                easing: Easing.bezier(
+                    KEYBOARD_ANIMATION.EASING[0],
+                    KEYBOARD_ANIMATION.EASING[1],
+                    KEYBOARD_ANIMATION.EASING[2],
+                    KEYBOARD_ANIMATION.EASING[3]
+                ),
+            }
+        );
 
     const translateY = interpolate(slideProgress, [0, 1], [100, 0]);
     const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
@@ -300,7 +303,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     // Get rows based on layout
     const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
 
-    // Get suggestions
+    // Get suggestions - reads directly from reducer state
     const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
 
     return (
@@ -336,7 +339,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     highlightedIndex={keyboard.highlightedSuggestion ?? 1}
                 />
 
-                {/* Keyboard Rows */}
+                {/* Keyboard Rows - reads currentKey directly from reducer state */}
                 <div style={{
                     flex: 1,
                     display: "flex",

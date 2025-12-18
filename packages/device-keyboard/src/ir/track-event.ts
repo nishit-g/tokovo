@@ -12,8 +12,8 @@ import type { KeyboardPayloads } from "./payloads";
 // =============================================================================
 
 export type KeyboardTrackEvent = TrackEventBase & {
-    kind: "OS";
-    target: "keyboard";
+    kind: "APP";
+    appId: "keyboard";
     deviceId: string;
 } & (
         | { type: "SHOW"; payload: KeyboardPayloads["SHOW"] }
@@ -36,11 +36,11 @@ export type KeyboardTrackEvent = TrackEventBase & {
 // =============================================================================
 
 declare module "@tokovo/ir" {
-    interface OSPayloadRegistry {
+    interface AppPayloadRegistry {
         keyboard: KeyboardPayloads;
     }
 
-    interface OSTrackEventRegistry {
+    interface AppTrackEventRegistry {
         keyboard: KeyboardTrackEvent;
     }
 }

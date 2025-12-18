@@ -18,7 +18,7 @@ export type DeviceReducer = (state: Record<string, DeviceState>, event: Timeline
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
 
 /** Feature reducer type */
-export type FeatureReducer = (draft: WorldState, event: TimelineEvent, index: number) => void;
+export type FeatureReducer = (draft: WorldState, event: TimelineEvent, index?: number) => void;
 
 // =============================================================================
 // REDUCER REGISTRY

@@ -26,7 +26,7 @@ import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
  */
 export interface PluginLowering {
     appId: string;
-    lower(event: TrackEvent): RuntimeEvent[];
+    lower(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[];
 }
 
 /**
@@ -34,6 +34,7 @@ export interface PluginLowering {
  */
 export interface LoweringContext {
     pluginLowerers: Map<string, PluginLowering>;
+    fps: number;
 }
 
 // =============================================================================
@@ -76,7 +77,7 @@ function lowerAppEvent(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[] 
     // Try plugin lowerer first
     const pluginLowerer = ctx.pluginLowerers.get(appId);
     if (pluginLowerer) {
-        return pluginLowerer.lower(event);
+        return pluginLowerer.lower(event, ctx);
     }
 
     // Fallback: built-in WhatsApp lowering for backward compatibility
@@ -366,13 +367,13 @@ export function lowerTrackEvents(
  * Create lowering context from plugins.
  * Plugins with a `v2Lowering` property will be used for APP event delegation.
  */
-export function createLoweringContext(plugins: TokovoPlugin[]): LoweringContext {
+export function createLoweringContext(plugins: TokovoPlugin[], fps: number = 30): LoweringContext {
     const pluginLowerers = new Map<string, PluginLowering>();
 
     for (const plugin of plugins) {
         // Check if plugin has V2 lowering capability
         const pluginWithV2Lowering = plugin as TokovoPlugin & {
-            v2Lowering?: { lower: (event: TrackEvent) => RuntimeEvent[] };
+            v2Lowering?: { lower: (event: TrackEvent, ctx: LoweringContext) => RuntimeEvent[] };
         };
 
         if (pluginWithV2Lowering.v2Lowering) {
@@ -383,7 +384,7 @@ export function createLoweringContext(plugins: TokovoPlugin[]): LoweringContext 
         }
     }
 
-    return { pluginLowerers };
+    return { pluginLowerers, fps };
 }
 
 /**
@@ -393,6 +394,6 @@ export function lowerEpisode(
     ir: TrackEpisodeIR,
     plugins: TokovoPlugin[]
 ): RuntimeEvent[] {
-    const ctx = createLoweringContext(plugins);
+    const ctx = createLoweringContext(plugins, ir.fps);
     return lowerTrackEvents(ir.events, ctx);
 }

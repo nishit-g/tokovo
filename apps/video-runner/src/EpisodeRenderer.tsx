@@ -19,6 +19,7 @@ import { prepareTrackEpisode, type PreparedTrackEpisode } from "@tokovo/compiler
 import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
 import { iPhone16Profile } from "@tokovo/devices";
 import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
+import { KeyboardPlugin } from "@tokovo/device-keyboard";
 import { episodeRegistry, getFormat, type EpisodeDefinition } from "@tokovo/episodes";
 
 // Import device reducers (side-effects)
@@ -73,6 +74,9 @@ function resolvePlugins(appIds: string[]) {
 
     if (appIds.includes("app_whatsapp")) {
         plugins.push(WhatsAppPluginV2);
+    }
+    if (appIds.includes("keyboard")) {
+        plugins.push(KeyboardPlugin);
     }
     // Add more plugin mappings as needed
 
