@@ -12,3 +12,5 @@
 // Add test imports here as you create them:
 // import "./keyboard-test.episode";
 // import "./camera-test.episode";
+
+import "./test.episode";

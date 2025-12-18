@@ -31,7 +31,7 @@ PluginManager.register(WhatsApp);
 
 // When you add new folders, import them here:
 import "@tokovo/episodes/src/production";
-// import "@tokovo/episodes/src/showcases";
+import "@tokovo/episodes/src/showcases";
 // import "@tokovo/episodes/src/tests";
 
 // =============================================================================

@@ -59,6 +59,116 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
         ],
     });
 
+    // ==========================================================================
+    // EPISODE GENERATOR
+    // ==========================================================================
+    plop.setGenerator("episode", {
+        description: "Generate a new Tokovo episode",
+        prompts: [
+            {
+                type: "input",
+                name: "id",
+                message: "Episode ID (kebab-case, e.g., my-awesome-episode):",
+                validate: (input: string) => {
+                    if (!/^[a-z][a-z0-9-]*$/.test(input)) {
+                        return "ID must be kebab-case (lowercase with dashes)";
+                    }
+                    return true;
+                },
+            },
+            {
+                type: "input",
+                name: "title",
+                message: "Episode title (e.g., My Awesome Episode):",
+            },
+            {
+                type: "input",
+                name: "description",
+                message: "Description:",
+                default: "A Tokovo episode",
+            },
+            {
+                type: "list",
+                name: "category",
+                message: "Category:",
+                choices: ["production", "showcase", "test"],
+                default: "production",
+            },
+            {
+                type: "list",
+                name: "format",
+                message: "Video format:",
+                choices: ["1080x1920", "1080x1920@60", "1920x1080", "1080x1080", "iphone-16-pro"],
+                default: "1080x1920",
+            },
+            {
+                type: "input",
+                name: "duration",
+                message: "Duration (e.g., 30s, 1m, 45s):",
+                default: "30s",
+            },
+            {
+                type: "checkbox",
+                name: "apps",
+                message: "Apps to include:",
+                choices: ["app_whatsapp", "app_twitter", "app_instagram"],
+                default: ["app_whatsapp"],
+            },
+        ],
+        actions: (answers: any) => {
+            // Map category to folder name
+            const categoryToFolder: Record<string, string> = {
+                production: "production",
+                showcase: "showcases",
+                test: "tests",
+            };
+            const folder = categoryToFolder[answers.category] || answers.category;
+
+            // Calculate derived values
+            const fps = answers.format?.includes("@60") ? 60 : 30;
+            const durationMatch = answers.duration?.match(/^(\d+)(s|m)$/);
+            let durationInFrames = 900; // default 30s
+            if (durationMatch) {
+                const value = parseInt(durationMatch[1]);
+                const unit = durationMatch[2];
+                durationInFrames = unit === "m" ? value * 60 * fps : value * fps;
+            }
+
+            // Add computed values to answers
+            answers.fps = fps;
+            answers.durationInFrames = durationInFrames;
+            answers.hasWhatsApp = answers.apps?.includes("app_whatsapp");
+            answers.tags = answers.apps || [];
+            answers.folder = folder;
+
+            const actions: any[] = [
+                {
+                    type: "add",
+                    path: path.join(
+                        process.cwd(),
+                        `packages/episodes/src/${folder}/${answers.id}.episode.ts`
+                    ),
+                    templateFile: path.join(__dirname, "episode/templates/episode.ts.hbs"),
+                },
+            ];
+
+            // Only append to barrel if index.ts exists
+            const barrelPath = path.join(
+                process.cwd(),
+                `packages/episodes/src/${folder}/index.ts`
+            );
+
+            actions.push({
+                type: "append",
+                path: barrelPath,
+                template: `import "./${answers.id}.episode";\n`,
+            });
+
+            return actions;
+        },
+    });
+
+
     // Add custom helpers for case conversion
     plop.setHelper("pascalCase", (text: string) => {
         return text
