@@ -120,9 +120,23 @@ export { IOSNotificationStrategy } from "./strategies/IOSNotificationStrategy";
 export { AndroidNotificationStrategy } from "./strategies/AndroidNotificationStrategy";
 
 // =============================================================================
+// REGISTRIES
+// =============================================================================
+
+export {
+    NotificationStrategyRegistry,
+    registerDefaultStrategies,
+    type NotificationStrategyProps,
+    type NotificationStrategyComponent,
+} from "./registries";
+
+// =============================================================================
 // AUTO-REGISTRATION
 // =============================================================================
 
-// Auto-register plugin on import
+// Auto-register plugin and default strategies on import
 import { registerNotificationPlugin } from "./plugin";
+import { registerDefaultStrategies } from "./registries";
+
 registerNotificationPlugin();
+registerDefaultStrategies();

@@ -2,26 +2,40 @@
  * Notification Reducer
  * 
  * State management for device notifications.
+ * 
+ * NOTE: Uses WorldState and DeviceState from @tokovo/core.
+ * Creates flat NotificationInstance per NOTI_ARCH_2.md canonical shape.
  */
 
-import type { NotificationInstance, NotificationIR, DynamicIslandState } from "./types";
+import type { WorldState, DeviceState } from "@tokovo/core";
+import type { NotificationInstance, DynamicIslandState } from "./types";
 
 // =============================================================================
-// TYPES
+// HELPER: Type-safe access to notification items
 // =============================================================================
 
-interface DeviceState {
-    notifications: NotificationInstance[];
-    notificationCenter?: {
-        open: boolean;
-        groups: any[];
-    };
-    dynamicIsland?: DynamicIslandState;
-    foregroundAppId?: string;
+/**
+ * Get notification items from device with proper typing.
+ * Core's NotificationCenterState.items is Notification[] but we use NotificationInstance[].
+ * This helper encapsulates the type cast to reduce scattered (device as any) casts.
+ */
+function getItems(device: DeviceState): NotificationInstance[] {
+    return (device.notificationCenter?.items || []) as NotificationInstance[];
 }
 
-interface WorldState {
-    devices: Record<string, DeviceState>;
+/**
+ * Set notification items on device.
+ */
+function setItems(device: DeviceState, items: NotificationInstance[]): void {
+    if (!device.notificationCenter) {
+        device.notificationCenter = {
+            items: [],
+            headsUp: null,
+            headsUpQueue: [],
+            groups: [],
+        };
+    }
+    device.notificationCenter.items = items as any;
 }
 
 // =============================================================================
@@ -38,17 +52,9 @@ export function notificationReducer(
     const device = draft.devices[event.deviceId];
     if (!device) return;
 
-    // Initialize notificationCenter if needed (this is where scheduler reads from)
-    if (!device.notificationCenter) {
-        (device as any).notificationCenter = {
-            items: [],
-            headsUp: null,
-            headsUpQueue: [],
-            groups: [],
-        };
-    }
-    if (!(device as any).notificationCenter.items) {
-        (device as any).notificationCenter.items = [];
+    // Initialize using setItems helper if needed
+    if (!device.notificationCenter?.items) {
+        setItems(device, []);
     }
 
     switch (event.type) {
@@ -59,31 +65,41 @@ export function notificationReducer(
         case "NOTIFICATION_SHOW": {
             const id = event.id || `notif_${event.at}_${Math.random().toString(36).slice(2, 8)}`;
 
+            // ★ CANONICAL FLAT SHAPE - No ir nesting
             const instance: NotificationInstance = {
+                // Identity
                 id,
-                ir: {
-                    id,
-                    appId: event.appId,
-                    title: event.title,
-                    body: event.body,
-                    mode: event.mode,
-                    priority: event.priority,
-                    icon: event.icon,
-                    preview: event.preview,
-                    actions: event.actions,
-                    groupKey: event.groupKey,
-                    threadId: event.threadId,
-                    replyable: event.replyable,
-                    metadata: event.metadata,
-                },
                 deviceId: event.deviceId,
+                appId: event.appId,
+
+                // Content (flat, not nested in ir)
+                title: event.title || "",
+                body: event.body || "",
+                icon: event.icon,
+                preview: event.preview,
+                actions: event.actions,
+                replyable: event.replyable,
+                metadata: event.metadata,
+
+                // Grouping
+                groupKey: event.groupKey,
+                threadId: event.threadId,
+
+                // Timing
+                createdAtFrame: event.at,
                 shownAtFrame: event.at,
+
+                // State
+                state: "headsUp",
                 mode: event.mode || "headsup",
+                priority: event.priority || "default",
                 animationState: "entering",
             };
 
-            // Write to notificationCenter.items where scheduler reads from
-            (device as any).notificationCenter.items.push(instance);
+            // Add to items using helper
+            const items = getItems(device);
+            items.push(instance);
+            setItems(device, items);
             break;
         }
 
@@ -92,22 +108,21 @@ export function notificationReducer(
         // =====================================================================
         case "DISMISS_NOTIFICATION":
         case "NOTIFICATION_DISMISS": {
-            const items = (device as any).notificationCenter?.items || [];
+            const items = getItems(device);
             if (event.all) {
                 // Clear all
-                (device as any).notificationCenter.items = [];
+                setItems(device, []);
             } else if (event.groupKey) {
-                // Dismiss by group
-                (device as any).notificationCenter.items = items.filter(
-                    (n: any) => n.ir?.groupKey !== event.groupKey
-                );
+                // Dismiss by group - use flat groupKey
+                setItems(device, items.filter(n => n.groupKey !== event.groupKey));
             } else if (event.id) {
                 // Dismiss single
-                const notif = items.find((n: any) => n.id === event.id);
+                const notif = items.find(n => n.id === event.id);
                 if (notif) {
                     notif.dismissedAtFrame = event.at;
                     notif.animationState = "exiting";
                 }
+                setItems(device, items);
             }
             break;
         }
@@ -117,15 +132,16 @@ export function notificationReducer(
         // =====================================================================
         case "TAP_NOTIFICATION":
         case "NOTIFICATION_TAP": {
-            const items = (device as any).notificationCenter?.items || [];
-            const notif = items.find((n: any) => n.id === event.id);
+            const items = getItems(device);
+            const notif = items.find(n => n.id === event.id);
             if (notif) {
                 notif.tapped = true;
                 notif.dismissedAtFrame = event.at;
                 notif.animationState = "dismissed";
 
-                // Open the app
-                device.foregroundAppId = notif.ir?.appId;
+                // Open the app - use flat appId
+                device.foregroundAppId = notif.appId;
+                setItems(device, items);
             }
             break;
         }
@@ -135,11 +151,12 @@ export function notificationReducer(
         // =====================================================================
         case "SWIPE_NOTIFICATION":
         case "NOTIFICATION_SWIPE": {
-            const items = (device as any).notificationCenter?.items || [];
-            const notif = items.find((n: any) => n.id === event.id);
+            const items = getItems(device);
+            const notif = items.find(n => n.id === event.id);
             if (notif && event.action === "dismiss") {
                 notif.dismissedAtFrame = event.at;
                 notif.animationState = "exiting";
+                setItems(device, items);
             }
             break;
         }
@@ -149,20 +166,22 @@ export function notificationReducer(
         // =====================================================================
         case "SET_DYNAMIC_ISLAND":
         case "NOTIFICATION_DYNAMIC_ISLAND": {
-            device.dynamicIsland = {
+            // DynamicIslandState has mode, content - appId comes from content
+            (device as any).dynamicIsland = {
                 mode: event.mode || "idle",
-                appId: event.appId,
-                content: event.content,
+                content: {
+                    appId: event.appId,
+                    ...event.content,
+                },
             };
             break;
         }
 
         // =====================================================================
-        // NOTIFICATION PANEL
+        // NOTIFICATION PANEL (Not in core NotificationCenterState - skip for now)
         // =====================================================================
         case "TOGGLE_NOTIFICATION_PANEL": {
-            device.notificationCenter ??= { open: false, groups: [] };
-            device.notificationCenter.open = event.open ?? !device.notificationCenter.open;
+            // Panel state handled at render level, not in reducer
             break;
         }
 
@@ -171,9 +190,7 @@ export function notificationReducer(
         // =====================================================================
         case "CLEAR_ALL_NOTIFICATIONS":
         case "NOTIFICATION_CLEAR_ALL": {
-            if ((device as any).notificationCenter) {
-                (device as any).notificationCenter.items = [];
-            }
+            setItems(device, []);
             break;
         }
 
@@ -182,23 +199,22 @@ export function notificationReducer(
         // =====================================================================
         case "REPLY_NOTIFICATION":
         case "NOTIFICATION_REPLY": {
-            const items = (device as any).notificationCenter?.items || [];
-            const notif = items.find((n: any) => n.id === event.id);
+            const items = getItems(device);
+            const notif = items.find(n => n.id === event.id);
             if (notif) {
                 notif.dismissedAtFrame = event.at;
-                // The reply text could be passed to an app event handler
+                setItems(device, items);
             }
             break;
         }
     }
 
     // Clean up dismissed notifications after animation window (30 frames)
-    if ((device as any).notificationCenter?.items) {
-        const cleanupThreshold = event.at - 30;
-        (device as any).notificationCenter.items = (device as any).notificationCenter.items.filter(
-            (n: any) => !n.dismissedAtFrame || n.dismissedAtFrame > cleanupThreshold
-        );
-    }
+    const cleanupThreshold = event.at - 30;
+    const cleanedItems = getItems(device).filter(
+        n => !n.dismissedAtFrame || n.dismissedAtFrame > cleanupThreshold
+    );
+    setItems(device, cleanedItems);
 }
 
 // =============================================================================

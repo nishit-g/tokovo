@@ -2,45 +2,13 @@ import type { DeviceState } from "@tokovo/core";
 import type { NotificationInstance } from "./types";
 
 /**
- * Normalizes a notification from any shape to canonical shape
- */
-function normalizeNotification(n: any): NotificationInstance {
-    // If it has nested ir, flatten it
-    const ir = n.ir || {};
-
-    return {
-        id: n.id,
-        deviceId: n.deviceId || "",
-        appId: n.appId || ir.appId || "",
-        title: n.title || ir.title || "",
-        body: n.body || ir.body || "",
-        icon: n.icon || ir.icon,
-        preview: n.preview || ir.preview,
-        actions: n.actions || ir.actions,
-        replyable: n.replyable || ir.replyable,
-        category: n.category || ir.category,
-        metadata: n.metadata || ir.metadata,
-        groupKey: n.groupKey || ir.groupKey,
-        threadId: n.threadId || ir.threadId,
-        createdAtFrame: n.createdAtFrame ?? n.at ?? n.deliveredAtFrame ?? 0,
-        shownAtFrame: n.shownAtFrame,
-        dismissedAtFrame: n.dismissedAtFrame ?? n.dismissedAt,
-        state: n.state || "pending",
-        mode: n.mode || ir.mode || "both",
-        priority: n.priority || ir.priority || "default",
-        deliverWhen: n.deliverWhen || ir.deliverWhen,
-        tapped: n.tapped,
-        animationState: n.animationState,
-        // Keep legacy ir for backward compat
-        ir: n.ir,
-    };
-}
-
-/**
  * Notification Scheduler
  * 
  * Determines which notifications are visible at a given time `t`.
  * Moves the "Smart Queue" logic from View to Engine.
+ * 
+ * NOTE: Reducer now produces canonical NotificationInstance shape.
+ * No normalization needed - fields are flat and properly typed.
  * 
  * Rules:
  * 1. Notifications must have a minimum gap between them.
@@ -52,13 +20,8 @@ export const NotificationScheduler = {
      * Compute the current visual state of notifications.
      */
     schedule(device: DeviceState, t: number): { headsUp: NotificationInstance | null } {
-        // Check both locations for backwards compatibility:
-        // - device.notificationCenter.items (new - from devices reducer)
-        // - device.os.notifications (legacy)
-        const rawNotifications = device.notificationCenter?.items || device.os?.notifications || [];
-
-        // Normalize all notifications to canonical shape
-        const notifications = rawNotifications.map(normalizeNotification);
+        // Read from notificationCenter.items (canonical location)
+        const notifications = (device.notificationCenter?.items || []) as NotificationInstance[];
         const isLocked = device.isLocked;
 
         // Configuration
@@ -81,7 +44,7 @@ export const NotificationScheduler = {
 
         if (candidates.length === 0) return { headsUp: null };
 
-        // 2. Sort by creation time (FIFO)
+        // 2. Sort by creation time (FIFO) - use canonical createdAtFrame
         const sorted = [...candidates].sort((a, b) => a.createdAtFrame - b.createdAtFrame);
 
         // 3. Simulate the Timeline to find what's active NOW

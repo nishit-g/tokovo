@@ -1,14 +1,15 @@
 import React from "react";
 import { AppSurface } from "@tokovo/core";
 import type { NotificationInstance } from "../types";
-import { AndroidNotificationStrategy } from "../strategies/AndroidNotificationStrategy";
+import { NotificationStrategyRegistry } from "../registries";
 import { IOSNotificationStrategy } from "../strategies/IOSNotificationStrategy";
 
 
 interface HeadsUpNotificationProps {
     notification: NotificationInstance;
     currentTime: number;
-    variant?: "ios" | "android";
+    /** Theme for visual style - looks up from NotificationStrategyRegistry */
+    variant?: string;
     autoDismissAfter?: number; // frames
     deviceWidth?: number; // Physical device width (e.g., 1290 for iPhone 16)
 }
@@ -17,6 +18,13 @@ interface HeadsUpNotificationProps {
  * Heads-Up Notification
  * Displays at the top of the screen when device is unlocked
  * Slides down and auto-dismisses after configurable duration
+ * 
+ * Supports custom themes via NotificationStrategyRegistry:
+ * @example
+ * ```typescript
+ * NotificationStrategyRegistry.register("ghibli", GhibliNotificationStrategy);
+ * <HeadsUpNotification variant="ghibli" ... />
+ * ```
  */
 export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     notification,
@@ -25,8 +33,6 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     autoDismissAfter = 150,
     deviceWidth = 1290, // Default to iPhone 16 width
 }) => {
-    const isAndroid = variant === "android";
-
     // Calculate animation state
     const timeSinceAppear = currentTime - (notification.shownAtFrame || 0);
     const appearDuration = 15; // frames for slide-in animation
@@ -65,8 +71,8 @@ export const HeadsUpNotification: React.FC<HeadsUpNotificationProps> = ({
     // DI ends at ~146px (topY:36 + height:110), add margin for proper spacing  
     const pillTop = 180; // Below Dynamic Island with some margin
 
-    // Strategy component
-    const Strategy = isAndroid ? AndroidNotificationStrategy : IOSNotificationStrategy;
+    // ★ REGISTRY LOOKUP - Get strategy from registry with iOS fallback
+    const Strategy = NotificationStrategyRegistry.get(variant) || IOSNotificationStrategy;
 
     // AppSurface scaling: design at 393px logical, scale to physical device width
     const DESIGN_WIDTH = 393; // Standard iPhone logical width
