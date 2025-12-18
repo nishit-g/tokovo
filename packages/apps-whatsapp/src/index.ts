@@ -93,10 +93,18 @@ export { whatsappAudioRules } from "./assets/audio-rules";
 // =============================================================================
 
 import "./ui/strategies";
-import { AutoSoundRegistry, AppMetadataRegistry } from "@tokovo/core";
+import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry } from "@tokovo/core";
 import { whatsappAudioRules } from "./assets/audio-rules";
 
+// WhatsApp sound paths
+const whatsappSounds = {
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+};
+
 AutoSoundRegistry.register(whatsappAudioRules);
+SoundRegistry.registerMany(whatsappSounds);
 
 AppMetadataRegistry.register("app_whatsapp", {
     displayName: "WhatsApp",

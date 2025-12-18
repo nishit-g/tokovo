@@ -91,14 +91,21 @@ export { keyboardAudioRules } from "./assets/audio-rules";
 // AUTO-REGISTRATION
 // =============================================================================
 
-import { ReducerRegistry, AutoSoundRegistry } from "@tokovo/core";
+import { ReducerRegistry, AutoSoundRegistry, SoundRegistry } from "@tokovo/core";
 import { keyboardReducer } from "./reducer";
 import { keyboardAudioRules } from "./assets/audio-rules";
+
+// Keyboard sound paths
+const keyboardSounds = {
+    "keyboard_click": "core/keyboard/typing_loop.wav",
+    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+};
 
 // Register on import
 ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
 ReducerRegistry.registerAppReducer("keyboard", keyboardReducer); // NEW: Enable APP event routing
 AutoSoundRegistry.register(keyboardAudioRules);
+SoundRegistry.registerMany(keyboardSounds);
 
 // Import components to register strategies
 import "./views/ios/IOSKeyboard";
