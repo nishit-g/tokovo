@@ -18,16 +18,21 @@ export function callV2Lowering(
     event: CallTrackEvent,
     _ctx: { fps: number }
 ): any[] {
+    console.log("[callV2Lowering] ✨ Lowering CALL event:", event.type, "at", event.at);
+
     // Call events map directly to runtime events
     // Spread first, then override essential fields to ensure they're correct
     const { _declarationOrder, ...rest } = event;
-    return [{
+    const result = [{
         ...rest,
         at: event.at,
         kind: "CALL" as const,
         deviceId: event.deviceId,
         type: event.type,
     }];
+
+    console.log("[callV2Lowering] 📤 Output:", result);
+    return result;
 }
 
 // =============================================================================

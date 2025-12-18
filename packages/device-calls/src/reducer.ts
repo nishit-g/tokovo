@@ -30,16 +30,25 @@ export function callReducer(
     draft: WorldState,
     event: TimelineEvent
 ): void {
+    // DEBUG: Log all events to see what we receive
+    if (event.kind === "CALL") {
+        console.log("[CallReducer] 🔔 Received CALL event:", event.type, event);
+    }
+
     // Only handle CALL kind events
     if (event.kind !== "CALL") return;
 
     const deviceId = (event as any).deviceId || Object.keys(draft.devices)[0];
     const device = draft.devices[deviceId];
-    if (!device) return;
+    if (!device) {
+        console.warn("[CallReducer] ⚠️ Device not found:", deviceId);
+        return;
+    }
 
     switch (event.type) {
         case "INCOMING": {
             const e = event as any;
+            console.log("[CallReducer] 📞 Setting incoming call from:", e.callerName);
             device.call = {
                 status: "incoming",
                 callerId: e.callerId,
@@ -54,6 +63,7 @@ export function callReducer(
                 isSpeakerOn: false,
                 isOnHold: false,
             };
+            console.log("[CallReducer] ✅ device.call is now:", device.call);
             break;
         }
 

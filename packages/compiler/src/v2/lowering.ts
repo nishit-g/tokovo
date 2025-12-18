@@ -49,7 +49,10 @@ export function lowerTrackEvent(
     event: TrackEvent,
     ctx: LoweringContext
 ): RuntimeEvent[] {
-    switch (event.kind) {
+    // Cast to handle extended kinds like CALL that aren't in TrackEvent union
+    const kind = event.kind as string;
+
+    switch (kind) {
         case "CAMERA":
             return lowerCameraEvent(event as CameraTrackEvent);
         case "AUDIO":
@@ -60,6 +63,8 @@ export function lowerTrackEvent(
             return lowerMarkerEvent(event as MarkerTrackEvent);
         case "DEVICE":
             return lowerDeviceEvent(event);
+        case "CALL":
+            return lowerCallEvent(event);
         default:
             // APP events - delegate to plugin
             return lowerAppEvent(event, ctx);
@@ -345,6 +350,29 @@ function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
  */
 function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
     return [];
+}
+
+/**
+ * Lower CALL events (phone calls).
+ * These come from CallTrackBuilder DSL.
+ */
+function lowerCallEvent(event: TrackEvent): RuntimeEvent[] {
+    const e = event as any;
+
+    console.log("[lowerCallEvent] 📞 Lowering CALL event:", e.type, "at", e.at);
+
+    // CALL events are passed through 1:1 with kind: "CALL"
+    const { _declarationOrder, ...rest } = e;
+    const result = [{
+        ...rest,
+        at: e.at,
+        kind: "CALL" as const,
+        deviceId: e.deviceId,
+        type: e.type,
+    }];
+
+    console.log("[lowerCallEvent] 📤 Output:", result);
+    return result as any[];
 }
 
 /**

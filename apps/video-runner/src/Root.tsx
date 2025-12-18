@@ -26,6 +26,14 @@ setCompiler(compile);
 PluginManager.register(WhatsApp);
 
 // =============================================================================
+// PLUGIN IMPORTS (side-effect: auto-registers reducers)
+// =============================================================================
+
+// Device plugins auto-register their reducers on import
+import "@tokovo/device-calls";
+import "@tokovo/device-notifications";
+
+// =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)
 // =============================================================================
 

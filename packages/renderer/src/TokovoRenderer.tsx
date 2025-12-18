@@ -23,6 +23,7 @@ import {
     HeadsUpNotification,
     NotificationInstance
 } from "@tokovo/device-notifications";
+import { PhoneApp } from "@tokovo/device-calls";
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./overlays";
@@ -141,6 +142,14 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
     const hasActiveCall = device.call && device.call.status !== "ended";
 
+    // DEBUG: Call state
+    if (device.call) {
+        console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
+    }
+    if (hasActiveCall) {
+        console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
+    }
+
     // ==========================================================================
     // 4. SELECT APP VIEW
     // ==========================================================================
@@ -168,27 +177,19 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
                         {/* ========================================================================= */}
                         {(() => {
-                            // A. Active Call takes precedence
+                            // A. Active Call takes precedence - use PhoneApp directly from device-calls
                             if (hasActiveCall) {
-                                const PhoneView = pm.getView(APP_IDS.PHONE);
-                                if (PhoneView) {
-                                    // Phone App handles its own scaling/surface if needed, or we wrap it?
-                                    // Usually full-screen system apps define their own layout, but let's standardise.
-                                    const meta = pm.get(APP_IDS.PHONE)?.metadata;
-                                    const designWidth = meta?.designWidth || 393; // Default logical width
+                                const designWidth = 393; // iPhone design width
 
-                                    return (
-                                        <AppSurface
-                                            designWidth={designWidth}
-                                            targetWidth={profile.dimensions.width}
-                                            targetHeight={profile.dimensions.height}
-                                        >
-                                            <PhoneView world={world} t={t} platform={variant} deviceId={deviceId} />
-                                        </AppSurface>
-                                    );
-                                }
-                                // Fallback removed (Plugin must exist)
-                                return <div style={{ color: "white", padding: 50 }}>System Error: Phone App Missing</div>;
+                                return (
+                                    <AppSurface
+                                        designWidth={designWidth}
+                                        targetWidth={profile.dimensions.width}
+                                        targetHeight={profile.dimensions.height}
+                                    >
+                                        <PhoneApp world={world} t={t} platform={variant} deviceId={deviceId} />
+                                    </AppSurface>
+                                );
                             }
 
                             // B. Active App (Unlocked)

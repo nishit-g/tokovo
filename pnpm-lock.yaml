@@ -310,6 +310,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-calls':
+        specifier: workspace:*
+        version: link:../device-calls
       '@tokovo/device-keyboard':
         specifier: workspace:*
         version: link:../device-keyboard
