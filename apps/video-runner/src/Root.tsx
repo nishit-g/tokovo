@@ -6,7 +6,8 @@ import { WhatsappMediaShowcaseVideo } from "./WhatsappMediaShowcaseVideo";
 import { UltimateShowcaseVideo } from "./UltimateShowcaseVideo";
 import { TwitterShowcaseVideo } from "./TwitterShowcaseVideo";
 import { MultiAppShowcaseVideo } from "./MultiAppShowcaseVideo";
-import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
+// LEGACY (V1 DSL - disabled)
+// import { NotificationShowcaseVideo } from "./NotificationShowcaseVideo";
 import { KeyboardTypingShowcase } from "./KeyboardTypingShowcase";
 import { FullRealityShowcase } from "./FullRealityShowcase";
 import { PhoneCallShowcase } from "./PhoneCallShowcase";
@@ -15,10 +16,10 @@ import { SemanticCameraShowcase } from "./SemanticCameraShowcase";
 import { AutoDirectorShowcase } from "./AutoDirectorShowcase";
 import { ManualCameraShowcase } from "./ManualCameraShowcase";
 import { NotificationShowcase } from "./showcases/NotificationShowcase";
-import { BakchodiGangVideo } from "./BakchodiGangVideo";
+// import { BakchodiGangVideo } from "./BakchodiGangVideo";
 import { GandhiTextingVideo } from "./GandhiTextingVideo";
-import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
-import { UltimateCapabilitiesShowcase, ultimateShowcaseConfig } from "./UltimateCapabilitiesShowcase";
+// import { EnterpriseDemoVideo, enterpriseDemoConfig } from "./EnterpriseDemoVideo";
+// import { UltimateCapabilitiesShowcase, ultimateShowcaseConfig } from "./UltimateCapabilitiesShowcase";
 import { TrackDemoVideo, trackDemoConfig } from "./TrackDemoVideo";
 import { BakchodiBrosVideo, bakchodiConfig } from "./BakchodiBrosVideo";
 import { PluginManager, setCompiler } from "@tokovo/core";
@@ -56,7 +57,7 @@ export const RemotionRoot: React.FC = () => {
                 width={bakchodiConfig.width}
                 height={bakchodiConfig.height}
             />
-            {/* Ultimate Capabilities Showcase - shows ALL features */}
+            {/* Ultimate Capabilities Showcase - V1 DSL disabled
             <Composition
                 id={ultimateShowcaseConfig.id}
                 component={UltimateCapabilitiesShowcase}
@@ -65,6 +66,7 @@ export const RemotionRoot: React.FC = () => {
                 width={ultimateShowcaseConfig.width}
                 height={ultimateShowcaseConfig.height}
             />
+            */}
             <Composition
                 id="AutoDirectorShowcase"
                 component={AutoDirectorShowcase}
@@ -121,6 +123,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            {/* LEGACY (V1 DSL - disabled)
             <Composition
                 id="NotificationShowcase"
                 component={NotificationShowcaseVideo}
@@ -129,6 +132,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            */}
             <Composition
                 id="FullCinematicShowcase"
                 component={FullCinematicShowcaseVideo}
@@ -187,6 +191,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            {/* LEGACY (V1 DSL - disabled)
             <Composition
                 id="BakchodiGang"
                 component={BakchodiGangVideo}
@@ -195,6 +200,7 @@ export const RemotionRoot: React.FC = () => {
                 width={1080}
                 height={1920}
             />
+            */}
             <Composition
                 id="GandhiTexting"
                 component={GandhiTextingVideo}
@@ -204,11 +210,80 @@ export const RemotionRoot: React.FC = () => {
                 height={1920}
             />
 
-            {/* === ENTERPRISE PIPELINE DEMO (New) === */}
+            {/* === ENTERPRISE PIPELINE DEMO (Legacy V1 - disabled) ===
             <Composition
                 {...enterpriseDemoConfig}
             />
+            */}
 
+            {/* ========================================================= */}
+            {/* === AUTO-DISCOVERY COMPOSITIONS (V2 Architecture) ====== */}
+            {/* ========================================================= */}
+            <RegistryCompositions />
+        </>
+    );
+};
+
+// =============================================================================
+// AUTO-DISCOVERY: Generates compositions from episode registry
+// =============================================================================
+
+import { Folder } from "remotion";
+import { episodeRegistry, getFormat } from "@tokovo/episodes";
+import { EpisodeRenderer, calculateEpisodeMetadata } from "./EpisodeRenderer";
+import { z } from "zod";
+
+// Import production episodes (side-effect: auto-registers)
+import "@tokovo/episodes/src/production";
+
+const RegistryCompositions: React.FC = () => {
+    const productionEpisodes = episodeRegistry.filter({ category: "production" });
+    const showcaseEpisodes = episodeRegistry.filter({ category: "showcase" });
+    const testEpisodes = episodeRegistry.filter({ category: "test" });
+
+    console.log("[Root] Auto-discovery found:", {
+        production: productionEpisodes.length,
+        showcase: showcaseEpisodes.length,
+        test: testEpisodes.length,
+    });
+
+    const renderEpisode = (ep: any) => {
+        const format = typeof ep.config.format === "string"
+            ? getFormat(ep.config.format as any)
+            : ep.config.format;
+
+        return (
+            <Composition
+                key={ep.meta.id}
+                id={ep.meta.id}
+                component={EpisodeRenderer}
+                durationInFrames={ep.config.durationInFrames}
+                fps={format.fps}
+                width={format.width}
+                height={format.height}
+                defaultProps={{ episodeId: ep.meta.id }}
+                schema={z.object({ episodeId: z.string() })}
+            />
+        );
+    };
+
+    return (
+        <>
+            {productionEpisodes.length > 0 && (
+                <Folder name="Production">
+                    {productionEpisodes.map(renderEpisode)}
+                </Folder>
+            )}
+            {showcaseEpisodes.length > 0 && (
+                <Folder name="Showcases">
+                    {showcaseEpisodes.map(renderEpisode)}
+                </Folder>
+            )}
+            {testEpisodes.length > 0 && (
+                <Folder name="Tests">
+                    {testEpisodes.map(renderEpisode)}
+                </Folder>
+            )}
         </>
     );
 };
