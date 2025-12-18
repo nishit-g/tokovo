@@ -2,34 +2,33 @@ import { AutoSoundRule } from "@tokovo/core";
 import { APP_IDS } from "@tokovo/core";
 
 export const whatsappAudioRules: AutoSoundRule[] = [
-    // === V2 EVENTS ===
+    // === RUNTIME EVENTS (after lowering, kind=APP) ===
     {
-        match: { kind: "MessageSent", appId: APP_IDS.WHATSAPP },
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_SENT" },
         action: "PLAY_ONE_SHOT",
         sound: "app_whatsapp.message_out",
         bus: "ui",
         duckMusic: true
     },
     {
-        match: { kind: "MessageReceived", appId: APP_IDS.WHATSAPP },
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_RECEIVED" },
         action: "PLAY_ONE_SHOT",
         sound: "app_whatsapp.message_in",
         bus: "ui",
         duckMusic: true
     },
     {
-        match: { kind: "TypingStarted", appId: APP_IDS.WHATSAPP },
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_START" },
         action: "START_LOOP",
         sound: "app_whatsapp.typing_loop",
         bus: "sfx",
         volume: 0.4,
-        idTemplate: "typing_{conversationId}_{actor}" // V2 uses "actor" instead of "from"
+        idTemplate: "typing_{conversationId}_{from}"
     },
     {
-        match: { kind: "TypingEnded", appId: APP_IDS.WHATSAPP },
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_END" },
         action: "STOP_SOUND",
-        stopId: "typing_{conversationId}_{actor}"
+        stopId: "typing_{conversationId}_{from}"
     },
-
 
 ];

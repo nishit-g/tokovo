@@ -56,3 +56,6 @@ export {
     type CrossfadeState,
     type MoodTag,
 } from "./music-bed";
+
+// Sound paths
+export { getSoundPath } from "./sounds";

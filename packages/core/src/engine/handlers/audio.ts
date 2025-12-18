@@ -95,13 +95,25 @@ export function handleAutoSounds(
 
     // Only fetch rules relevant to this event kind
     const rules = AutoSoundRegistry.getRulesForKind(event.kind);
+
+    // Debug: log if rules exist for this event kind
+    if (rules.length > 0) {
+        console.log(`[AutoSound] Found ${rules.length} rules for kind: ${event.kind}`, event);
+    }
+
     const instructions = deriveAudioInstructions(event, rules);
+
+    // Debug: log if instructions were generated
+    if (instructions.length > 0) {
+        console.log(`[AutoSound] Generated ${instructions.length} instructions:`, instructions);
+    }
 
     for (const instruction of instructions) {
         const instanceId = instruction.instanceId || `auto_${ctx.eventIndex}_${event.at}`;
 
         if (instruction.action === "PLAY_ONE_SHOT" || instruction.action === "START_LOOP") {
             if (instruction.cue && instruction.soundId) {
+                console.log(`[AutoSound] 🔊 Adding sound: ${instruction.soundId} at frame ${event.at}`);
                 draft.audio!.activeSounds[instanceId] = {
                     soundId: instruction.soundId,
                     startFrame: event.at,
