@@ -11,6 +11,7 @@
         "@tokovo/dsl": "workspace:*",
         "@tokovo/ir": "workspace:*",
         "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/device-calls": "workspace:*",
         "@tokovo/device-keyboard": "workspace:*",
         "@tokovo/device-notifications": "workspace:*",
         "zod": "^3.0.0"
