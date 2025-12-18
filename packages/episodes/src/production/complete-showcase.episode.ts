@@ -34,7 +34,7 @@ export default defineEpisode({
     config: {
         format: "1080x1920",
         durationInFrames: 1200, // 40s * 30fps
-        apps: ["app_whatsapp"],
+        apps: ["app_whatsapp", "keyboard"],
     },
     build: () => episode("complete-showcase", {
         fps: 30,
@@ -44,11 +44,6 @@ export default defineEpisode({
         .device("phone", "iphone16", {
             app: "app_whatsapp",
             conversations: [
-                {
-                    id: "dm_mom",
-                    name: "Mom ❤️",
-                    avatar: "/avatars/avatar-mom.jpg",
-                },
                 {
                     id: "dm_alex",
                     name: "Alex 👋",
