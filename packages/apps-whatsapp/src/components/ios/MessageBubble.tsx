@@ -1,6 +1,6 @@
 import React from "react";
+import { Check, CheckCheck } from "lucide-react";
 import { getTheme } from "./theme";
-import { DoubleCheckIcon } from "./Icons";
 import { MessageContent } from "./MessageContent";
 import { MessageData } from "../../types";
 
@@ -41,26 +41,43 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         return <MessageContent message={message} />;
     }
 
-    // Only show tail for the FIRST message in a group
+    // Only show tail for the FIRST message in a group (Visual Run)
     const showTail = isFirst;
 
-    // Corner Radius Logic
+    // Corner Radius Logic (Visual Run)
     // Top-Left: Sharp if Receiver & First
     // Top-Right: Sharp if Sender & First
     const borderTopLeft = !isMe && isFirst ? 0 : 16;
     const borderTopRight = isMe && isFirst ? 0 : 16;
-    // Bottoms are generally rounded unless we want extremely tight "stack" look
-    // Standard WhatsApp iOS rounds all bottoms.
+
+    // Bottoms are rounded unless it's a middle/first message in a run, then we might want smaller radius?
+    // standard WhatsApp iOS:
+    // First: Rounded except corner
+    // Middle: Rounded
+    // Last: Rounded
+    // Actually, usually in rapid succession they look 'stacked'. 
+    // For now keeping simple logic: 16px everywhere else.
+
+    // ANCHOR DATA
+    // We attach data-anchor="message" and data-message-id={id} 
+    // so the camera system can find this element.
 
     return (
-        <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
-            maxWidth: "75%", // Standard width constraint
-            position: "relative",
-            marginBottom: 2, // Tight bubble spacing
-            display: "flex",
-            flexDirection: "column"
-        }}>
+        <div
+            data-anchor="message"
+            data-message-id={message.id}
+            style={{
+                alignSelf: isMe ? "flex-end" : "flex-start",
+                maxWidth: "75%", // Standard width constraint
+                position: "relative",
+                // Visual Run Spacing: 
+                // If isLast (of group), we rely on parent margin. 
+                // Inside group, we use small margin.
+                marginBottom: 2,
+                display: "flex",
+                flexDirection: "column"
+            }}
+        >
             <div style={{
                 backgroundColor: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
                 borderRadius: 16,
@@ -78,7 +95,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     <span style={{
                         fontSize: 13,
                         fontWeight: 500,
-                        color: senderColor || "#00A884",
+                        color: senderColor || "#00A884", // Fallback color
                         marginBottom: 2,
                         display: "block",
                     }}>
@@ -90,21 +107,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {message.replyTo && (
                     <div style={{
                         backgroundColor: "rgba(0, 0, 0, 0.06)",
-                        borderLeft: "3px solid #25D366",
+                        borderLeft: "3px solid var(--app-wa-primary)", // Theme primary
                         borderRadius: 4,
                         padding: "4px 8px",
                         marginBottom: 4,
                         fontSize: 12,
+                        cursor: "pointer"
                     }}>
                         <div style={{
-                            color: "#25D366",
+                            color: "var(--app-wa-primary)", // Theme primary
                             fontWeight: 500,
                             marginBottom: 2,
                         }}>
                             {message.replyTo.from || "You"}
                         </div>
                         <div style={{
-                            color: "#666",
+                            color: "var(--app-wa-bubble-text)", // Use text color but opaque?
+                            opacity: 0.7,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
@@ -116,7 +135,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
 
                 {/* Content Layer */}
-                <MessageContent message={message} />
+                <div style={{ color: theme.colors.bubbleText }}>
+                    <MessageContent message={message} />
+                </div>
 
                 {/* Metadata Row (Time + Read) */}
                 <div style={{
@@ -129,14 +150,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 }}>
                     <span style={{
                         fontSize: 11,
-                        color: theme.colors.secondary, // Greenish on My, Gray on Other?
-                        // Actually on "My" bubble, time is also theme-colored usually
+                        color: theme.colors.bubbleTime,
                     }}>
                         {message.timestamp || "10:00"}
                     </span>
-                    {isMe && <DoubleCheckIcon read={message.status === "read"} size={14} />}
+                    {isMe && (
+                        message.status === "read" ?
+                            <CheckCheck size={14} color="#53BDEB" /> : // Read Blue
+                            <Check size={14} color="var(--app-wa-bubble-time)" /> // Sent Gray
+                    )}
                 </div>
             </div>
+
             {/* Reactions - Floating pill at bottom-right like WhatsApp */}
             {message.reactions && message.reactions.length > 0 && (
                 <div style={{
@@ -152,7 +177,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         <span
                             key={`${reaction.emoji}_${idx}`}
                             style={{
-                                background: "#fff",
+                                background: theme.colors.background, // Match app bg or bubble bg? usually white/app bg
                                 borderRadius: 10,
                                 padding: "2px 6px",
                                 fontSize: 12,
@@ -160,12 +185,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 alignItems: "center",
                                 gap: 2,
                                 boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-                                border: "1px solid rgba(0,0,0,0.08)",
+                                border: "1px solid var(--app-wa-separator)",
                             }}
                         >
                             {reaction.emoji}
                             {reaction.count > 1 && (
-                                <span style={{ fontSize: 10, color: "#666" }}>
+                                <span style={{ fontSize: 10, color: theme.colors.secondary }}>
                                     {reaction.count}
                                 </span>
                             )}
@@ -190,7 +215,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 >
                     {/* Authentic WhatsApp Tail Path approximation */}
                     <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
-                    {/* Note: This is a simplified path for the demo. SVG paths for actual WA tail are complex bezier curves */}
                 </svg>
             )}
         </div>

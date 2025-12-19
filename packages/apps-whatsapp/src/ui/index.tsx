@@ -1,5 +1,6 @@
 import React from "react";
 import { WorldState, AppSurface } from "@tokovo/core";
+import { injectWhatsAppStyles } from "../styles";
 
 // Screens
 import { ChatScreen } from "./screens/ios/ChatScreen";
@@ -74,6 +75,10 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     }
 
     // 4. Return Content (Hoisted AppSurface handles scaling now)
+    React.useEffect(() => {
+        injectWhatsAppStyles();
+    }, []);
+
     return (
         <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
             {activeScreenContent}

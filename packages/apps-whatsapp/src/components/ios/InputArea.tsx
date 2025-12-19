@@ -1,6 +1,6 @@
 import React from "react";
+import { Plus, Camera, Mic, Send } from "lucide-react";
 import { getTheme } from "./theme";
-import { PlusCircleIcon, CameraFillIcon, MicrophoneFillIcon } from "./Icons";
 
 // Logical height for Input Area
 // ~48-50px for the input field itself
@@ -19,35 +19,41 @@ export const InputArea: React.FC<{
     const paddingBottom = Math.max(safeAreaBottom, 20);
 
     return (
-        <div style={{
-            backgroundColor: "#F6F6F6", // Or #FFFFFF depending on exact version
-            borderTop: "1px solid rgba(0,0,0,0.1)",
-            padding: `10px 16px ${paddingBottom}px 16px`,
-            display: "flex",
-            alignItems: "center",
-            gap: 12, // Standard gap
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            backdropFilter: "blur(20px)", // Glassmorphism
-        }}>
+        <div
+            data-anchor="input"
+            style={{
+                backgroundColor: "#F6F6F6", // Or #FFFFFF depending on exact version
+                borderTop: "1px solid var(--app-wa-separator)",
+                padding: `10px 16px ${paddingBottom}px 16px`,
+                display: "flex",
+                alignItems: "center",
+                gap: 12, // Standard gap
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                backdropFilter: "blur(20px)", // Glassmorphism
+            }}
+        >
             {/* Plus Button */}
             <div style={{ paddingBottom: 6 }}>
-                <PlusCircleIcon color={theme.colors.primary} />
+                <Plus size={24} color={theme.colors.primary} />
             </div>
 
             {/* Input Field */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20, // Rounded pill
-                border: "1px solid rgba(0,0,0,0.1)",
-                padding: "8px 12px",
-                minHeight: 36,
-                display: "flex",
-                alignItems: "center"
-            }}>
+            <div
+                data-anchor="typing"
+                style={{
+                    flex: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 20, // Rounded pill
+                    border: "1px solid rgba(0,0,0,0.1)",
+                    padding: "8px 12px",
+                    minHeight: 36,
+                    display: "flex",
+                    alignItems: "center"
+                }}
+            >
                 <span style={{
                     fontSize: 16,
                     fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
@@ -83,13 +89,12 @@ export const InputArea: React.FC<{
             {hasContent ? (
                 // Send button implies Mic usually transforms or just send icon
                 <div style={{ paddingBottom: 6 }}>
-                    {/* Using Mic for now as visual placeholder, strictly speaking it changes to Send */}
-                    <MicrophoneFillIcon color={theme.colors.primary} />
+                    <Send size={20} color={theme.colors.primary} fill={theme.colors.primary} />
                 </div>
             ) : (
                 <div style={{ display: "flex", gap: 16, paddingBottom: 6 }}>
-                    <CameraFillIcon color={theme.colors.primary} />
-                    <MicrophoneFillIcon color={theme.colors.primary} />
+                    <Camera size={22} color={theme.colors.primary} />
+                    <Mic size={20} color={theme.colors.primary} fill={theme.colors.primary} />
                 </div>
             )}
 

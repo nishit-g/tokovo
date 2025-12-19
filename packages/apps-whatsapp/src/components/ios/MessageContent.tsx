@@ -1,4 +1,5 @@
 import React from "react";
+import { Play } from "lucide-react";
 import { MessageData } from "../../types";
 import { getTheme } from "./theme";
 
@@ -8,7 +9,7 @@ const TextContent: React.FC<{ text: string }> = ({ text }) => (
     <div style={{
         fontSize: 16,
         lineHeight: "21px",
-        color: "#000",
+        color: "var(--app-wa-bubble-text)",
         fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
         wordWrap: "break-word",
         whiteSpace: "pre-wrap"
@@ -52,9 +53,7 @@ const VideoContent: React.FC<{ url?: string; thumbnail?: string; caption?: strin
                     backgroundColor: "rgba(0,0,0,0.6)",
                     display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                        <path d="M8 5v14l11-7z" />
-                    </svg>
+                    <Play size={24} color="white" fill="white" style={{ marginLeft: 2 }} />
                 </div>
             </div>
             {duration && (
@@ -76,16 +75,16 @@ const SystemContent: React.FC<{ text: string }> = ({ text }) => {
     return (
         <div style={{
             alignSelf: "center",
-            backgroundColor: "rgba(0,0,0,0.2)", // "Encyclopedia" style
+            backgroundColor: "var(--app-wa-header-bg)", // "Encyclopedia" style
             borderRadius: 8,
             padding: "4px 8px",
             fontSize: 12,
-            color: "#333", // Or theme.colors.systemText
+            color: "var(--app-wa-bubble-timestamp)", // Or theme.colors.systemText
             marginBottom: 8,
             marginTop: 8,
             textAlign: "center",
             maxWidth: "80%",
-            boxShadow: "0 1px 1px rgba(255,255,255,0.4)"
+            boxShadow: "0 1px 1px rgba(0,0,0,0.1)"
         }}>
             {text}
         </div>
