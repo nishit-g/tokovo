@@ -35,9 +35,12 @@ export const InputArea: React.FC<{
                 backdropFilter: "blur(20px)", // Glassmorphism
             }}
         >
-            {/* Plus Button */}
-            <div style={{ paddingBottom: 6 }}>
-                <Plus size={24} color={theme.colors.primary} />
+            {/* Plus Button (Blue SVG) */}
+            <div style={{ paddingBottom: 6, cursor: "pointer" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 5V19" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M5 12H19" stroke="#007AFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
             </div>
 
             {/* Input Field */}
@@ -46,21 +49,34 @@ export const InputArea: React.FC<{
                 style={{
                     flex: 1,
                     backgroundColor: "#FFFFFF",
-                    borderRadius: 20, // Rounded pill
-                    border: "1px solid rgba(0,0,0,0.1)",
-                    padding: "8px 12px",
+                    borderRadius: 20,
+                    border: "1px solid rgba(0,0,0,0.1)", // Subtle border
+                    padding: "6px 12px 6px 8px", // Left padding smaller for sticker icon
                     minHeight: 36,
                     display: "flex",
-                    alignItems: "center"
+                    alignItems: "center",
+                    gap: 8
                 }}
             >
+                {/* Sticker Icon inside Input */}
+                <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M18.5 18.5L22 22" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="#8E8E93" strokeWidth="1.5" />
+                        <path d="M8 14C8 14 9.5 16 12 16C14.5 16 16 14 16 14" stroke="#8E8E93" strokeWidth="1.5" strokeLinecap="round" />
+                        <path d="M9 10L9.01 10" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
+                        <path d="M15 10L15.01 10" stroke="#8E8E93" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                </div>
+
                 <span style={{
                     fontSize: 16,
                     fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-                    color: "#000",
-                    lineHeight: "20px"
+                    color: hasContent ? "#000" : "#C7C7CC", // Logic handled here
+                    lineHeight: "20px",
+                    flex: 1
                 }}>
-                    {text}
+                    {hasContent ? text : "Message"}
                     {showCursor && (
                         <span style={{
                             display: "inline-block",
@@ -73,28 +89,28 @@ export const InputArea: React.FC<{
                         }} />
                     )}
                 </span>
-                {!hasContent && (
-                    <span style={{
-                        fontSize: 16,
-                        color: "#C7C7CC",
-                        position: "absolute",
-                        pointerEvents: "none"
-                    }}>
-                        Message
-                    </span>
-                )}
             </div>
 
-            {/* Right Icons: Camera if empty, Mic if typing (or both in some versions) */}
+            {/* Right Icons: Camera and Mic */}
             {hasContent ? (
-                // Send button implies Mic usually transforms or just send icon
-                <div style={{ paddingBottom: 6 }}>
-                    <Send size={20} color={theme.colors.primary} fill={theme.colors.primary} />
+                // Send button 
+                <div style={{ paddingBottom: 6, cursor: "pointer" }}>
+                    <div style={{
+                        width: 32,
+                        height: 32,
+                        backgroundColor: theme.colors.primary,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <Send size={18} color="#FFF" fill="#FFF" style={{ marginLeft: 2 }} />
+                    </div>
                 </div>
             ) : (
-                <div style={{ display: "flex", gap: 16, paddingBottom: 6 }}>
-                    <Camera size={22} color={theme.colors.primary} />
-                    <Mic size={20} color={theme.colors.primary} fill={theme.colors.primary} />
+                <div style={{ display: "flex", gap: 20, paddingBottom: 6, alignItems: "center" }}>
+                    <Camera size={26} color={theme.colors.primary} strokeWidth={1.5} />
+                    <Mic size={24} color={theme.colors.primary} strokeWidth={1.5} />
                 </div>
             )}
 

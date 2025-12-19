@@ -1,18 +1,18 @@
 export const iOSTokens = {
     colors: {
-        primary: "var(--app-wa-primary)", // #007AFF
-        secondary: "var(--app-wa-secondary)", // #8E8E93
-        background: "var(--app-wa-background)", // #FFFFFF
-        headerBg: "var(--app-wa-header-bg)", // rgba(246, 246, 246, 0.9)
-        chatBg: "var(--app-wa-chat-bg)", // #ECE5DD
+        primary: "var(--wa-color-primary)",
+        secondary: "var(--wa-text-secondary)",
+        background: "var(--wa-bg-primary)",
+        headerBg: "var(--wa-bg-header)",
+        chatBg: "var(--wa-bg-chat)",
 
         // Bubbles
-        bubbleMyBg: "var(--app-wa-bubble-my-bg)", // #DCF8C6
-        bubbleOtherBg: "var(--app-wa-bubble-other-bg)", // #FFFFFF
-        bubbleText: "var(--app-wa-bubble-text)", // #000000
-        bubbleTime: "var(--app-wa-bubble-time)", // rgba(0,0,0,0.45)
+        bubbleMyBg: "var(--wa-bubble-out-bg)",
+        bubbleOtherBg: "var(--wa-bubble-in-bg)",
+        bubbleText: "var(--wa-text-primary)",
+        bubbleTime: "var(--wa-text-secondary)",
 
-        separator: "var(--app-wa-separator)" // rgba(0,0,0,0.1)
+        separator: "var(--wa-separator)"
     },
     // Logical Standard Typography
     typography: {

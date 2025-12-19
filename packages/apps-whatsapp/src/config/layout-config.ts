@@ -39,27 +39,27 @@ export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral
  * All units in device pixels (3x retina).
  */
 export const LAYOUT_CONSTANTS = {
-    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
-    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
-    LINE_HEIGHT: 66,          // Text line height (22px visual)
-    FONT_SIZE: 51,            // Text font size
-    TIMESTAMP_HEIGHT: 36,     // Footer area height
-    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
+    BUBBLE_PADDING_V: 21,     // 7px visual (iOS tight padding)
+    BUBBLE_PADDING_H: 36,     // 12px visual (Left/Right padding)
+    LINE_HEIGHT: 66,          // 22px visual (Standard iOS Body ledding)
+    FONT_SIZE: 51,            // 17px visual (Standard iOS Body size)
+    TIMESTAMP_HEIGHT: 45,     // 15px visual (Footer area with checkmarks)
+    SENDER_NAME_HEIGHT: 45,   // 15px visual
 
     // Spacing Tiers (The 3-Tier Model)
-    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
-    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
-    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
+    GAP_MINIMAL: 6,           // 2px visual (Visual Run / Burst - very tight)
+    GAP_RUN_BREAK: 24,        // 8px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 36,           // 12px visual (Sender Switch)
 
     // System Spacing
-    GAP_SYSTEM: 24,           // 9px visual
+    GAP_SYSTEM: 30,           // 10px visual
 
     // Typography / Metrics
-    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
+    AVG_CHAR_WIDTH: 27,       // Calibrated for SF Pro Text 17pt
 
     // Typing Indicator
-    TYPING_BUBBLE_HEIGHT: 72, // Inner height
-    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
+    TYPING_BUBBLE_HEIGHT: 72, // 24px visual
+    TYPING_BUBBLE_PADDING_V: 24,
 };
 
 /**

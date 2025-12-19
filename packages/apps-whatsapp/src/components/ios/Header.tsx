@@ -25,7 +25,7 @@ export const Header: React.FC<{
                 alignItems: "center",
                 paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
                 paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
-                borderBottom: "0.5px solid var(--app-wa-separator)",
+                borderBottom: `0.5px solid ${theme.colors.separator}`,
                 backdropFilter: "blur(20px)",
                 position: "relative",
                 zIndex: 100,
@@ -41,7 +41,7 @@ export const Header: React.FC<{
                 cursor: 'pointer'
             }}>
                 <ChevronLeft size={30} color={theme.colors.primary} style={{ marginLeft: -8 }} />
-                <span style={{ fontSize: 17, marginLeft: -5, fontWeight: 400 }}>95</span>
+                <span style={{ fontSize: 17, marginLeft: -5, fontWeight: 400, color: theme.colors.primary }}>95</span>
             </div>
 
             {/* Avatar */}
@@ -69,7 +69,7 @@ export const Header: React.FC<{
                 <div style={{
                     fontSize: 16, // Standard 16pt
                     fontWeight: "600",
-                    color: "var(--app-wa-bubble-text)", // Dynamic text color
+                    color: theme.colors.bubbleText, // Use theme text
                     lineHeight: "20px"
                 }}>
                     {contactName}

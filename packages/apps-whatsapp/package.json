@@ -9,11 +9,12 @@
     "dependencies": {
         "@tokovo/core": "workspace:*",
         "@tokovo/ir": "workspace:*",
+        "lucide-react": "^0.263.1",
         "react": "^18.2.0"
     },
     "devDependencies": {
-        "typescript": "^5.0.0",
         "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
+        "@types/react": "18.2.0",
+        "typescript": "^5.0.0"
     }
 }

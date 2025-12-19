@@ -107,7 +107,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {message.replyTo && (
                     <div style={{
                         backgroundColor: "rgba(0, 0, 0, 0.06)",
-                        borderLeft: "3px solid var(--app-wa-primary)", // Theme primary
+                        borderLeft: `3px solid ${theme.colors.primary}`,
                         borderRadius: 4,
                         padding: "4px 8px",
                         marginBottom: 4,
@@ -115,14 +115,14 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                         cursor: "pointer"
                     }}>
                         <div style={{
-                            color: "var(--app-wa-primary)", // Theme primary
+                            color: theme.colors.primary,
                             fontWeight: 500,
                             marginBottom: 2,
                         }}>
                             {message.replyTo.from || "You"}
                         </div>
                         <div style={{
-                            color: "var(--app-wa-bubble-text)", // Use text color but opaque?
+                            color: theme.colors.bubbleText,
                             opacity: 0.7,
                             overflow: "hidden",
                             textOverflow: "ellipsis",
@@ -156,8 +156,8 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </span>
                     {isMe && (
                         message.status === "read" ?
-                            <CheckCheck size={14} color="#53BDEB" /> : // Read Blue
-                            <Check size={14} color="var(--app-wa-bubble-time)" /> // Sent Gray
+                            <CheckCheck size={14} color={theme.colors.primary} /> : // Read Blue
+                            <Check size={14} color={theme.colors.bubbleTime} /> // Sent Gray
                     )}
                 </div>
             </div>
@@ -185,7 +185,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 alignItems: "center",
                                 gap: 2,
                                 boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-                                border: "1px solid var(--app-wa-separator)",
+                                border: `1px solid ${theme.colors.separator}`,
                             }}
                         >
                             {reaction.emoji}

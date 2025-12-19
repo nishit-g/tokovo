@@ -14,11 +14,8 @@ interface DateSeparatorProps {
 }
 
 export const DateSeparator: React.FC<DateSeparatorProps> = ({
-    text = "Today",
-    platform = "ios"
+    text = "Today"
 }) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-
     return (
         <div style={{
             display: "flex",
@@ -26,17 +23,19 @@ export const DateSeparator: React.FC<DateSeparatorProps> = ({
             alignItems: "center",
             padding: "16px 0",
         }}>
-            <div style={{
-                backgroundColor: "rgba(225, 245, 254, 0.92)",
-                padding: "8px 24px",
-                borderRadius: 16,
-                boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-            }}>
+            <div
+                className="wa-ios-blur"
+                style={{
+                    backgroundColor: "var(--wa-bg-header)", // Use header blur bg or specific pill bg
+                    padding: "8px 24px",
+                    borderRadius: 16,
+                    boxShadow: "var(--wa-shadow-sm)",
+                }}>
                 <span style={{
-                    fontSize: 26,
+                    fontSize: 26, // ~9px visual
                     fontWeight: 500,
-                    color: "#54656F",
-                    fontFamily: config.fontFamily || "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                    color: "var(--wa-text-secondary)",
+                    fontFamily: "var(--wa-ios-font)",
                     letterSpacing: 0.2,
                     textTransform: "uppercase",
                 }}>
