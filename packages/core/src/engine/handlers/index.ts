@@ -8,7 +8,7 @@
 export * from "./types";
 
 // Handlers
-export { processCameraEvent, cameraController } from "./camera";
+export { processCameraEvent } from "./camera";
 export { processAudioEvent, handleAutoSounds } from "./audio";
 export { processOSEvent } from "./os";
 export { processNotificationEvent } from "./notification";

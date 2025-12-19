@@ -1,15 +1,27 @@
 /**
- * DirectorLite
- *
- * Minimal, shippable camera director.
- * One baked style (ViralDramaV1), no framework.
+ * DirectorLite - Re-exports from @tokovo/device-camera
+ * 
+ * Legacy backward compatibility layer.
+ * All new code should import directly from @tokovo/device-camera.
+ * 
+ * @deprecated Import from "@tokovo/device-camera" instead
  */
 
-export * from "./types";
-export { deriveDirectorEffects } from "./derive";
-export type { DeriveContext } from "./derive";
-export { extractSignals } from "./signals";
-export { ViralDramaV1, RULES, RULES_BY_SIGNAL } from "./rules";
-export type { Rule } from "./strategy";
-export * from "./strategy";
+export {
+    deriveDirectorEffects,
+    extractSignals,
+    ViralDramaV1,
+} from "@tokovo/device-camera";
 
+export type {
+    DirectorSignal,
+    DirectorSignalType,
+    DirectorLayoutModel,
+    DirectorOutput,
+    DerivedCameraEffect,
+    DirectorDebug,
+    DeriveContext,
+    DirectorStrategy,
+    Rule,
+    LayoutRect,
+} from "@tokovo/device-camera";

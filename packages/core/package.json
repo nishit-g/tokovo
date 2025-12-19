@@ -8,6 +8,7 @@
     },
     "dependencies": {
         "@tokovo/ir": "workspace:*",
+        "@tokovo/device-camera": "workspace:*",
         "immer": "^10.0.0",
         "react": "18.2.0",
         "zod": "^4.2.1"

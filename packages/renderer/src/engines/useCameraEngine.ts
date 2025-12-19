@@ -1,44 +1,34 @@
 /**
- * Camera Engine
+ * Camera Engine v2
  *
- * Pure computation layer that determines:
- * - Base camera transform from world state
- * - DirectorLite effects (if enabled)
- * - Semantic Anchor integration (NEW)
- * - Final CSS styles for camera wrapper
- *
+ * Simplified camera engine using @tokovo/device-camera processors.
+ * 
  * ARCHITECTURE:
  * 1. Get base transform from world state
  * 2. Get anchors from registered anchor providers
- * 3. Derive director effects using signals + anchors
- * 4. Apply effects to produce final transform
- * 5. Build CSS styles
+ * 3. Convert legacy effects to new format
+ * 4. Process all effects through unified processor registry
+ * 5. Apply DirectorLite if no manual effects
+ * 6. Build CSS styles
  */
 
 import { useMemo, useRef } from "react";
 import {
     WorldState,
-    CameraTransform,
-    DEFAULT_CAMERA_TRANSFORM,
+    ChatLayoutState,
     EventIndex,
     getEventsInRange,
+} from "@tokovo/core";
+import {
+    processActiveEffects,
     deriveDirectorEffects,
     extractSignals,
-    ChatLayoutState,
-    DirectorOutput,
+    CameraEffect,
+    CameraTransform,
+    DEFAULT_TRANSFORM,
     AnchorSnapshot,
-    AnchorStabilityState,
-    DEFAULT_ANCHOR_STABILITY,
-    ANCHOR_STABILITY_FRAMES,
-    SemanticAnchorId,
-    resolveAnchorWithFallback,
-    AnchorRegistry, // Import the Registry
-    ActiveCameraEffect,
-} from "@tokovo/core";
-import { getShotPreset } from "@tokovo/core";
+} from "@tokovo/device-camera";
 import { LayoutEngineOutput } from "./useLayoutEngine";
-import { createDirectorLayoutModel } from "../layout/director-adapter";
-import { applyDirectorEffects, Viewport } from "../camera-composer";
 import { getAnchorsForApp } from "../anchor-providers/registry";
 
 // =============================================================================
@@ -52,77 +42,19 @@ export interface CameraEngineInput {
     eventIndex?: EventIndex;
     directorEnabled?: boolean;
     directorDebug?: boolean;
-    /** Enable semantic anchor system (NEW) */
     anchorSystemEnabled?: boolean;
 }
 
 export interface CameraEngineOutput {
-    /** Final camera transform (after DirectorLite) */
     transform: CameraTransform;
-    /** CSS style for camera wrapper */
     cameraStyle: React.CSSProperties;
-    /** CSS style for device wrapper (legacy layout transforms) */
     deviceStyle: React.CSSProperties;
-    /** DirectorLite output (for debugging) */
-    directorOutput?: DirectorOutput;
-    /** Current anchor snapshot (for debugging) */
+    directorSkipped?: string;
     anchorSnapshot?: AnchorSnapshot;
-    /** Anchor stability state (for debugging) */
-    anchorStability?: AnchorStabilityState;
 }
 
 // =============================================================================
-// ANCHOR STABILITY TRACKING
-// =============================================================================
-
-/**
- * Track anchor stability across frames.
- * Implements hysteresis: only switch anchors after N stable frames.
- */
-function updateAnchorStability(
-    prevState: AnchorStabilityState,
-    candidateAnchor: SemanticAnchorId | null,
-    t: number
-): { state: AnchorStabilityState; effectiveAnchor: SemanticAnchorId | null } {
-    // Same anchor as candidate → increment stable frames
-    if (candidateAnchor === prevState.candidateAnchor) {
-        const newStableFrames = prevState.stableFrames + 1;
-
-        // Check if candidate has been stable long enough to become current
-        if (newStableFrames >= ANCHOR_STABILITY_FRAMES && candidateAnchor !== prevState.currentAnchor) {
-            return {
-                state: {
-                    currentAnchor: candidateAnchor,
-                    candidateAnchor,
-                    stableFrames: newStableFrames,
-                    lastSwitchFrame: t,
-                },
-                effectiveAnchor: candidateAnchor,
-            };
-        }
-
-        return {
-            state: {
-                ...prevState,
-                stableFrames: newStableFrames,
-            },
-            effectiveAnchor: prevState.currentAnchor,
-        };
-    }
-
-    // Different anchor → reset stability counter
-    return {
-        state: {
-            ...prevState,
-            candidateAnchor,
-            stableFrames: 1,
-        },
-        effectiveAnchor: prevState.currentAnchor,
-    };
-}
-
-// =============================================================================
-// CAMERA ENGINE HOOK
+// MAIN HOOK
 // =============================================================================
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
@@ -131,438 +63,161 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         t,
         layoutOutput,
         eventIndex,
-        directorEnabled = true,
+        directorEnabled = false,
         directorDebug = false,
         anchorSystemEnabled = true,
     } = input;
 
-    // Anchor stability state (persists across frames)
-    const anchorStabilityRef = useRef<AnchorStabilityState>(DEFAULT_ANCHOR_STABILITY);
-
-    // Tracking state for smooth camera transitions (persists across frames)
-    // Used by both ANCHOR_TRACK and for smooth fallback when effects end
+    // Tracking state for smooth camera movement
     const trackingStateRef = useRef<{
         prevOriginX: number;
         prevOriginY: number;
         prevScale: number;
-        hasActiveEffect: boolean;  // Whether an effect was active last frame
+        hasActiveEffect: boolean;
     }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0, hasActiveEffect: false });
 
     return useMemo(() => {
         const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
 
         // =====================================================================
-        // 1. BASE CAMERA TRANSFORM
+        // 1. ANCHOR SNAPSHOT
         // =====================================================================
-        const baseCameraTransform: CameraTransform =
-            (world.camera?.deviceTransforms?.[deviceId]) ||
-            world.camera?.transform ||
-            DEFAULT_CAMERA_TRANSFORM;
-
-        let finalCameraTransform = baseCameraTransform;
-        let directorOutput: DirectorOutput | undefined;
         let anchorSnapshot: AnchorSnapshot | undefined;
-        let anchorStability: AnchorStabilityState | undefined;
-
-        // =====================================================================
-        // 2. SEMANTIC ANCHOR EXTRACTION (NEW)
-        // =====================================================================
         if (anchorSystemEnabled && appId) {
-            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId) ?? undefined;
-
-            if (directorDebug && anchorSnapshot) {
-                const anchorCount = Object.keys(anchorSnapshot.anchors).length;
-                console.log(`[CameraEngine] t=${t} app=${appId} anchors=${anchorCount}`, Object.keys(anchorSnapshot.anchors));
+            const snapshot = getAnchorsForApp(appId, world, layout, deviceId);
+            if (snapshot) {
+                anchorSnapshot = {
+                    anchors: snapshot.anchors,
+                    deviceId: snapshot.deviceId,
+                    appId: snapshot.appId,
+                };
             }
         }
 
         // =====================================================================
-        // 3. DIRECTOR LITE INTEGRATION (with anchor support)
+        // 2. CONVERT LEGACY EFFECTS
         // =====================================================================
-        if (directorEnabled && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
-            // Get manual camera effects (if any active, skip director)
-            const manualCameraEffects = world.camera?.activeEffects || [];
+        const legacyEffects = world.camera?.activeEffects || [];
+        const convertedEffects = convertLegacyEffects(legacyEffects);
 
-            // Signal window: past 90 frames, future 15 frames
+        // =====================================================================
+        // 3. PROCESS ALL EFFECTS THROUGH DEVICE-CAMERA
+        // =====================================================================
+        const viewport = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+        };
+
+        let finalTransform = processActiveEffects(
+            t,
+            convertedEffects,
+            DEFAULT_TRANSFORM,
+            anchorSnapshot,
+            viewport
+        );
+
+        let directorSkipped: string | undefined;
+
+        // =====================================================================
+        // 4. DIRECTOR LITE (IF NO MANUAL EFFECTS ACTIVE)
+        // =====================================================================
+        const hasActiveManualEffect = convertedEffects.some(
+            (e) => t >= e.startFrame && t < e.endFrame
+        );
+
+        if (directorEnabled && !hasActiveManualEffect && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
             const windowStart = Math.max(0, t - 90);
             const windowEnd = t + 15;
             const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
 
-            // Extract signals scoped to this device/app
-            const signals = extractSignals(eventsInWindow, deviceId, appId || "");
+            const signals = extractSignals(eventsInWindow, t, 90);
 
-            // Create layout model from computed layout
             const chatLayout = layout as ChatLayoutState;
-            // Safe access to scrollY
-            const scrollY = chatLayout.scrollY || 0;
+            const directorLayout = {
+                messageRects: {},
+                inputAreaRect: undefined,
+                lastMessageRect: undefined,
+                viewport,
+            };
 
-            const directorLayout = createDirectorLayoutModel(
-                chatLayout,
-                deviceId,
-                appId || "",
-                activeConversationId || "",
-                profile.dimensions.width,
-                effectiveViewportHeight
-            );
-
-            // =========================================================================
-            // ANCHOR STABILITY (Hysteresis)
-            // =========================================================================
-            // Determine candidate anchor from latest signal
-            let candidateAnchor: SemanticAnchorId | null = null;
-            if (signals.length > 0 && anchorSnapshot) {
-                const latestSignal = signals[signals.length - 1];
-                // Map signal type to target anchor
-                candidateAnchor = mapSignalToAnchor(latestSignal.type);
-
-                // Resolve with fallback if anchor not present
-                if (candidateAnchor) {
-                    const resolved = resolveAnchorWithFallback(candidateAnchor, anchorSnapshot.anchors);
-                    if (resolved) {
-                        candidateAnchor = resolved.anchor;
-                    }
-                }
-            }
-
-            // Update stability tracking
-            const stabilityResult = updateAnchorStability(
-                anchorStabilityRef.current,
-                candidateAnchor,
-                t
-            );
-            anchorStabilityRef.current = stabilityResult.state;
-            anchorStability = stabilityResult.state;
-
-            // Derive effects (PURE FUNCTION - no state)
-            const result = deriveDirectorEffects({
+            const directorResult = deriveDirectorEffects({
                 t,
                 signals,
                 layoutModel: directorLayout,
-                seed: 42, // Deterministic seed
+                seed: 42,
                 debug: directorDebug,
-                manualCameraEffects,
+                manualCameraEffects: convertedEffects,
             });
 
-            directorOutput = result;
-
-            // Log debug info if enabled
-            if (directorDebug && result.debug) {
-                console.log(`[CameraEngine] t=${t}`, result.debug, {
-                    currentAnchor: anchorStability?.currentAnchor,
-                    candidateAnchor: anchorStability?.candidateAnchor,
-                    stableFrames: anchorStability?.stableFrames,
-                });
+            if (directorResult.skipped) {
+                directorSkipped = directorResult.skipped;
             }
 
-            // =========================================================================
-            // RESOLVE FOCUSANCHOR EFFECTS FROM DIRECTOR
-            // =========================================================================
-            // Convert FocusAnchor effects (semantic) to resolved effects (with rects)
-            // This is where director's semantic output meets the anchor system!
-            if (!result.skipped && result.effects.length > 0 && anchorSnapshot) {
-                for (const effect of result.effects) {
-                    if (effect.type === "FocusAnchor" && effect.anchor) {
-                        // Resolve anchor to rect
-                        const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
-                        if (resolved) {
-                            // Inject the resolved rect into the effect
-                            effect.target = resolved.rect;
-                            // Inject framing config 
-                            // TODO: DirectorLite derive logic already injects generic targets, but for framing we might need more
-
-                            // Get scale from preset if not explicitly set
-                            if (!effect.scale && effect.preset) {
-                                effect.scale = getPresetScaleSimple(effect.preset);
-                            }
-
-                            if (directorDebug) {
-                                console.log(`[CameraEngine] FocusAnchor resolved: ${effect.anchor} → rect`, resolved.rect);
-                            }
-                        }
+            // Apply director effects to transform
+            if (!directorResult.skipped && directorResult.effects.length > 0) {
+                for (const effect of directorResult.effects) {
+                    if (effect.category === "framing" && effect.scale) {
+                        finalTransform = {
+                            ...finalTransform,
+                            scale: finalTransform.scale * effect.scale * effect.progress,
+                        };
+                    }
+                    if (effect.category === "shake" && effect.intensity) {
+                        const shakeAmount = (effect.intensity || 0) * (1 - effect.progress);
+                        finalTransform = {
+                            ...finalTransform,
+                            shakeX: finalTransform.shakeX + Math.sin(t * 0.5) * shakeAmount,
+                            shakeY: finalTransform.shakeY + Math.cos(t * 0.7) * shakeAmount,
+                        };
                     }
                 }
             }
-
-            // Apply director effects if not skipped and effects exist
-            if (!result.skipped && result.effects.length > 0) {
-                const viewport: Viewport = {
-                    width: profile.dimensions.width,
-                    height: profile.dimensions.height,
-                    scrollY: chatLayout.scrollY,
-                };
-                finalCameraTransform = applyDirectorEffects(result.effects, viewport);
-
-                // Track DirectorLite effects for smooth decay
-                // This is crucial: when DirectorLite effects end, we need to decay smoothly
-                const hasDirectorFramingEffect = result.effects.some(e => e.category === "framing");
-                if (hasDirectorFramingEffect) {
-                    trackingStateRef.current = {
-                        prevOriginX: finalCameraTransform.originX,
-                        prevOriginY: finalCameraTransform.originY,
-                        prevScale: finalCameraTransform.scale,
-                        hasActiveEffect: true,
-                    };
-                }
-            }
         }
 
         // =====================================================================
-        // 3.5. ANCHOR_FOCUS EFFECT RESOLUTION (THE MISSING LINK!)
+        // 5. SMOOTH DECAY TO NEUTRAL (WHEN NO EFFECTS)
         // =====================================================================
-        // Process manual ANCHOR_FOCUS effects from timeline and resolve their
-        // anchor rects from the anchor snapshot. This is where semantic anchors
-        // finally become camera origins!
-        const activeEffects = world.camera?.activeEffects || [];
-        const anchorFocusEffects = activeEffects.filter(
-            (ae) => ae.effect.type === "ANCHOR_FOCUS" && t >= ae.startFrame && t < ae.endFrame
-        );
-
-        if (anchorFocusEffects.length > 0 && anchorSnapshot) {
-            for (const ae of anchorFocusEffects) {
-                const effect = ae.effect as any; // CameraAnchorFocusEffect
-
-                // 1. Resolve to Snapshot Rect
-                const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
-                if (!resolved) continue;
-
-                const rect = resolved.rect;
-                const viewportWidth = profile.dimensions.width;
-                const viewportHeight = profile.dimensions.height;
-
-                // 2. Get Framing Config (Layer 3)
-                const framing = AnchorRegistry.getFraming(anchorSnapshot.appId, resolved.anchor) || {
-                    anchorPoint: { x: 0.5, y: 0.5 },
-                    paddingPx: 0,
-                    targetFill: 1.0
-                };
-
-                // 3. Compute Target Origin
-                const contentCX = rect.x + rect.width / 2;
-                const contentCY = rect.y + rect.height / 2;
-
-                // Adjust for scroll if NOT sticky
-                let finalY = contentCY;
-                const isSticky = resolved.rect.metadata?.sticky || rect.y < 0;
-
-                if (!isSticky) {
-                    const scrollY = (layout as any).scrollY || 0;
-                    finalY -= scrollY;
-                }
-
-                // Convert Content Point -> Frame Point
-                // Use framing configuration
-                const targetX = rect.x + rect.width * framing.anchorPoint.x;
-                const targetY = finalY + rect.height * framing.anchorPoint.y - (rect.height / 2);
-
-                // Normalize to 0-1 range
-                const originX = targetX / viewportWidth;
-                const originY = targetY / viewportHeight;
-
-                // Clamp
-                const clampedOriginX = Math.max(0.1, Math.min(0.9, originX));
-                const clampedOriginY = Math.max(0.1, Math.min(0.9, originY));
-
-                // 4. Animate it
-                const duration = ae.endFrame - ae.startFrame;
-                const progress = Math.min(1, (t - ae.startFrame) / duration);
-                const easing = effect.easing || "ease-out";
-                const easedProgress = applyEasingSimple(progress, easing);
-                const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
-
-                finalCameraTransform = {
-                    ...finalCameraTransform,
-                    scale: 1 + (targetScale - 1) * easedProgress,
-                    originX: clampedOriginX,
-                    originY: clampedOriginY,
-                };
-
-                // Shake
-                if (effect.shake && effect.shake > 0) {
-                    const frameInEffect = t - ae.startFrame;
-                    const shakeDecay = 1 - progress * 0.6;
-                    const shakeX = (seededRandom(ae.startFrame + frameInEffect) - 0.5) * 2 * effect.shake * shakeDecay;
-                    const shakeY = (seededRandom(ae.startFrame + frameInEffect + 1000) - 0.5) * 2 * effect.shake * shakeDecay;
-                    finalCameraTransform.shakeX = shakeX;
-                    finalCameraTransform.shakeY = shakeY;
-                }
-
-                trackingStateRef.current = {
-                    prevOriginX: clampedOriginX,
-                    prevOriginY: clampedOriginY,
-                    prevScale: finalCameraTransform.scale,
-                    hasActiveEffect: true,
-                };
-            }
-        }
-
-        // =====================================================================
-        // 3.6. ANCHOR_TRACK PROCESSING (Webseries Camera)
-        // =====================================================================
-        // Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
-        // follows the anchor rect with exponential smoothing for cinematic feel.
-        const anchorTrackEffects = activeEffects.filter(
-            (ae) => ae.effect.type === "ANCHOR_TRACK" && t >= ae.startFrame && t < ae.endFrame
-        );
-
-        if (anchorTrackEffects.length > 0 && anchorSnapshot) {
-            for (const ae of anchorTrackEffects) {
-                const effect = ae.effect as any;  // CameraAnchorTrackEffect
-
-                // 1. Resolve Anchor
-                const resolved = resolveAnchorWithFallback(effect.anchor, anchorSnapshot.anchors);
-                if (!resolved) continue;
-
-                const rect = resolved.rect;
-                const viewportWidth = profile.dimensions.width;
-                const viewportHeight = profile.dimensions.height;
-
-                // 2. Get Framing Config
-                const framing = AnchorRegistry.getFraming(anchorSnapshot.appId, resolved.anchor) || {
-                    anchorPoint: { x: 0.5, y: 0.5 }
-                };
-
-                // 3. Compute Target Point based on Framing or Effect overrides
-                const alignX = effect.align?.x ?? framing.anchorPoint.x;
-                const alignY = effect.align?.y ?? framing.anchorPoint.y;
-
-                const targetPointX = rect.x + rect.width * alignX;
-                const targetPointY = rect.y + rect.height * alignY;
-
-                // Adjust for scroll offset on track effects too? 
-                // Currently track effects seemed to work on raw rects, but if scroll logic applies to focus, it applies here too.
-                // Assuming rect.y is content-space, and we need viewport-space:
-                // TODO: Verify if ANCHOR_TRACK targets matched. 
-                // The original code calculated targetOriginX/Y directly from rect.
-                // If rect.y was content coordinate, calculating origin Y without scroll subtraction would be wrong for scrolled content.
-                // Assuming we need scroll correction here too.
-                let finalY = targetPointY;
-                const isSticky = resolved.rect.metadata?.sticky || rect.y < 0;
-                if (!isSticky) {
-                    const scrollY = (layout as any).scrollY || 0; // this might be unsafe cast if not chat layout
-                    finalY -= scrollY;
-                }
-
-                const targetOriginX = Math.max(0.1, Math.min(0.9, targetPointX / viewportWidth));
-                const targetOriginY = Math.max(0.1, Math.min(0.9, finalY / viewportHeight));
-
-                // 4. Smooth Follow
-                const prev = trackingStateRef.current;
-                const smoothing = effect.smoothing ?? 0.18;
-                const DEADZONE = 0.01;
-                const deltaX = Math.abs(targetOriginX - prev.prevOriginX);
-                const deltaY = Math.abs(targetOriginY - prev.prevOriginY);
-
-                let smoothedOriginX = prev.prevOriginX;
-                let smoothedOriginY = prev.prevOriginY;
-
-                if (deltaX > DEADZONE || deltaY > DEADZONE) {
-                    smoothedOriginX = lerp(prev.prevOriginX, targetOriginX, smoothing);
-                    smoothedOriginY = lerp(prev.prevOriginY, targetOriginY, smoothing);
-                }
-
-                // 5. Animate Scale
-                const duration = ae.endFrame - ae.startFrame;
-                const progress = Math.min(1, (t - ae.startFrame) / duration);
-                const targetScale = effect.scale || getPresetScaleSimple(effect.preset);
-                const easedProgress = applyEasingSimple(progress, effect.easing || "ease-out");
-                const scale = 1 + (targetScale - 1) * easedProgress;
-
-                finalCameraTransform = {
-                    ...finalCameraTransform,
-                    scale,
-                    originX: smoothedOriginX,
-                    originY: smoothedOriginY,
-                };
-
-                trackingStateRef.current = {
-                    prevOriginX: smoothedOriginX,
-                    prevOriginY: smoothedOriginY,
-                    prevScale: scale,
-                    hasActiveEffect: true,
-                };
-            }
-        }
-
-        // =====================================================================
-        // 3.7. SMOOTH DECAY FALLBACK (Prevents Jerk)
-        // =====================================================================
-        // When no anchor effects are active (manual or DirectorLite), smoothly 
-        // decay towards neutral instead of snapping. This prevents the jerk when effects end.
-
-        // Check if DirectorLite has active framing effects
-        const hasDirectorFraming = directorEnabled && directorOutput &&
-            !directorOutput.skipped &&
-            directorOutput.effects.some(e => e.category === "framing");
-
-        // Has ANY active camera effects (manual OR DirectorLite)
-        const hasAnyActiveEffects = anchorFocusEffects.length > 0 ||
-            anchorTrackEffects.length > 0 ||
-            hasDirectorFraming;
-
-        if (!hasAnyActiveEffects && trackingStateRef.current.hasActiveEffect) {
-            // Effect just ended - smoothly decay towards neutral
-            const DECAY_SMOOTHING = 0.12;  // Smooth decay rate
+        if (!hasActiveManualEffect && !directorEnabled) {
             const prev = trackingStateRef.current;
-
-            // Lerp towards neutral (origin: 0.5, scale: 1.0)
-            const decayedOriginX = lerp(prev.prevOriginX, 0.5, DECAY_SMOOTHING);
-            const decayedOriginY = lerp(prev.prevOriginY, 0.5, DECAY_SMOOTHING);
-            const decayedScale = lerp(prev.prevScale, 1.0, DECAY_SMOOTHING);
-
-            // Check if we've essentially reached neutral
-            const isAtNeutral =
-                Math.abs(decayedOriginX - 0.5) < 0.01 &&
-                Math.abs(decayedOriginY - 0.5) < 0.01 &&
-                Math.abs(decayedScale - 1.0) < 0.01;
-
-            if (isAtNeutral) {
-                // Snap to neutral and clear tracking state
-                trackingStateRef.current = {
-                    prevOriginX: 0.5,
-                    prevOriginY: 0.5,
-                    prevScale: 1.0,
-                    hasActiveEffect: false,
-                };
-            } else {
-                // Continue decaying
-                finalCameraTransform = {
-                    ...finalCameraTransform,
-                    scale: decayedScale,
-                    originX: decayedOriginX,
-                    originY: decayedOriginY,
-                };
-
-                trackingStateRef.current = {
-                    prevOriginX: decayedOriginX,
-                    prevOriginY: decayedOriginY,
-                    prevScale: decayedScale,
-                    hasActiveEffect: true,  // Keep decaying
+            if (prev.hasActiveEffect) {
+                // Smooth decay
+                const decayRate = 0.05;
+                finalTransform = {
+                    ...finalTransform,
+                    scale: lerp(prev.prevScale, 1, decayRate),
+                    originX: lerp(prev.prevOriginX, 0.5, decayRate),
+                    originY: lerp(prev.prevOriginY, 0.5, decayRate),
                 };
             }
         }
 
+        // Update tracking state
+        trackingStateRef.current = {
+            prevOriginX: finalTransform.originX,
+            prevOriginY: finalTransform.originY,
+            prevScale: finalTransform.scale,
+            hasActiveEffect: hasActiveManualEffect,
+        };
+
         // =====================================================================
-        // 4. BUILD CAMERA CSS STYLE
+        // 6. BUILD CSS STYLES
         // =====================================================================
         const cameraTransformString = `
-            translate(${finalCameraTransform.translateX + finalCameraTransform.shakeX}px, ${finalCameraTransform.translateY + finalCameraTransform.shakeY}px)
-            scale(${finalCameraTransform.scale})
-            rotate(${finalCameraTransform.rotation}deg)
+            translate(${finalTransform.translateX + finalTransform.shakeX}px, ${finalTransform.translateY + finalTransform.shakeY}px)
+            scale(${finalTransform.scale})
+            rotate(${finalTransform.rotation}deg)
         `.replace(/\s+/g, ' ').trim();
 
         const cameraStyle: React.CSSProperties = {
             width: profile.dimensions.width,
             height: profile.dimensions.height,
-            transformOrigin: `${finalCameraTransform.originX * 100}% ${finalCameraTransform.originY * 100}%`,
+            transformOrigin: `${finalTransform.originX * 100}% ${finalTransform.originY * 100}%`,
             transform: cameraTransformString,
-            transition: 'none', // Frame-perfect sync
+            transition: 'none',
         };
 
-        // =====================================================================
-        // 5. BUILD DEVICE CSS STYLE (legacy layout transforms)
-        // =====================================================================
+        // Device style for layout transitions
         let deviceStyle: React.CSSProperties = {};
-
         if (layout.kind === "TRANSITION") {
             const transLayout = layout as any;
             const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
@@ -575,12 +230,11 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         }
 
         return {
-            transform: finalCameraTransform,
+            transform: finalTransform,
             cameraStyle,
             deviceStyle,
-            directorOutput,
+            directorSkipped,
             anchorSnapshot,
-            anchorStability,
         };
     }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
 }
@@ -589,100 +243,80 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 // HELPERS
 // =============================================================================
 
-/**
- * Map signal type to semantic anchor.
- * This is the "intent" mapping.
- */
-function mapSignalToAnchor(signalType: string): SemanticAnchorId | null {
-    switch (signalType) {
-        case "TypingStarted":
-        case "TypingEnded":
-            return "inputArea"; // Stable anchor for typing (not typingIndicator!)
-        case "NewMessage":
-            return "lastMessage";
-        case "MessageRead":
-            return "lastMessage";
-        case "CallIncoming":
-            return "callPoster";
-        default:
-            return null;
-    }
-}
-
-/**
- * Simple easing function for ANCHOR_FOCUS effects.
- */
-function applyEasingSimple(t: number, easing: string): number {
-    switch (easing) {
-        case "linear":
-            return t;
-        case "ease-in":
-            return t * t;
-        case "ease-out":
-            return 1 - (1 - t) * (1 - t);
-        case "ease-in-out":
-            return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        case "cinematic":
-            // S-curve for smooth cinematic motion
-            return t * t * (3 - 2 * t);
-        case "expoOut":
-            // Fast deceleration — used for impact/emotional hits
-            return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
-        default:
-            return 1 - (1 - t) * (1 - t); // Default to ease-out
-    }
-}
-
-/**
- * Get scale for a preset (v1 locked values).
- */
-function getPresetScaleSimple(preset?: string): number {
-    switch (preset) {
-        // v1 CORE (LOCKED)
-        case "message": return 1.08;
-        case "subtle": return 1.04;
-        case "impact": return 1.35;
-        case "snap": return 1.15;
-        // v1 MOTION (LOCKED)
-        case "operatorFollow": return 1.22;
-        case "punchGlide": return 1.35;
-        // v1 INTERRUPTION (LOCKED)
-        case "interrupt": return 1.25;
-        case "takeover": return 0.85;
-        // v1 STRUCTURAL (LOCKED)
-        case "reset": return 1.0;
-        case "establish": return 0.9;
-        // v2 (feature-flagged)
-        case "suspenseHold": return 1.1;
-        case "voyeur": return 0.92;
-        case "isolation": return 0.88;
-        case "whipSnap": return 1.18;
-        case "floatFollow": return 1.15;
-        case "panic": return 1.4;
-        case "collapse": return 0.8;
-        // Legacy (deprecated)
-        case "dramatic": return 1.3;
-        case "impactPunch": return 1.35;
-        case "documentaryHold": return 1.05;
-        case "documentary": return 1.0;
-        default: return 1.15;
-    }
-}
-
-/**
- * Deterministic seeded random (mulberry32).
- */
-function seededRandom(seed: number): number {
-    let t = seed + 0x6d2b79f5;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-}
-
-/**
- * Linear interpolation.
- * The key to smooth camera tracking (exponential smoothing).
- */
 function lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t;
+}
+
+/**
+ * Convert legacy ActiveCameraEffect format to new CameraEffect format.
+ */
+function convertLegacyEffects(legacyEffects: any[]): CameraEffect[] {
+    return legacyEffects.map((ae) => {
+        const effectType = (ae.type || ae.effect?.type || "").toLowerCase();
+        const baseEffect = {
+            id: ae.id || `effect_${ae.startFrame}`,
+            startFrame: ae.startFrame,
+            endFrame: ae.endFrame,
+            easing: ae.easing || ae.effect?.easing || "ease-out",
+        };
+
+        switch (effectType) {
+            case "zoom":
+                return {
+                    ...baseEffect,
+                    type: "zoom" as const,
+                    targetScale: ae.targetScale ?? ae.scale ?? 1,
+                    targetX: ae.translateX ?? 0,
+                    targetY: ae.translateY ?? 0,
+                    originX: ae.originX,
+                    originY: ae.originY,
+                };
+
+            case "shake":
+                return {
+                    ...baseEffect,
+                    type: "shake" as const,
+                    intensity: ae.intensity ?? 5,
+                    intensityX: ae.intensityX,
+                    intensityY: ae.intensityY,
+                    frequency: ae.frequency ?? 15,
+                    decay: ae.decay ?? 0.8,
+                };
+
+            case "focus":
+            case "anchor_focus":
+                return {
+                    ...baseEffect,
+                    type: "focus" as const,
+                    anchorId: ae.effect?.anchor || ae.anchor || "",
+                    scale: ae.scale || ae.effect?.scale,
+                    preset: ae.preset || ae.effect?.preset,
+                };
+
+            case "track":
+            case "anchor_track":
+                return {
+                    ...baseEffect,
+                    type: "track" as const,
+                    anchorId: ae.effect?.anchor || ae.anchor || "",
+                    scale: ae.scale || ae.effect?.scale || 1.05,
+                    smoothing: ae.smoothing || 0.18,
+                };
+
+            case "reset":
+                return {
+                    ...baseEffect,
+                    type: "reset" as const,
+                };
+
+            default:
+                return {
+                    ...baseEffect,
+                    type: "zoom" as const,
+                    targetScale: 1,
+                    targetX: 0,
+                    targetY: 0,
+                };
+        }
+    });
 }

@@ -2,16 +2,13 @@
  * Camera Handler - Processes CAMERA events
  * 
  * @description Handles camera movements, effects, and layout changes.
+ * Uses device-camera reducer for effect processing.
  */
 
 import type { WorldState } from "../../types";
 import type { CameraEvent, HandlerContext } from "./types";
-import { CameraController, createActiveEffect } from "../../camera";
+import { cameraReducer } from "@tokovo/device-camera";
 import { DEFAULT_CAMERA_STATE, DEFAULT_CAMERA_TRANSFORM } from "../../types";
-import { TIMING } from "../../constants";
-
-// Camera controller instance
-const cameraController = new CameraController(TIMING.FPS_DEFAULT);
 
 /**
  * Process camera event and update camera state
@@ -79,15 +76,9 @@ export function processCameraEvent(
         case "ANCHOR_FOCUS":
         case "ANCHOR_TRACK":
         case "RESET": {
-            // Create active effect and add to list
-            const activeEffect = createActiveEffect(e, `effect_${ctx.eventIndex}_${event.at}`);
-            if (activeEffect) {
-                draft.camera.activeEffects.push(activeEffect);
-            }
+            // Delegate to device-camera reducer
+            cameraReducer(draft as any, event as any);
             break;
         }
     }
 }
-
-// Export the camera controller for use in replay
-export { cameraController };

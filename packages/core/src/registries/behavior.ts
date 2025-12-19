@@ -6,8 +6,10 @@
  */
 
 import { createRegistry } from "./factory";
-import type { ShotPresetId } from "../camera/presets";
 import type { SemanticAnchorId } from "../types/anchor";
+
+// ShotPresetId is now just a string (presets moved to device-camera)
+type ShotPresetId = string;
 
 // =============================================================================
 // TYPES

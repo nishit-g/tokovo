@@ -14,6 +14,7 @@ import {
     TimelineEvent,
     WorldState,
     DEFAULT_CAMERA_STATE,
+    DEFAULT_CAMERA_TRANSFORM,
     DEFAULT_AUDIO_STATE,
 } from "./types";
 import { TIMING } from "./constants";
@@ -30,7 +31,6 @@ import {
     processNotificationEvent,
     processCallEvent,
     processTouchEvent,
-    cameraController,
     HandlerContext,
 } from "./engine/handlers";
 
@@ -315,13 +315,14 @@ export function replay(
             const deviceEffects = draft.camera.activeEffects.filter(
                 ae => !ae.deviceId || ae.deviceId === deviceId
             );
-            const deviceCameraState = { ...draft.camera, activeEffects: deviceEffects };
-            draft.camera.deviceTransforms[deviceId] = cameraController.computeTransform(deviceCameraState, t);
+            // Camera transform is now computed in renderer using device-camera processors
+            // Here we just store the default transform
+            draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as any;
         }
 
         const activeDeviceId = draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
         draft.camera.transform = draft.camera.deviceTransforms[activeDeviceId]
-            || cameraController.computeTransform(draft.camera, t);
+            || DEFAULT_CAMERA_TRANSFORM as any;
     });
 }
 
