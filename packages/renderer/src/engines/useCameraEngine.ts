@@ -130,11 +130,12 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
         // =====================================================================
         // 3. PROCESS EFFECTS THROUGH REGISTRY
+        // Use previous frame's transform as base so reset/transitions have state to lerp FROM
         // =====================================================================
         let transform = processActiveEffects(
             t,
             effects,
-            DEFAULT_TRANSFORM,
+            prevTransformRef.current,  // CRITICAL: Use previous transform, not DEFAULT
             anchorSnapshot,
             viewport
         );

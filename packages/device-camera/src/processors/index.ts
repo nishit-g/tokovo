@@ -188,7 +188,7 @@ const resetProcessor: EffectProcessor = {
         const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
         const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
 
-        // Interpolate all values toward default
+        // Interpolate all values toward neutral (default state)
         return {
             scale: lerp(ctx.transform.scale, 1, easedProgress),
             translateX: lerp(ctx.transform.translateX, 0, easedProgress),

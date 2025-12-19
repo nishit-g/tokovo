@@ -177,44 +177,20 @@ export class CameraPointBuilder {
      * Reset camera to default state.
      */
     reset(options: CameraResetOptions = {}): void {
-        if (options.duration) {
-            const duration = parseDurationToFrames(options.duration, this._fps);
-            this._events.push(
-                {
-                    at: this._frame,
-                    duration,
-                    kind: "CAMERA",
-                    type: "ANIMATE_START",
-                    payload: {
-                        x: 0,
-                        y: 0,
-                        scale: 1,
-                        rotation: 0,
-                        originX: 0.5,
-                        originY: 0.5,
-                        easing: options.easing ?? "easeOut",
-                    },
-                    _declarationOrder: this._getOrder(),
-                },
-                {
-                    at: this._frame + duration,
-                    kind: "CAMERA",
-                    type: "ANIMATE_END",
-                    payload: {},
-                    _declarationOrder: this._getOrder(),
-                }
-            );
-        } else {
-            this._events.push({
-                at: this._frame,
-                kind: "CAMERA",
-                type: "RESET",
-                payload: {
-                    easing: options.easing,
-                },
-                _declarationOrder: this._getOrder(),
-            });
-        }
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : 30; // Default 1 second at 30fps
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "RESET",
+            payload: {
+                easing: options.easing ?? "easeOut",
+            },
+            _declarationOrder: this._getOrder(),
+        });
     }
 }
 

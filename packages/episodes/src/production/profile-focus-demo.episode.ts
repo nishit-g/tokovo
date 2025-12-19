@@ -60,12 +60,16 @@ export default defineEpisode({
 
         // === CAMERA TRACK ===
         .camera(cam => {
-            // At 4 seconds: Focus on profile picture
+            // At 4 seconds: Focus on profile picture (zoom IN)
             cam.at("4s").focus("profile", {
                 scale: 2.0,
-                duration: "1s",
+                duration: "1s",  // Ease in: 4s → 5s
             });
 
+            // At 5s: Return to neutral (zoom OUT) - starts exactly when focus ends!
+            cam.at("5s").reset({
+                duration: "0.8s",  // Smooth ease back: 5s → 5.8s
+            });
         })
         .build(),
 });
