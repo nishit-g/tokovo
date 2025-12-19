@@ -29,6 +29,10 @@ export interface BaseMessage {
     timestamp?: string;
     status?: "sending" | "sent" | "delivered" | "read";
     at?: number;
+    /** Reactions (tapbacks) on this message */
+    reactions?: WhatsAppReaction[];
+    /** Reply-to reference if this message is a reply */
+    replyTo?: ReplyToData;
 }
 
 // =============================================================================

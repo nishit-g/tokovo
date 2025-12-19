@@ -87,7 +87,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
 
                 {/* Reply-To Preview */}
-                {(message as any).replyTo && (
+                {message.replyTo && (
                     <div style={{
                         backgroundColor: "rgba(0, 0, 0, 0.06)",
                         borderLeft: "3px solid #25D366",
@@ -101,7 +101,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             fontWeight: 500,
                             marginBottom: 2,
                         }}>
-                            {(message as any).replyTo.from || "You"}
+                            {message.replyTo.from || "You"}
                         </div>
                         <div style={{
                             color: "#666",
@@ -110,7 +110,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                             whiteSpace: "nowrap",
                             maxWidth: 200,
                         }}>
-                            {(message as any).replyTo.text || (message as any).replyTo.preview || "📷 Photo"}
+                            {message.replyTo.text || "📷 Photo"}
                         </div>
                     </div>
                 )}
@@ -138,7 +138,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </div>
             </div>
             {/* Reactions - Floating pill at bottom-right like WhatsApp */}
-            {(message as any).reactions && (message as any).reactions.length > 0 && (
+            {message.reactions && message.reactions.length > 0 && (
                 <div style={{
                     position: "absolute",
                     bottom: -8,
@@ -148,9 +148,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     gap: 2,
                     zIndex: 1,
                 }}>
-                    {(message as any).reactions.map((reaction: { emoji: string; count: number }, idx: number) => (
+                    {message.reactions.map((reaction, idx) => (
                         <span
-                            key={idx}
+                            key={`${reaction.emoji}_${idx}`}
                             style={{
                                 background: "#fff",
                                 borderRadius: 10,

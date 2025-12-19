@@ -71,30 +71,43 @@ function getAppState(draft: WorldState): WhatsAppState {
 /**
  * Generate a realistic timestamp string from frame number.
  * 
- * ENTERPRISE PATTERN: Frame-based time simulation
- * - Base time: 10:42 (arbitrary start point)
- * - Each frame represents ~2 seconds of "in-story" time  
- * - This creates realistic message spacing based on timeline position
+ * ENTERPRISE PATTERN: Frame-based time simulation using world config
+ * - FPS: Read from world.config.fps (defaults to 30)
+ * - Base time: Read from device OS clock (defaults to 10:42)
+ * - Progression: 1 timeline second = 1 story minute
  * 
- * At 30fps:
- * - frame 0 (0s timeline) → 10:42
- * - frame 90 (3s timeline) → 10:45 (3 min later)
+ * Example at 30fps from 10:42 base:
+ * - frame 0   (0s timeline)  → 10:42
+ * - frame 90  (3s timeline)  → 10:45 (3 min later)
  * - frame 750 (25s timeline) → 11:07 (25 min later)
+ * 
+ * @param frame - Current frame number
+ * @param draft - WorldState to read config from
+ * @param deviceId - Device ID to get OS clock from (optional)
  */
-function generateTimestamp(frame: number, _messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
+function generateTimestamp(frame: number, draft: WorldState, deviceId?: string): string {
+    // Get FPS from config (enterprise pattern - no hardcoding!)
+    const fps = draft.config?.fps ?? 30;
+
+    // Try to get base time from device OS clock
+    let baseTime: Date;
+    if (deviceId && draft.devices?.[deviceId]?.os?.clock) {
+        baseTime = new Date(draft.devices[deviceId].os!.clock);
+    } else {
+        // Fallback: use 10:42 as default
+        baseTime = new Date("2024-01-01T10:42:00");
+    }
+
+    const baseHour = baseTime.getHours();
+    const baseMinute = baseTime.getMinutes();
 
     // Convert frames to "story minutes": 1 timeline second = 1 story minute
-    // This makes a 30s episode span ~30 minutes of "story time"
-    const fps = 30; // Standard fps
     const timelineSeconds = frame / fps;
     const storyMinutesElapsed = Math.floor(timelineSeconds);
 
     // Calculate final time
     const totalMinutes = baseMinute + storyMinutesElapsed;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
+    const hours = (baseHour + Math.floor(totalMinutes / 60)) % 24;  // Wrap at 24h
     const minutes = totalMinutes % 60;
 
     return `${hours}:${minutes.toString().padStart(2, "0")}`;
@@ -158,7 +171,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         // Extract screen from payload (V2) or root (V1)
         const screen = payload.screen || appEvent.screen || "chat";
         appState.screen = screen;
-        (appState as any).currentScreen = screen;  // UI reads this for navigation
+        appState.currentScreen = screen;  // UI reads this for navigation
 
         // Map screen to generic ViewKind
         if (screen === "chats" || screen === "chatList") {
@@ -186,7 +199,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
         if (targetConversationId) {
             appState.conversationId = targetConversationId;
             appState.screen = "chat";
-            (appState as any).currentScreen = "chat";
+            appState.currentScreen = "chat";
             appState.viewMode = "CHAT";
         }
         return;
@@ -224,9 +237,8 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             const msgType = (payload.messageType || msgPayload.type || "text") as WhatsAppMessageType;
             const msgId = payload.messageId || msgPayload.id || `msg_${event.at}_${fromUser}`;
 
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
+            // Generate timestamp from frame, using world config for FPS and device OS for base time
+            const timestamp = generateTimestamp(event.at, draft, appEvent.deviceId);
 
             const newMessage: WhatsAppMessage = {
                 id: msgId,
@@ -307,7 +319,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 type: "image",
                 imageUrl: payload.url,
                 caption: payload.caption,
-                timestamp: generateTimestamp(event.at, messageIndex),
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
                 status: "sent",
                 at: event.at,
             });
@@ -327,7 +339,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 videoUrl: payload.url,
                 duration: payload.duration || 10,
                 caption: payload.caption,
-                timestamp: generateTimestamp(event.at, messageIndex),
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
                 status: isReceived ? "delivered" : "sent",
                 at: event.at,
             });
@@ -346,7 +358,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 duration: payload.duration || 5,
                 isPlaying: false,
                 playProgress: 0,
-                timestamp: generateTimestamp(event.at, messageIndex),
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
                 status: isReceived ? "delivered" : "sent",
                 at: event.at,
             });
@@ -363,7 +375,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                 from: isReceived ? payload.from : "me",
                 type: "gif",
                 gifUrl: payload.url,
-                timestamp: generateTimestamp(event.at, messageIndex),
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
                 status: isReceived ? "delivered" : "sent",
                 at: event.at,
             });
