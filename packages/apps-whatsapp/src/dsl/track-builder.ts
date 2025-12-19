@@ -10,7 +10,19 @@
  * @see docs-v2/DSL_REVAMP.md#app-track-plugin-system
  */
 
-import type { WhatsAppPayloads, WhatsAppTrackEvent, TrackMessageRef } from "@tokovo/ir";
+import type { TrackMessageRef } from "@tokovo/ir";
+
+// Local type for WhatsApp track events
+type WhatsAppTrackEvent = {
+    at: number;
+    duration?: number;
+    deviceId: string;
+    kind: "APP";
+    appId: "app_whatsapp";
+    type: string;
+    payload: Record<string, any>;
+    _declarationOrder: number;
+};
 
 // =============================================================================
 // TYPES
@@ -112,6 +124,147 @@ export class WhatsAppPointBuilder {
     }
 
     /**
+     * Send an image.
+     */
+    sendImage(url: string, options: ImageOptions = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "IMAGE_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                caption: options.caption,
+                messageType: "image",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a video.
+     */
+    receiveVideo(from: string, url: string, options: { duration?: number; caption?: string } = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VIDEO_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                url,
+                duration: options.duration ?? 10,
+                caption: options.caption,
+                messageType: "video",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a video.
+     */
+    sendVideo(url: string, options: { duration?: number; caption?: string } = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VIDEO_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                duration: options.duration ?? 10,
+                caption: options.caption,
+                messageType: "video",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a voice note.
+     */
+    receiveVoice(from: string, duration: number): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VOICE_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                duration,
+                messageType: "voice",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a voice note.
+     */
+    sendVoice(duration: number): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VOICE_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                duration,
+                messageType: "voice",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a GIF.
+     */
+    receiveGif(from: string, url: string): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GIF_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                url,
+                messageType: "gif",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a GIF.
+     */
+    sendGif(url: string): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GIF_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                messageType: "gif",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
      * React to a message.
      */
     react(messageRef: TrackMessageRef, emoji: string): void {
@@ -122,6 +275,7 @@ export class WhatsAppPointBuilder {
             appId: "app_whatsapp",
             type: "REACT",
             payload: {
+                conversationId: this._conversationId,  // Required for reducer!
                 messageRef,
                 emoji,
             },
@@ -254,6 +408,100 @@ export class WhatsAppTrackBuilder {
             this._events,
             this._getOrder
         );
+    }
+
+    /**
+     * Switch to a different conversation.
+     * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
+     */
+    switchTo(conversationId: string): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "CONVERSATION_OPENED",  // Core event!
+            payload: {
+                conversationId,
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+        // Update internal conversation ID for subsequent methods
+        (this as any)._conversationId = conversationId;
+    }
+
+    /**
+     * Open the chat list screen.
+     * Emits core NAVIGATE_SCREEN event (handled by navigation.ts)
+     */
+    openChatList(): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "NAVIGATE_SCREEN",  // Core event!
+            payload: {
+                screen: "chats",  // Core expects "chats" not "chatList"
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
+
+    /**
+     * Go back to previous screen.
+     * Emits core GO_BACK event (handled by navigation.ts)
+     */
+    goBack(): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GO_BACK",  // Core event!
+            payload: {},
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
+
+    /**
+     * Open profile screen.
+     */
+    openProfile(): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "NAVIGATE_SCREEN",
+            payload: {
+                screen: "profile",
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
+
+    /**
+     * Add a date separator (e.g., "Today", "Yesterday").
+     */
+    dateSeparator(text: string = "Today"): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "DATE_SEPARATOR",
+            payload: {
+                conversationId: this._conversationId,
+                text,
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
     }
 }
 

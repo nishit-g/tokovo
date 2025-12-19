@@ -86,6 +86,35 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     </span>
                 )}
 
+                {/* Reply-To Preview */}
+                {(message as any).replyTo && (
+                    <div style={{
+                        backgroundColor: "rgba(0, 0, 0, 0.06)",
+                        borderLeft: "3px solid #25D366",
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        marginBottom: 4,
+                        fontSize: 12,
+                    }}>
+                        <div style={{
+                            color: "#25D366",
+                            fontWeight: 500,
+                            marginBottom: 2,
+                        }}>
+                            {(message as any).replyTo.from || "You"}
+                        </div>
+                        <div style={{
+                            color: "#666",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: 200,
+                        }}>
+                            {(message as any).replyTo.text || (message as any).replyTo.preview || "📷 Photo"}
+                        </div>
+                    </div>
+                )}
+
                 {/* Content Layer */}
                 <MessageContent message={message} />
 
@@ -108,6 +137,42 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                     {isMe && <DoubleCheckIcon read={message.status === "read"} size={14} />}
                 </div>
             </div>
+            {/* Reactions - Floating pill at bottom-right like WhatsApp */}
+            {(message as any).reactions && (message as any).reactions.length > 0 && (
+                <div style={{
+                    position: "absolute",
+                    bottom: -8,
+                    right: isMe ? 8 : undefined,
+                    left: isMe ? undefined : 8,
+                    display: "flex",
+                    gap: 2,
+                    zIndex: 1,
+                }}>
+                    {(message as any).reactions.map((reaction: { emoji: string; count: number }, idx: number) => (
+                        <span
+                            key={idx}
+                            style={{
+                                background: "#fff",
+                                borderRadius: 10,
+                                padding: "2px 6px",
+                                fontSize: 12,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                                border: "1px solid rgba(0,0,0,0.08)",
+                            }}
+                        >
+                            {reaction.emoji}
+                            {reaction.count > 1 && (
+                                <span style={{ fontSize: 10, color: "#666" }}>
+                                    {reaction.count}
+                                </span>
+                            )}
+                        </span>
+                    ))}
+                </div>
+            )}
 
             {/* SVG Tail */}
             {showTail && (

@@ -479,6 +479,179 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
 };
 
 // ============================================================================
+// VOICE MESSAGE BUBBLE - With Waveform Animation
+// ============================================================================
+
+interface VoiceMessageBubbleProps {
+    duration: number; // in seconds
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number; // 0-1
+    platform?: Platform;
+}
+
+export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+    duration,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    // Generate waveform bars (deterministic based on duration)
+    const waveformBars = Array.from({ length: 35 }, (_, i) => {
+        // Create realistic voice pattern using sin + noise
+        const seed = (duration * 13 + i * 7) % 100;
+        const baseHeight = 0.3 + 0.5 * Math.sin((i / 35) * Math.PI);
+        const noise = (seed % 30) / 100;
+        return Math.min(1, Math.max(0.15, baseHeight + noise));
+    });
+
+    const playedBars = Math.floor(playProgress * waveformBars.length);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            padding: config.bubblePaddingHorizontal,
+            minWidth: 480,
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{ marginBottom: 8 }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Voice message content */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+            }}>
+                {/* Avatar / Microphone icon */}
+                <div style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: "50%",
+                    backgroundColor: isMe ? "#128C7E" : "#00A884",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                }}>
+                    {isPlaying ? (
+                        // Pause icon
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <rect x="6" y="4" width="4" height="16" rx="1" />
+                            <rect x="14" y="4" width="4" height="16" rx="1" />
+                        </svg>
+                    ) : (
+                        // Play icon
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    )}
+                </div>
+
+                {/* Waveform visualization */}
+                <div style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                }}>
+                    {/* Waveform bars */}
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 3,
+                        height: 60,
+                    }}>
+                        {waveformBars.map((height, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    width: 6,
+                                    height: `${height * 100}%`,
+                                    backgroundColor: i < playedBars
+                                        ? (isMe ? "#128C7E" : "#00A884")
+                                        : (isMe ? "rgba(18, 140, 126, 0.3)" : "rgba(0, 168, 132, 0.3)"),
+                                    borderRadius: 3,
+                                    transition: "background-color 0.1s",
+                                }}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Duration + Timestamp */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {isPlaying
+                                ? formatDuration(Math.floor(playProgress * duration))
+                                : formatDuration(duration)
+                            }
+                        </span>
+
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                        }}>
+                            {/* Microphone icon */}
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill={isMe ? "#128C7E" : "#00A884"}>
+                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
+                            </svg>
+
+                            <span style={{
+                                fontSize: config.timestampSize,
+                                color: config.timestampColor,
+                                fontFamily: tokens.fontFamily,
+                            }}>
+                                {timestamp}
+                            </span>
+                            {isMe && <DoubleCheckIcon read={read} />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
 // SHARED: Double Check Icon for read receipts
 // ============================================================================
 
@@ -488,3 +661,4 @@ const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read =
         <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
 );
+

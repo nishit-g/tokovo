@@ -33,7 +33,8 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
 }) => {
     // 1. Resolve App State & Screen
     const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+    // CRITICAL: Core navigation.ts sets 'currentScreen', not 'screen'!
+    const currentScreen = appState?.currentScreen || appState?.screen || "chat";
 
     // 2. Resolve Dimensions (Resolution Independence)
     // Receive logical dimensions from parent (TokovoRenderer's AppSurface)

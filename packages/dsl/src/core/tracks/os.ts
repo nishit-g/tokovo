@@ -202,6 +202,81 @@ export class OSPointBuilder {
         };
         this.events.push(event);
     }
+
+    // =========================================================================
+    // DEVICE NAVIGATION (Inter-App)
+    // =========================================================================
+
+    /**
+     * Open an app (switch to foreground).
+     * Emits DEVICE:OPEN_APP → sets device.foregroundAppId
+     */
+    openApp(appId: string): void {
+        // DEVICE events are handled by core navigation.ts
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,  // Cross-kind event
+            type: "OPEN_APP",
+            payload: { appId },
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Close the current app (return to launcher).
+     * Emits DEVICE:CLOSE_APP
+     */
+    closeApp(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "CLOSE_APP",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Go to home screen.
+     * Emits DEVICE:GO_HOME
+     */
+    goHome(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "GO_HOME",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Lock the device.
+     * Emits DEVICE:LOCK
+     */
+    lock(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "LOCK",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Unlock the device.
+     * Emits DEVICE:UNLOCK
+     */
+    unlock(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "UNLOCK",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
 }
 
 // =============================================================================

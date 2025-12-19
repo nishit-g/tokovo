@@ -36,6 +36,7 @@ export const whatsappV2Lowering: V2LoweringHandler = {
                     conversationId: e.payload.conversationId,
                     from: e.payload.from,
                     text: e.payload.text,
+                    payload: e.payload, // Pass full payload for replyTo, etc.
                 } as any];
 
             case "MESSAGE_SENT":
@@ -44,6 +45,7 @@ export const whatsappV2Lowering: V2LoweringHandler = {
                     type: "MESSAGE_SENT",
                     conversationId: e.payload.conversationId,
                     text: e.payload.text,
+                    payload: e.payload, // Pass full payload for replyTo, etc.
                 } as any];
 
             case "TYPING_START":
@@ -73,6 +75,7 @@ export const whatsappV2Lowering: V2LoweringHandler = {
                 return [{
                     ...base,
                     type: "REACT",
+                    conversationId: e.payload.conversationId,  // Required at root!
                     payload: e.payload,
                 } as any];
 
@@ -81,6 +84,32 @@ export const whatsappV2Lowering: V2LoweringHandler = {
                     ...base,
                     type: "READ_MESSAGES",
                     payload: { conversationId: e.payload.conversationId },
+                } as any];
+
+            // Pass through media events directly
+            case "IMAGE_SENT":
+            case "VIDEO_RECEIVED":
+            case "VIDEO_SENT":
+            case "VOICE_RECEIVED":
+            case "VOICE_SENT":
+            case "GIF_RECEIVED":
+            case "GIF_SENT":
+            case "DATE_SEPARATOR":
+                return [{
+                    ...base,
+                    type: e.type,
+                    payload: e.payload,
+                    conversationId: e.payload?.conversationId,
+                } as any];
+
+            // Navigation events - pass to core navigation handler
+            case "CONVERSATION_OPENED":
+            case "NAVIGATE_SCREEN":
+            case "GO_BACK":
+                return [{
+                    ...base,
+                    type: e.type,
+                    payload: e.payload,
                 } as any];
 
             default:

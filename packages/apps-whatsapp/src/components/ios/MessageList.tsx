@@ -10,9 +10,10 @@ interface MessageListProps {
     messages: MessageData[];
     ownerName?: string;
     isTyping?: boolean;
+    isGroupChat?: boolean;
 }
 
-export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me", isTyping }) => {
+export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me", isTyping, isGroupChat = false }) => {
     const theme = getTheme("ios");
 
     // Architecture Layer 1: Semantic Grouping
@@ -66,6 +67,9 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = 
                                 isMe={group.isMe}
                                 isFirst={item.isFirst}
                                 isLast={item.isLast}
+                                isGroupChat={isGroupChat}
+                                senderName={item.data.from}
+                                showSenderName={isGroupChat && !group.isMe && item.isFirst}
                             />
                         ))}
                     </div>

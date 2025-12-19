@@ -215,6 +215,17 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
                     break;
             }
 
+            // Handle replyTo (reply quote) - V2 payload takes priority
+            if (payload.replyTo) {
+                newMessage.replyTo = {
+                    messageId: payload.replyTo.messageId || payload.replyTo.id,
+                    text: payload.replyTo.text,
+                    from: payload.replyTo.from,
+                    type: payload.replyTo.type,
+                    thumbnailUrl: payload.replyTo.thumbnailUrl,
+                };
+            }
+
             (conversation.messages as any[]).push(newMessage);
 
             break;
@@ -239,6 +250,99 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             if (conversation.typing && actor) {
                 delete conversation.typing[actor];
             }
+            break;
+        }
+
+        // =====================================================================
+        // MEDIA MESSAGES - Images, Videos, Voice, GIFs
+        // =====================================================================
+
+        case "IMAGE_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_me_img`,
+                from: "me",
+                type: "image",
+                imageUrl: payload.url,
+                caption: payload.caption,
+                timestamp: generateTimestamp(event.at, messageIndex),
+                status: "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "VIDEO_RECEIVED":
+        case "VIDEO_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "VIDEO_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_vid`,
+                from: isReceived ? payload.from : "me",
+                type: "video",
+                thumbnailUrl: payload.url,
+                videoUrl: payload.url,
+                duration: payload.duration || 10,
+                caption: payload.caption,
+                timestamp: generateTimestamp(event.at, messageIndex),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "VOICE_RECEIVED":
+        case "VOICE_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "VOICE_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_voice`,
+                from: isReceived ? payload.from : "me",
+                type: "voice",
+                duration: payload.duration || 5,
+                isPlaying: false,
+                playProgress: 0,
+                timestamp: generateTimestamp(event.at, messageIndex),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "GIF_RECEIVED":
+        case "GIF_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "GIF_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_gif`,
+                from: isReceived ? payload.from : "me",
+                type: "gif",
+                gifUrl: payload.url,
+                timestamp: generateTimestamp(event.at, messageIndex),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        // =====================================================================
+        // DATE SEPARATOR - "Today", "Yesterday", etc.
+        // =====================================================================
+
+        case "DATE_SEPARATOR": {
+            const payload = (appEvent as any).payload || {};
+            (conversation.messages as any[]).push({
+                id: `sep_${event.at}_date`,
+                from: "system",
+                type: "system",
+                systemType: "date_change",
+                text: payload.text || "Today",
+                at: event.at,
+            });
             break;
         }
 
@@ -307,6 +411,62 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             break;
         }
 
+        // V2 DSL: REACT event from track builder
+        // Supports symbolic refs:
+        //   - { messageId: "msg_123" } - exact ID
+        //   - { index: -1 } or { index: "last" } - last message
+        //   - { index: -2 } - second to last
+        //   - { index: 0 } - first message
+        case "REACT": {
+            const payload = (appEvent as any).payload || {};
+            const emoji = payload.emoji || "❤️";
+            const messages = conversation.messages as WhatsAppMessage[];
+
+            let targetMsg: any = null;
+
+            // Check for messageId first
+            const messageId = payload.messageRef?.messageId || payload.messageRef?.id;
+            if (messageId) {
+                targetMsg = messages.find(m => m.id === messageId);
+            }
+
+            // Check for index-based ref (supports "last", negative indices)
+            const indexRef = payload.messageRef?.index;
+            if (!targetMsg && indexRef !== undefined) {
+                if (indexRef === "last" || indexRef === -1) {
+                    targetMsg = messages[messages.length - 1];
+                } else if (typeof indexRef === "number" && indexRef < 0) {
+                    // Negative index from end
+                    targetMsg = messages[messages.length + indexRef];
+                } else if (typeof indexRef === "number") {
+                    // Positive index from start
+                    targetMsg = messages[indexRef];
+                }
+            }
+
+            // Fallback: if no ref specified, react to last message
+            if (!targetMsg && messages.length > 0) {
+                targetMsg = messages[messages.length - 1];
+            }
+
+            if (targetMsg) {
+                if (!targetMsg.reactions) {
+                    targetMsg.reactions = [];
+                }
+
+                const existing = targetMsg.reactions.find((r: any) => r.emoji === emoji);
+                if (existing) {
+                    existing.count += 1;
+                } else {
+                    targetMsg.reactions.push({
+                        emoji,
+                        count: 1,
+                        fromMe: true,
+                    });
+                }
+            }
+            break;
+        }
         case "REACTION_ADDED": {
             // Find the message and add/update the reaction
             if (appEvent.messageId) {

@@ -47,7 +47,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             from: m.from,
             timestamp: m.timestamp,
             status: m.status,
-            at: m.at
+            at: m.at,
+            // Pass through reactions and replyTo for UI rendering
+            reactions: m.reactions,
+            replyTo: m.replyTo,
         };
 
         switch (m.type) {
@@ -100,6 +103,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 messages={messages}
                 ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
                 isTyping={conversation?.typing && Object.keys(conversation.typing).some(id => id !== "me")}
+                isGroupChat={conversation?.type === "group"}
             />
 
             <InputArea

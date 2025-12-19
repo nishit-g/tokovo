@@ -369,7 +369,6 @@ packages/
         handler.ts
         index.ts
       processors/
-        focus.ts
         index.ts
         reset.ts
         shake.ts
@@ -616,16 +615,13 @@ packages/
     tsconfig.tsbuildinfo
   episodes/
     src/
-      legacy/
-        enterprise-demo.episode.ts
-        notification-showcase.dsl.ts
-        ultimate-capabilities-showcase.episode.ts
       production/
         bakchodi-bros.episode.ts
         complete-showcase.episode.ts
         index.ts
         keyboard-typing-demo.episode.ts
         notification-demo.episode.ts
+        profile-focus-demo.episode.ts
         track-demo.episode.ts
       registry/
         episode-registry.ts
@@ -4588,6 +4584,479 @@ Core logic for the Tokovo engine.
 }
 ````
 
+## File: packages/device-keyboard/src/components/IOSKeyboard.tsx
+````typescript
+/**
+ * IOSKeyboard - Realistic iOS keyboard component
+ * 
+ * Features:
+ * - Full QWERTY layout
+ * - Key pop-up on press (3 frames)
+ * - Slide up/down animation
+ * - iOS light/dark themes
+ */
+
+import React from "react";
+import { useCurrentFrame, interpolate, Easing } from "remotion";
+import { KeyboardState, KeyboardLayout } from "@tokovo/core";
+
+// =============================================================================
+// KEYBOARD LAYOUTS
+// =============================================================================
+
+const QWERTY_ROWS = [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+    ["123", "🌐", "space", "return"]
+];
+
+const NUMBERS_ROWS = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
+    ["#+=", ".", ",", "?", "!", "'", "⌫"],
+    ["ABC", "🌐", "space", "return"]
+];
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+import { KeyboardProps } from "../core/registry";
+
+interface KeyProps {
+    label: string;
+    isPressed: boolean;
+    width?: number; // Sizing weight (roughly px)
+    isSpecial?: boolean;
+    variant: "light" | "dark";
+    isIcon?: boolean;
+}
+
+// =============================================================================
+// KEY COMPONENT
+// =============================================================================
+
+const Key: React.FC<KeyProps> = ({
+    label,
+    isPressed,
+    width = 33, // Standard key width in px
+    isSpecial = false,
+    variant
+}) => {
+    // Colors
+    const colors = variant === "light"
+        ? {
+            keyBg: isSpecial ? "#B3B6BE" : "#FFFFFF",
+            keyText: "#000000",
+            popupBg: "#FFFFFF",
+            shadow: "0 1px 0 rgba(0,0,0,0.3)",
+        }
+        : {
+            keyBg: isSpecial ? "#3A3A3C" : "#6D6D72",
+            keyText: "#FFFFFF",
+            popupBg: "#6D6D72",
+            shadow: "0 1px 0 rgba(0,0,0,0.45)",
+        };
+
+    // ARCHITECTURE STANDARD: PIXEL VALUES
+    // Designed for 393px width
+    const fontSize = label === "space" ? 16 : label.length > 1 ? 16 : 25; // 25px Standard
+    const fontWeight = label === "shift" || label === "delete" ? 300 : 400;
+
+    const bg = isPressed ? (isSpecial ? "#EAECF0" : "#E5E5E5") : colors.keyBg;
+
+    // Pop-ups enabled!
+    const showPopup = isPressed && label.length === 1 && !isSpecial;
+
+    return (
+        <div style={{
+            position: "relative",
+            width: width, // PIXEL WIDTH
+            height: 42,   // PIXEL HEIGHT
+            margin: "0 3px", // PIXEL MARGIN (Side gaps)
+            zIndex: showPopup ? 100 : 1,
+        }}>
+            {/* Pop-up */}
+            {showPopup && (
+                <KeyPopup label={label} variant={variant} colors={colors} keyWidth={width} />
+            )}
+
+            {/* Key Body */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: "100%",
+                backgroundColor: bg,
+                borderRadius: 5, // iOS Standard Radius
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize,
+                fontWeight,
+                color: colors.keyText,
+                boxShadow: colors.shadow,
+                transition: "background-color 0.05s",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
+            }}>
+                {renderLabel(label, variant)}
+            </div>
+        </div>
+    );
+};
+
+// =============================================================================
+// KEY POPUP (SVG Shape)
+// =============================================================================
+
+const KeyPopup: React.FC<{
+    label: string,
+    variant: "light" | "dark",
+    colors: any,
+    keyWidth: number
+}> = ({ label, variant, colors, keyWidth }) => {
+    // Popup metrics
+    const POPUP_WIDTH = keyWidth + 24; // ~58px
+    const POPUP_HEIGHT = 100; // Fixed tall height
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: "50%",
+            width: POPUP_WIDTH,
+            height: POPUP_HEIGHT,
+            transform: "translateX(-50%)",
+            pointerEvents: "none",
+            zIndex: 200,
+            filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))"
+        }}>
+            <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 100 130"
+                preserveAspectRatio="none"
+                style={{ overflow: "visible" }}
+            >
+                <path
+                    d="M 20 130 L 80 130 L 80 80 Q 80 60 100 60 L 100 15 Q 100 0 85 0 L 15 0 Q 0 0 0 15 L 0 60 Q 20 60 20 80 Z"
+                    fill={colors.popupBg}
+                />
+            </svg>
+
+            {/* Character */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                height: 60, // Top bubble height
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 36, // Large 36px char
+                color: colors.keyText,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+                fontWeight: 400,
+                paddingBottom: 5
+            }}>
+                {label.toUpperCase()}
+            </div>
+        </div>
+    );
+};
+
+// Helper for Icons
+const renderLabel = (label: string, variant: string) => {
+    // SF Symbols approximation - returning SVGs that fill their container
+    const iconStyle = { width: "50%", height: "50%", display: "block" };
+
+    if (label === "space") return "";
+    if (label === "⇧") return <ArrowUpIcon style={iconStyle} />;
+    if (label === "⌫") return <DeleteIcon style={iconStyle} />;
+    if (label === "return") return "return";
+    if (label === "123") return "123";
+    if (label === "ABC") return "ABC";
+    if (label === "🌐") return <GlobeIcon style={{ width: "60%", height: "60%" }} />;
+    return label;
+}
+
+const ArrowUpIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="currentColor"><path d="M12 4L4 16H8V20H16V16H20L12 4Z" /></svg>
+);
+
+const DeleteIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 2H10L2 12L10 22H22V2Z" vectorEffect="non-scaling-stroke" /><line x1="12" y1="8" x2="18" y2="16" vectorEffect="non-scaling-stroke" /><line x1="12" y1="16" x2="18" y2="8" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+const GlobeIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><line x1="2" y1="12" x2="22" y2="12" vectorEffect="non-scaling-stroke" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><path d="M8 14s1.5 2 4 2 4-2 4-2" vectorEffect="non-scaling-stroke" /><line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" vectorEffect="non-scaling-stroke" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" vectorEffect="non-scaling-stroke" /><line x1="12" y1="19" x2="12" y2="23" vectorEffect="non-scaling-stroke" /><line x1="8" y1="23" x2="16" y2="23" vectorEffect="non-scaling-stroke" /></svg>
+);
+
+// =============================================================================
+// KEYBOARD ROW
+// =============================================================================
+
+const KeyboardRow: React.FC<{
+    keys: string[];
+    currentKey: string | null;
+    variant: "light" | "dark";
+    rowIndex: number;
+}> = ({ keys, currentKey, variant, rowIndex }) => {
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%",
+            marginBottom: 10, // 10px Gap
+        }}>
+            {keys.map((key, index) => {
+                const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
+                const isSpace = key === "space";
+                const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
+                    (key === "⌫" && currentKey === "⌫") ||
+                    (isSpace && currentKey === " ");
+
+                // PIXEL WIDTHS (Based on 393 width)
+                // Standard: ~31-33
+                let width = 33; // Base (Matches ~10% minus gap)
+
+                if (key === "space") width = 192; // 5x
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 48; // 1.5x
+                if (key === "⇧" || key === "⌫") width = 42;
+
+                return (
+                    <Key
+                        key={`${key}-${index}`}
+                        label={key}
+                        isPressed={isPressed}
+                        width={width}
+                        isSpecial={isSpecial}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN KEYBOARD COMPONENT
+// =============================================================================
+
+// =============================================================================
+// MAIN KEYBOARD COMPONENT
+// =============================================================================
+
+export const IOSKeyboard: React.FC<KeyboardProps> = ({
+    keyboard,
+    variant = "light",
+}) => {
+    const frame = useCurrentFrame();
+
+    // -------------------------------------------------------------------------
+    // SCALING INFRASTRUCTURE
+    // -------------------------------------------------------------------------
+    // The keyboard is designed at 393 logical pixels (iPhone 14/15/16 Pro).
+    // We want it to fill the rendered width (e.g. 1080px or 1179px).
+    // Instead of hardcoding 1080, we use percentage width for the container,
+    // and a transform: scale() on the inner content to match logical pixels.
+
+    // HOWEVER, scaling inner content is tricky without knowing exact width.
+    // simpler approach: CSS Zoom or just design keys in % or fluid units?
+    // Keys need specific sizes. 
+
+    // LET'S GO WITH FLUID WIDTH (100%) but keep aspect ratio constraints?
+    // Actually, "perfect rectangle" complaint suggests it's not fitting.
+    // Let's rely on standard scaling: We render at 393px logical, and scale up to 100% of parent.
+
+    // Animation
+    const ANIMATION_DURATION = 18;
+    const transitionStart = keyboard.visibilityChangedAt || 0;
+    const targetValue = keyboard.visible ? 1 : 0;
+    const startValue = keyboard.visible ? 0 : 1;
+
+    const slideProgress = interpolate(
+        frame,
+        [transitionStart, transitionStart + ANIMATION_DURATION],
+        [startValue, targetValue],
+        {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.19, 1, 0.22, 1),
+        }
+    );
+
+    const translateY = interpolate(slideProgress, [0, 1], [100, 0]); // % based translate
+    const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
+
+    if (!keyboard.visible && slideProgress === 0) return null;
+
+    const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
+    const bgColor = variant === "light" ? "rgba(209, 211, 217, 0.96)" : "rgba(28, 28, 30, 0.94)";
+    const backdropFilter = "blur(50px)";
+
+    // Derived State (View-Layer Prediction)
+    const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "100%", // FILL THE DEVICE FRAME
+            height: "auto", // Let content dictate height
+            transform: `translateY(${translateY}%)`,
+            opacity,
+            zIndex: 1000,
+            display: "flex", // Centering wrapper
+            justifyContent: "center",
+            alignItems: "flex-end",
+            overflow: "hidden" // Clip to device frame
+        }}>
+            {/* 
+               Content Wrapper: 
+               Designed at 393px. AppSurface handles the rest.
+            */}
+            <div style={{
+                width: 393, // FIXED PIXEL WIDTH
+                backgroundColor: bgColor,
+                backdropFilter,
+                WebkitBackdropFilter: backdropFilter,
+                paddingTop: 8,
+                paddingBottom: 34, // Home indicator area
+                boxShadow: "0 -1px 0 rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+            }}>
+                {/* Predictive Bar */}
+                <div style={{
+                    height: 48,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "0 10px",
+                    marginBottom: 4,
+                }}>
+                    {suggestions.map((word, i) => (
+                        <div key={i} style={{
+                            flex: 1,
+                            margin: "0 4px",
+                            textAlign: "center",
+                            fontSize: 17, // Standard iOS body
+                            color: variant === "light" ? (i === 1 ? "#007AFF" : "#111") : (i === 1 ? "#0A84FF" : "#FFF"),
+                            fontWeight: 400,
+                            letterSpacing: -0.3,
+                            height: "100%",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            position: "relative",
+                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
+                        }}>
+                            {/* Dividers */}
+                            {i < 2 && (
+                                <div style={{
+                                    position: "absolute",
+                                    right: -4,
+                                    height: "40%",
+                                    width: 1,
+                                    backgroundColor: variant === "light" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"
+                                }} />
+                            )}
+                            {i === 1 ? `"${word}"` : word}
+                        </div>
+                    ))}
+                </div>
+
+                {/* Keyboard Rows */}
+                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "0 6px" }}>
+                    {rows.map((row, index) => (
+                        <KeyboardRow
+                            key={index}
+                            keys={row}
+                            currentKey={keyboard.currentKey}
+                            variant={variant}
+                            rowIndex={index}
+                        />
+                    ))}
+                </div>
+
+                {/* Bottom Actions (Emoji / Mic) with SVGs */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 8,
+                    left: 24,
+                    width: 26,
+                    height: 26,
+                    opacity: 0.6,
+                    color: variant === "light" ? "#444" : "#CCC"
+                }}>
+                    <EmojiIcon style={{ width: "100%", height: "100%" }} />
+                </div>
+                <div style={{
+                    position: "absolute",
+                    bottom: 8,
+                    right: 24,
+                    width: 22,
+                    height: 22,
+                    opacity: 0.6,
+                    color: variant === "light" ? "#444" : "#CCC"
+                }}>
+                    <MicIcon style={{ width: "100%", height: "100%" }} />
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// Use Real Prediction Logic
+import { IOSPrediction } from "../implementations/ios/prediction";
+
+export default IOSKeyboard;
+// Strategy Registration
+import { KeyboardRegistry } from "../core/registry";
+KeyboardRegistry.register("ios", IOSKeyboard);
+````
+
+## File: packages/device-keyboard/src/core/provider.ts
+````typescript
+import React from "react";
+import { KeyboardProps } from "./registry";
+
+/**
+ * Keyboard Provider Interface
+ * 
+ * Defines the contract for a Keyboard Plugin.
+ * A Provider supplies:
+ * 1. Visual Component
+ * 2. Logical Behavior (Prediction)
+ */
+export interface KeyboardProvider {
+    /** Unique ID (e.g., "ios", "android") */
+    id: string;
+
+    /** The React Component to render */
+    Component: React.ComponentType<KeyboardProps>;
+
+    /**
+     * Pure function to determine suggestions based on input.
+     * MUST be deterministic for replayability.
+     */
+    getSuggestions: (text: string, seed: number) => string[];
+}
+````
+
 ## File: packages/device-keyboard/src/core/registry.ts
 ````typescript
 import React from "react";
@@ -4616,6 +5085,33 @@ class KeyboardRegistryClass {
 export const KeyboardRegistry = new KeyboardRegistryClass();
 ````
 
+## File: packages/device-keyboard/src/implementations/ios/prediction.ts
+````typescript
+/**
+ * iOS Keyboard Prediction Logic (Pure)
+ * 
+ * separated from View for testability and deterministic replay.
+ */
+export const IOSPrediction = {
+    getSuggestions: (text: string, seed: number): string[] => {
+        const common = ["the", "I", "a", "to", "and", "in", "it", "you", "of", "for"];
+        const context = ["love", "peace", "truth", "soul", "mind", "life", "world"];
+
+        // Simple hash of input to vary seed
+        const inputHash = text.length;
+
+        // Deterministic pseudo-random based on input length + seed
+        const s = seed + inputHash;
+
+        const i1 = (s * 3) % common.length;
+        const i2 = (s * 7 + 1) % context.length;
+        const i3 = (s * 2 + 5) % common.length;
+
+        return [common[i1], context[i2], common[i3]];
+    }
+};
+````
+
 ## File: packages/device-keyboard/tsconfig.json
 ````json
 {
@@ -4628,6 +5124,25 @@ export const KeyboardRegistry = new KeyboardRegistryClass();
         "src/**/*"
     ]
 }
+````
+
+## File: packages/devices/src/iphone16/shell.ts
+````typescript
+import { DeviceRegistry } from "../registry";
+import { iPhone16Frame } from "./Frame";
+import { StatusBar } from "../StatusBar";
+import { iPhone16Profile } from "./profile";
+
+// Register the Shell
+DeviceRegistry.register({
+    id: "iphone16",
+    FrameComponent: iPhone16Frame,
+    StatusBarComponent: StatusBar,
+    cornerRadius: iPhone16Profile.screen.cornerRadius,
+    hasDynamicIsland: true
+});
+
+export const iPhone16Shell = DeviceRegistry.get("iphone16")!;
 ````
 
 ## File: packages/devices/src/keyboards/index.ts
@@ -4926,6 +5441,26 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
 };
 
 export default IOSKeyboard;
+````
+
+## File: packages/devices/src/registry.ts
+````typescript
+import { DeviceShell } from "./types";
+import React from "react";
+
+class DeviceRegistryClass {
+    private shells = new Map<string, DeviceShell>();
+
+    register(shell: DeviceShell) {
+        this.shells.set(shell.id, shell);
+    }
+
+    get(id: string): DeviceShell | undefined {
+        return this.shells.get(id);
+    }
+}
+
+export const DeviceRegistry = new DeviceRegistryClass();
 ````
 
 ## File: packages/devices/package.json
@@ -8226,6 +8761,358 @@ export const dsl = {
 };
 ````
 
+## File: packages/dsl/src/events/navigation.ts
+````typescript
+/**
+ * Navigation Event Factories
+ * 
+ * Low-level event creators for app navigation.
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+export const navigation = {
+    /**
+     * Navigate to a different app
+     */
+    navigateApp: (
+        at: number,
+        targetAppId: string,
+        options?: {
+            screen?: string;
+            conversationId?: string;
+            transition?: "push" | "pop" | "present";
+            duration?: number
+        }
+    ): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: targetAppId, // Targeted at the destination app
+        type: "NAVIGATE_APP",
+        trace: createTrace(Tracer.capture()),
+        screen: options?.screen,
+        conversationId: options?.conversationId,
+        transition: options?.transition,
+        animationDuration: options?.duration
+    } as any), // Cast to any because NAVIGATE_APP might not be in core types yet, but runtime handles it
+
+    /**
+     * Navigate within current app
+     */
+    /**
+     * Navigate within current app
+     * 
+     * @example
+     * // Autocompletes 'screen' based on 'appId'!
+     * dsl.navigation.navigateScreen(0, "app_whatsapp", "chat")
+     */
+    navigateScreen: <ID extends keyof import("@tokovo/core").AppScreens>(
+        at: number,
+        appId: ID,
+        screen: import("@tokovo/core").AppScreens[ID],
+        options?: {
+            transition?: "push" | "pop" | "present" | "dismiss";
+            duration?: number
+        }
+    ): TimelineEvent => ({
+        at,
+        kind: "APP",
+        appId: appId as string,
+        type: "NAVIGATE_SCREEN",
+        trace: createTrace(Tracer.capture()),
+        screen: screen as string,
+        transition: options?.transition,
+        animationDuration: options?.duration
+    } as any)
+};
+````
+
+## File: packages/dsl/src/events/notification.ts
+````typescript
+import { NotificationIR } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+// Simple ID Generator since utils doesn't exist yet
+const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
+
+/**
+ * Generic Notification DSL
+ * 
+ * Allows authors to simulate push notifications from any app.
+ */
+
+export interface ScheduleNotificationOptions {
+    appId: string;
+    title: string;
+    body: string;
+
+    // Optional overrides
+    icon?: string;
+    id?: string; // Manual ID if you want to reference it later
+
+    // Advanced
+    threadKey?: string;
+    groupKey?: string;
+    category?: NotificationIR["category"];
+
+    // Actions
+    actions?: NotificationIR["actions"];
+    replyable?: boolean;
+}
+
+export const notification = {
+    /**
+     * Schedule a notification to appear
+     */
+    schedule: (at: number, options: ScheduleNotificationOptions) => {
+        const id = options.id || generateId("notif");
+
+        // Construct the IR payload
+        // We use the "SHOW_NOTIFICATION" event which the Engine listens to.
+        // The Engine will wrap this IR into a NotificationInstance.
+        return {
+            at,
+            kind: "DEVICE",
+            deviceId: "primary", // Default to primary for now
+            type: "SHOW_NOTIFICATION",
+            trace: createTrace(Tracer.capture()),
+
+            // The IR fields
+            id,
+            appId: options.appId,
+            title: options.title,
+            body: options.body,
+            icon: options.icon,
+
+            // Meta
+            category: options.category,
+            threadKey: options.threadKey,
+            groupKey: options.groupKey,
+            actions: options.actions,
+            replyable: options.replyable,
+        } as const;
+    },
+
+    /**
+     * Simulate tapping a notification (opens the app)
+     */
+    tap: (at: number, notificationId: string, actionId?: string) => ({
+        at,
+        kind: "DEVICE",
+        deviceId: "primary",
+        type: "TAP_NOTIFICATION",
+        trace: createTrace(Tracer.capture()),
+        notificationId,
+        actionId,
+    } as const),
+
+    /**
+     * Dismiss a notification
+     */
+    dismiss: (at: number, notificationId: string) => ({
+        at,
+        kind: "DEVICE",
+        deviceId: "primary",
+        type: "DISMISS_NOTIFICATION",
+        trace: createTrace(Tracer.capture()),
+        notificationId,
+    } as const),
+
+    /**
+     * Clear all notifications
+     */
+    clearAll: (at: number) => ({
+        at,
+        kind: "DEVICE",
+        deviceId: "primary",
+        type: "CLEAR_ALL_NOTIFICATIONS",
+        trace: createTrace(Tracer.capture()),
+    } as const),
+};
+````
+
+## File: packages/dsl/src/events/os.ts
+````typescript
+/**
+ * OS Event Factories
+ * 
+ * Low-level event creators for device OS state changes.
+ * Controls clock, battery, network, DND mode.
+ */
+
+import { TimelineEvent, NetworkType } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+/**
+ * OS event factories
+ */
+export const os = {
+    /**
+     * Set device time (Unix timestamp ms)
+     */
+    setTime: (at: number, time: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_TIME",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        time,
+    } as TimelineEvent),
+
+    /**
+     * Set battery level (0-100)
+     */
+    setBattery: (at: number, level: number, charging = false, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_BATTERY",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        level,
+        charging,
+    } as TimelineEvent),
+
+    /**
+     * Drain battery at rate per second
+     */
+    drainBattery: (at: number, rate: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "DRAIN_BATTERY",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        rate,
+    } as TimelineEvent),
+
+    /**
+     * Set network type and optional strength
+     */
+    setNetwork: (at: number, network: NetworkType, strength?: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_NETWORK",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        network,
+        strength,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Do Not Disturb mode
+     */
+    setDND: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_DND",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Low Power mode
+     */
+    setLowPower: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_LOW_POWER",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+
+    /**
+     * Toggle Airplane mode (disables network)
+     */
+    setAirplane: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "OS",
+        type: "SET_AIRPLANE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        enabled,
+    } as TimelineEvent),
+};
+````
+
+## File: packages/dsl/src/events/touch.ts
+````typescript
+/**
+ * Touch Event Factories
+ * 
+ * Low-level event creators for gesture visualization.
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+/**
+ * Touch event factories
+ */
+export const touch = {
+    /**
+     * Tap at coordinates (shows brief circle)
+     */
+    tap: (at: number, x: number, y: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "TAP",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        x,
+        y,
+    } as TimelineEvent),
+
+    /**
+     * Long press at coordinates
+     */
+    longPress: (at: number, x: number, y: number, duration: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "LONG_PRESS",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        x,
+        y,
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Drag from start to end coordinates
+     */
+    drag: (at: number, startX: number, startY: number, endX: number, endY: number, duration: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "DRAG",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        startX,
+        startY,
+        endX,
+        endY,
+        duration,
+    } as TimelineEvent),
+
+    /**
+     * Scroll vertically
+     */
+    scroll: (at: number, y: number, velocity?: number, deviceId?: string): TimelineEvent => ({
+        at,
+        kind: "TOUCH",
+        type: "SCROLL",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        y,
+        velocity,
+    } as TimelineEvent),
+};
+````
+
 ## File: packages/dsl/src/events/typing.ts
 ````typescript
 /**
@@ -8419,6 +9306,33 @@ export interface EpisodeDefinition {
     id: string;
     flow: any; // Using any for now to avoid circular dependency hell with IR
     schemaVersion: string;
+}
+````
+
+## File: packages/dsl/package.json
+````json
+{
+    "name": "@tokovo/dsl",
+    "version": "0.0.1",
+    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "source-map-support": "^0.5.21"
+    },
+    "devDependencies": {
+        "@types/source-map-support": "^0.5.10",
+        "typescript": "^5.0.0"
+    }
 }
 ````
 
@@ -16695,117 +17609,6 @@ export type { V2LoweringHandler } from "./v2/handler";
 export { whatsappLowering as whatsappLegacyLowering } from "./legacy/handler";
 ````
 
-## File: packages/apps-whatsapp/src/runtime/adapters/anchors.ts
-````typescript
-import {
-    AnchorProvider,
-    AnchorSnapshot,
-    LayoutRect,
-    ChatLayoutState,
-    APP_IDS
-} from "@tokovo/core";
-
-const APP_ID = APP_IDS.WHATSAPP;
-
-// Production-grade anchor provider converting Layout Engine output to Semantic Anchors
-export const WhatsAppAnchors: AnchorProvider = {
-    appId: APP_ID,
-
-    // Static Framing Definitions
-    framing: {
-        // Conversation / Messages
-        message: {
-            anchorPoint: { x: 0.5, y: 0.5 },
-            paddingPx: 40,
-            targetFill: 0.6
-        },
-        message_me: {
-            anchorPoint: { x: 0.6, y: 0.5 },
-            paddingPx: 40,
-            targetFill: 0.6
-        },
-        message_other: {
-            anchorPoint: { x: 0.4, y: 0.5 },
-            paddingPx: 40,
-            targetFill: 0.6
-        },
-        device: {
-            anchorPoint: { x: 0.5, y: 0.5 },
-            paddingPx: 0,
-            targetFill: 1.0
-        },
-
-        // System / Status
-        typing: {
-            anchorPoint: { x: 0.35, y: 0.5 },
-            paddingPx: 30,
-            targetFill: 0.3
-        },
-        input: {
-            anchorPoint: { x: 0.5, y: 0.8 },
-            paddingPx: 20,
-            targetFill: 0.9
-        },
-
-        // Nav
-        header: {
-            anchorPoint: { x: 0.5, y: 0.15 },
-            paddingPx: 10,
-            targetFill: 0.9
-        },
-        profile: {
-            anchorPoint: { x: 0.2, y: 0.15 }, // Focus specifically on avatar
-            paddingPx: 50,
-            targetFill: 0.4
-        }
-    },
-
-    // Dynamic extraction from Computed Layout
-    getAnchors(
-        world,
-        layout,
-        deviceId
-    ): AnchorSnapshot {
-        // Cast generic layout to ChatLayoutState
-        const chatLayout = layout as ChatLayoutState;
-        const anchors: Record<string, LayoutRect> = {};
-
-        // If no layout (e.g. app not active), return empty or device fallback
-        if (!chatLayout || !chatLayout.semantic) {
-            // Fallback to device? Or empty.
-            return { anchors: {}, deviceId, appId: APP_ID };
-        }
-
-        // Map Semantic Regions to Anchors
-        // ChatLayoutState.semantic.regions is Record<string, SemanticRegion>
-        const regions = chatLayout.semantic.regions;
-        for (const [key, region] of Object.entries(regions)) {
-            // Mapping strategy: 
-            // 1. ID match (e.g. "msg_123")
-            // 2. Tag match? (Layout Engine provides specific IDs)
-            // The Camera system requests specific IDs like "msg_123".
-            // So we just pass them through.
-
-            // We can also alias standard semantic names like "lastMessage"
-            anchors[key] = region.rect;
-        }
-
-        // Computed Aliases
-        if (chatLayout.meta?.lastMessageId && regions[chatLayout.meta.lastMessageId]) {
-            anchors["lastMessage"] = regions[chatLayout.meta.lastMessageId].rect;
-        }
-
-        // Input area and Header are already in regions from layout.ts
-
-        return {
-            anchors,
-            deviceId,
-            appId: APP_ID,
-        };
-    }
-};
-````
-
 ## File: packages/apps-whatsapp/src/runtime/adapters/index.ts
 ````typescript
 /**
@@ -23690,120 +24493,6 @@ export function isEventForDevice(e: TimelineEvent, deviceId: string): boolean {
 }
 ````
 
-## File: packages/core/src/utils/validation.ts
-````typescript
-import { z } from "zod";
-import { TokovoPlugin } from "./plugin";
-import { AppMetadata } from "./app-metadata";
-
-// =============================================================================
-// PLUGIN & METADATA SCHEMAS
-// =============================================================================
-
-export const AppMetadataSchema = z.object({
-    displayName: z.string(),
-    themeColor: z.string().regex(/^#/, "Must be a hex color"),
-    icon: z.string(),
-    viewStrategy: z.enum(["CHAT", "FEED", "STORY", "LOCKSCREEN", "HOMESCREEN", "FULLSCREEN", "TRANSITION"]).optional(),
-    designWidth: z.number().optional().default(393),
-}) as z.ZodType<Partial<AppMetadata> & { name?: string }>; // Loose typing to match Partial
-
-// NOTE: We don't deeply validate React components or Functions (runtime checks only)
-export const TokovoPluginSchema = z.object({
-    id: z.string().min(3),
-    version: z.string(),
-
-    // Metadata block
-    metadata: z.object({
-        name: z.string(),
-        themeColor: z.string().optional(),
-        icon: z.string().optional(),
-        designWidth: z.number().optional(),
-    }).optional(),
-
-    // Deprecated fields (lax schema)
-    name: z.string().optional(),
-    icon: z.string().optional(),
-    primaryColor: z.string().optional(),
-
-    // Arrays
-    eventTypes: z.array(z.string()).optional(),
-
-    // Maps
-    sounds: z.record(z.string(), z.string()).optional(),
-    anchors: z.record(z.string(), z.any()).optional(), // Framing config is complex, lazy check
-});
-
-/**
- * Validates a plugin definition at load time.
- * @throws ZodError if invalid
- */
-export function validatePlugin(plugin: TokovoPlugin): void {
-    // 1. Structural Check
-    TokovoPluginSchema.parse(plugin);
-
-    // 2. Logic Checks
-    if (!plugin.appView && !plugin.screens) {
-        throw new Error(`[Validation] Plugin ${plugin.id} must provide 'appView' or 'screens'.`);
-    }
-
-    if (!plugin.metadata?.name && !plugin.name) {
-        throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
-    }
-
-    // 3. Conflict Prevention (Enterprise Standard)
-
-    // Core events that don't need namespacing
-    const CORE_EVENT_TYPES = new Set([
-        "MESSAGE_RECEIVED", "MESSAGE_SENT", "MESSAGE_READ", "MESSAGE_DELETED",
-        "TYPING_START", "TYPING_END",
-        "REACTION_ADDED",
-        "CALL", // Provisionally Core
-        "NOTIFICATION", "SHOW_NOTIFICATION", "HIDE_NOTIFICATION",
-        "PLAY_TRACK", "PAUSE_TRACK", "START_BACKGROUND_APP",
-        "OPEN_APP", "CLOSE_APP",
-        "SCREEN_NAVIGATED",
-        // Enhanced Features (Standardized)
-        "VOICE_MESSAGE_RECEIVED",
-        "GROUP_MEMBER_ADDED", "GROUP_MEMBER_REMOVED"
-    ]);
-
-    // Enforce Event Namespacing
-    if (plugin.eventTypes) {
-        for (const type of plugin.eventTypes) {
-            if (CORE_EVENT_TYPES.has(type)) continue;
-
-            const validPrefix = `${plugin.id}.`;
-            if (!type.startsWith(validPrefix)) {
-                throw new Error(
-                    `[Conflict Prevention] Event type '${type}' in plugin '${plugin.id}' must be namespaced.\n` +
-                    `Required format: '${validPrefix}MyEvent'.\n` +
-                    `Core events allowed: ${Array.from(CORE_EVENT_TYPES).join(", ")}`
-                );
-            }
-        }
-    }
-
-    // Enforce Sound Namespacing
-    if (plugin.sounds) {
-        for (const key of Object.keys(plugin.sounds)) {
-            // Allow dot or underscore separator
-            const validPrefixDot = `${plugin.id}.`;
-            // For legacy mostly, but strict enterprise usually prefers dot. 
-            // However, many assets use underscore (app_whatsapp_sent).
-            // Let's allow underscore if the ID itself has underscores.
-            // Actually, best to strictly check if it STARTS with the ID.
-            if (!key.startsWith(plugin.id)) {
-                throw new Error(
-                    `[Conflict Prevention] Sound key '${key}' in plugin '${plugin.id}' must be namespaced.\n` +
-                    `It must start with '${plugin.id}' (e.g. '${plugin.id}.sent' or '${plugin.id}_sent').`
-                );
-            }
-        }
-    }
-}
-````
-
 ## File: packages/core/src/constants.ts
 ````typescript
 /**
@@ -28070,182 +28759,6 @@ export interface DirectorOutput {
 }
 ````
 
-## File: packages/device-camera/src/lowering/handler.ts
-````typescript
-/**
- * Camera Lowering Handler - DSL → Runtime event transformation
- * 
- * Transforms camera DSL IR events into runtime timeline operations.
- * 
- * @module device-camera/lowering
- */
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-interface CameraIREvent {
-    at: number;
-    kind: "CAMERA";
-    type: string;
-    duration?: number;
-    payload?: Record<string, unknown>;
-    _declarationOrder?: number;
-    [key: string]: unknown;
-}
-
-interface RuntimeEvent {
-    at: number;
-    kind: "CAMERA";
-    type: string;
-    [key: string]: unknown;
-}
-
-interface LoweringContext {
-    fps: number;
-}
-
-// =============================================================================
-// LOWERING HANDLER
-// =============================================================================
-
-/**
- * Lower camera DSL events to runtime events
- * 
- * Mappings:
- * - SET → CUT (instant camera change)
- * - ANIMATE_START → ZOOM (animated zoom)
- * - SHAKE_START → SHAKE (screen shake)
- * - FOCUS → ANCHOR_FOCUS (semantic anchor focus)
- * - TRACK_START → ANCHOR_TRACK (continuous follow)
- * - RESET → RESET (return to neutral)
- */
-export function cameraV2Lowering(
-    event: CameraIREvent,
-    _ctx: LoweringContext
-): RuntimeEvent[] {
-    const { _declarationOrder, payload, ...rest } = event;
-
-    // Merge payload into top level for reducer
-    const baseEvent = {
-        ...rest,
-        ...(payload || {}),
-        at: event.at,
-        kind: "CAMERA" as const,
-    };
-
-    switch (event.type) {
-        // =================================================================
-        // SET → CUT (instant)
-        // =================================================================
-        case "SET":
-            return [{
-                ...baseEvent,
-                type: "CUT",
-            }];
-
-        // =================================================================
-        // ANIMATE_START → ZOOM
-        // =================================================================
-        case "ANIMATE_START":
-            return [{
-                ...baseEvent,
-                type: "ZOOM",
-                scale: payload?.scale ?? 1,
-                translateX: payload?.x ?? 0,
-                translateY: payload?.y ?? 0,
-                originX: payload?.originX,
-                originY: payload?.originY,
-                easing: payload?.easing ?? "ease-out",
-            }];
-
-        // =================================================================
-        // SHAKE_START → SHAKE
-        // =================================================================
-        case "SHAKE_START":
-            return [{
-                ...baseEvent,
-                type: "SHAKE",
-                intensity: (payload?.intensityX as number) ?? 5,
-                intensityX: payload?.intensityX,
-                intensityY: payload?.intensityY,
-                frequency: payload?.frequency ?? 15,
-                decay: payload?.decay ?? 0.8,
-            }];
-
-        // =================================================================
-        // FOCUS → ANCHOR_FOCUS
-        // =================================================================
-        case "FOCUS":
-            return [{
-                ...baseEvent,
-                type: "ANCHOR_FOCUS",
-                anchor: payload?.anchor ?? "device",
-                scale: payload?.scale,
-                preset: payload?.preset,
-            }];
-
-        // =================================================================
-        // TRACK_START → ANCHOR_TRACK
-        // =================================================================
-        case "TRACK_START":
-            return [{
-                ...baseEvent,
-                type: "ANCHOR_TRACK",
-                anchor: payload?.anchor ?? "device",
-                scale: payload?.scale ?? 1.05,
-                smoothing: payload?.lag ?? 0.18,
-            }];
-
-        // =================================================================
-        // RESET → RESET
-        // =================================================================
-        case "RESET":
-            return [{
-                ...baseEvent,
-                type: "RESET",
-            }];
-
-        // =================================================================
-        // Pass-through for already-runtime events
-        // =================================================================
-        case "ZOOM":
-        case "SHAKE":
-        case "ANCHOR_FOCUS":
-        case "ANCHOR_TRACK":
-        case "CUT":
-            return [baseEvent];
-
-        default:
-            console.warn(`[cameraV2Lowering] Unknown event type: ${event.type}`);
-            return [baseEvent];
-    }
-}
-
-// =============================================================================
-// EVENT TYPES FOR REGISTRATION
-// =============================================================================
-
-export const CAMERA_EVENT_TYPES = [
-    // DSL types
-    "SET",
-    "ANIMATE_START",
-    "ANIMATE_END",
-    "SHAKE_START",
-    "SHAKE_END",
-    "FOCUS",
-    "TRACK_START",
-    "TRACK_END",
-    "RESET",
-    // Runtime types
-    "ZOOM",
-    "SHAKE",
-    "ANCHOR_FOCUS",
-    "ANCHOR_TRACK",
-    "CUT",
-] as const;
-````
-
 ## File: packages/device-camera/src/lowering/index.ts
 ````typescript
 /**
@@ -28255,71 +28768,6 @@ export const CAMERA_EVENT_TYPES = [
  */
 
 export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./handler";
-````
-
-## File: packages/device-camera/src/processors/focus.ts
-````typescript
-/**
- * Focus Effect Processor
- * 
- * Focus camera on a semantic anchor.
- * Resolves anchor ID to coordinates and animates zoom.
- * 
- * @module device-camera/processors/focus
- */
-
-import type { EffectProcessor, EffectProcessorContext } from "./types";
-import type { FocusEffect, CameraTransform } from "../types";
-import { applyEasing, lerp, getProgress } from "../utils";
-
-// Default framing presets
-const PRESETS: Record<string, { scale: number; padding: number }> = {
-    close: { scale: 1.35, padding: 20 },
-    medium: { scale: 1.15, padding: 40 },
-    wide: { scale: 1.05, padding: 60 },
-    message: { scale: 1.08, padding: 30 },
-    impact: { scale: 1.3, padding: 20 },
-};
-
-export const focusProcessor: EffectProcessor = {
-    type: "focus",
-
-    process(ctx: EffectProcessorContext): CameraTransform {
-        const { t, effect, transform, anchorSnapshot, viewport } = ctx;
-        const e = effect as FocusEffect;
-
-        // Calculate progress
-        const progress = getProgress(t, e.startFrame, e.endFrame);
-        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
-
-        // Get preset or defaults
-        const preset = PRESETS[e.preset ?? "medium"] ?? PRESETS.medium;
-        const targetScale = e.scale ?? preset.scale;
-
-        // Try to resolve anchor
-        let originX = 0.5;
-        let originY = 0.5;
-
-        if (anchorSnapshot && anchorSnapshot.anchors[e.anchorId] && viewport) {
-            const rect = anchorSnapshot.anchors[e.anchorId];
-            // Convert anchor center to normalized origin (0-1)
-            originX = (rect.x + rect.width / 2) / viewport.width;
-            originY = (rect.y + rect.height / 2) / viewport.height;
-        }
-
-        // Interpolate towards target
-        const scale = lerp(1, targetScale, easedProgress);
-        const interpOriginX = lerp(transform.originX, originX, easedProgress);
-        const interpOriginY = lerp(transform.originY, originY, easedProgress);
-
-        return {
-            ...transform,
-            scale: transform.scale * scale,
-            originX: interpOriginX,
-            originY: interpOriginY,
-        };
-    },
-};
 ````
 
 ## File: packages/device-camera/src/processors/reset.ts
@@ -28941,86 +29389,6 @@ See [camera_arch.md](/docs/packages/camera_arch.md) for full documentation.
 }
 ````
 
-## File: packages/device-keyboard/src/camera/behaviors.ts
-````typescript
-/**
- * Keyboard Camera Behaviors
- * 
- * Defines how keyboard events map to camera intents.
- */
-
-import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
-
-const APP_ID = "device_keyboard";
-
-// =============================================================================
-// EVENT → INTENT MAPPINGS
-// =============================================================================
-
-/**
- * Keyboard event to camera intent mappings.
- * 
- * Each event can produce a camera intent:
- * - FOCUS: zoom to specific anchor
- * - RESET: return to neutral
- * - HOLD: maintain current position
- */
-export const KEYBOARD_INTENT_MAPPINGS: Record<string, CameraIntent> = {
-    // Visibility events
-    KEYBOARD_SHOW: { type: "FOCUS", anchor: "keyboard", preset: "reveal" },
-    KEYBOARD_HIDE: { type: "RESET", preset: "reset" },
-
-    // Typing events - focus on input field, not individual keys
-    KEYBOARD_TYPE: { type: "FOCUS", anchor: "inputField", preset: "subtle" },
-    KEYBOARD_KEY_DOWN: { type: "HOLD" }, // Don't jitter on each key
-    KEYBOARD_KEY_UP: { type: "HOLD" },
-
-    // Layout switch
-    KEYBOARD_SWITCH_LAYOUT: { type: "HOLD" },
-
-    // Autocomplete
-    KEYBOARD_ACCEPT_SUGGESTION: { type: "FOCUS", anchor: "predictionBar", preset: "snap" },
-};
-
-// =============================================================================
-// PRESET OVERRIDES
-// =============================================================================
-
-/**
- * Optional preset overrides for keyboard.
- * Deltas from global presets.
- */
-export const KEYBOARD_PRESET_OVERRIDES: Partial<
-    Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
-> = {
-    // Reveal keyboard with slight zoom
-    reveal: { scale: 1.1 },
-
-    // Subtle focus on input field
-    subtle: { scale: 1.05 },
-
-    // Snap to autocomplete suggestion
-    snap: { scale: 1.08 },
-};
-
-// =============================================================================
-// APP BEHAVIOR EXPORT
-// =============================================================================
-
-export const KeyboardBehavior: AppBehavior = {
-    appId: APP_ID,
-    eventMappings: KEYBOARD_INTENT_MAPPINGS,
-    presetOverrides: KEYBOARD_PRESET_OVERRIDES,
-};
-
-/**
- * Get camera intent for a keyboard event.
- */
-export function getKeyboardIntent(eventType: string): CameraIntent | undefined {
-    return KEYBOARD_INTENT_MAPPINGS[eventType];
-}
-````
-
 ## File: packages/device-keyboard/src/camera/index.ts
 ````typescript
 /**
@@ -29028,451 +29396,6 @@ export function getKeyboardIntent(eventType: string): CameraIntent | undefined {
  */
 
 export * from "./behaviors";
-````
-
-## File: packages/device-keyboard/src/components/IOSKeyboard.tsx
-````typescript
-/**
- * IOSKeyboard - Realistic iOS keyboard component
- * 
- * Features:
- * - Full QWERTY layout
- * - Key pop-up on press (3 frames)
- * - Slide up/down animation
- * - iOS light/dark themes
- */
-
-import React from "react";
-import { useCurrentFrame, interpolate, Easing } from "remotion";
-import { KeyboardState, KeyboardLayout } from "@tokovo/core";
-
-// =============================================================================
-// KEYBOARD LAYOUTS
-// =============================================================================
-
-const QWERTY_ROWS = [
-    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
-    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
-    ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
-    ["123", "🌐", "space", "return"]
-];
-
-const NUMBERS_ROWS = [
-    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
-    ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
-    ["#+=", ".", ",", "?", "!", "'", "⌫"],
-    ["ABC", "🌐", "space", "return"]
-];
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-import { KeyboardProps } from "../core/registry";
-
-interface KeyProps {
-    label: string;
-    isPressed: boolean;
-    width?: number; // Sizing weight (roughly px)
-    isSpecial?: boolean;
-    variant: "light" | "dark";
-    isIcon?: boolean;
-}
-
-// =============================================================================
-// KEY COMPONENT
-// =============================================================================
-
-const Key: React.FC<KeyProps> = ({
-    label,
-    isPressed,
-    width = 33, // Standard key width in px
-    isSpecial = false,
-    variant
-}) => {
-    // Colors
-    const colors = variant === "light"
-        ? {
-            keyBg: isSpecial ? "#B3B6BE" : "#FFFFFF",
-            keyText: "#000000",
-            popupBg: "#FFFFFF",
-            shadow: "0 1px 0 rgba(0,0,0,0.3)",
-        }
-        : {
-            keyBg: isSpecial ? "#3A3A3C" : "#6D6D72",
-            keyText: "#FFFFFF",
-            popupBg: "#6D6D72",
-            shadow: "0 1px 0 rgba(0,0,0,0.45)",
-        };
-
-    // ARCHITECTURE STANDARD: PIXEL VALUES
-    // Designed for 393px width
-    const fontSize = label === "space" ? 16 : label.length > 1 ? 16 : 25; // 25px Standard
-    const fontWeight = label === "shift" || label === "delete" ? 300 : 400;
-
-    const bg = isPressed ? (isSpecial ? "#EAECF0" : "#E5E5E5") : colors.keyBg;
-
-    // Pop-ups enabled!
-    const showPopup = isPressed && label.length === 1 && !isSpecial;
-
-    return (
-        <div style={{
-            position: "relative",
-            width: width, // PIXEL WIDTH
-            height: 42,   // PIXEL HEIGHT
-            margin: "0 3px", // PIXEL MARGIN (Side gaps)
-            zIndex: showPopup ? 100 : 1,
-        }}>
-            {/* Pop-up */}
-            {showPopup && (
-                <KeyPopup label={label} variant={variant} colors={colors} keyWidth={width} />
-            )}
-
-            {/* Key Body */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: bg,
-                borderRadius: 5, // iOS Standard Radius
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize,
-                fontWeight,
-                color: colors.keyText,
-                boxShadow: colors.shadow,
-                transition: "background-color 0.05s",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
-            }}>
-                {renderLabel(label, variant)}
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// KEY POPUP (SVG Shape)
-// =============================================================================
-
-const KeyPopup: React.FC<{
-    label: string,
-    variant: "light" | "dark",
-    colors: any,
-    keyWidth: number
-}> = ({ label, variant, colors, keyWidth }) => {
-    // Popup metrics
-    const POPUP_WIDTH = keyWidth + 24; // ~58px
-    const POPUP_HEIGHT = 100; // Fixed tall height
-
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 0,
-            left: "50%",
-            width: POPUP_WIDTH,
-            height: POPUP_HEIGHT,
-            transform: "translateX(-50%)",
-            pointerEvents: "none",
-            zIndex: 200,
-            filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))"
-        }}>
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 100 130"
-                preserveAspectRatio="none"
-                style={{ overflow: "visible" }}
-            >
-                <path
-                    d="M 20 130 L 80 130 L 80 80 Q 80 60 100 60 L 100 15 Q 100 0 85 0 L 15 0 Q 0 0 0 15 L 0 60 Q 20 60 20 80 Z"
-                    fill={colors.popupBg}
-                />
-            </svg>
-
-            {/* Character */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: 60, // Top bubble height
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 36, // Large 36px char
-                color: colors.keyText,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-                fontWeight: 400,
-                paddingBottom: 5
-            }}>
-                {label.toUpperCase()}
-            </div>
-        </div>
-    );
-};
-
-// Helper for Icons
-const renderLabel = (label: string, variant: string) => {
-    // SF Symbols approximation - returning SVGs that fill their container
-    const iconStyle = { width: "50%", height: "50%", display: "block" };
-
-    if (label === "space") return "";
-    if (label === "⇧") return <ArrowUpIcon style={iconStyle} />;
-    if (label === "⌫") return <DeleteIcon style={iconStyle} />;
-    if (label === "return") return "return";
-    if (label === "123") return "123";
-    if (label === "ABC") return "ABC";
-    if (label === "🌐") return <GlobeIcon style={{ width: "60%", height: "60%" }} />;
-    return label;
-}
-
-const ArrowUpIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="currentColor"><path d="M12 4L4 16H8V20H16V16H20L12 4Z" /></svg>
-);
-
-const DeleteIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M22 2H10L2 12L10 22H22V2Z" vectorEffect="non-scaling-stroke" /><line x1="12" y1="8" x2="18" y2="16" vectorEffect="non-scaling-stroke" /><line x1="12" y1="16" x2="18" y2="8" vectorEffect="non-scaling-stroke" /></svg>
-);
-
-const GlobeIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><line x1="2" y1="12" x2="22" y2="12" vectorEffect="non-scaling-stroke" /><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" vectorEffect="non-scaling-stroke" /></svg>
-);
-
-const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10" vectorEffect="non-scaling-stroke" /><path d="M8 14s1.5 2 4 2 4-2 4-2" vectorEffect="non-scaling-stroke" /><line x1="9" y1="9" x2="9.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /><line x1="15" y1="9" x2="15.01" y2="9" strokeWidth="2" vectorEffect="non-scaling-stroke" /></svg>
-);
-
-const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" vectorEffect="non-scaling-stroke" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" vectorEffect="non-scaling-stroke" /><line x1="12" y1="19" x2="12" y2="23" vectorEffect="non-scaling-stroke" /><line x1="8" y1="23" x2="16" y2="23" vectorEffect="non-scaling-stroke" /></svg>
-);
-
-// =============================================================================
-// KEYBOARD ROW
-// =============================================================================
-
-const KeyboardRow: React.FC<{
-    keys: string[];
-    currentKey: string | null;
-    variant: "light" | "dark";
-    rowIndex: number;
-}> = ({ keys, currentKey, variant, rowIndex }) => {
-    return (
-        <div style={{
-            display: "flex",
-            justifyContent: "center",
-            width: "100%",
-            marginBottom: 10, // 10px Gap
-        }}>
-            {keys.map((key, index) => {
-                const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
-                const isSpace = key === "space";
-                const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
-                    (key === "⌫" && currentKey === "⌫") ||
-                    (isSpace && currentKey === " ");
-
-                // PIXEL WIDTHS (Based on 393 width)
-                // Standard: ~31-33
-                let width = 33; // Base (Matches ~10% minus gap)
-
-                if (key === "space") width = 192; // 5x
-                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 48; // 1.5x
-                if (key === "⇧" || key === "⌫") width = 42;
-
-                return (
-                    <Key
-                        key={`${key}-${index}`}
-                        label={key}
-                        isPressed={isPressed}
-                        width={width}
-                        isSpecial={isSpecial}
-                        variant={variant}
-                    />
-                );
-            })}
-        </div>
-    );
-};
-
-// =============================================================================
-// MAIN KEYBOARD COMPONENT
-// =============================================================================
-
-// =============================================================================
-// MAIN KEYBOARD COMPONENT
-// =============================================================================
-
-export const IOSKeyboard: React.FC<KeyboardProps> = ({
-    keyboard,
-    variant = "light",
-}) => {
-    const frame = useCurrentFrame();
-
-    // -------------------------------------------------------------------------
-    // SCALING INFRASTRUCTURE
-    // -------------------------------------------------------------------------
-    // The keyboard is designed at 393 logical pixels (iPhone 14/15/16 Pro).
-    // We want it to fill the rendered width (e.g. 1080px or 1179px).
-    // Instead of hardcoding 1080, we use percentage width for the container,
-    // and a transform: scale() on the inner content to match logical pixels.
-
-    // HOWEVER, scaling inner content is tricky without knowing exact width.
-    // simpler approach: CSS Zoom or just design keys in % or fluid units?
-    // Keys need specific sizes. 
-
-    // LET'S GO WITH FLUID WIDTH (100%) but keep aspect ratio constraints?
-    // Actually, "perfect rectangle" complaint suggests it's not fitting.
-    // Let's rely on standard scaling: We render at 393px logical, and scale up to 100% of parent.
-
-    // Animation
-    const ANIMATION_DURATION = 18;
-    const transitionStart = keyboard.visibilityChangedAt || 0;
-    const targetValue = keyboard.visible ? 1 : 0;
-    const startValue = keyboard.visible ? 0 : 1;
-
-    const slideProgress = interpolate(
-        frame,
-        [transitionStart, transitionStart + ANIMATION_DURATION],
-        [startValue, targetValue],
-        {
-            extrapolateLeft: "clamp",
-            extrapolateRight: "clamp",
-            easing: Easing.bezier(0.19, 1, 0.22, 1),
-        }
-    );
-
-    const translateY = interpolate(slideProgress, [0, 1], [100, 0]); // % based translate
-    const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
-
-    if (!keyboard.visible && slideProgress === 0) return null;
-
-    const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
-    const bgColor = variant === "light" ? "rgba(209, 211, 217, 0.96)" : "rgba(28, 28, 30, 0.94)";
-    const backdropFilter = "blur(50px)";
-
-    // Derived State (View-Layer Prediction)
-    const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
-
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%", // FILL THE DEVICE FRAME
-            height: "auto", // Let content dictate height
-            transform: `translateY(${translateY}%)`,
-            opacity,
-            zIndex: 1000,
-            display: "flex", // Centering wrapper
-            justifyContent: "center",
-            alignItems: "flex-end",
-            overflow: "hidden" // Clip to device frame
-        }}>
-            {/* 
-               Content Wrapper: 
-               Designed at 393px. AppSurface handles the rest.
-            */}
-            <div style={{
-                width: 393, // FIXED PIXEL WIDTH
-                backgroundColor: bgColor,
-                backdropFilter,
-                WebkitBackdropFilter: backdropFilter,
-                paddingTop: 8,
-                paddingBottom: 34, // Home indicator area
-                boxShadow: "0 -1px 0 rgba(0,0,0,0.1)",
-                display: "flex",
-                flexDirection: "column",
-            }}>
-                {/* Predictive Bar */}
-                <div style={{
-                    height: 48,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "0 10px",
-                    marginBottom: 4,
-                }}>
-                    {suggestions.map((word, i) => (
-                        <div key={i} style={{
-                            flex: 1,
-                            margin: "0 4px",
-                            textAlign: "center",
-                            fontSize: 17, // Standard iOS body
-                            color: variant === "light" ? (i === 1 ? "#007AFF" : "#111") : (i === 1 ? "#0A84FF" : "#FFF"),
-                            fontWeight: 400,
-                            letterSpacing: -0.3,
-                            height: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            position: "relative",
-                            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
-                        }}>
-                            {/* Dividers */}
-                            {i < 2 && (
-                                <div style={{
-                                    position: "absolute",
-                                    right: -4,
-                                    height: "40%",
-                                    width: 1,
-                                    backgroundColor: variant === "light" ? "rgba(0,0,0,0.1)" : "rgba(255,255,255,0.1)"
-                                }} />
-                            )}
-                            {i === 1 ? `"${word}"` : word}
-                        </div>
-                    ))}
-                </div>
-
-                {/* Keyboard Rows */}
-                <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "space-evenly", padding: "0 6px" }}>
-                    {rows.map((row, index) => (
-                        <KeyboardRow
-                            key={index}
-                            keys={row}
-                            currentKey={keyboard.currentKey}
-                            variant={variant}
-                            rowIndex={index}
-                        />
-                    ))}
-                </div>
-
-                {/* Bottom Actions (Emoji / Mic) with SVGs */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 8,
-                    left: 24,
-                    width: 26,
-                    height: 26,
-                    opacity: 0.6,
-                    color: variant === "light" ? "#444" : "#CCC"
-                }}>
-                    <EmojiIcon style={{ width: "100%", height: "100%" }} />
-                </div>
-                <div style={{
-                    position: "absolute",
-                    bottom: 8,
-                    right: 24,
-                    width: 22,
-                    height: 22,
-                    opacity: 0.6,
-                    color: variant === "light" ? "#444" : "#CCC"
-                }}>
-                    <MicIcon style={{ width: "100%", height: "100%" }} />
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// Use Real Prediction Logic
-import { IOSPrediction } from "../implementations/ios/prediction";
-
-export default IOSKeyboard;
-// Strategy Registration
-import { KeyboardRegistry } from "../core/registry";
-KeyboardRegistry.register("ios", IOSKeyboard);
 ````
 
 ## File: packages/device-keyboard/src/config/layouts/numbers.ts
@@ -29849,34 +29772,6 @@ export function getKeyboardTheme(
 }
 ````
 
-## File: packages/device-keyboard/src/core/provider.ts
-````typescript
-import React from "react";
-import { KeyboardProps } from "./registry";
-
-/**
- * Keyboard Provider Interface
- * 
- * Defines the contract for a Keyboard Plugin.
- * A Provider supplies:
- * 1. Visual Component
- * 2. Logical Behavior (Prediction)
- */
-export interface KeyboardProvider {
-    /** Unique ID (e.g., "ios", "android") */
-    id: string;
-
-    /** The React Component to render */
-    Component: React.ComponentType<KeyboardProps>;
-
-    /**
-     * Pure function to determine suggestions based on input.
-     * MUST be deterministic for replayability.
-     */
-    getSuggestions: (text: string, seed: number) => string[];
-}
-````
-
 ## File: packages/device-keyboard/src/dsl/helpers.ts
 ````typescript
 /**
@@ -29986,33 +29881,6 @@ export function expandTypeToKeyEvents(
 
 export * from "./track-builder";
 export * from "./helpers";
-````
-
-## File: packages/device-keyboard/src/implementations/ios/prediction.ts
-````typescript
-/**
- * iOS Keyboard Prediction Logic (Pure)
- * 
- * separated from View for testability and deterministic replay.
- */
-export const IOSPrediction = {
-    getSuggestions: (text: string, seed: number): string[] => {
-        const common = ["the", "I", "a", "to", "and", "in", "it", "you", "of", "for"];
-        const context = ["love", "peace", "truth", "soul", "mind", "life", "world"];
-
-        // Simple hash of input to vary seed
-        const inputHash = text.length;
-
-        // Deterministic pseudo-random based on input length + seed
-        const s = seed + inputHash;
-
-        const i1 = (s * 3) % common.length;
-        const i2 = (s * 7 + 1) % context.length;
-        const i3 = (s * 2 + 5) % common.length;
-
-        return [common[i1], context[i2], common[i3]];
-    }
-};
 ````
 
 ## File: packages/device-keyboard/src/ir/index.ts
@@ -32972,23 +32840,69 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
 };
 ````
 
-## File: packages/devices/src/iphone16/shell.ts
+## File: packages/devices/src/iphone16/profile.ts
 ````typescript
-import { DeviceRegistry } from "../registry";
-import { iPhone16Frame } from "./Frame";
-import { StatusBar } from "../StatusBar";
-import { iPhone16Profile } from "./profile";
+import { DeviceProfile, CameraDeviceConfig } from "../types";
 
-// Register the Shell
-DeviceRegistry.register({
+/**
+ * iPhone 16 camera configuration
+ * - Slow pan speed for cinematic feel on mobile
+ * - High follow lag for smooth, less reactive tracking
+ * - Tighter zoom range for portrait scrolling
+ */
+const iPhone16Camera: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "slow",
+    followLag: "high",
+    snapThreshold: 40,
+    safeAreaTop: 110,      // Dynamic Island + status bar
+    safeAreaBottom: 102,   // Home indicator
+    followLagFactor: 0.7,  // Cinematic lag
+    panSpeedMultiplier: 0.6,
+};
+
+/**
+ * iPhone 16 Device Profile
+ * 
+ * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
+ * Dynamic Island: Centered at top, pill shape
+ */
+export const iPhone16Profile: DeviceProfile = {
     id: "iphone16",
-    FrameComponent: iPhone16Frame,
-    StatusBarComponent: StatusBar,
-    cornerRadius: iPhone16Profile.screen.cornerRadius,
-    hasDynamicIsland: true
-});
+    name: "iPhone 16 Pro Max",
+    type: "phone",
+    dimensions: { width: 1290, height: 2796 },
+    screen: {
+        width: 1290,
+        height: 2796,
+        ppi: 460,
+        cornerRadius: 55,
+    },
+    pixelDensity: 3,
+    camera: iPhone16Camera,
 
-export const iPhone16Shell = DeviceRegistry.get("iphone16")!;
+    // Dynamic Island dimensions (measured from iPhone 16 specs)
+    dynamicIsland: {
+        centerX: 645,           // 1290 / 2 (centered)
+        topY: 36,               // Top padding
+        collapsedWidth: 370,    // Pill width
+        collapsedHeight: 110,   // Pill height
+        expandedWidth: 900,     // Expanded for Now Playing
+        expandedHeight: 220,    // Expanded height
+        cornerRadius: 55,       // Pill corners
+    },
+
+    // Device OS sounds
+    sounds: {
+        "device.notification": "os/ios/notification.wav",
+        "device.lock": "os/ios/lock.wav",
+        "device.unlock": "os/ios/unlock.wav",
+        "device.screenshot": "os/ios/screenshot.wav",
+        "device.charging": "os/ios/charging.wav",
+        "device.keyboard": "os/ios/keyboard.wav",
+    },
+};
 ````
 
 ## File: packages/devices/src/ir/device-event.ts
@@ -33192,6 +33106,69 @@ export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React
             </div>
         </div>
     );
+};
+````
+
+## File: packages/devices/src/pixel/profile.ts
+````typescript
+import { DeviceProfile, CameraDeviceConfig } from "../types";
+
+/**
+ * Pixel camera configuration
+ * - Medium pan speed for balanced feel
+ * - Medium follow lag for responsive tracking
+ * - Slightly wider zoom range for Android
+ */
+const PixelCamera: CameraDeviceConfig = {
+    minZoom: 0.85,
+    maxZoom: 1.2,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 45,
+    safeAreaTop: 90,       // Status bar
+    safeAreaBottom: 48,    // Navigation bar/gesture area
+    followLagFactor: 0.5,  // Balanced lag
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Pixel 7 Pro Device Profile
+ * 
+ * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
+ * No Dynamic Island - uses status bar indicators
+ */
+export const PixelProfile: DeviceProfile = {
+    id: "pixel",
+    name: "Pixel 7 Pro",
+    type: "phone",
+    dimensions: {
+        width: 1080,
+        height: 2400,
+    },
+    screen: {
+        width: 1080,
+        height: 2400,
+        ppi: 512,
+        cornerRadius: 24, // Approximation
+    },
+    camera: PixelCamera,
+    pixelDensity: 3,
+
+    // Android uses status bar for background app indicators
+    statusBarWidget: {
+        rightX: 1000,      // Near right edge
+        topY: 24,
+        maxWidth: 200,
+        height: 66,
+    },
+
+    // Device OS sounds
+    sounds: {
+        "device.notification": "os/android/notification.ogg",
+        "device.lock": "os/android/lock.ogg",
+        "device.unlock": "os/android/unlock.ogg",
+        "device.keyboard": "os/android/keyboard.ogg",
+    },
 };
 ````
 
@@ -33798,6 +33775,131 @@ export function formatTime(timestamp: number): string {
 }
 ````
 
+## File: packages/devices/src/index.ts
+````typescript
+/**
+ * @tokovo/devices
+ * 
+ * Enterprise device profiles and OS features for Tokovo.
+ * 
+ * @example
+ * ```typescript
+ * import { DeviceRegistry, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
+ * 
+ * // Use registered profile
+ * const profile = DeviceRegistry.get("iphone16");
+ * 
+ * // Use DSL for OS events
+ * const device = new DeviceTrackBuilder(30, "phone", getOrder);
+ * device.at("2s").lock();
+ * device.at("5s").unlock();
+ * device.at("10s").openApp("app_whatsapp");
+ * ```
+ */
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export * from "./types";
+export type { FrameProps, FrameComponent } from "./registries";
+export type { StatusBarStrategyProps, StatusBarStrategyComponent, StatusBarNotificationIcon } from "./registries";
+export type { DeviceTrackEvent, DeviceEventType } from "./ir";
+
+// =============================================================================
+// REGISTRIES
+// =============================================================================
+
+export {
+    DeviceRegistry,
+    FrameRegistry,
+    StatusBarStrategyRegistry,
+} from "./registries";
+
+// =============================================================================
+// DSL
+// =============================================================================
+
+export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl";
+
+// =============================================================================
+// IR
+// =============================================================================
+
+export { isDeviceEvent } from "./ir";
+
+// =============================================================================
+// LOWERING
+// =============================================================================
+
+export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering";
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export { deviceReducer } from "./reducer";
+
+// =============================================================================
+// VIEWS
+// =============================================================================
+
+export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar";
+
+// =============================================================================
+// STRATEGIES
+// =============================================================================
+
+export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
+
+// =============================================================================
+// DEVICE PROFILES
+// =============================================================================
+
+export { iPhone16Profile } from "./iphone16/profile";
+export { iPhone16Frame } from "./iphone16/Frame";
+export { iPhone16Shell } from "./iphone16/shell";
+
+export { PixelProfile } from "./pixel/profile";
+export { PixelFrame } from "./pixel/Frame";
+
+// =============================================================================
+// KEYBOARDS (Legacy export)
+// =============================================================================
+
+export * from "./keyboards";
+
+// =============================================================================
+// PLUGIN
+// =============================================================================
+
+export { DevicesPlugin, registerDevicesPlugin, type DevicesPluginContract } from "./plugin";
+
+// =============================================================================
+// AUTO-REGISTRATION
+// =============================================================================
+
+import { registerDevicesPlugin } from "./plugin";
+registerDevicesPlugin();
+
+// =============================================================================
+// DYNAMIC LOOKUP HELPER
+// =============================================================================
+
+import { DeviceRegistry } from "./registries";
+import { iPhone16Profile } from "./iphone16/profile";
+import type { DeviceProfile } from "./types";
+
+/**
+ * Get device profile by ID
+ * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
+ * @returns DeviceProfile or default iPhone16Profile if not found
+ */
+export function getDeviceProfile(profileId: string): DeviceProfile {
+    return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
+}
+````
+
 ## File: packages/devices/src/plugin.ts
 ````typescript
 /**
@@ -33921,26 +34023,6 @@ export function registerDevicesPlugin(): void {
 export default DevicesPlugin;
 ````
 
-## File: packages/devices/src/registry.ts
-````typescript
-import { DeviceShell } from "./types";
-import React from "react";
-
-class DeviceRegistryClass {
-    private shells = new Map<string, DeviceShell>();
-
-    register(shell: DeviceShell) {
-        this.shells.set(shell.id, shell);
-    }
-
-    get(id: string): DeviceShell | undefined {
-        return this.shells.get(id);
-    }
-}
-
-export const DeviceRegistry = new DeviceRegistryClass();
-````
-
 ## File: packages/devices/src/StatusBar.tsx
 ````typescript
 /**
@@ -34016,6 +34098,153 @@ export const DarkStatusBar: React.FC<Omit<StatusBarProps, "theme">> = (props) =>
 export const LightStatusBar: React.FC<Omit<StatusBarProps, "theme">> = (props) => (
     <StatusBar {...props} theme="light" />
 );
+````
+
+## File: packages/devices/src/types.ts
+````typescript
+/**
+ * Camera motion speed configuration
+ */
+export type CameraSpeed = "slow" | "medium" | "fast";
+
+/**
+ * Camera follow lag configuration
+ * - high: More cinematic, camera lags significantly behind target
+ * - medium: Balanced tracking
+ * - low: Camera closely follows target (reactive)
+ */
+export type CameraFollowLag = "high" | "medium" | "low";
+
+/**
+ * Camera configuration for a specific device profile.
+ * 
+ * DESIGN PRINCIPLE: Device profiles define camera physics.
+ * Apps do NOT override these values. Ever.
+ */
+export interface CameraDeviceConfig {
+    // === Zoom Constraints ===
+    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
+    minZoom: number;
+    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
+    maxZoom: number;
+
+    // === Motion Characteristics ===
+    /** Pan speed for camera movement */
+    panSpeed: CameraSpeed;
+    /** Lag when following a target (soft tracking delay) */
+    followLag: CameraFollowLag;
+    /** Snap threshold in pixels - below this, snap instantly vs animate */
+    snapThreshold: number;
+
+    // === Safe Areas for Framing ===
+    /** Top safe area in pixels (status bar, notch, etc.) */
+    safeAreaTop: number;
+    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
+    safeAreaBottom: number;
+
+    // === Follow Easing (numeric values for computation) ===
+    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
+    followLagFactor: number;
+    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
+    panSpeedMultiplier: number;
+}
+
+/**
+ * Default camera configuration for devices
+ */
+export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 50,
+    safeAreaTop: 0,
+    safeAreaBottom: 0,
+    followLagFactor: 0.5,
+    panSpeedMultiplier: 1.0,
+};
+
+/**
+ * Dynamic Island configuration (iOS 14+ iPhones)
+ */
+export interface DynamicIslandConfig {
+    /** Center X position in device pixels */
+    centerX: number;
+    /** Top Y position */
+    topY: number;
+    /** Collapsed pill width */
+    collapsedWidth: number;
+    /** Collapsed pill height */
+    collapsedHeight: number;
+    /** Expanded width */
+    expandedWidth: number;
+    /** Expanded height */
+    expandedHeight: number;
+    /** Corner radius for pill shape */
+    cornerRadius: number;
+}
+
+/**
+ * Status bar widget area (Android)
+ */
+export interface StatusBarWidgetConfig {
+    /** Right edge X position */
+    rightX: number;
+    /** Top Y position */
+    topY: number;
+    /** Maximum width for indicators */
+    maxWidth: number;
+    /** Height of indicator area */
+    height: number;
+}
+
+/**
+ * Device profile defining physical characteristics and camera behavior
+ */
+export interface DeviceShell {
+    /** Unique ID (e.g. "iphone16", "pixel6") */
+    id: string;
+
+    /** The outer frame component (bezel + screen container) */
+    FrameComponent: React.ComponentType<any>;
+
+    /** The System UI (Status Bar) */
+    StatusBarComponent: React.ComponentType<any>;
+
+    /** The Home Indicator (Bottom bar) */
+    HomeIndicatorComponent?: React.ComponentType<any>;
+
+    /** Physical config */
+    cornerRadius: number;
+    hasDynamicIsland: boolean;
+}
+
+export interface DeviceProfile {
+    id: string;
+    name: string;
+    type: "phone" | "tablet" | "desktop" | "watch";
+    dimensions: {
+        width: number;
+        height: number;
+        depth?: number;
+    };
+    screen: {
+        width: number;
+        height: number;
+        ppi: number;
+        cornerRadius: number;
+    };
+    pixelDensity: number;
+    /** Camera behavior configuration (uses defaults if not specified) */
+    camera?: CameraDeviceConfig;
+
+    /** Dynamic Island configuration (iOS only) */
+    dynamicIsland?: DynamicIslandConfig;
+    statusBarWidget?: StatusBarWidgetConfig;
+
+    /** Device OS sounds (notification, lock, unlock, etc.) */
+    sounds?: Record<string, string>;
+}
 ````
 
 ## File: packages/dsl/src/author/beat-builder.ts
@@ -35507,330 +35736,6 @@ export class AudioTrackBuilder {
 }
 ````
 
-## File: packages/dsl/src/core/tracks/camera.ts
-````typescript
-/**
- * Camera Track Builder - Full manual camera control
- *
- * Provides control over camera position, zoom, and effects.
- * Supports both instant (point) and animated (span) operations.
- */
-
-import type { CameraTrackEvent, EasingType } from "@tokovo/ir";
-import { parseTimeToFrames, parseDurationToFrames } from "../../utils/time";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-type GetDeclarationOrder = () => number;
-
-export interface CameraSetOptions {
-    x?: number;
-    y?: number;
-    scale?: number;
-    rotation?: number;
-    originX?: number;
-    originY?: number;
-}
-
-export interface CameraAnimateOptions extends CameraSetOptions {
-    duration: string | number;
-    easing?: EasingType;
-}
-
-export interface CameraFocusOptions {
-    scale?: number;
-    padding?: number;
-    duration?: string | number;
-    easing?: EasingType;
-}
-
-export interface CameraTrackOptions {
-    scale?: number;
-    lag?: number;
-}
-
-export interface CameraShakeOptions {
-    intensityX: number;
-    intensityY: number;
-    frequency?: number;
-    decay?: number;
-    duration: string | number;
-}
-
-export interface CameraResetOptions {
-    duration?: string | number;
-    easing?: EasingType;
-}
-
-// =============================================================================
-// POINT BUILDER (at)
-// =============================================================================
-
-export class CameraPointBuilder {
-    private readonly frame: number;
-    private readonly fps: number;
-    private readonly events: CameraTrackEvent[];
-    private readonly getOrder: GetDeclarationOrder;
-
-    constructor(
-        frame: number,
-        fps: number,
-        events: CameraTrackEvent[],
-        getOrder: GetDeclarationOrder
-    ) {
-        this.frame = frame;
-        this.fps = fps;
-        this.events = events;
-        this.getOrder = getOrder;
-    }
-
-    /**
-     * Set camera state instantly.
-     */
-    set(options: CameraSetOptions): void {
-        const event: CameraTrackEvent = {
-            at: this.frame,
-            kind: "CAMERA",
-            type: "SET",
-            payload: {
-                x: options.x,
-                y: options.y,
-                scale: options.scale,
-                rotation: options.rotation,
-                originX: options.originX,
-                originY: options.originY,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Animate camera to new state.
-     */
-    animate(options: CameraAnimateOptions): void {
-        const duration = parseDurationToFrames(options.duration, this.fps);
-
-        const startEvent: CameraTrackEvent = {
-            at: this.frame,
-            duration,
-            kind: "CAMERA",
-            type: "ANIMATE_START",
-            payload: {
-                x: options.x,
-                y: options.y,
-                scale: options.scale,
-                rotation: options.rotation,
-                originX: options.originX,
-                originY: options.originY,
-                easing: options.easing ?? "linear",
-            },
-            _declarationOrder: this.getOrder(),
-        };
-
-        const endEvent: CameraTrackEvent = {
-            at: this.frame + duration,
-            kind: "CAMERA",
-            type: "ANIMATE_END",
-            payload: {},
-            _declarationOrder: this.getOrder(),
-        };
-
-        this.events.push(startEvent, endEvent);
-    }
-
-    /**
-     * Focus on an anchor.
-     */
-    focus(anchorId: string, options: CameraFocusOptions = {}): void {
-        const duration = options.duration
-            ? parseDurationToFrames(options.duration, this.fps)
-            : undefined;
-
-        const event: CameraTrackEvent = {
-            at: this.frame,
-            duration,
-            kind: "CAMERA",
-            type: "FOCUS",
-            payload: {
-                anchorId,
-                scale: options.scale,
-                padding: options.padding,
-                easing: options.easing,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Apply screen shake effect.
-     */
-    shake(options: CameraShakeOptions): void {
-        const duration = parseDurationToFrames(options.duration, this.fps);
-
-        const startEvent: CameraTrackEvent = {
-            at: this.frame,
-            duration,
-            kind: "CAMERA",
-            type: "SHAKE_START",
-            payload: {
-                intensityX: options.intensityX,
-                intensityY: options.intensityY,
-                frequency: options.frequency,
-                decay: options.decay,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-
-        const endEvent: CameraTrackEvent = {
-            at: this.frame + duration,
-            kind: "CAMERA",
-            type: "SHAKE_END",
-            payload: {},
-            _declarationOrder: this.getOrder(),
-        };
-
-        this.events.push(startEvent, endEvent);
-    }
-
-    /**
-     * Reset camera to default state.
-     */
-    reset(options: CameraResetOptions = {}): void {
-        if (options.duration !== undefined) {
-            const duration = parseDurationToFrames(options.duration, this.fps);
-
-            const startEvent: CameraTrackEvent = {
-                at: this.frame,
-                duration,
-                kind: "CAMERA",
-                type: "ANIMATE_START",
-                payload: {
-                    x: 0,
-                    y: 0,
-                    scale: 1,
-                    rotation: 0,
-                    originX: 0.5,
-                    originY: 0.5,
-                    easing: options.easing ?? "easeOut",
-                },
-                _declarationOrder: this.getOrder(),
-            };
-
-            const endEvent: CameraTrackEvent = {
-                at: this.frame + duration,
-                kind: "CAMERA",
-                type: "ANIMATE_END",
-                payload: {},
-                _declarationOrder: this.getOrder(),
-            };
-
-            this.events.push(startEvent, endEvent);
-        } else {
-            const event: CameraTrackEvent = {
-                at: this.frame,
-                kind: "CAMERA",
-                type: "RESET",
-                payload: {
-                    easing: options.easing,
-                },
-                _declarationOrder: this.getOrder(),
-            };
-            this.events.push(event);
-        }
-    }
-}
-
-// =============================================================================
-// SPAN BUILDER (span)
-// =============================================================================
-
-export class CameraSpanBuilder {
-    private readonly startFrame: number;
-    private readonly endFrame: number;
-    private readonly fps: number;
-    private readonly events: CameraTrackEvent[];
-    private readonly getOrder: GetDeclarationOrder;
-
-    constructor(
-        startFrame: number,
-        endFrame: number,
-        fps: number,
-        events: CameraTrackEvent[],
-        getOrder: GetDeclarationOrder
-    ) {
-        this.startFrame = startFrame;
-        this.endFrame = endFrame;
-        this.fps = fps;
-        this.events = events;
-        this.getOrder = getOrder;
-    }
-
-    /**
-     * Track an anchor continuously.
-     */
-    track(anchorId: string, options: CameraTrackOptions = {}): void {
-        const startEvent: CameraTrackEvent = {
-            at: this.startFrame,
-            duration: this.endFrame - this.startFrame,
-            kind: "CAMERA",
-            type: "TRACK_START",
-            payload: {
-                anchorId,
-                scale: options.scale,
-                lag: options.lag,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-
-        const endEvent: CameraTrackEvent = {
-            at: this.endFrame,
-            kind: "CAMERA",
-            type: "TRACK_END",
-            payload: {},
-            _declarationOrder: this.getOrder(),
-        };
-
-        this.events.push(startEvent, endEvent);
-    }
-}
-
-// =============================================================================
-// CAMERA TRACK BUILDER
-// =============================================================================
-
-export class CameraTrackBuilder {
-    readonly _events: CameraTrackEvent[] = [];
-    private readonly fps: number;
-    private readonly getOrder: GetDeclarationOrder;
-
-    constructor(fps: number, getOrder: GetDeclarationOrder) {
-        this.fps = fps;
-        this.getOrder = getOrder;
-    }
-
-    /**
-     * Create a point (instant) operation at a specific time.
-     */
-    at(time: string | number): CameraPointBuilder {
-        const frame = parseTimeToFrames(time, this.fps);
-        return new CameraPointBuilder(frame, this.fps, this._events, this.getOrder);
-    }
-
-    /**
-     * Create a span (duration) operation between two times.
-     */
-    span(start: string | number, end: string | number): CameraSpanBuilder {
-        const startFrame = parseTimeToFrames(start, this.fps);
-        const endFrame = parseTimeToFrames(end, this.fps);
-        return new CameraSpanBuilder(startFrame, endFrame, this.fps, this._events, this.getOrder);
-    }
-}
-````
-
 ## File: packages/dsl/src/core/tracks/index.ts
 ````typescript
 /**
@@ -36463,7 +36368,7 @@ export const audio = {
         duration: opts.duration,
         instanceId: opts.instanceId,
         deviceId: opts.deviceId,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Stop a sound
@@ -36474,7 +36379,7 @@ export const audio = {
         type: "STOP_SOUND",
         trace: createTrace(Tracer.capture()),
         instanceId,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Fade volume
@@ -36487,7 +36392,7 @@ export const audio = {
         instanceId,
         toVolume,
         duration,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Play background music
@@ -36500,7 +36405,231 @@ export const audio = {
         soundId,
         volume,
         loop,
-    } as TimelineEvent),
+    } as any),
+};
+````
+
+## File: packages/dsl/src/events/call.ts
+````typescript
+/**
+ * Phone Call DSL Events
+ * 
+ * Event factories for phone call simulation.
+ * Supports incoming, outgoing, answer, decline, end, and call controls.
+ */
+
+import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
+import { createTrace, Trace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+// =============================================================================
+// CALL EVENT TYPES
+// =============================================================================
+
+export interface CallIncomingEvent {
+    at: number;
+    kind: "CALL";
+    type: "INCOMING";
+    deviceId?: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    callerMetadata?: CallerMetadata;
+    trace: Trace;
+}
+
+export interface CallAnswerEvent {
+    at: number;
+    kind: "CALL";
+    type: "ANSWER";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallDeclineEvent {
+    at: number;
+    kind: "CALL";
+    type: "DECLINE";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallEndEvent {
+    at: number;
+    kind: "CALL";
+    type: "END";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleMuteEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_MUTE";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleSpeakerEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_SPEAKER";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleHoldEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_HOLD";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export type CallEvent =
+    | CallIncomingEvent
+    | CallAnswerEvent
+    | CallDeclineEvent
+    | CallEndEvent
+    | CallToggleMuteEvent
+    | CallToggleSpeakerEvent
+    | CallToggleHoldEvent;
+
+// =============================================================================
+// CALL EVENT FACTORIES
+// =============================================================================
+
+export interface IncomingCallOptions {
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    posterImage?: string;
+    posterNameFont?: string;
+    deviceId?: string;
+}
+
+/**
+ * Phone Call DSL - Event factories for phone call simulation
+ */
+export const call = {
+    /**
+     * Trigger an incoming phone call
+     * 
+     * @example
+     * dsl.call.incoming(0, "alice", "Alice Smith", { displayMode: "fullscreen" })
+     * dsl.call.incoming(0, "bob", "Bob", { displayMode: "overlay", posterImage: "/bob.jpg" })
+     */
+    incoming: (
+        at: number,
+        callerId: string,
+        callerName: string,
+        opts?: IncomingCallOptions
+    ): CallIncomingEvent => ({
+        at,
+        kind: "CALL",
+        type: "INCOMING",
+        trace: createTrace(Tracer.capture()),
+        callerId,
+        callerName,
+        callerAvatar: opts?.callerAvatar,
+        isVideo: opts?.isVideo ?? false,
+        callType: opts?.callType ?? "voice",
+        displayMode: opts?.displayMode ?? "fullscreen",
+        deviceId: opts?.deviceId,
+        callerMetadata: opts?.posterImage ? {
+            posterImage: opts.posterImage,
+            posterStyle: "modern",
+            posterNameFont: opts.posterNameFont,
+        } : undefined,
+    }),
+
+    /**
+     * Answer an incoming call
+     * 
+     * @example
+     * dsl.call.answer(100)
+     */
+    answer: (at: number, deviceId?: string): CallAnswerEvent => ({
+        at,
+        kind: "CALL",
+        type: "ANSWER",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Decline an incoming call
+     * 
+     * @example
+     * dsl.call.decline(50)
+     */
+    decline: (at: number, deviceId?: string): CallDeclineEvent => ({
+        at,
+        kind: "CALL",
+        type: "DECLINE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * End an active call
+     * 
+     * @example
+     * dsl.call.end(300)
+     */
+    end: (at: number, deviceId?: string): CallEndEvent => ({
+        at,
+        kind: "CALL",
+        type: "END",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle mute on active call
+     * 
+     * @example
+     * dsl.call.toggleMute(150)
+     */
+    toggleMute: (at: number, deviceId?: string): CallToggleMuteEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_MUTE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle speaker on active call
+     * 
+     * @example
+     * dsl.call.toggleSpeaker(160)
+     */
+    toggleSpeaker: (at: number, deviceId?: string): CallToggleSpeakerEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_SPEAKER",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle hold on active call
+     * 
+     * @example
+     * dsl.call.toggleHold(200)
+     */
+    toggleHold: (at: number, deviceId?: string): CallToggleHoldEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_HOLD",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
 };
 ````
 
@@ -36579,7 +36708,7 @@ export const camera = {
         originX: opts.originX ?? 0.5,
         originY: opts.originY ?? 0.5,
         easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Pan to position
@@ -36593,7 +36722,7 @@ export const camera = {
         translateY,
         duration,
         easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Camera shake effect
@@ -36607,7 +36736,7 @@ export const camera = {
         duration,
         frequency: opts.frequency ?? 18,
         decay: opts.decay ?? 0.5,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Reset camera to default
@@ -36619,7 +36748,7 @@ export const camera = {
         trace: createTrace(Tracer.capture()),
         duration,
         easing,
-    } as TimelineEvent),
+    } as any),
 
     // =========================================================================
     // SEMANTIC ANCHOR CAMERA (Webseries Style)
@@ -36643,7 +36772,7 @@ export const camera = {
         shake,
         duration: getPresetDuration(preset),
         easing: "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Track a semantic anchor with smooth following (Webseries Camera!)
@@ -36667,7 +36796,7 @@ export const camera = {
         smoothing,
         preset: preset ?? "operatorFollow",
         easing: "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Hold current camera position (let viewer read)
@@ -36681,7 +36810,7 @@ export const camera = {
         type: "HOLD",
         trace: createTrace(Tracer.capture()),
         duration,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Punch + Glide: The webseries signature move
@@ -36706,7 +36835,7 @@ export const camera = {
                 shake: 3,
                 duration: 10,
                 easing: "ease-out",
-            } as TimelineEvent,
+            } as any,
             // Phase 2: Glide (smooth follow)
             {
                 at: at + 10,
@@ -36718,7 +36847,7 @@ export const camera = {
                 smoothing: 0.18,
                 preset: "operatorFollow",
                 easing: "ease-out",
-            } as TimelineEvent,
+            } as any,
         ]
     },
 };
@@ -36760,437 +36889,196 @@ function getPresetDuration(preset: string): number {
 }
 ````
 
-## File: packages/dsl/src/events/navigation.ts
+## File: packages/dsl/src/events/keyboard.ts
 ````typescript
 /**
- * Navigation Event Factories
+ * Keyboard Event Factories
  * 
- * Low-level event creators for app navigation.
+ * Low-level event creators for keyboard simulation.
+ * Used by showcases and DSL builders.
  */
 
-import { TimelineEvent } from "@tokovo/core";
+import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
 import { createTrace } from "@tokovo/ir";
 import { Tracer } from "../tracer";
 
-export const navigation = {
+/**
+ * Keyboard event factories
+ */
+export const keyboard = {
     /**
-     * Navigate to a different app
+     * Show the virtual keyboard
      */
-    navigateApp: (
-        at: number,
-        targetAppId: string,
-        options?: {
-            screen?: string;
-            conversationId?: string;
-            transition?: "push" | "pop" | "present";
-            duration?: number
-        }
-    ): TimelineEvent => ({
+    show: (at: number, deviceId: string, layout: KeyboardLayout = "qwerty"): TimelineEvent => ({
         at,
-        kind: "APP",
-        appId: targetAppId, // Targeted at the destination app
-        type: "NAVIGATE_APP",
+        kind: "KEYBOARD",
+        type: "SHOW",
         trace: createTrace(Tracer.capture()),
-        screen: options?.screen,
-        conversationId: options?.conversationId,
-        transition: options?.transition,
-        animationDuration: options?.duration
-    } as any), // Cast to any because NAVIGATE_APP might not be in core types yet, but runtime handles it
+        deviceId,
+        layout,
+    } as TimelineEvent),
 
     /**
-     * Navigate within current app
+     * Hide the virtual keyboard
+     */
+    hide: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "HIDE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Type a single character (V2)
+     */
+    typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardType",
+        trace: createTrace(Tracer.capture()),
+        text: char,
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Delete last character (backspace)
+     */
+    backspace: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyDown",
+        trace: createTrace(Tracer.capture()),
+        key: "Backspace",
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Set text directly
+     */
+    setText: (at: number, deviceId: string, text: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "SET_TEXT",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+        text,
+    } as TimelineEvent),
+
+    /**
+     * Clear all text
+     */
+    clear: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KEYBOARD",
+        type: "CLEAR",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Key down (for visual highlight) (V2)
+     */
+    keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyDown",
+        trace: createTrace(Tracer.capture()),
+        key,
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Key up (end visual highlight) (V2)
+     */
+    keyUp: (at: number, deviceId: string): TimelineEvent => ({
+        at,
+        kind: "KeyboardInput",
+        type: "keyUp",
+        trace: createTrace(Tracer.capture()),
+        key: "", // Key up clears current key
+        deviceId,
+    } as TimelineEvent),
+
+    /**
+     * Generate a realistic typing sequence
      */
     /**
-     * Navigate within current app
+     * Generate a realistic, smart typing sequence
      * 
-     * @example
-     * // Autocompletes 'screen' based on 'appId'!
-     * dsl.navigation.navigateScreen(0, "app_whatsapp", "chat")
+     * - Automatically switches layouts (123, ABC)
+     * - Uses seeded RNG for deterministic variance
      */
-    navigateScreen: <ID extends keyof import("@tokovo/core").AppScreens>(
-        at: number,
-        appId: ID,
-        screen: import("@tokovo/core").AppScreens[ID],
-        options?: {
-            transition?: "push" | "pop" | "present" | "dismiss";
-            duration?: number
+    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
+        const trace = createTrace(Tracer.capture());
+        const events: TimelineEvent[] = [];
+        let t = at;
+
+        // Deterministic RNG
+        const seed = options?.seed || 123456;
+        // Simple hash of text to vary seed if not provided, for different texts
+        const textHash = text.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
+        const rng = new SeededRNG(seed + textHash);
+
+        const speedMap = { fast: 2, normal: 3, slow: 5 };
+        const baseSpeed = speedMap[options?.speed || "normal"];
+        const variance = options?.variance || 0;
+
+        // Smart Layout State
+        let currentLayout: "qwerty" | "numbers" = "qwerty"; // default
+
+        // Helpers
+        const isNumberOrSymbol = (char: string) => /[0-9\-/:;()$&@"\.,?!']/.test(char);
+        const getLayoutForChar = (char: string): "qwerty" | "numbers" => {
+            if (char === " ") return currentLayout; // Space works on likely both, or we assume stickiness
+            return isNumberOrSymbol(char) ? "numbers" : "qwerty";
+        };
+
+        for (const char of text) {
+            const requiredLayout = getLayoutForChar(char);
+
+            // Switch Layout if needed
+            if (requiredLayout !== currentLayout) {
+                const switchKey = currentLayout === "qwerty" ? "123" : "ABC";
+
+                // Press Switch Key
+                events.push(keyboard.keyDown(t, deviceId, switchKey));
+                t += Math.floor(baseSpeed * 0.5);
+
+                // Switch Action
+                events.push({
+                    at: t,
+                    kind: "KEYBOARD",
+                    type: "SHOW", // SHOW updates layout too
+                    trace,
+                    deviceId,
+                    layout: requiredLayout
+                } as any);
+
+                // Release Switch Key
+                events.push(keyboard.keyUp(t, deviceId));
+
+                currentLayout = requiredLayout;
+                t += baseSpeed + rng.nextInt(0, variance);
+            }
+
+            // Normal Key Press
+            // Press - V2
+            events.push(keyboard.keyDown(t, deviceId, char));
+
+            // Commit char (Input Change happens here) - V2
+            events.push(keyboard.typeChar(t, deviceId, char));
+
+            t += Math.floor(baseSpeed * 0.5);
+
+            // Release - V2
+            events.push(keyboard.keyUp(t, deviceId));
+
+            // Delay next char
+            t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
         }
-    ): TimelineEvent => ({
-        at,
-        kind: "APP",
-        appId: appId as string,
-        type: "NAVIGATE_SCREEN",
-        trace: createTrace(Tracer.capture()),
-        screen: screen as string,
-        transition: options?.transition,
-        animationDuration: options?.duration
-    } as any)
-};
-````
 
-## File: packages/dsl/src/events/notification.ts
-````typescript
-import { NotificationIR } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-// Simple ID Generator since utils doesn't exist yet
-const generateId = (prefix: string) => `${prefix}_${Math.random().toString(36).substr(2, 9)}`;
-
-/**
- * Generic Notification DSL
- * 
- * Allows authors to simulate push notifications from any app.
- */
-
-export interface ScheduleNotificationOptions {
-    appId: string;
-    title: string;
-    body: string;
-
-    // Optional overrides
-    icon?: string;
-    id?: string; // Manual ID if you want to reference it later
-
-    // Advanced
-    threadKey?: string;
-    groupKey?: string;
-    category?: NotificationIR["category"];
-
-    // Actions
-    actions?: NotificationIR["actions"];
-    replyable?: boolean;
-}
-
-export const notification = {
-    /**
-     * Schedule a notification to appear
-     */
-    schedule: (at: number, options: ScheduleNotificationOptions) => {
-        const id = options.id || generateId("notif");
-
-        // Construct the IR payload
-        // We use the "SHOW_NOTIFICATION" event which the Engine listens to.
-        // The Engine will wrap this IR into a NotificationInstance.
-        return {
-            at,
-            kind: "DEVICE",
-            deviceId: "primary", // Default to primary for now
-            type: "SHOW_NOTIFICATION",
-            trace: createTrace(Tracer.capture()),
-
-            // The IR fields
-            id,
-            appId: options.appId,
-            title: options.title,
-            body: options.body,
-            icon: options.icon,
-
-            // Meta
-            category: options.category,
-            threadKey: options.threadKey,
-            groupKey: options.groupKey,
-            actions: options.actions,
-            replyable: options.replyable,
-        } as const;
-    },
-
-    /**
-     * Simulate tapping a notification (opens the app)
-     */
-    tap: (at: number, notificationId: string, actionId?: string) => ({
-        at,
-        kind: "DEVICE",
-        deviceId: "primary",
-        type: "TAP_NOTIFICATION",
-        trace: createTrace(Tracer.capture()),
-        notificationId,
-        actionId,
-    } as const),
-
-    /**
-     * Dismiss a notification
-     */
-    dismiss: (at: number, notificationId: string) => ({
-        at,
-        kind: "DEVICE",
-        deviceId: "primary",
-        type: "DISMISS_NOTIFICATION",
-        trace: createTrace(Tracer.capture()),
-        notificationId,
-    } as const),
-
-    /**
-     * Clear all notifications
-     */
-    clearAll: (at: number) => ({
-        at,
-        kind: "DEVICE",
-        deviceId: "primary",
-        type: "CLEAR_ALL_NOTIFICATIONS",
-        trace: createTrace(Tracer.capture()),
-    } as const),
-};
-````
-
-## File: packages/dsl/src/events/os.ts
-````typescript
-/**
- * OS Event Factories
- * 
- * Low-level event creators for device OS state changes.
- * Controls clock, battery, network, DND mode.
- */
-
-import { TimelineEvent, NetworkType } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/**
- * OS event factories
- */
-export const os = {
-    /**
-     * Set device time (Unix timestamp ms)
-     */
-    setTime: (at: number, time: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_TIME",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        time,
-    } as TimelineEvent),
-
-    /**
-     * Set battery level (0-100)
-     */
-    setBattery: (at: number, level: number, charging = false, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_BATTERY",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        level,
-        charging,
-    } as TimelineEvent),
-
-    /**
-     * Drain battery at rate per second
-     */
-    drainBattery: (at: number, rate: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "DRAIN_BATTERY",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        rate,
-    } as TimelineEvent),
-
-    /**
-     * Set network type and optional strength
-     */
-    setNetwork: (at: number, network: NetworkType, strength?: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_NETWORK",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        network,
-        strength,
-    } as TimelineEvent),
-
-    /**
-     * Toggle Do Not Disturb mode
-     */
-    setDND: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_DND",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        enabled,
-    } as TimelineEvent),
-
-    /**
-     * Toggle Low Power mode
-     */
-    setLowPower: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_LOW_POWER",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        enabled,
-    } as TimelineEvent),
-
-    /**
-     * Toggle Airplane mode (disables network)
-     */
-    setAirplane: (at: number, enabled: boolean, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "OS",
-        type: "SET_AIRPLANE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        enabled,
-    } as TimelineEvent),
-};
-````
-
-## File: packages/dsl/src/events/touch.ts
-````typescript
-/**
- * Touch Event Factories
- * 
- * Low-level event creators for gesture visualization.
- */
-
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/**
- * Touch event factories
- */
-export const touch = {
-    /**
-     * Tap at coordinates (shows brief circle)
-     */
-    tap: (at: number, x: number, y: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "TOUCH",
-        type: "TAP",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        x,
-        y,
-    } as TimelineEvent),
-
-    /**
-     * Long press at coordinates
-     */
-    longPress: (at: number, x: number, y: number, duration: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "TOUCH",
-        type: "LONG_PRESS",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        x,
-        y,
-        duration,
-    } as TimelineEvent),
-
-    /**
-     * Drag from start to end coordinates
-     */
-    drag: (at: number, startX: number, startY: number, endX: number, endY: number, duration: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "TOUCH",
-        type: "DRAG",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        startX,
-        startY,
-        endX,
-        endY,
-        duration,
-    } as TimelineEvent),
-
-    /**
-     * Scroll vertically
-     */
-    scroll: (at: number, y: number, velocity?: number, deviceId?: string): TimelineEvent => ({
-        at,
-        kind: "TOUCH",
-        type: "SCROLL",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        y,
-        velocity,
-    } as TimelineEvent),
-};
-````
-
-## File: packages/dsl/src/helpers/audio.ts
-````typescript
-/**
- * Audio Event Factories
- * 
- * Low-level event creators for sound effects and music.
- */
-
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-export interface PlayOptions {
-    loop?: boolean;
-    duration?: number;
-    instanceId?: string;
-    deviceId?: string;
-}
-
-export interface FadeOptions {
-    easing?: string;
-}
-
-/**
- * Audio event factories
- */
-export const audio = {
-    /**
-     * Play a sound effect
-     */
-    play: (at: number, soundId: string, volume = 1.0, opts: PlayOptions = {}): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "PLAY_SOUND",
-        trace: createTrace(Tracer.capture()),
-        soundId,
-        volume,
-        loop: opts.loop,
-        duration: opts.duration,
-        instanceId: opts.instanceId,
-        deviceId: opts.deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Stop a sound
-     */
-    stop: (at: number, instanceId: string): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "STOP_SOUND",
-        trace: createTrace(Tracer.capture()),
-        instanceId,
-    } as TimelineEvent),
-
-    /**
-     * Fade volume
-     */
-    fade: (at: number, instanceId: string, toVolume: number, duration: number): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "FADE_VOLUME",
-        trace: createTrace(Tracer.capture()),
-        instanceId,
-        toVolume,
-        duration,
-    } as TimelineEvent),
-
-    /**
-     * Play background music
-     */
-    backgroundMusic: (at: number, soundId: string, volume = 0.5, loop = true): TimelineEvent => ({
-        at,
-        kind: "AUDIO",
-        type: "BACKGROUND_MUSIC",
-        trace: createTrace(Tracer.capture()),
-        soundId,
-        volume,
-        loop,
-    } as TimelineEvent),
+        return events;
+    }
 };
 ````
 
@@ -37416,262 +37304,6 @@ export const call = {
         deviceId,
     }),
 };
-````
-
-## File: packages/dsl/src/helpers/camera.ts
-````typescript
-/**
- * Camera Event Factories
- * 
- * Low-level event creators for camera movements.
- */
-
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-export interface ZoomOptions {
-    originX?: number;
-    originY?: number;
-    easing?: string;
-}
-
-export interface PanOptions {
-    easing?: string;
-}
-
-export interface ShakeOptions {
-    frequency?: number;
-    decay?: number;
-}
-
-/**
- * Camera event factories
- */
-export const camera = {
-    /**
-     * Focus on a specific semantic anchor (Alias for anchorFocus)
-     */
-    focus: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_FOCUS",
-        trace: createTrace(Tracer.capture()),
-        anchor: options.target,
-        preset: "message", // Default
-        shake: 0,
-        duration: options.duration ?? 30, // Default duration
-        easing: "ease-out",
-    } as any),
-
-    /**
-     * Track a semantic anchor (Alias for anchorTrack)
-     */
-    track: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_TRACK",
-        trace: createTrace(Tracer.capture()),
-        anchor: options.target,
-        preset: "operatorFollow",
-        duration: options.duration ?? 35,
-        smoothing: 0.18,
-        easing: "ease-out",
-        zoom: options.zoom // Pass zoom if supported by IR
-    } as any),
-
-    /**
-     * Zoom in/out
-     */
-    zoom: (at: number, scale: number, duration: number, opts: ZoomOptions = {}): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ZOOM",
-        trace: createTrace(Tracer.capture()),
-        scale,
-        duration,
-        originX: opts.originX ?? 0.5,
-        originY: opts.originY ?? 0.5,
-        easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
-
-    /**
-     * Pan to position
-     */
-    pan: (at: number, translateX: number, translateY: number, duration: number, opts: PanOptions = {}): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "PAN",
-        trace: createTrace(Tracer.capture()),
-        translateX,
-        translateY,
-        duration,
-        easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
-
-    /**
-     * Camera shake effect
-     */
-    shake: (at: number, intensity: number, duration: number, opts: ShakeOptions = {}): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "SHAKE",
-        trace: createTrace(Tracer.capture()),
-        intensity,
-        duration,
-        frequency: opts.frequency ?? 18,
-        decay: opts.decay ?? 0.5,
-    } as TimelineEvent),
-
-    /**
-     * Reset camera to default
-     */
-    reset: (at: number, duration: number, easing = "ease-out"): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "RESET",
-        trace: createTrace(Tracer.capture()),
-        duration,
-        easing,
-    } as TimelineEvent),
-
-    // =========================================================================
-    // SEMANTIC ANCHOR CAMERA (Webseries Style)
-    // =========================================================================
-
-    /**
-     * Focus on a semantic anchor (one-time origin set)
-     * 
-     * @param at - Frame to start effect
-     * @param anchor - Semantic anchor ID (lastMessage, inputArea, etc.)
-     * @param preset - Shot preset (dramatic, subtle, impact, etc.)
-     * @param shake - Optional shake intensity
-     */
-    anchorFocus: (at: number, anchor: string, preset = "message", shake = 0): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_FOCUS",
-        trace: createTrace(Tracer.capture()),
-        anchor,
-        preset,
-        shake,
-        duration: getPresetDuration(preset),
-        easing: "ease-out",
-    } as TimelineEvent),
-
-    /**
-     * Track a semantic anchor with smooth following (Webseries Camera!)
-     * 
-     * Unlike anchorFocus which sets origin once, anchorTrack continuously
-     * follows the anchor rect with exponential smoothing.
-     * 
-     * @param at - Frame to start tracking
-     * @param anchor - Semantic anchor ID
-     * @param duration - Frames to track (default: 35)
-     * @param smoothing - Smoothing factor: 0.08=slow, 0.18=operator, 0.35=snappy, 0.6=whip
-     * @param preset - Optional preset for scale (default uses operatorFollow)
-     */
-    anchorTrack: (at: number, anchor: string, duration = 35, smoothing = 0.18, preset?: string): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "ANCHOR_TRACK",
-        trace: createTrace(Tracer.capture()),
-        anchor,
-        duration,
-        smoothing,
-        preset: preset ?? "operatorFollow",
-        easing: "ease-out",
-    } as TimelineEvent),
-
-    /**
-     * Hold current camera position (let viewer read)
-     * 
-     * @param at - Frame to start hold
-     * @param duration - Frames to hold (min 12 recommended)
-     */
-    hold: (at: number, duration = 18): TimelineEvent => ({
-        at,
-        kind: "CAMERA",
-        type: "HOLD",
-        trace: createTrace(Tracer.capture()),
-        duration,
-    } as TimelineEvent),
-
-    /**
-     * Punch + Glide: The webseries signature move
-     * Fast zoom-in, then smooth follow.
-     * 
-     * Combines: impactPunch(10 frames) → operatorFollow(35 frames)
-     * 
-     * @param at - Frame to start
-     * @param anchor - Semantic anchor to follow
-     */
-    punchGlide: (at: number, anchor: string): TimelineEvent[] => {
-        const trace = createTrace(Tracer.capture());
-        return [
-            // Phase 1: Punch (fast zoom + shake)
-            {
-                at,
-                kind: "CAMERA",
-                type: "ANCHOR_FOCUS",
-                trace,
-                anchor,
-                preset: "impactPunch",
-                shake: 3,
-                duration: 10,
-                easing: "ease-out",
-            } as TimelineEvent,
-            // Phase 2: Glide (smooth follow)
-            {
-                at: at + 10,
-                kind: "CAMERA",
-                type: "ANCHOR_TRACK",
-                trace,
-                anchor,
-                duration: 35,
-                smoothing: 0.18,
-                preset: "operatorFollow",
-                easing: "ease-out",
-            } as TimelineEvent,
-        ]
-    },
-};
-
-/**
- * Get duration from preset name (v1 locked values)
- */
-function getPresetDuration(preset: string): number {
-    switch (preset) {
-        // v1 CORE (LOCKED)
-        case "message": return 22;
-        case "subtle": return 30;
-        case "impact": return 14;
-        case "snap": return 8;
-        // v1 MOTION (LOCKED)
-        case "operatorFollow": return 40;
-        case "punchGlide": return 40;
-        // v1 INTERRUPTION (LOCKED)
-        case "interrupt": return 10;
-        case "takeover": return 20;
-        // v1 STRUCTURAL (LOCKED)  
-        case "reset": return 20;
-        case "establish": return 30;
-        // v2 (feature-flagged)
-        case "suspenseHold": return 50;
-        case "voyeur": return 40;
-        case "isolation": return 35;
-        case "whipSnap": return 6;
-        case "floatFollow": return 60;
-        case "panic": return 12;
-        case "collapse": return 40;
-        // Legacy (deprecated)
-        case "dramatic": return 25;
-        case "impactPunch": return 10;
-        case "documentaryHold": return 24;
-        case "documentary": return 45;
-        default: return 22;  // Default to message
-    }
-}
 ````
 
 ## File: packages/dsl/src/helpers/index.ts
@@ -41197,300 +40829,6 @@ export class AudioTrackBuilder {
 }
 ````
 
-## File: packages/dsl/src/v2/camera-track.ts
-````typescript
-/**
- * Camera Track Builder - God mode camera control
- * 
- * @description Provides full manual control over camera position, zoom, effects.
- * Supports both instant (point) and animated (span) operations.
- * 
- * @see docs-v2/DSL_REVAMP.md#camera-track---god-mode
- */
-
-import { CameraTrackEvent, CameraPayloads, EasingType } from "@tokovo/ir";
-import { parseTimeToFrames, parseDurationToFrames } from "./utils/time";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-type GetDeclarationOrder = () => number;
-
-export interface CameraSetOptions {
-    x?: number;
-    y?: number;
-    scale?: number;
-    rotation?: number;
-    originX?: number;
-    originY?: number;
-}
-
-export interface CameraAnimateOptions extends CameraSetOptions {
-    duration: string | number;
-    easing?: EasingType;
-}
-
-export interface CameraFocusOptions {
-    scale?: number;
-    padding?: number;
-    duration?: string | number;
-    easing?: EasingType;
-}
-
-export interface CameraTrackOptions {
-    scale?: number;
-    lag?: number;
-}
-
-export interface CameraShakeOptions {
-    intensityX: number;
-    intensityY: number;
-    frequency?: number;
-    decay?: number;
-    duration: string | number;
-}
-
-export interface CameraResetOptions {
-    duration?: string | number;
-    easing?: EasingType;
-}
-
-// =============================================================================
-// POINT BUILDER (at)
-// =============================================================================
-
-export class CameraPointBuilder {
-    constructor(
-        private _frame: number,
-        private _fps: number,
-        private _events: CameraTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
-
-    /**
-     * Set camera state instantly.
-     */
-    set(options: CameraSetOptions): void {
-        this._events.push({
-            at: this._frame,
-            kind: "CAMERA",
-            type: "SET",
-            payload: {
-                x: options.x,
-                y: options.y,
-                scale: options.scale,
-                rotation: options.rotation,
-                originX: options.originX,
-                originY: options.originY,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
-
-    /**
-     * Animate camera to new state.
-     */
-    animate(options: CameraAnimateOptions): void {
-        const duration = parseDurationToFrames(options.duration, this._fps);
-
-        this._events.push(
-            {
-                at: this._frame,
-                duration,
-                kind: "CAMERA",
-                type: "ANIMATE_START",
-                payload: {
-                    x: options.x,
-                    y: options.y,
-                    scale: options.scale,
-                    rotation: options.rotation,
-                    originX: options.originX,
-                    originY: options.originY,
-                    easing: options.easing ?? "linear",
-                },
-                _declarationOrder: this._getOrder(),
-            },
-            {
-                at: this._frame + duration,
-                kind: "CAMERA",
-                type: "ANIMATE_END",
-                payload: {},
-                _declarationOrder: this._getOrder(),
-            }
-        );
-    }
-
-    /**
-     * Focus on an anchor.
-     */
-    focus(anchorId: string, options: CameraFocusOptions = {}): void {
-        const duration = options.duration
-            ? parseDurationToFrames(options.duration, this._fps)
-            : 0;
-
-        this._events.push({
-            at: this._frame,
-            duration: duration || undefined,
-            kind: "CAMERA",
-            type: "FOCUS",
-            payload: {
-                anchorId,
-                scale: options.scale,
-                padding: options.padding,
-                easing: options.easing,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
-
-    /**
-     * Apply screen shake effect.
-     */
-    shake(options: CameraShakeOptions): void {
-        const duration = parseDurationToFrames(options.duration, this._fps);
-
-        this._events.push(
-            {
-                at: this._frame,
-                duration,
-                kind: "CAMERA",
-                type: "SHAKE_START",
-                payload: {
-                    intensityX: options.intensityX,
-                    intensityY: options.intensityY,
-                    frequency: options.frequency,
-                    decay: options.decay,
-                },
-                _declarationOrder: this._getOrder(),
-            },
-            {
-                at: this._frame + duration,
-                kind: "CAMERA",
-                type: "SHAKE_END",
-                payload: {},
-                _declarationOrder: this._getOrder(),
-            }
-        );
-    }
-
-    /**
-     * Reset camera to default state.
-     */
-    reset(options: CameraResetOptions = {}): void {
-        if (options.duration) {
-            const duration = parseDurationToFrames(options.duration, this._fps);
-            this._events.push(
-                {
-                    at: this._frame,
-                    duration,
-                    kind: "CAMERA",
-                    type: "ANIMATE_START",
-                    payload: {
-                        x: 0,
-                        y: 0,
-                        scale: 1,
-                        rotation: 0,
-                        originX: 0.5,
-                        originY: 0.5,
-                        easing: options.easing ?? "easeOut",
-                    },
-                    _declarationOrder: this._getOrder(),
-                },
-                {
-                    at: this._frame + duration,
-                    kind: "CAMERA",
-                    type: "ANIMATE_END",
-                    payload: {},
-                    _declarationOrder: this._getOrder(),
-                }
-            );
-        } else {
-            this._events.push({
-                at: this._frame,
-                kind: "CAMERA",
-                type: "RESET",
-                payload: {
-                    easing: options.easing,
-                },
-                _declarationOrder: this._getOrder(),
-            });
-        }
-    }
-}
-
-// =============================================================================
-// SPAN BUILDER (span)
-// =============================================================================
-
-export class CameraSpanBuilder {
-    constructor(
-        private _startFrame: number,
-        private _endFrame: number,
-        private _fps: number,
-        private _events: CameraTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
-
-    /**
-     * Track an anchor continuously.
-     */
-    track(anchorId: string, options: CameraTrackOptions = {}): void {
-        this._events.push(
-            {
-                at: this._startFrame,
-                duration: this._endFrame - this._startFrame,
-                kind: "CAMERA",
-                type: "TRACK_START",
-                payload: {
-                    anchorId,
-                    scale: options.scale,
-                    lag: options.lag,
-                },
-                _declarationOrder: this._getOrder(),
-            },
-            {
-                at: this._endFrame,
-                kind: "CAMERA",
-                type: "TRACK_END",
-                payload: {},
-                _declarationOrder: this._getOrder(),
-            }
-        );
-    }
-}
-
-// =============================================================================
-// CAMERA TRACK BUILDER
-// =============================================================================
-
-export class CameraTrackBuilder {
-    _events: CameraTrackEvent[] = [];
-
-    constructor(
-        private _fps: number,
-        private _getOrder: GetDeclarationOrder
-    ) { }
-
-    /**
-     * Create a point (instant) operation at a specific time.
-     */
-    at(time: string | number): CameraPointBuilder {
-        const frame = parseTimeToFrames(time, this._fps);
-        return new CameraPointBuilder(frame, this._fps, this._events, this._getOrder);
-    }
-
-    /**
-     * Create a span (duration) operation between two times.
-     */
-    span(start: string | number, end: string | number): CameraSpanBuilder {
-        const startFrame = parseTimeToFrames(start, this._fps);
-        const endFrame = parseTimeToFrames(end, this._fps);
-        return new CameraSpanBuilder(startFrame, endFrame, this._fps, this._events, this._getOrder);
-    }
-}
-````
-
 ## File: packages/dsl/src/v2/episode.ts
 ````typescript
 /**
@@ -41952,587 +41290,77 @@ export class OSTrackBuilder {
 }
 ````
 
-## File: packages/dsl/package.json
-````json
-{
-    "name": "@tokovo/dsl",
-    "version": "0.0.1",
-    "description": "Tokovo Author DSL - fluent API for writing cinematic chat stories",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "source-map-support": "^0.5.21"
-    },
-    "devDependencies": {
-        "@types/source-map-support": "^0.5.10",
-        "typescript": "^5.0.0"
+## File: packages/dsl/src/tracer.ts
+````typescript
+// Source map support removed for browser compatibility
+
+import { Trace } from "@tokovo/ir";
+
+/**
+ * Tracer
+ * 
+ * Auto-captures stack traces to link IR events to DSL source code.
+ */
+export class Tracer {
+    /**
+     * Capture the current stack trace and return a Trace object.
+     * @param offsetFrames Number of frames to skip (default 1 to skip capture call itself)
+     */
+    static capture(offsetFrames = 1): Partial<Trace> {
+        const stack = new Error().stack;
+        if (!stack) return {};
+
+        // DEBUG: Uncomment to see raw stack
+        // console.log("RAW STACK:", stack);
+
+        const lines = stack.split('\n');
+
+        // Find the first frame outside of the DSL package
+        // We look for logic that is NOT in node_modules and NOT in our own internal files
+        for (let i = offsetFrames + 1; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Skip internal node frames
+            if (line.includes('(node:') || line.includes('(internal/')) continue;
+
+            // Skip node_modules
+            if (line.includes('node_modules')) continue;
+
+            // Skip our own DSL internals (if mapped)
+            if (line.includes('/dsl/src/')) continue;
+            if (line.includes('/dsl/dist/')) continue;
+
+            // This should be the user code
+            const source = this.parseFrame(line);
+            if (source) {
+                return {
+                    source
+                };
+            }
+        }
+
+        return {};
+    }
+
+    /**
+     * Parse a stack frame line to extract file and line number.
+     * Format: "    at Function.method (/path/to/file.ts:123:45)"
+     *      or "    at /path/to/file.ts:123:45"
+     */
+    private static parseFrame(line: string): { file: string; line: number } | undefined {
+        // Regex to match file path, line, and column
+        // Matches: (path):line:col
+        const match = line.match(/\((.+):(\d+):(\d+)\)$/) || line.match(/at\s+(.+):(\d+):(\d+)$/);
+
+        if (match) {
+            return {
+                file: match[1],
+                line: parseInt(match[2], 10)
+            };
+        }
+        return undefined;
     }
 }
-````
-
-## File: packages/episodes/src/legacy/enterprise-demo.episode.ts
-````typescript
-/**
- * Enterprise Demo Episode
- * 
- * PROPER IMPLEMENTATION using the canonical DSL:
- * - episode() with d.beat() / b.send() / b.receive()
- * - Uses device-keyboard for typing
- * - Zero inline types or helper functions
- * 
- * @see docs/FUCKING_MESS.md
- */
-
-import { episode } from "@tokovo/dsl";
-import type { SceneIR } from "@tokovo/ir";
-
-// =============================================================================
-// EPISODE DEFINITION (Pure DSL - No Manual Events)
-// =============================================================================
-
-export const enterpriseDemo: SceneIR = episode("enterprise-demo", ep => {
-    ep.config({ fps: 30, title: "Enterprise Demo - Dinner Date" });
-
-    ep.device("MainPhone", "iphone16", d => {
-        d.app("app_whatsapp");
-        d.conversation("dm_sarah", { name: "Sarah ❤️", avatar: "" });
-
-        // =====================================================================
-        // ACT 1: Opening - Sarah initiates
-        // =====================================================================
-        d.beat("opening", b => {
-            b.wait("1s");
-            b.receive("Sarah ❤️", "Hey! Are you free tonight?");
-        });
-
-        // =====================================================================
-        // ACT 2: Me replying (with keyboard)
-        // =====================================================================
-        d.beat("reply", b => {
-            b.wait("1s");
-            b.typing("me").for("2s");  // Shows keyboard + typing animation
-            b.send("Yeah, what's up?");
-        });
-
-        // =====================================================================
-        // ACT 3: Sarah suggests dinner
-        // =====================================================================
-        d.beat("dinner-suggestion", b => {
-            b.wait("0.8s");
-            b.typing("Sarah ❤️").for("2s");
-            b.receive("Sarah ❤️", "Want to grab dinner? 🍝");
-        });
-
-        // =====================================================================
-        // ACT 4: Quick back and forth
-        // =====================================================================
-        d.beat("quick-exchange", b => {
-            b.wait("0.5s");
-            b.typing("me").for("1.5s");
-            b.send("Sure! What are you in the mood for?");
-
-            b.wait("1s");
-            b.typing("Sarah ❤️").for("2s");
-            b.receive("Sarah ❤️", "How about that new Italian place? 🇮🇹");
-        });
-
-        // =====================================================================
-        // ACT 5: Confirmation with emojis
-        // =====================================================================
-        d.beat("confirmation", b => {
-            b.wait("0.8s");
-            b.typing("me").for("1.5s");
-            b.send("Perfect! See you at 7? 🥂");
-
-            b.wait("1s");
-            b.typing("Sarah ❤️").for("1s");
-            b.receive("Sarah ❤️", "It's a date! 💕");
-        });
-
-        // =====================================================================
-        // ACT 6: Camera focus on final message
-        // =====================================================================
-        d.beat("finale", b => {
-            b.wait("1s");
-            b.camera(c => {
-                c.focus("lastMessage", { duration: "1s", preset: "subtle" });
-            });
-            b.wait("2s");
-        });
-    });
-});
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export default enterpriseDemo;
-````
-
-## File: packages/episodes/src/legacy/notification-showcase.dsl.ts
-````typescript
-/**
- * Notification Showcase Episode
- * 
- * Demonstrates EVERY notification feature:
- * - HeadsUp notifications in Dynamic Island
- * - Different priority levels (passive, active, timeSensitive, critical)
- * - Rich content with preview images
- * - Action buttons
- * - Replyable notifications
- * - Notification updates (real-time changes)
- * - Tap to open app
- * - Swipe to dismiss
- * - Inline reply
- * - Notification grouping
- * - Clear all
- */
-
-import {
-    TimelineEvent,
-    WorldState,
-    notificationDsl,
-    DEFAULT_BUS_CONFIG,
-} from "@tokovo/core";
-
-// =============================================================================
-// INITIAL WORLD STATE
-// =============================================================================
-
-export const notificationShowcaseWorld: WorldState = {
-    devices: {
-        phone: {
-            id: "phone",
-            profileId: "iphone16",
-            isLocked: false,
-            foregroundAppId: undefined, // Home screen
-            notifications: [],
-            backgroundApps: [],
-            notificationCenter: {
-                items: [],
-                headsUp: null,
-                headsUpQueue: [],
-                groups: [],
-            },
-        },
-    },
-    conversations: {},
-    appState: {},
-    camera: {
-        baseView: "APP_VIEW",
-        activeDeviceId: "phone",
-        layout: { mode: "SINGLE", primaryDeviceId: "phone" },
-        activeEffects: [],
-        transform: {
-            translateX: 0, translateY: 0, scale: 1, rotation: 0,
-            originX: 0.5, originY: 0.5, shakeX: 0, shakeY: 0,
-        },
-        deviceTransforms: {},
-    },
-    audio: {
-        activeSounds: {},
-        buses: DEFAULT_BUS_CONFIG,
-    },
-};
-
-// =============================================================================
-// TIMELINE EVENTS
-// =============================================================================
-
-export const notificationShowcaseEvents: TimelineEvent[] = [
-    // =========================================================================
-    // ACT 1: BASIC NOTIFICATIONS (0-5s)
-    // =========================================================================
-
-    // Simple WhatsApp message (frame 0 = 0s)
-    notificationDsl.show(0, "phone", {
-        appId: "app_whatsapp",
-        title: "Sarah 💬",
-        body: "Hey! Are you coming tonight?",
-        priority: "active",
-        icon: "💬",
-    }),
-
-    // Auto-dismiss after ~3s, then Instagram (frame 90 = 3s)
-    notificationDsl.show(90, "phone", {
-        appId: "app_instagram",
-        title: "mike_photos",
-        body: "Liked your photo ❤️",
-        priority: "active",
-        icon: "📸",
-        threadId: "ig_likes",
-    }),
-
-    // =========================================================================
-    // ACT 2: TIME SENSITIVE NOTIFICATION (5-8s)
-    // =========================================================================
-
-    // Time sensitive notification (frame 150 = 5s)
-    notificationDsl.show(150, "phone", {
-        appId: "app_uber",
-        title: "🚗 Your Uber is arriving!",
-        body: "John is 2 min away in Toyota Prius",
-        priority: "timeSensitive",
-        icon: "🚗",
-        preview: {
-            kind: "text",
-            value: "License: ABC 1234",
-        },
-    }),
-
-    // =========================================================================
-    // ACT 3: RICH NOTIFICATION WITH ACTIONS (8-12s)
-    // =========================================================================
-
-    // Rich notification with image preview and action buttons (frame 240 = 8s)
-    notificationDsl.show(240, "phone", {
-        appId: "app_instagram",
-        title: "New post from @travel_vibes",
-        body: "Just landed in Bali! 🌴✨",
-        priority: "active",
-        icon: "📸",
-        preview: {
-            kind: "image",
-            value: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=400",
-            aspectRatio: 1.5,
-        },
-        actions: [
-            { id: "like", label: "❤️ Like" },
-            { id: "comment", label: "💬 Comment" },
-        ],
-        threadId: "ig_posts",
-    }),
-
-    // =========================================================================
-    // ACT 4: REPLYABLE NOTIFICATION (12-16s)
-    // =========================================================================
-
-    // Replyable message notification (frame 360 = 12s)
-    notificationDsl.show(360, "phone", {
-        appId: "app_whatsapp",
-        title: "Sarah 💬",
-        body: "What time should I pick you up?",
-        priority: "active",
-        icon: "💬",
-        replyable: true,
-        actions: [
-            { id: "reply", label: "Reply" },
-            { id: "mark_read", label: "Mark as Read" },
-        ],
-        threadId: "sarah_chat",
-    }),
-
-    // User sends a quick reply (frame 420 = 14s)
-    notificationDsl.reply(420, "phone", "notif_360_app_whatsapp", "7:30 works!"),
-
-    // =========================================================================
-    // ACT 5: NOTIFICATION UPDATE (16-20s)
-    // =========================================================================
-
-    // Initial notification (frame 480 = 16s)
-    notificationDsl.show(480, "phone", {
-        appId: "app_messages",
-        title: "Group Chat: Team",
-        body: "Alex: Check the new designs",
-        priority: "active",
-        icon: "💬",
-        groupKey: "team_chat",
-        threadId: "group_team",
-    }),
-
-    // Update notification with more messages (frame 540 = 18s)
-    notificationDsl.update(540, "phone", "notif_480_app_messages", {
-        body: "3 new messages",
-        metadata: { messageCount: 3 },
-    }),
-
-    // =========================================================================
-    // ACT 6: NOTIFICATION GROUPING (20-25s)
-    // =========================================================================
-
-    // Multiple notifications from same app (frame 600-690)
-    notificationDsl.show(600, "phone", {
-        appId: "app_email",
-        title: "Newsletter",
-        body: "Your weekly digest is here",
-        priority: "passive",
-        icon: "📧",
-        groupKey: "emails",
-    }),
-
-    notificationDsl.show(630, "phone", {
-        appId: "app_email",
-        title: "Amazon",
-        body: "Your order has shipped!",
-        priority: "active",
-        icon: "📧",
-        groupKey: "emails",
-    }),
-
-    notificationDsl.show(660, "phone", {
-        appId: "app_email",
-        title: "GitHub",
-        body: "New pull request in tokovo/core",
-        priority: "active",
-        icon: "📧",
-        groupKey: "emails",
-    }),
-
-    notificationDsl.show(690, "phone", {
-        appId: "app_email",
-        title: "Slack",
-        body: "[#general] New message from @john",
-        priority: "active",
-        icon: "📧",
-        groupKey: "emails",
-    }),
-
-    // =========================================================================
-    // ACT 7: USER INTERACTIONS (25-30s)
-    // =========================================================================
-
-    // User taps notification to open app (frame 750 = 25s)
-    notificationDsl.tap(750, "phone", "notif_690_app_email"),
-
-    // User swipes to dismiss (frame 810 = 27s)
-    notificationDsl.swipe(810, "phone", "notif_660_app_email", "right", "dismiss"),
-
-    // =========================================================================
-    // ACT 8: CRITICAL NOTIFICATION (30-33s)
-    // =========================================================================
-
-    // Critical notification (doesn't auto-dismiss) (frame 900 = 30s)
-    notificationDsl.show(900, "phone", {
-        appId: "app_calendar",
-        title: "⚠️ Meeting in 5 minutes!",
-        body: "Team standup - Join Zoom meeting",
-        priority: "critical",
-        icon: "📅",
-        actions: [
-            { id: "join", label: "Join Now" },
-            { id: "snooze", label: "Snooze 5m" },
-        ],
-    }),
-
-    // =========================================================================
-    // ACT 9: CLEAR ALL (33-36s)
-    // =========================================================================
-
-    // Clear all notifications (frame 990 = 33s)
-    notificationDsl.clearAll(990, "phone"),
-
-    // =========================================================================
-    // ACT 10: SILENT NOTIFICATION (36s+)
-    // =========================================================================
-
-    // Silent notification (goes directly to shade, no headsUp) (frame 1080 = 36s)
-    notificationDsl.show(1080, "phone", {
-        appId: "app_weather",
-        title: "Weather Update",
-        body: "Rain expected tomorrow at 3pm",
-        mode: "silent",
-        priority: "passive",
-        icon: "🌧️",
-    }),
-
-    // Final notification to show we're done (frame 1140 = 38s)
-    notificationDsl.show(1140, "phone", {
-        appId: "app_system",
-        title: "✅ Notification Demo Complete",
-        body: "All features demonstrated!",
-        priority: "timeSensitive",
-        icon: "🎉",
-    }),
-];
-
-// =============================================================================
-// EPISODE EXPORT
-// =============================================================================
-
-export const notificationShowcaseEpisode = {
-    id: "notification-showcase",
-    name: "Notification Feature Showcase",
-    description: "Demonstrates all notification features: headsUp, priority levels, rich content, actions, replies, updates, grouping, interactions",
-    fps: 30,
-    durationInFrames: 1200,  // 40 seconds
-    initialWorld: notificationShowcaseWorld,
-    events: notificationShowcaseEvents,
-};
-
-export default notificationShowcaseEpisode;
-````
-
-## File: packages/episodes/src/legacy/ultimate-capabilities-showcase.episode.ts
-````typescript
-/**
- * Ultimate Capabilities Showcase Episode
- * 
- * This episode demonstrates all key capabilities of Tokovo:
- * - Messaging (receive, send, typing)
- * - Camera (zoom, focus)
- * - Wait timing
- * 
- * Uses the CORRECT DSL API pattern from enterprise-demo.episode.ts
- * 
- * @see docs-v2/03-DSL-REFERENCE.md
- */
-
-import { episode } from "@tokovo/dsl";
-import type { SceneIR } from "@tokovo/ir";
-
-// =============================================================================
-// EPISODE DEFINITION
-// =============================================================================
-
-export const ultimateShowcaseEpisode: SceneIR = episode("ultimate-showcase", ep => {
-    ep.config({
-        fps: 30,
-        title: "Ultimate Tokovo Showcase"
-    });
-
-    // =========================================================================
-    // DEVICE SETUP
-    // =========================================================================
-
-    ep.device("Phone", "iphone16", d => {
-        d.app("app_whatsapp");
-
-        // Conversations
-        d.conversation("dm_sarah", { name: "Sarah ❤️", avatar: "" });
-        d.conversation("dm_boss", { name: "Boss 👔", avatar: "" });
-        d.conversation("family_group", { name: "Family 👨‍👩‍👧", avatar: "" });
-
-        // =====================================================================
-        // BEAT 1: Opening - Sarah messages first
-        // =====================================================================
-
-        d.beat("opening", b => {
-            b.wait("500ms");
-            b.receive("Sarah ❤️", "Hey baby! I've been thinking about you all day 💕");
-        });
-
-        // =====================================================================
-        // BEAT 2: User replies with typing
-        // =====================================================================
-
-        d.beat("user-reply", b => {
-            b.wait("800ms");
-            b.typing("me").for("1.5s");
-            b.send("Aww that's so sweet! I was just thinking about you too 😊");
-        });
-
-        // =====================================================================
-        // BEAT 3: Sarah typing and responding
-        // =====================================================================
-
-        d.beat("sarah-responds", b => {
-            b.wait("600ms");
-            b.typing("Sarah ❤️").for("2s");
-            b.receive("Sarah ❤️", "Look at this beautiful sunset! Wish you were here 🌅");
-        });
-
-        // =====================================================================
-        // BEAT 4: Camera focus on message
-        // =====================================================================
-
-        d.beat("camera-focus", b => {
-            b.wait("500ms");
-            b.camera(c => {
-                c.focus("lastMessage", { duration: "0.5s", preset: "subtle" });
-            });
-            b.wait("1s");
-        });
-
-        // =====================================================================
-        // BEAT 5: Romantic exchange
-        // =====================================================================
-
-        d.beat("romantic-exchange", b => {
-            b.wait("500ms");
-            b.typing("me").for("1s");
-            b.send("Wow, that's gorgeous! 😍");
-
-            b.wait("800ms");
-            b.typing("Sarah ❤️").for("1.5s");
-            b.receive("Sarah ❤️", "I have something important to tell you...");
-        });
-
-        // =====================================================================
-        // BEAT 6: Dramatic pause with camera
-        // =====================================================================
-
-        d.beat("dramatic-pause", b => {
-            b.wait("1s");
-            b.camera(c => {
-                c.focus("lastMessage", { duration: "1s", preset: "dramatic" });
-            });
-            b.wait("2s");
-        });
-
-        // =====================================================================
-        // BEAT 7: The reveal
-        // =====================================================================
-
-        d.beat("reveal", b => {
-            b.typing("Sarah ❤️").for("3s");
-            b.receive("Sarah ❤️", "I got the job offer! We can finally move in together! 🎉🏠");
-        });
-
-        // =====================================================================
-        // BEAT 8: Excited response
-        // =====================================================================
-
-        d.beat("celebration", b => {
-            b.wait("500ms");
-            b.typing("me").for("0.8s");
-            b.send("OMG THAT'S AMAZING!! 🎊🎊🎊 I'M SO PROUD OF YOU!!");
-
-            b.wait("800ms");
-            b.typing("Sarah ❤️").for("1s");
-            b.receive("Sarah ❤️", "I love you so much! 💕💕💕");
-        });
-
-        // =====================================================================
-        // BEAT 9: Final message and camera reset
-        // =====================================================================
-
-        d.beat("finale", b => {
-            b.wait("500ms");
-            b.typing("me").for("0.8s");
-            b.send("I love you too! Let's celebrate tonight! 🥂");
-
-            b.wait("1s");
-            b.camera(c => {
-                c.focus("lastMessage", { duration: "0.5s", preset: "subtle" });
-            });
-            b.wait("2s");
-        });
-    });
-});
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export default ultimateShowcaseEpisode;
-
-// Metadata for composition
-export const ultimateShowcaseConfig = {
-    id: "UltimateCapabilitiesShowcase",
-    durationInFrames: 900, // 30 seconds at 30fps
-    fps: 30,
-    width: 1080,
-    height: 1920
-};
 ````
 
 ## File: packages/episodes/src/production/bakchodi-bros.episode.ts
@@ -46741,212 +45569,6 @@ export function isAppEvent(e: TrackEvent): e is AppTrackEventRegistry[keyof AppT
     "devDependencies": {
         "typescript": "^5.0.0"
     }
-}
-````
-
-## File: packages/renderer/src/engines/useLayoutEngine.ts
-````typescript
-/**
- * Layout Engine
- *
- * Pure computation layer that determines:
- * - Which device is active
- * - What view kind to display (CHAT, FEED, LOCKSCREEN, etc.)
- * - Layout positions and scroll state
- *
- * Input: world + time
- * Output: layout blueprint (no JSX)
- *
- * NOTE ON MEMOIZATION:
- * This runs every frame because `world` reference changes on each frame.
- * This is intentional - it's the Update Loop. Keep computations fast,
- * avoid object allocations in loops.
- */
-
-import { useMemo } from "react";
-import {
-    WorldState,
-    DeviceState,
-    LAYOUT,
-    DEFAULT_CAMERA_STATE,
-} from "@tokovo/core";
-import { computeLayout, LayoutState, ViewKind, LayoutContext } from "../layout";
-import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
-import { AppMetadataRegistry } from "@tokovo/core";
-
-// =============================================================================
-// INPUT / OUTPUT TYPES
-// =============================================================================
-
-export interface LayoutEngineInput {
-    world: WorldState;
-    t: number;
-    focusDeviceId?: string;
-}
-
-export interface LayoutEngineOutput {
-    /** Active device ID */
-    deviceId: string;
-    /** Active device state */
-    device: DeviceState;
-    /** Foreground app ID (if any) */
-    appId: string | undefined;
-    /** What type of view to render */
-    viewKind: ViewKind;
-    /** Computed layout state (discriminated union - use layout.kind to narrow) */
-    layout: LayoutState;
-    /** Device profile (iPhone16, Pixel, etc.) */
-    profile: DeviceProfile;
-    /** Platform variant */
-    variant: "ios" | "android";
-    /** Active conversation (for chat views) */
-    activeConversationId?: string;
-    /** Active story (for story views) */
-    activeStoryId?: string;
-    /** Viewport height after accounting for header/input */
-    effectiveViewportHeight: number;
-    /** Whether this is a fallback/error state */
-    isError: boolean;
-}
-
-// =============================================================================
-// NULL LAYOUT (safe fallback when device not found)
-// =============================================================================
-
-const NULL_DEVICE: DeviceState = {
-    id: "__null__",
-    profileId: "iphone16",
-    isLocked: true,
-    notifications: [],
-};
-
-const NULL_LAYOUT: LayoutState = {
-    kind: "TRANSITION",
-    deviceTranslateX: 0,
-    deviceTranslateY: 0,
-    deviceScale: 1,
-    deviceRotation: 0,
-    overlayOpacity: 0,
-    meta: {},
-};
-
-export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
-    deviceId: "__null__",
-    device: NULL_DEVICE,
-    appId: undefined,
-    viewKind: "TRANSITION",
-    layout: NULL_LAYOUT,
-    profile: iPhone16Profile,
-    variant: "ios",
-    effectiveViewportHeight: iPhone16Profile.dimensions.height,
-    isError: true,
-};
-
-// =============================================================================
-// LAYOUT ENGINE HOOK
-// =============================================================================
-
-export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
-    const { world, t, focusDeviceId } = input;
-
-    return useMemo(() => {
-        // 1. Determine active device
-        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
-        const device = world.devices[deviceId];
-
-        // Return safe fallback instead of crashing
-        if (!device) {
-            console.error(`[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`);
-            return NULL_LAYOUT_OUTPUT;
-        }
-
-        const appId = device.foregroundAppId;
-
-        // 2. Determine ViewKind
-        let viewKind: ViewKind = "TRANSITION";
-        let activeConversationId: string | undefined;
-        let activeStoryId: string | undefined;
-
-        if (device.isLocked) {
-            viewKind = "LOCKSCREEN";
-        } else if (appId) {
-            // GENERIC LAYOUT RESOLUTION
-            // 1. Check App Metadata for default strategy
-            const { AppMetadataRegistry } = require("@tokovo/core"); // Dynamic require to avoid cycle if any, or just import at top
-            const meta = AppMetadataRegistry.get(appId);
-            viewKind = meta.viewStrategy || "TRANSITION";
-
-            // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
-            // Apps MUST implement `BaseAppState` to dynamically switch layouts.
-            // Heuristics have been removed for architectural purity.
-            const appState = world.appState?.[appId] as import("@tokovo/core").BaseAppState;
-
-            if (appState && appState.viewMode) {
-                viewKind = appState.viewMode;
-
-                // Extract Standard Context
-                if (viewKind === "CHAT") {
-                    // Prefer explicit conversationId, fallback to first one (Legacy behavior preserved for now)
-                    activeConversationId = appState.conversationId || Object.keys(world.conversations)[0];
-                } else if (viewKind === "STORY") {
-                    activeStoryId = appState.activeStoryId;
-                }
-            }
-
-            // 3. Twitter Special Case (Implicit Feed if not set)
-            // TODO: Move this to Twitter App Reducer in next sprint
-            if (appId === "app_twitter" && !viewKind) viewKind = "FEED";
-        } else {
-            // No app open, show home screen
-            viewKind = "HOMESCREEN";
-        }
-
-        // 3. Get device profile
-        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
-        const isPixel = device.profileId.includes("pixel");
-        const variant: "ios" | "android" = isPixel ? "android" : "ios";
-
-        // 4. Compute keyboard height (for viewport shrink when typing)
-        const KEYBOARD_HEIGHT_IOS = 900;   // At 3x scale
-        const KEYBOARD_HEIGHT_ANDROID = 750;
-        const keyboardHeight = device.keyboard?.visible
-            ? (variant === "ios" ? KEYBOARD_HEIGHT_IOS : KEYBOARD_HEIGHT_ANDROID)
-            : 0;
-
-        // 5. Compute effective viewport height (shrinks when keyboard visible)
-        const effectiveViewportHeight = viewKind === "CHAT"
-            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT - keyboardHeight
-            : profile.dimensions.height;
-
-        // 5. Build layout context and compute layout
-        const layoutContext: LayoutContext = {
-            world,
-            t,
-            activeDeviceId: deviceId,
-            activeAppId: appId || "",
-            viewKind,
-            activeConversationId,
-            activeStoryId,
-            viewportWidth: profile.dimensions.width,
-            viewportHeight: effectiveViewportHeight,
-        };
-
-        const layout = computeLayout(layoutContext);
-
-        return {
-            deviceId,
-            device,
-            appId,
-            viewKind,
-            layout,
-            profile,
-            variant,
-            activeConversationId,
-            activeStoryId,
-            effectiveViewportHeight,
-            isError: false,
-        };
-    }, [world, t, focusDeviceId]);
 }
 ````
 
@@ -52385,6 +51007,116 @@ export function createWhatsAppTrackBuilder(
 }
 ````
 
+## File: packages/apps-whatsapp/src/runtime/adapters/anchors.ts
+````typescript
+import {
+    AnchorProvider,
+    AnchorSnapshot,
+    LayoutRect,
+    ChatLayoutState,
+    APP_IDS
+} from "@tokovo/core";
+
+const APP_ID = APP_IDS.WHATSAPP;
+
+// Production-grade anchor provider converting Layout Engine output to Semantic Anchors
+export const WhatsAppAnchors: AnchorProvider = {
+    appId: APP_ID,
+
+    // Static Framing Definitions
+    framing: {
+        // Conversation / Messages
+        message: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        message_me: {
+            anchorPoint: { x: 0.6, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        message_other: {
+            anchorPoint: { x: 0.4, y: 0.5 },
+            paddingPx: 40,
+            targetFill: 0.6
+        },
+        device: {
+            anchorPoint: { x: 0.5, y: 0.5 },
+            paddingPx: 0,
+            targetFill: 1.0
+        },
+
+        // System / Status
+        typing: {
+            anchorPoint: { x: 0.35, y: 0.5 },
+            paddingPx: 30,
+            targetFill: 0.3
+        },
+        input: {
+            anchorPoint: { x: 0.5, y: 0.8 },
+            paddingPx: 20,
+            targetFill: 0.9
+        },
+
+        // Nav
+        header: {
+            anchorPoint: { x: 0.5, y: 0.15 },
+            paddingPx: 10,
+            targetFill: 0.9
+        },
+        profile: {
+            anchorPoint: { x: 0.2, y: 0.15 }, // Focus specifically on avatar
+            paddingPx: 50,
+            targetFill: 0.4
+        }
+    },
+
+    // Dynamic extraction from Computed Layout
+    getAnchors(
+        world,
+        layout,
+        deviceId
+    ): AnchorSnapshot {
+        // Cast generic layout to ChatLayoutState
+        const chatLayout = layout as ChatLayoutState;
+        const anchors: Record<string, LayoutRect> = {};
+
+        // If no layout (e.g. app not active), return empty or device fallback
+        if (!chatLayout || !chatLayout.semantic) {
+            return { anchors: {}, deviceId, appId: APP_ID };
+        }
+
+        // Map Semantic Regions to Anchors
+        // ChatLayoutState.semantic.regions is Record<string, SemanticRegion>
+        const regions = chatLayout.semantic.regions;
+        for (const [key, region] of Object.entries(regions)) {
+            // Mapping strategy: 
+            // 1. ID match (e.g. "msg_123")
+            // 2. Tag match? (Layout Engine provides specific IDs)
+            // The Camera system requests specific IDs like "msg_123".
+            // So we just pass them through.
+
+            // We can also alias standard semantic names like "lastMessage"
+            anchors[key] = region.rect;
+        }
+
+        // Computed Aliases
+        if (chatLayout.meta?.lastMessageId && regions[chatLayout.meta.lastMessageId]) {
+            anchors["lastMessage"] = regions[chatLayout.meta.lastMessageId].rect;
+        }
+
+        // Input area and Header are already in regions from layout.ts
+
+        return {
+            anchors,
+            deviceId,
+            appId: APP_ID,
+        };
+    }
+};
+````
+
 ## File: packages/apps-whatsapp/src/ui/screens/ios/ChatScreen.tsx
 ````typescript
 import React from "react";
@@ -52638,32 +51370,6 @@ export type {
 export { compile, CompilerContext, Cursor } from "./legacy";
 export type { CompileResult, CompileOptions, CompilerConfig } from "./legacy";
 export * from "./legacy/passes";
-````
-
-## File: packages/compiler/package.json
-````json
-{
-    "name": "@tokovo/compiler",
-    "version": "0.0.1",
-    "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
-    "main": "src/index.ts",
-    "types": "src/index.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/device-camera": "workspace:*"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
-}
 ````
 
 ## File: packages/core/src/audio/auto-sound.ts
@@ -53033,125 +51739,6 @@ export function getSoundPath(soundId: string): string {
 }
 
 export { SoundRegistry };
-````
-
-## File: packages/core/src/director-lite/index.ts
-````typescript
-/**
- * DirectorLite - Re-exports from @tokovo/device-camera
- * 
- * Legacy backward compatibility layer.
- * All new code should import directly from @tokovo/device-camera.
- * 
- * @deprecated Import from "@tokovo/device-camera" instead
- */
-
-export {
-    deriveDirectorEffects,
-    extractSignals,
-    ViralDramaV1,
-} from "@tokovo/device-camera";
-
-export type {
-    DirectorSignal,
-    DirectorSignalType,
-    DirectorLayoutModel,
-    DirectorOutput,
-    DerivedCameraEffect,
-    DirectorDebug,
-    DeriveContext,
-    DirectorStrategy,
-    Rule,
-    LayoutRect,
-} from "@tokovo/device-camera";
-````
-
-## File: packages/core/src/engine/handlers/camera.ts
-````typescript
-/**
- * Camera Handler - Processes CAMERA events
- * 
- * @description Handles camera movements, effects, and layout changes.
- * Uses device-camera reducer for effect processing.
- */
-
-import type { WorldState } from "../../types";
-import type { CameraEvent, HandlerContext } from "./types";
-import { cameraReducer } from "@tokovo/device-camera";
-import { DEFAULT_CAMERA_STATE, DEFAULT_CAMERA_TRANSFORM } from "../../types";
-
-/**
- * Process camera event and update camera state
- */
-export function processCameraEvent(
-    draft: WorldState,
-    event: CameraEvent,
-    ctx: HandlerContext
-): void {
-    // Ensure camera state exists with all required properties
-    if (!draft.camera || !draft.camera.activeEffects) {
-        draft.camera = { ...DEFAULT_CAMERA_STATE };
-    }
-    // Ensure layout exists
-    if (!draft.camera.layout) {
-        draft.camera.layout = {
-            mode: "SINGLE",
-            primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone"
-        };
-    }
-
-    const e = event as any; // For accessing optional fields
-
-    switch (event.type) {
-        case "SET_VIEW":
-            // Legacy support - just update base view
-            draft.camera.baseView = e.view?.type;
-            draft.camera.appId = e.view?.appId;
-            break;
-
-        case "CUT":
-            // Hard cut - reset all effects
-            draft.camera.activeEffects = [];
-            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
-
-            // Switch to new device if specified
-            if (e.toDeviceId) {
-                draft.camera.activeDeviceId = e.toDeviceId;
-                draft.camera.layout.primaryDeviceId = e.toDeviceId;
-            }
-
-            // Update base view if specified
-            if (e.toView) {
-                draft.camera.baseView = e.toView === "app" ? "APP_VIEW" : "TRANSITION";
-            }
-            break;
-
-        case "LAYOUT":
-            // Change view layout mode
-            draft.camera.layout = {
-                mode: e.mode,
-                primaryDeviceId: e.primaryDeviceId,
-                secondaryDeviceId: e.secondaryDeviceId,
-                pipPosition: e.pipPosition,
-                pipScale: e.pipScale,
-            };
-            // Update active device to match primary
-            draft.camera.activeDeviceId = e.primaryDeviceId;
-            break;
-
-        case "ZOOM":
-        case "PAN":
-        case "SHAKE":
-        case "FOCUS":
-        case "ANCHOR_FOCUS":
-        case "ANCHOR_TRACK":
-        case "RESET": {
-            // Delegate to device-camera reducer
-            cameraReducer(draft as any, event as any);
-            break;
-        }
-    }
-}
 ````
 
 ## File: packages/core/src/engine/handlers/index.ts
@@ -54842,500 +53429,117 @@ export * from "./validation";
 export { SeededRNG } from "./rng";
 ````
 
-## File: packages/core/src/tokens.ts
+## File: packages/core/src/utils/validation.ts
 ````typescript
+import { z } from "zod";
+import type { TokovoPlugin } from "../plugin/plugin";
+import type { AppMetadata } from "../registries/metadata";
+
+// =============================================================================
+// PLUGIN & METADATA SCHEMAS
+// =============================================================================
+
+export const AppMetadataSchema = z.object({
+    displayName: z.string(),
+    themeColor: z.string().regex(/^#/, "Must be a hex color"),
+    icon: z.string(),
+    viewStrategy: z.enum(["CHAT", "FEED", "STORY", "LOCKSCREEN", "HOMESCREEN", "FULLSCREEN", "TRANSITION"]).optional(),
+    designWidth: z.number().optional().default(393),
+}) as z.ZodType<Partial<AppMetadata> & { name?: string }>; // Loose typing to match Partial
+
+// NOTE: We don't deeply validate React components or Functions (runtime checks only)
+export const TokovoPluginSchema = z.object({
+    id: z.string().min(3),
+    version: z.string(),
+
+    // Metadata block
+    metadata: z.object({
+        name: z.string(),
+        themeColor: z.string().optional(),
+        icon: z.string().optional(),
+        designWidth: z.number().optional(),
+    }).optional(),
+
+    // Deprecated fields (lax schema)
+    name: z.string().optional(),
+    icon: z.string().optional(),
+    primaryColor: z.string().optional(),
+
+    // Arrays
+    eventTypes: z.array(z.string()).optional(),
+
+    // Maps
+    sounds: z.record(z.string(), z.string()).optional(),
+    anchors: z.record(z.string(), z.any()).optional(), // Framing config is complex, lazy check
+});
+
 /**
- * Shared Design Tokens & UI Primitives
- * Platform-agnostic tokens for iOS and Android rendering.
- * 
- * NOTE: App-specific configs (whatsapp, instagram, etc.) in appConfigs
- * are legacy and should be moved to their respective plugin packages.
+ * Validates a plugin definition at load time.
+ * @throws ZodError if invalid
  */
+export function validatePlugin(plugin: TokovoPlugin): void {
+    // 1. Structural Check
+    TokovoPluginSchema.parse(plugin);
 
-// =============================================================================
-// DESIGN TOKENS
-// =============================================================================
-
-export const iOSTokens = {
-    // Colors
-    colors: {
-        // System colors
-        primary: "#007AFF",
-        success: "#34C759",
-        warning: "#FF9500",
-        danger: "#FF3B30",
-
-        // Grays
-        label: "#000000",
-        secondaryLabel: "#8E8E93",
-        tertiaryLabel: "#C7C7CC",
-        background: "#FFFFFF",
-        secondaryBackground: "#F2F2F7",
-        separator: "rgba(60, 60, 67, 0.36)",
-
-        // @deprecated - App colors should be in plugin packages
-        // These are left for backward compatibility
-    },
-
-    // Typography (in 3x scale for Remotion)
-    typography: {
-        largeTitle: { fontSize: 102, fontWeight: "700" as const, lineHeight: 123 },
-        title1: { fontSize: 84, fontWeight: "700" as const, lineHeight: 102 },
-        title2: { fontSize: 66, fontWeight: "700" as const, lineHeight: 78 },
-        title3: { fontSize: 60, fontWeight: "600" as const, lineHeight: 72 },
-        headline: { fontSize: 51, fontWeight: "600" as const, lineHeight: 63 },
-        body: { fontSize: 51, fontWeight: "400" as const, lineHeight: 66 },
-        callout: { fontSize: 48, fontWeight: "400" as const, lineHeight: 60 },
-        subhead: { fontSize: 45, fontWeight: "400" as const, lineHeight: 57 },
-        footnote: { fontSize: 39, fontWeight: "400" as const, lineHeight: 51 },
-        caption1: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
-        caption2: { fontSize: 33, fontWeight: "400" as const, lineHeight: 42 },
-    },
-
-    // Spacing (in 3x scale)
-    spacing: {
-        xs: 12,
-        sm: 24,
-        md: 48,
-        lg: 72,
-        xl: 96,
-    },
-
-    // Radii (in 3x scale)
-    radii: {
-        sm: 12,
-        md: 24,
-        lg: 36,
-        xl: 48,
-        pill: 999,
-    },
-
-    // Shadows
-    shadows: {
-        sm: "0 3px 9px rgba(0,0,0,0.08)",
-        md: "0 6px 18px rgba(0,0,0,0.12)",
-        lg: "0 12px 36px rgba(0,0,0,0.16)",
-    },
-
-    // Font family
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
-};
-
-export const androidTokens = {
-    // Colors (Material You)
-    colors: {
-        primary: "#1A73E8",
-        success: "#34A853",
-        warning: "#FBBC04",
-        danger: "#EA4335",
-
-        label: "#202124",
-        secondaryLabel: "#5F6368",
-        tertiaryLabel: "#9AA0A6",
-        background: "#FFFFFF",
-        secondaryBackground: "#F8F9FA",
-        separator: "rgba(0, 0, 0, 0.12)",
-
-        // @deprecated - App colors should be in plugin packages
-    },
-
-    // Typography (Material 3, in 3x scale)
-    typography: {
-        displayLarge: { fontSize: 171, fontWeight: "400" as const, lineHeight: 192 },
-        displayMedium: { fontSize: 135, fontWeight: "400" as const, lineHeight: 156 },
-        displaySmall: { fontSize: 108, fontWeight: "400" as const, lineHeight: 132 },
-        headlineLarge: { fontSize: 96, fontWeight: "400" as const, lineHeight: 120 },
-        headlineMedium: { fontSize: 84, fontWeight: "400" as const, lineHeight: 108 },
-        headlineSmall: { fontSize: 72, fontWeight: "400" as const, lineHeight: 96 },
-        titleLarge: { fontSize: 66, fontWeight: "400" as const, lineHeight: 84 },
-        titleMedium: { fontSize: 48, fontWeight: "500" as const, lineHeight: 72 },
-        titleSmall: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
-        bodyLarge: { fontSize: 48, fontWeight: "400" as const, lineHeight: 72 },
-        bodyMedium: { fontSize: 42, fontWeight: "400" as const, lineHeight: 60 },
-        bodySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
-        labelLarge: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
-        labelMedium: { fontSize: 36, fontWeight: "500" as const, lineHeight: 48 },
-        labelSmall: { fontSize: 33, fontWeight: "500" as const, lineHeight: 48 },
-    },
-
-    // Spacing
-    spacing: {
-        xs: 12,
-        sm: 24,
-        md: 48,
-        lg: 72,
-        xl: 96,
-    },
-
-    // Radii
-    radii: {
-        sm: 12,
-        md: 24,
-        lg: 42,
-        xl: 84,
-        pill: 999,
-    },
-
-    // Font family
-    fontFamily: "'Roboto', 'Google Sans', sans-serif",
-};
-
-// =============================================================================
-// UTILITY FUNCTIONS
-// =============================================================================
-
-export type Platform = "ios" | "android";
-
-export function getTokens(platform: Platform) {
-    return platform === "ios" ? iOSTokens : androidTokens;
-}
-
-// Unified typography that maps semantic names to platform-specific styles
-type SemanticTypography = "largeTitle" | "title" | "headline" | "body" | "callout" | "caption" | "footnote";
-
-const typographyMap: Record<SemanticTypography, { ios: keyof typeof iOSTokens.typography; android: keyof typeof androidTokens.typography }> = {
-    largeTitle: { ios: "largeTitle", android: "displaySmall" },
-    title: { ios: "title1", android: "headlineLarge" },
-    headline: { ios: "headline", android: "titleMedium" },
-    body: { ios: "body", android: "bodyLarge" },
-    callout: { ios: "callout", android: "bodyMedium" },
-    caption: { ios: "caption1", android: "bodySmall" },
-    footnote: { ios: "footnote", android: "labelMedium" }
-};
-
-export function getTypography(platform: Platform, semantic: SemanticTypography) {
-    const map = typographyMap[semantic];
-    if (platform === "ios") {
-        return iOSTokens.typography[map.ios];
+    // 2. Logic Checks
+    if (!plugin.appView && !plugin.screens) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must provide 'appView' or 'screens'.`);
     }
-    return androidTokens.typography[map.android];
-}
 
-// =============================================================================
-// SHARED STYLES
-// =============================================================================
+    if (!plugin.metadata?.name && !plugin.name) {
+        throw new Error(`[Validation] Plugin ${plugin.id} must have a name.`);
+    }
 
-export const sharedStyles = {
-    // Flexbox utilities
-    flexCenter: {
-        display: "flex" as const,
-        alignItems: "center" as const,
-        justifyContent: "center" as const,
-    },
-    flexBetween: {
-        display: "flex" as const,
-        alignItems: "center" as const,
-        justifyContent: "space-between" as const,
-    },
-    flexColumn: {
-        display: "flex" as const,
-        flexDirection: "column" as const,
-    },
+    // 3. Conflict Prevention (Enterprise Standard)
 
-    // Full size
-    absoluteFill: {
-        position: "absolute" as const,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
+    // Core events that don't need namespacing
+    const CORE_EVENT_TYPES = new Set([
+        "MESSAGE_RECEIVED", "MESSAGE_SENT", "MESSAGE_READ", "MESSAGE_DELETED",
+        "TYPING_START", "TYPING_END",
+        "REACTION_ADDED",
+        "CALL", // Provisionally Core
+        "NOTIFICATION", "SHOW_NOTIFICATION", "HIDE_NOTIFICATION",
+        "PLAY_TRACK", "PAUSE_TRACK", "START_BACKGROUND_APP",
+        "OPEN_APP", "CLOSE_APP",
+        "SCREEN_NAVIGATED",
+        // Enhanced Features (Standardized)
+        "VOICE_MESSAGE_RECEIVED",
+        "GROUP_MEMBER_ADDED", "GROUP_MEMBER_REMOVED"
+    ]);
 
-    // Text truncation
-    truncate: {
-        overflow: "hidden" as const,
-        textOverflow: "ellipsis" as const,
-        whiteSpace: "nowrap" as const,
-    },
-};
+    // Enforce Event Namespacing
+    if (plugin.eventTypes) {
+        for (const type of plugin.eventTypes) {
+            if (CORE_EVENT_TYPES.has(type)) continue;
 
-// =============================================================================
-// APP-SPECIFIC CONFIG
-// @deprecated These configs are being migrated to their respective app packages.
-//             - WhatsApp: @tokovo/apps-whatsapp/src/tokens/config.ts
-//             - Instagram: @tokovo/apps-instagram/src/tokens/config.ts (future)
-//             These exports are kept for backward compatibility.
-// =============================================================================
-
-export const appConfigs = {
-    whatsapp: {
-        ios: {
-            // Header
-            headerHeight: 270,
-            headerBg: "#F6F6F6",
-            statusBarHeight: 144,
-            avatarSize: 111,
-            avatarMargin: 24,
-            headerTitleSize: 51,
-            headerSubtitleSize: 36,
-            headerIconGap: 54,
-
-            // Chat area
-            chatBackground: "#ECE5DD",
-            inputHeight: 180,
-
-            // Message bubbles
-            bubblePadding: 24,
-            bubblePaddingHorizontal: 36,
-            bubbleRadius: 24,
-            bubbleTailRadius: 6,
-            bubbleMaxWidth: "78%",
-            bubbleMarginHorizontal: 36,
-            bubbleGap: 12,  // Gap between consecutive messages
-            bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-
-            // Bubble colors
-            bubbleMyColor: "#E7FFDB",
-            bubbleOtherColor: "#FFFFFF",
-            bubbleTextColor: "#111B21",
-
-            // Message text
-            messageTextSize: 48,
-            messageLineHeight: 66,
-            timestampSize: 33,
-            timestampColor: "#667781",
-
-            // Sender name (groups)
-            senderNameSize: 33,
-            senderNameColor: "#25D366",
-
-            // Read receipts
-            accentColor: "#25D366",
-            readReceiptColor: "#53BDEB",
-            unreadReceiptColor: "#8696A0",
-
-            // Avatar (for contacts without photos)
-            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            avatarFontSize: 45,
-
-            // Input area
-            inputBg: "#FFFFFF",
-            inputBorderRadius: 60,
-            inputPlaceholderColor: "#8E8E93",
-            inputTextColor: "#000000",
-            inputIconColor: "#8E8E93",
-            sendButtonColor: "#25D366",
-
-            // Tuning indicator
-            typingBubbleColor: "#FFFFFF",
-            typingDotColor: "#8E8E93",
-            typingDotSize: 24,
-
-            // "Psychotic" Features
-            editedLabelColor: "#8E8E93",
-            editedLabelSize: 30,
-
-            missedCallIconColor: "#FF3B30",
-            missedCallBubbleColor: "#FFFFFF",
-
-            adminBadgeColor: "#E1DAD0",
-            adminTextColor: "#667781",
-
-            waveformActiveColor: "#007AFF",
-            waveformInactiveColor: "#C7C7CC",
-
-            screenshotAlertBg: "rgba(255,59,48,0.1)",
-            screenshotAlertText: "#FF3B30",
-        },
-        android: {
-            // Header
-            headerHeight: 255,
-            headerBg: "#008069",
-            statusBarHeight: 120,
-            avatarSize: 105,
-            avatarMargin: 24,
-            headerTitleSize: 48,
-            headerSubtitleSize: 33,
-            headerIconGap: 48,
-
-            // Chat area
-            chatBackground: "#ECE5DD",
-            inputHeight: 165,
-
-            // Message bubbles
-            bubblePadding: 21,
-            bubblePaddingHorizontal: 33,
-            bubbleRadius: 21,
-            bubbleTailRadius: 6,
-            bubbleMaxWidth: "78%",
-            bubbleMarginHorizontal: 30,
-            bubbleGap: 9,
-            bubbleShadow: "0 1px 1px rgba(0,0,0,0.1)",
-
-            // Bubble colors
-            bubbleMyColor: "#E7FFDB",
-            bubbleOtherColor: "#FFFFFF",
-            bubbleTextColor: "#111B21",
-
-            // Message text
-            messageTextSize: 45,
-            messageLineHeight: 63,
-            timestampSize: 30,
-            timestampColor: "#667781",
-
-            // Sender name (groups)
-            senderNameSize: 30,
-            senderNameColor: "#25D366",
-
-            // Read receipts
-            accentColor: "#25D366",
-            readReceiptColor: "#53BDEB",
-            unreadReceiptColor: "#8696A0",
-
-            // Avatar (for contacts without photos)
-            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            avatarFontSize: 42,
-
-            // Input area
-            inputBg: "#FFFFFF",
-            inputBorderRadius: 60,
-            inputPlaceholderColor: "#8E8E93",
-            inputTextColor: "#000000",
-            inputIconColor: "#8E8E93",
-            sendButtonColor: "#008069", // Android Teal
-
-            // Typing indicator
-            typingBubbleColor: "#FFFFFF",
-            typingDotColor: "#8E8E93",
-            typingDotSize: 21,
-
-            // "Psychotic" Features
-            editedLabelColor: "#8E8E93",
-            editedLabelSize: 27,
-
-            missedCallIconColor: "#FF3B30",
-            missedCallBubbleColor: "#FFFFFF",
-
-            adminBadgeColor: "#E1DAD0",
-            adminTextColor: "#54656F",
-
-            waveformActiveColor: "#008069",
-            waveformInactiveColor: "#C7C7CC",
-
-            screenshotAlertBg: "rgba(255,59,48,0.1)",
-            screenshotAlertText: "#FF3B30",
-        },
-    },
-    instagram: {
-        ios: {
-            headerHeight: 264,
-            navHeight: 147,
-            storySize: 210,
-            accentColor: "#E4405F",
-        },
-        android: {
-            headerHeight: 252,
-            navHeight: 144,
-            storySize: 200,
-            accentColor: "#E4405F",
-        }
-    },
-    imessage: {
-        ios: {
-            bubbleMyColor: "#007AFF",
-            bubbleMyTextColor: "#FFFFFF",
-            bubbleOtherColor: "#E9E9EB",
-            bubbleOtherTextColor: "#000000",
-            accentColor: "#007AFF",
-        },
-        android: {
-            bubbleMyColor: "#007AFF",
-            bubbleMyTextColor: "#FFFFFF",
-            bubbleOtherColor: "#E9E9EB",
-            bubbleOtherTextColor: "#000000",
-            accentColor: "#007AFF",
-        }
-    },
-    homescreen: {
-        ios: {
-            // Grid
-            gridColumns: 4,
-            gridRows: 6,
-            gridGapRow: 36,
-            gridGapCol: 0,
-            gridPaddingTop: 240,
-            gridPaddingHorizontal: 30,
-
-            // Icons
-            iconSize: 180,
-            iconRadius: 40, // 180 * 0.22 roughly
-            iconLabelSize: 33,
-            iconLabelColor: "#FFFFFF",
-            iconLabelGap: 12,
-
-            // Folders
-            folderBackdrop: "rgba(255,255,255,0.2)",
-            folderBlur: "30px",
-            folderPreviewGap: 9,
-            folderMiniIconRadius: 0.2, // relative to mini size
-
-            // Dock
-            dockHeight: 270,
-            dockRadius: 90,
-            dockBottom: 60,
-            dockWidth: "92%",
-            dockBackdrop: "rgba(255,255,255,0.2)",
-            dockBlur: "60px",
-            dockIconSize: 150,
-
-            // Page Dots
-            dotSize: 21,
-            dotGap: 18,
-            dotActiveColor: "#FFFFFF",
-            dotInactiveColor: "rgba(255,255,255,0.4)",
-            dotMarginBottom: 30,
-        },
-        android: {
-            // Grid
-            gridColumns: 5,
-            gridRows: 6,
-            gridGapRow: 48,
-            gridGapCol: 0,
-            gridPaddingTop: 150,
-            gridPaddingHorizontal: 24,
-
-            // Icons
-            iconSize: 165,
-            iconRadius: 82.5, // Circular
-            iconLabelSize: 30,
-            iconLabelColor: "#FFFFFF",
-            iconLabelGap: 15,
-
-            // Folders
-            folderBackdrop: "rgba(255,255,255,0.15)",
-            folderBlur: "20px",
-            folderPreviewGap: 12,
-            folderMiniIconRadius: 0.5,
-
-            // Dock (Android usually simpler / just icons)
-            dockHeight: 240,
-            dockRadius: 0, // No dock background conventionally
-            dockBottom: 30,
-            dockWidth: "100%",
-            dockBackdrop: "transparent",
-            dockBlur: "0px",
-            dockIconSize: 165,
-
-            // Page Dots
-            dotSize: 18,
-            dotGap: 24,
-            dotActiveColor: "#FFFFFF",
-            dotInactiveColor: "rgba(255,255,255,0.4)",
-            dotMarginBottom: 45,
+            const validPrefix = `${plugin.id}.`;
+            if (!type.startsWith(validPrefix)) {
+                throw new Error(
+                    `[Conflict Prevention] Event type '${type}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `Required format: '${validPrefix}MyEvent'.\n` +
+                    `Core events allowed: ${Array.from(CORE_EVENT_TYPES).join(", ")}`
+                );
+            }
         }
     }
-};
 
-// =============================================================================
-// EXPORT CONFIG GETTER
-// =============================================================================
-
-export function getAppConfig<T extends keyof typeof appConfigs>(
-    app: T,
-    platform: Platform
-): typeof appConfigs[T][Platform] {
-    const config = appConfigs[app];
-    return (config as any)[platform] || (config as any).ios;
+    // Enforce Sound Namespacing
+    if (plugin.sounds) {
+        for (const key of Object.keys(plugin.sounds)) {
+            // Allow dot or underscore separator
+            const validPrefixDot = `${plugin.id}.`;
+            // For legacy mostly, but strict enterprise usually prefers dot. 
+            // However, many assets use underscore (app_whatsapp_sent).
+            // Let's allow underscore if the ID itself has underscores.
+            // Actually, best to strictly check if it STARTS with the ID.
+            if (!key.startsWith(plugin.id)) {
+                throw new Error(
+                    `[Conflict Prevention] Sound key '${key}' in plugin '${plugin.id}' must be namespaced.\n` +
+                    `It must start with '${plugin.id}' (e.g. '${plugin.id}.sent' or '${plugin.id}_sent').`
+                );
+            }
+        }
+    }
 }
 ````
 
@@ -56307,489 +54511,180 @@ export function convertToEffects(
 }
 ````
 
-## File: packages/device-camera/src/processors/index.ts
+## File: packages/device-camera/src/lowering/handler.ts
 ````typescript
 /**
- * Effect Processors - Registry pattern for camera effects
+ * Camera Lowering Handler - DSL → Runtime event transformation
  * 
- * Each effect type has a dedicated processor.
- * Processors are pure functions: (context) → transform
+ * Transforms camera DSL IR events into runtime timeline operations.
  * 
- * @module device-camera/processors
+ * @module device-camera/lowering
  */
 
-import {
-    CameraEffect,
-    CameraTransform,
-    DEFAULT_TRANSFORM,
-    ZoomEffect,
-    ShakeEffect,
-    FocusEffect,
-    TrackEffect,
-    ResetEffect,
-} from "../types";
-import { AnchorSnapshot } from "../anchors/types";
-import { resolveAnchorFully } from "../anchors/resolver";
-import { applyEasing, lerp, seededRandom } from "../utils";
-
 // =============================================================================
-// PROCESSOR INTERFACE
+// TYPES
 // =============================================================================
 
-export interface EffectProcessorContext {
-    /** Current frame */
-    t: number;
-
-    /** The effect being processed */
-    effect: CameraEffect;
-
-    /** Current transform (accumulator) */
-    transform: CameraTransform;
-
-    /** Anchor snapshot for semantic targeting */
-    anchorSnapshot?: AnchorSnapshot;
-
-    /** Viewport dimensions */
-    viewport?: { width: number; height: number };
-}
-
-export interface EffectProcessor {
-    /** Effect type this processor handles */
-    type: string;
-
-    /** Process the effect and return updated transform */
-    process(ctx: EffectProcessorContext): CameraTransform;
-}
-
-// =============================================================================
-// PROCESSOR IMPLEMENTATIONS
-// =============================================================================
-
-function getProgress(t: number, startFrame: number, endFrame: number): number {
-    const duration = endFrame - startFrame;
-    if (duration <= 0) return 1;
-    return Math.max(0, Math.min(1, (t - startFrame) / duration));
-}
-
-const zoomProcessor: EffectProcessor = {
-    type: "zoom",
-    process(ctx): CameraTransform {
-        const e = ctx.effect as ZoomEffect;
-        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
-
-        return {
-            ...ctx.transform,
-            scale: lerp(1, e.targetScale, easedProgress),
-            translateX: ctx.transform.translateX + lerp(0, e.targetX ?? 0, easedProgress),
-            translateY: ctx.transform.translateY + lerp(0, e.targetY ?? 0, easedProgress),
-            originX: e.originX ?? ctx.transform.originX,
-            originY: e.originY ?? ctx.transform.originY,
-        };
-    },
-};
-
-const shakeProcessor: EffectProcessor = {
-    type: "shake",
-    process(ctx): CameraTransform {
-        const e = ctx.effect as ShakeEffect;
-        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-
-        // Procedural shake using frame as seed
-        const seed = e.startFrame + (ctx.t - e.startFrame);
-        const rand = seededRandom(seed);
-
-        // Frequency-based oscillation
-        const phase = (ctx.t - e.startFrame) * (e.frequency ?? 15) / 30;
-
-        // Decay over time
-        const decayFactor = Math.pow(e.decay ?? 0.8, progress * 10);
-
-        // Calculate shake offsets
-        const baseX = e.intensityX ?? e.intensity;
-        const baseY = e.intensityY ?? e.intensity;
-
-        const shakeX = Math.sin(phase * Math.PI * 2 + rand() * Math.PI) * baseX * decayFactor;
-        const shakeY = Math.cos(phase * Math.PI * 2 * 1.3 + rand() * Math.PI) * baseY * decayFactor;
-
-        return {
-            ...ctx.transform,
-            shakeX: ctx.transform.shakeX + shakeX,
-            shakeY: ctx.transform.shakeY + shakeY,
-        };
-    },
-};
-
-const focusProcessor: EffectProcessor = {
-    type: "focus",
-    process(ctx): CameraTransform {
-        const e = ctx.effect as FocusEffect;
-        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
-
-        // Resolve anchor to origin
-        let originX = 0.5;
-        let originY = 0.5;
-        let targetScale = e.scale ?? 1.15;
-
-        if (ctx.anchorSnapshot && ctx.viewport) {
-            const resolved = resolveAnchorFully(
-                e.anchorId,
-                ctx.anchorSnapshot,
-                ctx.anchorSnapshot.appId,
-                ctx.viewport
-            );
-            originX = resolved.originX;
-            originY = resolved.originY;
-            if (!e.scale) {
-                targetScale = resolved.suggestedScale;
-            }
-        }
-
-        return {
-            ...ctx.transform,
-            scale: lerp(1, targetScale, easedProgress),
-            originX: lerp(0.5, originX, easedProgress),
-            originY: lerp(0.5, originY, easedProgress),
-        };
-    },
-};
-
-const trackProcessor: EffectProcessor = {
-    type: "track",
-    process(ctx): CameraTransform {
-        const e = ctx.effect as TrackEffect;
-        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-        const smoothing = e.smoothing ?? 0.18;
-
-        // Resolve current anchor position
-        let originX = ctx.transform.originX;
-        let originY = ctx.transform.originY;
-
-        if (ctx.anchorSnapshot && ctx.viewport) {
-            const resolved = resolveAnchorFully(
-                e.anchorId,
-                ctx.anchorSnapshot,
-                ctx.anchorSnapshot.appId,
-                ctx.viewport
-            );
-            // Smooth follow - interpolate toward anchor
-            originX = lerp(ctx.transform.originX, resolved.originX, smoothing);
-            originY = lerp(ctx.transform.originY, resolved.originY, smoothing);
-        }
-
-        // Ease in/out of tracking
-        const easeIn = Math.min(1, progress * 5);  // First 20% eases in
-        const easeOut = Math.min(1, (1 - progress) * 5);  // Last 20% eases out
-        const trackStrength = Math.min(easeIn, easeOut);
-
-        return {
-            ...ctx.transform,
-            scale: lerp(1, e.scale ?? 1.05, trackStrength),
-            originX,
-            originY,
-        };
-    },
-};
-
-const resetProcessor: EffectProcessor = {
-    type: "reset",
-    process(ctx): CameraTransform {
-        const e = ctx.effect as ResetEffect;
-        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
-
-        // Interpolate all values toward default
-        return {
-            scale: lerp(ctx.transform.scale, 1, easedProgress),
-            translateX: lerp(ctx.transform.translateX, 0, easedProgress),
-            translateY: lerp(ctx.transform.translateY, 0, easedProgress),
-            originX: lerp(ctx.transform.originX, 0.5, easedProgress),
-            originY: lerp(ctx.transform.originY, 0.5, easedProgress),
-            rotation: lerp(ctx.transform.rotation, 0, easedProgress),
-            shakeX: lerp(ctx.transform.shakeX, 0, easedProgress),
-            shakeY: lerp(ctx.transform.shakeY, 0, easedProgress),
-        };
-    },
-};
-
-// =============================================================================
-// REGISTRY
-// =============================================================================
-
-const processorRegistry = new Map<string, EffectProcessor>();
-
-// Register built-in processors
-processorRegistry.set("zoom", zoomProcessor);
-processorRegistry.set("shake", shakeProcessor);
-processorRegistry.set("focus", focusProcessor);
-processorRegistry.set("track", trackProcessor);
-processorRegistry.set("reset", resetProcessor);
-
-/**
- * Register a custom effect processor.
- */
-export function registerCameraProcessor(processor: EffectProcessor): void {
-    processorRegistry.set(processor.type, processor);
-}
-
-// =============================================================================
-// MAIN PROCESSING FUNCTION
-// =============================================================================
-
-/**
- * Process all active effects and return final transform.
- * 
- * This is a PURE function - same inputs always produce same outputs.
- * Compatible with Remotion's frame-by-frame rendering.
- */
-export function processActiveEffects(
-    t: number,
-    effects: CameraEffect[],
-    initialTransform: CameraTransform = DEFAULT_TRANSFORM,
-    anchorSnapshot?: AnchorSnapshot,
-    viewport?: { width: number; height: number }
-): CameraTransform {
-    let transform = { ...initialTransform };
-
-    // Filter to active effects only
-    const activeEffects = effects.filter(
-        e => t >= e.startFrame && t < e.endFrame
-    );
-
-    // Process each effect through its registered processor
-    for (const effect of activeEffects) {
-        const processor = processorRegistry.get(effect.type);
-        if (processor) {
-            transform = processor.process({
-                t,
-                effect,
-                transform,
-                anchorSnapshot,
-                viewport,
-            });
-        }
-    }
-
-    return transform;
-}
-````
-
-## File: packages/device-camera/src/reducer/index.ts
-````typescript
-/**
- * Camera Reducer - Processes runtime events into typed effects
- * 
- * Uses discriminated union types directly - no legacy wrappers.
- * 
- * @module device-camera/reducer
- */
-
-import {
-    CameraEffect,
-    ZoomEffect,
-    ShakeEffect,
-    FocusEffect,
-    TrackEffect,
-    ResetEffect,
-    CameraState,
-    DEFAULT_CAMERA_STATE,
-    DEFAULT_TRANSFORM,
-    EasingType,
-} from "../types";
-
-// =============================================================================
-// EVENT TYPES
-// =============================================================================
-
-interface CameraEvent {
+interface CameraIREvent {
+    at: number;
     kind: "CAMERA";
     type: string;
-    at: number;
+    duration?: number;
+    payload?: Record<string, unknown>;
+    _declarationOrder?: number;
     [key: string]: unknown;
 }
 
+interface RuntimeEvent {
+    at: number;
+    kind: "CAMERA";
+    type: string;
+    [key: string]: unknown;
+}
+
+interface LoweringContext {
+    fps: number;
+}
+
 // =============================================================================
-// REDUCER
+// LOWERING HANDLER
 // =============================================================================
 
 /**
- * Process a camera event and update state.
- * Creates properly typed effects directly - no conversion needed.
+ * Lower camera DSL events to runtime events
+ * 
+ * Mappings:
+ * - SET → CUT (instant camera change)
+ * - ANIMATE_START → ZOOM (animated zoom)
+ * - SHAKE_START → SHAKE (screen shake)
+ * - FOCUS → ANCHOR_FOCUS (semantic anchor focus)
+ * - TRACK_START → ANCHOR_TRACK (continuous follow)
+ * - RESET → RESET (return to neutral)
  */
-export function cameraReducer(
-    draft: { camera?: CameraState },
-    event: CameraEvent
-): void {
-    if (event.kind !== "CAMERA") return;
+export function cameraV2Lowering(
+    event: CameraIREvent,
+    _ctx: LoweringContext
+): RuntimeEvent[] {
+    const { _declarationOrder, payload, ...rest } = event;
 
-    // Ensure camera state exists
-    if (!draft.camera) {
-        draft.camera = { ...DEFAULT_CAMERA_STATE };
-    }
-
-    const at = event.at;
-    const duration = (event.duration as number) ?? 30;
-    const easing = (event.easing as EasingType) ?? "ease-out";
+    // Merge payload into top level for reducer
+    const baseEvent = {
+        ...rest,
+        ...(payload || {}),
+        at: event.at,
+        kind: "CAMERA" as const,
+    };
 
     switch (event.type) {
         // =================================================================
-        // ZOOM - Scale and translate
+        // SET → CUT (instant)
         // =================================================================
-        case "ZOOM": {
-            const effect: ZoomEffect = {
-                type: "zoom",
-                id: `zoom_${at}`,
-                startFrame: at,
-                endFrame: at + duration,
-                targetScale: (event.scale as number) ?? 1,
-                targetX: (event.translateX as number) ?? 0,
-                targetY: (event.translateY as number) ?? 0,
-                originX: event.originX as number | undefined,
-                originY: event.originY as number | undefined,
-                easing,
-            };
-            draft.camera.activeEffects.push(effect);
-            break;
-        }
+        case "SET":
+            return [{
+                ...baseEvent,
+                type: "CUT",
+            }];
 
         // =================================================================
-        // SHAKE - Screen shake
+        // ANIMATE_START → ZOOM
         // =================================================================
-        case "SHAKE": {
-            const effect: ShakeEffect = {
-                type: "shake",
-                id: `shake_${at}`,
-                startFrame: at,
-                endFrame: at + duration,
-                intensity: (event.intensity as number) ?? 5,
-                intensityX: event.intensityX as number | undefined,
-                intensityY: event.intensityY as number | undefined,
-                frequency: (event.frequency as number) ?? 15,
-                decay: (event.decay as number) ?? 0.8,
-                easing,
-            };
-            draft.camera.activeEffects.push(effect);
-            break;
-        }
+        case "ANIMATE_START":
+            return [{
+                ...baseEvent,
+                type: "ZOOM",
+                scale: payload?.scale ?? 1,
+                translateX: payload?.x ?? 0,
+                translateY: payload?.y ?? 0,
+                originX: payload?.originX,
+                originY: payload?.originY,
+                easing: payload?.easing ?? "ease-out",
+            }];
 
         // =================================================================
-        // ANCHOR_FOCUS - Semantic anchor focus (one-time)
+        // SHAKE_START → SHAKE
+        // =================================================================
+        case "SHAKE_START":
+            return [{
+                ...baseEvent,
+                type: "SHAKE",
+                intensity: (payload?.intensityX as number) ?? 5,
+                intensityX: payload?.intensityX,
+                intensityY: payload?.intensityY,
+                frequency: payload?.frequency ?? 15,
+                decay: payload?.decay ?? 0.8,
+            }];
+
+        // =================================================================
+        // FOCUS → focus (processor registered as 'focus')
         // =================================================================
         case "FOCUS":
-        case "ANCHOR_FOCUS": {
-            const effect: FocusEffect = {
+            return [{
+                ...baseEvent,
                 type: "focus",
-                id: `focus_${at}`,
-                startFrame: at,
-                endFrame: at + duration,
-                anchorId: (event.anchor as string) ?? "device",
-                scale: event.scale as number | undefined,
-                preset: event.preset as string | undefined,
-                easing,
-            };
-            draft.camera.activeEffects.push(effect);
-            break;
-        }
+                anchorId: payload?.anchorId ?? payload?.anchor ?? "device",
+                scale: payload?.scale,
+                preset: payload?.preset,
+            }];
 
         // =================================================================
-        // ANCHOR_TRACK - Continuous anchor following
+        // TRACK_START → track (processor registered as 'track')
         // =================================================================
-        case "TRACK":
-        case "ANCHOR_TRACK": {
-            const effect: TrackEffect = {
+        case "TRACK_START":
+            return [{
+                ...baseEvent,
                 type: "track",
-                id: `track_${at}`,
-                startFrame: at,
-                endFrame: at + duration,
-                anchorId: (event.anchor as string) ?? "device",
-                scale: (event.scale as number) ?? 1.05,
-                smoothing: (event.smoothing as number) ?? 0.18,
-                easing,
-            };
-            draft.camera.activeEffects.push(effect);
-            break;
-        }
+                anchorId: payload?.anchorId ?? payload?.anchor ?? "device",
+                scale: payload?.scale ?? 1.05,
+                smoothing: payload?.lag ?? 0.18,
+            }];
 
         // =================================================================
-        // RESET - Return to neutral
+        // RESET → RESET
         // =================================================================
-        case "RESET": {
-            const effect: ResetEffect = {
-                type: "reset",
-                id: `reset_${at}`,
-                startFrame: at,
-                endFrame: at + duration,
-                easing,
-            };
-            draft.camera.activeEffects.push(effect);
-            break;
-        }
+        case "RESET":
+            return [{
+                ...baseEvent,
+                type: "RESET",
+            }];
 
         // =================================================================
-        // CUT - Instant camera change
+        // Pass-through for already-runtime events
         // =================================================================
-        case "CUT": {
-            // Clear all effects
-            draft.camera.activeEffects = [];
-            draft.camera.transform = { ...DEFAULT_TRANSFORM };
+        case "ZOOM":
+        case "SHAKE":
+        case "ANCHOR_FOCUS":
+        case "ANCHOR_TRACK":
+        case "CUT":
+            return [baseEvent];
 
-            // Update device if specified
-            if (event.toDeviceId) {
-                draft.camera.activeDeviceId = event.toDeviceId as string;
-            }
-            break;
-        }
-
-        // =================================================================
-        // SET_VIEW - Legacy view change
-        // =================================================================
-        case "SET_VIEW": {
-            const view = event.view as { type?: string; appId?: string } | undefined;
-            if (view) {
-                draft.camera.baseView = view.type;
-                draft.camera.appId = view.appId;
-            }
-            break;
-        }
-
-        // =================================================================
-        // LAYOUT - Change view layout mode
-        // =================================================================
-        case "LAYOUT": {
-            draft.camera.layout = {
-                mode: (event.mode as "SINGLE" | "PIP" | "SPLIT") ?? "SINGLE",
-                primaryDeviceId: event.primaryDeviceId as string | undefined,
-                secondaryDeviceId: event.secondaryDeviceId as string | undefined,
-            };
-            break;
-        }
+        default:
+            console.warn(`[cameraV2Lowering] Unknown event type: ${event.type}`);
+            return [baseEvent];
     }
 }
 
 // =============================================================================
-// EFFECT CLEANUP
+// EVENT TYPES FOR REGISTRATION
 // =============================================================================
 
-/**
- * Remove expired effects from state.
- * Call periodically to prevent memory growth.
- */
-export function cleanupExpiredEffects(state: CameraState, currentFrame: number): void {
-    // Keep effects that end after current frame (still active or future)
-    state.activeEffects = state.activeEffects.filter(
-        effect => effect.endFrame > currentFrame
-    );
-}
-
-/**
- * Get only active effects at a specific frame.
- */
-export function getActiveEffects(state: CameraState, frame: number): CameraEffect[] {
-    return state.activeEffects.filter(
-        effect => frame >= effect.startFrame && frame < effect.endFrame
-    );
-}
+export const CAMERA_EVENT_TYPES = [
+    // DSL types
+    "SET",
+    "ANIMATE_START",
+    "ANIMATE_END",
+    "SHAKE_START",
+    "SHAKE_END",
+    "FOCUS",
+    "TRACK_START",
+    "TRACK_END",
+    "RESET",
+    // Runtime types
+    "ZOOM",
+    "SHAKE",
+    "ANCHOR_FOCUS",
+    "ANCHOR_TRACK",
+    "CUT",
+] as const;
 ````
 
 ## File: packages/device-camera/src/types/index.ts
@@ -57228,6 +55123,98 @@ SoundRegistry.registerMany({
     "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
     "keyboard_click": "typing.mp3",
 });
+````
+
+## File: packages/device-keyboard/src/camera/behaviors.ts
+````typescript
+/**
+ * Keyboard Camera Behaviors
+ * 
+ * Defines how keyboard events map to camera intents.
+ */
+
+// Type definitions for camera behavior system
+// These are local since they're not exported from @tokovo/core
+export type ShotPresetId = string;
+export interface CameraIntent {
+    type: "FOCUS" | "RESET" | "HOLD" | "TRACK";
+    anchor?: string;
+    preset?: string;
+}
+export interface AppBehavior {
+    appId: string;
+    eventMappings: Record<string, CameraIntent>;
+    presetOverrides?: Partial<Record<ShotPresetId, Partial<{ scale: number; shake: number }>>>;
+}
+
+const APP_ID = "device_keyboard";
+
+// =============================================================================
+// EVENT → INTENT MAPPINGS
+// =============================================================================
+
+/**
+ * Keyboard event to camera intent mappings.
+ * 
+ * Each event can produce a camera intent:
+ * - FOCUS: zoom to specific anchor
+ * - RESET: return to neutral
+ * - HOLD: maintain current position
+ */
+export const KEYBOARD_INTENT_MAPPINGS: Record<string, CameraIntent> = {
+    // Visibility events
+    KEYBOARD_SHOW: { type: "FOCUS", anchor: "keyboard", preset: "reveal" },
+    KEYBOARD_HIDE: { type: "RESET", preset: "reset" },
+
+    // Typing events - focus on input field, not individual keys
+    KEYBOARD_TYPE: { type: "FOCUS", anchor: "inputField", preset: "subtle" },
+    KEYBOARD_KEY_DOWN: { type: "HOLD" }, // Don't jitter on each key
+    KEYBOARD_KEY_UP: { type: "HOLD" },
+
+    // Layout switch
+    KEYBOARD_SWITCH_LAYOUT: { type: "HOLD" },
+
+    // Autocomplete
+    KEYBOARD_ACCEPT_SUGGESTION: { type: "FOCUS", anchor: "predictionBar", preset: "snap" },
+};
+
+// =============================================================================
+// PRESET OVERRIDES
+// =============================================================================
+
+/**
+ * Optional preset overrides for keyboard.
+ * Deltas from global presets.
+ */
+export const KEYBOARD_PRESET_OVERRIDES: Partial<
+    Record<ShotPresetId, Partial<{ scale: number; shake: number }>>
+> = {
+    // Reveal keyboard with slight zoom
+    reveal: { scale: 1.1 },
+
+    // Subtle focus on input field
+    subtle: { scale: 1.05 },
+
+    // Snap to autocomplete suggestion
+    snap: { scale: 1.08 },
+};
+
+// =============================================================================
+// APP BEHAVIOR EXPORT
+// =============================================================================
+
+export const KeyboardBehavior: AppBehavior = {
+    appId: APP_ID,
+    eventMappings: KEYBOARD_INTENT_MAPPINGS,
+    presetOverrides: KEYBOARD_PRESET_OVERRIDES,
+};
+
+/**
+ * Get camera intent for a keyboard event.
+ */
+export function getKeyboardIntent(eventType: string): CameraIntent | undefined {
+    return KEYBOARD_INTENT_MAPPINGS[eventType];
+}
 ````
 
 ## File: packages/device-keyboard/src/dsl/track-builder.ts
@@ -58150,259 +56137,6 @@ export const NotificationScheduler = {
 };
 ````
 
-## File: packages/devices/src/iphone16/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * iPhone 16 camera configuration
- * - Slow pan speed for cinematic feel on mobile
- * - High follow lag for smooth, less reactive tracking
- * - Tighter zoom range for portrait scrolling
- */
-const iPhone16Camera: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "slow",
-    followLag: "high",
-    snapThreshold: 40,
-    safeAreaTop: 110,      // Dynamic Island + status bar
-    safeAreaBottom: 102,   // Home indicator
-    followLagFactor: 0.7,  // Cinematic lag
-    panSpeedMultiplier: 0.6,
-};
-
-/**
- * iPhone 16 Device Profile
- * 
- * Resolution: 1290 x 2796 (Super Retina XDR, 460 ppi)
- * Dynamic Island: Centered at top, pill shape
- */
-export const iPhone16Profile: DeviceProfile = {
-    id: "iphone16",
-    name: "iPhone 16 Pro Max",
-    type: "phone",
-    dimensions: { width: 1290, height: 2796 },
-    screen: {
-        width: 1290,
-        height: 2796,
-        ppi: 460,
-        cornerRadius: 55,
-    },
-    pixelDensity: 3,
-    camera: iPhone16Camera,
-
-    // Dynamic Island dimensions (measured from iPhone 16 specs)
-    dynamicIsland: {
-        centerX: 645,           // 1290 / 2 (centered)
-        topY: 36,               // Top padding
-        collapsedWidth: 370,    // Pill width
-        collapsedHeight: 110,   // Pill height
-        expandedWidth: 900,     // Expanded for Now Playing
-        expandedHeight: 220,    // Expanded height
-        cornerRadius: 55,       // Pill corners
-    },
-
-    // Device OS sounds
-    sounds: {
-        "device.notification": "os/ios/notification.wav",
-        "device.lock": "os/ios/lock.wav",
-        "device.unlock": "os/ios/unlock.wav",
-        "device.screenshot": "os/ios/screenshot.wav",
-        "device.charging": "os/ios/charging.wav",
-        "device.keyboard": "os/ios/keyboard.wav",
-    },
-};
-````
-
-## File: packages/devices/src/pixel/profile.ts
-````typescript
-import { DeviceProfile, CameraDeviceConfig } from "../types";
-
-/**
- * Pixel camera configuration
- * - Medium pan speed for balanced feel
- * - Medium follow lag for responsive tracking
- * - Slightly wider zoom range for Android
- */
-const PixelCamera: CameraDeviceConfig = {
-    minZoom: 0.85,
-    maxZoom: 1.2,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 45,
-    safeAreaTop: 90,       // Status bar
-    safeAreaBottom: 48,    // Navigation bar/gesture area
-    followLagFactor: 0.5,  // Balanced lag
-    panSpeedMultiplier: 1.0,
-};
-
-/**
- * Pixel 7 Pro Device Profile
- * 
- * Resolution: 1080 x 2400 (LTPO AMOLED, 512 ppi)
- * No Dynamic Island - uses status bar indicators
- */
-export const PixelProfile: DeviceProfile = {
-    id: "pixel",
-    name: "Pixel 7 Pro",
-    type: "phone",
-    dimensions: {
-        width: 1080,
-        height: 2400,
-    },
-    screen: {
-        width: 1080,
-        height: 2400,
-        ppi: 512,
-        cornerRadius: 24, // Approximation
-    },
-    camera: PixelCamera,
-    pixelDensity: 3,
-
-    // Android uses status bar for background app indicators
-    statusBarWidget: {
-        rightX: 1000,      // Near right edge
-        topY: 24,
-        maxWidth: 200,
-        height: 66,
-    },
-
-    // Device OS sounds
-    sounds: {
-        "device.notification": "os/android/notification.ogg",
-        "device.lock": "os/android/lock.ogg",
-        "device.unlock": "os/android/unlock.ogg",
-        "device.keyboard": "os/android/keyboard.ogg",
-    },
-};
-````
-
-## File: packages/devices/src/index.ts
-````typescript
-/**
- * @tokovo/devices
- * 
- * Enterprise device profiles and OS features for Tokovo.
- * 
- * @example
- * ```typescript
- * import { DeviceRegistry, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
- * 
- * // Use registered profile
- * const profile = DeviceRegistry.get("iphone16");
- * 
- * // Use DSL for OS events
- * const device = new DeviceTrackBuilder(30, "phone", getOrder);
- * device.at("2s").lock();
- * device.at("5s").unlock();
- * device.at("10s").openApp("app_whatsapp");
- * ```
- */
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export * from "./types";
-export type { FrameProps, FrameComponent } from "./registries";
-export type { StatusBarStrategyProps, StatusBarStrategyComponent, StatusBarNotificationIcon } from "./registries";
-export type { DeviceTrackEvent, DeviceEventType } from "./ir";
-
-// =============================================================================
-// REGISTRIES
-// =============================================================================
-
-export {
-    DeviceRegistry,
-    FrameRegistry,
-    StatusBarStrategyRegistry,
-} from "./registries";
-
-// =============================================================================
-// DSL
-// =============================================================================
-
-export { DeviceTrackBuilder, DevicePointBuilder } from "./dsl";
-
-// =============================================================================
-// IR
-// =============================================================================
-
-export { isDeviceEvent } from "./ir";
-
-// =============================================================================
-// LOWERING
-// =============================================================================
-
-export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./lowering";
-
-// =============================================================================
-// REDUCER
-// =============================================================================
-
-export { deviceReducer } from "./reducer";
-
-// =============================================================================
-// VIEWS
-// =============================================================================
-
-export { StatusBar, DarkStatusBar, LightStatusBar } from "./StatusBar";
-
-// =============================================================================
-// STRATEGIES
-// =============================================================================
-
-export { IOSStatusBarStrategy, AndroidStatusBarStrategy } from "./strategies";
-
-// =============================================================================
-// DEVICE PROFILES
-// =============================================================================
-
-export { iPhone16Profile } from "./iphone16/profile";
-export { iPhone16Frame } from "./iphone16/Frame";
-export { iPhone16Shell } from "./iphone16/shell";
-
-export { PixelProfile } from "./pixel/profile";
-export { PixelFrame } from "./pixel/Frame";
-
-// =============================================================================
-// KEYBOARDS (Legacy export)
-// =============================================================================
-
-export * from "./keyboards";
-
-// =============================================================================
-// PLUGIN
-// =============================================================================
-
-export { DevicesPlugin, registerDevicesPlugin, type DevicesPluginContract } from "./plugin";
-
-// =============================================================================
-// AUTO-REGISTRATION
-// =============================================================================
-
-import { registerDevicesPlugin } from "./plugin";
-registerDevicesPlugin();
-
-// =============================================================================
-// DYNAMIC LOOKUP HELPER
-// =============================================================================
-
-import { DeviceRegistry } from "./registries";
-import { iPhone16Profile } from "./iphone16/profile";
-import type { DeviceProfile } from "./types";
-
-/**
- * Get device profile by ID
- * @param profileId - Device profile ID (e.g., "iphone16", "pixel")
- * @returns DeviceProfile or default iPhone16Profile if not found
- */
-export function getDeviceProfile(profileId: string): DeviceProfile {
-    return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
-}
-````
-
 ## File: packages/devices/src/reducer.ts
 ````typescript
 import { produce } from "immer";
@@ -58593,448 +56327,1174 @@ export function deviceReducer(devices: Record<string, DeviceState>, event: Timel
 ReducerRegistry.registerDeviceReducer(deviceReducer);
 ````
 
-## File: packages/devices/src/types.ts
+## File: packages/dsl/src/core/tracks/camera.ts
 ````typescript
 /**
- * Camera motion speed configuration
+ * Camera Track Builder - Full manual camera control
+ *
+ * Provides control over camera position, zoom, and effects.
+ * Supports both instant (point) and animated (span) operations.
  */
-export type CameraSpeed = "slow" | "medium" | "fast";
 
-/**
- * Camera follow lag configuration
- * - high: More cinematic, camera lags significantly behind target
- * - medium: Balanced tracking
- * - low: Camera closely follows target (reactive)
- */
-export type CameraFollowLag = "high" | "medium" | "low";
+import type { CameraTrackEvent, EasingType } from "@tokovo/ir";
+import { parseTimeToFrames, parseDurationToFrames } from "../../utils/time";
 
-/**
- * Camera configuration for a specific device profile.
- * 
- * DESIGN PRINCIPLE: Device profiles define camera physics.
- * Apps do NOT override these values. Ever.
- */
-export interface CameraDeviceConfig {
-    // === Zoom Constraints ===
-    /** Minimum zoom level (e.g., 0.9 = slight zoom out allowed) */
-    minZoom: number;
-    /** Maximum zoom level (e.g., 1.15 = 15% zoom in allowed) */
-    maxZoom: number;
+// =============================================================================
+// TYPES
+// =============================================================================
 
-    // === Motion Characteristics ===
-    /** Pan speed for camera movement */
-    panSpeed: CameraSpeed;
-    /** Lag when following a target (soft tracking delay) */
-    followLag: CameraFollowLag;
-    /** Snap threshold in pixels - below this, snap instantly vs animate */
-    snapThreshold: number;
+type GetDeclarationOrder = () => number;
 
-    // === Safe Areas for Framing ===
-    /** Top safe area in pixels (status bar, notch, etc.) */
-    safeAreaTop: number;
-    /** Bottom safe area in pixels (home indicator, keyboard, etc.) */
-    safeAreaBottom: number;
-
-    // === Follow Easing (numeric values for computation) ===
-    /** Follow lag factor: 0.1 (tight) to 0.9 (loose/cinematic) */
-    followLagFactor: number;
-    /** Pan speed multiplier: 0.5 (slow) to 2.0 (fast) */
-    panSpeedMultiplier: number;
+export interface CameraSetOptions {
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    originX?: number;
+    originY?: number;
 }
 
-/**
- * Default camera configuration for devices
- */
-export const DEFAULT_CAMERA_CONFIG: CameraDeviceConfig = {
-    minZoom: 0.9,
-    maxZoom: 1.15,
-    panSpeed: "medium",
-    followLag: "medium",
-    snapThreshold: 50,
-    safeAreaTop: 0,
-    safeAreaBottom: 0,
-    followLagFactor: 0.5,
-    panSpeedMultiplier: 1.0,
-};
-
-/**
- * Dynamic Island configuration (iOS 14+ iPhones)
- */
-export interface DynamicIslandConfig {
-    /** Center X position in device pixels */
-    centerX: number;
-    /** Top Y position */
-    topY: number;
-    /** Collapsed pill width */
-    collapsedWidth: number;
-    /** Collapsed pill height */
-    collapsedHeight: number;
-    /** Expanded width */
-    expandedWidth: number;
-    /** Expanded height */
-    expandedHeight: number;
-    /** Corner radius for pill shape */
-    cornerRadius: number;
+export interface CameraAnimateOptions extends CameraSetOptions {
+    duration: string | number;
+    easing?: EasingType;
 }
 
-/**
- * Status bar widget area (Android)
- */
-export interface StatusBarWidgetConfig {
-    /** Right edge X position */
-    rightX: number;
-    /** Top Y position */
-    topY: number;
-    /** Maximum width for indicators */
-    maxWidth: number;
-    /** Height of indicator area */
-    height: number;
+export interface CameraFocusOptions {
+    scale?: number;
+    padding?: number;
+    duration?: string | number;
+    easing?: EasingType;
 }
 
-/**
- * Device profile defining physical characteristics and camera behavior
- */
-export interface DeviceShell {
-    /** Unique ID (e.g. "iphone16", "pixel6") */
-    id: string;
-
-    /** The outer frame component (bezel + screen container) */
-    FrameComponent: React.ComponentType<any>;
-
-    /** The System UI (Status Bar) */
-    StatusBarComponent: React.ComponentType<any>;
-
-    /** The Home Indicator (Bottom bar) */
-    HomeIndicatorComponent?: React.ComponentType<any>;
-
-    /** Physical config */
-    cornerRadius: number;
-    hasDynamicIsland: boolean;
+export interface CameraTrackOptions {
+    scale?: number;
+    lag?: number;
 }
 
-export interface DeviceProfile {
-    id: string;
-    name: string;
-    type: "phone" | "tablet" | "desktop" | "watch";
-    dimensions: {
-        width: number;
-        height: number;
-        depth?: number;
-    };
-    screen: {
-        width: number;
-        height: number;
-        ppi: number;
-        cornerRadius: number;
-    };
-    pixelDensity: number;
-    /** Camera behavior configuration (uses defaults if not specified) */
-    camera?: CameraDeviceConfig;
+export interface CameraShakeOptions {
+    intensityX: number;
+    intensityY: number;
+    frequency?: number;
+    decay?: number;
+    duration: string | number;
+}
 
-    /** Dynamic Island configuration (iOS only) */
-    dynamicIsland?: DynamicIslandConfig;
-    statusBarWidget?: StatusBarWidgetConfig;
+export interface CameraResetOptions {
+    duration?: string | number;
+    easing?: EasingType;
+}
 
-    /** Device OS sounds (notification, lock, unlock, etc.) */
-    sounds?: Record<string, string>;
+// =============================================================================
+// POINT BUILDER (at)
+// =============================================================================
+
+export class CameraPointBuilder {
+    private readonly frame: number;
+    private readonly fps: number;
+    private readonly events: CameraTrackEvent[];
+    private readonly getOrder: GetDeclarationOrder;
+
+    constructor(
+        frame: number,
+        fps: number,
+        events: CameraTrackEvent[],
+        getOrder: GetDeclarationOrder
+    ) {
+        this.frame = frame;
+        this.fps = fps;
+        this.events = events;
+        this.getOrder = getOrder;
+    }
+
+    /**
+     * Set camera state instantly.
+     */
+    set(options: CameraSetOptions): void {
+        const event: CameraTrackEvent = {
+            at: this.frame,
+            kind: "CAMERA",
+            type: "SET",
+            payload: {
+                x: options.x,
+                y: options.y,
+                scale: options.scale,
+                rotation: options.rotation,
+                originX: options.originX,
+                originY: options.originY,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Animate camera to new state.
+     */
+    animate(options: CameraAnimateOptions): void {
+        const duration = parseDurationToFrames(options.duration, this.fps);
+
+        const startEvent: CameraTrackEvent = {
+            at: this.frame,
+            duration,
+            kind: "CAMERA",
+            type: "ANIMATE_START",
+            payload: {
+                x: options.x,
+                y: options.y,
+                scale: options.scale,
+                rotation: options.rotation,
+                originX: options.originX,
+                originY: options.originY,
+                easing: options.easing ?? "linear",
+            },
+            _declarationOrder: this.getOrder(),
+        };
+
+        const endEvent: CameraTrackEvent = {
+            at: this.frame + duration,
+            kind: "CAMERA",
+            type: "ANIMATE_END",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        };
+
+        this.events.push(startEvent, endEvent);
+    }
+
+    /**
+     * Focus on an anchor.
+     */
+    focus(anchorId: string, options: CameraFocusOptions = {}): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this.fps)
+            : undefined;
+
+        const event: CameraTrackEvent = {
+            at: this.frame,
+            duration,
+            kind: "CAMERA",
+            type: "FOCUS",
+            payload: {
+                anchorId,
+                scale: options.scale,
+                padding: options.padding,
+                easing: options.easing,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Apply screen shake effect.
+     */
+    shake(options: CameraShakeOptions): void {
+        const duration = parseDurationToFrames(options.duration, this.fps);
+
+        const startEvent: CameraTrackEvent = {
+            at: this.frame,
+            duration,
+            kind: "CAMERA",
+            type: "SHAKE_START",
+            payload: {
+                intensityX: options.intensityX,
+                intensityY: options.intensityY,
+                frequency: options.frequency,
+                decay: options.decay,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+
+        const endEvent: CameraTrackEvent = {
+            at: this.frame + duration,
+            kind: "CAMERA",
+            type: "SHAKE_END",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        };
+
+        this.events.push(startEvent, endEvent);
+    }
+
+    /**
+     * Reset camera to default state.
+     */
+    reset(options: CameraResetOptions = {}): void {
+        const duration = options.duration !== undefined
+            ? parseDurationToFrames(options.duration, this.fps)
+            : 30; // Default 1 second at 30fps
+
+        const event: CameraTrackEvent = {
+            at: this.frame,
+            duration,
+            kind: "CAMERA",
+            type: "RESET",
+            payload: {
+                easing: options.easing ?? "easeOut",
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+}
+
+// =============================================================================
+// SPAN BUILDER (span)
+// =============================================================================
+
+export class CameraSpanBuilder {
+    private readonly startFrame: number;
+    private readonly endFrame: number;
+    private readonly fps: number;
+    private readonly events: CameraTrackEvent[];
+    private readonly getOrder: GetDeclarationOrder;
+
+    constructor(
+        startFrame: number,
+        endFrame: number,
+        fps: number,
+        events: CameraTrackEvent[],
+        getOrder: GetDeclarationOrder
+    ) {
+        this.startFrame = startFrame;
+        this.endFrame = endFrame;
+        this.fps = fps;
+        this.events = events;
+        this.getOrder = getOrder;
+    }
+
+    /**
+     * Track an anchor continuously.
+     */
+    track(anchorId: string, options: CameraTrackOptions = {}): void {
+        const startEvent: CameraTrackEvent = {
+            at: this.startFrame,
+            duration: this.endFrame - this.startFrame,
+            kind: "CAMERA",
+            type: "TRACK_START",
+            payload: {
+                anchorId,
+                scale: options.scale,
+                lag: options.lag,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+
+        const endEvent: CameraTrackEvent = {
+            at: this.endFrame,
+            kind: "CAMERA",
+            type: "TRACK_END",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        };
+
+        this.events.push(startEvent, endEvent);
+    }
+}
+
+// =============================================================================
+// CAMERA TRACK BUILDER
+// =============================================================================
+
+export class CameraTrackBuilder {
+    readonly _events: CameraTrackEvent[] = [];
+    private readonly fps: number;
+    private readonly getOrder: GetDeclarationOrder;
+
+    constructor(fps: number, getOrder: GetDeclarationOrder) {
+        this.fps = fps;
+        this.getOrder = getOrder;
+    }
+
+    /**
+     * Create a point (instant) operation at a specific time.
+     */
+    at(time: string | number): CameraPointBuilder {
+        const frame = parseTimeToFrames(time, this.fps);
+        return new CameraPointBuilder(frame, this.fps, this._events, this.getOrder);
+    }
+
+    /**
+     * Create a span (duration) operation between two times.
+     */
+    span(start: string | number, end: string | number): CameraSpanBuilder {
+        const startFrame = parseTimeToFrames(start, this.fps);
+        const endFrame = parseTimeToFrames(end, this.fps);
+        return new CameraSpanBuilder(startFrame, endFrame, this.fps, this._events, this.getOrder);
+    }
 }
 ````
 
-## File: packages/dsl/src/events/call.ts
+## File: packages/dsl/src/events/messages.ts
 ````typescript
 /**
- * Phone Call DSL Events
+ * Message Event Factories
  * 
- * Event factories for phone call simulation.
- * Supports incoming, outgoing, answer, decline, end, and call controls.
+ * Low-level event creators for messaging (WhatsApp, etc).
  */
 
-import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
-import { createTrace, Trace } from "@tokovo/ir";
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
 import { Tracer } from "../tracer";
 
-// =============================================================================
-// CALL EVENT TYPES
-// =============================================================================
-
-export interface CallIncomingEvent {
-    at: number;
-    kind: "CALL";
-    type: "INCOMING";
-    deviceId?: string;
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo?: boolean;
-    callType?: CallType;
-    displayMode?: CallDisplayMode;
-    callerMetadata?: CallerMetadata;
-    trace: Trace;
-}
-
-export interface CallAnswerEvent {
-    at: number;
-    kind: "CALL";
-    type: "ANSWER";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallDeclineEvent {
-    at: number;
-    kind: "CALL";
-    type: "DECLINE";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallEndEvent {
-    at: number;
-    kind: "CALL";
-    type: "END";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleMuteEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_MUTE";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleSpeakerEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_SPEAKER";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleHoldEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_HOLD";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export type CallEvent =
-    | CallIncomingEvent
-    | CallAnswerEvent
-    | CallDeclineEvent
-    | CallEndEvent
-    | CallToggleMuteEvent
-    | CallToggleSpeakerEvent
-    | CallToggleHoldEvent;
-
-// =============================================================================
-// CALL EVENT FACTORIES
-// =============================================================================
-
-export interface IncomingCallOptions {
-    callerAvatar?: string;
-    isVideo?: boolean;
-    callType?: CallType;
-    displayMode?: CallDisplayMode;
-    posterImage?: string;
-    posterNameFont?: string;
-    deviceId?: string;
-}
+/** Message status for tick progression */
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
 
 /**
- * Phone Call DSL - Event factories for phone call simulation
+ * Message event factories
  */
-export const call = {
+export const messages = {
     /**
-     * Trigger an incoming phone call
-     * 
-     * @example
-     * dsl.call.incoming(0, "alice", "Alice Smith", { displayMode: "fullscreen" })
-     * dsl.call.incoming(0, "bob", "Bob", { displayMode: "overlay", posterImage: "/bob.jpg" })
+     * Send a message (from device owner)
      */
-    incoming: (
-        at: number,
-        callerId: string,
-        callerName: string,
-        opts?: IncomingCallOptions
-    ): CallIncomingEvent => ({
+    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
         at,
-        kind: "CALL",
-        type: "INCOMING",
+        kind: "MessageSent", // V2 IR
+        deviceId: options.deviceId || "primary",
         trace: createTrace(Tracer.capture()),
-        callerId,
-        callerName,
-        callerAvatar: opts?.callerAvatar,
-        isVideo: opts?.isVideo ?? false,
-        callType: opts?.callType ?? "voice",
-        displayMode: opts?.displayMode ?? "fullscreen",
-        deviceId: opts?.deviceId,
-        callerMetadata: opts?.posterImage ? {
-            posterImage: opts.posterImage,
-            posterStyle: "modern",
-            posterNameFont: opts.posterNameFont,
-        } : undefined,
-    }),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
 
     /**
-     * Answer an incoming call
-     * 
-     * @example
-     * dsl.call.answer(100)
+     * Receive a message (from someone else)
      */
-    answer: (at: number, deviceId?: string): CallAnswerEvent => ({
+    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
         at,
-        kind: "CALL",
-        type: "ANSWER",
+        kind: "MessageReceived", // V2 IR
+        deviceId: options.deviceId || "primary",
         trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
 
     /**
-     * Decline an incoming call
-     * 
-     * @example
-     * dsl.call.decline(50)
+     * Start typing indicator
      */
-    decline: (at: number, deviceId?: string): CallDeclineEvent => ({
+    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
-        kind: "CALL",
-        type: "DECLINE",
-        trace: createTrace(Tracer.capture()),
+        kind: "TypingStarted",
         deviceId,
-    }),
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
 
     /**
-     * End an active call
-     * 
-     * @example
-     * dsl.call.end(300)
+     * Stop typing indicator
      */
-    end: (at: number, deviceId?: string): CallEndEvent => ({
+    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
-        kind: "CALL",
-        type: "END",
-        trace: createTrace(Tracer.capture()),
+        kind: "TypingEnded",
         deviceId,
-    }),
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
 
     /**
-     * Toggle mute on active call
-     * 
-     * @example
-     * dsl.call.toggleMute(150)
+     * Send an image
      */
-    toggleMute: (at: number, deviceId?: string): CallToggleMuteEvent => ({
+    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
-        kind: "CALL",
-        type: "TOGGLE_MUTE",
-        trace: createTrace(Tracer.capture()),
+        kind: "MessageSent",
         deviceId,
-    }),
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
 
     /**
-     * Toggle speaker on active call
-     * 
-     * @example
-     * dsl.call.toggleSpeaker(160)
+     * Receive an image
      */
-    toggleSpeaker: (at: number, deviceId?: string): CallToggleSpeakerEvent => ({
+    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
         at,
-        kind: "CALL",
-        type: "TOGGLE_SPEAKER",
-        trace: createTrace(Tracer.capture()),
+        kind: "MessageReceived",
         deviceId,
-    }),
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
 
-    /**
-     * Toggle hold on active call
-     * 
-     * @example
-     * dsl.call.toggleHold(200)
-     */
-    toggleHold: (at: number, deviceId?: string): CallToggleHoldEvent => ({
-        at,
-        kind: "CALL",
-        type: "TOGGLE_HOLD",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
+    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
+    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
+        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
+    } as any)
 };
 ````
 
-## File: packages/dsl/src/tracer.ts
+## File: packages/dsl/src/helpers/audio.ts
 ````typescript
-// Source map support removed for browser compatibility
+/**
+ * Audio Event Factories
+ * 
+ * Low-level event creators for sound effects and music.
+ * 
+ * @deprecated Use V2 track-based DSL instead
+ */
 
-import { Trace } from "@tokovo/ir";
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+export interface PlayOptions {
+    loop?: boolean;
+    duration?: number;
+    instanceId?: string;
+    deviceId?: string;
+}
+
+export interface FadeOptions {
+    easing?: string;
+}
 
 /**
- * Tracer
- * 
- * Auto-captures stack traces to link IR events to DSL source code.
+ * Audio event factories
+ * @deprecated Use AudioTrackBuilder from V2 DSL
  */
-export class Tracer {
+export const audio = {
     /**
-     * Capture the current stack trace and return a Trace object.
-     * @param offsetFrames Number of frames to skip (default 1 to skip capture call itself)
+     * Play a sound effect
      */
-    static capture(offsetFrames = 1): Partial<Trace> {
-        const stack = new Error().stack;
-        if (!stack) return {};
-
-        // DEBUG: Uncomment to see raw stack
-        // console.log("RAW STACK:", stack);
-
-        const lines = stack.split('\n');
-
-        // Find the first frame outside of the DSL package
-        // We look for logic that is NOT in node_modules and NOT in our own internal files
-        for (let i = offsetFrames + 1; i < lines.length; i++) {
-            const line = lines[i];
-
-            // Skip internal node frames
-            if (line.includes('(node:') || line.includes('(internal/')) continue;
-
-            // Skip node_modules
-            if (line.includes('node_modules')) continue;
-
-            // Skip our own DSL internals (if mapped)
-            if (line.includes('/dsl/src/')) continue;
-            if (line.includes('/dsl/dist/')) continue;
-
-            // This should be the user code
-            const source = this.parseFrame(line);
-            if (source) {
-                return {
-                    source
-                };
-            }
-        }
-
-        return {};
-    }
+    play: (at: number, soundId: string, volume = 1.0, opts: PlayOptions = {}): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "PLAY_SOUND",
+        trace: createTrace(Tracer.capture()),
+        soundId,
+        volume,
+        loop: opts.loop,
+        duration: opts.duration,
+        instanceId: opts.instanceId,
+        deviceId: opts.deviceId,
+    } as any),
 
     /**
-     * Parse a stack frame line to extract file and line number.
-     * Format: "    at Function.method (/path/to/file.ts:123:45)"
-     *      or "    at /path/to/file.ts:123:45"
+     * Stop a sound
      */
-    private static parseFrame(line: string): { file: string; line: number } | undefined {
-        // Regex to match file path, line, and column
-        // Matches: (path):line:col
-        const match = line.match(/\((.+):(\d+):(\d+)\)$/) || line.match(/at\s+(.+):(\d+):(\d+)$/);
+    stop: (at: number, instanceId: string): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "STOP_SOUND",
+        trace: createTrace(Tracer.capture()),
+        instanceId,
+    } as any),
 
-        if (match) {
-            return {
-                file: match[1],
-                line: parseInt(match[2], 10)
-            };
-        }
-        return undefined;
+    /**
+     * Fade volume
+     */
+    fade: (at: number, instanceId: string, toVolume: number, duration: number): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "FADE_VOLUME",
+        trace: createTrace(Tracer.capture()),
+        instanceId,
+        toVolume,
+        duration,
+    } as any),
+
+    /**
+     * Play background music
+     */
+    backgroundMusic: (at: number, soundId: string, volume = 0.5, loop = true): TimelineEvent => ({
+        at,
+        kind: "AUDIO",
+        type: "BACKGROUND_MUSIC",
+        trace: createTrace(Tracer.capture()),
+        soundId,
+        volume,
+        loop,
+    } as any),
+};
+````
+
+## File: packages/dsl/src/helpers/camera.ts
+````typescript
+/**
+ * Camera Event Factories
+ * 
+ * Low-level event creators for camera movements.
+ * 
+ * @deprecated Use CameraTrackBuilder from V2 DSL
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+export interface ZoomOptions {
+    originX?: number;
+    originY?: number;
+    easing?: string;
+}
+
+export interface PanOptions {
+    easing?: string;
+}
+
+export interface ShakeOptions {
+    frequency?: number;
+    decay?: number;
+}
+
+/**
+ * Camera event factories
+ * @deprecated Use CameraTrackBuilder from V2 DSL
+ */
+export const camera = {
+    /**
+     * Focus on a specific semantic anchor (Alias for anchorFocus)
+     */
+    focus: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        trace: createTrace(Tracer.capture()),
+        anchor: options.target,
+        preset: "message", // Default
+        shake: 0,
+        duration: options.duration ?? 30, // Default duration
+        easing: "ease-out",
+    } as any),
+
+    /**
+     * Track a semantic anchor (Alias for anchorTrack)
+     */
+    track: (at: number, options: { target: string, zoom?: number, duration?: number }): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_TRACK",
+        trace: createTrace(Tracer.capture()),
+        anchor: options.target,
+        preset: "operatorFollow",
+        duration: options.duration ?? 35,
+        smoothing: 0.18,
+        easing: "ease-out",
+        zoom: options.zoom // Pass zoom if supported by IR
+    } as any),
+
+    /**
+     * Zoom in/out
+     */
+    zoom: (at: number, scale: number, duration: number, opts: ZoomOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ZOOM",
+        trace: createTrace(Tracer.capture()),
+        scale,
+        duration,
+        originX: opts.originX ?? 0.5,
+        originY: opts.originY ?? 0.5,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    /**
+     * Pan to position
+     */
+    pan: (at: number, translateX: number, translateY: number, duration: number, opts: PanOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "PAN",
+        trace: createTrace(Tracer.capture()),
+        translateX,
+        translateY,
+        duration,
+        easing: opts.easing ?? "ease-out",
+    } as any),
+
+    /**
+     * Camera shake effect
+     */
+    shake: (at: number, intensity: number, duration: number, opts: ShakeOptions = {}): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "SHAKE",
+        trace: createTrace(Tracer.capture()),
+        intensity,
+        duration,
+        frequency: opts.frequency ?? 18,
+        decay: opts.decay ?? 0.5,
+    } as any),
+
+    /**
+     * Reset camera to default
+     */
+    reset: (at: number, duration: number, easing = "ease-out"): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "RESET",
+        trace: createTrace(Tracer.capture()),
+        duration,
+        easing,
+    } as any),
+
+    // =========================================================================
+    // SEMANTIC ANCHOR CAMERA (Webseries Style)
+    // =========================================================================
+
+    /**
+     * Focus on a semantic anchor (one-time origin set)
+     * 
+     * @param at - Frame to start effect
+     * @param anchor - Semantic anchor ID (lastMessage, inputArea, etc.)
+     * @param preset - Shot preset (dramatic, subtle, impact, etc.)
+     * @param shake - Optional shake intensity
+     */
+    anchorFocus: (at: number, anchor: string, preset = "message", shake = 0): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_FOCUS",
+        trace: createTrace(Tracer.capture()),
+        anchor,
+        preset,
+        shake,
+        duration: getPresetDuration(preset),
+        easing: "ease-out",
+    } as any),
+
+    /**
+     * Track a semantic anchor with smooth following (Webseries Camera!)
+     * 
+     * Unlike anchorFocus which sets origin once, anchorTrack continuously
+     * follows the anchor rect with exponential smoothing.
+     * 
+     * @param at - Frame to start tracking
+     * @param anchor - Semantic anchor ID
+     * @param duration - Frames to track (default: 35)
+     * @param smoothing - Smoothing factor: 0.08=slow, 0.18=operator, 0.35=snappy, 0.6=whip
+     * @param preset - Optional preset for scale (default uses operatorFollow)
+     */
+    anchorTrack: (at: number, anchor: string, duration = 35, smoothing = 0.18, preset?: string): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "ANCHOR_TRACK",
+        trace: createTrace(Tracer.capture()),
+        anchor,
+        duration,
+        smoothing,
+        preset: preset ?? "operatorFollow",
+        easing: "ease-out",
+    } as any),
+
+    /**
+     * Hold current camera position (let viewer read)
+     * 
+     * @param at - Frame to start hold
+     * @param duration - Frames to hold (min 12 recommended)
+     */
+    hold: (at: number, duration = 18): TimelineEvent => ({
+        at,
+        kind: "CAMERA",
+        type: "HOLD",
+        trace: createTrace(Tracer.capture()),
+        duration,
+    } as any),
+
+    /**
+     * Punch + Glide: The webseries signature move
+     * Fast zoom-in, then smooth follow.
+     * 
+     * Combines: impactPunch(10 frames) → operatorFollow(35 frames)
+     * 
+     * @param at - Frame to start
+     * @param anchor - Semantic anchor to follow
+     */
+    punchGlide: (at: number, anchor: string): TimelineEvent[] => {
+        const trace = createTrace(Tracer.capture());
+        return [
+            // Phase 1: Punch (fast zoom + shake)
+            {
+                at,
+                kind: "CAMERA",
+                type: "ANCHOR_FOCUS",
+                trace,
+                anchor,
+                preset: "impactPunch",
+                shake: 3,
+                duration: 10,
+                easing: "ease-out",
+            } as any,
+            // Phase 2: Glide (smooth follow)
+            {
+                at: at + 10,
+                kind: "CAMERA",
+                type: "ANCHOR_TRACK",
+                trace,
+                anchor,
+                duration: 35,
+                smoothing: 0.18,
+                preset: "operatorFollow",
+                easing: "ease-out",
+            } as any,
+        ]
+    },
+};
+
+
+/**
+ * Get duration from preset name (v1 locked values)
+ */
+function getPresetDuration(preset: string): number {
+    switch (preset) {
+        // v1 CORE (LOCKED)
+        case "message": return 22;
+        case "subtle": return 30;
+        case "impact": return 14;
+        case "snap": return 8;
+        // v1 MOTION (LOCKED)
+        case "operatorFollow": return 40;
+        case "punchGlide": return 40;
+        // v1 INTERRUPTION (LOCKED)
+        case "interrupt": return 10;
+        case "takeover": return 20;
+        // v1 STRUCTURAL (LOCKED)  
+        case "reset": return 20;
+        case "establish": return 30;
+        // v2 (feature-flagged)
+        case "suspenseHold": return 50;
+        case "voyeur": return 40;
+        case "isolation": return 35;
+        case "whipSnap": return 6;
+        case "floatFollow": return 60;
+        case "panic": return 12;
+        case "collapse": return 40;
+        // Legacy (deprecated)
+        case "dramatic": return 25;
+        case "impactPunch": return 10;
+        case "documentaryHold": return 24;
+        case "documentary": return 45;
+        default: return 22;  // Default to message
     }
 }
+````
+
+## File: packages/dsl/src/v2/camera-track.ts
+````typescript
+/**
+ * Camera Track Builder - God mode camera control
+ * 
+ * @description Provides full manual control over camera position, zoom, effects.
+ * Supports both instant (point) and animated (span) operations.
+ * 
+ * @see docs-v2/DSL_REVAMP.md#camera-track---god-mode
+ */
+
+import { CameraTrackEvent, CameraPayloads, EasingType } from "@tokovo/ir";
+import { parseTimeToFrames, parseDurationToFrames } from "./utils/time";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+type GetDeclarationOrder = () => number;
+
+export interface CameraSetOptions {
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    originX?: number;
+    originY?: number;
+}
+
+export interface CameraAnimateOptions extends CameraSetOptions {
+    duration: string | number;
+    easing?: EasingType;
+}
+
+export interface CameraFocusOptions {
+    scale?: number;
+    padding?: number;
+    duration?: string | number;
+    easing?: EasingType;
+}
+
+export interface CameraTrackOptions {
+    scale?: number;
+    lag?: number;
+}
+
+export interface CameraShakeOptions {
+    intensityX: number;
+    intensityY: number;
+    frequency?: number;
+    decay?: number;
+    duration: string | number;
+}
+
+export interface CameraResetOptions {
+    duration?: string | number;
+    easing?: EasingType;
+}
+
+// =============================================================================
+// POINT BUILDER (at)
+// =============================================================================
+
+export class CameraPointBuilder {
+    constructor(
+        private _frame: number,
+        private _fps: number,
+        private _events: CameraTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    /**
+     * Set camera state instantly.
+     */
+    set(options: CameraSetOptions): void {
+        this._events.push({
+            at: this._frame,
+            kind: "CAMERA",
+            type: "SET",
+            payload: {
+                x: options.x,
+                y: options.y,
+                scale: options.scale,
+                rotation: options.rotation,
+                originX: options.originX,
+                originY: options.originY,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Animate camera to new state.
+     */
+    animate(options: CameraAnimateOptions): void {
+        const duration = parseDurationToFrames(options.duration, this._fps);
+
+        this._events.push(
+            {
+                at: this._frame,
+                duration,
+                kind: "CAMERA",
+                type: "ANIMATE_START",
+                payload: {
+                    x: options.x,
+                    y: options.y,
+                    scale: options.scale,
+                    rotation: options.rotation,
+                    originX: options.originX,
+                    originY: options.originY,
+                    easing: options.easing ?? "linear",
+                },
+                _declarationOrder: this._getOrder(),
+            },
+            {
+                at: this._frame + duration,
+                kind: "CAMERA",
+                type: "ANIMATE_END",
+                payload: {},
+                _declarationOrder: this._getOrder(),
+            }
+        );
+    }
+
+    /**
+     * Focus on an anchor.
+     */
+    focus(anchorId: string, options: CameraFocusOptions = {}): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : 0;
+
+        this._events.push({
+            at: this._frame,
+            duration: duration || undefined,
+            kind: "CAMERA",
+            type: "FOCUS",
+            payload: {
+                anchorId,
+                scale: options.scale,
+                padding: options.padding,
+                easing: options.easing,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Apply screen shake effect.
+     */
+    shake(options: CameraShakeOptions): void {
+        const duration = parseDurationToFrames(options.duration, this._fps);
+
+        this._events.push(
+            {
+                at: this._frame,
+                duration,
+                kind: "CAMERA",
+                type: "SHAKE_START",
+                payload: {
+                    intensityX: options.intensityX,
+                    intensityY: options.intensityY,
+                    frequency: options.frequency,
+                    decay: options.decay,
+                },
+                _declarationOrder: this._getOrder(),
+            },
+            {
+                at: this._frame + duration,
+                kind: "CAMERA",
+                type: "SHAKE_END",
+                payload: {},
+                _declarationOrder: this._getOrder(),
+            }
+        );
+    }
+
+    /**
+     * Reset camera to default state.
+     */
+    reset(options: CameraResetOptions = {}): void {
+        const duration = options.duration
+            ? parseDurationToFrames(options.duration, this._fps)
+            : 30; // Default 1 second at 30fps
+
+        this._events.push({
+            at: this._frame,
+            duration,
+            kind: "CAMERA",
+            type: "RESET",
+            payload: {
+                easing: options.easing ?? "easeOut",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+}
+
+// =============================================================================
+// SPAN BUILDER (span)
+// =============================================================================
+
+export class CameraSpanBuilder {
+    constructor(
+        private _startFrame: number,
+        private _endFrame: number,
+        private _fps: number,
+        private _events: CameraTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    /**
+     * Track an anchor continuously.
+     */
+    track(anchorId: string, options: CameraTrackOptions = {}): void {
+        this._events.push(
+            {
+                at: this._startFrame,
+                duration: this._endFrame - this._startFrame,
+                kind: "CAMERA",
+                type: "TRACK_START",
+                payload: {
+                    anchorId,
+                    scale: options.scale,
+                    lag: options.lag,
+                },
+                _declarationOrder: this._getOrder(),
+            },
+            {
+                at: this._endFrame,
+                kind: "CAMERA",
+                type: "TRACK_END",
+                payload: {},
+                _declarationOrder: this._getOrder(),
+            }
+        );
+    }
+}
+
+// =============================================================================
+// CAMERA TRACK BUILDER
+// =============================================================================
+
+export class CameraTrackBuilder {
+    _events: CameraTrackEvent[] = [];
+
+    constructor(
+        private _fps: number,
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    /**
+     * Create a point (instant) operation at a specific time.
+     */
+    at(time: string | number): CameraPointBuilder {
+        const frame = parseTimeToFrames(time, this._fps);
+        return new CameraPointBuilder(frame, this._fps, this._events, this._getOrder);
+    }
+
+    /**
+     * Create a span (duration) operation between two times.
+     */
+    span(start: string | number, end: string | number): CameraSpanBuilder {
+        const startFrame = parseTimeToFrames(start, this._fps);
+        const endFrame = parseTimeToFrames(end, this._fps);
+        return new CameraSpanBuilder(startFrame, endFrame, this._fps, this._events, this._getOrder);
+    }
+}
+````
+
+## File: packages/dsl/src/index.ts
+````typescript
+/**
+ * @tokovo/dsl
+ *
+ * Domain Specific Language for authoring Tokovo episodes.
+ *
+ * The DSL provides a fluent API for creating episode timelines
+ * with track-based authoring for camera, audio, OS, and app events.
+ *
+ * @example
+ * ```typescript
+ * import { episode, CameraTrackBuilder } from "@tokovo/dsl";
+ *
+ * const ir = episode("demo", { fps: 30, duration: "30s" })
+ *   .device("phone", "iphone16", { app: "app_whatsapp" })
+ *   .camera(cam => cam.at("0s").set({ scale: 1 }))
+ *   .audio(audio => audio.span("0s", "30s").bgm("lofi_chill"))
+ *   .build();
+ * ```
+ */
+
+// =============================================================================
+// CORE: Track-based DSL (RECOMMENDED)
+// =============================================================================
+
+export {
+    episode,
+    EpisodeBuilder,
+    CameraTrackBuilder,
+    CameraPointBuilder,
+    CameraSpanBuilder,
+    AudioTrackBuilder,
+    AudioPointBuilder,
+    AudioSpanBuilder,
+    OSTrackBuilder,
+    OSPointBuilder,
+} from "./core";
+
+export type {
+    DeviceOptions,
+    TrackBuilder,
+    TrackFn,
+    CameraSetOptions,
+    CameraAnimateOptions,
+    CameraFocusOptions,
+    CameraTrackOptions,
+    CameraShakeOptions,
+    CameraResetOptions,
+    BgmOptions,
+    PlayOptions,
+    CrossfadeOptions,
+    FadeOutOptions,
+    NetworkType,
+    OSStateOptions,
+    BatteryOptions,
+    NetworkOptions,
+    NotificationOptions,
+} from "./core";
+
+// =============================================================================
+// UTILS: Time parsing
+// =============================================================================
+
+export {
+    parseTimeToFrames,
+    parseDurationToFrames,
+    framesToSeconds,
+    framesToTimeString,
+} from "./utils";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type {
+    TypingBuilder,
+    MessageHandle,
+    EpisodeConfig,
+    EpisodeDefinition,
+} from "./types";
+
+// =============================================================================
+// TRACER: Debug utility
+// =============================================================================
+
+export { Tracer } from "./tracer";
+
+// =============================================================================
+// HELPERS: Event factories (import from "@tokovo/dsl/helpers")
+// =============================================================================
+
+// Re-export common helpers at top level for convenience
+export {
+    keyboard,
+    generateTyping,
+    getTypingEndFrame,
+    TYPING_SPEEDS,
+    messages,
+    dsl,
+} from "./helpers";
+
+export type {
+    TypingSpeed,
+    TypingOptions,
+} from "./helpers";
+
+// =============================================================================
+// BACKWARD COMPATIBILITY: v2 namespace
+// =============================================================================
+
+// Re-export core as v2 for backward compatibility
+export * as v2 from "./core";
+
+// Alias for backward compatibility
+export { episode as trackEpisode } from "./core";
+
+// =============================================================================
+// LEGACY: Beat-based DSL (DEPRECATED)
+// =============================================================================
+
+// Legacy exports are available via "@tokovo/dsl/legacy"
+// Do not import legacy directly - it shows deprecation warnings
 ````
 
 ## File: packages/episodes/src/production/complete-showcase.episode.ts
@@ -59255,6 +57715,85 @@ export default defineEpisode({
 });
 ````
 
+## File: packages/episodes/src/production/profile-focus-demo.episode.ts
+````typescript
+/**
+ * Profile Focus Demo
+ * 
+ * Demonstrates camera.focus on "profile" anchor - centering the profile picture.
+ * This episode shows how anchors work to target semantic UI elements.
+ */
+
+import { defineEpisode } from "../types/episode-definition";
+import { episode } from "@tokovo/dsl/src/v2";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+// Declaration order counter
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+// =============================================================================
+// EPISODE DEFINITION (auto-registers via defineEpisode)
+// =============================================================================
+
+export default defineEpisode({
+    meta: {
+        id: "profile-focus-demo",
+        title: "Profile Focus Demo 📷",
+        description: "Demonstrates camera.focus on profile anchor",
+        category: "production",
+        tags: ["camera", "anchor", "demo", "profile"],
+    },
+    config: {
+        format: "1080x1920",
+        durationInFrames: 450, // 15s * 30fps
+        apps: ["app_whatsapp"],
+    },
+    build: () => episode("profile-focus-demo", {
+        fps: 30,
+        duration: "15s",
+        title: "Profile Focus Demo 📷",
+        description: "Shows how anchors target semantic UI elements",
+    })
+        // Configure device with WhatsApp
+        .device("phone", "iphone16", {
+            app: "app_whatsapp",
+            conversations: [
+                { id: "dm_john", name: "John", avatar: "/avatars/avatar-john.jpg" },
+            ],
+            os: {
+                time: new Date("2024-12-19T22:00:00"),
+                battery: 85,
+                network: "5G",
+            },
+        })
+
+        // === WHATSAPP TRACK ===
+        .track("app_whatsapp", () => {
+            return new WhatsAppTrackBuilder(30, "phone", "dm_john", getOrder);
+        }, wa => {
+            // Initial conversation
+            wa.at("0s").receive("John", "Hey! Check out my new profile pic! 📸");
+            wa.at("2s").send("Looking good!");
+        })
+
+        // === CAMERA TRACK ===
+        .camera(cam => {
+            // At 4 seconds: Focus on profile picture (zoom IN)
+            cam.at("4s").focus("profile", {
+                scale: 2.0,
+                duration: "1s",  // Ease in: 4s → 5s
+            });
+
+            // At 5s: Return to neutral (zoom OUT) - starts exactly when focus ends!
+            cam.at("5s").reset({
+                duration: "0.8s",  // Smooth ease back: 5s → 5.8s
+            });
+        })
+        .build(),
+});
+````
+
 ## File: packages/episodes/src/tests/index.ts
 ````typescript
 /**
@@ -59273,6 +57812,215 @@ export default defineEpisode({
 // import "./camera-test.episode";
 
 import "./test.episode";
+````
+
+## File: packages/renderer/src/engines/useLayoutEngine.ts
+````typescript
+/**
+ * Layout Engine
+ *
+ * Pure computation layer that determines:
+ * - Which device is active
+ * - What view kind to display (CHAT, FEED, LOCKSCREEN, etc.)
+ * - Layout positions and scroll state
+ *
+ * Input: world + time
+ * Output: layout blueprint (no JSX)
+ *
+ * NOTE ON MEMOIZATION:
+ * This runs every frame because `world` reference changes on each frame.
+ * This is intentional - it's the Update Loop. Keep computations fast,
+ * avoid object allocations in loops.
+ */
+
+import { useMemo } from "react";
+import {
+    WorldState,
+    DeviceState,
+    LAYOUT,
+    DEFAULT_CAMERA_STATE,
+    LayoutState,
+    ViewKind,
+    LayoutContext,
+} from "@tokovo/core";
+import { computeLayout } from "../layout";
+import { iPhone16Profile, PixelProfile, DeviceProfile } from "@tokovo/devices";
+import { AppMetadataRegistry } from "@tokovo/core";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface LayoutEngineInput {
+    world: WorldState;
+    t: number;
+    focusDeviceId?: string;
+}
+
+export interface LayoutEngineOutput {
+    /** Active device ID */
+    deviceId: string;
+    /** Active device state */
+    device: DeviceState;
+    /** Foreground app ID (if any) */
+    appId: string | undefined;
+    /** What type of view to render */
+    viewKind: ViewKind;
+    /** Computed layout state (discriminated union - use layout.kind to narrow) */
+    layout: LayoutState;
+    /** Device profile (iPhone16, Pixel, etc.) */
+    profile: DeviceProfile;
+    /** Platform variant */
+    variant: "ios" | "android";
+    /** Active conversation (for chat views) */
+    activeConversationId?: string;
+    /** Active story (for story views) */
+    activeStoryId?: string;
+    /** Viewport height after accounting for header/input */
+    effectiveViewportHeight: number;
+    /** Whether this is a fallback/error state */
+    isError: boolean;
+}
+
+// =============================================================================
+// NULL LAYOUT (safe fallback when device not found)
+// =============================================================================
+
+const NULL_DEVICE: DeviceState = {
+    id: "__null__",
+    profileId: "iphone16",
+    isLocked: true,
+    notifications: [],
+};
+
+const NULL_LAYOUT: LayoutState = {
+    kind: "TRANSITION",
+    deviceTranslateX: 0,
+    deviceTranslateY: 0,
+    deviceScale: 1,
+    deviceRotation: 0,
+    overlayOpacity: 0,
+    meta: {},
+};
+
+export const NULL_LAYOUT_OUTPUT: LayoutEngineOutput = {
+    deviceId: "__null__",
+    device: NULL_DEVICE,
+    appId: undefined,
+    viewKind: "TRANSITION",
+    layout: NULL_LAYOUT,
+    profile: iPhone16Profile,
+    variant: "ios",
+    effectiveViewportHeight: iPhone16Profile.dimensions.height,
+    isError: true,
+};
+
+// =============================================================================
+// LAYOUT ENGINE HOOK
+// =============================================================================
+
+export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
+    const { world, t, focusDeviceId } = input;
+
+    return useMemo(() => {
+        // 1. Determine active device
+        const deviceId = focusDeviceId || world.camera?.activeDeviceId || Object.keys(world.devices)[0];
+        const device = world.devices[deviceId];
+
+        // Return safe fallback instead of crashing
+        if (!device) {
+            console.error(`[LayoutEngine] Device "${deviceId}" not found. Returning NULL_LAYOUT.`);
+            return NULL_LAYOUT_OUTPUT;
+        }
+
+        const appId = device.foregroundAppId;
+
+        // 2. Determine ViewKind
+        let viewKind: ViewKind = "TRANSITION";
+        let activeConversationId: string | undefined;
+        let activeStoryId: string | undefined;
+
+        if (device.isLocked) {
+            viewKind = "LOCKSCREEN";
+        } else if (appId) {
+            // GENERIC LAYOUT RESOLUTION
+            // 1. Check App Metadata for default strategy
+            const { AppMetadataRegistry } = require("@tokovo/core"); // Dynamic require to avoid cycle if any, or just import at top
+            const meta = AppMetadataRegistry.get(appId);
+            viewKind = meta.viewStrategy || "TRANSITION";
+
+            // 2. Check Dynamic App State for overrides via STANDARD CONTRACT
+            // Apps MUST implement `BaseAppState` to dynamically switch layouts.
+            // Heuristics have been removed for architectural purity.
+            const appState = world.appState?.[appId] as import("@tokovo/core").BaseAppState;
+
+            if (appState && appState.viewMode) {
+                viewKind = appState.viewMode;
+
+                // Extract Standard Context
+                if (viewKind === "CHAT") {
+                    // Prefer explicit conversationId, fallback to first one (Legacy behavior preserved for now)
+                    activeConversationId = appState.conversationId || Object.keys(world.conversations)[0];
+                } else if (viewKind === "STORY") {
+                    activeStoryId = appState.activeStoryId;
+                }
+            }
+
+            // 3. Twitter Special Case (Implicit Feed if not set)
+            // TODO: Move this to Twitter App Reducer in next sprint
+            if (appId === "app_twitter" && !viewKind) viewKind = "FEED";
+        } else {
+            // No app open, show home screen
+            viewKind = "HOMESCREEN";
+        }
+
+        // 3. Get device profile
+        const profile = device.profileId === "pixel" ? PixelProfile : iPhone16Profile;
+        const isPixel = device.profileId.includes("pixel");
+        const variant: "ios" | "android" = isPixel ? "android" : "ios";
+
+        // 4. Compute keyboard height (for viewport shrink when typing)
+        const KEYBOARD_HEIGHT_IOS = 900;   // At 3x scale
+        const KEYBOARD_HEIGHT_ANDROID = 750;
+        const keyboardHeight = device.keyboard?.visible
+            ? (variant === "ios" ? KEYBOARD_HEIGHT_IOS : KEYBOARD_HEIGHT_ANDROID)
+            : 0;
+
+        // 5. Compute effective viewport height (shrinks when keyboard visible)
+        const effectiveViewportHeight = viewKind === "CHAT"
+            ? profile.dimensions.height - LAYOUT.CHAT_HEADER_HEIGHT - LAYOUT.CHAT_INPUT_HEIGHT - keyboardHeight
+            : profile.dimensions.height;
+
+        // 5. Build layout context and compute layout
+        const layoutContext: LayoutContext = {
+            world,
+            t,
+            activeDeviceId: deviceId,
+            activeAppId: appId || "",
+            viewKind,
+            activeConversationId,
+            activeStoryId,
+            viewportWidth: profile.dimensions.width,
+            viewportHeight: effectiveViewportHeight,
+        };
+
+        const layout = computeLayout(layoutContext);
+
+        return {
+            deviceId,
+            device,
+            appId,
+            viewKind,
+            layout,
+            profile,
+            variant,
+            activeConversationId,
+            activeStoryId,
+            effectiveViewportHeight,
+            isError: false,
+        };
+    }, [world, t, focusDeviceId]);
+}
 ````
 
 ## File: packages/renderer/src/os/index.ts
@@ -59716,197 +58464,30 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
 };
 ````
 
-## File: packages/compiler/src/v2/prepare.ts
-````typescript
-/**
- * Prepare Track Episode - Converts TrackEpisodeIR to engine-ready format
- *
- * @description The glue between v2 DSL and the runtime engine.
- * Takes TrackEpisodeIR from episode().build() and produces
- * a CompiledEpisode ready for runEpisode().
- *
- * @see docs-v2/DSL_REVAMP.md
- */
-
-import type { TrackEpisodeIR } from "@tokovo/ir";
-import type { RuntimeEvent, WorldState, TokovoPlugin } from "@tokovo/core";
-import { lowerEpisode } from "./lowering";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface PreparedTrackEpisode {
-    id: string;
-    fps: number;
-    durationInFrames: number;
-    events: RuntimeEvent[];
-    initialWorld: WorldState;
-    plugins: TokovoPlugin[];
-    metadata: {
-        title?: string;
-        description?: string;
-        markers: Array<{ id: string; frame: number }>;
-        sections: Array<{ id: string; start: number; end: number }>;
-    };
-}
-
-// =============================================================================
-// PREPARE FUNCTION
-// =============================================================================
-
-/**
- * Prepare a v2 TrackEpisodeIR for the runtime engine.
- * 
- * @param ir - TrackEpisodeIR from episode().build()
- * @param plugins - Array of plugins to use
- * @returns PreparedTrackEpisode ready for runEpisode()
- */
-export function prepareTrackEpisode(
-    ir: TrackEpisodeIR,
-    plugins: TokovoPlugin[]
-): PreparedTrackEpisode {
-    // Lower TrackEvent[] to RuntimeEvent[] (delegates APP events to plugins)
-    const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
-
-    // Build initial world state from device configs
-    const initialWorld = buildInitialWorld(ir);
-
-    // Build metadata
-    const metadata = {
-        title: ir.title,
-        description: ir.description,
-        markers: ir.markers.map(m => ({ id: m.id, frame: m.frame })),
-        sections: ir.sections.map(s => ({
-            id: s.id,
-            start: s.startFrame,
-            end: s.endFrame
-        })),
-    };
-
-    console.log("[prepareTrackEpisode] Prepared episode:", {
-        id: ir.id,
-        trackEvents: ir.events.length,
-        runtimeEvents: runtimeEvents.length,
-        devices: ir.devices.length,
-        conversations: ir.devices.flatMap(d => d.conversations || []).length,
-    });
-
-    return {
-        id: ir.id,
-        fps: ir.fps,
-        durationInFrames: ir.durationInFrames,
-        events: runtimeEvents,
-        initialWorld,
-        plugins,
-        metadata,
-    };
-}
-
-// =============================================================================
-// WORLD BUILDER
-// =============================================================================
-
-/**
- * Build initial WorldState from TrackEpisodeIR device configs.
- */
-function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
-    // Build devices map
-    const devices: Record<string, any> = {};
-    for (const device of ir.devices) {
-        devices[device.id] = {
-            id: device.id,
-            profileId: device.profile,
-            foregroundAppId: device.app,  // CRITICAL: Renderer checks this!
-            isLocked: false,              // Device must be unlocked
-            platform: device.profile.includes("pixel") ? "android" : "ios",
-            // Initialize keyboard state per device
-            keyboard: {
-                visible: false,
-                layout: "qwerty",
-                currentKey: null,
-                keyPressedAt: null,
-                inputText: "",
-                cursorPosition: 0,
-                cursorVisible: true,
-                visibilityChangedAt: -1, // Quiescent: no transition yet
-                selectionStart: null,
-                selectionEnd: null,
-                suggestions: [],
-                highlightedSuggestion: null,
-                keyPressVisual: null,
-                typingSchedule: null, // Enterprise: derived animation
-            },
-        };
+## File: packages/compiler/package.json
+````json
+{
+    "name": "@tokovo/compiler",
+    "version": "0.0.1",
+    "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/device-camera": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
     }
-
-    // Build conversations map
-    const conversations: Record<string, any> = {};
-    for (const device of ir.devices) {
-        for (const conv of device.conversations || []) {
-            conversations[conv.id] = {
-                id: conv.id,
-                name: conv.name,
-                avatar: conv.avatar || "",
-                type: conv.type || "dm",
-                participants: (conv as any).participants || [],
-                messages: [],
-                typing: null,
-                unreadCount: 0,
-            };
-        }
-    }
-
-    // Get OS config from first device (or defaults)
-    const firstDevice = ir.devices[0];
-    const osConfig = firstDevice?.os || {};
-
-    const os = {
-        time: osConfig.time instanceof Date ? osConfig.time : new Date(),
-        battery: osConfig.battery ?? 100,
-        network: osConfig.network ?? "5G",
-        strength: 4,
-        dnd: false,
-        charging: false,
-        lowPowerMode: false,
-    };
-
-    // Default camera state
-    const camera = {
-        scale: 1,
-        translateX: 0,
-        translateY: 0,
-        rotation: 0,
-        originX: 0.5,
-        originY: 0.5,
-        activeEffects: [],
-    };
-
-    // Default audio state - MUST match AudioState expected by mixer
-    const audio = {
-        activeSounds: {},  // Required by computeBusStates
-        buses: {
-            music: { baseGain: 1.0 },
-            ui: { baseGain: 1.0 },
-            sfx: { baseGain: 1.0 },
-            voice: { baseGain: 1.0 },
-            master: { baseGain: 1.0 },
-        },
-        muted: false,
-    };
-
-    // Notifications
-    const notifications: any[] = [];
-
-    return {
-        devices,
-        conversations,
-        os,
-        camera,
-        audio,
-        notifications,
-        apps: {},
-    } as unknown as WorldState;
 }
 ````
 
@@ -60099,6 +58680,37 @@ export {
 };
 ````
 
+## File: packages/core/src/director-lite/index.ts
+````typescript
+/**
+ * DirectorLite - Re-exports from @tokovo/device-camera
+ * 
+ * Legacy backward compatibility layer.
+ * All new code should import directly from @tokovo/device-camera.
+ * 
+ * @deprecated Import from "@tokovo/device-camera" instead
+ */
+
+export {
+    deriveDirectorEffects,
+    extractSignals,
+    ViralDramaV1,
+} from "@tokovo/device-camera";
+
+export type {
+    DirectorSignal,
+    DirectorSignalType,
+    DirectorLayoutModel,
+    DirectorOutput,
+    DerivedCameraEffect,
+    DirectorDebug,
+    DeriveContext,
+    DirectorStrategy,
+    Rule,
+    // Note: LayoutRect is exported from ../types/layout (via @tokovo/core types barrel)
+} from "@tokovo/device-camera";
+````
+
 ## File: packages/core/src/engine/handlers/audio.ts
 ````typescript
 /**
@@ -60224,6 +58836,99 @@ export function handleAutoSounds(
             if (instruction.instanceId) {
                 delete draft.audio!.activeSounds[instruction.instanceId];
             }
+        }
+    }
+}
+````
+
+## File: packages/core/src/engine/handlers/camera.ts
+````typescript
+/**
+ * Camera Handler - Processes CAMERA events
+ * 
+ * @description Handles camera movements, effects, and layout changes.
+ * Uses device-camera reducer for effect processing.
+ */
+
+import type { WorldState } from "../../types";
+import type { CameraEvent, HandlerContext } from "./types";
+import { cameraReducer } from "@tokovo/device-camera";
+import { DEFAULT_CAMERA_STATE, DEFAULT_CAMERA_TRANSFORM } from "../../types";
+
+/**
+ * Process camera event and update camera state
+ */
+export function processCameraEvent(
+    draft: WorldState,
+    event: CameraEvent,
+    ctx: HandlerContext
+): void {
+    // Ensure camera state exists with all required properties
+    if (!draft.camera || !draft.camera.activeEffects) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+    // Ensure layout exists
+    if (!draft.camera.layout) {
+        draft.camera.layout = {
+            mode: "SINGLE",
+            primaryDeviceId: draft.camera.activeDeviceId || Object.keys(draft.devices)[0] || "main_phone"
+        };
+    }
+
+    const e = event as any; // For accessing optional fields
+
+    // Cast type to string for extended runtime compatibility
+    // (lowering outputs lowercase 'focus'/'track' in addition to uppercase variants)
+    switch (event.type as string) {
+        case "SET_VIEW":
+            // Legacy support - just update base view
+            draft.camera.baseView = e.view?.type;
+            draft.camera.appId = e.view?.appId;
+            break;
+
+        case "CUT":
+            // Hard cut - reset all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_CAMERA_TRANSFORM };
+
+            // Switch to new device if specified
+            if (e.toDeviceId) {
+                draft.camera.activeDeviceId = e.toDeviceId;
+                draft.camera.layout.primaryDeviceId = e.toDeviceId;
+            }
+
+            // Update base view if specified
+            if (e.toView) {
+                draft.camera.baseView = e.toView === "app" ? "APP_VIEW" : "TRANSITION";
+            }
+            break;
+
+        case "LAYOUT":
+            // Change view layout mode
+            draft.camera.layout = {
+                mode: e.mode,
+                primaryDeviceId: e.primaryDeviceId,
+                secondaryDeviceId: e.secondaryDeviceId,
+                pipPosition: e.pipPosition,
+                pipScale: e.pipScale,
+            };
+            // Update active device to match primary
+            draft.camera.activeDeviceId = e.primaryDeviceId;
+            break;
+
+        case "ZOOM":
+        case "PAN":
+        case "SHAKE":
+        case "focus":
+        case "FOCUS":
+        case "ANCHOR_FOCUS":
+        case "track":
+        case "TRACK":
+        case "ANCHOR_TRACK":
+        case "RESET": {
+            // Delegate to device-camera reducer
+            cameraReducer(draft as any, event as any);
+            break;
         }
     }
 }
@@ -60751,42 +59456,6 @@ export const BehaviorRegistry = {
 };
 ````
 
-## File: packages/core/src/registries/index.ts
-````typescript
-/**
- * Registries Module - All registration systems
- * 
- * @description Consolidated registry pattern.
- */
-
-// Factory for creating type-safe registries
-export { createRegistry } from "./factory";
-export type { Registry } from "./factory";
-
-// App Registry
-export { AppRegistry } from "./app";
-export type { AppViewProps, AppViewComponent } from "./app";
-
-// Sound Registry
-export { SoundRegistry } from "./sound";
-
-// Widget Registry
-export { WidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget";
-
-// Behavior Registry
-export { BehaviorRegistry } from "./behavior";
-
-// App Metadata Registry
-export { AppMetadataRegistry } from "./metadata";
-export type { AppMetadata } from "./metadata";
-
-// Layout Registry
-export { LayoutRegistry } from "./layout";
-export type { LayoutStrategy, LayoutContext, LayoutState } from "./layout";
-
-// Note: AnchorRegistry is exported from ../anchors (not duplicated here)
-````
-
 ## File: packages/core/src/types/anchor.ts
 ````typescript
 /**
@@ -60941,9 +59610,723 @@ export * from "./plugin-contract";
 export * from "./anchor";
 ````
 
-## File: packages/device-camera/tsconfig.tsbuildinfo
+## File: packages/core/src/tokens.ts
+````typescript
+/**
+ * Shared Design Tokens & UI Primitives
+ * Platform-agnostic tokens for iOS and Android rendering.
+ * 
+ * NOTE: App-specific configs (whatsapp, instagram, etc.) in appConfigs
+ * are legacy and should be moved to their respective plugin packages.
+ */
+
+// =============================================================================
+// DESIGN TOKENS
+// =============================================================================
+
+export const iOSTokens = {
+    // Colors
+    colors: {
+        // System colors
+        primary: "#007AFF",
+        success: "#34C759",
+        warning: "#FF9500",
+        danger: "#FF3B30",
+
+        // Grays
+        label: "#000000",
+        secondaryLabel: "#8E8E93",
+        tertiaryLabel: "#C7C7CC",
+        background: "#FFFFFF",
+        secondaryBackground: "#F2F2F7",
+        separator: "rgba(60, 60, 67, 0.36)",
+
+        // @deprecated - App colors should be in plugin packages
+        // These are left for backward compatibility
+    },
+
+    // Typography (in 3x scale for Remotion)
+    typography: {
+        largeTitle: { fontSize: 102, fontWeight: "700" as const, lineHeight: 123 },
+        title1: { fontSize: 84, fontWeight: "700" as const, lineHeight: 102 },
+        title2: { fontSize: 66, fontWeight: "700" as const, lineHeight: 78 },
+        title3: { fontSize: 60, fontWeight: "600" as const, lineHeight: 72 },
+        headline: { fontSize: 51, fontWeight: "600" as const, lineHeight: 63 },
+        body: { fontSize: 51, fontWeight: "400" as const, lineHeight: 66 },
+        callout: { fontSize: 48, fontWeight: "400" as const, lineHeight: 60 },
+        subhead: { fontSize: 45, fontWeight: "400" as const, lineHeight: 57 },
+        footnote: { fontSize: 39, fontWeight: "400" as const, lineHeight: 51 },
+        caption1: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
+        caption2: { fontSize: 33, fontWeight: "400" as const, lineHeight: 42 },
+    },
+
+    // Spacing (in 3x scale)
+    spacing: {
+        xs: 12,
+        sm: 24,
+        md: 48,
+        lg: 72,
+        xl: 96,
+    },
+
+    // Radii (in 3x scale)
+    radii: {
+        sm: 12,
+        md: 24,
+        lg: 36,
+        xl: 48,
+        pill: 999,
+    },
+
+    // Shadows
+    shadows: {
+        sm: "0 3px 9px rgba(0,0,0,0.08)",
+        md: "0 6px 18px rgba(0,0,0,0.12)",
+        lg: "0 12px 36px rgba(0,0,0,0.16)",
+    },
+
+    // Font family
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', sans-serif",
+};
+
+export const androidTokens = {
+    // Colors (Material You)
+    colors: {
+        primary: "#1A73E8",
+        success: "#34A853",
+        warning: "#FBBC04",
+        danger: "#EA4335",
+
+        label: "#202124",
+        secondaryLabel: "#5F6368",
+        tertiaryLabel: "#9AA0A6",
+        background: "#FFFFFF",
+        secondaryBackground: "#F8F9FA",
+        separator: "rgba(0, 0, 0, 0.12)",
+
+        // @deprecated - App colors should be in plugin packages
+    },
+
+    // Typography (Material 3, in 3x scale)
+    typography: {
+        displayLarge: { fontSize: 171, fontWeight: "400" as const, lineHeight: 192 },
+        displayMedium: { fontSize: 135, fontWeight: "400" as const, lineHeight: 156 },
+        displaySmall: { fontSize: 108, fontWeight: "400" as const, lineHeight: 132 },
+        headlineLarge: { fontSize: 96, fontWeight: "400" as const, lineHeight: 120 },
+        headlineMedium: { fontSize: 84, fontWeight: "400" as const, lineHeight: 108 },
+        headlineSmall: { fontSize: 72, fontWeight: "400" as const, lineHeight: 96 },
+        titleLarge: { fontSize: 66, fontWeight: "400" as const, lineHeight: 84 },
+        titleMedium: { fontSize: 48, fontWeight: "500" as const, lineHeight: 72 },
+        titleSmall: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
+        bodyLarge: { fontSize: 48, fontWeight: "400" as const, lineHeight: 72 },
+        bodyMedium: { fontSize: 42, fontWeight: "400" as const, lineHeight: 60 },
+        bodySmall: { fontSize: 36, fontWeight: "400" as const, lineHeight: 48 },
+        labelLarge: { fontSize: 42, fontWeight: "500" as const, lineHeight: 60 },
+        labelMedium: { fontSize: 36, fontWeight: "500" as const, lineHeight: 48 },
+        labelSmall: { fontSize: 33, fontWeight: "500" as const, lineHeight: 48 },
+    },
+
+    // Spacing
+    spacing: {
+        xs: 12,
+        sm: 24,
+        md: 48,
+        lg: 72,
+        xl: 96,
+    },
+
+    // Radii
+    radii: {
+        sm: 12,
+        md: 24,
+        lg: 42,
+        xl: 84,
+        pill: 999,
+    },
+
+    // Font family
+    fontFamily: "'Roboto', 'Google Sans', sans-serif",
+};
+
+// =============================================================================
+// UTILITY FUNCTIONS
+// =============================================================================
+
+// Import Platform from types/device to avoid duplicate exports
+import type { Platform } from "./types/device";
+// Re-export for backward compatibility (consumers of tokens.ts may expect it)
+export type { Platform };
+
+export function getTokens(platform: Platform) {
+    return platform === "ios" ? iOSTokens : androidTokens;
+}
+
+// Unified typography that maps semantic names to platform-specific styles
+type SemanticTypography = "largeTitle" | "title" | "headline" | "body" | "callout" | "caption" | "footnote";
+
+const typographyMap: Record<SemanticTypography, { ios: keyof typeof iOSTokens.typography; android: keyof typeof androidTokens.typography }> = {
+    largeTitle: { ios: "largeTitle", android: "displaySmall" },
+    title: { ios: "title1", android: "headlineLarge" },
+    headline: { ios: "headline", android: "titleMedium" },
+    body: { ios: "body", android: "bodyLarge" },
+    callout: { ios: "callout", android: "bodyMedium" },
+    caption: { ios: "caption1", android: "bodySmall" },
+    footnote: { ios: "footnote", android: "labelMedium" }
+};
+
+export function getTypography(platform: Platform, semantic: SemanticTypography) {
+    const map = typographyMap[semantic];
+    if (platform === "ios") {
+        return iOSTokens.typography[map.ios];
+    }
+    return androidTokens.typography[map.android];
+}
+
+// =============================================================================
+// SHARED STYLES
+// =============================================================================
+
+export const sharedStyles = {
+    // Flexbox utilities
+    flexCenter: {
+        display: "flex" as const,
+        alignItems: "center" as const,
+        justifyContent: "center" as const,
+    },
+    flexBetween: {
+        display: "flex" as const,
+        alignItems: "center" as const,
+        justifyContent: "space-between" as const,
+    },
+    flexColumn: {
+        display: "flex" as const,
+        flexDirection: "column" as const,
+    },
+
+    // Full size
+    absoluteFill: {
+        position: "absolute" as const,
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+    },
+
+    // Text truncation
+    truncate: {
+        overflow: "hidden" as const,
+        textOverflow: "ellipsis" as const,
+        whiteSpace: "nowrap" as const,
+    },
+};
+
+// =============================================================================
+// APP-SPECIFIC CONFIG
+// @deprecated These configs are being migrated to their respective app packages.
+//             - WhatsApp: @tokovo/apps-whatsapp/src/tokens/config.ts
+//             - Instagram: @tokovo/apps-instagram/src/tokens/config.ts (future)
+//             These exports are kept for backward compatibility.
+// =============================================================================
+
+export const appConfigs = {
+    whatsapp: {
+        ios: {
+            // Header
+            headerHeight: 270,
+            headerBg: "#F6F6F6",
+            statusBarHeight: 144,
+            avatarSize: 111,
+            avatarMargin: 24,
+            headerTitleSize: 51,
+            headerSubtitleSize: 36,
+            headerIconGap: 54,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
+            inputHeight: 180,
+
+            // Message bubbles
+            bubblePadding: 24,
+            bubblePaddingHorizontal: 36,
+            bubbleRadius: 24,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 36,
+            bubbleGap: 12,  // Gap between consecutive messages
+            bubbleShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
+
+            // Bubble colors
+            bubbleMyColor: "#E7FFDB",
+            bubbleOtherColor: "#FFFFFF",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 48,
+            messageLineHeight: 66,
+            timestampSize: 33,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 33,
+            senderNameColor: "#25D366",
+
+            // Read receipts
+            accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 45,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#25D366",
+
+            // Tuning indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 24,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 30,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#667781",
+
+            waveformActiveColor: "#007AFF",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
+        },
+        android: {
+            // Header
+            headerHeight: 255,
+            headerBg: "#008069",
+            statusBarHeight: 120,
+            avatarSize: 105,
+            avatarMargin: 24,
+            headerTitleSize: 48,
+            headerSubtitleSize: 33,
+            headerIconGap: 48,
+
+            // Chat area
+            chatBackground: "#ECE5DD",
+            inputHeight: 165,
+
+            // Message bubbles
+            bubblePadding: 21,
+            bubblePaddingHorizontal: 33,
+            bubbleRadius: 21,
+            bubbleTailRadius: 6,
+            bubbleMaxWidth: "78%",
+            bubbleMarginHorizontal: 30,
+            bubbleGap: 9,
+            bubbleShadow: "0 1px 1px rgba(0,0,0,0.1)",
+
+            // Bubble colors
+            bubbleMyColor: "#E7FFDB",
+            bubbleOtherColor: "#FFFFFF",
+            bubbleTextColor: "#111B21",
+
+            // Message text
+            messageTextSize: 45,
+            messageLineHeight: 63,
+            timestampSize: 30,
+            timestampColor: "#667781",
+
+            // Sender name (groups)
+            senderNameSize: 30,
+            senderNameColor: "#25D366",
+
+            // Read receipts
+            accentColor: "#25D366",
+            readReceiptColor: "#53BDEB",
+            unreadReceiptColor: "#8696A0",
+
+            // Avatar (for contacts without photos)
+            avatarGradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+            avatarFontSize: 42,
+
+            // Input area
+            inputBg: "#FFFFFF",
+            inputBorderRadius: 60,
+            inputPlaceholderColor: "#8E8E93",
+            inputTextColor: "#000000",
+            inputIconColor: "#8E8E93",
+            sendButtonColor: "#008069", // Android Teal
+
+            // Typing indicator
+            typingBubbleColor: "#FFFFFF",
+            typingDotColor: "#8E8E93",
+            typingDotSize: 21,
+
+            // "Psychotic" Features
+            editedLabelColor: "#8E8E93",
+            editedLabelSize: 27,
+
+            missedCallIconColor: "#FF3B30",
+            missedCallBubbleColor: "#FFFFFF",
+
+            adminBadgeColor: "#E1DAD0",
+            adminTextColor: "#54656F",
+
+            waveformActiveColor: "#008069",
+            waveformInactiveColor: "#C7C7CC",
+
+            screenshotAlertBg: "rgba(255,59,48,0.1)",
+            screenshotAlertText: "#FF3B30",
+        },
+    },
+    instagram: {
+        ios: {
+            headerHeight: 264,
+            navHeight: 147,
+            storySize: 210,
+            accentColor: "#E4405F",
+        },
+        android: {
+            headerHeight: 252,
+            navHeight: 144,
+            storySize: 200,
+            accentColor: "#E4405F",
+        }
+    },
+    imessage: {
+        ios: {
+            bubbleMyColor: "#007AFF",
+            bubbleMyTextColor: "#FFFFFF",
+            bubbleOtherColor: "#E9E9EB",
+            bubbleOtherTextColor: "#000000",
+            accentColor: "#007AFF",
+        },
+        android: {
+            bubbleMyColor: "#007AFF",
+            bubbleMyTextColor: "#FFFFFF",
+            bubbleOtherColor: "#E9E9EB",
+            bubbleOtherTextColor: "#000000",
+            accentColor: "#007AFF",
+        }
+    },
+    homescreen: {
+        ios: {
+            // Grid
+            gridColumns: 4,
+            gridRows: 6,
+            gridGapRow: 36,
+            gridGapCol: 0,
+            gridPaddingTop: 240,
+            gridPaddingHorizontal: 30,
+
+            // Icons
+            iconSize: 180,
+            iconRadius: 40, // 180 * 0.22 roughly
+            iconLabelSize: 33,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 12,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.2)",
+            folderBlur: "30px",
+            folderPreviewGap: 9,
+            folderMiniIconRadius: 0.2, // relative to mini size
+
+            // Dock
+            dockHeight: 270,
+            dockRadius: 90,
+            dockBottom: 60,
+            dockWidth: "92%",
+            dockBackdrop: "rgba(255,255,255,0.2)",
+            dockBlur: "60px",
+            dockIconSize: 150,
+
+            // Page Dots
+            dotSize: 21,
+            dotGap: 18,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 30,
+        },
+        android: {
+            // Grid
+            gridColumns: 5,
+            gridRows: 6,
+            gridGapRow: 48,
+            gridGapCol: 0,
+            gridPaddingTop: 150,
+            gridPaddingHorizontal: 24,
+
+            // Icons
+            iconSize: 165,
+            iconRadius: 82.5, // Circular
+            iconLabelSize: 30,
+            iconLabelColor: "#FFFFFF",
+            iconLabelGap: 15,
+
+            // Folders
+            folderBackdrop: "rgba(255,255,255,0.15)",
+            folderBlur: "20px",
+            folderPreviewGap: 12,
+            folderMiniIconRadius: 0.5,
+
+            // Dock (Android usually simpler / just icons)
+            dockHeight: 240,
+            dockRadius: 0, // No dock background conventionally
+            dockBottom: 30,
+            dockWidth: "100%",
+            dockBackdrop: "transparent",
+            dockBlur: "0px",
+            dockIconSize: 165,
+
+            // Page Dots
+            dotSize: 18,
+            dotGap: 24,
+            dotActiveColor: "#FFFFFF",
+            dotInactiveColor: "rgba(255,255,255,0.4)",
+            dotMarginBottom: 45,
+        }
+    }
+};
+
+// =============================================================================
+// EXPORT CONFIG GETTER
+// =============================================================================
+
+export function getAppConfig<T extends keyof typeof appConfigs>(
+    app: T,
+    platform: Platform
+): typeof appConfigs[T][Platform] {
+    const config = appConfigs[app];
+    return (config as any)[platform] || (config as any).ios;
+}
 ````
-{"fileNames":["../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.webworker.importscripts.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.scripthost.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.core.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.generator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.proxy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.reflect.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.array.include.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asyncgenerator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.bigint.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.number.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.weakref.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.disposable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.iterator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.float16.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.full.d.ts","./src/types/index.ts","./src/anchors/types.ts","./src/anchors/registry.ts","./src/anchors/resolver.ts","./src/anchors/index.ts","./src/utils/index.ts","./src/processors/index.ts","./src/director-lite/types.ts","./src/director-lite/strategy.ts","./src/director-lite/derive.ts","./src/director-lite/signals.ts","./src/director-lite/index.ts","./src/reducer/index.ts","./src/presets.ts","./src/lowering/handler.ts","./src/lowering/index.ts","./src/plugin.ts","./src/index.ts","./src/processors/types.ts","./src/processors/focus.ts","./src/processors/reset.ts","./src/processors/shake.ts","./src/processors/track.ts","./src/processors/zoom.ts","../../node_modules/.pnpm/@types+estree@1.0.8/node_modules/@types/estree/index.d.ts","../../node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema/index.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/use-at-your-own-risk.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/index.d.ts","../../node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/disposable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/indexable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/iterators.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.typedarray.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/abortcontroller.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/domexception.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/events.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/header.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/readable.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/file.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/fetch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/formdata.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/connector.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-origin.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool-stats.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/handlers.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/balanced-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-interceptor.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/env-http-proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-handler.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/api.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/interceptors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/util.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cookies.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/patch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/websocket.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/eventsource.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/filereader.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/diagnostics-channel.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/content-type.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cache.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/fetch.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert/strict.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/async_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/child_process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/cluster.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/console.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/constants.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/crypto.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dgram.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/diagnostics_channel.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/domain.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http2.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/https.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/inspector.generated.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/module.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/net.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/os.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/path.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/perf_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/punycode.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/querystring.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/repl.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/sea.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/consumers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/web.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/string_decoder.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/test.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tls.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/trace_events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tty.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/url.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/util.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/v8.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/vm.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/wasi.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/worker_threads.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/zlib.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/index.d.ts"],"fileIdsList":[[111,114,121,167],[111,112,113,121,167],[114,121,167],[121,167],[121,164,167],[121,166,167],[167],[121,167,172,200],[121,167,168,173,178,186,197,208],[121,167,168,169,178,186],[116,117,118,121,167],[121,167,170,209],[121,167,171,172,179,187],[121,167,172,197,205],[121,167,173,175,178,186],[121,166,167,174],[121,167,175,176],[121,167,177,178],[121,166,167,178],[121,167,178,179,180,197,208],[121,167,178,179,180,193,197,200],[121,167,175,178,181,186,197,208],[121,167,178,179,181,182,186,197,205,208],[121,167,181,183,197,205,208],[119,120,121,122,123,124,125,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214],[121,167,178,184],[121,167,185,208,213],[121,167,175,178,186,197],[121,167,187],[121,167,188],[121,166,167,189],[121,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213,214],[121,167,191],[121,167,192],[121,167,178,193,194],[121,167,193,195,209,211],[121,167,178,197,198,200],[121,167,199,200],[121,167,197,198],[121,167,200],[121,167,201],[121,164,167,197,202],[121,167,178,203,204],[121,167,203,204],[121,167,172,186,197,205],[121,167,206],[121,167,186,207],[121,167,181,192,208],[121,167,172,209],[121,167,197,210],[121,167,185,211],[121,167,212],[121,162,167],[121,162,167,178,180,189,197,200,208,211,213],[121,167,197,214],[121,134,138,167,208],[121,134,167,197,208],[121,129,167],[121,131,134,167,205,208],[121,167,186,205],[121,167,215],[121,129,167,215],[121,131,134,167,186,208],[121,126,127,130,133,167,178,197,208],[121,134,141,167],[121,126,132,167],[121,134,155,156,167],[121,130,134,167,200,208,215],[121,155,167,215],[121,128,129,167,215],[121,134,167],[121,128,129,130,131,132,133,134,135,136,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,154,156,157,158,159,160,161,167],[121,134,149,167],[121,134,141,142,167],[121,132,134,142,143,167],[121,133,167],[121,126,129,134,167],[121,134,138,142,143,167],[121,138,167],[121,132,134,137,167,208],[121,126,131,134,141,167],[121,167,197],[121,129,134,155,167,213,215],[88,89,90,121,167],[88,121,167],[88,89,121,167],[87,92,94,95,121,167],[87,94,95,96,97,121,167],[94,121,167],[87,91,92,93,98,99,100,102,103,121,167],[101,121,167],[99,121,167],[87,92,105,121,167],[87,88,90,92,121,167],[87,121,167]],"fileInfos":[{"version":"c430d44666289dae81f30fa7b2edebf186ecc91a2d4c71266ea6ae76388792e1","affectsGlobalScope":true,"impliedFormat":1},{"version":"45b7ab580deca34ae9729e97c13cfd999df04416a79116c3bfb483804f85ded4","impliedFormat":1},{"version":"3facaf05f0c5fc569c5649dd359892c98a85557e3e0c847964caeb67076f4d75","impliedFormat":1},{"version":"e44bb8bbac7f10ecc786703fe0a6a4b952189f908707980ba8f3c8975a760962","impliedFormat":1},{"version":"5e1c4c362065a6b95ff952c0eab010f04dcd2c3494e813b493ecfd4fcb9fc0d8","impliedFormat":1},{"version":"68d73b4a11549f9c0b7d352d10e91e5dca8faa3322bfb77b661839c42b1ddec7","impliedFormat":1},{"version":"5efce4fc3c29ea84e8928f97adec086e3dc876365e0982cc8479a07954a3efd4","impliedFormat":1},{"version":"feecb1be483ed332fad555aff858affd90a48ab19ba7272ee084704eb7167569","impliedFormat":1},{"version":"ee7bad0c15b58988daa84371e0b89d313b762ab83cb5b31b8a2d1162e8eb41c2","impliedFormat":1},{"version":"27bdc30a0e32783366a5abeda841bc22757c1797de8681bbe81fbc735eeb1c10","impliedFormat":1},{"version":"8fd575e12870e9944c7e1d62e1f5a73fcf23dd8d3a321f2a2c74c20d022283fe","impliedFormat":1},{"version":"2ab096661c711e4a81cc464fa1e6feb929a54f5340b46b0a07ac6bbf857471f0","impliedFormat":1},{"version":"080941d9f9ff9307f7e27a83bcd888b7c8270716c39af943532438932ec1d0b9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2e80ee7a49e8ac312cc11b77f1475804bee36b3b2bc896bead8b6e1266befb43","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7a3c8b952931daebdfc7a2897c53c0a1c73624593fa070e46bd537e64dcd20a","affectsGlobalScope":true,"impliedFormat":1},{"version":"80e18897e5884b6723488d4f5652167e7bb5024f946743134ecc4aa4ee731f89","affectsGlobalScope":true,"impliedFormat":1},{"version":"cd034f499c6cdca722b60c04b5b1b78e058487a7085a8e0d6fb50809947ee573","affectsGlobalScope":true,"impliedFormat":1},{"version":"c57796738e7f83dbc4b8e65132f11a377649c00dd3eee333f672b8f0a6bea671","affectsGlobalScope":true,"impliedFormat":1},{"version":"dc2df20b1bcdc8c2d34af4926e2c3ab15ffe1160a63e58b7e09833f616efff44","affectsGlobalScope":true,"impliedFormat":1},{"version":"515d0b7b9bea2e31ea4ec968e9edd2c39d3eebf4a2d5cbd04e88639819ae3b71","affectsGlobalScope":true,"impliedFormat":1},{"version":"0559b1f683ac7505ae451f9a96ce4c3c92bdc71411651ca6ddb0e88baaaad6a3","affectsGlobalScope":true,"impliedFormat":1},{"version":"0dc1e7ceda9b8b9b455c3a2d67b0412feab00bd2f66656cd8850e8831b08b537","affectsGlobalScope":true,"impliedFormat":1},{"version":"ce691fb9e5c64efb9547083e4a34091bcbe5bdb41027e310ebba8f7d96a98671","affectsGlobalScope":true,"impliedFormat":1},{"version":"8d697a2a929a5fcb38b7a65594020fcef05ec1630804a33748829c5ff53640d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ff2a353abf8a80ee399af572debb8faab2d33ad38c4b4474cff7f26e7653b8d","affectsGlobalScope":true,"impliedFormat":1},{"version":"fb0f136d372979348d59b3f5020b4cdb81b5504192b1cacff5d1fbba29378aa1","affectsGlobalScope":true,"impliedFormat":1},{"version":"d15bea3d62cbbdb9797079416b8ac375ae99162a7fba5de2c6c505446486ac0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"68d18b664c9d32a7336a70235958b8997ebc1c3b8505f4f1ae2b7e7753b87618","affectsGlobalScope":true,"impliedFormat":1},{"version":"eb3d66c8327153d8fa7dd03f9c58d351107fe824c79e9b56b462935176cdf12a","affectsGlobalScope":true,"impliedFormat":1},{"version":"38f0219c9e23c915ef9790ab1d680440d95419ad264816fa15009a8851e79119","affectsGlobalScope":true,"impliedFormat":1},{"version":"69ab18c3b76cd9b1be3d188eaf8bba06112ebbe2f47f6c322b5105a6fbc45a2e","affectsGlobalScope":true,"impliedFormat":1},{"version":"a680117f487a4d2f30ea46f1b4b7f58bef1480456e18ba53ee85c2746eeca012","affectsGlobalScope":true,"impliedFormat":1},{"version":"2f11ff796926e0832f9ae148008138ad583bd181899ab7dd768a2666700b1893","affectsGlobalScope":true,"impliedFormat":1},{"version":"4de680d5bb41c17f7f68e0419412ca23c98d5749dcaaea1896172f06435891fc","affectsGlobalScope":true,"impliedFormat":1},{"version":"954296b30da6d508a104a3a0b5d96b76495c709785c1d11610908e63481ee667","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac9538681b19688c8eae65811b329d3744af679e0bdfa5d842d0e32524c73e1c","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a969edff4bd52585473d24995c5ef223f6652d6ef46193309b3921d65dd4376","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e9fbd7030c440b33d021da145d3232984c8bb7916f277e8ffd3dc2e3eae2bdb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811ec78f7fefcabbda4bfa93b3eb67d9ae166ef95f9bff989d964061cbf81a0c","affectsGlobalScope":true,"impliedFormat":1},{"version":"717937616a17072082152a2ef351cb51f98802fb4b2fdabd32399843875974ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7e7d9b7b50e5f22c915b525acc5a49a7a6584cf8f62d0569e557c5cfc4b2ac2","affectsGlobalScope":true,"impliedFormat":1},{"version":"71c37f4c9543f31dfced6c7840e068c5a5aacb7b89111a4364b1d5276b852557","affectsGlobalScope":true,"impliedFormat":1},{"version":"576711e016cf4f1804676043e6a0a5414252560eb57de9faceee34d79798c850","affectsGlobalScope":true,"impliedFormat":1},{"version":"89c1b1281ba7b8a96efc676b11b264de7a8374c5ea1e6617f11880a13fc56dc6","affectsGlobalScope":true,"impliedFormat":1},{"version":"74f7fa2d027d5b33eb0471c8e82a6c87216223181ec31247c357a3e8e2fddc5b","affectsGlobalScope":true,"impliedFormat":1},{"version":"d6d7ae4d1f1f3772e2a3cde568ed08991a8ae34a080ff1151af28b7f798e22ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"063600664504610fe3e99b717a1223f8b1900087fab0b4cad1496a114744f8df","affectsGlobalScope":true,"impliedFormat":1},{"version":"934019d7e3c81950f9a8426d093458b65d5aff2c7c1511233c0fd5b941e608ab","affectsGlobalScope":true,"impliedFormat":1},{"version":"52ada8e0b6e0482b728070b7639ee42e83a9b1c22d205992756fe020fd9f4a47","affectsGlobalScope":true,"impliedFormat":1},{"version":"3bdefe1bfd4d6dee0e26f928f93ccc128f1b64d5d501ff4a8cf3c6371200e5e6","affectsGlobalScope":true,"impliedFormat":1},{"version":"59fb2c069260b4ba00b5643b907ef5d5341b167e7d1dbf58dfd895658bda2867","affectsGlobalScope":true,"impliedFormat":1},{"version":"639e512c0dfc3fad96a84caad71b8834d66329a1f28dc95e3946c9b58176c73a","affectsGlobalScope":true,"impliedFormat":1},{"version":"368af93f74c9c932edd84c58883e736c9e3d53cec1fe24c0b0ff451f529ceab1","affectsGlobalScope":true,"impliedFormat":1},{"version":"af3dd424cf267428f30ccfc376f47a2c0114546b55c44d8c0f1d57d841e28d74","affectsGlobalScope":true,"impliedFormat":1},{"version":"995c005ab91a498455ea8dfb63aa9f83fa2ea793c3d8aa344be4a1678d06d399","affectsGlobalScope":true,"impliedFormat":1},{"version":"959d36cddf5e7d572a65045b876f2956c973a586da58e5d26cde519184fd9b8a","affectsGlobalScope":true,"impliedFormat":1},{"version":"965f36eae237dd74e6cca203a43e9ca801ce38824ead814728a2807b1910117d","affectsGlobalScope":true,"impliedFormat":1},{"version":"3925a6c820dcb1a06506c90b1577db1fdbf7705d65b62b99dce4be75c637e26b","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a3d63ef2b853447ec4f749d3f368ce642264246e02911fcb1590d8c161b8005","affectsGlobalScope":true,"impliedFormat":1},{"version":"8cdf8847677ac7d20486e54dd3fcf09eda95812ac8ace44b4418da1bbbab6eb8","affectsGlobalScope":true,"impliedFormat":1},{"version":"8444af78980e3b20b49324f4a16ba35024fef3ee069a0eb67616ea6ca821c47a","affectsGlobalScope":true,"impliedFormat":1},{"version":"3287d9d085fbd618c3971944b65b4be57859f5415f495b33a6adc994edd2f004","affectsGlobalScope":true,"impliedFormat":1},{"version":"b4b67b1a91182421f5df999988c690f14d813b9850b40acd06ed44691f6727ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"df83c2a6c73228b625b0beb6669c7ee2a09c914637e2d35170723ad49c0f5cd4","affectsGlobalScope":true,"impliedFormat":1},{"version":"436aaf437562f276ec2ddbee2f2cdedac7664c1e4c1d2c36839ddd582eeb3d0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e3c06ea092138bf9fa5e874a1fdbc9d54805d074bee1de31b99a11e2fec239d","affectsGlobalScope":true,"impliedFormat":1},{"version":"87dc0f382502f5bbce5129bdc0aea21e19a3abbc19259e0b43ae038a9fc4e326","affectsGlobalScope":true,"impliedFormat":1},{"version":"b1cb28af0c891c8c96b2d6b7be76bd394fddcfdb4709a20ba05a7c1605eea0f9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2fef54945a13095fdb9b84f705f2b5994597640c46afeb2ce78352fab4cb3279","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac77cb3e8c6d3565793eb90a8373ee8033146315a3dbead3bde8db5eaf5e5ec6","affectsGlobalScope":true,"impliedFormat":1},{"version":"56e4ed5aab5f5920980066a9409bfaf53e6d21d3f8d020c17e4de584d29600ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ece9f17b3866cc077099c73f4983bddbcb1dc7ddb943227f1ec070f529dedd1","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a6282c8827e4b9a95f4bf4f5c205673ada31b982f50572d27103df8ceb8013c","affectsGlobalScope":true,"impliedFormat":1},{"version":"1c9319a09485199c1f7b0498f2988d6d2249793ef67edda49d1e584746be9032","affectsGlobalScope":true,"impliedFormat":1},{"version":"e3a2a0cee0f03ffdde24d89660eba2685bfbdeae955a6c67e8c4c9fd28928eeb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811c71eee4aa0ac5f7adf713323a5c41b0cf6c4e17367a34fbce379e12bbf0a4","affectsGlobalScope":true,"impliedFormat":1},{"version":"51ad4c928303041605b4d7ae32e0c1ee387d43a24cd6f1ebf4a2699e1076d4fa","affectsGlobalScope":true,"impliedFormat":1},{"version":"60037901da1a425516449b9a20073aa03386cce92f7a1fd902d7602be3a7c2e9","affectsGlobalScope":true,"impliedFormat":1},{"version":"d4b1d2c51d058fc21ec2629fff7a76249dec2e36e12960ea056e3ef89174080f","affectsGlobalScope":true,"impliedFormat":1},{"version":"22adec94ef7047a6c9d1af3cb96be87a335908bf9ef386ae9fd50eeb37f44c47","affectsGlobalScope":true,"impliedFormat":1},{"version":"196cb558a13d4533a5163286f30b0509ce0210e4b316c56c38d4c0fd2fb38405","affectsGlobalScope":true,"impliedFormat":1},{"version":"73f78680d4c08509933daf80947902f6ff41b6230f94dd002ae372620adb0f60","affectsGlobalScope":true,"impliedFormat":1},{"version":"c5239f5c01bcfa9cd32f37c496cf19c61d69d37e48be9de612b541aac915805b","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e7f8264d0fb4c5339605a15daadb037bf238c10b654bb3eee14208f860a32ea","affectsGlobalScope":true,"impliedFormat":1},{"version":"782dec38049b92d4e85c1585fbea5474a219c6984a35b004963b00beb1aab538","affectsGlobalScope":true,"impliedFormat":1},{"version":"bde31fd423cd93b0eff97197a3f66df7c93e8c0c335cbeb113b7ff1ac35c23f4","impliedFormat":1},{"version":"48b3b8b8d97f7d23ed1a4782657a4035ae1bd953cbc51e8453b5dffcd3959b71","signature":"51ccfb61148b7f2f6909812b1b7159e42157c39d5a86ee5c4f2637e29c0fcc01"},{"version":"dfcd389a6bab366fa5a520042f49fe0039a2fee6ec0f3a14ab79182d87a4e2c6","signature":"9b1521dc296b55e6a2a51536eafe56c8c3a9e09057071cd1a238c9348200e5e3"},{"version":"01729c605ccb4a309ef00062a23d46a7ff3e529d8bb4bed44d55e8961c123a3e","signature":"8c01fe82f497636f0a512983301dc1f0e023dc95042e79ce9772b952b3f379ba"},{"version":"868ec29ad02e61b82d0142ce689363c2de0c656a1871863174b8a9fc836f0392","signature":"d67b2969917d86eea8f3c6064cb0c41fd97050f74316c6af32f57a818c50d147"},{"version":"e34e3bea4bb28011894599887ed6324c774df53ea95a1005ab2a5d6d1313f434","signature":"2f7240974a13feb51dcfb82e98f18c19c34a305b118e61ebc3fbe8261f2e8bdd"},{"version":"50cac1f7bb4193fcce54ddcdf0e8ef75199b273d1bd5cc4ae2a6c538d0603436","signature":"aa331bfd775aa7f7d843eb3ab67866961ccbd22603f707413754dc9fba216c08"},{"version":"53ebac4a2c3372f44ee2cb4a109ccaec9032d6e644b9a5048f8e1fcbc315accb","signature":"6847e485b08dc33a5d08a241f4401e09f0a0ff02a8afc97eef8835a3c54e74a0"},{"version":"08dcaf353b848cc5d673bb4b52776f2808ba4af4192e4b495218efba54c89a81","signature":"65176d057ac38f5398e7e4dc976e1cb32a8ed8212daaf866c1e11e1b6ad1f195"},{"version":"02ea6089e32ce6a82bed8134aa007e575dfd16cc0a270248459b4b3cd77a0c16","signature":"2cff0f47a9df649303a2eebdc93509d22328ba637773ce8811cae0c34d2939aa"},{"version":"15d9f7de8ac4dd2b603de77a2d945c11e64f74f7c7829561d3e8b427d3c5811a","signature":"55e5818bc6cbd20f88f26945bd717d1038cf78b1d868840c737e46a92a53ae7e"},{"version":"34462201bd579b9fe51baf8752da29db87582de2b1153b422f0d2dc6e69ea93e","signature":"be8cb3b164f11b63430cd1278c9d2e6906dbe428ecbba1753b683da5d51ce741"},{"version":"a453a18888b61a5bd5852ac4c30de1015a8f02e142814bbaedc019e2b052c3d6","signature":"f42d8838e79aacedd22ad383900185f896224c66067677ec66d3b88aa9f111b4"},{"version":"5abfed4b1b151d1a6612035052f289809c68a4161821621c1013cf28e8be6ea3","signature":"14c5339bc6b6cc234d903eba7e051a05128d32fdb67fe9a00fe28c8ed5a777f9"},{"version":"e734d863ea49079bd785bef95b2879404b81f5d82a4efeb4fe46a4898c09a74c","signature":"e1ec54e2380448538c8f99bd859f3a772069511a36150afdeaa2d01abaa99243"},{"version":"84e03239d9790078f94d1b58d49f840334ad1759bfb78301ab69083778a4095a","signature":"29ea4ca6ea4b5f1f83b8d76f61775cf9ffc07c24757b048ed512622c6fc65a44"},{"version":"e02e29766ec2254c31a9d6ba7ab0e566178f024a9d1d03f348fd879939d7a657","signature":"4ef6cee2bccf72863fb0875a26d125dda4e2b382371642687481d9f5284467a4"},{"version":"8d617caa67a5d6659c0ae8ea4b4583c5952a2b03ecc83d609c4eda7048290645","signature":"1061345cd792c0f141f49073cf6724ec67babd9ff1b3f0605ae9dda7da67c109"},{"version":"13c63057bf769e4bac0f07ab85b37b8351bd934b39374c709b303a2bb8a53c9f","signature":"378677c113999e1817e9126cdc302dbaf7cdc2e624b190c7afe2e8711e821ac0"},{"version":"b82fdebe2a642e93eb1816b353482aad286e83b13b8016614488cfaea5f2831c","signature":"70ae801d524f6b22676db3cd303dd63793e0281d8de9172e902bbcf47395b373"},{"version":"e8301866d7cec64aca2bf326d928503aac278a117e8c821d93eaa6d4fea3b7d0","signature":"a7c97c14897f5817a3a506179f38c77454f1741e612554e7e9f4a1df8471dc9b"},{"version":"eae6e8df7034e09dc8c49836c996dfee10b0a3931c3001feb8a6d3df8119ae04","signature":"dc705b2994d881bd6a656bf89e749ad486605659b0fe3be6376ed16366babe6e"},{"version":"4c7870ee095003bc1f516c71a51cd740facaf856720c70aa222fffe59e6b4ba3","signature":"ca98ccac320cc234a22cc278f6a1f1ad20c99af31230efde224f7dc7cc13caba"},{"version":"2b4071c63de850bbfc060e299d82d7af1ad22d754a3154b79758559c0a5c050c","signature":"f96b484f8dc4df74800857261d36b8042d9b843f42c8bc7adc27fbcfe936bae2"},{"version":"751250daca14385b2780c58c762dfa6d6f2d188086f1863c986b21df1a791fd4","signature":"0a78a5fcad7e8d00496edab48e6007ac93d20c2d5a3c9e1e4f547c5855a53854"},{"version":"151ff381ef9ff8da2da9b9663ebf657eac35c4c9a19183420c05728f31a6761d","impliedFormat":1},{"version":"f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1","impliedFormat":1},{"version":"a4a39b5714adfcadd3bbea6698ca2e942606d833bde62ad5fb6ec55f5e438ff8","impliedFormat":1},{"version":"bbc1d029093135d7d9bfa4b38cbf8761db505026cc458b5e9c8b74f4000e5e75","impliedFormat":1},{"version":"1f68ab0e055994eb337b67aa87d2a15e0200951e9664959b3866ee6f6b11a0fe","impliedFormat":1},{"version":"70521b6ab0dcba37539e5303104f29b721bfb2940b2776da4cc818c07e1fefc1","affectsGlobalScope":true,"impliedFormat":1},{"version":"ab41ef1f2cdafb8df48be20cd969d875602483859dc194e9c97c8a576892c052","affectsGlobalScope":true,"impliedFormat":1},{"version":"d153a11543fd884b596587ccd97aebbeed950b26933ee000f94009f1ab142848","affectsGlobalScope":true,"impliedFormat":1},{"version":"21d819c173c0cf7cc3ce57c3276e77fd9a8a01d35a06ad87158781515c9a438a","impliedFormat":1},{"version":"98cffbf06d6bab333473c70a893770dbe990783904002c4f1a960447b4b53dca","affectsGlobalScope":true,"impliedFormat":1},{"version":"ba481bca06f37d3f2c137ce343c7d5937029b2468f8e26111f3c9d9963d6568d","affectsGlobalScope":true,"impliedFormat":1},{"version":"6d9ef24f9a22a88e3e9b3b3d8c40ab1ddb0853f1bfbd5c843c37800138437b61","affectsGlobalScope":true,"impliedFormat":1},{"version":"1db0b7dca579049ca4193d034d835f6bfe73096c73663e5ef9a0b5779939f3d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"9798340ffb0d067d69b1ae5b32faa17ab31b82466a3fc00d8f2f2df0c8554aaa","affectsGlobalScope":true,"impliedFormat":1},{"version":"f26b11d8d8e4b8028f1c7d618b22274c892e4b0ef5b3678a8ccbad85419aef43","affectsGlobalScope":true,"impliedFormat":1},{"version":"5929864ce17fba74232584d90cb721a89b7ad277220627cc97054ba15a98ea8f","impliedFormat":1},{"version":"763fe0f42b3d79b440a9b6e51e9ba3f3f91352469c1e4b3b67bfa4ff6352f3f4","impliedFormat":1},{"version":"25c8056edf4314820382a5fdb4bb7816999acdcb929c8f75e3f39473b87e85bc","impliedFormat":1},{"version":"c464d66b20788266e5353b48dc4aa6bc0dc4a707276df1e7152ab0c9ae21fad8","impliedFormat":1},{"version":"78d0d27c130d35c60b5e5566c9f1e5be77caf39804636bc1a40133919a949f21","impliedFormat":1},{"version":"c6fd2c5a395f2432786c9cb8deb870b9b0e8ff7e22c029954fabdd692bff6195","impliedFormat":1},{"version":"1d6e127068ea8e104a912e42fc0a110e2aa5a66a356a917a163e8cf9a65e4a75","impliedFormat":1},{"version":"5ded6427296cdf3b9542de4471d2aa8d3983671d4cac0f4bf9c637208d1ced43","impliedFormat":1},{"version":"7f182617db458e98fc18dfb272d40aa2fff3a353c44a89b2c0ccb3937709bfb5","impliedFormat":1},{"version":"cadc8aced301244057c4e7e73fbcae534b0f5b12a37b150d80e5a45aa4bebcbd","impliedFormat":1},{"version":"385aab901643aa54e1c36f5ef3107913b10d1b5bb8cbcd933d4263b80a0d7f20","impliedFormat":1},{"version":"9670d44354bab9d9982eca21945686b5c24a3f893db73c0dae0fd74217a4c219","impliedFormat":1},{"version":"0b8a9268adaf4da35e7fa830c8981cfa22adbbe5b3f6f5ab91f6658899e657a7","impliedFormat":1},{"version":"11396ed8a44c02ab9798b7dca436009f866e8dae3c9c25e8c1fbc396880bf1bb","impliedFormat":1},{"version":"ba7bc87d01492633cb5a0e5da8a4a42a1c86270e7b3d2dea5d156828a84e4882","impliedFormat":1},{"version":"4893a895ea92c85345017a04ed427cbd6a1710453338df26881a6019432febdd","impliedFormat":1},{"version":"c21dc52e277bcfc75fac0436ccb75c204f9e1b3fa5e12729670910639f27343e","impliedFormat":1},{"version":"13f6f39e12b1518c6650bbb220c8985999020fe0f21d818e28f512b7771d00f9","impliedFormat":1},{"version":"9b5369969f6e7175740bf51223112ff209f94ba43ecd3bb09eefff9fd675624a","impliedFormat":1},{"version":"4fe9e626e7164748e8769bbf74b538e09607f07ed17c2f20af8d680ee49fc1da","impliedFormat":1},{"version":"24515859bc0b836719105bb6cc3d68255042a9f02a6022b3187948b204946bd2","impliedFormat":1},{"version":"ea0148f897b45a76544ae179784c95af1bd6721b8610af9ffa467a518a086a43","impliedFormat":1},{"version":"24c6a117721e606c9984335f71711877293a9651e44f59f3d21c1ea0856f9cc9","impliedFormat":1},{"version":"dd3273ead9fbde62a72949c97dbec2247ea08e0c6952e701a483d74ef92d6a17","impliedFormat":1},{"version":"405822be75ad3e4d162e07439bac80c6bcc6dbae1929e179cf467ec0b9ee4e2e","impliedFormat":1},{"version":"0db18c6e78ea846316c012478888f33c11ffadab9efd1cc8bcc12daded7a60b6","impliedFormat":1},{"version":"e61be3f894b41b7baa1fbd6a66893f2579bfad01d208b4ff61daef21493ef0a8","impliedFormat":1},{"version":"bd0532fd6556073727d28da0edfd1736417a3f9f394877b6d5ef6ad88fba1d1a","impliedFormat":1},{"version":"89167d696a849fce5ca508032aabfe901c0868f833a8625d5a9c6e861ef935d2","impliedFormat":1},{"version":"615ba88d0128ed16bf83ef8ccbb6aff05c3ee2db1cc0f89ab50a4939bfc1943f","impliedFormat":1},{"version":"a4d551dbf8746780194d550c88f26cf937caf8d56f102969a110cfaed4b06656","impliedFormat":1},{"version":"8bd86b8e8f6a6aa6c49b71e14c4ffe1211a0e97c80f08d2c8cc98838006e4b88","impliedFormat":1},{"version":"317e63deeb21ac07f3992f5b50cdca8338f10acd4fbb7257ebf56735bf52ab00","impliedFormat":1},{"version":"4732aec92b20fb28c5fe9ad99521fb59974289ed1e45aecb282616202184064f","impliedFormat":1},{"version":"2e85db9e6fd73cfa3d7f28e0ab6b55417ea18931423bd47b409a96e4a169e8e6","impliedFormat":1},{"version":"c46e079fe54c76f95c67fb89081b3e399da2c7d109e7dca8e4b58d83e332e605","impliedFormat":1},{"version":"bf67d53d168abc1298888693338cb82854bdb2e69ef83f8a0092093c2d562107","impliedFormat":1},{"version":"2cbe0621042e2a68c7cbce5dfed3906a1862a16a7d496010636cdbdb91341c0f","affectsGlobalScope":true,"impliedFormat":1},{"version":"e2677634fe27e87348825bb041651e22d50a613e2fdf6a4a3ade971d71bac37e","impliedFormat":1},{"version":"7394959e5a741b185456e1ef5d64599c36c60a323207450991e7a42e08911419","impliedFormat":1},{"version":"8c0bcd6c6b67b4b503c11e91a1fb91522ed585900eab2ab1f61bba7d7caa9d6f","impliedFormat":1},{"version":"8cd19276b6590b3ebbeeb030ac271871b9ed0afc3074ac88a94ed2449174b776","affectsGlobalScope":true,"impliedFormat":1},{"version":"696eb8d28f5949b87d894b26dc97318ef944c794a9a4e4f62360cd1d1958014b","impliedFormat":1},{"version":"3f8fa3061bd7402970b399300880d55257953ee6d3cd408722cb9ac20126460c","impliedFormat":1},{"version":"35ec8b6760fd7138bbf5809b84551e31028fb2ba7b6dc91d95d098bf212ca8b4","affectsGlobalScope":true,"impliedFormat":1},{"version":"5524481e56c48ff486f42926778c0a3cce1cc85dc46683b92b1271865bcf015a","impliedFormat":1},{"version":"68bd56c92c2bd7d2339457eb84d63e7de3bd56a69b25f3576e1568d21a162398","affectsGlobalScope":true,"impliedFormat":1},{"version":"3e93b123f7c2944969d291b35fed2af79a6e9e27fdd5faa99748a51c07c02d28","impliedFormat":1},{"version":"9d19808c8c291a9010a6c788e8532a2da70f811adb431c97520803e0ec649991","impliedFormat":1},{"version":"87aad3dd9752067dc875cfaa466fc44246451c0c560b820796bdd528e29bef40","impliedFormat":1},{"version":"4aacb0dd020eeaef65426153686cc639a78ec2885dc72ad220be1d25f1a439df","impliedFormat":1},{"version":"f0bd7e6d931657b59605c44112eaf8b980ba7f957a5051ed21cb93d978cf2f45","impliedFormat":1},{"version":"8db0ae9cb14d9955b14c214f34dae1b9ef2baee2fe4ce794a4cd3ac2531e3255","affectsGlobalScope":true,"impliedFormat":1},{"version":"15fc6f7512c86810273af28f224251a5a879e4261b4d4c7e532abfbfc3983134","impliedFormat":1},{"version":"58adba1a8ab2d10b54dc1dced4e41f4e7c9772cbbac40939c0dc8ce2cdb1d442","impliedFormat":1},{"version":"2fd4c143eff88dabb57701e6a40e02a4dbc36d5eb1362e7964d32028056a782b","impliedFormat":1},{"version":"714435130b9015fae551788df2a88038471a5a11eb471f27c4ede86552842bc9","impliedFormat":1},{"version":"855cd5f7eb396f5f1ab1bc0f8580339bff77b68a770f84c6b254e319bbfd1ac7","impliedFormat":1},{"version":"5650cf3dace09e7c25d384e3e6b818b938f68f4e8de96f52d9c5a1b3db068e86","impliedFormat":1},{"version":"1354ca5c38bd3fd3836a68e0f7c9f91f172582ba30ab15bb8c075891b91502b7","affectsGlobalScope":true,"impliedFormat":1},{"version":"27fdb0da0daf3b337c5530c5f266efe046a6ceb606e395b346974e4360c36419","impliedFormat":1},{"version":"2d2fcaab481b31a5882065c7951255703ddbe1c0e507af56ea42d79ac3911201","impliedFormat":1},{"version":"afbe24ab0d74694372baa632ecb28bb375be53f3be53f9b07ecd7fc994907de5","impliedFormat":1},{"version":"ca867399f7db82df981d6915bcbb2d81131d7d1ef683bc782b59f71dda59bc85","affectsGlobalScope":true,"impliedFormat":1},{"version":"00877fef624f3171c2e44944fb63a55e2a9f9120d7c8b5eb4181c263c9a077cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e043a1bc8fbf2a255bccf9bf27e0f1caf916c3b0518ea34aa72357c0afd42ec","impliedFormat":1},{"version":"b4f70ec656a11d570e1a9edce07d118cd58d9760239e2ece99306ee9dfe61d02","impliedFormat":1},{"version":"3bc2f1e2c95c04048212c569ed38e338873f6a8593930cf5a7ef24ffb38fc3b6","impliedFormat":1},{"version":"6e70e9570e98aae2b825b533aa6292b6abd542e8d9f6e9475e88e1d7ba17c866","impliedFormat":1},{"version":"f9d9d753d430ed050dc1bf2667a1bab711ccbb1c1507183d794cc195a5b085cc","impliedFormat":1},{"version":"9eece5e586312581ccd106d4853e861aaaa1a39f8e3ea672b8c3847eedd12f6e","impliedFormat":1},{"version":"47ab634529c5955b6ad793474ae188fce3e6163e3a3fb5edd7e0e48f14435333","impliedFormat":1},{"version":"37ba7b45141a45ce6e80e66f2a96c8a5ab1bcef0fc2d0f56bb58df96ec67e972","impliedFormat":1},{"version":"45650f47bfb376c8a8ed39d4bcda5902ab899a3150029684ee4c10676d9fbaee","impliedFormat":1},{"version":"0225ecb9ed86bdb7a2c7fd01f1556906902929377b44483dc4b83e03b3ef227d","affectsGlobalScope":true,"impliedFormat":1},{"version":"74cf591a0f63db318651e0e04cb55f8791385f86e987a67fd4d2eaab8191f730","impliedFormat":1},{"version":"5eab9b3dc9b34f185417342436ec3f106898da5f4801992d8ff38ab3aff346b5","impliedFormat":1},{"version":"12ed4559eba17cd977aa0db658d25c4047067444b51acfdcbf38470630642b23","affectsGlobalScope":true,"impliedFormat":1},{"version":"f3ffabc95802521e1e4bcba4c88d8615176dc6e09111d920c7a213bdda6e1d65","impliedFormat":1},{"version":"f9ab232778f2842ffd6955f88b1049982fa2ecb764d129ee4893cbc290f41977","impliedFormat":1},{"version":"ae56f65caf3be91108707bd8dfbccc2a57a91feb5daabf7165a06a945545ed26","impliedFormat":1},{"version":"a136d5de521da20f31631a0a96bf712370779d1c05b7015d7019a9b2a0446ca9","impliedFormat":1},{"version":"c3b41e74b9a84b88b1dca61ec39eee25c0dbc8e7d519ba11bb070918cfacf656","affectsGlobalScope":true,"impliedFormat":1},{"version":"4737a9dc24d0e68b734e6cfbcea0c15a2cfafeb493485e27905f7856988c6b29","affectsGlobalScope":true,"impliedFormat":1},{"version":"36d8d3e7506b631c9582c251a2c0b8a28855af3f76719b12b534c6edf952748d","impliedFormat":1},{"version":"1ca69210cc42729e7ca97d3a9ad48f2e9cb0042bada4075b588ae5387debd318","impliedFormat":1},{"version":"f5ebe66baaf7c552cfa59d75f2bfba679f329204847db3cec385acda245e574e","impliedFormat":1},{"version":"ed59add13139f84da271cafd32e2171876b0a0af2f798d0c663e8eeb867732cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"05db535df8bdc30d9116fe754a3473d1b6479afbc14ae8eb18b605c62677d518","impliedFormat":1},{"version":"b1810689b76fd473bd12cc9ee219f8e62f54a7d08019a235d07424afbf074d25","impliedFormat":1}],"root":[[87,110]],"options":{"composite":true,"declaration":true,"declarationMap":true,"esModuleInterop":true,"jsx":4,"module":99,"outDir":"./dist","rootDir":"./src","skipLibCheck":true,"sourceMap":true,"strict":true,"target":99},"referencedMap":[[115,1],[114,2],[113,3],[111,4],[112,4],[164,5],[165,5],[166,6],[121,7],[167,8],[168,9],[169,10],[116,4],[119,11],[117,4],[118,4],[170,12],[171,13],[172,14],[173,15],[174,16],[175,17],[176,17],[177,18],[178,19],[179,20],[180,21],[122,4],[120,4],[181,22],[182,23],[183,24],[215,25],[184,26],[185,27],[186,28],[187,29],[188,30],[189,31],[190,32],[191,33],[192,34],[193,35],[194,35],[195,36],[196,4],[197,37],[199,38],[198,39],[200,40],[201,41],[202,42],[203,43],[204,44],[205,45],[206,46],[207,47],[208,48],[209,49],[210,50],[211,51],[212,52],[123,4],[124,4],[125,4],[163,53],[213,54],[214,55],[84,4],[85,4],[15,4],[13,4],[14,4],[19,4],[18,4],[2,4],[20,4],[21,4],[22,4],[23,4],[24,4],[25,4],[26,4],[27,4],[3,4],[28,4],[29,4],[4,4],[30,4],[34,4],[31,4],[32,4],[33,4],[35,4],[36,4],[37,4],[5,4],[38,4],[39,4],[40,4],[41,4],[6,4],[45,4],[42,4],[43,4],[44,4],[46,4],[7,4],[47,4],[52,4],[53,4],[48,4],[49,4],[50,4],[51,4],[8,4],[57,4],[54,4],[55,4],[56,4],[58,4],[9,4],[59,4],[60,4],[61,4],[63,4],[62,4],[64,4],[65,4],[10,4],[66,4],[67,4],[68,4],[11,4],[69,4],[70,4],[71,4],[72,4],[73,4],[1,4],[74,4],[75,4],[12,4],[79,4],[77,4],[82,4],[81,4],[86,4],[76,4],[80,4],[78,4],[83,4],[17,4],[16,4],[141,56],[151,57],[140,56],[161,58],[132,59],[131,60],[160,61],[154,62],[159,63],[134,64],[148,65],[133,66],[157,67],[129,68],[128,61],[158,69],[130,70],[135,71],[136,4],[139,71],[126,4],[162,72],[152,73],[143,74],[144,75],[146,76],[142,77],[145,78],[155,61],[137,79],[138,80],[147,81],[127,82],[150,73],[149,71],[153,4],[156,83],[91,84],[89,85],[90,86],[88,4],[96,87],[98,88],[97,89],[95,89],[94,4],[104,90],[101,4],[102,91],[103,92],[100,4],[106,93],[93,94],[107,93],[108,93],[109,93],[105,95],[110,93],[99,95],[87,4],[92,95]],"latestChangedDtsFile":"./dist/types/index.d.ts","version":"5.9.3"}
+
+## File: packages/device-camera/src/reducer/index.ts
+````typescript
+/**
+ * Camera Reducer - Processes runtime events into typed effects
+ * 
+ * Uses discriminated union types directly - no legacy wrappers.
+ * 
+ * @module device-camera/reducer
+ */
+
+import {
+    CameraEffect,
+    ZoomEffect,
+    ShakeEffect,
+    FocusEffect,
+    TrackEffect,
+    ResetEffect,
+    CameraState,
+    DEFAULT_CAMERA_STATE,
+    DEFAULT_TRANSFORM,
+    EasingType,
+} from "../types";
+
+// =============================================================================
+// EVENT TYPES
+// =============================================================================
+
+interface CameraEvent {
+    kind: "CAMERA";
+    type: string;
+    at: number;
+    [key: string]: unknown;
+}
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+/**
+ * Process a camera event and update state.
+ * Creates properly typed effects directly - no conversion needed.
+ */
+export function cameraReducer(
+    draft: { camera?: CameraState },
+    event: CameraEvent
+): void {
+    if (event.kind !== "CAMERA") return;
+
+    // Ensure camera state exists
+    if (!draft.camera) {
+        draft.camera = { ...DEFAULT_CAMERA_STATE };
+    }
+
+    const at = event.at;
+    const duration = (event.duration as number) ?? 30;
+    const easing = (event.easing as EasingType) ?? "ease-out";
+
+    switch (event.type) {
+        // =================================================================
+        // ZOOM - Scale and translate
+        // =================================================================
+        case "ZOOM": {
+            const effect: ZoomEffect = {
+                type: "zoom",
+                id: `zoom_${at}`,
+                startFrame: at,
+                endFrame: at + duration,
+                targetScale: (event.scale as number) ?? 1,
+                targetX: (event.translateX as number) ?? 0,
+                targetY: (event.translateY as number) ?? 0,
+                originX: event.originX as number | undefined,
+                originY: event.originY as number | undefined,
+                easing,
+            };
+            draft.camera.activeEffects.push(effect);
+            break;
+        }
+
+        // =================================================================
+        // SHAKE - Screen shake
+        // =================================================================
+        case "SHAKE": {
+            const effect: ShakeEffect = {
+                type: "shake",
+                id: `shake_${at}`,
+                startFrame: at,
+                endFrame: at + duration,
+                intensity: (event.intensity as number) ?? 5,
+                intensityX: event.intensityX as number | undefined,
+                intensityY: event.intensityY as number | undefined,
+                frequency: (event.frequency as number) ?? 15,
+                decay: (event.decay as number) ?? 0.8,
+                easing,
+            };
+            draft.camera.activeEffects.push(effect);
+            break;
+        }
+
+        // =================================================================
+        // focus/FOCUS/ANCHOR_FOCUS - Semantic anchor focus (one-time)
+        // =================================================================
+        case "focus":
+        case "FOCUS":
+        case "ANCHOR_FOCUS": {
+            const effect: FocusEffect = {
+                type: "focus",
+                id: `focus_${at}`,
+                startFrame: at,
+                endFrame: at + duration,
+                anchorId: (event.anchorId as string) ?? (event.anchor as string) ?? "device",
+                scale: event.scale as number | undefined,
+                preset: event.preset as string | undefined,
+                easing,
+            };
+            draft.camera.activeEffects.push(effect);
+            break;
+        }
+
+        // =================================================================
+        // track/TRACK/ANCHOR_TRACK - Continuous anchor following
+        // =================================================================
+        case "track":
+        case "TRACK":
+        case "ANCHOR_TRACK": {
+            const effect: TrackEffect = {
+                type: "track",
+                id: `track_${at}`,
+                startFrame: at,
+                endFrame: at + duration,
+                anchorId: (event.anchorId as string) ?? (event.anchor as string) ?? "device",
+                scale: (event.scale as number) ?? 1.05,
+                smoothing: (event.smoothing as number) ?? 0.18,
+                easing,
+            };
+            draft.camera.activeEffects.push(effect);
+            break;
+        }
+
+        // =================================================================
+        // RESET - Return to neutral
+        // =================================================================
+        case "RESET": {
+            const effect: ResetEffect = {
+                type: "reset",
+                id: `reset_${at}`,
+                startFrame: at,
+                endFrame: at + duration,
+                easing,
+            };
+            draft.camera.activeEffects.push(effect);
+            break;
+        }
+
+        // =================================================================
+        // CUT - Instant camera change
+        // =================================================================
+        case "CUT": {
+            // Clear all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_TRANSFORM };
+
+            // Update device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId as string;
+            }
+            break;
+        }
+
+        // =================================================================
+        // SET_VIEW - Legacy view change
+        // =================================================================
+        case "SET_VIEW": {
+            const view = event.view as { type?: string; appId?: string } | undefined;
+            if (view) {
+                draft.camera.baseView = view.type;
+                draft.camera.appId = view.appId;
+            }
+            break;
+        }
+
+        // =================================================================
+        // LAYOUT - Change view layout mode
+        // =================================================================
+        case "LAYOUT": {
+            draft.camera.layout = {
+                mode: (event.mode as "SINGLE" | "PIP" | "SPLIT") ?? "SINGLE",
+                primaryDeviceId: event.primaryDeviceId as string | undefined,
+                secondaryDeviceId: event.secondaryDeviceId as string | undefined,
+            };
+            break;
+        }
+    }
+}
+
+// =============================================================================
+// EFFECT CLEANUP
+// =============================================================================
+
+/**
+ * Remove expired effects from state.
+ * Call periodically to prevent memory growth.
+ */
+export function cleanupExpiredEffects(state: CameraState, currentFrame: number): void {
+    // Keep effects that end after current frame (still active or future)
+    state.activeEffects = state.activeEffects.filter(
+        effect => effect.endFrame > currentFrame
+    );
+}
+
+/**
+ * Get only active effects at a specific frame.
+ */
+export function getActiveEffects(state: CameraState, frame: number): CameraEffect[] {
+    return state.activeEffects.filter(
+        effect => frame >= effect.startFrame && frame < effect.endFrame
+    );
+}
 ````
 
 ## File: packages/device-keyboard/src/assets/audio-rules.ts
@@ -62143,331 +61526,6 @@ export const NOTIFICATION_EVENT_TYPES = [
 ];
 ````
 
-## File: packages/dsl/src/events/keyboard.ts
-````typescript
-/**
- * Keyboard Event Factories
- * 
- * Low-level event creators for keyboard simulation.
- * Used by showcases and DSL builders.
- */
-
-import { TimelineEvent, KeyboardLayout, SeededRNG } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/**
- * Keyboard event factories
- */
-export const keyboard = {
-    /**
-     * Show the virtual keyboard
-     */
-    show: (at: number, deviceId: string, layout: KeyboardLayout = "qwerty"): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SHOW",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        layout,
-    } as TimelineEvent),
-
-    /**
-     * Hide the virtual keyboard
-     */
-    hide: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "HIDE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Type a single character (V2)
-     */
-    typeChar: (at: number, deviceId: string, char: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardType",
-        trace: createTrace(Tracer.capture()),
-        text: char,
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Delete last character (backspace)
-     */
-    backspace: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardInput",
-        type: "keyDown",
-        trace: createTrace(Tracer.capture()),
-        key: "Backspace",
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Set text directly
-     */
-    setText: (at: number, deviceId: string, text: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "SET_TEXT",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-        text,
-    } as TimelineEvent),
-
-    /**
-     * Clear all text
-     */
-    clear: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KEYBOARD",
-        type: "CLEAR",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Key down (for visual highlight) (V2)
-     */
-    keyDown: (at: number, deviceId: string, key: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardInput",
-        type: "keyDown",
-        trace: createTrace(Tracer.capture()),
-        key,
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Key up (end visual highlight) (V2)
-     */
-    keyUp: (at: number, deviceId: string): TimelineEvent => ({
-        at,
-        kind: "KeyboardInput",
-        type: "keyUp",
-        trace: createTrace(Tracer.capture()),
-        key: "", // Key up clears current key
-        deviceId,
-    } as TimelineEvent),
-
-    /**
-     * Generate a realistic typing sequence
-     */
-    /**
-     * Generate a realistic, smart typing sequence
-     * 
-     * - Automatically switches layouts (123, ABC)
-     * - Uses seeded RNG for deterministic variance
-     */
-    type: (at: number, deviceId: string, text: string, options?: { speed?: "fast" | "normal" | "slow", variance?: number, seed?: number }): TimelineEvent[] => {
-        const trace = createTrace(Tracer.capture());
-        const events: TimelineEvent[] = [];
-        let t = at;
-
-        // Deterministic RNG
-        const seed = options?.seed || 123456;
-        // Simple hash of text to vary seed if not provided, for different texts
-        const textHash = text.split("").reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0);
-        const rng = new SeededRNG(seed + textHash);
-
-        const speedMap = { fast: 2, normal: 3, slow: 5 };
-        const baseSpeed = speedMap[options?.speed || "normal"];
-        const variance = options?.variance || 0;
-
-        // Smart Layout State
-        let currentLayout: "qwerty" | "numbers" = "qwerty"; // default
-
-        // Helpers
-        const isNumberOrSymbol = (char: string) => /[0-9\-/:;()$&@"\.,?!']/.test(char);
-        const getLayoutForChar = (char: string): "qwerty" | "numbers" => {
-            if (char === " ") return currentLayout; // Space works on likely both, or we assume stickiness
-            return isNumberOrSymbol(char) ? "numbers" : "qwerty";
-        };
-
-        for (const char of text) {
-            const requiredLayout = getLayoutForChar(char);
-
-            // Switch Layout if needed
-            if (requiredLayout !== currentLayout) {
-                const switchKey = currentLayout === "qwerty" ? "123" : "ABC";
-
-                // Press Switch Key
-                events.push(keyboard.keyDown(t, deviceId, switchKey));
-                t += Math.floor(baseSpeed * 0.5);
-
-                // Switch Action
-                events.push({
-                    at: t,
-                    kind: "KEYBOARD",
-                    type: "SHOW", // SHOW updates layout too
-                    trace,
-                    deviceId,
-                    layout: requiredLayout
-                } as any);
-
-                // Release Switch Key
-                events.push(keyboard.keyUp(t, deviceId));
-
-                currentLayout = requiredLayout;
-                t += baseSpeed + rng.nextInt(0, variance);
-            }
-
-            // Normal Key Press
-            // Press - V2
-            events.push(keyboard.keyDown(t, deviceId, char));
-
-            // Commit char (Input Change happens here) - V2
-            events.push(keyboard.typeChar(t, deviceId, char));
-
-            t += Math.floor(baseSpeed * 0.5);
-
-            // Release - V2
-            events.push(keyboard.keyUp(t, deviceId));
-
-            // Delay next char
-            t += baseSpeed + (variance > 0 ? rng.nextInt(0, variance) : 0);
-        }
-
-        return events;
-    }
-};
-````
-
-## File: packages/dsl/src/events/messages.ts
-````typescript
-/**
- * Message Event Factories
- * 
- * Low-level event creators for messaging (WhatsApp, etc).
- */
-
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-/** Message status for tick progression */
-export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
-
-/**
- * Message event factories
- */
-export const messages = {
-    /**
-     * Send a message (from device owner)
-     */
-    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
-        at,
-        kind: "MessageSent", // V2 IR
-        deviceId: options.deviceId || "primary",
-        trace: createTrace(Tracer.capture()),
-        appId: options.appId || "app_whatsapp",
-        conversationId,
-        silent: options.silent,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
-
-    /**
-     * Receive a message (from someone else)
-     */
-    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
-        at,
-        kind: "MessageReceived", // V2 IR
-        deviceId: options.deviceId || "primary",
-        trace: createTrace(Tracer.capture()),
-        appId: options.appId || "app_whatsapp",
-        conversationId,
-        silent: options.silent,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
-
-    /**
-     * Start typing indicator
-     */
-    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingStarted",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
-
-    /**
-     * Stop typing indicator
-     */
-    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingEnded",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
-
-    /**
-     * Send an image
-     */
-    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageSent",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
-
-    /**
-     * Receive an image
-     */
-    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageReceived",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
-
-    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
-    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
-        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
-    } as any)
-};
-````
-
 ## File: packages/dsl/src/v2/index.ts
 ````typescript
 /**
@@ -62489,131 +61547,6 @@ export {
     framesToSeconds,
     framesToTimeString,
 } from "../utils";
-````
-
-## File: packages/dsl/src/index.ts
-````typescript
-/**
- * @tokovo/dsl
- *
- * Domain Specific Language for authoring Tokovo episodes.
- *
- * The DSL provides a fluent API for creating episode timelines
- * with track-based authoring for camera, audio, OS, and app events.
- *
- * @example
- * ```typescript
- * import { episode, CameraTrackBuilder } from "@tokovo/dsl";
- *
- * const ir = episode("demo", { fps: 30, duration: "30s" })
- *   .device("phone", "iphone16", { app: "app_whatsapp" })
- *   .camera(cam => cam.at("0s").set({ scale: 1 }))
- *   .audio(audio => audio.span("0s", "30s").bgm("lofi_chill"))
- *   .build();
- * ```
- */
-
-// =============================================================================
-// CORE: Track-based DSL (RECOMMENDED)
-// =============================================================================
-
-export {
-    episode,
-    EpisodeBuilder,
-    CameraTrackBuilder,
-    CameraPointBuilder,
-    CameraSpanBuilder,
-    AudioTrackBuilder,
-    AudioPointBuilder,
-    AudioSpanBuilder,
-    OSTrackBuilder,
-    OSPointBuilder,
-} from "./core";
-
-export type {
-    DeviceOptions,
-    TrackBuilder,
-    TrackFn,
-    CameraSetOptions,
-    CameraAnimateOptions,
-    CameraFocusOptions,
-    CameraTrackOptions,
-    CameraShakeOptions,
-    CameraResetOptions,
-    BgmOptions,
-    PlayOptions,
-    CrossfadeOptions,
-    FadeOutOptions,
-    NetworkType,
-    OSStateOptions,
-    BatteryOptions,
-    NetworkOptions,
-    NotificationOptions,
-} from "./core";
-
-// =============================================================================
-// UTILS: Time parsing
-// =============================================================================
-
-export {
-    parseTimeToFrames,
-    parseDurationToFrames,
-    framesToSeconds,
-    framesToTimeString,
-} from "./utils";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export type {
-    TypingBuilder,
-    MessageHandle,
-    EpisodeConfig,
-    EpisodeDefinition,
-} from "./types";
-
-// =============================================================================
-// TRACER: Debug utility
-// =============================================================================
-
-export { Tracer } from "./tracer";
-
-// =============================================================================
-// HELPERS: Event factories (import from "@tokovo/dsl/helpers")
-// =============================================================================
-
-// Re-export common helpers at top level for convenience
-export {
-    keyboard,
-    generateTyping,
-    getTypingEndFrame,
-    TYPING_SPEEDS,
-    messages,
-    dsl,
-} from "./helpers";
-
-export type {
-    TypingSpeed,
-    TypingOptions,
-} from "./helpers";
-
-// =============================================================================
-// BACKWARD COMPATIBILITY: v2 namespace
-// =============================================================================
-
-// Re-export core as v2 for backward compatibility
-export * as v2 from "./core";
-
-// Alias for backward compatibility
-export { episode as trackEpisode } from "./core";
-
-// =============================================================================
-// LEGACY: Beat-based DSL (DEPRECATED)
-// =============================================================================
-
-// Legacy exports are available via "@tokovo/dsl/legacy"
-// Do not import legacy directly - it shows deprecation warnings
 ````
 
 ## File: packages/ir/src/index.ts
@@ -62658,296 +61591,6 @@ export * from "./utils";
 // Re-export legacy for backward compatibility
 // These can be imported from "@tokovo/ir/legacy" when we add subpath exports
 export * from "./legacy";
-````
-
-## File: packages/renderer/src/engines/useCameraEngine.ts
-````typescript
-/**
- * Camera Engine - Frame-based transform computation
- * 
- * Pure computation layer that processes camera effects each frame.
- * Compatible with Remotion's frame-by-frame rendering.
- * 
- * ARCHITECTURE:
- * 1. Get effects from world.camera.activeEffects (typed)
- * 2. Get anchors from registered providers
- * 3. Process all effects through processor registry
- * 4. Apply DirectorLite if no manual effects
- * 5. Build CSS styles
- * 
- * @module device-camera
- */
-
-import { useMemo, useRef } from "react";
-import type { CSSProperties } from "react";
-
-// Import everything from device-camera
-import {
-    // Types
-    CameraEffect,
-    CameraTransform,
-    DEFAULT_TRANSFORM,
-    CameraState,
-
-    // Processors
-    processActiveEffects,
-
-    // Anchors
-    AnchorSnapshot,
-    getAnchorsForApp,
-
-    // Director-Lite
-    deriveDirectorEffects,
-    extractSignals,
-    convertToEffects,
-} from "@tokovo/device-camera";
-
-// Core imports for world/layout types
-import type { WorldState, EventIndex } from "@tokovo/core";
-import { getEventsInRange } from "@tokovo/core";
-
-import { LayoutEngineOutput } from "./useLayoutEngine";
-
-// =============================================================================
-// INPUT / OUTPUT TYPES
-// =============================================================================
-
-export interface CameraEngineInput {
-    /** Current world state */
-    world: WorldState;
-
-    /** Current frame */
-    t: number;
-
-    /** Layout engine output */
-    layoutOutput: LayoutEngineOutput;
-
-    /** Event index for signal extraction */
-    eventIndex?: EventIndex;
-
-    /** Enable DirectorLite auto-camera */
-    directorEnabled?: boolean;
-
-    /** Debug mode for DirectorLite */
-    directorDebug?: boolean;
-}
-
-export interface CameraEngineOutput {
-    /** Final computed transform */
-    transform: CameraTransform;
-
-    /** CSS styles for camera wrapper */
-    cameraStyle: CSSProperties;
-
-    /** CSS styles for device wrapper */
-    deviceStyle: CSSProperties;
-
-    /** Debug: why director was skipped */
-    directorSkipped?: string;
-
-    /** Anchor snapshot used this frame */
-    anchorSnapshot?: AnchorSnapshot;
-}
-
-// =============================================================================
-// MAIN HOOK
-// =============================================================================
-
-export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-    const {
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled = false,
-        directorDebug = false,
-    } = input;
-
-    // Tracking state for smooth transitions
-    const prevTransformRef = useRef<CameraTransform>(DEFAULT_TRANSFORM);
-
-    return useMemo(() => {
-        const { appId, profile, layout, deviceId } = layoutOutput;
-
-        const viewport = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-        };
-
-        // =====================================================================
-        // 1. GET ANCHOR SNAPSHOT
-        // =====================================================================
-        let anchorSnapshot: AnchorSnapshot | undefined;
-        if (appId) {
-            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
-        }
-
-        // =====================================================================
-        // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
-        // =====================================================================
-        const effects: CameraEffect[] = world.camera?.activeEffects ?? [];
-
-        // Filter to active manual effects
-        const activeManualEffects = effects.filter(
-            e => t >= e.startFrame && t < e.endFrame
-        );
-
-        // =====================================================================
-        // 3. PROCESS EFFECTS THROUGH REGISTRY
-        // =====================================================================
-        let transform = processActiveEffects(
-            t,
-            effects,
-            DEFAULT_TRANSFORM,
-            anchorSnapshot,
-            viewport
-        );
-
-        let directorSkipped: string | undefined;
-
-        // =====================================================================
-        // 4. DIRECTOR-LITE (if no manual effects active)
-        // =====================================================================
-        if (directorEnabled && activeManualEffects.length === 0 && eventIndex) {
-            // Extract signals from recent events
-            const windowStart = Math.max(0, t - 90);
-            const windowEnd = t + 15;
-            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-            const signals = extractSignals(eventsInWindow, t, 90);
-
-            // Derive camera effects from signals
-            const directorResult = deriveDirectorEffects({
-                t,
-                signals,
-                layoutModel: {
-                    messageRects: {},
-                    viewport,
-                },
-                seed: 42,
-                debug: directorDebug,
-                manualCameraEffects: effects,
-            });
-
-            if (directorResult.skipped) {
-                directorSkipped = directorResult.skipped;
-            }
-
-            // Apply director effects through processor registry
-            if (!directorResult.skipped && directorResult.effects.length > 0) {
-                // Convert DerivedCameraEffect to CameraEffect for processors
-                const directorEffects = convertToEffects(directorResult.effects, t);
-
-                // Process through the same processor registry as manual effects
-                transform = processActiveEffects(
-                    t,
-                    directorEffects,
-                    transform, // Use current transform as base
-                    anchorSnapshot,
-                    viewport
-                );
-            }
-        }
-
-        // =====================================================================
-        // 5. SMOOTH DECAY TO NEUTRAL (when no effects)
-        // =====================================================================
-        const hasActiveEffect = activeManualEffects.length > 0 ||
-            (directorEnabled && !directorSkipped);
-
-        if (!hasActiveEffect) {
-            // Smoothly return to neutral
-            const decayRate = 0.05;
-            const prev = prevTransformRef.current;
-            if (prev.scale !== 1 || prev.originX !== 0.5 || prev.originY !== 0.5) {
-                transform = {
-                    ...transform,
-                    scale: lerp(prev.scale, 1, decayRate),
-                    originX: lerp(prev.originX, 0.5, decayRate),
-                    originY: lerp(prev.originY, 0.5, decayRate),
-                };
-            }
-        }
-
-        // Store for next frame
-        prevTransformRef.current = transform;
-
-        // =====================================================================
-        // 6. BUILD CSS STYLES
-        // =====================================================================
-        const cameraStyle = buildCameraCSS(transform, viewport);
-        const deviceStyle = buildDeviceCSS(layout);
-
-        return {
-            transform,
-            cameraStyle,
-            deviceStyle,
-            directorSkipped,
-            anchorSnapshot,
-        };
-    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
-}
-
-// =============================================================================
-// CSS BUILDERS
-// =============================================================================
-
-function buildCameraCSS(
-    transform: CameraTransform,
-    viewport: { width: number; height: number }
-): CSSProperties {
-    const transformString = `
-        translate(${transform.translateX + transform.shakeX}px, ${transform.translateY + transform.shakeY}px)
-        scale(${transform.scale})
-        rotate(${transform.rotation}deg)
-    `.replace(/\s+/g, ' ').trim();
-
-    return {
-        width: viewport.width,
-        height: viewport.height,
-        transformOrigin: `${transform.originX * 100}% ${transform.originY * 100}%`,
-        transform: transformString,
-        transition: "none", // CRITICAL: No CSS transitions for Remotion
-    };
-}
-
-function buildDeviceCSS(layout: unknown): CSSProperties {
-    // Handle transition layouts with device transforms
-    const transLayout = layout as {
-        kind?: string;
-        deviceScale?: number;
-        deviceTranslateX?: number;
-        deviceTranslateY?: number;
-        deviceRotation?: number;
-    };
-
-    if (transLayout.kind !== "TRANSITION") {
-        return {};
-    }
-
-    const {
-        deviceScale = 1,
-        deviceTranslateX = 0,
-        deviceTranslateY = 0,
-        deviceRotation = 0,
-    } = transLayout;
-
-    if (deviceScale === 1 && deviceTranslateX === 0 && deviceTranslateY === 0 && deviceRotation === 0) {
-        return {};
-    }
-
-    return {
-        transformOrigin: "center center",
-        transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-    };
-}
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-function lerp(a: number, b: number, t: number): number {
-    return a + (b - a) * t;
-}
 ````
 
 ## File: packages/renderer/src/index.ts
@@ -63353,6 +61996,216 @@ export const whatsappAudioRules: AutoSoundRule[] = [
 ];
 ````
 
+## File: packages/compiler/src/v2/prepare.ts
+````typescript
+/**
+ * Prepare Track Episode - Converts TrackEpisodeIR to engine-ready format
+ *
+ * @description The glue between v2 DSL and the runtime engine.
+ * Takes TrackEpisodeIR from episode().build() and produces
+ * a CompiledEpisode ready for runEpisode().
+ *
+ * @see docs-v2/DSL_REVAMP.md
+ */
+
+import type { TrackEpisodeIR } from "@tokovo/ir";
+import type { RuntimeEvent, WorldState, TokovoPlugin } from "@tokovo/core";
+import { lowerEpisode } from "./lowering";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface PreparedTrackEpisode {
+    id: string;
+    fps: number;
+    durationInFrames: number;
+    events: RuntimeEvent[];
+    initialWorld: WorldState;
+    plugins: TokovoPlugin[];
+    metadata: {
+        title?: string;
+        description?: string;
+        markers: Array<{ id: string; frame: number }>;
+        sections: Array<{ id: string; start: number; end: number }>;
+    };
+}
+
+// =============================================================================
+// PREPARE FUNCTION
+// =============================================================================
+
+/**
+ * Prepare a v2 TrackEpisodeIR for the runtime engine.
+ * 
+ * @param ir - TrackEpisodeIR from episode().build()
+ * @param plugins - Array of plugins to use
+ * @returns PreparedTrackEpisode ready for runEpisode()
+ */
+export function prepareTrackEpisode(
+    ir: TrackEpisodeIR,
+    plugins: TokovoPlugin[]
+): PreparedTrackEpisode {
+    // Lower TrackEvent[] to RuntimeEvent[] (delegates APP events to plugins)
+    const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
+
+    // Build initial world state from device configs
+    const initialWorld = buildInitialWorld(ir);
+
+    // Build metadata
+    const metadata = {
+        title: ir.title,
+        description: ir.description,
+        markers: ir.markers.map(m => ({ id: m.id, frame: m.frame })),
+        sections: ir.sections.map(s => ({
+            id: s.id,
+            start: s.startFrame,
+            end: s.endFrame
+        })),
+    };
+
+    console.log("[prepareTrackEpisode] Prepared episode:", {
+        id: ir.id,
+        trackEvents: ir.events.length,
+        runtimeEvents: runtimeEvents.length,
+        devices: ir.devices.length,
+        conversations: ir.devices.flatMap(d => d.conversations || []).length,
+    });
+
+    return {
+        id: ir.id,
+        fps: ir.fps,
+        durationInFrames: ir.durationInFrames,
+        events: runtimeEvents,
+        initialWorld,
+        plugins,
+        metadata,
+    };
+}
+
+// =============================================================================
+// WORLD BUILDER
+// =============================================================================
+
+/**
+ * Build initial WorldState from TrackEpisodeIR device configs.
+ */
+function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
+    // Build devices map
+    const devices: Record<string, any> = {};
+    for (const device of ir.devices) {
+        devices[device.id] = {
+            id: device.id,
+            profileId: device.profile,
+            foregroundAppId: device.app,  // CRITICAL: Renderer checks this!
+            isLocked: false,              // Device must be unlocked
+            platform: device.profile.includes("pixel") ? "android" : "ios",
+            // Initialize keyboard state per device
+            keyboard: {
+                visible: false,
+                layout: "qwerty",
+                currentKey: null,
+                keyPressedAt: null,
+                inputText: "",
+                cursorPosition: 0,
+                cursorVisible: true,
+                visibilityChangedAt: -1, // Quiescent: no transition yet
+                selectionStart: null,
+                selectionEnd: null,
+                suggestions: [],
+                highlightedSuggestion: null,
+                keyPressVisual: null,
+                typingSchedule: null, // Enterprise: derived animation
+            },
+        };
+    }
+
+    // Build conversations map
+    const conversations: Record<string, any> = {};
+    for (const device of ir.devices) {
+        for (const conv of device.conversations || []) {
+            conversations[conv.id] = {
+                id: conv.id,
+                name: conv.name,
+                avatar: conv.avatar || "",
+                type: conv.type || "dm",
+                participants: (conv as any).participants || [],
+                messages: [],
+                typing: null,
+                unreadCount: 0,
+            };
+        }
+    }
+
+    // Get OS config from first device (or defaults)
+    const firstDevice = ir.devices[0];
+    const osConfig = firstDevice?.os || {};
+
+    const os = {
+        time: osConfig.time instanceof Date ? osConfig.time : new Date(),
+        battery: osConfig.battery ?? 100,
+        network: osConfig.network ?? "5G",
+        strength: 4,
+        dnd: false,
+        charging: false,
+        lowPowerMode: false,
+    };
+
+    // Default camera state
+    const camera = {
+        scale: 1,
+        translateX: 0,
+        translateY: 0,
+        rotation: 0,
+        originX: 0.5,
+        originY: 0.5,
+        activeEffects: [],
+    };
+
+    // Default audio state - MUST match AudioState expected by mixer
+    const audio = {
+        activeSounds: {},  // Required by computeBusStates
+        buses: {
+            music: { baseGain: 1.0 },
+            ui: { baseGain: 1.0 },
+            sfx: { baseGain: 1.0 },
+            voice: { baseGain: 1.0 },
+            master: { baseGain: 1.0 },
+        },
+        muted: false,
+    };
+
+    // Notifications
+    const notifications: any[] = [];
+
+    // Build appState map with viewMode for proper layout resolution
+    const appState: Record<string, any> = {};
+    for (const device of ir.devices) {
+        if (device.app) {
+            // Apps with conversations should default to CHAT viewMode
+            const hasConversations = device.conversations && device.conversations.length > 0;
+            const firstConversation = device.conversations?.[0];
+
+            appState[device.app] = {
+                viewMode: hasConversations ? "CHAT" : "FEED",
+                conversationId: firstConversation?.id,
+            };
+        }
+    }
+
+    return {
+        devices,
+        conversations,
+        os,
+        camera,
+        audio,
+        notifications,
+        apps: {},
+        appState,  // CRITICAL: Layout engine reads viewMode from here
+    } as unknown as WorldState;
+}
+````
+
 ## File: packages/core/src/camera/index.ts
 ````typescript
 /**
@@ -63467,28 +62320,319 @@ export function processNotificationEvent(
 }
 ````
 
-## File: packages/episodes/src/production/index.ts
+## File: packages/core/src/registries/index.ts
 ````typescript
 /**
- * Production Episodes
+ * Registries Module - All registration systems
  * 
- * Import this file to auto-register all production episodes.
- * 
- * @example
- * // In Root.tsx:
- * import "@tokovo/episodes/src/production";
- * 
- * @see docs-v2/EPISODE-ARCH.md
+ * @description Consolidated registry pattern.
  */
 
-// Import all production episodes (side-effect: auto-registers via defineEpisode)
-import "./track-demo.episode";
-import "./bakchodi-bros.episode";
-import "./keyboard-typing-demo.episode";
-import "./notification-demo.episode";
-import "./complete-showcase.episode";
+// Factory for creating type-safe registries
+export { createRegistry } from "./factory";
+export type { Registry } from "./factory";
 
-// Add new episodes here as they are created
+// App Registry
+export { AppRegistry } from "./app";
+export type { AppViewProps, AppViewComponent } from "./app";
+
+// Sound Registry
+export { SoundRegistry } from "./sound";
+
+// Widget Registry
+export { WidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget";
+
+// Behavior Registry
+export { BehaviorRegistry } from "./behavior";
+
+// App Metadata Registry
+export { AppMetadataRegistry } from "./metadata";
+export type { AppMetadata } from "./metadata";
+
+// Layout Registry
+export { LayoutRegistry } from "./layout";
+export type { LayoutStrategy } from "./layout";
+// Note: LayoutContext, LayoutState are exported from ../types/layout (not re-exported here)
+
+// Note: AnchorRegistry is exported from ../anchors (not duplicated here)
+````
+
+## File: packages/device-camera/src/processors/index.ts
+````typescript
+/**
+ * Effect Processors - Registry pattern for camera effects
+ * 
+ * Each effect type has a dedicated processor.
+ * Processors are pure functions: (context) → transform
+ * 
+ * @module device-camera/processors
+ */
+
+import {
+    CameraEffect,
+    CameraTransform,
+    DEFAULT_TRANSFORM,
+    ZoomEffect,
+    ShakeEffect,
+    FocusEffect,
+    TrackEffect,
+    ResetEffect,
+} from "../types";
+import { AnchorSnapshot } from "../anchors/types";
+import { resolveAnchorFully } from "../anchors/resolver";
+import { applyEasing, lerp, seededRandom } from "../utils";
+
+// =============================================================================
+// PROCESSOR INTERFACE
+// =============================================================================
+
+export interface EffectProcessorContext {
+    /** Current frame */
+    t: number;
+
+    /** The effect being processed */
+    effect: CameraEffect;
+
+    /** Current transform (accumulator) */
+    transform: CameraTransform;
+
+    /** Anchor snapshot for semantic targeting */
+    anchorSnapshot?: AnchorSnapshot;
+
+    /** Viewport dimensions */
+    viewport?: { width: number; height: number };
+}
+
+export interface EffectProcessor {
+    /** Effect type this processor handles */
+    type: string;
+
+    /** Process the effect and return updated transform */
+    process(ctx: EffectProcessorContext): CameraTransform;
+}
+
+// =============================================================================
+// PROCESSOR IMPLEMENTATIONS
+// =============================================================================
+
+function getProgress(t: number, startFrame: number, endFrame: number): number {
+    const duration = endFrame - startFrame;
+    if (duration <= 0) return 1;
+    return Math.max(0, Math.min(1, (t - startFrame) / duration));
+}
+
+const zoomProcessor: EffectProcessor = {
+    type: "zoom",
+    process(ctx): CameraTransform {
+        const e = ctx.effect as ZoomEffect;
+        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+
+        return {
+            ...ctx.transform,
+            scale: lerp(1, e.targetScale, easedProgress),
+            translateX: ctx.transform.translateX + lerp(0, e.targetX ?? 0, easedProgress),
+            translateY: ctx.transform.translateY + lerp(0, e.targetY ?? 0, easedProgress),
+            originX: e.originX ?? ctx.transform.originX,
+            originY: e.originY ?? ctx.transform.originY,
+        };
+    },
+};
+
+const shakeProcessor: EffectProcessor = {
+    type: "shake",
+    process(ctx): CameraTransform {
+        const e = ctx.effect as ShakeEffect;
+        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+
+        // Procedural shake using frame as seed
+        const seed = e.startFrame + (ctx.t - e.startFrame);
+        const rand = seededRandom(seed);
+
+        // Frequency-based oscillation
+        const phase = (ctx.t - e.startFrame) * (e.frequency ?? 15) / 30;
+
+        // Decay over time
+        const decayFactor = Math.pow(e.decay ?? 0.8, progress * 10);
+
+        // Calculate shake offsets
+        const baseX = e.intensityX ?? e.intensity;
+        const baseY = e.intensityY ?? e.intensity;
+
+        const shakeX = Math.sin(phase * Math.PI * 2 + rand() * Math.PI) * baseX * decayFactor;
+        const shakeY = Math.cos(phase * Math.PI * 2 * 1.3 + rand() * Math.PI) * baseY * decayFactor;
+
+        return {
+            ...ctx.transform,
+            shakeX: ctx.transform.shakeX + shakeX,
+            shakeY: ctx.transform.shakeY + shakeY,
+        };
+    },
+};
+
+const focusProcessor: EffectProcessor = {
+    type: "focus",
+    process(ctx): CameraTransform {
+        const e = ctx.effect as FocusEffect;
+        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+
+        // Resolve anchor to origin
+        let originX = 0.5;
+        let originY = 0.5;
+        let targetScale = e.scale ?? 1.15;
+
+        if (ctx.anchorSnapshot && ctx.viewport) {
+            const resolved = resolveAnchorFully(
+                e.anchorId,
+                ctx.anchorSnapshot,
+                ctx.anchorSnapshot.appId,
+                ctx.viewport
+            );
+            originX = resolved.originX;
+            originY = resolved.originY;
+            if (!e.scale) {
+                targetScale = resolved.suggestedScale;
+            }
+        }
+
+        return {
+            ...ctx.transform,
+            scale: lerp(1, targetScale, easedProgress),
+            originX: lerp(0.5, originX, easedProgress),
+            originY: lerp(0.5, originY, easedProgress),
+        };
+    },
+};
+
+const trackProcessor: EffectProcessor = {
+    type: "track",
+    process(ctx): CameraTransform {
+        const e = ctx.effect as TrackEffect;
+        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+        const smoothing = e.smoothing ?? 0.18;
+
+        // Resolve current anchor position
+        let originX = ctx.transform.originX;
+        let originY = ctx.transform.originY;
+
+        if (ctx.anchorSnapshot && ctx.viewport) {
+            const resolved = resolveAnchorFully(
+                e.anchorId,
+                ctx.anchorSnapshot,
+                ctx.anchorSnapshot.appId,
+                ctx.viewport
+            );
+            // Smooth follow - interpolate toward anchor
+            originX = lerp(ctx.transform.originX, resolved.originX, smoothing);
+            originY = lerp(ctx.transform.originY, resolved.originY, smoothing);
+        }
+
+        // Ease in/out of tracking
+        const easeIn = Math.min(1, progress * 5);  // First 20% eases in
+        const easeOut = Math.min(1, (1 - progress) * 5);  // Last 20% eases out
+        const trackStrength = Math.min(easeIn, easeOut);
+
+        return {
+            ...ctx.transform,
+            scale: lerp(1, e.scale ?? 1.05, trackStrength),
+            originX,
+            originY,
+        };
+    },
+};
+
+const resetProcessor: EffectProcessor = {
+    type: "reset",
+    process(ctx): CameraTransform {
+        const e = ctx.effect as ResetEffect;
+        const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+        const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+
+        // Interpolate all values toward neutral (default state)
+        return {
+            scale: lerp(ctx.transform.scale, 1, easedProgress),
+            translateX: lerp(ctx.transform.translateX, 0, easedProgress),
+            translateY: lerp(ctx.transform.translateY, 0, easedProgress),
+            originX: lerp(ctx.transform.originX, 0.5, easedProgress),
+            originY: lerp(ctx.transform.originY, 0.5, easedProgress),
+            rotation: lerp(ctx.transform.rotation, 0, easedProgress),
+            shakeX: lerp(ctx.transform.shakeX, 0, easedProgress),
+            shakeY: lerp(ctx.transform.shakeY, 0, easedProgress),
+        };
+    },
+};
+
+// =============================================================================
+// REGISTRY
+// =============================================================================
+
+const processorRegistry = new Map<string, EffectProcessor>();
+
+// Register built-in processors
+processorRegistry.set("zoom", zoomProcessor);
+processorRegistry.set("shake", shakeProcessor);
+processorRegistry.set("focus", focusProcessor);
+processorRegistry.set("track", trackProcessor);
+processorRegistry.set("reset", resetProcessor);
+
+// Uppercase aliases for direct camera events (e.g., from engine handler)
+processorRegistry.set("ZOOM", zoomProcessor);
+processorRegistry.set("SHAKE", shakeProcessor);
+processorRegistry.set("RESET", resetProcessor);
+
+/**
+ * Register a custom effect processor.
+ */
+export function registerCameraProcessor(processor: EffectProcessor): void {
+    processorRegistry.set(processor.type, processor);
+}
+
+// =============================================================================
+// MAIN PROCESSING FUNCTION
+// =============================================================================
+
+/**
+ * Process all active effects and return final transform.
+ * 
+ * This is a PURE function - same inputs always produce same outputs.
+ * Compatible with Remotion's frame-by-frame rendering.
+ */
+export function processActiveEffects(
+    t: number,
+    effects: CameraEffect[],
+    initialTransform: CameraTransform = DEFAULT_TRANSFORM,
+    anchorSnapshot?: AnchorSnapshot,
+    viewport?: { width: number; height: number }
+): CameraTransform {
+    let transform = { ...initialTransform };
+
+    // Filter to active effects only
+    const activeEffects = effects.filter(
+        e => t >= e.startFrame && t < e.endFrame
+    );
+
+    // Process each effect through its registered processor
+    for (const effect of activeEffects) {
+        const processor = processorRegistry.get(effect.type);
+        if (processor) {
+            transform = processor.process({
+                t,
+                effect,
+                transform,
+                anchorSnapshot,
+                viewport,
+            });
+        }
+    }
+
+    return transform;
+}
+````
+
+## File: packages/device-camera/tsconfig.tsbuildinfo
+````
+{"fileNames":["../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.webworker.importscripts.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.scripthost.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.core.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.generator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.proxy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.reflect.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.array.include.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asyncgenerator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.bigint.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.number.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.weakref.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.disposable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.iterator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.float16.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.full.d.ts","./src/types/index.ts","./src/anchors/types.ts","./src/anchors/registry.ts","./src/anchors/resolver.ts","./src/anchors/index.ts","./src/utils/index.ts","./src/processors/index.ts","./src/director-lite/types.ts","./src/director-lite/strategy.ts","./src/director-lite/derive.ts","./src/director-lite/signals.ts","./src/director-lite/index.ts","./src/reducer/index.ts","./src/presets.ts","./src/lowering/handler.ts","./src/lowering/index.ts","./src/plugin.ts","./src/index.ts","./src/processors/types.ts","./src/processors/reset.ts","./src/processors/shake.ts","./src/processors/track.ts","./src/processors/zoom.ts","../../node_modules/.pnpm/@types+estree@1.0.8/node_modules/@types/estree/index.d.ts","../../node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema/index.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/use-at-your-own-risk.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/index.d.ts","../../node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/disposable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/indexable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/iterators.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.typedarray.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/abortcontroller.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/domexception.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/events.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/header.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/readable.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/file.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/fetch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/formdata.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/connector.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-origin.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool-stats.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/handlers.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/balanced-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-interceptor.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/env-http-proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-handler.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/api.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/interceptors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/util.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cookies.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/patch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/websocket.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/eventsource.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/filereader.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/diagnostics-channel.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/content-type.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cache.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/fetch.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert/strict.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/async_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/child_process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/cluster.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/console.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/constants.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/crypto.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dgram.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/diagnostics_channel.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/domain.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http2.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/https.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/inspector.generated.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/module.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/net.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/os.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/path.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/perf_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/punycode.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/querystring.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/repl.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/sea.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/consumers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/web.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/string_decoder.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/test.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tls.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/trace_events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tty.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/url.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/util.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/v8.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/vm.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/wasi.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/worker_threads.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/zlib.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/index.d.ts"],"fileIdsList":[[110,113,120,166],[110,111,112,120,166],[113,120,166],[120,166],[120,163,166],[120,165,166],[166],[120,166,171,199],[120,166,167,172,177,185,196,207],[120,166,167,168,177,185],[115,116,117,120,166],[120,166,169,208],[120,166,170,171,178,186],[120,166,171,196,204],[120,166,172,174,177,185],[120,165,166,173],[120,166,174,175],[120,166,176,177],[120,165,166,177],[120,166,177,178,179,196,207],[120,166,177,178,179,192,196,199],[120,166,174,177,180,185,196,207],[120,166,177,178,180,181,185,196,204,207],[120,166,180,182,196,204,207],[118,119,120,121,122,123,124,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,177,183],[120,166,184,207,212],[120,166,174,177,185,196],[120,166,186],[120,166,187],[120,165,166,188],[120,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,190],[120,166,191],[120,166,177,192,193],[120,166,192,194,208,210],[120,166,177,196,197,199],[120,166,198,199],[120,166,196,197],[120,166,199],[120,166,200],[120,163,166,196,201],[120,166,177,202,203],[120,166,202,203],[120,166,171,185,196,204],[120,166,205],[120,166,185,206],[120,166,180,191,207],[120,166,171,208],[120,166,196,209],[120,166,184,210],[120,166,211],[120,161,166],[120,161,166,177,179,188,196,199,207,210,212],[120,166,196,213],[120,133,137,166,207],[120,133,166,196,207],[120,128,166],[120,130,133,166,204,207],[120,166,185,204],[120,166,214],[120,128,166,214],[120,130,133,166,185,207],[120,125,126,129,132,166,177,196,207],[120,133,140,166],[120,125,131,166],[120,133,154,155,166],[120,129,133,166,199,207,214],[120,154,166,214],[120,127,128,166,214],[120,133,166],[120,127,128,129,130,131,132,133,134,135,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,155,156,157,158,159,160,166],[120,133,148,166],[120,133,140,141,166],[120,131,133,141,142,166],[120,132,166],[120,125,128,133,166],[120,133,137,141,142,166],[120,137,166],[120,131,133,136,166,207],[120,125,130,133,140,166],[120,166,196],[120,128,133,154,166,212,214],[88,89,90,120,166],[88,120,166],[88,89,120,166],[87,92,94,95,120,166],[87,94,95,96,97,120,166],[94,120,166],[87,91,92,93,98,99,100,102,103,120,166],[101,120,166],[99,120,166],[87,88,90,92,120,166],[87,92,105,120,166],[87,120,166]],"fileInfos":[{"version":"c430d44666289dae81f30fa7b2edebf186ecc91a2d4c71266ea6ae76388792e1","affectsGlobalScope":true,"impliedFormat":1},{"version":"45b7ab580deca34ae9729e97c13cfd999df04416a79116c3bfb483804f85ded4","impliedFormat":1},{"version":"3facaf05f0c5fc569c5649dd359892c98a85557e3e0c847964caeb67076f4d75","impliedFormat":1},{"version":"e44bb8bbac7f10ecc786703fe0a6a4b952189f908707980ba8f3c8975a760962","impliedFormat":1},{"version":"5e1c4c362065a6b95ff952c0eab010f04dcd2c3494e813b493ecfd4fcb9fc0d8","impliedFormat":1},{"version":"68d73b4a11549f9c0b7d352d10e91e5dca8faa3322bfb77b661839c42b1ddec7","impliedFormat":1},{"version":"5efce4fc3c29ea84e8928f97adec086e3dc876365e0982cc8479a07954a3efd4","impliedFormat":1},{"version":"feecb1be483ed332fad555aff858affd90a48ab19ba7272ee084704eb7167569","impliedFormat":1},{"version":"ee7bad0c15b58988daa84371e0b89d313b762ab83cb5b31b8a2d1162e8eb41c2","impliedFormat":1},{"version":"27bdc30a0e32783366a5abeda841bc22757c1797de8681bbe81fbc735eeb1c10","impliedFormat":1},{"version":"8fd575e12870e9944c7e1d62e1f5a73fcf23dd8d3a321f2a2c74c20d022283fe","impliedFormat":1},{"version":"2ab096661c711e4a81cc464fa1e6feb929a54f5340b46b0a07ac6bbf857471f0","impliedFormat":1},{"version":"080941d9f9ff9307f7e27a83bcd888b7c8270716c39af943532438932ec1d0b9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2e80ee7a49e8ac312cc11b77f1475804bee36b3b2bc896bead8b6e1266befb43","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7a3c8b952931daebdfc7a2897c53c0a1c73624593fa070e46bd537e64dcd20a","affectsGlobalScope":true,"impliedFormat":1},{"version":"80e18897e5884b6723488d4f5652167e7bb5024f946743134ecc4aa4ee731f89","affectsGlobalScope":true,"impliedFormat":1},{"version":"cd034f499c6cdca722b60c04b5b1b78e058487a7085a8e0d6fb50809947ee573","affectsGlobalScope":true,"impliedFormat":1},{"version":"c57796738e7f83dbc4b8e65132f11a377649c00dd3eee333f672b8f0a6bea671","affectsGlobalScope":true,"impliedFormat":1},{"version":"dc2df20b1bcdc8c2d34af4926e2c3ab15ffe1160a63e58b7e09833f616efff44","affectsGlobalScope":true,"impliedFormat":1},{"version":"515d0b7b9bea2e31ea4ec968e9edd2c39d3eebf4a2d5cbd04e88639819ae3b71","affectsGlobalScope":true,"impliedFormat":1},{"version":"0559b1f683ac7505ae451f9a96ce4c3c92bdc71411651ca6ddb0e88baaaad6a3","affectsGlobalScope":true,"impliedFormat":1},{"version":"0dc1e7ceda9b8b9b455c3a2d67b0412feab00bd2f66656cd8850e8831b08b537","affectsGlobalScope":true,"impliedFormat":1},{"version":"ce691fb9e5c64efb9547083e4a34091bcbe5bdb41027e310ebba8f7d96a98671","affectsGlobalScope":true,"impliedFormat":1},{"version":"8d697a2a929a5fcb38b7a65594020fcef05ec1630804a33748829c5ff53640d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ff2a353abf8a80ee399af572debb8faab2d33ad38c4b4474cff7f26e7653b8d","affectsGlobalScope":true,"impliedFormat":1},{"version":"fb0f136d372979348d59b3f5020b4cdb81b5504192b1cacff5d1fbba29378aa1","affectsGlobalScope":true,"impliedFormat":1},{"version":"d15bea3d62cbbdb9797079416b8ac375ae99162a7fba5de2c6c505446486ac0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"68d18b664c9d32a7336a70235958b8997ebc1c3b8505f4f1ae2b7e7753b87618","affectsGlobalScope":true,"impliedFormat":1},{"version":"eb3d66c8327153d8fa7dd03f9c58d351107fe824c79e9b56b462935176cdf12a","affectsGlobalScope":true,"impliedFormat":1},{"version":"38f0219c9e23c915ef9790ab1d680440d95419ad264816fa15009a8851e79119","affectsGlobalScope":true,"impliedFormat":1},{"version":"69ab18c3b76cd9b1be3d188eaf8bba06112ebbe2f47f6c322b5105a6fbc45a2e","affectsGlobalScope":true,"impliedFormat":1},{"version":"a680117f487a4d2f30ea46f1b4b7f58bef1480456e18ba53ee85c2746eeca012","affectsGlobalScope":true,"impliedFormat":1},{"version":"2f11ff796926e0832f9ae148008138ad583bd181899ab7dd768a2666700b1893","affectsGlobalScope":true,"impliedFormat":1},{"version":"4de680d5bb41c17f7f68e0419412ca23c98d5749dcaaea1896172f06435891fc","affectsGlobalScope":true,"impliedFormat":1},{"version":"954296b30da6d508a104a3a0b5d96b76495c709785c1d11610908e63481ee667","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac9538681b19688c8eae65811b329d3744af679e0bdfa5d842d0e32524c73e1c","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a969edff4bd52585473d24995c5ef223f6652d6ef46193309b3921d65dd4376","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e9fbd7030c440b33d021da145d3232984c8bb7916f277e8ffd3dc2e3eae2bdb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811ec78f7fefcabbda4bfa93b3eb67d9ae166ef95f9bff989d964061cbf81a0c","affectsGlobalScope":true,"impliedFormat":1},{"version":"717937616a17072082152a2ef351cb51f98802fb4b2fdabd32399843875974ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7e7d9b7b50e5f22c915b525acc5a49a7a6584cf8f62d0569e557c5cfc4b2ac2","affectsGlobalScope":true,"impliedFormat":1},{"version":"71c37f4c9543f31dfced6c7840e068c5a5aacb7b89111a4364b1d5276b852557","affectsGlobalScope":true,"impliedFormat":1},{"version":"576711e016cf4f1804676043e6a0a5414252560eb57de9faceee34d79798c850","affectsGlobalScope":true,"impliedFormat":1},{"version":"89c1b1281ba7b8a96efc676b11b264de7a8374c5ea1e6617f11880a13fc56dc6","affectsGlobalScope":true,"impliedFormat":1},{"version":"74f7fa2d027d5b33eb0471c8e82a6c87216223181ec31247c357a3e8e2fddc5b","affectsGlobalScope":true,"impliedFormat":1},{"version":"d6d7ae4d1f1f3772e2a3cde568ed08991a8ae34a080ff1151af28b7f798e22ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"063600664504610fe3e99b717a1223f8b1900087fab0b4cad1496a114744f8df","affectsGlobalScope":true,"impliedFormat":1},{"version":"934019d7e3c81950f9a8426d093458b65d5aff2c7c1511233c0fd5b941e608ab","affectsGlobalScope":true,"impliedFormat":1},{"version":"52ada8e0b6e0482b728070b7639ee42e83a9b1c22d205992756fe020fd9f4a47","affectsGlobalScope":true,"impliedFormat":1},{"version":"3bdefe1bfd4d6dee0e26f928f93ccc128f1b64d5d501ff4a8cf3c6371200e5e6","affectsGlobalScope":true,"impliedFormat":1},{"version":"59fb2c069260b4ba00b5643b907ef5d5341b167e7d1dbf58dfd895658bda2867","affectsGlobalScope":true,"impliedFormat":1},{"version":"639e512c0dfc3fad96a84caad71b8834d66329a1f28dc95e3946c9b58176c73a","affectsGlobalScope":true,"impliedFormat":1},{"version":"368af93f74c9c932edd84c58883e736c9e3d53cec1fe24c0b0ff451f529ceab1","affectsGlobalScope":true,"impliedFormat":1},{"version":"af3dd424cf267428f30ccfc376f47a2c0114546b55c44d8c0f1d57d841e28d74","affectsGlobalScope":true,"impliedFormat":1},{"version":"995c005ab91a498455ea8dfb63aa9f83fa2ea793c3d8aa344be4a1678d06d399","affectsGlobalScope":true,"impliedFormat":1},{"version":"959d36cddf5e7d572a65045b876f2956c973a586da58e5d26cde519184fd9b8a","affectsGlobalScope":true,"impliedFormat":1},{"version":"965f36eae237dd74e6cca203a43e9ca801ce38824ead814728a2807b1910117d","affectsGlobalScope":true,"impliedFormat":1},{"version":"3925a6c820dcb1a06506c90b1577db1fdbf7705d65b62b99dce4be75c637e26b","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a3d63ef2b853447ec4f749d3f368ce642264246e02911fcb1590d8c161b8005","affectsGlobalScope":true,"impliedFormat":1},{"version":"8cdf8847677ac7d20486e54dd3fcf09eda95812ac8ace44b4418da1bbbab6eb8","affectsGlobalScope":true,"impliedFormat":1},{"version":"8444af78980e3b20b49324f4a16ba35024fef3ee069a0eb67616ea6ca821c47a","affectsGlobalScope":true,"impliedFormat":1},{"version":"3287d9d085fbd618c3971944b65b4be57859f5415f495b33a6adc994edd2f004","affectsGlobalScope":true,"impliedFormat":1},{"version":"b4b67b1a91182421f5df999988c690f14d813b9850b40acd06ed44691f6727ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"df83c2a6c73228b625b0beb6669c7ee2a09c914637e2d35170723ad49c0f5cd4","affectsGlobalScope":true,"impliedFormat":1},{"version":"436aaf437562f276ec2ddbee2f2cdedac7664c1e4c1d2c36839ddd582eeb3d0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e3c06ea092138bf9fa5e874a1fdbc9d54805d074bee1de31b99a11e2fec239d","affectsGlobalScope":true,"impliedFormat":1},{"version":"87dc0f382502f5bbce5129bdc0aea21e19a3abbc19259e0b43ae038a9fc4e326","affectsGlobalScope":true,"impliedFormat":1},{"version":"b1cb28af0c891c8c96b2d6b7be76bd394fddcfdb4709a20ba05a7c1605eea0f9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2fef54945a13095fdb9b84f705f2b5994597640c46afeb2ce78352fab4cb3279","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac77cb3e8c6d3565793eb90a8373ee8033146315a3dbead3bde8db5eaf5e5ec6","affectsGlobalScope":true,"impliedFormat":1},{"version":"56e4ed5aab5f5920980066a9409bfaf53e6d21d3f8d020c17e4de584d29600ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ece9f17b3866cc077099c73f4983bddbcb1dc7ddb943227f1ec070f529dedd1","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a6282c8827e4b9a95f4bf4f5c205673ada31b982f50572d27103df8ceb8013c","affectsGlobalScope":true,"impliedFormat":1},{"version":"1c9319a09485199c1f7b0498f2988d6d2249793ef67edda49d1e584746be9032","affectsGlobalScope":true,"impliedFormat":1},{"version":"e3a2a0cee0f03ffdde24d89660eba2685bfbdeae955a6c67e8c4c9fd28928eeb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811c71eee4aa0ac5f7adf713323a5c41b0cf6c4e17367a34fbce379e12bbf0a4","affectsGlobalScope":true,"impliedFormat":1},{"version":"51ad4c928303041605b4d7ae32e0c1ee387d43a24cd6f1ebf4a2699e1076d4fa","affectsGlobalScope":true,"impliedFormat":1},{"version":"60037901da1a425516449b9a20073aa03386cce92f7a1fd902d7602be3a7c2e9","affectsGlobalScope":true,"impliedFormat":1},{"version":"d4b1d2c51d058fc21ec2629fff7a76249dec2e36e12960ea056e3ef89174080f","affectsGlobalScope":true,"impliedFormat":1},{"version":"22adec94ef7047a6c9d1af3cb96be87a335908bf9ef386ae9fd50eeb37f44c47","affectsGlobalScope":true,"impliedFormat":1},{"version":"196cb558a13d4533a5163286f30b0509ce0210e4b316c56c38d4c0fd2fb38405","affectsGlobalScope":true,"impliedFormat":1},{"version":"73f78680d4c08509933daf80947902f6ff41b6230f94dd002ae372620adb0f60","affectsGlobalScope":true,"impliedFormat":1},{"version":"c5239f5c01bcfa9cd32f37c496cf19c61d69d37e48be9de612b541aac915805b","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e7f8264d0fb4c5339605a15daadb037bf238c10b654bb3eee14208f860a32ea","affectsGlobalScope":true,"impliedFormat":1},{"version":"782dec38049b92d4e85c1585fbea5474a219c6984a35b004963b00beb1aab538","affectsGlobalScope":true,"impliedFormat":1},{"version":"bde31fd423cd93b0eff97197a3f66df7c93e8c0c335cbeb113b7ff1ac35c23f4","impliedFormat":1},{"version":"48b3b8b8d97f7d23ed1a4782657a4035ae1bd953cbc51e8453b5dffcd3959b71","signature":"51ccfb61148b7f2f6909812b1b7159e42157c39d5a86ee5c4f2637e29c0fcc01"},{"version":"dfcd389a6bab366fa5a520042f49fe0039a2fee6ec0f3a14ab79182d87a4e2c6","signature":"9b1521dc296b55e6a2a51536eafe56c8c3a9e09057071cd1a238c9348200e5e3"},{"version":"01729c605ccb4a309ef00062a23d46a7ff3e529d8bb4bed44d55e8961c123a3e","signature":"8c01fe82f497636f0a512983301dc1f0e023dc95042e79ce9772b952b3f379ba"},{"version":"868ec29ad02e61b82d0142ce689363c2de0c656a1871863174b8a9fc836f0392","signature":"d67b2969917d86eea8f3c6064cb0c41fd97050f74316c6af32f57a818c50d147"},{"version":"e34e3bea4bb28011894599887ed6324c774df53ea95a1005ab2a5d6d1313f434","signature":"2f7240974a13feb51dcfb82e98f18c19c34a305b118e61ebc3fbe8261f2e8bdd"},{"version":"50cac1f7bb4193fcce54ddcdf0e8ef75199b273d1bd5cc4ae2a6c538d0603436","signature":"aa331bfd775aa7f7d843eb3ab67866961ccbd22603f707413754dc9fba216c08"},{"version":"899ee3f26c138885986d7b04814949725b125361e4213df03ec0b3f9877ab8c2","signature":"6847e485b08dc33a5d08a241f4401e09f0a0ff02a8afc97eef8835a3c54e74a0"},{"version":"08dcaf353b848cc5d673bb4b52776f2808ba4af4192e4b495218efba54c89a81","signature":"65176d057ac38f5398e7e4dc976e1cb32a8ed8212daaf866c1e11e1b6ad1f195"},{"version":"02ea6089e32ce6a82bed8134aa007e575dfd16cc0a270248459b4b3cd77a0c16","signature":"2cff0f47a9df649303a2eebdc93509d22328ba637773ce8811cae0c34d2939aa"},{"version":"15d9f7de8ac4dd2b603de77a2d945c11e64f74f7c7829561d3e8b427d3c5811a","signature":"55e5818bc6cbd20f88f26945bd717d1038cf78b1d868840c737e46a92a53ae7e"},{"version":"34462201bd579b9fe51baf8752da29db87582de2b1153b422f0d2dc6e69ea93e","signature":"be8cb3b164f11b63430cd1278c9d2e6906dbe428ecbba1753b683da5d51ce741"},{"version":"a453a18888b61a5bd5852ac4c30de1015a8f02e142814bbaedc019e2b052c3d6","signature":"f42d8838e79aacedd22ad383900185f896224c66067677ec66d3b88aa9f111b4"},{"version":"bc3cabe12c19bea24d148e394e30d316548e5c427828a325af3f7b41fb0adc60","signature":"14c5339bc6b6cc234d903eba7e051a05128d32fdb67fe9a00fe28c8ed5a777f9"},{"version":"e734d863ea49079bd785bef95b2879404b81f5d82a4efeb4fe46a4898c09a74c","signature":"e1ec54e2380448538c8f99bd859f3a772069511a36150afdeaa2d01abaa99243"},{"version":"bd36f20e75598369b740269b580ccf2e61fb560866afe76df5f19823382e279a","signature":"29ea4ca6ea4b5f1f83b8d76f61775cf9ffc07c24757b048ed512622c6fc65a44"},{"version":"e02e29766ec2254c31a9d6ba7ab0e566178f024a9d1d03f348fd879939d7a657","signature":"4ef6cee2bccf72863fb0875a26d125dda4e2b382371642687481d9f5284467a4"},{"version":"8d617caa67a5d6659c0ae8ea4b4583c5952a2b03ecc83d609c4eda7048290645","signature":"1061345cd792c0f141f49073cf6724ec67babd9ff1b3f0605ae9dda7da67c109"},{"version":"13c63057bf769e4bac0f07ab85b37b8351bd934b39374c709b303a2bb8a53c9f","signature":"378677c113999e1817e9126cdc302dbaf7cdc2e624b190c7afe2e8711e821ac0"},{"version":"b82fdebe2a642e93eb1816b353482aad286e83b13b8016614488cfaea5f2831c","signature":"70ae801d524f6b22676db3cd303dd63793e0281d8de9172e902bbcf47395b373"},{"version":"eae6e8df7034e09dc8c49836c996dfee10b0a3931c3001feb8a6d3df8119ae04","signature":"dc705b2994d881bd6a656bf89e749ad486605659b0fe3be6376ed16366babe6e"},{"version":"4c7870ee095003bc1f516c71a51cd740facaf856720c70aa222fffe59e6b4ba3","signature":"ca98ccac320cc234a22cc278f6a1f1ad20c99af31230efde224f7dc7cc13caba"},{"version":"2b4071c63de850bbfc060e299d82d7af1ad22d754a3154b79758559c0a5c050c","signature":"f96b484f8dc4df74800857261d36b8042d9b843f42c8bc7adc27fbcfe936bae2"},{"version":"751250daca14385b2780c58c762dfa6d6f2d188086f1863c986b21df1a791fd4","signature":"0a78a5fcad7e8d00496edab48e6007ac93d20c2d5a3c9e1e4f547c5855a53854"},{"version":"151ff381ef9ff8da2da9b9663ebf657eac35c4c9a19183420c05728f31a6761d","impliedFormat":1},{"version":"f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1","impliedFormat":1},{"version":"a4a39b5714adfcadd3bbea6698ca2e942606d833bde62ad5fb6ec55f5e438ff8","impliedFormat":1},{"version":"bbc1d029093135d7d9bfa4b38cbf8761db505026cc458b5e9c8b74f4000e5e75","impliedFormat":1},{"version":"1f68ab0e055994eb337b67aa87d2a15e0200951e9664959b3866ee6f6b11a0fe","impliedFormat":1},{"version":"70521b6ab0dcba37539e5303104f29b721bfb2940b2776da4cc818c07e1fefc1","affectsGlobalScope":true,"impliedFormat":1},{"version":"ab41ef1f2cdafb8df48be20cd969d875602483859dc194e9c97c8a576892c052","affectsGlobalScope":true,"impliedFormat":1},{"version":"d153a11543fd884b596587ccd97aebbeed950b26933ee000f94009f1ab142848","affectsGlobalScope":true,"impliedFormat":1},{"version":"21d819c173c0cf7cc3ce57c3276e77fd9a8a01d35a06ad87158781515c9a438a","impliedFormat":1},{"version":"98cffbf06d6bab333473c70a893770dbe990783904002c4f1a960447b4b53dca","affectsGlobalScope":true,"impliedFormat":1},{"version":"ba481bca06f37d3f2c137ce343c7d5937029b2468f8e26111f3c9d9963d6568d","affectsGlobalScope":true,"impliedFormat":1},{"version":"6d9ef24f9a22a88e3e9b3b3d8c40ab1ddb0853f1bfbd5c843c37800138437b61","affectsGlobalScope":true,"impliedFormat":1},{"version":"1db0b7dca579049ca4193d034d835f6bfe73096c73663e5ef9a0b5779939f3d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"9798340ffb0d067d69b1ae5b32faa17ab31b82466a3fc00d8f2f2df0c8554aaa","affectsGlobalScope":true,"impliedFormat":1},{"version":"f26b11d8d8e4b8028f1c7d618b22274c892e4b0ef5b3678a8ccbad85419aef43","affectsGlobalScope":true,"impliedFormat":1},{"version":"5929864ce17fba74232584d90cb721a89b7ad277220627cc97054ba15a98ea8f","impliedFormat":1},{"version":"763fe0f42b3d79b440a9b6e51e9ba3f3f91352469c1e4b3b67bfa4ff6352f3f4","impliedFormat":1},{"version":"25c8056edf4314820382a5fdb4bb7816999acdcb929c8f75e3f39473b87e85bc","impliedFormat":1},{"version":"c464d66b20788266e5353b48dc4aa6bc0dc4a707276df1e7152ab0c9ae21fad8","impliedFormat":1},{"version":"78d0d27c130d35c60b5e5566c9f1e5be77caf39804636bc1a40133919a949f21","impliedFormat":1},{"version":"c6fd2c5a395f2432786c9cb8deb870b9b0e8ff7e22c029954fabdd692bff6195","impliedFormat":1},{"version":"1d6e127068ea8e104a912e42fc0a110e2aa5a66a356a917a163e8cf9a65e4a75","impliedFormat":1},{"version":"5ded6427296cdf3b9542de4471d2aa8d3983671d4cac0f4bf9c637208d1ced43","impliedFormat":1},{"version":"7f182617db458e98fc18dfb272d40aa2fff3a353c44a89b2c0ccb3937709bfb5","impliedFormat":1},{"version":"cadc8aced301244057c4e7e73fbcae534b0f5b12a37b150d80e5a45aa4bebcbd","impliedFormat":1},{"version":"385aab901643aa54e1c36f5ef3107913b10d1b5bb8cbcd933d4263b80a0d7f20","impliedFormat":1},{"version":"9670d44354bab9d9982eca21945686b5c24a3f893db73c0dae0fd74217a4c219","impliedFormat":1},{"version":"0b8a9268adaf4da35e7fa830c8981cfa22adbbe5b3f6f5ab91f6658899e657a7","impliedFormat":1},{"version":"11396ed8a44c02ab9798b7dca436009f866e8dae3c9c25e8c1fbc396880bf1bb","impliedFormat":1},{"version":"ba7bc87d01492633cb5a0e5da8a4a42a1c86270e7b3d2dea5d156828a84e4882","impliedFormat":1},{"version":"4893a895ea92c85345017a04ed427cbd6a1710453338df26881a6019432febdd","impliedFormat":1},{"version":"c21dc52e277bcfc75fac0436ccb75c204f9e1b3fa5e12729670910639f27343e","impliedFormat":1},{"version":"13f6f39e12b1518c6650bbb220c8985999020fe0f21d818e28f512b7771d00f9","impliedFormat":1},{"version":"9b5369969f6e7175740bf51223112ff209f94ba43ecd3bb09eefff9fd675624a","impliedFormat":1},{"version":"4fe9e626e7164748e8769bbf74b538e09607f07ed17c2f20af8d680ee49fc1da","impliedFormat":1},{"version":"24515859bc0b836719105bb6cc3d68255042a9f02a6022b3187948b204946bd2","impliedFormat":1},{"version":"ea0148f897b45a76544ae179784c95af1bd6721b8610af9ffa467a518a086a43","impliedFormat":1},{"version":"24c6a117721e606c9984335f71711877293a9651e44f59f3d21c1ea0856f9cc9","impliedFormat":1},{"version":"dd3273ead9fbde62a72949c97dbec2247ea08e0c6952e701a483d74ef92d6a17","impliedFormat":1},{"version":"405822be75ad3e4d162e07439bac80c6bcc6dbae1929e179cf467ec0b9ee4e2e","impliedFormat":1},{"version":"0db18c6e78ea846316c012478888f33c11ffadab9efd1cc8bcc12daded7a60b6","impliedFormat":1},{"version":"e61be3f894b41b7baa1fbd6a66893f2579bfad01d208b4ff61daef21493ef0a8","impliedFormat":1},{"version":"bd0532fd6556073727d28da0edfd1736417a3f9f394877b6d5ef6ad88fba1d1a","impliedFormat":1},{"version":"89167d696a849fce5ca508032aabfe901c0868f833a8625d5a9c6e861ef935d2","impliedFormat":1},{"version":"615ba88d0128ed16bf83ef8ccbb6aff05c3ee2db1cc0f89ab50a4939bfc1943f","impliedFormat":1},{"version":"a4d551dbf8746780194d550c88f26cf937caf8d56f102969a110cfaed4b06656","impliedFormat":1},{"version":"8bd86b8e8f6a6aa6c49b71e14c4ffe1211a0e97c80f08d2c8cc98838006e4b88","impliedFormat":1},{"version":"317e63deeb21ac07f3992f5b50cdca8338f10acd4fbb7257ebf56735bf52ab00","impliedFormat":1},{"version":"4732aec92b20fb28c5fe9ad99521fb59974289ed1e45aecb282616202184064f","impliedFormat":1},{"version":"2e85db9e6fd73cfa3d7f28e0ab6b55417ea18931423bd47b409a96e4a169e8e6","impliedFormat":1},{"version":"c46e079fe54c76f95c67fb89081b3e399da2c7d109e7dca8e4b58d83e332e605","impliedFormat":1},{"version":"bf67d53d168abc1298888693338cb82854bdb2e69ef83f8a0092093c2d562107","impliedFormat":1},{"version":"2cbe0621042e2a68c7cbce5dfed3906a1862a16a7d496010636cdbdb91341c0f","affectsGlobalScope":true,"impliedFormat":1},{"version":"e2677634fe27e87348825bb041651e22d50a613e2fdf6a4a3ade971d71bac37e","impliedFormat":1},{"version":"7394959e5a741b185456e1ef5d64599c36c60a323207450991e7a42e08911419","impliedFormat":1},{"version":"8c0bcd6c6b67b4b503c11e91a1fb91522ed585900eab2ab1f61bba7d7caa9d6f","impliedFormat":1},{"version":"8cd19276b6590b3ebbeeb030ac271871b9ed0afc3074ac88a94ed2449174b776","affectsGlobalScope":true,"impliedFormat":1},{"version":"696eb8d28f5949b87d894b26dc97318ef944c794a9a4e4f62360cd1d1958014b","impliedFormat":1},{"version":"3f8fa3061bd7402970b399300880d55257953ee6d3cd408722cb9ac20126460c","impliedFormat":1},{"version":"35ec8b6760fd7138bbf5809b84551e31028fb2ba7b6dc91d95d098bf212ca8b4","affectsGlobalScope":true,"impliedFormat":1},{"version":"5524481e56c48ff486f42926778c0a3cce1cc85dc46683b92b1271865bcf015a","impliedFormat":1},{"version":"68bd56c92c2bd7d2339457eb84d63e7de3bd56a69b25f3576e1568d21a162398","affectsGlobalScope":true,"impliedFormat":1},{"version":"3e93b123f7c2944969d291b35fed2af79a6e9e27fdd5faa99748a51c07c02d28","impliedFormat":1},{"version":"9d19808c8c291a9010a6c788e8532a2da70f811adb431c97520803e0ec649991","impliedFormat":1},{"version":"87aad3dd9752067dc875cfaa466fc44246451c0c560b820796bdd528e29bef40","impliedFormat":1},{"version":"4aacb0dd020eeaef65426153686cc639a78ec2885dc72ad220be1d25f1a439df","impliedFormat":1},{"version":"f0bd7e6d931657b59605c44112eaf8b980ba7f957a5051ed21cb93d978cf2f45","impliedFormat":1},{"version":"8db0ae9cb14d9955b14c214f34dae1b9ef2baee2fe4ce794a4cd3ac2531e3255","affectsGlobalScope":true,"impliedFormat":1},{"version":"15fc6f7512c86810273af28f224251a5a879e4261b4d4c7e532abfbfc3983134","impliedFormat":1},{"version":"58adba1a8ab2d10b54dc1dced4e41f4e7c9772cbbac40939c0dc8ce2cdb1d442","impliedFormat":1},{"version":"2fd4c143eff88dabb57701e6a40e02a4dbc36d5eb1362e7964d32028056a782b","impliedFormat":1},{"version":"714435130b9015fae551788df2a88038471a5a11eb471f27c4ede86552842bc9","impliedFormat":1},{"version":"855cd5f7eb396f5f1ab1bc0f8580339bff77b68a770f84c6b254e319bbfd1ac7","impliedFormat":1},{"version":"5650cf3dace09e7c25d384e3e6b818b938f68f4e8de96f52d9c5a1b3db068e86","impliedFormat":1},{"version":"1354ca5c38bd3fd3836a68e0f7c9f91f172582ba30ab15bb8c075891b91502b7","affectsGlobalScope":true,"impliedFormat":1},{"version":"27fdb0da0daf3b337c5530c5f266efe046a6ceb606e395b346974e4360c36419","impliedFormat":1},{"version":"2d2fcaab481b31a5882065c7951255703ddbe1c0e507af56ea42d79ac3911201","impliedFormat":1},{"version":"afbe24ab0d74694372baa632ecb28bb375be53f3be53f9b07ecd7fc994907de5","impliedFormat":1},{"version":"ca867399f7db82df981d6915bcbb2d81131d7d1ef683bc782b59f71dda59bc85","affectsGlobalScope":true,"impliedFormat":1},{"version":"00877fef624f3171c2e44944fb63a55e2a9f9120d7c8b5eb4181c263c9a077cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e043a1bc8fbf2a255bccf9bf27e0f1caf916c3b0518ea34aa72357c0afd42ec","impliedFormat":1},{"version":"b4f70ec656a11d570e1a9edce07d118cd58d9760239e2ece99306ee9dfe61d02","impliedFormat":1},{"version":"3bc2f1e2c95c04048212c569ed38e338873f6a8593930cf5a7ef24ffb38fc3b6","impliedFormat":1},{"version":"6e70e9570e98aae2b825b533aa6292b6abd542e8d9f6e9475e88e1d7ba17c866","impliedFormat":1},{"version":"f9d9d753d430ed050dc1bf2667a1bab711ccbb1c1507183d794cc195a5b085cc","impliedFormat":1},{"version":"9eece5e586312581ccd106d4853e861aaaa1a39f8e3ea672b8c3847eedd12f6e","impliedFormat":1},{"version":"47ab634529c5955b6ad793474ae188fce3e6163e3a3fb5edd7e0e48f14435333","impliedFormat":1},{"version":"37ba7b45141a45ce6e80e66f2a96c8a5ab1bcef0fc2d0f56bb58df96ec67e972","impliedFormat":1},{"version":"45650f47bfb376c8a8ed39d4bcda5902ab899a3150029684ee4c10676d9fbaee","impliedFormat":1},{"version":"0225ecb9ed86bdb7a2c7fd01f1556906902929377b44483dc4b83e03b3ef227d","affectsGlobalScope":true,"impliedFormat":1},{"version":"74cf591a0f63db318651e0e04cb55f8791385f86e987a67fd4d2eaab8191f730","impliedFormat":1},{"version":"5eab9b3dc9b34f185417342436ec3f106898da5f4801992d8ff38ab3aff346b5","impliedFormat":1},{"version":"12ed4559eba17cd977aa0db658d25c4047067444b51acfdcbf38470630642b23","affectsGlobalScope":true,"impliedFormat":1},{"version":"f3ffabc95802521e1e4bcba4c88d8615176dc6e09111d920c7a213bdda6e1d65","impliedFormat":1},{"version":"f9ab232778f2842ffd6955f88b1049982fa2ecb764d129ee4893cbc290f41977","impliedFormat":1},{"version":"ae56f65caf3be91108707bd8dfbccc2a57a91feb5daabf7165a06a945545ed26","impliedFormat":1},{"version":"a136d5de521da20f31631a0a96bf712370779d1c05b7015d7019a9b2a0446ca9","impliedFormat":1},{"version":"c3b41e74b9a84b88b1dca61ec39eee25c0dbc8e7d519ba11bb070918cfacf656","affectsGlobalScope":true,"impliedFormat":1},{"version":"4737a9dc24d0e68b734e6cfbcea0c15a2cfafeb493485e27905f7856988c6b29","affectsGlobalScope":true,"impliedFormat":1},{"version":"36d8d3e7506b631c9582c251a2c0b8a28855af3f76719b12b534c6edf952748d","impliedFormat":1},{"version":"1ca69210cc42729e7ca97d3a9ad48f2e9cb0042bada4075b588ae5387debd318","impliedFormat":1},{"version":"f5ebe66baaf7c552cfa59d75f2bfba679f329204847db3cec385acda245e574e","impliedFormat":1},{"version":"ed59add13139f84da271cafd32e2171876b0a0af2f798d0c663e8eeb867732cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"05db535df8bdc30d9116fe754a3473d1b6479afbc14ae8eb18b605c62677d518","impliedFormat":1},{"version":"b1810689b76fd473bd12cc9ee219f8e62f54a7d08019a235d07424afbf074d25","impliedFormat":1}],"root":[[87,109]],"options":{"composite":true,"declaration":true,"declarationMap":true,"esModuleInterop":true,"jsx":4,"module":99,"outDir":"./dist","rootDir":"./src","skipLibCheck":true,"sourceMap":true,"strict":true,"target":99},"referencedMap":[[114,1],[113,2],[112,3],[110,4],[111,4],[163,5],[164,5],[165,6],[120,7],[166,8],[167,9],[168,10],[115,4],[118,11],[116,4],[117,4],[169,12],[170,13],[171,14],[172,15],[173,16],[174,17],[175,17],[176,18],[177,19],[178,20],[179,21],[121,4],[119,4],[180,22],[181,23],[182,24],[214,25],[183,26],[184,27],[185,28],[186,29],[187,30],[188,31],[189,32],[190,33],[191,34],[192,35],[193,35],[194,36],[195,4],[196,37],[198,38],[197,39],[199,40],[200,41],[201,42],[202,43],[203,44],[204,45],[205,46],[206,47],[207,48],[208,49],[209,50],[210,51],[211,52],[122,4],[123,4],[124,4],[162,53],[212,54],[213,55],[84,4],[85,4],[15,4],[13,4],[14,4],[19,4],[18,4],[2,4],[20,4],[21,4],[22,4],[23,4],[24,4],[25,4],[26,4],[27,4],[3,4],[28,4],[29,4],[4,4],[30,4],[34,4],[31,4],[32,4],[33,4],[35,4],[36,4],[37,4],[5,4],[38,4],[39,4],[40,4],[41,4],[6,4],[45,4],[42,4],[43,4],[44,4],[46,4],[7,4],[47,4],[52,4],[53,4],[48,4],[49,4],[50,4],[51,4],[8,4],[57,4],[54,4],[55,4],[56,4],[58,4],[9,4],[59,4],[60,4],[61,4],[63,4],[62,4],[64,4],[65,4],[10,4],[66,4],[67,4],[68,4],[11,4],[69,4],[70,4],[71,4],[72,4],[73,4],[1,4],[74,4],[75,4],[12,4],[79,4],[77,4],[82,4],[81,4],[86,4],[76,4],[80,4],[78,4],[83,4],[17,4],[16,4],[140,56],[150,57],[139,56],[160,58],[131,59],[130,60],[159,61],[153,62],[158,63],[133,64],[147,65],[132,66],[156,67],[128,68],[127,61],[157,69],[129,70],[134,71],[135,4],[138,71],[125,4],[161,72],[151,73],[142,74],[143,75],[145,76],[141,77],[144,78],[154,61],[136,79],[137,80],[146,81],[126,82],[149,73],[148,71],[152,4],[155,83],[91,84],[89,85],[90,86],[88,4],[96,87],[98,88],[97,89],[95,89],[94,4],[104,90],[101,4],[102,91],[103,92],[100,4],[93,93],[106,94],[107,94],[108,94],[105,95],[109,94],[99,95],[87,4],[92,95]],"latestChangedDtsFile":"./dist/types/index.d.ts","version":"5.9.3"}
 ````
 
 ## File: packages/episodes/src/production/keyboard-typing-demo.episode.ts
@@ -63626,6 +62770,297 @@ export default defineEpisode({
 });
 ````
 
+## File: packages/renderer/src/engines/useCameraEngine.ts
+````typescript
+/**
+ * Camera Engine - Frame-based transform computation
+ * 
+ * Pure computation layer that processes camera effects each frame.
+ * Compatible with Remotion's frame-by-frame rendering.
+ * 
+ * ARCHITECTURE:
+ * 1. Get effects from world.camera.activeEffects (typed)
+ * 2. Get anchors from registered providers
+ * 3. Process all effects through processor registry
+ * 4. Apply DirectorLite if no manual effects
+ * 5. Build CSS styles
+ * 
+ * @module device-camera
+ */
+
+import { useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
+
+// Import everything from device-camera
+import {
+    // Types
+    CameraEffect,
+    CameraTransform,
+    DEFAULT_TRANSFORM,
+    CameraState,
+
+    // Processors
+    processActiveEffects,
+
+    // Anchors
+    AnchorSnapshot,
+    getAnchorsForApp,
+
+    // Director-Lite
+    deriveDirectorEffects,
+    extractSignals,
+    convertToEffects,
+} from "@tokovo/device-camera";
+
+// Core imports for world/layout types
+import type { WorldState, EventIndex } from "@tokovo/core";
+import { getEventsInRange } from "@tokovo/core";
+
+import { LayoutEngineOutput } from "./useLayoutEngine";
+
+// =============================================================================
+// INPUT / OUTPUT TYPES
+// =============================================================================
+
+export interface CameraEngineInput {
+    /** Current world state */
+    world: WorldState;
+
+    /** Current frame */
+    t: number;
+
+    /** Layout engine output */
+    layoutOutput: LayoutEngineOutput;
+
+    /** Event index for signal extraction */
+    eventIndex?: EventIndex;
+
+    /** Enable DirectorLite auto-camera */
+    directorEnabled?: boolean;
+
+    /** Debug mode for DirectorLite */
+    directorDebug?: boolean;
+}
+
+export interface CameraEngineOutput {
+    /** Final computed transform */
+    transform: CameraTransform;
+
+    /** CSS styles for camera wrapper */
+    cameraStyle: CSSProperties;
+
+    /** CSS styles for device wrapper */
+    deviceStyle: CSSProperties;
+
+    /** Debug: why director was skipped */
+    directorSkipped?: string;
+
+    /** Anchor snapshot used this frame */
+    anchorSnapshot?: AnchorSnapshot;
+}
+
+// =============================================================================
+// MAIN HOOK
+// =============================================================================
+
+export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
+    const {
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled = false,
+        directorDebug = false,
+    } = input;
+
+    // Tracking state for smooth transitions
+    const prevTransformRef = useRef<CameraTransform>(DEFAULT_TRANSFORM);
+
+    return useMemo(() => {
+        const { appId, profile, layout, deviceId } = layoutOutput;
+
+        const viewport = {
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+        };
+
+        // =====================================================================
+        // 1. GET ANCHOR SNAPSHOT
+        // =====================================================================
+        let anchorSnapshot: AnchorSnapshot | undefined;
+        if (appId) {
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
+        }
+
+        // =====================================================================
+        // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
+        // =====================================================================
+        const effects: CameraEffect[] = world.camera?.activeEffects ?? [];
+
+        // Filter to active manual effects
+        const activeManualEffects = effects.filter(
+            e => t >= e.startFrame && t < e.endFrame
+        );
+
+        // =====================================================================
+        // 3. PROCESS EFFECTS THROUGH REGISTRY
+        // Use previous frame's transform as base so reset/transitions have state to lerp FROM
+        // =====================================================================
+        let transform = processActiveEffects(
+            t,
+            effects,
+            prevTransformRef.current,  // CRITICAL: Use previous transform, not DEFAULT
+            anchorSnapshot,
+            viewport
+        );
+
+        let directorSkipped: string | undefined;
+
+        // =====================================================================
+        // 4. DIRECTOR-LITE (if no manual effects active)
+        // =====================================================================
+        if (directorEnabled && activeManualEffects.length === 0 && eventIndex) {
+            // Extract signals from recent events
+            const windowStart = Math.max(0, t - 90);
+            const windowEnd = t + 15;
+            const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
+            const signals = extractSignals(eventsInWindow, t, 90);
+
+            // Derive camera effects from signals
+            const directorResult = deriveDirectorEffects({
+                t,
+                signals,
+                layoutModel: {
+                    messageRects: {},
+                    viewport,
+                },
+                seed: 42,
+                debug: directorDebug,
+                manualCameraEffects: effects,
+            });
+
+            if (directorResult.skipped) {
+                directorSkipped = directorResult.skipped;
+            }
+
+            // Apply director effects through processor registry
+            if (!directorResult.skipped && directorResult.effects.length > 0) {
+                // Convert DerivedCameraEffect to CameraEffect for processors
+                const directorEffects = convertToEffects(directorResult.effects, t);
+
+                // Process through the same processor registry as manual effects
+                transform = processActiveEffects(
+                    t,
+                    directorEffects,
+                    transform, // Use current transform as base
+                    anchorSnapshot,
+                    viewport
+                );
+            }
+        }
+
+        // =====================================================================
+        // 5. SMOOTH DECAY TO NEUTRAL (when no effects)
+        // =====================================================================
+        const hasActiveEffect = activeManualEffects.length > 0 ||
+            (directorEnabled && !directorSkipped);
+
+        if (!hasActiveEffect) {
+            // Smoothly return to neutral
+            const decayRate = 0.05;
+            const prev = prevTransformRef.current;
+            if (prev.scale !== 1 || prev.originX !== 0.5 || prev.originY !== 0.5) {
+                transform = {
+                    ...transform,
+                    scale: lerp(prev.scale, 1, decayRate),
+                    originX: lerp(prev.originX, 0.5, decayRate),
+                    originY: lerp(prev.originY, 0.5, decayRate),
+                };
+            }
+        }
+
+        // Store for next frame
+        prevTransformRef.current = transform;
+
+        // =====================================================================
+        // 6. BUILD CSS STYLES
+        // =====================================================================
+        const cameraStyle = buildCameraCSS(transform, viewport);
+        const deviceStyle = buildDeviceCSS(layout);
+
+        return {
+            transform,
+            cameraStyle,
+            deviceStyle,
+            directorSkipped,
+            anchorSnapshot,
+        };
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
+}
+
+// =============================================================================
+// CSS BUILDERS
+// =============================================================================
+
+function buildCameraCSS(
+    transform: CameraTransform,
+    viewport: { width: number; height: number }
+): CSSProperties {
+    const transformString = `
+        translate(${transform.translateX + transform.shakeX}px, ${transform.translateY + transform.shakeY}px)
+        scale(${transform.scale})
+        rotate(${transform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+    return {
+        width: viewport.width,
+        height: viewport.height,
+        transformOrigin: `${transform.originX * 100}% ${transform.originY * 100}%`,
+        transform: transformString,
+        transition: "none", // CRITICAL: No CSS transitions for Remotion
+    };
+}
+
+function buildDeviceCSS(layout: unknown): CSSProperties {
+    // Handle transition layouts with device transforms
+    const transLayout = layout as {
+        kind?: string;
+        deviceScale?: number;
+        deviceTranslateX?: number;
+        deviceTranslateY?: number;
+        deviceRotation?: number;
+    };
+
+    if (transLayout.kind !== "TRANSITION") {
+        return {};
+    }
+
+    const {
+        deviceScale = 1,
+        deviceTranslateX = 0,
+        deviceTranslateY = 0,
+        deviceRotation = 0,
+    } = transLayout;
+
+    if (deviceScale === 1 && deviceTranslateX === 0 && deviceTranslateY === 0 && deviceRotation === 0) {
+        return {};
+    }
+
+    return {
+        transformOrigin: "center center",
+        transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+    };
+}
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+function lerp(a: number, b: number, t: number): number {
+    return a + (b - a) * t;
+}
+````
+
 ## File: packages/renderer/package.json
 ````json
 {
@@ -63656,6 +63091,369 @@ export default defineEpisode({
 }
 ````
 
+## File: packages/device-keyboard/src/reducer.ts
+````typescript
+import {
+    WorldState,
+    TimelineEvent,
+    ReducerRegistry,
+    FeatureReducer
+} from "@tokovo/core";
+
+/**
+ * processKeyboardEvent
+ * 
+ * Handles all KEYBOARD specific events.
+ * Manages the virtual keyboard state in `device.keyboard`.
+ * Automatically injects INPUT_CHANGE events into the foreground app.
+ */
+export const keyboardReducer: FeatureReducer = (
+    draft: WorldState,
+    event: TimelineEvent,
+    index?: number
+) => {
+    // Shared Device Access
+    const eventAny = event as any;
+    const deviceId = eventAny.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // INITIALIZATION: The "Gold Standard" of robustness.
+    // Ensure device.keyboard always exists if a keyboard event is being processed.
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+            visibilityChangedAt: -1,
+            suggestions: [],
+            highlightedSuggestion: null,
+            selectionStart: null,
+            selectionEnd: null,
+            keyPressVisual: null,
+        } as any;
+    }
+
+    const keyboard = device.keyboard!;
+
+    // Handle V2 Ops
+    if (event.kind === "KeyboardType") {
+        const e = event as import("@tokovo/ir").KeyboardTypeOp;
+        // Append text (simulating typing)
+        const textToAppend = e.text;
+        const pos = keyboard.cursorPosition;
+        const currentText = keyboard.inputText;
+        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
+
+        keyboard.inputText = newText;
+        keyboard.cursorPosition = pos + textToAppend.length;
+
+        // AUTOMATION: Inject into App
+        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+
+        // AUDIO: Handled by AutoSound Rules
+        return;
+    }
+
+    if (event.kind === "KeyboardInput") {
+        const e = event as import("@tokovo/ir").KeyboardInputOp;
+        if (e.type === "keyDown") {
+            keyboard.currentKey = e.key;
+            keyboard.keyPressedAt = event.at;
+
+            // Handle Backspace logic for V2
+            if (e.key === "Backspace") {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+
+            // AUDIO: Handled by AutoSound Rules
+        } else {
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
+        }
+        return;
+    }
+
+    // Handle V2 Ops & Legacy Ops
+    // We remove the strict kind guard to allow this to act as both a FeatureReducer 
+    // and an AppReducer for kind: "APP", appId: "keyboard".
+
+    const eventType = (event as any).type;
+
+    switch (eventType) {
+        case "SHOW":
+            keyboard.visible = true;
+            keyboard.layout = (event as any).layout || "qwerty";
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
+            keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "HIDE":
+            keyboard.visible = false;
+            keyboard.currentKey = null;
+            keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "KEY_DOWN": {
+            const key = (event as any).key;
+            keyboard.currentKey = key;
+            keyboard.keyPressedAt = event.at;
+
+            // Handle character insertion for printable keys
+            if (key.length === 1) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                const newText = text.slice(0, pos) + key + text.slice(pos);
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos + 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            } else if (key === "Backspace") {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+            break;
+        }
+
+        case "KEY_UP":
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR": {
+            const char = (event as any).char;
+            // Add character to input
+            const pos = keyboard.cursorPosition;
+            const text = keyboard.inputText;
+            const newText = text.slice(0, pos) + char + text.slice(pos);
+            keyboard.inputText = newText;
+            keyboard.cursorPosition = pos + 1;
+            keyboard.currentKey = char;
+            keyboard.keyPressedAt = event.at;
+
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "BACKSPACE": {
+            if (keyboard.cursorPosition > 0) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                const newText = text.slice(0, pos - 1) + text.slice(pos);
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos - 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            }
+            keyboard.currentKey = "⌫";
+            keyboard.keyPressedAt = event.at;
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "SET_TEXT": {
+            const text = (event as any).text;
+            keyboard.inputText = text;
+            keyboard.cursorPosition = text.length;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, text, event.at);
+            break;
+        }
+
+        case "TYPING_SEQUENCE": {
+            // Enterprise pattern: Store schedule, renderer derives key press from frame
+            const e = event as any;
+            keyboard.typingSchedule = {
+                entries: e.schedule,
+                text: e.text,
+                startFrame: e.startFrame,
+                endFrame: e.endFrame,
+            };
+            // Set final text immediately (renderer will animate progressively)
+            keyboard.inputText = e.text;
+            keyboard.cursorPosition = e.text.length;
+            // AUTOMATION: Inject final text into App (apps can derive if needed)
+            injectInputToApp(draft, device.foregroundAppId, e.text, e.endFrame);
+            break;
+        }
+
+        case "CLEAR":
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
+            keyboard.typingSchedule = null;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, "", event.at);
+            break;
+    }
+};
+
+/**
+ * Helper to push input changes to the active app
+ */
+function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
+    if (!appId) return;
+    const reducer = ReducerRegistry.getAppReducer(appId);
+    if (reducer) {
+        reducer(draft, { // Use legacy event format expected by apps
+            kind: "APP",
+            type: "INPUT_CHANGE",
+            appId,
+            payload: { text },
+            at
+        } as any);
+    }
+}
+````
+
+## File: packages/episodes/src/production/index.ts
+````typescript
+/**
+ * Production Episodes
+ * 
+ * Import this file to auto-register all production episodes.
+ * 
+ * @example
+ * // In Root.tsx:
+ * import "@tokovo/episodes/src/production";
+ * 
+ * @see docs-v2/EPISODE-ARCH.md
+ */
+
+// Import all production episodes (side-effect: auto-registers via defineEpisode)
+import "./track-demo.episode";
+import "./bakchodi-bros.episode";
+import "./keyboard-typing-demo.episode";
+import "./notification-demo.episode";
+import "./complete-showcase.episode";
+import "./profile-focus-demo.episode";
+
+// Add new episodes here as they are created
+````
+
+## File: packages/episodes/src/index.ts
+````typescript
+/**
+ * @tokovo/episodes
+ * 
+ * Enterprise episode management with auto-discovery.
+ * 
+ * @example
+ * // Create episodes using defineEpisode (auto-registers)
+ * import { defineEpisode } from "@tokovo/episodes";
+ * 
+ * export default defineEpisode({
+ *     meta: { id: "demo", title: "Demo", category: "production" },
+ *     config: { format: "1080x1920", durationInFrames: 300, apps: [] },
+ *     build: () => episode(...).build(),
+ * });
+ * 
+ * // Access all registered episodes
+ * import { episodeRegistry } from "@tokovo/episodes";
+ * const all = episodeRegistry.all();
+ * 
+ * @see docs-v2/EPISODE-ARCH.md
+ */
+
+// =============================================================================
+// REGISTRY (Auto-discovery)
+// =============================================================================
+export { episodeRegistry, EpisodeRegistry } from "./registry";
+
+// =============================================================================
+// TYPES & HELPERS
+// =============================================================================
+export { defineEpisode } from "./types";
+export type {
+    EpisodeMeta,
+    EpisodeConfig,
+    EpisodeDefinition,
+    FormatId,
+    CustomFormat,
+} from "./types";
+export {
+    EpisodeMetaSchema,
+    EpisodeConfigSchema,
+    EpisodeDefinitionSchema,
+} from "./types";
+
+// =============================================================================
+// FORMAT TEMPLATES
+// =============================================================================
+export {
+    FORMATS,
+    getFormat,
+    listFormats,
+    getFormatsByAspectRatio
+} from "./templates";
+export type { VideoFormat } from "./templates";
+
+// =============================================================================
+// SCHEMA (Zod validators for episode content)
+// =============================================================================
+export * from "./schema";
+
+// =============================================================================
+// LEGACY EPISODES
+// =============================================================================
+// Note: Legacy V1 episodes are NOT exported - they use old DSL patterns
+// and will cause runtime errors. Access them directly if needed:
+//   import { bakchodiGangEpisode } from "@tokovo/episodes/src/episodes/bakchodi-gang"
+//
+// To create new episodes, use the V2 pattern with defineEpisode():
+//   import { defineEpisode } from "@tokovo/episodes";
+````
+
+## File: packages/episodes/package.json
+````json
+{
+    "name": "@tokovo/episodes",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/device-calls": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
+        "@tokovo/device-notifications": "workspace:*",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
 ## File: packages/compiler/src/v2/lowering.ts
 ````typescript
 /**
@@ -63677,6 +63475,7 @@ import type {
 } from "@tokovo/ir";
 import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
+import { keyboardV2Lowering } from "@tokovo/device-keyboard";
 
 // =============================================================================
 // TYPES
@@ -63715,7 +63514,10 @@ export function lowerTrackEvent(
 
     switch (kind) {
         case "CAMERA":
-            return cameraV2Lowering(event as CameraTrackEvent, { fps: ctx.fps });
+            // Cast to unknown first to handle type incompatibility between device-camera and core RuntimeEvent
+            return cameraV2Lowering(event as unknown as Parameters<typeof cameraV2Lowering>[0], { fps: ctx.fps }) as unknown as RuntimeEvent[];
+        case "KEYBOARD":
+            return keyboardV2Lowering.lower(event as any, ctx) as unknown as RuntimeEvent[];
         case "AUDIO":
             return lowerAudioEvent(event as AudioTrackEvent);
         case "OS":
@@ -64111,106 +63913,6 @@ export function lowerEpisode(
 }
 ````
 
-## File: packages/episodes/src/index.ts
-````typescript
-/**
- * @tokovo/episodes
- * 
- * Enterprise episode management with auto-discovery.
- * 
- * @example
- * // Create episodes using defineEpisode (auto-registers)
- * import { defineEpisode } from "@tokovo/episodes";
- * 
- * export default defineEpisode({
- *     meta: { id: "demo", title: "Demo", category: "production" },
- *     config: { format: "1080x1920", durationInFrames: 300, apps: [] },
- *     build: () => episode(...).build(),
- * });
- * 
- * // Access all registered episodes
- * import { episodeRegistry } from "@tokovo/episodes";
- * const all = episodeRegistry.all();
- * 
- * @see docs-v2/EPISODE-ARCH.md
- */
-
-// =============================================================================
-// REGISTRY (Auto-discovery)
-// =============================================================================
-export { episodeRegistry, EpisodeRegistry } from "./registry";
-
-// =============================================================================
-// TYPES & HELPERS
-// =============================================================================
-export { defineEpisode } from "./types";
-export type {
-    EpisodeMeta,
-    EpisodeConfig,
-    EpisodeDefinition,
-    FormatId,
-    CustomFormat,
-} from "./types";
-export {
-    EpisodeMetaSchema,
-    EpisodeConfigSchema,
-    EpisodeDefinitionSchema,
-} from "./types";
-
-// =============================================================================
-// FORMAT TEMPLATES
-// =============================================================================
-export {
-    FORMATS,
-    getFormat,
-    listFormats,
-    getFormatsByAspectRatio
-} from "./templates";
-export type { VideoFormat } from "./templates";
-
-// =============================================================================
-// SCHEMA (Zod validators for episode content)
-// =============================================================================
-export * from "./schema";
-
-// =============================================================================
-// LEGACY EPISODES
-// =============================================================================
-// Note: Legacy V1 episodes are NOT exported - they use old DSL patterns
-// and will cause runtime errors. Access them directly if needed:
-//   import { bakchodiGangEpisode } from "@tokovo/episodes/src/episodes/bakchodi-gang"
-//
-// To create new episodes, use the V2 pattern with defineEpisode():
-//   import { defineEpisode } from "@tokovo/episodes";
-````
-
-## File: packages/episodes/package.json
-````json
-{
-    "name": "@tokovo/episodes",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/device-calls": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*",
-        "@tokovo/device-notifications": "workspace:*",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
-    }
-}
-````
-
 ## File: packages/device-keyboard/src/index.ts
 ````typescript
 /**
@@ -64324,244 +64026,6 @@ SoundRegistry.registerMany(keyboardSounds);
 
 // Import components to register strategies
 import "./views/ios/IOSKeyboard";
-````
-
-## File: packages/device-keyboard/src/reducer.ts
-````typescript
-import {
-    WorldState,
-    TimelineEvent,
-    ReducerRegistry,
-    FeatureReducer
-} from "@tokovo/core";
-
-/**
- * processKeyboardEvent
- * 
- * Handles all KEYBOARD specific events.
- * Manages the virtual keyboard state in `device.keyboard`.
- * Automatically injects INPUT_CHANGE events into the foreground app.
- */
-export const keyboardReducer: FeatureReducer = (
-    draft: WorldState,
-    event: TimelineEvent,
-    index?: number
-) => {
-    // Shared Device Access
-    const eventAny = event as any;
-    const deviceId = eventAny.deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
-
-    // INITIALIZATION: The "Gold Standard" of robustness.
-    // Ensure device.keyboard always exists if a keyboard event is being processed.
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-            visibilityChangedAt: -1,
-            suggestions: [],
-            highlightedSuggestion: null,
-            selectionStart: null,
-            selectionEnd: null,
-            keyPressVisual: null,
-        } as any;
-    }
-
-    const keyboard = device.keyboard!;
-
-    // Handle V2 Ops
-    if (event.kind === "KeyboardType") {
-        const e = event as import("@tokovo/ir").KeyboardTypeOp;
-        // Append text (simulating typing)
-        const textToAppend = e.text;
-        const pos = keyboard.cursorPosition;
-        const currentText = keyboard.inputText;
-        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
-
-        keyboard.inputText = newText;
-        keyboard.cursorPosition = pos + textToAppend.length;
-
-        // AUTOMATION: Inject into App
-        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-
-        // AUDIO: Handled by AutoSound Rules
-        return;
-    }
-
-    if (event.kind === "KeyboardInput") {
-        const e = event as import("@tokovo/ir").KeyboardInputOp;
-        if (e.type === "keyDown") {
-            keyboard.currentKey = e.key;
-            keyboard.keyPressedAt = event.at;
-
-            // Handle Backspace logic for V2
-            if (e.key === "Backspace") {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                if (pos > 0) {
-                    const newText = text.slice(0, pos - 1) + text.slice(pos);
-                    keyboard.inputText = newText;
-                    keyboard.cursorPosition = pos - 1;
-                    // Inject into App
-                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-                }
-            }
-
-            // AUDIO: Handled by AutoSound Rules
-        } else {
-            keyboard.currentKey = null;
-            keyboard.keyPressedAt = null;
-        }
-        return;
-    }
-
-    // Handle V2 Ops & Legacy Ops
-    // We remove the strict kind guard to allow this to act as both a FeatureReducer 
-    // and an AppReducer for kind: "APP", appId: "keyboard".
-
-    const eventType = (event as any).type;
-
-    switch (eventType) {
-        case "SHOW":
-            keyboard.visible = true;
-            keyboard.layout = (event as any).layout || "qwerty";
-            keyboard.inputText = "";
-            keyboard.cursorPosition = 0;
-            keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "HIDE":
-            keyboard.visible = false;
-            keyboard.currentKey = null;
-            keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "KEY_DOWN": {
-            const key = (event as any).key;
-            keyboard.currentKey = key;
-            keyboard.keyPressedAt = event.at;
-
-            // Handle character insertion for printable keys
-            if (key.length === 1) {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                const newText = text.slice(0, pos) + key + text.slice(pos);
-                keyboard.inputText = newText;
-                keyboard.cursorPosition = pos + 1;
-
-                // AUTOMATION: Inject into App
-                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            } else if (key === "Backspace") {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                if (pos > 0) {
-                    const newText = text.slice(0, pos - 1) + text.slice(pos);
-                    keyboard.inputText = newText;
-                    keyboard.cursorPosition = pos - 1;
-                    // Inject into App
-                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-                }
-            }
-            break;
-        }
-
-        case "KEY_UP":
-            keyboard.currentKey = null;
-            keyboard.keyPressedAt = null;
-            break;
-
-        case "TYPE_CHAR": {
-            const char = (event as any).char;
-            // Add character to input
-            const pos = keyboard.cursorPosition;
-            const text = keyboard.inputText;
-            const newText = text.slice(0, pos) + char + text.slice(pos);
-            keyboard.inputText = newText;
-            keyboard.cursorPosition = pos + 1;
-            keyboard.currentKey = char;
-            keyboard.keyPressedAt = event.at;
-
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            // AUDIO: Handled by AutoSound Rules
-            break;
-        }
-
-        case "BACKSPACE": {
-            if (keyboard.cursorPosition > 0) {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                const newText = text.slice(0, pos - 1) + text.slice(pos);
-                keyboard.inputText = newText;
-                keyboard.cursorPosition = pos - 1;
-
-                // AUTOMATION: Inject into App
-                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            }
-            keyboard.currentKey = "⌫";
-            keyboard.keyPressedAt = event.at;
-            // AUDIO: Handled by AutoSound Rules
-            break;
-        }
-
-        case "SET_TEXT": {
-            const text = (event as any).text;
-            keyboard.inputText = text;
-            keyboard.cursorPosition = text.length;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, text, event.at);
-            break;
-        }
-
-        case "TYPING_SEQUENCE": {
-            // Enterprise pattern: Store schedule, renderer derives key press from frame
-            const e = event as any;
-            keyboard.typingSchedule = {
-                entries: e.schedule,
-                text: e.text,
-                startFrame: e.startFrame,
-                endFrame: e.endFrame,
-            };
-            // Set final text immediately (renderer will animate progressively)
-            keyboard.inputText = e.text;
-            keyboard.cursorPosition = e.text.length;
-            // AUTOMATION: Inject final text into App (apps can derive if needed)
-            injectInputToApp(draft, device.foregroundAppId, e.text, e.endFrame);
-            break;
-        }
-
-        case "CLEAR":
-            keyboard.inputText = "";
-            keyboard.cursorPosition = 0;
-            keyboard.typingSchedule = null;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, "", event.at);
-            break;
-    }
-};
-
-/**
- * Helper to push input changes to the active app
- */
-function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
-    if (!appId) return;
-    const reducer = ReducerRegistry.getAppReducer(appId);
-    if (reducer) {
-        reducer(draft, { // Use legacy event format expected by apps
-            kind: "APP",
-            type: "INPUT_CHANGE",
-            appId,
-            payload: { text },
-            at
-        } as any);
-    }
-}
 ````
 
 ## File: packages/apps-whatsapp/src/plugin.ts
@@ -64711,6 +64175,8 @@ export default WhatsAppPluginV2;
 // TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
 export * from "./types";
+// Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
+// types.ts re-exports needed types from types/layout.ts for compatibility.
 
 // =============================================================================
 // ENGINE - Replay loop and handlers
@@ -64751,8 +64217,20 @@ export * from "./audio";
 
 // =============================================================================
 // REGISTRIES - All registration systems
+// Named exports to avoid conflicts with ./plugin
 // =============================================================================
-export * from "./registries";
+export {
+    createRegistry,
+    AppRegistry,
+    SoundRegistry,
+    WidgetRegistry,
+    getDynamicIslandWidget,
+    getNotificationWidgets,
+    BehaviorRegistry,
+    AppMetadataRegistry,
+    LayoutRegistry,
+} from "./registries";
+export type { Registry, AppViewProps, AppViewComponent, AppMetadata, LayoutStrategy } from "./registries";
 
 // =============================================================================
 // NOTIFICATIONS - Notification system
@@ -64761,8 +64239,26 @@ export * from "./notifications";
 
 // =============================================================================
 // PLUGIN - Plugin system
+// Named exports to avoid conflicts with ./registries
 // =============================================================================
-export * from "./plugin";
+export {
+    PluginManager,
+    PluginManagerClass,
+    definePlugin,
+    registerPlugins,
+} from "./plugin";
+export type {
+    TokovoPluginContract,
+    PluginReducer,
+    PluginViews,
+    LoweringHandler,
+    DslExtension,
+    PluginAnchorRegistry,
+    PluginNotificationAdapter,
+    PluginTier,
+    TokovoPlugin,
+    ScreenComponent,
+} from "./plugin";
 
 // =============================================================================
 // UTILS - Utilities
@@ -64781,6 +64277,7 @@ export * from "./anchors";
 
 // =============================================================================
 // CONSTANTS & TOKENS
+// Note: constants.ts may export Platform, so be careful
 // =============================================================================
 export * from "./constants";
 export * from "./tokens";
@@ -65456,142 +64953,18 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 };
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
-````typescript
-/**
- * WhatsApp Package - Public API
- * 
- * This is the main entry point for the WhatsApp plugin.
- * All exports follow the Enterprise Gold Standard structure.
- */
-
-// =============================================================================
-// PLUGIN (Primary Export)
-// =============================================================================
-
-export {
-    WhatsAppPluginV2,
-    WhatsAppPluginV2 as WhatsAppPlugin,
-    registerWhatsAppPlugin,
-    type WhatsAppDslApi,
-} from "./plugin";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export * from "./types";
-
-// =============================================================================
-// RUNTIME
-// =============================================================================
-
-export {
-    whatsappReducer,
-    createWhatsAppInitialState,
-    selectAppState,
-    selectConversations,
-    selectCurrentConversation,
-    selectMessages,
-    selectLastMessage,
-    selectTypingMembers,
-} from "./runtime";
-
-// =============================================================================
-// VIEWS
-// =============================================================================
-
-export * from "./ui";
-// Note: ./views re-exports from ./ui, so we don't export it again
-
-// =============================================================================
-// IR (Intermediate Representation)
-// =============================================================================
-
-export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
-export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
-
-// =============================================================================
-// LOWERING
-// =============================================================================
-
-export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
-
-// =============================================================================
-// DSL
-// =============================================================================
-
-export {
-    whatsappDsl,
-    WhatsAppTrackBuilder,
-    WhatsAppPointBuilder,
-    WhatsAppSpanBuilder,
-    createWhatsAppTrackBuilder,
-} from "./dsl";
-export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
-
-// =============================================================================
-// LAYOUT
-// =============================================================================
-
-export { computeChatLayout } from "./layout";
-
-// =============================================================================
-// CAMERA
-// =============================================================================
-
-export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
-
-// =============================================================================
-// ASSETS
-// =============================================================================
-
-export { whatsappAudioRules } from "./assets/audio-rules";
-
-// =============================================================================
-// SIDE EFFECTS (Auto-registration)
-// =============================================================================
-
-import "./ui/strategies";
-import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry } from "@tokovo/core";
-import { whatsappAudioRules } from "./assets/audio-rules";
-
-// WhatsApp sound paths
-const whatsappSounds = {
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-};
-
-AutoSoundRegistry.register(whatsappAudioRules);
-SoundRegistry.registerMany(whatsappSounds);
-
-AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT",
-});
-
-// =============================================================================
-// LEGACY ALIASES
-// =============================================================================
-
-export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
-
-// =============================================================================
-// DEFAULT
-// =============================================================================
-
-export { default } from "./plugin";
-````
-
 ## File: packages/core/src/types.ts
 ````typescript
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-export type Platform = "ios" | "android";
+// NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
+// Import for local use and re-export for backward compatibility
+import type { DeviceId as _DeviceId, AppId as _AppId, ConversationId as _ConversationId, Platform as _Platform } from "./types/device";
+export type { DeviceId, AppId, ConversationId, Platform } from "./types/device";
+
+// Local aliases for use in this file
+type DeviceId = _DeviceId;
+type AppId = _AppId;
+type ConversationId = _ConversationId;
+type Platform = _Platform;
 
 import { TimelineOp } from "@tokovo/ir";
 
@@ -65808,7 +65181,7 @@ export interface BaseAppState {
      * The overarching layout mode this app is currently in.
      * IF provided, the OS will respect this over default metadata strategies.
      */
-    viewMode?: import("./types").ViewKind;
+    viewMode?: import("./types/layout").ViewKind;
 
     /** Context for CHAT view */
     conversationId?: string;
@@ -66252,13 +65625,7 @@ export interface DuckRule {
 // =============================================================================
 // LAYOUT PRIMITIVES
 // =============================================================================
-
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+// Note: LayoutRect moved to ./types/layout.ts (re-exported at bottom of file)
 
 // Sound cue - enhanced active sound with mixing metadata
 export interface SoundCue {
@@ -66442,300 +65809,180 @@ import type { RuntimeEvent } from "./types/runtime-event";
 export type TimelineEvent = RuntimeEvent;
 
 // --- Layout System Types ---
+// Re-export from types/layout.ts for backward compatibility
+// (types/index.ts is NOT exported from core/index.ts to avoid duplicates)
 
-export type ViewKind =
-    | "CHAT"
-    | "FEED"
-    | "STORY"
-    | "LOCKSCREEN"
-    | "HOMESCREEN"
-    | "FULLSCREEN"  // Apps like Phone, Camera
-    | "TRANSITION";
+export type {
+    ViewKind,
+    LayoutRect,
+    SemanticRegion,
+    SemanticLayoutState,
+    LayoutContext,
+    LayoutConfig,
+    ChatLayoutConfig,
+    FeedLayoutConfig,
+    StoryLayoutConfig,
+    LockscreenLayoutConfig,
+    TransitionLayoutConfig,
+    LayoutState,
+    BaseLayoutState,
+    ChatLayoutState,
+    ChatMessageLayout,
+    TypingLayout,
+    ChatLayoutMeta,
+    FeedLayoutState,
+    FeedItemLayout,
+    FeedLayoutMeta,
+    StoryLayoutState,
+    StoryItemLayout,
+    LockscreenLayoutState,
+    NotificationLayout,
+    LockscreenLayoutMeta,
+    TransitionLayoutState,
+    TransitionLayoutMeta,
+} from "./types/layout";
+````
 
-export interface LayoutContext {
-    world: WorldState;
-    t: number; // current frame
-    activeDeviceId: string;
-    activeAppId: string;
-    viewKind: ViewKind;
-
-    // View-specific selectors
-    activeConversationId?: string;   // CHAT
-    activeFeedId?: string;           // FEED (e.g. timeline id)
-    activeStoryId?: string;          // STORY (e.g. story reel id)
-
-    viewportWidth: number;
-    viewportHeight: number;
-
-    // Optional configuration overrides
-    config?: Partial<LayoutConfig>;
-}
-
-// --- LayoutConfig ---
-
-export interface LayoutConfig {
-    // Global-ish things
-    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
-
-    // Chat-specific
-    chat: ChatLayoutConfig;
-
-    // Feed-specific
-    feed: FeedLayoutConfig;
-
-    // Story-specific
-    story: StoryLayoutConfig;
-
-    // Lock screen
-    lockscreen: LockscreenLayoutConfig;
-
-    // Transitions
-    transition: TransitionLayoutConfig;
-}
-
-export interface ChatLayoutConfig {
-    bubbleWidth: number;
-    baseBubbleHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    lockToBottom: boolean;
-}
-
-export interface FeedLayoutConfig {
-    cardWidth: number;
-    baseCardHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    // For variable-height posts, same trick as chat:
-    charsPerLine: number;
-    lineHeight: number;
-
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    startAtTop: boolean;      // typical feed behaviour
-    autoScroll?: boolean;     // for cinematic auto-scroll episodes
-}
-
-export interface StoryLayoutConfig {
-    // Each story = full-screen page
-    defaultStoryDuration: number; // in frames
-    progressBarHeight: number;
-    storyGap: number;             // for 3D-ish page stack if needed
-
-    // Animation
-    storyTransitionDuration: number; // frames between stories
-}
-
-export interface LockscreenLayoutConfig {
-    topPadding: number;
-    notificationGap: number;
-    notificationWidth: number;
-    baseNotificationHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-
-    stackMaxNotifications: number; // older ones collapsed/hidden
-    appearDuration: number;
-}
-
-export interface TransitionLayoutConfig {
-    // Device position in composition
-    defaultScale: number;
-    zoomedScale: number;
-    panDuration: number;
-    zoomDuration: number;
-
-    // Computed state
-    notifications: Notification[];
-}
-
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+/**
+ * WhatsApp Package - Public API
+ * 
+ * This is the main entry point for the WhatsApp plugin.
+ * All exports follow the Enterprise Gold Standard structure.
+ */
 
 // =============================================================================
-// SEMANTIC LAYOUT PROTOCOL
+// PLUGIN (Primary Export)
 // =============================================================================
 
-/**
- * A Semantic Region describes a named area of interest in the layout.
- * The App (Plugin) is responsible for defining these during layout.
- */
-export interface SemanticRegion {
-    id: string;          // e.g. "msg_123", "header_profile", "input_area"
-    rect: LayoutRect;    // { x, y, width, height } - absolute viewport coordinates
-    tags: string[];      // e.g. ["message", "header", "interactive"]
-    metadata?: Record<string, any>; // Extensible metadata
-}
+export {
+    WhatsAppPluginV2,
+    WhatsAppPluginV2 as WhatsAppPlugin,
+    registerWhatsAppPlugin,
+    type WhatsAppDslApi,
+} from "./plugin";
 
-/**
- * Extends LayoutState to include a semantic map.
- * This is the "bridge" between Layout Engine (Math) and Camera Engine (Intent).
- */
-export interface SemanticLayoutState {
-    regions: Record<string, SemanticRegion>; // ID -> Region
-    groups: Record<string, string[]>;        // Tag -> IDs (e.g. "message" -> ["msg_1", "msg_2"])
-}
+// =============================================================================
+// TYPES
+// =============================================================================
 
-// --- LayoutState ---
+export * from "./types";
 
-export type LayoutState =
-    | ChatLayoutState
-    | FeedLayoutState
-    | StoryLayoutState
-    | LockscreenLayoutState
-    | TransitionLayoutState;
+// =============================================================================
+// RUNTIME
+// =============================================================================
 
-export interface BaseLayoutState {
-    kind: ViewKind;
-    /** Semantic regions defined by the app plugin */
-    semantic?: SemanticLayoutState;
-}
+export {
+    whatsappReducer,
+    createWhatsAppInitialState,
+    selectAppState,
+    selectConversations,
+    selectCurrentConversation,
+    selectMessages,
+    selectLastMessage,
+    selectTypingMembers,
+} from "./runtime";
 
-// ChatLayoutState
+// =============================================================================
+// VIEWS
+// =============================================================================
 
-export interface ChatLayoutState extends BaseLayoutState {
-    kind: "CHAT";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    messageLayouts: Record<string, ChatMessageLayout>;
-    typingLayout?: TypingLayout | null;
-    meta: ChatLayoutMeta;
-}
+export * from "./ui";
+// Note: ./views re-exports from ./ui, so we don't export it again
 
-export interface ChatMessageLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    translateX: number;
-    // Rect for director targeting (x, y relative to content, not viewport)
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
+// =============================================================================
+// IR (Intermediate Representation)
+// =============================================================================
 
-export interface TypingLayout {
-    y: number;
-    height: number;
-    opacity: number;
-    // Rect for director targeting
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
+export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
+export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
 
-export interface ChatLayoutMeta {
-    lastMessageId?: string;
-    /** Whether this is a group chat (more than 2 unique senders) */
-    isGroupChat?: boolean;
-}
+// =============================================================================
+// LOWERING
+// =============================================================================
 
-// FeedLayoutState
+export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
 
-export interface FeedLayoutState extends BaseLayoutState {
-    kind: "FEED";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    itemLayouts: Record<string, FeedItemLayout>;
-    meta: FeedLayoutMeta;
-}
+// =============================================================================
+// DSL
+// =============================================================================
 
-export interface FeedItemLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    scale: number;   // for subtle parallax / entry
-}
+export {
+    whatsappDsl,
+    WhatsAppTrackBuilder,
+    WhatsAppPointBuilder,
+    WhatsAppSpanBuilder,
+    createWhatsAppTrackBuilder,
+} from "./dsl";
+export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
 
-export interface FeedLayoutMeta {
-    firstVisibleItemId?: string;
-    lastVisibleItemId?: string;
-    focusedItemId?: string; // for cinematic highlight
-}
+// =============================================================================
+// LAYOUT
+// =============================================================================
 
-// StoryLayoutState
+export { computeChatLayout } from "./layout";
 
-export interface StoryLayoutState extends BaseLayoutState {
-    kind: "STORY";
-    activeStoryIndex: number;
-    storyCount: number;
-    storyProgress: number; // 0..1 within current story
-    storyLayouts: StoryItemLayout[];
-}
+// =============================================================================
+// CAMERA
+// =============================================================================
 
-export interface StoryItemLayout {
-    id: string;
-    index: number;
-    // For 3D card stack / page-motion effects:
-    translateX: number;
-    translateY: number;
-    scale: number;
-    opacity: number;
-}
+export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
 
-// LockscreenLayoutState
+// =============================================================================
+// ASSETS
+// =============================================================================
 
-export interface LockscreenLayoutState extends BaseLayoutState {
-    kind: "LOCKSCREEN";
-    notificationLayouts: NotificationLayout[];
-    meta: LockscreenLayoutMeta;
-}
+export { whatsappAudioRules } from "./assets/audio-rules";
 
-export interface NotificationLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-}
+// =============================================================================
+// SIDE EFFECTS (Auto-registration)
+// =============================================================================
 
-export interface LockscreenLayoutMeta {
-    // Add any meta fields if needed
-}
+import "./ui/strategies";
+import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry, registerAnchorProvider, LayoutRegistry, APP_IDS } from "@tokovo/core";
+import { whatsappAudioRules } from "./assets/audio-rules";
+import { WhatsAppAnchors } from "./runtime/adapters/anchors";
+import { computeChatLayout } from "./layout";
 
-// TransitionLayoutState
+// WhatsApp sound paths
+const whatsappSounds = {
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+};
 
-export interface TransitionLayoutState extends BaseLayoutState {
-    kind: "TRANSITION";
-    // These values are for the outer DeviceFrame / TokovoRenderer
-    deviceTranslateX: number;
-    deviceTranslateY: number;
-    deviceScale: number;
-    deviceRotation: number;
-    overlayOpacity: number;
-    meta: TransitionLayoutMeta;
-}
+AutoSoundRegistry.register(whatsappAudioRules);
+SoundRegistry.registerMany(whatsappSounds);
 
-export interface TransitionLayoutMeta {
-    // Add any meta fields if needed
-}
+// Register anchor provider for camera system
+registerAnchorProvider(WhatsAppAnchors);
+
+// Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
+LayoutRegistry.register({
+    appId: APP_IDS.WHATSAPP,
+    viewKind: "CHAT",
+    computeLayout: computeChatLayout,
+});
+
+AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬",
+    viewStrategy: "CHAT",
+});
+
+// =============================================================================
+// LEGACY ALIASES
+// =============================================================================
+
+export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
+
+// =============================================================================
+// DEFAULT
+// =============================================================================
+
+export { default } from "./plugin";
 ````
 
 ## File: apps/video-runner/src/Root.tsx
