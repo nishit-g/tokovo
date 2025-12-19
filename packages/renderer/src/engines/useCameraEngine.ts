@@ -35,6 +35,7 @@ import {
     // Director-Lite
     deriveDirectorEffects,
     extractSignals,
+    convertToEffects,
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
@@ -167,26 +168,19 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
                 directorSkipped = directorResult.skipped;
             }
 
-            // Apply director effects
+            // Apply director effects through processor registry
             if (!directorResult.skipped && directorResult.effects.length > 0) {
-                for (const effect of directorResult.effects) {
-                    // Apply based on category
-                    if (effect.category === "framing" && effect.scale) {
-                        const scaleAmount = effect.scale * effect.progress;
-                        transform = {
-                            ...transform,
-                            scale: transform.scale * (1 + (scaleAmount - 1) * effect.progress),
-                        };
-                    }
-                    if (effect.category === "shake" && effect.intensity) {
-                        const shakeAmount = effect.intensity * (1 - effect.progress);
-                        transform = {
-                            ...transform,
-                            shakeX: transform.shakeX + Math.sin(t * 0.5) * shakeAmount,
-                            shakeY: transform.shakeY + Math.cos(t * 0.7) * shakeAmount,
-                        };
-                    }
-                }
+                // Convert DerivedCameraEffect to CameraEffect for processors
+                const directorEffects = convertToEffects(directorResult.effects, t);
+
+                // Process through the same processor registry as manual effects
+                transform = processActiveEffects(
+                    t,
+                    directorEffects,
+                    transform, // Use current transform as base
+                    anchorSnapshot,
+                    viewport
+                );
             }
         }
 

@@ -1,22 +1,21 @@
 /**
- * Anchor Registry - App-specific anchor providers
+ * Anchor Registry - Self-contained anchor provider registry
  * 
- * Apps register their anchor providers here. The camera system
- * uses these to resolve semantic anchor names to actual rects.
+ * This module provides anchor registration and resolution WITHOUT
+ * depending on @tokovo/core to avoid cyclic dependencies.
+ * 
+ * USAGE:
+ * - Apps register providers using `registerAnchorProvider()`
+ * - useCameraEngine calls `getAnchorsForApp()` to get anchors
  * 
  * @module device-camera/anchors/registry
  */
 
-import {
-    AnchorProvider,
-    AnchorSnapshot,
-    AnchorFraming,
-    EMPTY_SNAPSHOT,
-    DEFAULT_FRAMING,
-} from "./types";
+import type { AnchorProvider, AnchorSnapshot, AnchorFraming } from "./types";
+import { EMPTY_SNAPSHOT, DEFAULT_FRAMING } from "./types";
 
 // =============================================================================
-// REGISTRY STATE
+// REGISTRY STATE (self-contained, not delegating to core)
 // =============================================================================
 
 /** Map of appId → AnchorProvider */
@@ -64,6 +63,7 @@ export function hasAnchorProvider(appId: string): boolean {
 
 /**
  * Get anchors for an app using its registered provider.
+ * This is the main entry point for useCameraEngine.
  */
 export function getAnchorsForApp(
     appId: string,

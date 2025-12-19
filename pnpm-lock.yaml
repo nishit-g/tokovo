@@ -115,6 +115,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-camera':
+        specifier: workspace:*
+        version: link:../device-camera
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir

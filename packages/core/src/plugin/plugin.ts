@@ -15,8 +15,7 @@ import { WorldState, Notification, BackgroundAppState } from "../types";
 import { AppReducer, ReducerRegistry } from "../engine";
 import { Platform } from "../tokens";
 import type { NotificationAdapter } from "../notifications/adapter";
-import { registerAnchors } from "../anchors";
-import type { AnchorFraming, AnchorSnapshot } from "../types/anchor";
+import { registerAnchorProvider, type AnchorFraming, type AnchorSnapshot } from "../anchors";
 import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
 import { AppRegistry } from "../registries/app";
 import { SoundRegistry } from "../registries/sound";
@@ -278,8 +277,8 @@ export class PluginManagerClass {
 
         // 5. Auto-register Anchors
         if (plugin.anchors) {
-            // Create a synthetic AnchorProvider
-            registerAnchors(plugin.id, {
+            // Create an AnchorProvider for this plugin
+            registerAnchorProvider({
                 appId: plugin.id,
                 framing: plugin.anchors,
                 getAnchors: plugin.getAnchors || ((world, layout, deviceId) => {

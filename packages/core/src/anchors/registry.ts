@@ -1,46 +1,42 @@
 /**
- * Anchor Registry - Global registry for semantic anchors
+ * Anchor Registry Facade
  * 
- * @description Plugins register their anchors here. The camera system
- * uses the registry to resolve anchor IDs to Rects.
+ * Delegates all operations to @tokovo/device-camera.
+ * Backward compatible - apps can still use AnchorRegistry.register()
  * 
  * @see docs-v2/DSL_REVAMP.md#anchors-system
  */
 
+// Import from device-camera (source of truth)
+import {
+    registerAnchorProvider,
+    getAnchorProvider,
+    getAnchorsForApp,
+    getAnchorFraming,
+    getRegisteredAppIds,
+    clearAnchorProviders,
+    type AnchorProvider,
+    type AnchorSnapshot,
+    type AnchorFraming,
+} from "@tokovo/device-camera";
+
+// Re-export types for convenience
+export type { AnchorProvider, AnchorSnapshot, AnchorFraming };
+
+// Legacy types (re-exported from types/anchor for backward compatibility)
 import type { AnchorProvider as AnchorProviderFunc, AnchorMap, Rect } from "../types/anchor";
 import type { WorldState } from "../types";
+export type { AnchorProviderFunc, AnchorMap, Rect };
 
 // =============================================================================
-// TYPES FOR CLASS-BASED API (used by renderer)
+// LEGACY FUNCTION-BASED API (kept for backward compatibility)
 // =============================================================================
 
-export interface AnchorFraming {
-    anchorPoint: { x: number; y: number };
-    paddingPx?: number;
-    targetFill?: number;
-}
-
-export interface AnchorSnapshot {
-    anchors: Record<string, { x: number; y: number; width: number; height: number }>;
-    deviceId: string;
-    appId: string;
-}
-
-export interface AnchorProvider {
-    appId: string;
-    framing: Record<string, AnchorFraming>;
-    getAnchors(world: WorldState, layout: unknown, deviceId: string): AnchorSnapshot;
-}
-
-// =============================================================================
-// GLOBAL REGISTRY
-// =============================================================================
-
-const globalProviderRegistry: Map<string, AnchorProvider> = new Map();
 const globalFuncRegistry: Map<string, AnchorProviderFunc> = new Map();
 
 /**
  * Register anchors from a plugin (function-based API).
+ * @deprecated Use registerAnchorProvider() instead
  */
 export function registerAnchors(pluginId: string, anchors: AnchorMap): void {
     for (const [anchorId, provider] of Object.entries(anchors)) {
@@ -53,6 +49,7 @@ export function registerAnchors(pluginId: string, anchors: AnchorMap): void {
 
 /**
  * Get all registered anchors (function-based).
+ * @deprecated
  */
 export function getRegisteredAnchors(): Map<string, AnchorProviderFunc> {
     return new Map(globalFuncRegistry);
@@ -62,12 +59,12 @@ export function getRegisteredAnchors(): Map<string, AnchorProviderFunc> {
  * Clear all registered anchors (for testing).
  */
 export function clearAnchors(): void {
-    globalProviderRegistry.clear();
     globalFuncRegistry.clear();
+    clearAnchorProviders();
 }
 
 // =============================================================================
-// ANCHOR RESOLUTION
+// ANCHOR RESOLUTION (function-based)
 // =============================================================================
 
 /**
@@ -118,36 +115,71 @@ export function hasAnchor(anchorId: string): boolean {
 }
 
 // =============================================================================
-// CLASS-BASED REGISTRY (for renderer compatibility)
+// CLASS-BASED REGISTRY (Facade - delegates to device-camera)
 // =============================================================================
 
-class AnchorRegistryClass {
+class AnchorRegistryFacade {
+    /**
+     * Register an anchor provider for an app.
+     * Delegates to device-camera's registry.
+     */
     register(provider: AnchorProvider): void {
-        globalProviderRegistry.set(provider.appId, provider);
+        registerAnchorProvider(provider);
         console.log(`[AnchorRegistry] Registered provider for: ${provider.appId}`);
     }
 
+    /**
+     * Get anchor provider for an app.
+     */
     get(appId: string): AnchorProvider | undefined {
-        return globalProviderRegistry.get(appId);
+        return getAnchorProvider(appId);
     }
 
+    /**
+     * Get all registered app IDs.
+     */
     getRegisteredApps(): string[] {
-        return Array.from(globalProviderRegistry.keys());
+        return getRegisteredAppIds();
     }
 
+    /**
+     * Get framing configuration for a specific anchor.
+     */
     getFraming(appId: string, anchorId: string): AnchorFraming | undefined {
-        const provider = globalProviderRegistry.get(appId);
-        return provider?.framing[anchorId];
+        const framing = getAnchorFraming(appId, anchorId);
+        // Return undefined if it's the default framing
+        if (framing && framing.anchorPoint.x === 0.5 && framing.anchorPoint.y === 0.5) {
+            return framing;
+        }
+        return framing;
     }
 
+    /**
+     * Check if a provider exists for an app.
+     */
     has(appId: string): boolean {
-        return globalProviderRegistry.has(appId);
+        return !!getAnchorProvider(appId);
     }
 
+    /**
+     * Clear all providers (for testing).
+     */
     clear(): void {
-        globalProviderRegistry.clear();
+        clearAnchorProviders();
     }
 }
 
-export const AnchorRegistry = new AnchorRegistryClass();
+export const AnchorRegistry = new AnchorRegistryFacade();
 
+// =============================================================================
+// MODERN API EXPORTS (re-exported from device-camera)
+// =============================================================================
+
+export {
+    registerAnchorProvider,
+    getAnchorProvider,
+    getAnchorsForApp,
+    getAnchorFraming,
+    getRegisteredAppIds,
+    clearAnchorProviders,
+};

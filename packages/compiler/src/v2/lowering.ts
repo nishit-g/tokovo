@@ -16,6 +16,7 @@ import type {
     MarkerTrackEvent,
 } from "@tokovo/ir";
 import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
+import { cameraV2Lowering } from "@tokovo/device-camera";
 
 // =============================================================================
 // TYPES
@@ -54,7 +55,7 @@ export function lowerTrackEvent(
 
     switch (kind) {
         case "CAMERA":
-            return lowerCameraEvent(event as CameraTrackEvent);
+            return cameraV2Lowering(event as CameraTrackEvent, { fps: ctx.fps });
         case "AUDIO":
             return lowerAudioEvent(event as AudioTrackEvent);
         case "OS":
@@ -168,87 +169,8 @@ function lowerWhatsAppEvent(event: TrackEvent): RuntimeEvent[] {
     }
 }
 
-/**
- * Lower camera events.
- */
-function lowerCameraEvent(event: CameraTrackEvent): RuntimeEvent[] {
-    const base = {
-        at: event.at,
-        kind: "CAMERA" as const,
-        deviceId: event.deviceId,
-    };
-
-    switch (event.type) {
-        case "SET":
-            return [{ ...base, type: "SET_VIEW", payload: event.payload } as any];
-
-        case "ANIMATE_START":
-            return [{
-                ...base,
-                type: "ZOOM",
-                duration: event.duration ?? 30,
-                payload: {
-                    scale: event.payload.scale ?? 1,
-                    translateX: event.payload.x ?? 0,
-                    translateY: event.payload.y ?? 0,
-                    easing: event.payload.easing,
-                },
-            } as any];
-
-        case "FOCUS":
-            return [{
-                ...base,
-                type: "ANCHOR_FOCUS",
-                duration: event.duration ?? 30,
-                anchor: event.payload.anchorId,
-                payload: {
-                    scale: event.payload.scale,
-                    padding: event.payload.padding,
-                    easing: event.payload.easing,
-                },
-            } as any];
-
-        case "TRACK_START":
-            return [{
-                ...base,
-                type: "ANCHOR_TRACK",
-                duration: event.duration ?? 30,
-                anchor: event.payload.anchorId,
-                payload: {
-                    scale: event.payload.scale,
-                    lag: event.payload.lag,
-                },
-            } as any];
-
-        case "SHAKE_START":
-            return [{
-                ...base,
-                type: "SHAKE",
-                duration: event.duration ?? 15,
-                payload: {
-                    intensity: Math.max(event.payload.intensityX, event.payload.intensityY),
-                    frequency: event.payload.frequency ?? 15,
-                    decay: event.payload.decay,
-                },
-            } as any];
-
-        case "RESET":
-            return [{
-                ...base,
-                type: "RESET",
-                duration: event.duration ?? 30,
-                payload: { easing: event.payload.easing },
-            } as any];
-
-        case "ANIMATE_END":
-        case "TRACK_END":
-        case "SHAKE_END":
-            return [];
-
-        default:
-            return [];
-    }
-}
+// Camera lowering is now delegated to @tokovo/device-camera
+// See: cameraV2Lowering imported at top of file
 
 /**
  * Lower audio events.

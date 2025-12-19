@@ -77,3 +77,27 @@ export type SemanticAnchorId =
     // Generic
     | "notification"
     | "keyboard";
+
+// =============================================================================
+// ANCHOR FRAMING (for class-based API)
+// =============================================================================
+
+/**
+ * Framing configuration for an anchor.
+ * Determines how the camera frames the anchor.
+ */
+export interface AnchorFraming {
+    anchorPoint: { x: number; y: number };
+    paddingPx?: number;
+    targetFill?: number;
+}
+
+/**
+ * Snapshot of current anchors from an app.
+ */
+export interface AnchorSnapshot {
+    anchors: Record<string, { x: number; y: number; width: number; height: number }>;
+    deviceId: string;
+    appId: string;
+}
+

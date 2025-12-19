@@ -13,7 +13,8 @@
     },
     "dependencies": {
         "@tokovo/ir": "workspace:*",
-        "@tokovo/core": "workspace:*"
+        "@tokovo/core": "workspace:*",
+        "@tokovo/device-camera": "workspace:*"
     },
     "devDependencies": {
         "typescript": "^5.0.0"
