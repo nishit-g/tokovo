@@ -411,17 +411,17 @@ export class WhatsAppTrackBuilder {
     }
 
     /**
-     * Switch to a different conversation.
+     * Switch to a different conversation at a specific time.
      * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
      */
-    switchTo(conversationId: string): void {
-        const frame = parseTime("0s", this._fps);
+    switchTo(conversationId: string, time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
         this._events.push({
             at: frame,
             deviceId: this._deviceId,
             kind: "APP",
             appId: "app_whatsapp",
-            type: "CONVERSATION_OPENED",  // Core event!
+            type: "CONVERSATION_OPENED",
             payload: {
                 conversationId,
             },
@@ -432,46 +432,46 @@ export class WhatsAppTrackBuilder {
     }
 
     /**
-     * Open the chat list screen.
+     * Open the chat list screen at a specific time.
      * Emits core NAVIGATE_SCREEN event (handled by navigation.ts)
      */
-    openChatList(): void {
-        const frame = parseTime("0s", this._fps);
+    openChatList(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
         this._events.push({
             at: frame,
             deviceId: this._deviceId,
             kind: "APP",
             appId: "app_whatsapp",
-            type: "NAVIGATE_SCREEN",  // Core event!
+            type: "NAVIGATE_SCREEN",
             payload: {
-                screen: "chats",  // Core expects "chats" not "chatList"
+                screen: "chats",
             },
             _declarationOrder: this._getOrder(),
         } as any);
     }
 
     /**
-     * Go back to previous screen.
+     * Go back to previous screen at a specific time.
      * Emits core GO_BACK event (handled by navigation.ts)
      */
-    goBack(): void {
-        const frame = parseTime("0s", this._fps);
+    goBack(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
         this._events.push({
             at: frame,
             deviceId: this._deviceId,
             kind: "APP",
             appId: "app_whatsapp",
-            type: "GO_BACK",  // Core event!
+            type: "GO_BACK",
             payload: {},
             _declarationOrder: this._getOrder(),
         } as any);
     }
 
     /**
-     * Open profile screen.
+     * Open profile screen at a specific time.
      */
-    openProfile(): void {
-        const frame = parseTime("0s", this._fps);
+    openProfile(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
         this._events.push({
             at: frame,
             deviceId: this._deviceId,

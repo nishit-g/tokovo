@@ -69,24 +69,30 @@ export default defineEpisode({
         .track("app_whatsapp", () => {
             return new WhatsAppTrackBuilder(30, "phone", "group_bakchodi", getOrder);
         }, wa => {
-            // SCENE 1: The Planning (0s - 12s)
+            // === NAVIGATION: Start on chat list (0s) ===
+            wa.openChatList("0s");
+
+            // === NAVIGATION: Switch to conversation (1s) ===
+            wa.switchTo("group_bakchodi", "1s");
+
+            // SCENE 1: The Planning (1s - 12s)
             wa.dateSeparator("Today"); // TrackBuilder method, no at() needed
-            wa.at("1s").receive("Aditya", "Bhai party kab? 🎉");
+            wa.at("2s").receive("Aditya", "Bhai party kab? 🎉");
 
-            wa.span("2s", "3s").typing("them");
-            wa.at("3s").receive("Rahul", "Kal raat? Meri treat! 💰");
+            wa.span("3s", "4s").typing("them");
+            wa.at("4s").receive("Rahul", "Kal raat? Meri treat! 💰");
 
-            wa.span("4s", "5s").typing("them");
-            wa.at("5s").receive("Priya", "Rahul ne kaha treat? Screenshot le lo 📸");
+            wa.span("5s", "6s").typing("them");
+            wa.at("6s").receive("Priya", "Rahul ne kaha treat? Screenshot le lo 📸");
 
-            wa.at("6s").react({ index: -1 }, "😂"); // React to Priya's screenshot message
+            wa.at("7s").react({ index: -1 }, "😂"); // React to Priya's screenshot message
 
             // User types reply (keyboard will show)
-            wa.span("7s", "9s").typing("me");
-            wa.at("9s").send("Hahahaha bhai teri toh lag gayi! 🤣");
+            wa.span("8s", "10s").typing("me");
+            wa.at("10s").send("Hahahaha bhai teri toh lag gayi! 🤣");
 
-            // SCENE 2: After the call (25s - 35s)
-            wa.at("25s").receive("Aditya", "Bhai tune phone kyun cut kiya? �");
+            // SCENE 2: After the call (25s - 38s)
+            wa.at("25s").receive("Aditya", "Bhai tune phone kyun cut kiya? 😤");
 
             wa.span("26s", "27s").typing("me");
             wa.at("27s").send("Mom ka call tha, ghar aana hai 😅");
@@ -108,25 +114,31 @@ export default defineEpisode({
 
             wa.at("33s").sendVoice(3);
 
+            // Send a GIF
+            wa.at("34s").sendGif("https://media.giphy.com/media/celebration/giphy.gif");
+
             wa.at("35s").receive("Aditya", "DONE! Letssss goooo!!! 🚀🔥");
 
             wa.at("36s").react({ index: -1 }, "🙌"); // React to finale
 
             wa.at("37s").read();
+
+            // === NAVIGATION: Go back to chat list (38s) ===
+            wa.openChatList("38s");
         })
 
         // === KEYBOARD TRACK ===
         .track("keyboard", () => {
             return new KeyboardTrackBuilder(30, "phone", getOrder);
         }, kb => {
-            // Keyboard appears when user types
-            kb.at("7s").show({ layout: "qwerty" });
-            kb.span("7.5s", "9s").type("Hahahaha bhai teri toh lag gayi! 🤣", { speed: "fast" });
-            kb.at("9.5s").hide();
+            // Keyboard appears when user types (adjusted to match new timing)
+            kb.at("8s").show({ layout: "qwerty" });
+            kb.span("8.5s", "10s").type("Hahahaha bhai teri toh lag gayi! 🤣", { speed: "fast" });
+            kb.at("10.5s").hide();
 
             // Typing after call
             kb.at("26s").show();
-            kb.span("26.2s", "27s").type("Mom ka call tha, ghar aana hai �", { speed: "normal" });
+            kb.span("26.2s", "27s").type("Mom ka call tha, ghar aana hai 😅", { speed: "normal" });
             kb.at("27.5s").hide();
         })
 

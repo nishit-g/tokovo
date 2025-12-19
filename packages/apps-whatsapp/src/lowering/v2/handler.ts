@@ -104,6 +104,13 @@ export const whatsappV2Lowering: V2LoweringHandler = {
 
             // Navigation events - pass to core navigation handler
             case "CONVERSATION_OPENED":
+                return [{
+                    ...base,
+                    type: e.type,
+                    conversationId: e.payload?.conversationId,  // Root level for reducer!
+                    payload: e.payload,
+                } as any];
+
             case "NAVIGATE_SCREEN":
             case "GO_BACK":
                 return [{

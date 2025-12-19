@@ -69,17 +69,31 @@ function getAppState(draft: WorldState): WhatsAppState {
 }
 
 /**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
+ * Generate a realistic timestamp string from frame number.
+ * 
+ * ENTERPRISE PATTERN: Frame-based time simulation
+ * - Base time: 10:42 (arbitrary start point)
+ * - Each frame represents ~2 seconds of "in-story" time  
+ * - This creates realistic message spacing based on timeline position
+ * 
+ * At 30fps:
+ * - frame 0 (0s timeline) → 10:42
+ * - frame 90 (3s timeline) → 10:45 (3 min later)
+ * - frame 750 (25s timeline) → 11:07 (25 min later)
  */
-function generateTimestamp(frame: number, messageIndex: number): string {
+function generateTimestamp(frame: number, _messageIndex: number): string {
     // Base time: 10:42
     const baseHour = 10;
     const baseMinute = 42;
 
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
+    // Convert frames to "story minutes": 1 timeline second = 1 story minute
+    // This makes a 30s episode span ~30 minutes of "story time"
+    const fps = 30; // Standard fps
+    const timelineSeconds = frame / fps;
+    const storyMinutesElapsed = Math.floor(timelineSeconds);
+
+    // Calculate final time
+    const totalMinutes = baseMinute + storyMinutesElapsed;
     const hours = baseHour + Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
 
@@ -133,21 +147,48 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     const eventType = event.type as string;
 
     // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
+    // V2 DSL uses these event types:
+    //   - NAVIGATE_SCREEN: openChatList(), openProfile()
+    //   - CONVERSATION_OPENED: switchTo()
+    //   - GO_BACK: goBack()
+    if (eventType === "NAVIGATE_SCREEN" || eventType === "SCREEN_NAVIGATED" || eventType === "GO_BACK") {
         const appState = getAppState(draft);
+        const payload = (appEvent as any).payload || {};
 
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
+        // Extract screen from payload (V2) or root (V1)
+        const screen = payload.screen || appEvent.screen || "chat";
         appState.screen = screen;
+        (appState as any).currentScreen = screen;  // UI reads this for navigation
 
         // Map screen to generic ViewKind
-        appState.viewMode = screen === "chat" ? "CHAT" : "TRANSITION";
-
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            appState.conversationId = appEvent.conversationId;
+        if (screen === "chats" || screen === "chatList") {
+            appState.viewMode = "LIST";  // Valid type value
+        } else if (screen === "chat") {
+            appState.viewMode = "CHAT";
+        } else {
+            appState.viewMode = "TRANSITION";  // Profile and others use transition
         }
 
+        // If navigating to a specific conversation
+        if (payload.conversationId || appEvent.conversationId) {
+            appState.conversationId = payload.conversationId || appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Handle CONVERSATION_OPENED (switchTo in DSL)
+    if (eventType === "CONVERSATION_OPENED") {
+        const appState = getAppState(draft);
+        const payload = (appEvent as any).payload || {};
+        const targetConversationId = payload.conversationId || appEvent.conversationId;
+
+        if (targetConversationId) {
+            appState.conversationId = targetConversationId;
+            appState.screen = "chat";
+            (appState as any).currentScreen = "chat";
+            appState.viewMode = "CHAT";
+        }
         return;
     }
 
