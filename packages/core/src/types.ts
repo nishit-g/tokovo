@@ -1,7 +1,13 @@
-export type DeviceId = string;
-export type AppId = string;
-export type ConversationId = string;
-export type Platform = "ios" | "android";
+// NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
+// Import for local use and re-export for backward compatibility
+import type { DeviceId as _DeviceId, AppId as _AppId, ConversationId as _ConversationId, Platform as _Platform } from "./types/device";
+export type { DeviceId, AppId, ConversationId, Platform } from "./types/device";
+
+// Local aliases for use in this file
+type DeviceId = _DeviceId;
+type AppId = _AppId;
+type ConversationId = _ConversationId;
+type Platform = _Platform;
 
 import { TimelineOp } from "@tokovo/ir";
 
@@ -218,7 +224,7 @@ export interface BaseAppState {
      * The overarching layout mode this app is currently in.
      * IF provided, the OS will respect this over default metadata strategies.
      */
-    viewMode?: import("./types").ViewKind;
+    viewMode?: import("./types/layout").ViewKind;
 
     /** Context for CHAT view */
     conversationId?: string;
@@ -662,13 +668,7 @@ export interface DuckRule {
 // =============================================================================
 // LAYOUT PRIMITIVES
 // =============================================================================
-
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
+// Note: LayoutRect moved to ./types/layout.ts (re-exported at bottom of file)
 
 // Sound cue - enhanced active sound with mixing metadata
 export interface SoundCue {
@@ -852,297 +852,35 @@ import type { RuntimeEvent } from "./types/runtime-event";
 export type TimelineEvent = RuntimeEvent;
 
 // --- Layout System Types ---
+// Re-export from types/layout.ts for backward compatibility
+// (types/index.ts is NOT exported from core/index.ts to avoid duplicates)
 
-export type ViewKind =
-    | "CHAT"
-    | "FEED"
-    | "STORY"
-    | "LOCKSCREEN"
-    | "HOMESCREEN"
-    | "FULLSCREEN"  // Apps like Phone, Camera
-    | "TRANSITION";
-
-export interface LayoutContext {
-    world: WorldState;
-    t: number; // current frame
-    activeDeviceId: string;
-    activeAppId: string;
-    viewKind: ViewKind;
-
-    // View-specific selectors
-    activeConversationId?: string;   // CHAT
-    activeFeedId?: string;           // FEED (e.g. timeline id)
-    activeStoryId?: string;          // STORY (e.g. story reel id)
-
-    viewportWidth: number;
-    viewportHeight: number;
-
-    // Optional configuration overrides
-    config?: Partial<LayoutConfig>;
-}
-
-// --- LayoutConfig ---
-
-export interface LayoutConfig {
-    // Global-ish things
-    cinematicMode: "NONE" | "FOLLOW_LAST_MESSAGE" | "FOCUS_ON_RANGE";
-
-    // Chat-specific
-    chat: ChatLayoutConfig;
-
-    // Feed-specific
-    feed: FeedLayoutConfig;
-
-    // Story-specific
-    story: StoryLayoutConfig;
-
-    // Lock screen
-    lockscreen: LockscreenLayoutConfig;
-
-    // Transitions
-    transition: TransitionLayoutConfig;
-}
-
-export interface ChatLayoutConfig {
-    bubbleWidth: number;
-    baseBubbleHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    lockToBottom: boolean;
-}
-
-export interface FeedLayoutConfig {
-    cardWidth: number;
-    baseCardHeight: number;
-    verticalGap: number;
-    topPadding: number;
-    bottomPadding: number;
-
-    // For variable-height posts, same trick as chat:
-    charsPerLine: number;
-    lineHeight: number;
-
-    scrollEasingDuration: number;
-    maxScrollCatchupSpeed: number;
-
-    startAtTop: boolean;      // typical feed behaviour
-    autoScroll?: boolean;     // for cinematic auto-scroll episodes
-}
-
-export interface StoryLayoutConfig {
-    // Each story = full-screen page
-    defaultStoryDuration: number; // in frames
-    progressBarHeight: number;
-    storyGap: number;             // for 3D-ish page stack if needed
-
-    // Animation
-    storyTransitionDuration: number; // frames between stories
-}
-
-export interface LockscreenLayoutConfig {
-    topPadding: number;
-    notificationGap: number;
-    notificationWidth: number;
-    baseNotificationHeight: number;
-    charsPerLine: number;
-    lineHeight: number;
-
-    stackMaxNotifications: number; // older ones collapsed/hidden
-    appearDuration: number;
-}
-
-export interface TransitionLayoutConfig {
-    // Device position in composition
-    defaultScale: number;
-    zoomedScale: number;
-    panDuration: number;
-    zoomDuration: number;
-
-    // Computed state
-    notifications: Notification[];
-}
-
-export interface LayoutRect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-// =============================================================================
-// SEMANTIC LAYOUT PROTOCOL
-// =============================================================================
-
-/**
- * A Semantic Region describes a named area of interest in the layout.
- * The App (Plugin) is responsible for defining these during layout.
- */
-export interface SemanticRegion {
-    id: string;          // e.g. "msg_123", "header_profile", "input_area"
-    rect: LayoutRect;    // { x, y, width, height } - absolute viewport coordinates
-    tags: string[];      // e.g. ["message", "header", "interactive"]
-    metadata?: Record<string, any>; // Extensible metadata
-}
-
-/**
- * Extends LayoutState to include a semantic map.
- * This is the "bridge" between Layout Engine (Math) and Camera Engine (Intent).
- */
-export interface SemanticLayoutState {
-    regions: Record<string, SemanticRegion>; // ID -> Region
-    groups: Record<string, string[]>;        // Tag -> IDs (e.g. "message" -> ["msg_1", "msg_2"])
-}
-
-// --- LayoutState ---
-
-export type LayoutState =
-    | ChatLayoutState
-    | FeedLayoutState
-    | StoryLayoutState
-    | LockscreenLayoutState
-    | TransitionLayoutState;
-
-export interface BaseLayoutState {
-    kind: ViewKind;
-    /** Semantic regions defined by the app plugin */
-    semantic?: SemanticLayoutState;
-}
-
-// ChatLayoutState
-
-export interface ChatLayoutState extends BaseLayoutState {
-    kind: "CHAT";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    messageLayouts: Record<string, ChatMessageLayout>;
-    typingLayout?: TypingLayout | null;
-    meta: ChatLayoutMeta;
-}
-
-export interface ChatMessageLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    translateX: number;
-    // Rect for director targeting (x, y relative to content, not viewport)
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
-
-export interface TypingLayout {
-    y: number;
-    height: number;
-    opacity: number;
-    // Rect for director targeting
-    rect?: {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-    };
-}
-
-export interface ChatLayoutMeta {
-    lastMessageId?: string;
-    /** Whether this is a group chat (more than 2 unique senders) */
-    isGroupChat?: boolean;
-}
-
-// FeedLayoutState
-
-export interface FeedLayoutState extends BaseLayoutState {
-    kind: "FEED";
-    scrollY: number;
-    contentHeight: number;
-    isAtBottom: boolean;
-    itemLayouts: Record<string, FeedItemLayout>;
-    meta: FeedLayoutMeta;
-}
-
-export interface FeedItemLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-    scale: number;   // for subtle parallax / entry
-}
-
-export interface FeedLayoutMeta {
-    firstVisibleItemId?: string;
-    lastVisibleItemId?: string;
-    focusedItemId?: string; // for cinematic highlight
-}
-
-// StoryLayoutState
-
-export interface StoryLayoutState extends BaseLayoutState {
-    kind: "STORY";
-    activeStoryIndex: number;
-    storyCount: number;
-    storyProgress: number; // 0..1 within current story
-    storyLayouts: StoryItemLayout[];
-}
-
-export interface StoryItemLayout {
-    id: string;
-    index: number;
-    // For 3D card stack / page-motion effects:
-    translateX: number;
-    translateY: number;
-    scale: number;
-    opacity: number;
-}
-
-// LockscreenLayoutState
-
-export interface LockscreenLayoutState extends BaseLayoutState {
-    kind: "LOCKSCREEN";
-    notificationLayouts: NotificationLayout[];
-    meta: LockscreenLayoutMeta;
-}
-
-export interface NotificationLayout {
-    id: string;
-    y: number;
-    height: number;
-    opacity: number;
-    translateY: number;
-}
-
-export interface LockscreenLayoutMeta {
-    // Add any meta fields if needed
-}
-
-// TransitionLayoutState
-
-export interface TransitionLayoutState extends BaseLayoutState {
-    kind: "TRANSITION";
-    // These values are for the outer DeviceFrame / TokovoRenderer
-    deviceTranslateX: number;
-    deviceTranslateY: number;
-    deviceScale: number;
-    deviceRotation: number;
-    overlayOpacity: number;
-    meta: TransitionLayoutMeta;
-}
-
-export interface TransitionLayoutMeta {
-    // Add any meta fields if needed
-}
+export type {
+    ViewKind,
+    LayoutRect,
+    SemanticRegion,
+    SemanticLayoutState,
+    LayoutContext,
+    LayoutConfig,
+    ChatLayoutConfig,
+    FeedLayoutConfig,
+    StoryLayoutConfig,
+    LockscreenLayoutConfig,
+    TransitionLayoutConfig,
+    LayoutState,
+    BaseLayoutState,
+    ChatLayoutState,
+    ChatMessageLayout,
+    TypingLayout,
+    ChatLayoutMeta,
+    FeedLayoutState,
+    FeedItemLayout,
+    FeedLayoutMeta,
+    StoryLayoutState,
+    StoryItemLayout,
+    LockscreenLayoutState,
+    NotificationLayout,
+    LockscreenLayoutMeta,
+    TransitionLayoutState,
+    TransitionLayoutMeta,
+} from "./types/layout";

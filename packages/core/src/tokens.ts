@@ -138,7 +138,10 @@ export const androidTokens = {
 // UTILITY FUNCTIONS
 // =============================================================================
 
-export type Platform = "ios" | "android";
+// Import Platform from types/device to avoid duplicate exports
+import type { Platform } from "./types/device";
+// Re-export for backward compatibility (consumers of tokens.ts may expect it)
+export type { Platform };
 
 export function getTokens(platform: Platform) {
     return platform === "ios" ? iOSTokens : androidTokens;

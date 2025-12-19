@@ -17,6 +17,7 @@ import type {
 } from "@tokovo/ir";
 import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
+import { keyboardV2Lowering } from "@tokovo/device-keyboard";
 
 // =============================================================================
 // TYPES
@@ -55,7 +56,10 @@ export function lowerTrackEvent(
 
     switch (kind) {
         case "CAMERA":
-            return cameraV2Lowering(event as CameraTrackEvent, { fps: ctx.fps });
+            // Cast to unknown first to handle type incompatibility between device-camera and core RuntimeEvent
+            return cameraV2Lowering(event as unknown as Parameters<typeof cameraV2Lowering>[0], { fps: ctx.fps }) as unknown as RuntimeEvent[];
+        case "KEYBOARD":
+            return keyboardV2Lowering.lower(event as any, ctx) as unknown as RuntimeEvent[];
         case "AUDIO":
             return lowerAudioEvent(event as AudioTrackEvent);
         case "OS":

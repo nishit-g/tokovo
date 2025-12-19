@@ -4,7 +4,19 @@
  * Defines how keyboard events map to camera intents.
  */
 
-import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
+// Type definitions for camera behavior system
+// These are local since they're not exported from @tokovo/core
+export type ShotPresetId = string;
+export interface CameraIntent {
+    type: "FOCUS" | "RESET" | "HOLD" | "TRACK";
+    anchor?: string;
+    preset?: string;
+}
+export interface AppBehavior {
+    appId: string;
+    eventMappings: Record<string, CameraIntent>;
+    presetOverrides?: Partial<Record<ShotPresetId, Partial<{ scale: number; shake: number }>>>;
+}
 
 const APP_ID = "device_keyboard";
 

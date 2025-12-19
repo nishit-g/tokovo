@@ -71,7 +71,7 @@ export const camera = {
         originX: opts.originX ?? 0.5,
         originY: opts.originY ?? 0.5,
         easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Pan to position
@@ -85,7 +85,7 @@ export const camera = {
         translateY,
         duration,
         easing: opts.easing ?? "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Camera shake effect
@@ -99,7 +99,7 @@ export const camera = {
         duration,
         frequency: opts.frequency ?? 18,
         decay: opts.decay ?? 0.5,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Reset camera to default
@@ -111,7 +111,7 @@ export const camera = {
         trace: createTrace(Tracer.capture()),
         duration,
         easing,
-    } as TimelineEvent),
+    } as any),
 
     // =========================================================================
     // SEMANTIC ANCHOR CAMERA (Webseries Style)
@@ -135,7 +135,7 @@ export const camera = {
         shake,
         duration: getPresetDuration(preset),
         easing: "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Track a semantic anchor with smooth following (Webseries Camera!)
@@ -159,7 +159,7 @@ export const camera = {
         smoothing,
         preset: preset ?? "operatorFollow",
         easing: "ease-out",
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Hold current camera position (let viewer read)
@@ -173,7 +173,7 @@ export const camera = {
         type: "HOLD",
         trace: createTrace(Tracer.capture()),
         duration,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Punch + Glide: The webseries signature move
@@ -198,7 +198,7 @@ export const camera = {
                 shake: 3,
                 duration: 10,
                 easing: "ease-out",
-            } as TimelineEvent,
+            } as any,
             // Phase 2: Glide (smooth follow)
             {
                 at: at + 10,
@@ -210,7 +210,7 @@ export const camera = {
                 smoothing: 0.18,
                 preset: "operatorFollow",
                 easing: "ease-out",
-            } as TimelineEvent,
+            } as any,
         ]
     },
 };

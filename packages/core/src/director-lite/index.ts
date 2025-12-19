@@ -23,5 +23,6 @@ export type {
     DeriveContext,
     DirectorStrategy,
     Rule,
-    LayoutRect,
+    // Note: LayoutRect is exported from ../types/layout (via @tokovo/core types barrel)
 } from "@tokovo/device-camera";
+

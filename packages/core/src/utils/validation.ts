@@ -1,7 +1,7 @@
 
 import { z } from "zod";
-import { TokovoPlugin } from "./plugin";
-import { AppMetadata } from "./app-metadata";
+import type { TokovoPlugin } from "../plugin/plugin";
+import type { AppMetadata } from "../registries/metadata";
 
 // =============================================================================
 // PLUGIN & METADATA SCHEMAS

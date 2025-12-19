@@ -9,6 +9,8 @@
 // TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
 export * from "./types";
+// Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
+// types.ts re-exports needed types from types/layout.ts for compatibility.
 
 // =============================================================================
 // ENGINE - Replay loop and handlers
@@ -49,8 +51,20 @@ export * from "./audio";
 
 // =============================================================================
 // REGISTRIES - All registration systems
+// Named exports to avoid conflicts with ./plugin
 // =============================================================================
-export * from "./registries";
+export {
+    createRegistry,
+    AppRegistry,
+    SoundRegistry,
+    WidgetRegistry,
+    getDynamicIslandWidget,
+    getNotificationWidgets,
+    BehaviorRegistry,
+    AppMetadataRegistry,
+    LayoutRegistry,
+} from "./registries";
+export type { Registry, AppViewProps, AppViewComponent, AppMetadata, LayoutStrategy } from "./registries";
 
 // =============================================================================
 // NOTIFICATIONS - Notification system
@@ -59,8 +73,26 @@ export * from "./notifications";
 
 // =============================================================================
 // PLUGIN - Plugin system
+// Named exports to avoid conflicts with ./registries
 // =============================================================================
-export * from "./plugin";
+export {
+    PluginManager,
+    PluginManagerClass,
+    definePlugin,
+    registerPlugins,
+} from "./plugin";
+export type {
+    TokovoPluginContract,
+    PluginReducer,
+    PluginViews,
+    LoweringHandler,
+    DslExtension,
+    PluginAnchorRegistry,
+    PluginNotificationAdapter,
+    PluginTier,
+    TokovoPlugin,
+    ScreenComponent,
+} from "./plugin";
 
 // =============================================================================
 // UTILS - Utilities
@@ -79,6 +111,7 @@ export * from "./anchors";
 
 // =============================================================================
 // CONSTANTS & TOKENS
+// Note: constants.ts may export Platform, so be careful
 // =============================================================================
 export * from "./constants";
 export * from "./tokens";
@@ -92,3 +125,4 @@ export * from "./components/AppSurface";
 // EPISODE PREPARATION
 // =============================================================================
 export * from "./prepare";
+

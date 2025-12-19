@@ -14,7 +14,8 @@
     "dependencies": {
         "@tokovo/ir": "workspace:*",
         "@tokovo/core": "workspace:*",
-        "@tokovo/device-camera": "workspace:*"
+        "@tokovo/device-camera": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*"
     },
     "devDependencies": {
         "typescript": "^5.0.0"

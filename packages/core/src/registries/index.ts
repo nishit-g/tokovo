@@ -27,6 +27,7 @@ export type { AppMetadata } from "./metadata";
 
 // Layout Registry
 export { LayoutRegistry } from "./layout";
-export type { LayoutStrategy, LayoutContext, LayoutState } from "./layout";
+export type { LayoutStrategy } from "./layout";
+// Note: LayoutContext, LayoutState are exported from ../types/layout (not re-exported here)
 
 // Note: AnchorRegistry is exported from ../anchors (not duplicated here)

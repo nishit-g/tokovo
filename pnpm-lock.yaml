@@ -118,6 +118,9 @@ importers:
       '@tokovo/device-camera':
         specifier: workspace:*
         version: link:../device-camera
+      '@tokovo/device-keyboard':
+        specifier: workspace:*
+        version: link:../device-keyboard
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir

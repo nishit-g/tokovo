@@ -2,6 +2,8 @@
  * Audio Event Factories
  * 
  * Low-level event creators for sound effects and music.
+ * 
+ * @deprecated Use V2 track-based DSL instead
  */
 
 import { TimelineEvent } from "@tokovo/core";
@@ -21,6 +23,7 @@ export interface FadeOptions {
 
 /**
  * Audio event factories
+ * @deprecated Use AudioTrackBuilder from V2 DSL
  */
 export const audio = {
     /**
@@ -37,7 +40,7 @@ export const audio = {
         duration: opts.duration,
         instanceId: opts.instanceId,
         deviceId: opts.deviceId,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Stop a sound
@@ -48,7 +51,7 @@ export const audio = {
         type: "STOP_SOUND",
         trace: createTrace(Tracer.capture()),
         instanceId,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Fade volume
@@ -61,7 +64,7 @@ export const audio = {
         instanceId,
         toVolume,
         duration,
-    } as TimelineEvent),
+    } as any),
 
     /**
      * Play background music
@@ -74,5 +77,5 @@ export const audio = {
         soundId,
         volume,
         loop,
-    } as TimelineEvent),
+    } as any),
 };
