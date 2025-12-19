@@ -58,11 +58,16 @@ export const easingFunctions: Record<EasingType, (t: number) => number> = {
         return t === 1 ? 1 : 1 - Math.pow(2, -10 * t);
     },
 
-    "spring": (t) => {
+    "spring": (t: number): number => {
         // Simplified spring without configurable parameters
         const w = 4.5; // frequency
         const decay = 0.25;
         return 1 - Math.exp(-decay * t * 10) * Math.cos(w * t * Math.PI * 2);
+    },
+
+    "elastic": (t: number): number => {
+        if (t === 0 || t === 1) return t;
+        return -Math.pow(2, 10 * (t - 1)) * Math.sin((t - 1.1) * 5 * Math.PI);
     },
 };
 

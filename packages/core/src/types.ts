@@ -525,25 +525,32 @@ export interface AppFolder {
 
 
 // =============================================================================
-// CAMERA SYSTEM TYPES
+// CAMERA SYSTEM TYPES (imported from @tokovo/device-camera)
 // =============================================================================
 
-// Easing types for smooth cinematic motion
-export type EasingType =
-    | "linear"
-    | "ease-in"
-    | "ease-out"
-    | "ease-in-out"
-    | "bounce"
-    | "elastic"
-    | "cinematic"   // Custom S-curve for film-like motion
-    | "expoOut";    // Fast deceleration for impact/emotional hits
+// Re-export camera types from device-camera (single source of truth)
+export type {
+    EasingType,
+    CameraEffect,
+    CameraEffectType,
+    ZoomEffect,
+    ShakeEffect,
+    FocusEffect,
+    TrackEffect,
+    ResetEffect,
+    CameraTransform,
+} from "@tokovo/device-camera";
+
+export { DEFAULT_TRANSFORM as DEFAULT_CAMERA_TRANSFORM } from "@tokovo/device-camera";
+
+// Import for use in CameraState
+import type { CameraEffect, CameraTransform } from "@tokovo/device-camera";
+import { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
 
 // =============================================================================
-// TRANSITION SYSTEM TYPES
+// TRANSITION SYSTEM TYPES (not camera-specific, stays in core)
 // =============================================================================
 
-// Transition types for screen animations
 export type TransitionType =
     | "FADE"
     | "SLIDE_LEFT"
@@ -555,10 +562,9 @@ export type TransitionType =
     | "CROSS_DISSOLVE";
 
 // =============================================================================
-// HIGHLIGHT SYSTEM TYPES
+// HIGHLIGHT SYSTEM TYPES (not camera-specific, stays in core)
 // =============================================================================
 
-// Highlight styles for message emphasis
 export type HighlightStyle =
     | "pulse"
     | "glow"
@@ -567,203 +573,18 @@ export type HighlightStyle =
     | "spotlight"
     | "scale";
 
-// Camera effect types
-export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
-
-// Targets for FOCUS effect - general purpose, not app-specific
-export type FocusTarget =
-    | { type: "app"; appId?: string }                                    // Focus on app viewport
-    | { type: "notification"; notificationId?: string }                  // Focus on notification
-    | { type: "message"; messageId: string; conversationId?: string }    // Focus on message bubble
-    | { type: "device"; deviceId?: string }                              // Focus on device
-    | { type: "element"; selector: string }                              // Focus on CSS selector
-    | { type: "point"; x: number; y: number };                           // Focus on absolute point (0-1 normalized)
-
-// Individual camera effect definitions
-export interface CameraZoomEffect {
-    type: "ZOOM";
-    scale: number;           // 1.0 = default, >1 = zoom in, <1 = zoom out
-    originX?: number;        // 0-1, default 0.5 (center)
-    originY?: number;        // 0-1, default 0.5 (center)
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraPanEffect {
-    type: "PAN";
-    translateX: number;      // pixels (or normalized 0-1 if relative)
-    translateY: number;      // pixels
-    relative?: boolean;      // if true, translateX/Y are 0-1 normalized
-    duration: number;        // frames
-    easing?: EasingType;
-}
-
-export interface CameraShakeEffect {
-    type: "SHAKE";
-    intensity: number;       // amplitude in pixels
-    frequency: number;       // shakes per second
-    decay?: number;          // 0-1, how fast shake reduces (1 = instant stop, 0 = no decay)
-    duration: number;        // frames
-    seed?: number;           // for deterministic randomness
-}
-
-export interface CameraFocusEffect {
-    type: "FOCUS";
-    target: FocusTarget;
-    scale?: number;          // zoom level when focused, default 1.5
-    duration: number;        // frames
-    easing?: EasingType;
-    holdDuration?: number;   // frames to hold at focus before returning
-}
-
-export interface CameraCutEffect {
-    type: "CUT";
-    toDeviceId?: string;     // switch to different device
-    toView?: "app" | "lockscreen" | "homescreen";
-    fadeMs?: number;         // optional fade transition (0 = hard cut)
-}
-
-export interface CameraResetEffect {
-    type: "RESET";
-    duration: number;        // frames to animate back to default
-    easing?: EasingType;
-}
-
-/**
- * Semantic Anchor Focus Effect
- * 
- * NEW: Uses semantic anchors (lastMessage, inputArea, etc.) instead of
- * hardcoded pixel coordinates. The anchor is resolved at runtime by
- * looking up the rect from the registered AnchorProvider.
- * 
- * This is the key to "cinematic" camera — the camera follows semantic
- * meaning, not arbitrary coordinates.
- * 
- * RUNTIME RESOLUTION:
- * - `anchor` is the semantic ID (e.g., "lastMessage")
- * - `resolvedRect` is populated at render time by useCameraEngine
- * - `viewport` is needed to convert rect → normalized origin
- */
-export interface CameraAnchorFocusEffect {
-    type: "ANCHOR_FOCUS";
-    /** Semantic anchor to focus on */
-    anchor: string;          // SemanticAnchorId (using string to avoid circular import)
-    /** Shot preset to apply (dramatic, subtle, snap, etc.) */
-    preset?: string;         // ShotPresetId
-    /** Override scale (if not using preset default) */
-    scale?: number;
-    /** Duration in frames */
-    duration: number;
-    /** Easing function */
-    easing?: EasingType;
-    /** Optional shake intensity */
-    shake?: number;
-
-    // === RUNTIME-RESOLVED FIELDS (populated by useCameraEngine) ===
-
-    /** The actual rect of the anchor (resolved at runtime) */
-    resolvedRect?: { x: number; y: number; width: number; height: number };
-    /** Viewport dimensions for normalizing rect → origin */
-    viewport?: { width: number; height: number };
-}
-
-/**
- * Anchor Tracking Effect (Webseries Camera)
- * 
- * Unlike ANCHOR_FOCUS which sets origin once, ANCHOR_TRACK continuously
- * follows the anchor rect over the duration. Uses exponential smoothing
- * (low-pass filter) for cinematic "operator follow" feel.
- * 
- * THE KEY: Rect is resolved EVERY FRAME, and origin is smoothed toward it.
- * 
- * Use cases:
- * - Message animation (bubble slides in → camera follows)
- * - Scroll tracking (chat scrolls → camera travels)
- * - Content updates (typing pushes layout → camera adjusts)
- */
-export interface CameraAnchorTrackEffect {
-    type: "ANCHOR_TRACK";
-    /** Semantic anchor to track */
-    anchor: string;
-    /** Duration to track in frames */
-    duration: number;
-    /** 
-     * Smoothing factor (0.0 - 1.0)
-     * - 0.08 = slow float (documentary)
-     * - 0.18 = operator follow (webseries standard)
-     * - 0.35 = snappy tracking
-     * - 0.60 = whip snap (fast travel)
-     */
-    smoothing?: number;
-    /** Shot preset for scale/shake */
-    preset?: string;
-    /** Override scale */
-    scale?: number;
-    /** Optional easing for scale animation */
-    easing?: EasingType;
-}
-
-/**
- * Camera Hold Effect
- * 
- * Hold current position for a specified duration.
- * Gives viewer time to read content.
- */
-export interface CameraHoldEffect {
-    type: "HOLD";
-    /** Duration in frames */
-    duration: number;
-}
-
-export type CameraEffect =
-    | CameraZoomEffect
-    | CameraPanEffect
-    | CameraShakeEffect
-    | CameraFocusEffect
-    | CameraAnchorFocusEffect
-    | CameraAnchorTrackEffect
-    | CameraHoldEffect
-    | CameraCutEffect
-    | CameraResetEffect;
-
-// Active camera effect (with timing info)
-export interface ActiveCameraEffect {
-    id: string;              // unique ID for this effect instance
-    effect: CameraEffect;
-    startFrame: number;
-    endFrame: number;
-    deviceId?: string;       // Target device (undefined = primary/active device)
-}
-
-// Computed camera transform (result of all active effects at time t)
-export interface CameraTransform {
-    translateX: number;
-    translateY: number;
-    scale: number;
-    rotation: number;        // degrees
-    originX: number;         // 0-1
-    originY: number;         // 0-1
-
-    // Shake offsets (added on top of main transform)
-    shakeX: number;
-    shakeY: number;
-}
-
 // =============================================================================
-// MULTI-DEVICE / POV TYPES
+// MULTI-DEVICE / POV TYPES (stays in core)
 // =============================================================================
 
-// View layout modes for multi-device rendering
 export type ViewLayoutMode =
-    | "SINGLE"              // One device fills the frame
-    | "SPLIT_HORIZONTAL"    // Side by side (left/right)
-    | "SPLIT_VERTICAL"      // Stacked (top/bottom)
-    | "PIP";                // Picture-in-Picture (main + small overlay)
+    | "SINGLE"
+    | "SPLIT_HORIZONTAL"
+    | "SPLIT_VERTICAL"
+    | "PIP";
 
-// PIP position options
 export type PIPPosition = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-// Layout configuration for multi-device views
 export interface ViewLayout {
     mode: ViewLayoutMode;
     primaryDeviceId: string;
@@ -772,55 +593,36 @@ export interface ViewLayout {
     pipScale?: number;
 }
 
-// Default view layout
 export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
     mode: "SINGLE",
     primaryDeviceId: "main_phone",
 };
 
-// Full camera state (stored in WorldState)
+// =============================================================================
+// CAMERA STATE (uses flat CameraEffect[] from device-camera)
+// =============================================================================
+
 export interface CameraState {
-    // Base view (for backward compatibility)
     baseView: "APP_VIEW" | "TRANSITION";
     appId?: AppId;
-
-    // Multi-device support
     activeDeviceId: string;
     layout: ViewLayout;
-
-    // Active effects (from timeline) - global + per-device
-    activeEffects: ActiveCameraEffect[];
-
-    // Computed transform for primary device
+    /** Flat typed effects - no wrapper needed */
+    activeEffects: CameraEffect[];
     transform: CameraTransform;
-
-    // Per-device transforms (computed by engine)
     deviceTransforms: Record<DeviceId, CameraTransform>;
 }
 
-// Default camera transform
-export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
-    translateX: 0,
-    translateY: 0,
-    scale: 1,
-    rotation: 0,
-    originX: 0.5,
-    originY: 0.5,
-    shakeX: 0,
-    shakeY: 0,
-};
-
-// Default camera state
 export const DEFAULT_CAMERA_STATE: CameraState = {
     baseView: "APP_VIEW",
     activeDeviceId: "main_phone",
     layout: { ...DEFAULT_VIEW_LAYOUT },
     activeEffects: [],
-    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    transform: { ...DEFAULT_TRANSFORM },
     deviceTransforms: {},
 };
 
-// Legacy type for backward compatibility
+/** @deprecated */
 export interface CameraViewConfig {
     type: "APP_VIEW" | "TRANSITION";
     appId?: AppId;

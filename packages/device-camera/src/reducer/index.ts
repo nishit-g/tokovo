@@ -1,13 +1,12 @@
 /**
- * Camera Reducer
+ * Camera Reducer - Processes runtime events into typed effects
  * 
- * Processes camera runtime events and stores effects in state.
- * Works with Immer for immutable updates.
+ * Uses discriminated union types directly - no legacy wrappers.
  * 
  * @module device-camera/reducer
  */
 
-import type {
+import {
     CameraEffect,
     ZoomEffect,
     ShakeEffect,
@@ -15,58 +14,33 @@ import type {
     TrackEffect,
     ResetEffect,
     CameraState,
+    DEFAULT_CAMERA_STATE,
     DEFAULT_TRANSFORM,
+    EasingType,
 } from "../types";
 
 // =============================================================================
-// TYPES
+// EVENT TYPES
 // =============================================================================
 
-interface CameraRuntimeEvent {
+interface CameraEvent {
     kind: "CAMERA";
     type: string;
     at: number;
-    duration?: number;
-    payload?: Record<string, unknown>;
-}
-
-interface WorldState {
-    camera?: CameraState;
     [key: string]: unknown;
 }
-
-// =============================================================================
-// DEFAULTS
-// =============================================================================
-
-const DEFAULT_CAMERA_STATE: CameraState = {
-    activeEffects: [],
-    transform: {
-        scale: 1,
-        translateX: 0,
-        translateY: 0,
-        originX: 0.5,
-        originY: 0.5,
-        rotation: 0,
-        shakeX: 0,
-        shakeY: 0,
-    },
-    focusedAnchor: null,
-};
 
 // =============================================================================
 // REDUCER
 // =============================================================================
 
 /**
- * Camera reducer - processes camera events and stores effects.
- * 
- * @param draft - Immer draft of world state
- * @param event - Camera runtime event
+ * Process a camera event and update state.
+ * Creates properly typed effects directly - no conversion needed.
  */
 export function cameraReducer(
-    draft: WorldState,
-    event: CameraRuntimeEvent
+    draft: { camera?: CameraState },
+    event: CameraEvent
 ): void {
     if (event.kind !== "CAMERA") return;
 
@@ -75,134 +49,165 @@ export function cameraReducer(
         draft.camera = { ...DEFAULT_CAMERA_STATE };
     }
 
-    const camera = draft.camera;
     const at = event.at;
-    const p = event.payload ?? {};
-    const duration = (event.duration as number) ?? (p.duration as number) ?? 30;
-    const effectId = `${event.type.toLowerCase()}_${at}`;
+    const duration = (event.duration as number) ?? 30;
+    const easing = (event.easing as EasingType) ?? "ease-out";
 
     switch (event.type) {
         // =================================================================
-        // ZOOM (from animate() DSL method)
+        // ZOOM - Scale and translate
         // =================================================================
         case "ZOOM": {
             const effect: ZoomEffect = {
                 type: "zoom",
-                id: effectId,
+                id: `zoom_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                targetScale: (p.scale as number) ?? 1,
-                targetX: (p.translateX as number) ?? (p.x as number) ?? 0,
-                targetY: (p.translateY as number) ?? (p.y as number) ?? 0,
-                originX: (p.originX as number) ?? undefined,
-                originY: (p.originY as number) ?? undefined,
-                easing: (p.easing as ZoomEffect["easing"]) ?? "ease-out",
+                targetScale: (event.scale as number) ?? 1,
+                targetX: (event.translateX as number) ?? 0,
+                targetY: (event.translateY as number) ?? 0,
+                originX: event.originX as number | undefined,
+                originY: event.originY as number | undefined,
+                easing,
             };
-            camera.activeEffects.push(effect);
+            draft.camera.activeEffects.push(effect);
             break;
         }
 
         // =================================================================
-        // SHAKE
+        // SHAKE - Screen shake
         // =================================================================
         case "SHAKE": {
             const effect: ShakeEffect = {
                 type: "shake",
-                id: effectId,
+                id: `shake_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                intensity: (p.intensity as number) ?? 5,
-                intensityX: (p.intensityX as number) ?? undefined,
-                intensityY: (p.intensityY as number) ?? undefined,
-                frequency: (p.frequency as number) ?? 15,
-                decay: (p.decay as number) ?? 0.8,
+                intensity: (event.intensity as number) ?? 5,
+                intensityX: event.intensityX as number | undefined,
+                intensityY: event.intensityY as number | undefined,
+                frequency: (event.frequency as number) ?? 15,
+                decay: (event.decay as number) ?? 0.8,
+                easing,
             };
-            camera.activeEffects.push(effect);
+            draft.camera.activeEffects.push(effect);
             break;
         }
 
         // =================================================================
-        // ANCHOR_FOCUS (from focus() DSL method)
+        // ANCHOR_FOCUS - Semantic anchor focus (one-time)
         // =================================================================
         case "FOCUS":
         case "ANCHOR_FOCUS": {
-            camera.focusedAnchor = (p.anchorId as string) ?? null;
-
             const effect: FocusEffect = {
                 type: "focus",
-                id: effectId,
+                id: `focus_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                anchorId: (p.anchorId as string) ?? "",
-                scale: (p.scale as number) ?? undefined,
-                preset: (p.preset as string) ?? "medium",
-                padding: (p.padding as number) ?? undefined,
-                easing: (p.easing as FocusEffect["easing"]) ?? "ease-out",
+                anchorId: (event.anchor as string) ?? "device",
+                scale: event.scale as number | undefined,
+                preset: event.preset as string | undefined,
+                easing,
             };
-            camera.activeEffects.push(effect);
+            draft.camera.activeEffects.push(effect);
             break;
         }
 
         // =================================================================
-        // ANCHOR_TRACK (from track() DSL method)
+        // ANCHOR_TRACK - Continuous anchor following
         // =================================================================
         case "TRACK":
         case "ANCHOR_TRACK": {
             const effect: TrackEffect = {
                 type: "track",
-                id: effectId,
+                id: `track_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                anchorId: (p.anchorId as string) ?? "",
-                scale: (p.scale as number) ?? 1.05,
-                smoothing: (p.smoothing as number) ?? 0.1,
+                anchorId: (event.anchor as string) ?? "device",
+                scale: (event.scale as number) ?? 1.05,
+                smoothing: (event.smoothing as number) ?? 0.18,
+                easing,
             };
-            camera.activeEffects.push(effect);
+            draft.camera.activeEffects.push(effect);
             break;
         }
 
         // =================================================================
-        // RESET
+        // RESET - Return to neutral
         // =================================================================
         case "RESET": {
-            camera.focusedAnchor = null;
-
             const effect: ResetEffect = {
                 type: "reset",
-                id: effectId,
+                id: `reset_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                easing: (p.easing as ResetEffect["easing"]) ?? "ease-out",
+                easing,
             };
-            camera.activeEffects.push(effect);
+            draft.camera.activeEffects.push(effect);
             break;
         }
 
         // =================================================================
-        // CUT (instant change, no animation)
+        // CUT - Instant camera change
         // =================================================================
-        case "CUT":
+        case "CUT": {
+            // Clear all effects
+            draft.camera.activeEffects = [];
+            draft.camera.transform = { ...DEFAULT_TRANSFORM };
+
+            // Update device if specified
+            if (event.toDeviceId) {
+                draft.camera.activeDeviceId = event.toDeviceId as string;
+            }
+            break;
+        }
+
+        // =================================================================
+        // SET_VIEW - Legacy view change
+        // =================================================================
         case "SET_VIEW": {
-            // For instant cuts, we directly modify the transform
-            // and clear any conflicting effects
-            camera.transform = {
-                ...camera.transform,
-                scale: (p.scale as number) ?? camera.transform.scale,
-                translateX: (p.x as number) ?? camera.transform.translateX,
-                translateY: (p.y as number) ?? camera.transform.translateY,
-                rotation: (p.rotation as number) ?? camera.transform.rotation,
-            };
-
-            if (p.originX !== undefined) {
-                camera.transform.originX = p.originX as number;
-            }
-            if (p.originY !== undefined) {
-                camera.transform.originY = p.originY as number;
+            const view = event.view as { type?: string; appId?: string } | undefined;
+            if (view) {
+                draft.camera.baseView = view.type;
+                draft.camera.appId = view.appId;
             }
             break;
         }
 
-        default:
-            console.warn(`[device-camera] Unknown camera event type: ${event.type}`);
+        // =================================================================
+        // LAYOUT - Change view layout mode
+        // =================================================================
+        case "LAYOUT": {
+            draft.camera.layout = {
+                mode: (event.mode as "SINGLE" | "PIP" | "SPLIT") ?? "SINGLE",
+                primaryDeviceId: event.primaryDeviceId as string | undefined,
+                secondaryDeviceId: event.secondaryDeviceId as string | undefined,
+            };
+            break;
+        }
     }
+}
+
+// =============================================================================
+// EFFECT CLEANUP
+// =============================================================================
+
+/**
+ * Remove expired effects from state.
+ * Call periodically to prevent memory growth.
+ */
+export function cleanupExpiredEffects(state: CameraState, currentFrame: number): void {
+    // Keep effects that end after current frame (still active or future)
+    state.activeEffects = state.activeEffects.filter(
+        effect => effect.endFrame > currentFrame
+    );
+}
+
+/**
+ * Get only active effects at a specific frame.
+ */
+export function getActiveEffects(state: CameraState, frame: number): CameraEffect[] {
+    return state.activeEffects.filter(
+        effect => frame >= effect.startFrame && frame < effect.endFrame
+    );
 }

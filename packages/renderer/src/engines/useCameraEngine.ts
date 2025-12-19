@@ -1,55 +1,86 @@
 /**
- * Camera Engine v2
- *
- * Simplified camera engine using @tokovo/device-camera processors.
+ * Camera Engine - Frame-based transform computation
+ * 
+ * Pure computation layer that processes camera effects each frame.
+ * Compatible with Remotion's frame-by-frame rendering.
  * 
  * ARCHITECTURE:
- * 1. Get base transform from world state
- * 2. Get anchors from registered anchor providers
- * 3. Convert legacy effects to new format
- * 4. Process all effects through unified processor registry
- * 5. Apply DirectorLite if no manual effects
- * 6. Build CSS styles
+ * 1. Get effects from world.camera.activeEffects (typed)
+ * 2. Get anchors from registered providers
+ * 3. Process all effects through processor registry
+ * 4. Apply DirectorLite if no manual effects
+ * 5. Build CSS styles
+ * 
+ * @module device-camera
  */
 
 import { useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
+
+// Import everything from device-camera
 import {
-    WorldState,
-    ChatLayoutState,
-    EventIndex,
-    getEventsInRange,
-} from "@tokovo/core";
-import {
-    processActiveEffects,
-    deriveDirectorEffects,
-    extractSignals,
+    // Types
     CameraEffect,
     CameraTransform,
     DEFAULT_TRANSFORM,
+    CameraState,
+
+    // Processors
+    processActiveEffects,
+
+    // Anchors
     AnchorSnapshot,
+    getAnchorsForApp,
+
+    // Director-Lite
+    deriveDirectorEffects,
+    extractSignals,
 } from "@tokovo/device-camera";
+
+// Core imports for world/layout types
+import type { WorldState, EventIndex } from "@tokovo/core";
+import { getEventsInRange } from "@tokovo/core";
+
 import { LayoutEngineOutput } from "./useLayoutEngine";
-import { getAnchorsForApp } from "../anchor-providers/registry";
 
 // =============================================================================
 // INPUT / OUTPUT TYPES
 // =============================================================================
 
 export interface CameraEngineInput {
+    /** Current world state */
     world: WorldState;
+
+    /** Current frame */
     t: number;
+
+    /** Layout engine output */
     layoutOutput: LayoutEngineOutput;
+
+    /** Event index for signal extraction */
     eventIndex?: EventIndex;
+
+    /** Enable DirectorLite auto-camera */
     directorEnabled?: boolean;
+
+    /** Debug mode for DirectorLite */
     directorDebug?: boolean;
-    anchorSystemEnabled?: boolean;
 }
 
 export interface CameraEngineOutput {
+    /** Final computed transform */
     transform: CameraTransform;
-    cameraStyle: React.CSSProperties;
-    deviceStyle: React.CSSProperties;
+
+    /** CSS styles for camera wrapper */
+    cameraStyle: CSSProperties;
+
+    /** CSS styles for device wrapper */
+    deviceStyle: CSSProperties;
+
+    /** Debug: why director was skipped */
     directorSkipped?: string;
+
+    /** Anchor snapshot used this frame */
     anchorSnapshot?: AnchorSnapshot;
 }
 
@@ -65,52 +96,43 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         eventIndex,
         directorEnabled = false,
         directorDebug = false,
-        anchorSystemEnabled = true,
     } = input;
 
-    // Tracking state for smooth camera movement
-    const trackingStateRef = useRef<{
-        prevOriginX: number;
-        prevOriginY: number;
-        prevScale: number;
-        hasActiveEffect: boolean;
-    }>({ prevOriginX: 0.5, prevOriginY: 0.5, prevScale: 1.0, hasActiveEffect: false });
+    // Tracking state for smooth transitions
+    const prevTransformRef = useRef<CameraTransform>(DEFAULT_TRANSFORM);
 
     return useMemo(() => {
-        const { deviceId, appId, viewKind, layout, profile, activeConversationId, effectiveViewportHeight } = layoutOutput;
+        const { appId, profile, layout, deviceId } = layoutOutput;
 
-        // =====================================================================
-        // 1. ANCHOR SNAPSHOT
-        // =====================================================================
-        let anchorSnapshot: AnchorSnapshot | undefined;
-        if (anchorSystemEnabled && appId) {
-            const snapshot = getAnchorsForApp(appId, world, layout, deviceId);
-            if (snapshot) {
-                anchorSnapshot = {
-                    anchors: snapshot.anchors,
-                    deviceId: snapshot.deviceId,
-                    appId: snapshot.appId,
-                };
-            }
-        }
-
-        // =====================================================================
-        // 2. CONVERT LEGACY EFFECTS
-        // =====================================================================
-        const legacyEffects = world.camera?.activeEffects || [];
-        const convertedEffects = convertLegacyEffects(legacyEffects);
-
-        // =====================================================================
-        // 3. PROCESS ALL EFFECTS THROUGH DEVICE-CAMERA
-        // =====================================================================
         const viewport = {
             width: profile.dimensions.width,
             height: profile.dimensions.height,
         };
 
-        let finalTransform = processActiveEffects(
+        // =====================================================================
+        // 1. GET ANCHOR SNAPSHOT
+        // =====================================================================
+        let anchorSnapshot: AnchorSnapshot | undefined;
+        if (appId) {
+            anchorSnapshot = getAnchorsForApp(appId, world, layout, deviceId);
+        }
+
+        // =====================================================================
+        // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
+        // =====================================================================
+        const effects: CameraEffect[] = world.camera?.activeEffects ?? [];
+
+        // Filter to active manual effects
+        const activeManualEffects = effects.filter(
+            e => t >= e.startFrame && t < e.endFrame
+        );
+
+        // =====================================================================
+        // 3. PROCESS EFFECTS THROUGH REGISTRY
+        // =====================================================================
+        let transform = processActiveEffects(
             t,
-            convertedEffects,
+            effects,
             DEFAULT_TRANSFORM,
             anchorSnapshot,
             viewport
@@ -119,55 +141,49 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         let directorSkipped: string | undefined;
 
         // =====================================================================
-        // 4. DIRECTOR LITE (IF NO MANUAL EFFECTS ACTIVE)
+        // 4. DIRECTOR-LITE (if no manual effects active)
         // =====================================================================
-        const hasActiveManualEffect = convertedEffects.some(
-            (e) => t >= e.startFrame && t < e.endFrame
-        );
-
-        if (directorEnabled && !hasActiveManualEffect && eventIndex && viewKind === "CHAT" && layout.kind === "CHAT") {
+        if (directorEnabled && activeManualEffects.length === 0 && eventIndex) {
+            // Extract signals from recent events
             const windowStart = Math.max(0, t - 90);
             const windowEnd = t + 15;
             const eventsInWindow = getEventsInRange(eventIndex, windowStart, windowEnd);
-
             const signals = extractSignals(eventsInWindow, t, 90);
 
-            const chatLayout = layout as ChatLayoutState;
-            const directorLayout = {
-                messageRects: {},
-                inputAreaRect: undefined,
-                lastMessageRect: undefined,
-                viewport,
-            };
-
+            // Derive camera effects from signals
             const directorResult = deriveDirectorEffects({
                 t,
                 signals,
-                layoutModel: directorLayout,
+                layoutModel: {
+                    messageRects: {},
+                    viewport,
+                },
                 seed: 42,
                 debug: directorDebug,
-                manualCameraEffects: convertedEffects,
+                manualCameraEffects: effects,
             });
 
             if (directorResult.skipped) {
                 directorSkipped = directorResult.skipped;
             }
 
-            // Apply director effects to transform
+            // Apply director effects
             if (!directorResult.skipped && directorResult.effects.length > 0) {
                 for (const effect of directorResult.effects) {
+                    // Apply based on category
                     if (effect.category === "framing" && effect.scale) {
-                        finalTransform = {
-                            ...finalTransform,
-                            scale: finalTransform.scale * effect.scale * effect.progress,
+                        const scaleAmount = effect.scale * effect.progress;
+                        transform = {
+                            ...transform,
+                            scale: transform.scale * (1 + (scaleAmount - 1) * effect.progress),
                         };
                     }
                     if (effect.category === "shake" && effect.intensity) {
-                        const shakeAmount = (effect.intensity || 0) * (1 - effect.progress);
-                        finalTransform = {
-                            ...finalTransform,
-                            shakeX: finalTransform.shakeX + Math.sin(t * 0.5) * shakeAmount,
-                            shakeY: finalTransform.shakeY + Math.cos(t * 0.7) * shakeAmount,
+                        const shakeAmount = effect.intensity * (1 - effect.progress);
+                        transform = {
+                            ...transform,
+                            shakeX: transform.shakeX + Math.sin(t * 0.5) * shakeAmount,
+                            shakeY: transform.shakeY + Math.cos(t * 0.7) * shakeAmount,
                         };
                     }
                 }
@@ -175,68 +191,96 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
         }
 
         // =====================================================================
-        // 5. SMOOTH DECAY TO NEUTRAL (WHEN NO EFFECTS)
+        // 5. SMOOTH DECAY TO NEUTRAL (when no effects)
         // =====================================================================
-        if (!hasActiveManualEffect && !directorEnabled) {
-            const prev = trackingStateRef.current;
-            if (prev.hasActiveEffect) {
-                // Smooth decay
-                const decayRate = 0.05;
-                finalTransform = {
-                    ...finalTransform,
-                    scale: lerp(prev.prevScale, 1, decayRate),
-                    originX: lerp(prev.prevOriginX, 0.5, decayRate),
-                    originY: lerp(prev.prevOriginY, 0.5, decayRate),
+        const hasActiveEffect = activeManualEffects.length > 0 ||
+            (directorEnabled && !directorSkipped);
+
+        if (!hasActiveEffect) {
+            // Smoothly return to neutral
+            const decayRate = 0.05;
+            const prev = prevTransformRef.current;
+            if (prev.scale !== 1 || prev.originX !== 0.5 || prev.originY !== 0.5) {
+                transform = {
+                    ...transform,
+                    scale: lerp(prev.scale, 1, decayRate),
+                    originX: lerp(prev.originX, 0.5, decayRate),
+                    originY: lerp(prev.originY, 0.5, decayRate),
                 };
             }
         }
 
-        // Update tracking state
-        trackingStateRef.current = {
-            prevOriginX: finalTransform.originX,
-            prevOriginY: finalTransform.originY,
-            prevScale: finalTransform.scale,
-            hasActiveEffect: hasActiveManualEffect,
-        };
+        // Store for next frame
+        prevTransformRef.current = transform;
 
         // =====================================================================
         // 6. BUILD CSS STYLES
         // =====================================================================
-        const cameraTransformString = `
-            translate(${finalTransform.translateX + finalTransform.shakeX}px, ${finalTransform.translateY + finalTransform.shakeY}px)
-            scale(${finalTransform.scale})
-            rotate(${finalTransform.rotation}deg)
-        `.replace(/\s+/g, ' ').trim();
-
-        const cameraStyle: React.CSSProperties = {
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            transformOrigin: `${finalTransform.originX * 100}% ${finalTransform.originY * 100}%`,
-            transform: cameraTransformString,
-            transition: 'none',
-        };
-
-        // Device style for layout transitions
-        let deviceStyle: React.CSSProperties = {};
-        if (layout.kind === "TRANSITION") {
-            const transLayout = layout as any;
-            const { deviceScale, deviceTranslateX, deviceTranslateY, deviceRotation } = transLayout;
-            if (deviceScale !== 1 || deviceTranslateX !== 0 || deviceTranslateY !== 0 || deviceRotation !== 0) {
-                deviceStyle = {
-                    transformOrigin: "center center",
-                    transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
-                };
-            }
-        }
+        const cameraStyle = buildCameraCSS(transform, viewport);
+        const deviceStyle = buildDeviceCSS(layout);
 
         return {
-            transform: finalTransform,
+            transform,
             cameraStyle,
             deviceStyle,
             directorSkipped,
             anchorSnapshot,
         };
-    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug, anchorSystemEnabled]);
+    }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
+}
+
+// =============================================================================
+// CSS BUILDERS
+// =============================================================================
+
+function buildCameraCSS(
+    transform: CameraTransform,
+    viewport: { width: number; height: number }
+): CSSProperties {
+    const transformString = `
+        translate(${transform.translateX + transform.shakeX}px, ${transform.translateY + transform.shakeY}px)
+        scale(${transform.scale})
+        rotate(${transform.rotation}deg)
+    `.replace(/\s+/g, ' ').trim();
+
+    return {
+        width: viewport.width,
+        height: viewport.height,
+        transformOrigin: `${transform.originX * 100}% ${transform.originY * 100}%`,
+        transform: transformString,
+        transition: "none", // CRITICAL: No CSS transitions for Remotion
+    };
+}
+
+function buildDeviceCSS(layout: unknown): CSSProperties {
+    // Handle transition layouts with device transforms
+    const transLayout = layout as {
+        kind?: string;
+        deviceScale?: number;
+        deviceTranslateX?: number;
+        deviceTranslateY?: number;
+        deviceRotation?: number;
+    };
+
+    if (transLayout.kind !== "TRANSITION") {
+        return {};
+    }
+
+    const {
+        deviceScale = 1,
+        deviceTranslateX = 0,
+        deviceTranslateY = 0,
+        deviceRotation = 0,
+    } = transLayout;
+
+    if (deviceScale === 1 && deviceTranslateX === 0 && deviceTranslateY === 0 && deviceRotation === 0) {
+        return {};
+    }
+
+    return {
+        transformOrigin: "center center",
+        transform: `translate(${deviceTranslateX}px, ${deviceTranslateY}px) scale(${deviceScale}) rotate(${deviceRotation}deg)`,
+    };
 }
 
 // =============================================================================
@@ -245,78 +289,4 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
 
 function lerp(a: number, b: number, t: number): number {
     return a + (b - a) * t;
-}
-
-/**
- * Convert legacy ActiveCameraEffect format to new CameraEffect format.
- */
-function convertLegacyEffects(legacyEffects: any[]): CameraEffect[] {
-    return legacyEffects.map((ae) => {
-        const effectType = (ae.type || ae.effect?.type || "").toLowerCase();
-        const baseEffect = {
-            id: ae.id || `effect_${ae.startFrame}`,
-            startFrame: ae.startFrame,
-            endFrame: ae.endFrame,
-            easing: ae.easing || ae.effect?.easing || "ease-out",
-        };
-
-        switch (effectType) {
-            case "zoom":
-                return {
-                    ...baseEffect,
-                    type: "zoom" as const,
-                    targetScale: ae.targetScale ?? ae.scale ?? 1,
-                    targetX: ae.translateX ?? 0,
-                    targetY: ae.translateY ?? 0,
-                    originX: ae.originX,
-                    originY: ae.originY,
-                };
-
-            case "shake":
-                return {
-                    ...baseEffect,
-                    type: "shake" as const,
-                    intensity: ae.intensity ?? 5,
-                    intensityX: ae.intensityX,
-                    intensityY: ae.intensityY,
-                    frequency: ae.frequency ?? 15,
-                    decay: ae.decay ?? 0.8,
-                };
-
-            case "focus":
-            case "anchor_focus":
-                return {
-                    ...baseEffect,
-                    type: "focus" as const,
-                    anchorId: ae.effect?.anchor || ae.anchor || "",
-                    scale: ae.scale || ae.effect?.scale,
-                    preset: ae.preset || ae.effect?.preset,
-                };
-
-            case "track":
-            case "anchor_track":
-                return {
-                    ...baseEffect,
-                    type: "track" as const,
-                    anchorId: ae.effect?.anchor || ae.anchor || "",
-                    scale: ae.scale || ae.effect?.scale || 1.05,
-                    smoothing: ae.smoothing || 0.18,
-                };
-
-            case "reset":
-                return {
-                    ...baseEffect,
-                    type: "reset" as const,
-                };
-
-            default:
-                return {
-                    ...baseEffect,
-                    type: "zoom" as const,
-                    targetScale: 1,
-                    targetX: 0,
-                    targetY: 0,
-                };
-        }
-    });
 }

@@ -1,119 +1,11 @@
 /**
- * Camera Effect Types
- * 
- * Discriminated union types for type-safe effect handling.
- * Each effect type has a unique `type` discriminant.
+ * Camera Types - Discriminated Union Effect System
  * 
  * @module device-camera/types
  */
 
 // =============================================================================
-// EASING TYPES
-// =============================================================================
-
-export type EasingType =
-    | "linear"
-    | "ease-in"
-    | "ease-out"
-    | "ease-in-out"
-    | "bounce"
-    | "cinematic"
-    | "expoOut"
-    | "spring";
-
-// =============================================================================
-// EFFECT TYPE DISCRIMINANT
-// =============================================================================
-
-export type CameraEffectType =
-    | "zoom"
-    | "shake"
-    | "focus"
-    | "track"
-    | "reset";
-
-// =============================================================================
-// BASE EFFECT INTERFACE
-// =============================================================================
-
-export interface CameraEffectBase {
-    id: string;
-    type: CameraEffectType;
-    startFrame: number;
-    endFrame: number;
-    easing?: EasingType;
-}
-
-// =============================================================================
-// ZOOM EFFECT
-// =============================================================================
-
-export interface ZoomEffect extends CameraEffectBase {
-    type: "zoom";
-    targetScale: number;
-    targetX?: number;
-    targetY?: number;
-    originX?: number;
-    originY?: number;
-}
-
-// =============================================================================
-// SHAKE EFFECT
-// =============================================================================
-
-export interface ShakeEffect extends CameraEffectBase {
-    type: "shake";
-    intensity: number;
-    intensityX?: number;
-    intensityY?: number;
-    frequency?: number;
-    decay?: number;
-}
-
-// =============================================================================
-// FOCUS EFFECT (SEMANTIC ANCHOR)
-// =============================================================================
-
-export interface FocusEffect extends CameraEffectBase {
-    type: "focus";
-    anchorId: string;
-    scale?: number;
-    padding?: number;
-    preset?: string;
-}
-
-// =============================================================================
-// TRACK EFFECT (CONTINUOUS FOLLOW)
-// =============================================================================
-
-export interface TrackEffect extends CameraEffectBase {
-    type: "track";
-    anchorId: string;
-    scale?: number;
-    smoothing?: number;
-}
-
-// =============================================================================
-// RESET EFFECT
-// =============================================================================
-
-export interface ResetEffect extends CameraEffectBase {
-    type: "reset";
-}
-
-// =============================================================================
-// DISCRIMINATED UNION
-// =============================================================================
-
-export type CameraEffect =
-    | ZoomEffect
-    | ShakeEffect
-    | FocusEffect
-    | TrackEffect
-    | ResetEffect;
-
-// =============================================================================
-// CAMERA TRANSFORM
+// CORE TRANSFORM
 // =============================================================================
 
 export interface CameraTransform {
@@ -139,28 +31,143 @@ export const DEFAULT_TRANSFORM: CameraTransform = {
 };
 
 // =============================================================================
+// EASING
+// =============================================================================
+
+export type EasingType =
+    | "linear"
+    | "ease-in"
+    | "ease-out"
+    | "ease-in-out"
+    | "bounce"
+    | "elastic"
+    | "cinematic"
+    | "expoOut"
+    | "spring";
+
+// =============================================================================
+// EFFECT BASE
+// =============================================================================
+
+interface EffectBase {
+    id: string;
+    startFrame: number;
+    endFrame: number;
+    easing?: EasingType;
+    /** Target device (undefined = apply to all/primary device) */
+    deviceId?: string;
+}
+
+// =============================================================================
+// DISCRIMINATED UNION: CameraEffect
+// =============================================================================
+
+export type CameraEffectType = "zoom" | "shake" | "focus" | "track" | "reset";
+
+/**
+ * ZOOM - Scale and translate with origin
+ */
+export interface ZoomEffect extends EffectBase {
+    type: "zoom";
+    targetScale: number;
+    targetX?: number;
+    targetY?: number;
+    originX?: number;
+    originY?: number;
+}
+
+/**
+ * SHAKE - Procedural screen shake
+ */
+export interface ShakeEffect extends EffectBase {
+    type: "shake";
+    intensity: number;
+    intensityX?: number;
+    intensityY?: number;
+    frequency?: number;
+    decay?: number;
+}
+
+/**
+ * FOCUS - Semantic anchor focus (one-time)
+ */
+export interface FocusEffect extends EffectBase {
+    type: "focus";
+    anchorId: string;
+    scale?: number;
+    preset?: string;
+}
+
+/**
+ * TRACK - Continuous anchor following
+ */
+export interface TrackEffect extends EffectBase {
+    type: "track";
+    anchorId: string;
+    scale?: number;
+    smoothing?: number;
+}
+
+/**
+ * RESET - Return to neutral camera
+ */
+export interface ResetEffect extends EffectBase {
+    type: "reset";
+}
+
+/**
+ * Discriminated union of all camera effects.
+ * TypeScript will narrow the type based on the `type` field.
+ */
+export type CameraEffect =
+    | ZoomEffect
+    | ShakeEffect
+    | FocusEffect
+    | TrackEffect
+    | ResetEffect;
+
+// =============================================================================
 // CAMERA STATE
 // =============================================================================
 
 export interface CameraState {
+    /** Active effects (processed each frame) */
     activeEffects: CameraEffect[];
+
+    /** Current computed transform (updated by engine) */
     transform: CameraTransform;
-    focusedAnchor?: string | null;
+
+    /** Active device ID */
+    activeDeviceId?: string;
+
+    /** Base view mode */
+    baseView?: string;
+
+    /** Current app being viewed */
+    appId?: string;
+
+    /** Layout mode */
+    layout?: {
+        mode: "SINGLE" | "PIP" | "SPLIT";
+        primaryDeviceId?: string;
+        secondaryDeviceId?: string;
+    };
 }
 
+export const DEFAULT_CAMERA_STATE: CameraState = {
+    activeEffects: [],
+    transform: DEFAULT_TRANSFORM,
+};
+
 // =============================================================================
-// ANCHOR TYPES (local definitions to avoid core dependency issues)
+// LEGACY COMPATIBILITY (to be removed)
 // =============================================================================
 
-export interface Rect {
-    x: number;
-    y: number;
-    width: number;
-    height: number;
-}
-
-export interface AnchorSnapshot {
-    anchors: Record<string, Rect>;
-    deviceId: string;
-    appId: string;
+/** @deprecated Use CameraEffect directly */
+export interface ActiveCameraEffect {
+    id: string;
+    effect: CameraEffect;
+    startFrame: number;
+    endFrame: number;
+    deviceId?: string;
 }

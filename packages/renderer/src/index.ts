@@ -62,4 +62,6 @@ export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEn
 // ===========================================================================
 // ANCHOR SYSTEM
 // ===========================================================================
-export * from "./anchor-providers";
+// Note: getAnchorsForApp is in @tokovo/device-camera now.
+// Only export renderer-specific anchors:
+export { registerBuiltInAnchorProviders, getAllAnchors } from "./anchor-providers";

@@ -6,12 +6,9 @@
  */
 
 // =============================================================================
-// TYPES - All type definitions
+// TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
 export * from "./types";
-
-// Legacy types.ts (for backward compatibility)
-export * from "./types.ts";
 
 // =============================================================================
 // ENGINE - Replay loop and handlers
@@ -19,9 +16,31 @@ export * from "./types.ts";
 export * from "./engine";
 
 // =============================================================================
-// CAMERA - Camera effects and transforms
+// CAMERA - Re-exports from device-camera (named exports only to avoid conflicts)
 // =============================================================================
-export * from "./camera";
+// Note: Camera types are already exported via ./types which imports from device-camera.
+// Only export utilities that aren't in types.ts:
+export {
+    cameraReducer,
+    cameraV2Lowering,
+    CAMERA_EVENT_TYPES,
+    processActiveEffects,
+    registerCameraProcessor,
+    applyEasing,
+    easingFunctions,
+    lerp,
+    seededRandom,
+    getPreset,
+    getShotPreset,
+    composeTimeline,
+    getPresetNames,
+    registerAnchorProvider,
+    getAnchorProvider,
+    getAnchorsForApp,
+    getAnchorFraming,
+    resolveAnchorWithFallback,
+    resolveAnchorFully,
+} from "./camera";
 
 // =============================================================================
 // AUDIO - Sound system

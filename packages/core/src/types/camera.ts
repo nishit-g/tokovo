@@ -1,27 +1,38 @@
 /**
- * Camera Types - All camera and transform types
+ * Camera Types - Re-exports from @tokovo/device-camera
  * 
- * @description Camera effects, transforms, and multi-device layouts.
+ * @description Single source of truth for camera types.
+ * All camera types now live in @tokovo/device-camera.
+ * 
+ * @deprecated Import directly from "@tokovo/device-camera" instead
  */
 
 import type { DeviceId, AppId } from "./device";
 
-// =============================================================================
-// EASING TYPES
-// =============================================================================
+// Re-export all camera types from device-camera
+export type {
+    CameraEffect,
+    CameraEffectType,
+    ZoomEffect,
+    ShakeEffect,
+    FocusEffect,
+    TrackEffect,
+    ResetEffect,
+    CameraTransform,
+    EasingType,
+} from "@tokovo/device-camera";
 
-export type EasingType =
-    | "linear"
-    | "ease-in"
-    | "ease-out"
-    | "ease-in-out"
-    | "bounce"
-    | "elastic"
-    | "cinematic"
-    | "expoOut";
+export { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
+
+// Alias for backward compatibility
+export { DEFAULT_TRANSFORM as DEFAULT_CAMERA_TRANSFORM } from "@tokovo/device-camera";
+
+// Import types for use in CameraState
+import type { CameraEffect, CameraTransform } from "@tokovo/device-camera";
+import { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
 
 // =============================================================================
-// TRANSITION TYPES
+// TRANSITION TYPES (not camera-specific, stays in core)
 // =============================================================================
 
 export type TransitionType =
@@ -35,7 +46,7 @@ export type TransitionType =
     | "CROSS_DISSOLVE";
 
 // =============================================================================
-// HIGHLIGHT TYPES
+// HIGHLIGHT TYPES (not camera-specific, stays in core)
 // =============================================================================
 
 export type HighlightStyle =
@@ -47,150 +58,7 @@ export type HighlightStyle =
     | "scale";
 
 // =============================================================================
-// CAMERA EFFECT TYPES
-// =============================================================================
-
-export type CameraEffectType = "ZOOM" | "PAN" | "SHAKE" | "FOCUS" | "CUT" | "RESET";
-
-export type FocusTarget =
-    | { type: "app"; appId?: string }
-    | { type: "notification"; notificationId?: string }
-    | { type: "message"; messageId: string; conversationId?: string }
-    | { type: "device"; deviceId?: string }
-    | { type: "element"; selector: string }
-    | { type: "point"; x: number; y: number };
-
-// =============================================================================
-// CAMERA EFFECTS
-// =============================================================================
-
-export interface CameraZoomEffect {
-    type: "ZOOM";
-    scale: number;
-    originX?: number;
-    originY?: number;
-    duration: number;
-    easing?: EasingType;
-}
-
-export interface CameraPanEffect {
-    type: "PAN";
-    translateX: number;
-    translateY: number;
-    relative?: boolean;
-    duration: number;
-    easing?: EasingType;
-}
-
-export interface CameraShakeEffect {
-    type: "SHAKE";
-    intensity: number;
-    frequency: number;
-    decay?: number;
-    duration: number;
-    seed?: number;
-}
-
-export interface CameraFocusEffect {
-    type: "FOCUS";
-    target: FocusTarget;
-    scale?: number;
-    duration: number;
-    easing?: EasingType;
-    holdDuration?: number;
-}
-
-export interface CameraCutEffect {
-    type: "CUT";
-    toDeviceId?: string;
-    toView?: "app" | "lockscreen" | "homescreen";
-    fadeMs?: number;
-}
-
-export interface CameraResetEffect {
-    type: "RESET";
-    duration: number;
-    easing?: EasingType;
-}
-
-export interface CameraAnchorFocusEffect {
-    type: "ANCHOR_FOCUS";
-    anchor: string;
-    preset?: string;
-    scale?: number;
-    duration: number;
-    easing?: EasingType;
-    shake?: number;
-    resolvedRect?: { x: number; y: number; width: number; height: number };
-    viewport?: { width: number; height: number };
-}
-
-export interface CameraAnchorTrackEffect {
-    type: "ANCHOR_TRACK";
-    anchor: string;
-    duration: number;
-    smoothing?: number;
-    preset?: string;
-    scale?: number;
-    easing?: EasingType;
-}
-
-export interface CameraHoldEffect {
-    type: "HOLD";
-    duration: number;
-}
-
-export type CameraEffect =
-    | CameraZoomEffect
-    | CameraPanEffect
-    | CameraShakeEffect
-    | CameraFocusEffect
-    | CameraAnchorFocusEffect
-    | CameraAnchorTrackEffect
-    | CameraHoldEffect
-    | CameraCutEffect
-    | CameraResetEffect;
-
-// =============================================================================
-// ACTIVE CAMERA EFFECT
-// =============================================================================
-
-export interface ActiveCameraEffect {
-    id: string;
-    effect: CameraEffect;
-    startFrame: number;
-    endFrame: number;
-    deviceId?: string;
-}
-
-// =============================================================================
-// CAMERA TRANSFORM
-// =============================================================================
-
-export interface CameraTransform {
-    translateX: number;
-    translateY: number;
-    scale: number;
-    rotation: number;
-    originX: number;
-    originY: number;
-    shakeX: number;
-    shakeY: number;
-}
-
-export const DEFAULT_CAMERA_TRANSFORM: CameraTransform = {
-    translateX: 0,
-    translateY: 0,
-    scale: 1,
-    rotation: 0,
-    originX: 0.5,
-    originY: 0.5,
-    shakeX: 0,
-    shakeY: 0,
-};
-
-// =============================================================================
-// MULTI-DEVICE LAYOUT
+// MULTI-DEVICE LAYOUT (stays in core - not camera-specific)
 // =============================================================================
 
 export type ViewLayoutMode =
@@ -215,16 +83,45 @@ export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
 };
 
 // =============================================================================
-// CAMERA STATE
+// CAMERA STATE - Uses flat CameraEffect[] (no wrapper)
 // =============================================================================
 
+/**
+ * Camera State
+ * 
+ * IMPORTANT: activeEffects is now CameraEffect[] directly.
+ * No more ActiveCameraEffect wrapper.
+ * 
+ * Each CameraEffect has:
+ * - type: discriminant ("zoom" | "shake" | "focus" | "track" | "reset")
+ * - id: unique identifier
+ * - startFrame / endFrame: timing
+ * - effect-specific fields (targetScale, intensity, anchorId, etc.)
+ */
 export interface CameraState {
+    /** Base view mode */
     baseView: "APP_VIEW" | "TRANSITION";
+
+    /** Current app ID */
     appId?: AppId;
+
+    /** Active device ID */
     activeDeviceId: string;
+
+    /** Multi-device layout */
     layout: ViewLayout;
-    activeEffects: ActiveCameraEffect[];
+
+    /**
+     * Active camera effects (flat, typed).
+     * Each effect includes its own timing (startFrame/endFrame).
+     * No wrapper needed - the effect IS the full specification.
+     */
+    activeEffects: CameraEffect[];
+
+    /** Computed transform for primary device */
     transform: CameraTransform;
+
+    /** Per-device transforms */
     deviceTransforms: Record<DeviceId, CameraTransform>;
 }
 
@@ -233,11 +130,33 @@ export const DEFAULT_CAMERA_STATE: CameraState = {
     activeDeviceId: "main_phone",
     layout: { ...DEFAULT_VIEW_LAYOUT },
     activeEffects: [],
-    transform: { ...DEFAULT_CAMERA_TRANSFORM },
+    transform: { ...DEFAULT_TRANSFORM },
     deviceTransforms: {},
 };
 
-// Legacy type
+// =============================================================================
+// LEGACY TYPES (deprecated, for migration period only)
+// =============================================================================
+
+/** @deprecated Use FocusEffect with anchorId instead */
+export type FocusTarget =
+    | { type: "app"; appId?: string }
+    | { type: "notification"; notificationId?: string }
+    | { type: "message"; messageId: string; conversationId?: string }
+    | { type: "device"; deviceId?: string }
+    | { type: "element"; selector: string }
+    | { type: "point"; x: number; y: number };
+
+/** @deprecated Use CameraEffect directly. This wrapper type is removed. */
+export interface ActiveCameraEffect {
+    id: string;
+    effect: unknown;
+    startFrame: number;
+    endFrame: number;
+    deviceId?: string;
+}
+
+/** @deprecated */
 export interface CameraViewConfig {
     type: "APP_VIEW" | "TRANSITION";
     appId?: AppId;
