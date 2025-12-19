@@ -32,7 +32,9 @@ export function processCameraEvent(
 
     const e = event as any; // For accessing optional fields
 
-    switch (event.type) {
+    // Cast type to string for extended runtime compatibility
+    // (lowering outputs lowercase 'focus'/'track' in addition to uppercase variants)
+    switch (event.type as string) {
         case "SET_VIEW":
             // Legacy support - just update base view
             draft.camera.baseView = e.view?.type;
@@ -72,8 +74,11 @@ export function processCameraEvent(
         case "ZOOM":
         case "PAN":
         case "SHAKE":
+        case "focus":
         case "FOCUS":
         case "ANCHOR_FOCUS":
+        case "track":
+        case "TRACK":
         case "ANCHOR_TRACK":
         case "RESET": {
             // Delegate to device-camera reducer

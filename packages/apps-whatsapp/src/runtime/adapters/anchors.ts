@@ -73,7 +73,6 @@ export const WhatsAppAnchors: AnchorProvider = {
 
         // If no layout (e.g. app not active), return empty or device fallback
         if (!chatLayout || !chatLayout.semantic) {
-            // Fallback to device? Or empty.
             return { anchors: {}, deviceId, appId: APP_ID };
         }
 

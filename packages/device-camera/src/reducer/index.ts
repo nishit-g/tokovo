@@ -95,8 +95,9 @@ export function cameraReducer(
         }
 
         // =================================================================
-        // ANCHOR_FOCUS - Semantic anchor focus (one-time)
+        // focus/FOCUS/ANCHOR_FOCUS - Semantic anchor focus (one-time)
         // =================================================================
+        case "focus":
         case "FOCUS":
         case "ANCHOR_FOCUS": {
             const effect: FocusEffect = {
@@ -104,7 +105,7 @@ export function cameraReducer(
                 id: `focus_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                anchorId: (event.anchor as string) ?? "device",
+                anchorId: (event.anchorId as string) ?? (event.anchor as string) ?? "device",
                 scale: event.scale as number | undefined,
                 preset: event.preset as string | undefined,
                 easing,
@@ -114,8 +115,9 @@ export function cameraReducer(
         }
 
         // =================================================================
-        // ANCHOR_TRACK - Continuous anchor following
+        // track/TRACK/ANCHOR_TRACK - Continuous anchor following
         // =================================================================
+        case "track":
         case "TRACK":
         case "ANCHOR_TRACK": {
             const effect: TrackEffect = {
@@ -123,7 +125,7 @@ export function cameraReducer(
                 id: `track_${at}`,
                 startFrame: at,
                 endFrame: at + duration,
-                anchorId: (event.anchor as string) ?? "device",
+                anchorId: (event.anchorId as string) ?? (event.anchor as string) ?? "device",
                 scale: (event.scale as number) ?? 1.05,
                 smoothing: (event.smoothing as number) ?? 0.18,
                 easing,

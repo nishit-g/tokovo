@@ -215,6 +215,11 @@ processorRegistry.set("focus", focusProcessor);
 processorRegistry.set("track", trackProcessor);
 processorRegistry.set("reset", resetProcessor);
 
+// Uppercase aliases for direct camera events (e.g., from engine handler)
+processorRegistry.set("ZOOM", zoomProcessor);
+processorRegistry.set("SHAKE", shakeProcessor);
+processorRegistry.set("RESET", resetProcessor);
+
 /**
  * Register a custom effect processor.
  */

@@ -16,5 +16,7 @@ import "./bakchodi-bros.episode";
 import "./keyboard-typing-demo.episode";
 import "./notification-demo.episode";
 import "./complete-showcase.episode";
+import "./profile-focus-demo.episode";
 
 // Add new episodes here as they are created
+

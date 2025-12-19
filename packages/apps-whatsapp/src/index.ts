@@ -93,8 +93,10 @@ export { whatsappAudioRules } from "./assets/audio-rules";
 // =============================================================================
 
 import "./ui/strategies";
-import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry } from "@tokovo/core";
+import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry, registerAnchorProvider, LayoutRegistry, APP_IDS } from "@tokovo/core";
 import { whatsappAudioRules } from "./assets/audio-rules";
+import { WhatsAppAnchors } from "./runtime/adapters/anchors";
+import { computeChatLayout } from "./layout";
 
 // WhatsApp sound paths
 const whatsappSounds = {
@@ -105,6 +107,16 @@ const whatsappSounds = {
 
 AutoSoundRegistry.register(whatsappAudioRules);
 SoundRegistry.registerMany(whatsappSounds);
+
+// Register anchor provider for camera system
+registerAnchorProvider(WhatsAppAnchors);
+
+// Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
+LayoutRegistry.register({
+    appId: APP_IDS.WHATSAPP,
+    viewKind: "CHAT",
+    computeLayout: computeChatLayout,
+});
 
 AppMetadataRegistry.register("app_whatsapp", {
     displayName: "WhatsApp",

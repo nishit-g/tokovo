@@ -100,25 +100,25 @@ export function cameraV2Lowering(
             }];
 
         // =================================================================
-        // FOCUS → ANCHOR_FOCUS
+        // FOCUS → focus (processor registered as 'focus')
         // =================================================================
         case "FOCUS":
             return [{
                 ...baseEvent,
-                type: "ANCHOR_FOCUS",
-                anchor: payload?.anchor ?? "device",
+                type: "focus",
+                anchorId: payload?.anchorId ?? payload?.anchor ?? "device",
                 scale: payload?.scale,
                 preset: payload?.preset,
             }];
 
         // =================================================================
-        // TRACK_START → ANCHOR_TRACK
+        // TRACK_START → track (processor registered as 'track')
         // =================================================================
         case "TRACK_START":
             return [{
                 ...baseEvent,
-                type: "ANCHOR_TRACK",
-                anchor: payload?.anchor ?? "device",
+                type: "track",
+                anchorId: payload?.anchorId ?? payload?.anchor ?? "device",
                 scale: payload?.scale ?? 1.05,
                 smoothing: payload?.lag ?? 0.18,
             }];

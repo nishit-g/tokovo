@@ -178,6 +178,21 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     // Notifications
     const notifications: any[] = [];
 
+    // Build appState map with viewMode for proper layout resolution
+    const appState: Record<string, any> = {};
+    for (const device of ir.devices) {
+        if (device.app) {
+            // Apps with conversations should default to CHAT viewMode
+            const hasConversations = device.conversations && device.conversations.length > 0;
+            const firstConversation = device.conversations?.[0];
+
+            appState[device.app] = {
+                viewMode: hasConversations ? "CHAT" : "FEED",
+                conversationId: firstConversation?.id,
+            };
+        }
+    }
+
     return {
         devices,
         conversations,
@@ -186,5 +201,6 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         audio,
         notifications,
         apps: {},
+        appState,  // CRITICAL: Layout engine reads viewMode from here
     } as unknown as WorldState;
 }
