@@ -61,6 +61,20 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
                 willChange: "transform",
             }}>
                 {children}
+
+                {/* Home Indicator - The horizontal bar at the bottom */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 24, // 8px * 3 scale
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 405, // 135px * 3 scale (iOS spec ~134-140px)
+                    height: 15, // 5px * 3 scale
+                    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent black
+                    borderRadius: 9, // Rounded ends
+                    zIndex: 9999, // Always on top
+                    pointerEvents: "none",
+                }} />
             </div>
         </div>
     );
