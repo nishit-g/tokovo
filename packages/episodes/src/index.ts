@@ -23,24 +23,24 @@
 // =============================================================================
 // REGISTRY (Auto-discovery)
 // =============================================================================
-export { episodeRegistry, EpisodeRegistry } from "./registry";
+export { episodeRegistry, EpisodeRegistry } from "./registry/index";
 
 // =============================================================================
 // TYPES & HELPERS
 // =============================================================================
-export { defineEpisode } from "./types";
+export { defineEpisode } from "./types/index";
 export type {
     EpisodeMeta,
     EpisodeConfig,
     EpisodeDefinition,
     FormatId,
     CustomFormat,
-} from "./types";
+} from "./types/index";
 export {
     EpisodeMetaSchema,
     EpisodeConfigSchema,
     EpisodeDefinitionSchema,
-} from "./types";
+} from "./types/index";
 
 // =============================================================================
 // FORMAT TEMPLATES
@@ -50,8 +50,8 @@ export {
     getFormat,
     listFormats,
     getFormatsByAspectRatio
-} from "./templates";
-export type { VideoFormat } from "./templates";
+} from "./templates/index";
+export type { VideoFormat } from "./templates/index";
 
 // =============================================================================
 // SCHEMA (Zod validators for episode content)
