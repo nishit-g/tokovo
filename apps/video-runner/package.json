@@ -14,6 +14,7 @@
         "@tokovo/compiler": "workspace:*",
         "@tokovo/device-calls": "workspace:*",
         "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
         "@tokovo/core": "workspace:*",
         "@tokovo/devices": "workspace:*",
         "@tokovo/device-keyboard": "workspace:*",

@@ -18,6 +18,7 @@ import "./notification-demo.episode";
 import "./complete-showcase.episode";
 import "./profile-focus-demo.episode";
 import "./bakchodi-gang.episode";
+import "./instagram-dm-demo.episode";
 
 // Add new episodes here as they are created
 

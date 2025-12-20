@@ -11,6 +11,7 @@
         "@tokovo/dsl": "workspace:*",
         "@tokovo/ir": "workspace:*",
         "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
         "@tokovo/device-calls": "workspace:*",
         "@tokovo/device-keyboard": "workspace:*",
         "@tokovo/device-notifications": "workspace:*",

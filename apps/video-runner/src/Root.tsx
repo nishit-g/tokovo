@@ -14,6 +14,7 @@ import { Composition, Folder } from "remotion";
 import { z } from "zod";
 import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { InstagramPlugin } from "@tokovo/apps-instagram";
 import { compile } from "@tokovo/compiler";
 import { episodeRegistry, getFormat } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
@@ -24,6 +25,7 @@ import { EpisodeRenderer } from "./EpisodeRenderer";
 
 setCompiler(compile);
 PluginManager.register(WhatsApp);
+PluginManager.register(InstagramPlugin as any);
 
 // =============================================================================
 // PLUGIN IMPORTS (side-effect: auto-registers reducers)
