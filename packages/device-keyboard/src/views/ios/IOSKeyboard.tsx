@@ -75,14 +75,47 @@ const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
 );
 
 // =============================================================================
-// KEY COMPONENT
+// HELPER: Derive currentKey from TypingSchedule at a given frame
 // =============================================================================
 
-interface IOSKeyAnimationProps {
-    isPressing: boolean; // Currently held down
-    timeSincePressed: number; // Frames since press start
-    timeSinceReleased: number; // Frames since release
+interface TypingScheduleEntry {
+    key: string;
+    frame: number;
 }
+
+interface TypingSchedule {
+    entries: TypingScheduleEntry[];
+    text: string;
+    startFrame: number;
+    endFrame: number;
+}
+
+/**
+ * Given a TypingSchedule and the current frame, determine which key is "active".
+ * Key is active for ~3 frames after its scheduled frame.
+ */
+function deriveCurrentKeyFromSchedule(
+    schedule: TypingSchedule | null | undefined,
+    frame: number
+): string | null {
+    if (!schedule || !schedule.entries) return null;
+
+    const KEY_PRESS_DURATION = 3; // Key is visually pressed for this many frames
+
+    // Find the latest entry where frame >= entry.frame AND frame < entry.frame + DURATION
+    for (let i = schedule.entries.length - 1; i >= 0; i--) {
+        const entry = schedule.entries[i];
+        if (frame >= entry.frame && frame < entry.frame + KEY_PRESS_DURATION) {
+            return entry.key;
+        }
+    }
+
+    return null;
+}
+
+// =============================================================================
+// KEY COMPONENT
+// =============================================================================
 
 export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
     label,
@@ -92,25 +125,14 @@ export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
     variant,
 }) => {
 
-    // NOTE: True animation requires knowing "time since release".
-    // Since we don't have that easily piped in without refactoring the Row -> Key interface,
-    // we will implement a "CSS Transition" based approach which is reactive to "isPressed".
-    // When isPressed goes False -> Transition opacity out.
-
     const colors = getThemeColors(variant, isSpecial, isPressed);
 
     // TYPOGRAPHY UPDATES:
-    // User requested "Reduce font weight, too bold".
-    // Switching to 300 (Light) for Letters.
     let fontSize = 25;
-    const fontWeight = 300; // LIGHTER (was 400)
+    const fontWeight = 300; // LIGHTER
 
     if (label.length > 1) {
         fontSize = 16;
-        // Functionals can stay 400 or go 300? 
-        // Usually system font functionals are regular. Let's keep them 400 for contrast.
-        // Actually user said "too bold right now", applying to everything safe.
-        // Let's stick strictly to 300 for clarity.
     }
 
     const displayLabel = label === "space" ? "space" : renderLabel(label, variant, colors.keyText);
@@ -273,8 +295,7 @@ export const IOSKeyRow: React.FC<{
     currentKey: string | null;
     variant: "light" | "dark";
     rowIndex: number;
-    typingSchedule?: any; // Pass schedule down
-}> = ({ keys, currentKey, variant, rowIndex, typingSchedule }) => {
+}> = ({ keys, currentKey, variant, rowIndex }) => {
 
     // LAYOUT GEOMETRY
     const ROW_GAP = 6;
@@ -296,21 +317,15 @@ export const IOSKeyRow: React.FC<{
                 const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
                 const isSpace = key === "space";
 
+                // CORRECTED: Compare against the derived currentKey passed down from parent
                 const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
                     (key === "⌫" && currentKey === "⌫") ||
                     (isSpace && currentKey === " ");
 
                 // KEY WIDTH LOGIC 
                 let width = 32;
-                // Space is shared with return/123 now, needs to be calculated.
-                // Bottom row structure is now: [123] [space] [return]
-                // 3 keys total.
-                // 123/return width -> 88px approx (matches Shift+Key combo width)
-                // space -> Fill remaining.
-
-                if (key === "space") width = 182; // Adjusted since Globe is gone
-                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 88; // Wider functional keys
-
+                if (key === "space") width = 182;
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 88;
                 if (key === "⇧" || key === "⌫") width = 46;
 
                 return (
@@ -403,6 +418,23 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const frame = useCurrentFrame();
 
     // -------------------------------------------------------------------------
+    // DERIVE CURRENT KEY FROM TYPING SCHEDULE (THE FIX)
+    // -------------------------------------------------------------------------
+    // If a typingSchedule exists, derive the active key from the current frame.
+    // Otherwise, fall back to the reducer-set `keyboard.currentKey`.
+    const derivedCurrentKey = useMemo(() => {
+        // Check if we have a schedule and we are within its time range
+        if (keyboard.typingSchedule) {
+            const schedule = keyboard.typingSchedule;
+            if (frame >= schedule.startFrame && frame <= schedule.endFrame) {
+                return deriveCurrentKeyFromSchedule(schedule, frame);
+            }
+        }
+        // Fallback to legacy reducer-driven state
+        return keyboard.currentKey;
+    }, [frame, keyboard.typingSchedule, keyboard.currentKey]);
+
+    // -------------------------------------------------------------------------
     // ANIMATION
     // -------------------------------------------------------------------------
     const ANIMATION_DURATION = 14;
@@ -478,10 +510,9 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                         <IOSKeyRow
                             key={index}
                             keys={row}
-                            currentKey={keyboard.currentKey}
+                            currentKey={derivedCurrentKey} // USE DERIVED KEY
                             variant={variant}
                             rowIndex={index}
-                            typingSchedule={keyboard.typingSchedule} // Pass it down if needed later
                         />
                     ))}
                 </div>
