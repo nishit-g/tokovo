@@ -2,7 +2,7 @@
  * Instagram Lowering Handler
  * 
  * Transforms DSL track events into runtime events.
- * Most events pass through directly since the reducer handles them.
+ * Events pass through with payload kept intact for reducer.
  */
 
 import type { InstagramTrackEvent } from "../ir/track-event";
@@ -13,22 +13,25 @@ import type { InstagramTrackEvent } from "../ir/track-event";
 
 export interface LoweringContext {
     fps: number;
+    pluginLowerers?: Map<string, any>; // Match the main context interface
 }
 
+/**
+ * Lower Instagram track events to runtime events.
+ * The payload is kept intact - reducer accesses event.payload.x
+ */
 export function lowerInstagramEvent(
     event: InstagramTrackEvent,
     _ctx: LoweringContext
 ): RuntimeInstagramEvent[] {
-    // Instagram events pass through directly
-    // The reducer handles all event types
-    const { payload, ...rest } = event;
+    // Pass through event with payload intact (not spread)
     return [{
-        kind: "APP",
-        appId: "app_instagram",
+        kind: "APP" as const,
+        appId: "app_instagram" as const,
         type: event.type,
-        ...payload,
         at: event.at,
         deviceId: event.deviceId,
+        payload: event.payload, // Keep payload wrapped!
     }];
 }
 
@@ -42,7 +45,7 @@ interface RuntimeInstagramEvent {
     type: string;
     at: number;
     deviceId: string;
-    [key: string]: unknown;
+    payload: Record<string, unknown>;
 }
 
 // =============================================================================

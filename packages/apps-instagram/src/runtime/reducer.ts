@@ -2,9 +2,7 @@
  * Instagram Runtime Reducer
  * 
  * Handles all Instagram-specific events.
- * 
- * IMPORTANT: Events arrive with data in `payload` field, not at root level.
- * e.g., event.payload.screen, not event.screen
+ * Events arrive with data in `payload` field.
  */
 
 import type { WorldState, TimelineEvent, FeatureReducer } from "@tokovo/core";
@@ -21,9 +19,6 @@ import type {
 // TYPE-SAFE ACCESSORS
 // =============================================================================
 
-/**
- * Get Instagram app state with type safety.
- */
 function getAppState(draft: WorldState): InstagramState {
     if (!draft.appState) {
         draft.appState = {};
@@ -37,9 +32,6 @@ function getAppState(draft: WorldState): InstagramState {
     return draft.appState["app_instagram"] as InstagramState;
 }
 
-/**
- * Get Instagram world data (feed, threads, stories).
- */
 function getInstagramData(draft: WorldState): InstagramWorldState {
     const extendedDraft = draft as WorldState & { instagram?: InstagramWorldState };
     if (!extendedDraft.instagram) {
@@ -52,9 +44,6 @@ function getInstagramData(draft: WorldState): InstagramWorldState {
     return extendedDraft.instagram;
 }
 
-/**
- * Generate timestamp string from frame.
- */
 function generateTimestamp(frame: number, draft: WorldState): string {
     const fps = (draft as any).config?.fps ?? 30;
     const baseTime = new Date("2024-12-18T14:30:00");
@@ -71,23 +60,16 @@ function generateTimestamp(frame: number, draft: WorldState): string {
 // REDUCER
 // =============================================================================
 
-export const instagramReducer: FeatureReducer = (
-    draft: WorldState,
-    event: TimelineEvent
-) => {
+export function instagramReducer(draft: WorldState, event: TimelineEvent): void {
     const eventAny = event as any;
-    const eventType = eventAny.type;
 
-    // Only handle Instagram events
-    if (eventAny.kind !== "APP" || eventAny.appId !== "app_instagram") {
+    // Only handle APP events for Instagram
+    if (eventAny.kind === "APP" && eventAny.appId !== "app_instagram") {
         return;
     }
 
-    // Extract payload - events have data in payload field
     const payload = eventAny.payload || {};
-
-    console.log(`[InstagramReducer] Processing ${eventType}:`, payload);
-
+    const eventType = eventAny.type;
     const appState = getAppState(draft);
     const data = getInstagramData(draft);
 
@@ -100,19 +82,16 @@ export const instagramReducer: FeatureReducer = (
             if (payload.threadId) {
                 appState.activeThreadId = payload.threadId;
             }
-            console.log(`[InstagramReducer] Navigated to: ${appState.screen}`);
             break;
         }
 
         case "OPEN_DM": {
             appState.screen = "dm_thread";
             appState.activeThreadId = payload.threadId;
-            // Mark as read
             const thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
             if (thread) {
                 thread.unread = false;
             }
-            console.log(`[InstagramReducer] Opened DM thread: ${payload.threadId}`);
             break;
         }
 
@@ -121,7 +100,7 @@ export const instagramReducer: FeatureReducer = (
         // =====================================================================
         case "NEW_POST": {
             const post: InstagramPost = {
-                id: payload.id || `post_${Date.now()}`,
+                id: payload.id || `post_${event.at}`,
                 author: payload.author,
                 image: payload.image,
                 caption: payload.caption || "",
@@ -131,7 +110,7 @@ export const instagramReducer: FeatureReducer = (
                 liked: false,
                 saved: false,
             };
-            data.feed.unshift(post); // Add to top
+            data.feed.unshift(post);
             break;
         }
 
@@ -148,7 +127,7 @@ export const instagramReducer: FeatureReducer = (
             const post = data.feed.find((p: InstagramPost) => p.id === payload.postId);
             if (post) {
                 const comment: InstagramComment = {
-                    id: `comment_${Date.now()}`,
+                    id: `comment_${event.at}`,
                     author: payload.author || { username: "me", avatar: "" },
                     text: payload.text,
                     likes: 0,
@@ -173,7 +152,6 @@ export const instagramReducer: FeatureReducer = (
         case "RECEIVE_DM": {
             let thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
 
-            // Create thread if doesn't exist
             if (!thread) {
                 thread = {
                     id: payload.threadId,
@@ -185,7 +163,7 @@ export const instagramReducer: FeatureReducer = (
             }
 
             const dm: InstagramDM = {
-                id: `dm_${Date.now()}`,
+                id: `dm_${event.at}_recv`,
                 sender: payload.from.username,
                 type: payload.contentType || "text",
                 content: payload.content,
@@ -194,7 +172,6 @@ export const instagramReducer: FeatureReducer = (
             };
             thread.messages.push(dm);
             thread.unread = true;
-            console.log(`[InstagramReducer] Received DM in thread ${payload.threadId}:`, payload.content);
             break;
         }
 
@@ -212,7 +189,7 @@ export const instagramReducer: FeatureReducer = (
             }
 
             const dm: InstagramDM = {
-                id: `dm_${Date.now()}`,
+                id: `dm_${event.at}_sent`,
                 sender: "me",
                 type: payload.contentType || "text",
                 content: payload.content,
@@ -220,7 +197,6 @@ export const instagramReducer: FeatureReducer = (
                 read: true,
             };
             thread.messages.push(dm);
-            console.log(`[InstagramReducer] Sent DM in thread ${payload.threadId}:`, payload.content);
             break;
         }
 
@@ -240,4 +216,6 @@ export const instagramReducer: FeatureReducer = (
             break;
         }
     }
-};
+}
+
+export { instagramReducer as default };

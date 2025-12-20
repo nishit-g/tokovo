@@ -55,11 +55,6 @@ export const InstagramApp: React.FC<InstagramAppProps> = ({
     const stories = instagramData?.stories ?? [];
     const threads = instagramData?.threads ?? [];
 
-    // Debug
-    if (t % 30 === 0) {
-        console.log(`[InstagramApp] Frame ${t}: screen=${screen}, feed=${feed.length}, threads=${threads.length}`);
-    }
-
     // Container style - fills AppSurface logical space
     const containerStyle: React.CSSProperties = {
         width: DESIGN_WIDTH,
