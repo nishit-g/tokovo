@@ -37,7 +37,7 @@ export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = 
                 backgroundColor: theme.colors.chatBg,
                 // Optional: Wallpaper pattern could be a CSS variable too or separate component
                 // Doodle Pattern (CSS radial gradient approximation of doodle)
-                backgroundImage: "radial-gradient(circle at 10% 20%, rgba(0,0,0,0.02) 1px, transparent 1px), radial-gradient(circle at 90% 80%, rgba(0,0,0,0.02) 1px, transparent 1px), radial-gradient(circle at 30% 60%, rgba(0,0,0,0.03) 1.5px, transparent 1.5px), radial-gradient(circle at 70% 30%, rgba(0,0,0,0.02) 1px, transparent 1px)",
+                backgroundImage: "radial-gradient(circle at 10% 20%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 90% 80%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 30% 60%, rgba(0,0,0,0.13) 1.5px, transparent 1.5px), radial-gradient(circle at 70% 30%, rgba(0,0,0,0.13) 1px, transparent 1px)",
                 backgroundSize: "60px 60px", // Repeat pattern
                 display: "flex",
                 flexDirection: "column",

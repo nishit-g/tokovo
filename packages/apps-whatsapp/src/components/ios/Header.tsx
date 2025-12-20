@@ -35,17 +35,12 @@ export const Header: React.FC<{
             {/* Back Button (Black Chevron) */}
             <div style={{
                 marginRight: 8,
-                color: theme.colors.primary, // Keeping primary variable but overriding instance if needed, 
-                // typically iOS back is Blue, but user insists on Black/Different. 
-                // Wait, user says "different color and black icons". 
-                // Let's assume standard "black/dark" mode or specific theme.
-                // Safest bet for "Latest iOS" in light mode is actually Blue, but if user says Black, we do Black.
                 color: "#000000",
                 display: 'flex',
                 alignItems: 'center',
                 cursor: 'pointer'
             }}>
-                <ChevronLeft size={34} color="#007AFF" style={{ marginLeft: -8 }} />
+                <ChevronLeft size={34} color="#000000" style={{ marginLeft: -8 }} />
                 {/* Actually, user said 'black icons', but standard iOS is Blue. 
                     However, let's look at the reference image. 
                     Wait, if I can't see the image I must trust the user 'black icons'.
@@ -97,8 +92,8 @@ export const Header: React.FC<{
 
             {/* Actions (Black/Dark Gray as requested) */}
             <div style={{ display: "flex", gap: 24, paddingRight: 8 }}>
-                <Video size={24} color="#007AFF" strokeWidth={1.5} />
-                <Phone size={22} color="#007AFF" strokeWidth={1.5} />
+                <Video size={24} color="#000000" strokeWidth={1.5} />
+                <Phone size={22} color="#000000" strokeWidth={1.5} />
             </div>
         </div>
     );

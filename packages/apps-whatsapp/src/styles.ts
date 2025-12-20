@@ -21,7 +21,7 @@ export const injectWhatsAppStyles = () => {
             --wa-bg-primary: #FFFFFF;
             --wa-bg-secondary: #F2F2F7;          /* System Grouped Background */
             --wa-bg-tertiary: #FFFFFF;
-            --wa-bg-header: rgba(249, 249, 249, 0.94); /* Blur material */
+            --wa-bg-header: #EFE7DE; /* Solid Beige to match Chat */
             --wa-bg-input: #F2F2F7;
             
             /* --- Chat Background --- */
