@@ -2,9 +2,11 @@
  * iOS StatusBar Strategy
  * 
  * Authentic iOS-style status bar with SF Pro fonts.
+ * Supports full theme customization.
  */
 
 import React from "react";
+import { resolveStatusBarTheme, STATUS_BAR_PRESETS } from "@tokovo/core";
 import type { StatusBarStrategyProps } from "../registries";
 import {
     SignalBarsIcon,
@@ -14,6 +16,27 @@ import {
     NetworkTypeLabel,
     formatTime,
 } from "./shared-icons";
+
+/**
+ * Resolve theme prop to actual colors.
+ * Handles:
+ * - "light" | "dark" → preset colors
+ * - ResolvedStatusBarTheme → use directly
+ */
+function resolveThemeColors(theme: StatusBarStrategyProps["theme"]): { textColor: string; bgColor: string } {
+    if (typeof theme === "string" || !theme) {
+        const preset = STATUS_BAR_PRESETS[theme || "light"];
+        return {
+            textColor: preset.iconColor,
+            bgColor: preset.backgroundColor,
+        };
+    }
+    // Full theme object
+    return {
+        textColor: theme.iconColor,
+        bgColor: theme.backgroundColor,
+    };
+}
 
 export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
     os,
@@ -30,7 +53,8 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
     const cellStrength = os?.cellStrength ?? 4;
     const isDND = os?.dnd ?? false;
 
-    const textColor = theme === "dark" ? "white" : "black";
+    // Resolve theme to actual colors
+    const { textColor, bgColor } = resolveThemeColors(theme);
 
     return (
         <div style={{
@@ -42,6 +66,7 @@ export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
             padding: "45px 72px 0 72px",
             boxSizing: "border-box",
             color: textColor,
+            backgroundColor: bgColor,
             position: "absolute",
             top: 0,
             left: 0,

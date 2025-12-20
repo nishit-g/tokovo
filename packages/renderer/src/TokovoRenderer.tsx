@@ -171,7 +171,14 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             <div style={cameraStyle}>
                 {/* Device wrapper — applies layout transforms */}
                 <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <FrameComponent statusBar={<StatusBar os={device.os} variant={variant} />}>
+                    {/* Extract statusBarTheme from foreground app's state */}
+                    <FrameComponent statusBar={
+                        <StatusBar
+                            os={device.os}
+                            variant={variant}
+                            theme={(appId && world.appState?.[appId] as any)?.statusBarTheme ?? "light"}
+                        />
+                    }>
 
                         {/* ========================================================================= */}
                         {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
@@ -284,7 +291,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                         )}
 
                         {/* Virtual Keyboard (Unified Surface) */}
-                        {device.keyboard && (
+                        {device.keyboard?.visible && (
                             <KeyboardSurface
                                 keyboard={device.keyboard}
                                 platform={variant}

@@ -884,3 +884,15 @@ export type {
     TransitionLayoutState,
     TransitionLayoutMeta,
 } from "./types/layout";
+
+// StatusBar theming
+export {
+    STATUS_BAR_PRESETS,
+    resolveStatusBarTheme,
+} from "./types/statusbar-theme";
+export type {
+    StatusBarPreset,
+    StatusBarCustomTheme,
+    StatusBarTheme,
+    ResolvedStatusBarTheme,
+} from "./types/statusbar-theme";

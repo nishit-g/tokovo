@@ -19,6 +19,13 @@ export interface WhatsAppState {
     currentConversationId?: string;
 
     viewMode?: "CHAT" | "LIST" | "TRANSITION";
+
+    /** StatusBar theme - "light" | "dark" | full custom theme */
+    statusBarTheme?: "light" | "dark" | {
+        backgroundColor?: string;
+        iconColor?: string;
+        timeColor?: string;
+    };
 }
 
 // =============================================================================

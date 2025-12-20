@@ -27,6 +27,7 @@ function getAppState(draft: WorldState): InstagramState {
         draft.appState["app_instagram"] = {
             screen: "home",
             activeThreadId: undefined,
+            statusBarTheme: "dark", // Instagram uses dark theme
         };
     }
     return draft.appState["app_instagram"] as InstagramState;
@@ -79,6 +80,7 @@ export function instagramReducer(draft: WorldState, event: TimelineEvent): void 
         // =====================================================================
         case "NAVIGATE": {
             appState.screen = payload.screen;
+            appState.statusBarTheme = "dark"; // Instagram dark theme
             if (payload.threadId) {
                 appState.activeThreadId = payload.threadId;
             }
@@ -88,6 +90,7 @@ export function instagramReducer(draft: WorldState, event: TimelineEvent): void 
         case "OPEN_DM": {
             appState.screen = "dm_thread";
             appState.activeThreadId = payload.threadId;
+            appState.statusBarTheme = "dark"; // Instagram dark theme
             const thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
             if (thread) {
                 thread.unread = false;

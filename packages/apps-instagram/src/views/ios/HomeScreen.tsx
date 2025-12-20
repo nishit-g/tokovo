@@ -2,7 +2,7 @@
  * Instagram Home Screen (iOS)
  * 
  * Main feed with header, stories, and posts.
- * Uses safe area insets for proper spacing.
+ * NOTE: Safe area top is handled by InstagramApp router.
  */
 
 import React from "react";
@@ -18,7 +18,6 @@ interface HomeScreenProps {
     stories: InstagramStory[];
     width: number;
     height: number;
-    safeAreaTop?: number;
     safeAreaBottom?: number;
 }
 
@@ -27,8 +26,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     stories,
     width,
     height,
-    safeAreaTop = 59, // iPhone notch area
-    safeAreaBottom = 34, // Home indicator area
+    safeAreaBottom = 34,
 }) => {
     const theme = instagramTheme;
 
@@ -42,9 +40,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             fontFamily: theme.typography.fontFamily,
             overflow: "hidden",
         }}>
-            {/* Safe area top padding (for notch/dynamic island) */}
-            <div style={{ height: safeAreaTop, flexShrink: 0 }} />
-
             {/* Header */}
             <Header />
 

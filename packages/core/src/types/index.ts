@@ -43,3 +43,5 @@ export * from "./plugin-contract";
 // Anchor types - V2 camera positioning
 export * from "./anchor";
 
+// StatusBar theming
+export * from "./statusbar-theme";

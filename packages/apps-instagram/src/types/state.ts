@@ -13,6 +13,12 @@ export type InstagramScreen = "home" | "search" | "reels" | "shop" | "profile" |
 export interface InstagramState {
     screen: InstagramScreen;
     activeThreadId?: string;
+    /** StatusBar theme - "light" | "dark" | full custom theme */
+    statusBarTheme?: "light" | "dark" | {
+        backgroundColor?: string;
+        iconColor?: string;
+        timeColor?: string;
+    };
 }
 
 // =============================================================================

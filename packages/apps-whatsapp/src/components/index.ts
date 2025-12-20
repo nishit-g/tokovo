@@ -20,8 +20,8 @@ export { DateSeparator } from "./DateSeparator";
 // Chats List Screen
 export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
 
-// iOS Status Bar
-export { iOSStatusBar, BubbleTail } from "./iOSStatusBar";
+// Bubble Tail (extracted from iOSStatusBar)
+export { BubbleTail } from "./BubbleTail";
 
 // Advanced Features (Phase 16)
 export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";

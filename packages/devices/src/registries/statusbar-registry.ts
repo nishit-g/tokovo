@@ -11,7 +11,7 @@
  */
 
 import type React from "react";
-import type { DeviceOSState } from "@tokovo/core";
+import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
 
 // =============================================================================
 // TYPES
@@ -23,13 +23,21 @@ export interface StatusBarNotificationIcon {
     icon?: string;
 }
 
+/**
+ * Props passed to StatusBar strategy components.
+ * Uses ResolvedStatusBarTheme for full color control.
+ */
 export interface StatusBarStrategyProps {
     /** Device OS state */
     os?: DeviceOSState;
     /** Manual time override */
     time?: string;
-    /** Theme */
-    theme?: "light" | "dark";
+    /** 
+     * Theme - can be:
+     * - "light" | "dark" (legacy presets)
+     * - Full ResolvedStatusBarTheme object with colors
+     */
+    theme?: "light" | "dark" | ResolvedStatusBarTheme;
     /** Battery percentage override */
     batteryPercentage?: number;
     /** Notification icons (Android) */

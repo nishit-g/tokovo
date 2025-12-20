@@ -1,5 +1,7 @@
 /**
  * Instagram DM Thread Screen (iOS)
+ * 
+ * NOTE: Safe area top is handled by InstagramApp router.
  */
 
 import React from "react";
@@ -10,6 +12,7 @@ interface DMScreenProps {
     thread: InstagramThread;
     width: number;
     height: number;
+    safeAreaBottom?: number;
 }
 
 // Back arrow
@@ -38,6 +41,7 @@ export const DMScreen: React.FC<DMScreenProps> = ({
     thread,
     width,
     height,
+    safeAreaBottom = 34,
 }) => {
     const theme = instagramTheme;
 
@@ -59,6 +63,7 @@ export const DMScreen: React.FC<DMScreenProps> = ({
                 paddingLeft: 8,
                 paddingRight: 16,
                 borderBottom: `1px solid ${theme.colors.divider}`,
+                flexShrink: 0,
             }}>
                 {/* Left: Back + Avatar + Name */}
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -125,9 +130,11 @@ export const DMScreen: React.FC<DMScreenProps> = ({
                     display: "flex",
                     alignItems: "center",
                     padding: 12,
+                    paddingBottom: 12 + safeAreaBottom,
                     gap: 12,
                     borderTop: `1px solid ${theme.colors.divider}`,
                     backgroundColor: theme.colors.background,
+                    flexShrink: 0,
                 }}
             >
                 {/* Camera */}

@@ -182,6 +182,9 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             appState.viewMode = "TRANSITION";  // Profile and others use transition
         }
 
+        // WhatsApp uses dark status bar (dark icons on light bg #ECE5DD)
+        appState.statusBarTheme = "dark";
+
         // If navigating to a specific conversation
         if (payload.conversationId || appEvent.conversationId) {
             appState.conversationId = payload.conversationId || appEvent.conversationId;
@@ -201,6 +204,7 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
             appState.screen = "chat";
             appState.currentScreen = "chat";
             appState.viewMode = "CHAT";
+            appState.statusBarTheme = "dark"; // WhatsApp dark icons on light bg
         }
         return;
     }
