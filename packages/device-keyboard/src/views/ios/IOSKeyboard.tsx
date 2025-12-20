@@ -1,6 +1,6 @@
 /**
  * IOSKeyboard - Realistic iOS keyboard component
- * (Revamped for iOS 17/18 Pixel Perfection & Visual Feedbacks)
+ * (Revamped for iOS 17/18 Pixel Perfection)
  */
 
 import React, { useMemo } from "react";
@@ -17,46 +17,40 @@ const QWERTY_ROWS = [
     ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
     ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
     ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
-    ["123", "space", "return"] // Removed Globe
+    ["123", "space", "return"]
 ];
 
 const NUMBERS_ROWS = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
     ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
     ["#+=", ".", ",", "?", "!", "'", "⌫"],
-    ["ABC", "space", "return"] // Removed Globe
+    ["ABC", "space", "return"]
 ];
 
 
 // =============================================================================
-// ICONS (SF Symbols High Fidelity - OUTLINE STYLE)
+// ICONS (SF Symbols - OUTLINE STYLE)
 // =============================================================================
 
-// Outline Shift Arrow
 const ShiftIcon = ({ style }: { style?: React.CSSProperties }) => (
     <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 3L5 10H9V20H15V10H19L12 3Z" strokeLinejoin="round" />
     </svg>
 );
 
-// Outline Backspace "House with X"
 const BackspaceIcon = ({ style, color }: { style?: React.CSSProperties, color: string }) => (
     <svg style={style} viewBox="0 0 44 32" fill="none">
-        {/* The House Shape containing the X - STROKE ONLY */}
         <path
             d="M13.88 4.3C14.77 2 17.07 0.5 19.67 0.5H36.5C40.64 0.5 44 3.86 44 8V24C44 28.14 40.64 31.5 36.5 31.5H19.67C17.07 31.5 14.77 30 13.88 27.7L2.4 16L13.88 4.3Z"
             stroke={color}
-            strokeWidth="2.5" // Slightly thicker stroke for visibility
+            strokeWidth="2.5"
             fill="none"
         />
-        {/* The "X" Inside */}
         <path d="M24 10L32 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
         <path d="M32 10L24 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-
-// Detailed Microphone
 const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
     <svg style={style} viewBox="0 0 24 24" fill="currentColor">
         <path d="M12 14C13.6569 14 15 12.6569 15 11V5C15 3.34315 13.6569 2 12 2C10.3431 2 9 3.34315 9 5V11C9 12.6569 10.3431 14 12 14Z" />
@@ -64,7 +58,6 @@ const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
     </svg>
 );
 
-// Emoji Face (Smiley)
 const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
     <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
         <circle cx="12" cy="12" r="10" />
@@ -75,70 +68,99 @@ const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
 );
 
 // =============================================================================
-// HELPER: Derive currentKey from TypingSchedule at a given frame
+// TYPING SCHEDULE HELPERS
 // =============================================================================
 
-interface TypingScheduleEntry {
-    key: string;
-    frame: number;
-}
+interface TypingScheduleEntry { key: string; frame: number; }
+interface TypingSchedule { entries: TypingScheduleEntry[]; text: string; startFrame: number; endFrame: number; }
 
-interface TypingSchedule {
-    entries: TypingScheduleEntry[];
-    text: string;
-    startFrame: number;
-    endFrame: number;
-}
+const KEY_PRESS_DURATION = 3;
 
-/**
- * Given a TypingSchedule and the current frame, determine which key is "active".
- * Key is active for ~3 frames after its scheduled frame.
- */
-function deriveCurrentKeyFromSchedule(
-    schedule: TypingSchedule | null | undefined,
-    frame: number
-): string | null {
+function deriveCurrentKeyFromSchedule(schedule: TypingSchedule | null | undefined, frame: number): string | null {
     if (!schedule || !schedule.entries) return null;
-
-    const KEY_PRESS_DURATION = 3; // Key is visually pressed for this many frames
-
-    // Find the latest entry where frame >= entry.frame AND frame < entry.frame + DURATION
     for (let i = schedule.entries.length - 1; i >= 0; i--) {
         const entry = schedule.entries[i];
         if (frame >= entry.frame && frame < entry.frame + KEY_PRESS_DURATION) {
             return entry.key;
         }
     }
-
     return null;
 }
+
+/**
+ * Derive progressive text from schedule: Only show characters that have been typed so far.
+ */
+function deriveProgressiveText(schedule: TypingSchedule | null | undefined, frame: number): string {
+    if (!schedule || !schedule.entries) return "";
+    let text = "";
+    for (const entry of schedule.entries) {
+        if (frame >= entry.frame) {
+            text += entry.key;
+        } else {
+            break; // Entries are in order
+        }
+    }
+    return text;
+}
+
+// =============================================================================
+// KEY POPUP - Simple iOS Style (No Complex SVG)
+// =============================================================================
+
+export const IOSKeyPopup: React.FC<KeyPopupProps> = ({ label, variant, keyWidth }) => {
+    const theme = getIOSTheme(variant);
+
+    // Simple rounded rect popup (matches modern iOS)
+    const POPUP_WIDTH = 56;
+    const POPUP_HEIGHT = 56;
+    const leftOffset = (keyWidth - POPUP_WIDTH) / 2;
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 56, // Above the key
+            left: leftOffset,
+            width: POPUP_WIDTH,
+            height: POPUP_HEIGHT,
+            backgroundColor: theme.popupBg,
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 32,
+            fontWeight: 300,
+            color: theme.keyText,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+        }}>
+            {label}
+        </div>
+    );
+};
 
 // =============================================================================
 // KEY COMPONENT
 // =============================================================================
 
-export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
+export const IOSKey: React.FC<KeyProps> = ({
     label,
-    isPressed, // This comes from simple state check (currentKey === label)
+    isPressed,
     width,
     isSpecial = false,
     variant,
 }) => {
-
     const colors = getThemeColors(variant, isSpecial, isPressed);
 
-    // TYPOGRAPHY UPDATES:
     let fontSize = 25;
-    const fontWeight = 300; // LIGHTER
+    const fontWeight = 300;
 
     if (label.length > 1) {
         fontSize = 16;
     }
 
     const displayLabel = label === "space" ? "space" : renderLabel(label, variant, colors.keyText);
-
-    // Pop-up Logic
-    const showPopup = label.length === 1 && !isSpecial;
+    const showPopup = isPressed && label.length === 1 && !isSpecial;
 
     return (
         <div style={{
@@ -146,26 +168,11 @@ export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
             width: width,
             flexGrow: label === "space" ? 1 : 0,
             height: 46,
-            zIndex: isPressed ? 120 : 1, // Z-index jumps when pressed
+            // CRITICAL: Remove overflow constraints to allow popup to be visible
         }}>
-            {/* Paddle Pop-up with CSS Animation */}
+            {/* Pop-up - Renders above key when pressed */}
             {showPopup && (
-                <div style={{
-                    position: "absolute",
-                    bottom: 0,
-                    left: 0,
-                    width: "100%",
-                    pointerEvents: "none",
-                    opacity: isPressed ? 1 : 0,
-                    transform: isPressed ? "scale(1)" : "scale(0.5) translateY(20px)",
-                    transformOrigin: "bottom center",
-                    transition: isPressed
-                        ? "none" // Instant In
-                        : "opacity 0.1s ease-out, transform 0.1s ease-out", // Fast Fade Out
-                    zIndex: 200,
-                }}>
-                    <IOSKeyPopup label={label} variant={variant} keyWidth={width || 32} />
-                </div>
+                <IOSKeyPopup label={label} variant={variant} keyWidth={width || 32} />
             )}
 
             {/* Key Body */}
@@ -173,7 +180,7 @@ export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
                 width: "100%",
                 height: "100%",
                 backgroundColor: colors.keyBg,
-                borderRadius: 5, // 5px is sharper than 8, fitting "plastic" better at this scale
+                borderRadius: 5,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -181,8 +188,6 @@ export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
                 fontWeight,
                 color: colors.keyText,
                 boxShadow: colors.shadow,
-                // Background color transition for tap effect
-                transition: "background-color 0s", // Instant tap response
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
                 cursor: "pointer",
                 WebkitFontSmoothing: "antialiased",
@@ -193,92 +198,14 @@ export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
     );
 };
 
-// =============================================================================
-// KEY POPUP (The "Paddle")
-// =============================================================================
-
-export const IOSKeyPopup: React.FC<KeyPopupProps> = ({ label, variant, keyWidth }) => {
-    const theme = getIOSTheme(variant);
-    const popupColors = { popupBg: theme.popupBg, keyText: theme.keyText };
-
-    // Paddle Dimensions
-    const POPUP_WIDTH = keyWidth + 32; // Expanded width
-    const POPUP_HEIGHT = 108;
-
-    // Proper centering offset
-    const leftOffset = (keyWidth - POPUP_WIDTH) / 2;
-
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 46, // Starts right at top of key
-            left: leftOffset,
-            width: POPUP_WIDTH,
-            height: POPUP_HEIGHT,
-            pointerEvents: "none",
-            zIndex: 200,
-            transformOrigin: "bottom center",
-            filter: "drop-shadow(0px 1px 4px rgba(0,0,0,0.35))" // Stronger popup shadow
-        }}>
-            {/* Paddle Shape SVG */}
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 100 160"
-                preserveAspectRatio="none"
-                style={{ overflow: "visible" }}
-            >
-                <path
-                    d="M 15 160
-                       L 85 160
-                       C 95 160 95 145 85 135
-                       L 85 100
-                       C 85 80 100 80 100 60
-                       L 100 15
-                       C 100 0 85 0 85 0
-                       L 15 0
-                       C 0 0 0 15 0 15
-                       L 0 60
-                       C 0 80 15 80 15 100
-                       L 15 135
-                       C 5 145 5 160 15 160
-                       Z"
-                    fill={popupColors.popupBg}
-                    fillRule="evenodd"
-                />
-            </svg>
-
-            {/* Character Preview */}
-            <div style={{
-                position: "absolute",
-                top: 8,
-                left: 0,
-                width: "100%",
-                height: 70,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 40,
-                color: popupColors.keyText,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-                fontWeight: 300, // Matching Lighter weight
-            }}>
-                {label}
-            </div>
-        </div>
-    );
-};
-
 // Icon Renderer Helper
-const renderLabel = (label: string, variant: string, color: string) => {
-    // Specific icon sizes relative to key
+const renderLabel = (label: string, _variant: string, color: string) => {
     const shiftStyle = { width: 22, height: 20 };
     const deleteStyle = { width: 24, height: 20 };
-    const globeStyle = { width: 20, height: 20 };
 
-    if (label === "") return null; // Space (Handled by parent "space" logic now)
+    if (label === "") return null;
     if (label === "⇧") return <ShiftIcon style={shiftStyle} />;
-    if (label === "⌫") return <BackspaceIcon style={deleteStyle} color={color} />; // Pass fill color
+    if (label === "⌫") return <BackspaceIcon style={deleteStyle} color={color} />;
     if (label === "return") return "return";
     if (label === "123") return "123";
     if (label === "ABC") return "ABC";
@@ -297,11 +224,9 @@ export const IOSKeyRow: React.FC<{
     rowIndex: number;
 }> = ({ keys, currentKey, variant, rowIndex }) => {
 
-    // LAYOUT GEOMETRY
     const ROW_GAP = 6;
     let paddingX = 0;
     if (rowIndex === 1) paddingX = 18;
-    if (rowIndex === 2) paddingX = 0;
 
     return (
         <div style={{
@@ -312,17 +237,17 @@ export const IOSKeyRow: React.FC<{
             paddingLeft: paddingX,
             paddingRight: paddingX,
             marginBottom: 12,
+            // CRITICAL: Allow overflow for popups
+            overflow: "visible",
         }}>
             {keys.map((key, index) => {
                 const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
                 const isSpace = key === "space";
 
-                // CORRECTED: Compare against the derived currentKey passed down from parent
                 const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
                     (key === "⌫" && currentKey === "⌫") ||
                     (isSpace && currentKey === " ");
 
-                // KEY WIDTH LOGIC 
                 let width = 32;
                 if (key === "space") width = 182;
                 if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 88;
@@ -366,8 +291,7 @@ export const IOSPredictionBar: React.FC<PredictionBarProps> = ({
         }}>
             {suggestions.map((word: string, i: number) => {
                 const isCenter = i === 1;
-                const weight = isCenter ? 400 : 300; // Even lighter here too
-
+                const weight = isCenter ? 400 : 300;
                 const displayText = (isCenter) ? `"${word}"` : word;
                 const color = theme.keyText;
 
@@ -418,21 +342,25 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const frame = useCurrentFrame();
 
     // -------------------------------------------------------------------------
-    // DERIVE CURRENT KEY FROM TYPING SCHEDULE (THE FIX)
+    // DERIVE STATE FROM TYPING SCHEDULE
     // -------------------------------------------------------------------------
-    // If a typingSchedule exists, derive the active key from the current frame.
-    // Otherwise, fall back to the reducer-set `keyboard.currentKey`.
     const derivedCurrentKey = useMemo(() => {
-        // Check if we have a schedule and we are within its time range
         if (keyboard.typingSchedule) {
             const schedule = keyboard.typingSchedule;
-            if (frame >= schedule.startFrame && frame <= schedule.endFrame) {
+            if (frame >= schedule.startFrame && frame <= schedule.endFrame + KEY_PRESS_DURATION) {
                 return deriveCurrentKeyFromSchedule(schedule, frame);
             }
         }
-        // Fallback to legacy reducer-driven state
         return keyboard.currentKey;
     }, [frame, keyboard.typingSchedule, keyboard.currentKey]);
+
+    // Progressive Text: Show characters as they are typed
+    const progressiveText = useMemo(() => {
+        if (keyboard.typingSchedule) {
+            return deriveProgressiveText(keyboard.typingSchedule, frame);
+        }
+        return keyboard.inputText;
+    }, [frame, keyboard.typingSchedule, keyboard.inputText]);
 
     // -------------------------------------------------------------------------
     // ANIMATION
@@ -442,7 +370,6 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
     const targetValue = keyboard.visible ? 1 : 0;
     const startValue = keyboard.visible ? 0 : 1;
 
-    // Spring Curve
     const slideProgress = interpolate(
         frame,
         [transitionStart, transitionStart + ANIMATION_DURATION],
@@ -461,7 +388,8 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
 
     const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
     const theme = getIOSTheme(variant);
-    const suggestions = IOSPrediction.getSuggestions(keyboard.inputText, 42);
+    // Use progressive text for suggestions
+    const suggestions = IOSPrediction.getSuggestions(progressiveText, 42);
 
     return (
         <div style={{
@@ -476,17 +404,19 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
             display: "flex",
             justifyContent: "center",
             alignItems: "flex-end",
-            overflow: "hidden"
+            // CRITICAL: Allow popup overflow
+            overflow: "visible",
         }}>
             {/* 393px Container */}
             <div style={{
                 width: 393,
                 backgroundColor: theme.containerBg,
                 paddingTop: 8,
-                paddingBottom: 34, // Home Indicator Area
+                paddingBottom: 34,
                 display: "flex",
                 flexDirection: "column",
                 position: "relative",
+                overflow: "visible", // CRITICAL for popups
             }}>
 
                 {/* Prediction Bar */}
@@ -505,12 +435,13 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     paddingLeft: 12,
                     paddingRight: 12,
                     paddingBottom: 4,
+                    overflow: "visible", // CRITICAL for popups
                 }}>
                     {rows.map((row, index) => (
                         <IOSKeyRow
                             key={index}
                             keys={row}
-                            currentKey={derivedCurrentKey} // USE DERIVED KEY
+                            currentKey={derivedCurrentKey}
                             variant={variant}
                             rowIndex={index}
                         />
