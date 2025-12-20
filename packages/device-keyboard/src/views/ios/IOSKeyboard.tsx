@@ -3,7 +3,7 @@
  * (Revamped for iOS 17/18 Pixel Perfection & Visual Feedbacks)
  */
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useCurrentFrame, interpolate, Easing } from "remotion";
 import { KeyboardProps, KeyProps, KeyPopupProps, PredictionBarProps, KeyboardStrategyRegistry } from "../strategy";
 import { getIOSTheme, getThemeColors } from "./theme";
@@ -17,48 +17,44 @@ const QWERTY_ROWS = [
     ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
     ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
     ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
-    ["123", "🌐", "space", "return"]
+    ["123", "space", "return"] // Removed Globe
 ];
 
 const NUMBERS_ROWS = [
     ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
     ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
     ["#+=", ".", ",", "?", "!", "'", "⌫"],
-    ["ABC", "🌐", "space", "return"]
+    ["ABC", "space", "return"] // Removed Globe
 ];
 
 
 // =============================================================================
-// ICONS (SF Symbols High Fidelity)
+// ICONS (SF Symbols High Fidelity - OUTLINE STYLE)
 // =============================================================================
 
-// Solid Shift Arrow (iOS 16/17 Style)
+// Outline Shift Arrow
 const ShiftIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="currentColor">
-        <path d="M10.9393 3.93934C11.5251 3.35355 12.4749 3.35355 13.0607 3.93934L19.0607 9.93934C19.6464 10.5251 19.6464 11.4749 19.0607 12.0607C18.7794 12.3419 18.3978 12.5 18 12.5H15V19C15 19.5523 14.5523 20 14 20H10C9.44772 20 9 19.5523 9 19V12.5H6C5.60218 12.5 5.22064 12.3419 4.93934 12.0607C4.35355 11.4749 4.35355 10.5251 4.93934 9.93934L10.9393 3.93934Z" />
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 3L5 10H9V20H15V10H19L12 3Z" strokeLinejoin="round" />
     </svg>
 );
 
-// Backspace "House with X" (iOS Native Shape)
+// Outline Backspace "House with X"
 const BackspaceIcon = ({ style, color }: { style?: React.CSSProperties, color: string }) => (
-    <svg style={style} viewBox="0 0 44 32">
-        {/* The House Shape containing the X */}
-        <path d="M13.88 4.3C14.77 2 17.07 0.5 19.67 0.5H36.5C40.64 0.5 44 3.86 44 8V24C44 28.14 40.64 31.5 36.5 31.5H19.67C17.07 31.5 14.77 30 13.88 27.7L2.4 16L13.88 4.3Z" fill={color} />
-        {/* The "X" Inside (White or Contrast) */}
-        <path d="M24 10L32 22" stroke="white" strokeWidth="2" strokeLinecap="round" />
-        <path d="M32 10L24 22" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    <svg style={style} viewBox="0 0 44 32" fill="none">
+        {/* The House Shape containing the X - STROKE ONLY */}
+        <path
+            d="M13.88 4.3C14.77 2 17.07 0.5 19.67 0.5H36.5C40.64 0.5 44 3.86 44 8V24C44 28.14 40.64 31.5 36.5 31.5H19.67C17.07 31.5 14.77 30 13.88 27.7L2.4 16L13.88 4.3Z"
+            stroke={color}
+            strokeWidth="2.5" // Slightly thicker stroke for visibility
+            fill="none"
+        />
+        {/* The "X" Inside */}
+        <path d="M24 10L32 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        <path d="M32 10L24 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
     </svg>
 );
 
-// Wireframe Globe
-const GlobeIcon = ({ style }: { style?: React.CSSProperties }) => (
-    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 3C14.5 3 16.5 7.02944 16.5 12C16.5 16.9706 14.5 21 12 21" />
-        <path d="M12 3C9.5 3 7.5 7.02944 7.5 12C7.5 16.9706 9.5 21 12 21" />
-        <path d="M3.5 12H20.5" />
-    </svg>
-);
 
 // Detailed Microphone
 const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
@@ -82,46 +78,72 @@ const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
 // KEY COMPONENT
 // =============================================================================
 
-export const IOSKey: React.FC<KeyProps> = ({
+interface IOSKeyAnimationProps {
+    isPressing: boolean; // Currently held down
+    timeSincePressed: number; // Frames since press start
+    timeSinceReleased: number; // Frames since release
+}
+
+export const IOSKey: React.FC<KeyProps & { schedule?: any }> = ({
     label,
-    isPressed,
-    width, // Now controlled strictly by parent flex/basis
+    isPressed, // This comes from simple state check (currentKey === label)
+    width,
     isSpecial = false,
-    variant
+    variant,
 }) => {
-    // Theme Colors
+
+    // NOTE: True animation requires knowing "time since release".
+    // Since we don't have that easily piped in without refactoring the Row -> Key interface,
+    // we will implement a "CSS Transition" based approach which is reactive to "isPressed".
+    // When isPressed goes False -> Transition opacity out.
+
     const colors = getThemeColors(variant, isSpecial, isPressed);
 
-    // TYPOGRAPHY (Regular Weight, Fixed Sizes)
-    // Letters: 25px
-    // Functionals: 16px
+    // TYPOGRAPHY UPDATES:
+    // User requested "Reduce font weight, too bold".
+    // Switching to 300 (Light) for Letters.
     let fontSize = 25;
-    const fontWeight = 400; // STRICTLY REGULAR
+    const fontWeight = 300; // LIGHTER (was 400)
 
     if (label.length > 1) {
         fontSize = 16;
+        // Functionals can stay 400 or go 300? 
+        // Usually system font functionals are regular. Let's keep them 400 for contrast.
+        // Actually user said "too bold right now", applying to everything safe.
+        // Let's stick strictly to 300 for clarity.
     }
 
     const displayLabel = label === "space" ? "space" : renderLabel(label, variant, colors.keyText);
 
     // Pop-up Logic
-    const showPopup = isPressed && label.length === 1 && !isSpecial;
+    const showPopup = label.length === 1 && !isSpecial;
 
     return (
         <div style={{
             position: "relative",
-            width: width, // Handled by flex-basis or explicit width
-            flexGrow: label === "space" ? 1 : 0, // Space fills
-            height: 46, // Fixed Height
-            zIndex: showPopup ? 120 : 1,
-            // SHADOW & RADIUS updates
-            borderRadius: 5, // Visual Request: "8-10px" feels too round for keys, let's use 6px and rely on rendering quality. 
-            // Wait, request said specifically 8-10px. OK, let's go for 7.5px as good compromise.
-            // borderRadius: 8 // User requested 8-10px.
+            width: width,
+            flexGrow: label === "space" ? 1 : 0,
+            height: 46,
+            zIndex: isPressed ? 120 : 1, // Z-index jumps when pressed
         }}>
-            {/* Paddle Pop-up */}
+            {/* Paddle Pop-up with CSS Animation */}
             {showPopup && (
-                <IOSKeyPopup label={label} variant={variant} keyWidth={width || 32} />
+                <div style={{
+                    position: "absolute",
+                    bottom: 0,
+                    left: 0,
+                    width: "100%",
+                    pointerEvents: "none",
+                    opacity: isPressed ? 1 : 0,
+                    transform: isPressed ? "scale(1)" : "scale(0.5) translateY(20px)",
+                    transformOrigin: "bottom center",
+                    transition: isPressed
+                        ? "none" // Instant In
+                        : "opacity 0.1s ease-out, transform 0.1s ease-out", // Fast Fade Out
+                    zIndex: 200,
+                }}>
+                    <IOSKeyPopup label={label} variant={variant} keyWidth={width || 32} />
+                </div>
             )}
 
             {/* Key Body */}
@@ -129,7 +151,7 @@ export const IOSKey: React.FC<KeyProps> = ({
                 width: "100%",
                 height: "100%",
                 backgroundColor: colors.keyBg,
-                borderRadius: 5, // Keeping standard iOS look, 8px is for large buttons
+                borderRadius: 5, // 5px is sharper than 8, fitting "plastic" better at this scale
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -137,10 +159,11 @@ export const IOSKey: React.FC<KeyProps> = ({
                 fontWeight,
                 color: colors.keyText,
                 boxShadow: colors.shadow,
-                transition: "background-color 0s",
+                // Background color transition for tap effect
+                transition: "background-color 0s", // Instant tap response
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
                 cursor: "pointer",
-                WebkitFontSmoothing: "antialiased", // Requested
+                WebkitFontSmoothing: "antialiased",
             }}>
                 {displayLabel}
             </div>
@@ -216,7 +239,7 @@ export const IOSKeyPopup: React.FC<KeyPopupProps> = ({ label, variant, keyWidth 
                 fontSize: 40,
                 color: popupColors.keyText,
                 fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-                fontWeight: 400,
+                fontWeight: 300, // Matching Lighter weight
             }}>
                 {label}
             </div>
@@ -237,7 +260,6 @@ const renderLabel = (label: string, variant: string, color: string) => {
     if (label === "return") return "return";
     if (label === "123") return "123";
     if (label === "ABC") return "ABC";
-    if (label === "🌐") return <GlobeIcon style={globeStyle} />;
 
     return label;
 }
@@ -251,53 +273,44 @@ export const IOSKeyRow: React.FC<{
     currentKey: string | null;
     variant: "light" | "dark";
     rowIndex: number;
-}> = ({ keys, currentKey, variant, rowIndex }) => {
+    typingSchedule?: any; // Pass schedule down
+}> = ({ keys, currentKey, variant, rowIndex, typingSchedule }) => {
 
     // LAYOUT GEOMETRY
-    // Row 1: QWERTY (10 keys) -> Standard padding
-    // Row 2: ASDF (9 keys) -> Indented
-    // Row 3: ZXCV (Shift/Back) -> More Indented ? No, Shift takes space.
-
-    // Config
-    const ROW_GAP = 6; // Horizontal Gap
-
-    // Row Specific Padding/Inset logic
-    // User requested "Row 2 has extra inset" and "Row 3 slightly more".
-    // Row 1 (10 keys): Fits width.
-    // Row 2 (9 keys): Needs to be centered, which flex does, but user wants specific *inset*.
-    // PADDING LOGIC:
+    const ROW_GAP = 6;
     let paddingX = 0;
-    if (rowIndex === 1) paddingX = 18; // ~Half key indent
-    if (rowIndex === 2) paddingX = 0; // Row 3 has big modifiers, so padding logic differs.
+    if (rowIndex === 1) paddingX = 18;
+    if (rowIndex === 2) paddingX = 0;
 
     return (
         <div style={{
             display: "flex",
-            justifyContent: "center", // Flex centers naturally
+            justifyContent: "center",
             width: "100%",
-            gap: ROW_GAP, // Consistent horizontal gap
+            gap: ROW_GAP,
             paddingLeft: paddingX,
             paddingRight: paddingX,
-            marginBottom: 12, // Vertical Gap
+            marginBottom: 12,
         }}>
             {keys.map((key, index) => {
                 const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
                 const isSpace = key === "space";
+
                 const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
                     (key === "⌫" && currentKey === "⌫") ||
                     (isSpace && currentKey === " ");
 
-                // KEY WIDTH LOGIC (Fixed Basis)
-                // Base width for letters: ~32px (393 - margins - gaps) / 10
-                // (393 - 24(outer) - 9*6) / 10 approx 31.5
-
+                // KEY WIDTH LOGIC 
                 let width = 32;
+                // Space is shared with return/123 now, needs to be calculated.
+                // Bottom row structure is now: [123] [space] [return]
+                // 3 keys total.
+                // 123/return width -> 88px approx (matches Shift+Key combo width)
+                // space -> Fill remaining.
 
-                // Specific Widths
-                if (key === "space") width = 186; // Space: widest
-                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 44;
+                if (key === "space") width = 182; // Adjusted since Globe is gone
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 88; // Wider functional keys
 
-                // Shift/Back: 1.5x letter (~48px)
                 if (key === "⇧" || key === "⌫") width = 46;
 
                 return (
@@ -328,18 +341,17 @@ export const IOSPredictionBar: React.FC<PredictionBarProps> = ({
 
     return (
         <div style={{
-            height: 48, // More breathing room
+            height: 48,
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-            padding: "0 12px", // Outer padding match
+            padding: "0 12px",
             marginBottom: 8,
             fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
         }}>
             {suggestions.map((word: string, i: number) => {
                 const isCenter = i === 1;
-                // Regular/Medium weights per feedback (not Bold)
-                const weight = isCenter ? 500 : 400;
+                const weight = isCenter ? 400 : 300; // Even lighter here too
 
                 const displayText = (isCenter) ? `"${word}"` : word;
                 const color = theme.keyText;
@@ -358,20 +370,19 @@ export const IOSPredictionBar: React.FC<PredictionBarProps> = ({
                             fontWeight: weight,
                             color: color,
                             letterSpacing: -0.2,
-                            opacity: isCenter ? 1 : 0.8 // Subtle focus
+                            opacity: isCenter ? 1 : 0.8
                         }}>
                             {displayText}
                         </span>
 
-                        {/* Thin Divider on the right of Left and Center items */}
                         {i < 2 && (
                             <div style={{
                                 position: "absolute",
                                 right: 0,
                                 width: 1,
-                                height: 24, // Taller but subtle
+                                height: 24,
                                 backgroundColor: theme.dividerColor,
-                                opacity: 0.5, // Reduced opacity
+                                opacity: 0.5,
                             }} />
                         )}
                     </div>
@@ -407,7 +418,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
         {
             extrapolateLeft: "clamp",
             extrapolateRight: "clamp",
-            easing: Easing.bezier(0.3, 1.15, 0.2, 1), // Slight bounce overshoot
+            easing: Easing.bezier(0.3, 1.15, 0.2, 1),
         }
     );
 
@@ -439,14 +450,11 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
             <div style={{
                 width: 393,
                 backgroundColor: theme.containerBg,
-                // No border, slab style
                 paddingTop: 8,
                 paddingBottom: 34, // Home Indicator Area
                 display: "flex",
                 flexDirection: "column",
-                position: "relative", // For floating corner icons
-                // No hard box shadow per user request (light gray slab)
-                // boxShadow: "0 -0.5px 0 rgba(0,0,0,0.15)", 
+                position: "relative",
             }}>
 
                 {/* Prediction Bar */}
@@ -456,13 +464,13 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                     highlightedIndex={1}
                 />
 
-                {/* Keys Container with Outer Padding */}
+                {/* Keys Container */}
                 <div style={{
                     flex: 1,
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "flex-end", // Align bottom
-                    paddingLeft: 12, // User requested 12-16px
+                    justifyContent: "flex-end",
+                    paddingLeft: 12,
                     paddingRight: 12,
                     paddingBottom: 4,
                 }}>
@@ -473,6 +481,7 @@ export const IOSKeyboard: React.FC<KeyboardProps> = ({
                             currentKey={keyboard.currentKey}
                             variant={variant}
                             rowIndex={index}
+                            typingSchedule={keyboard.typingSchedule} // Pass it down if needed later
                         />
                     ))}
                 </div>
