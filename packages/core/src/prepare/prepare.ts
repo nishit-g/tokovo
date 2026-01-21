@@ -1,16 +1,26 @@
 /**
  * prepareEpisode() - The Single Entry Point
- * 
+ *
  * This is the ONLY way to create a CompiledEpisode.
  * It orchestrates: compile → lower → validate → package
- * 
+ *
  * @see docs/FUCKING_MESS.md Section 3
  */
 
-import { CompiledEpisode, PrepareOptions, AssetManifest } from "../types/compiled-episode";
+import {
+  CompiledEpisode,
+  PrepareOptions,
+  AssetManifest,
+} from "../types/compiled-episode";
 import { RuntimeEvent } from "../types/runtime-event";
 import { TokovoPluginContract } from "../types/plugin-contract";
-import { WorldState, DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE, DEFAULT_OS_STATE } from "../types";
+import { createEventIndex } from "../utils/event-utils";
+import {
+  WorldState,
+  DEFAULT_CAMERA_STATE,
+  DEFAULT_AUDIO_STATE,
+  DEFAULT_OS_STATE,
+} from "../types";
 import { replay } from "../engine";
 
 // Type for compile function (optional peer dependency)
@@ -24,25 +34,24 @@ let compileEpisode: CompileFunction | null = null;
  * Call this from the entry point that has access to @tokovo/compiler.
  */
 export function setCompiler(compileFn: CompileFunction): void {
-    compileEpisode = compileFn;
+  compileEpisode = compileFn;
 }
-
 
 // =============================================================================
 // PLUGIN REGISTRY
 // =============================================================================
 
 interface PluginRegistry {
-    plugins: TokovoPluginContract[];
-    byId: Map<string, TokovoPluginContract>;
+  plugins: TokovoPluginContract[];
+  byId: Map<string, TokovoPluginContract>;
 }
 
 function buildPluginRegistry(plugins: TokovoPluginContract[]): PluginRegistry {
-    const byId = new Map<string, TokovoPluginContract>();
-    for (const plugin of plugins) {
-        byId.set(plugin.id, plugin);
-    }
-    return { plugins, byId };
+  const byId = new Map<string, TokovoPluginContract>();
+  for (const plugin of plugins) {
+    byId.set(plugin.id, plugin);
+  }
+  return { plugins, byId };
 }
 
 // =============================================================================
@@ -50,84 +59,85 @@ function buildPluginRegistry(plugins: TokovoPluginContract[]): PluginRegistry {
 // =============================================================================
 
 interface DeviceDefinition {
+  id: string;
+  platform?: "ios" | "android";
+  appId?: string;
+  profileId?: string;
+  conversations?: Array<{
     id: string;
-    platform?: "ios" | "android";
-    appId?: string;
-    profileId?: string;
-    conversations?: Array<{
-        id: string;
-        name?: string;
-        type?: "dm" | "group";
-        avatar?: string;
-    }>;
+    name?: string;
+    type?: "dm" | "group";
+    avatar?: string;
+  }>;
 }
 
 interface SceneIRLike {
-    id: string;
-    fps?: number;
-    durationInFrames?: number;
-    devices?: DeviceDefinition[];
+  id: string;
+  fps?: number;
+  durationInFrames?: number;
+  devices?: DeviceDefinition[];
 }
 
 /**
  * Derive initial world state from scene definition
  */
 export function deriveInitialWorld(
-    sceneIR: SceneIRLike,
-    registry: PluginRegistry
+  sceneIR: SceneIRLike,
+  registry: PluginRegistry,
 ): WorldState {
-    // Start with minimal world using existing defaults
-    const world: WorldState = {
-        devices: {},
-        conversations: {},
-        appState: {},
-        camera: { ...DEFAULT_CAMERA_STATE },
-        audio: { ...DEFAULT_AUDIO_STATE },
-        touches: [],
-    };
+  // Start with minimal world using existing defaults
+  const world: WorldState = {
+    devices: {},
+    conversations: {},
+    appState: {},
+    camera: { ...DEFAULT_CAMERA_STATE },
+    audio: { ...DEFAULT_AUDIO_STATE },
+    touches: [],
+  };
 
-    // Add devices from scene
-    for (const deviceDef of sceneIR.devices || []) {
-        world.devices[deviceDef.id] = {
-            id: deviceDef.id,
-            profileId: deviceDef.profileId || deviceDef.id,
-            isLocked: false,
-            foregroundAppId: deviceDef.appId || undefined,
-            platform: deviceDef.platform || "ios",
-            os: { ...DEFAULT_OS_STATE }
-        } as any;
+  // Add devices from scene
+  for (const deviceDef of sceneIR.devices || []) {
+    world.devices[deviceDef.id] = {
+      id: deviceDef.id,
+      profileId: deviceDef.profileId || deviceDef.id,
+      isLocked: false,
+      foregroundAppId: deviceDef.appId || undefined,
+      platform: deviceDef.platform || "ios",
+      os: { ...DEFAULT_OS_STATE },
+    } as any;
 
-        // Add conversations
-        for (const convDef of deviceDef.conversations || []) {
-            world.conversations[convDef.id] = {
-                id: convDef.id,
-                name: convDef.name || convDef.id,
-                type: convDef.type || "dm",
-                avatar: convDef.avatar,
-                messages: [],
-                typing: {}
-            };
-        }
-
-        // Initialize app state per plugin
-        for (const plugin of registry.plugins) {
-            if (plugin.createInitialState) {
-                if (!world.appState[deviceDef.id]) {
-                    world.appState[deviceDef.id] = {};
-                }
-                (world.appState as any)[deviceDef.id][plugin.id] = plugin.createInitialState();
-            }
-        }
+    // Add conversations
+    for (const convDef of deviceDef.conversations || []) {
+      world.conversations[convDef.id] = {
+        id: convDef.id,
+        name: convDef.name || convDef.id,
+        type: convDef.type || "dm",
+        avatar: convDef.avatar,
+        messages: [],
+        typing: {},
+      };
     }
 
-    // Set camera to first device
-    const deviceIds = Object.keys(world.devices);
-    if (deviceIds.length > 0) {
-        world.camera.activeDeviceId = deviceIds[0];
-        world.camera.layout = { mode: "SINGLE", primaryDeviceId: deviceIds[0] };
+    // Initialize app state per plugin
+    for (const plugin of registry.plugins) {
+      if (plugin.createInitialState) {
+        if (!world.appState[deviceDef.id]) {
+          world.appState[deviceDef.id] = {};
+        }
+        (world.appState as any)[deviceDef.id][plugin.id] =
+          plugin.createInitialState();
+      }
     }
+  }
 
-    return world;
+  // Set camera to first device
+  const deviceIds = Object.keys(world.devices);
+  if (deviceIds.length > 0) {
+    world.camera.activeDeviceId = deviceIds[0];
+    world.camera.layout = { mode: "SINGLE", primaryDeviceId: deviceIds[0] };
+  }
+
+  return world;
 }
 
 // =============================================================================
@@ -135,23 +145,23 @@ export function deriveInitialWorld(
 // =============================================================================
 
 const EVENT_KIND_PRIORITY: Record<string, number> = {
-    DEVICE: 1,
-    APP: 2,
-    CAMERA: 3,
-    AUDIO: 4,
-    KEYBOARD: 5
+  DEVICE: 1,
+  APP: 2,
+  CAMERA: 3,
+  AUDIO: 4,
+  KEYBOARD: 5,
 };
 
 function sortEvents(events: RuntimeEvent[]): RuntimeEvent[] {
-    return [...events].sort((a, b) => {
-        // 1. Sort by frame
-        if (a.at !== b.at) return a.at - b.at;
+  return [...events].sort((a, b) => {
+    // 1. Sort by frame
+    if (a.at !== b.at) return a.at - b.at;
 
-        // 2. Sort by kind priority
-        const priorityA = EVENT_KIND_PRIORITY[a.kind] || 10;
-        const priorityB = EVENT_KIND_PRIORITY[b.kind] || 10;
-        return priorityA - priorityB;
-    });
+    // 2. Sort by kind priority
+    const priorityA = EVENT_KIND_PRIORITY[a.kind] || 10;
+    const priorityB = EVENT_KIND_PRIORITY[b.kind] || 10;
+    return priorityA - priorityB;
+  });
 }
 
 // =============================================================================
@@ -159,54 +169,56 @@ function sortEvents(events: RuntimeEvent[]): RuntimeEvent[] {
 // =============================================================================
 
 interface ValidationError {
-    type: "error" | "warning";
-    message: string;
-    eventIndex?: number;
+  type: "error" | "warning";
+  message: string;
+  eventIndex?: number;
 }
 
 function validateEpisode(
-    episode: Pick<CompiledEpisode, "events" | "initialWorld">,
-    options: PrepareOptions
+  episode: Pick<CompiledEpisode, "events" | "initialWorld">,
+  options: PrepareOptions,
 ): ValidationError[] {
-    const errors: ValidationError[] = [];
+  const errors: ValidationError[] = [];
 
-    // Check events are sorted
-    for (let i = 1; i < episode.events.length; i++) {
-        if (episode.events[i].at < episode.events[i - 1].at) {
-            errors.push({
-                type: "error",
-                message: `Events not sorted: event ${i} at frame ${episode.events[i].at} comes before event ${i - 1} at frame ${episode.events[i - 1].at}`,
-                eventIndex: i
-            });
-        }
+  // Check events are sorted
+  for (let i = 1; i < episode.events.length; i++) {
+    if (episode.events[i].at < episode.events[i - 1].at) {
+      errors.push({
+        type: "error",
+        message: `Events not sorted: event ${i} at frame ${episode.events[i].at} comes before event ${i - 1} at frame ${episode.events[i - 1].at}`,
+        eventIndex: i,
+      });
     }
+  }
 
-    // Check all events have required fields
-    for (let i = 0; i < episode.events.length; i++) {
-        const e = episode.events[i];
-        if (typeof e.at !== "number") {
-            errors.push({
-                type: "error",
-                message: `Event ${i} missing 'at' field`,
-                eventIndex: i
-            });
-        }
-        if (!e.kind) {
-            errors.push({
-                type: "error",
-                message: `Event ${i} missing 'kind' field`,
-                eventIndex: i
-            });
-        }
+  // Check all events have required fields
+  for (let i = 0; i < episode.events.length; i++) {
+    const e = episode.events[i];
+    if (typeof e.at !== "number") {
+      errors.push({
+        type: "error",
+        message: `Event ${i} missing 'at' field`,
+        eventIndex: i,
+      });
     }
-
-    // In strict mode, throw on errors
-    if (options.strict && errors.some(e => e.type === "error")) {
-        const errorMessages = errors.filter(e => e.type === "error").map(e => e.message);
-        throw new Error(`Episode validation failed:\n${errorMessages.join("\n")}`);
+    if (!e.kind) {
+      errors.push({
+        type: "error",
+        message: `Event ${i} missing 'kind' field`,
+        eventIndex: i,
+      });
     }
+  }
 
-    return errors;
+  // In strict mode, throw on errors
+  if (options.strict && errors.some((e) => e.type === "error")) {
+    const errorMessages = errors
+      .filter((e) => e.type === "error")
+      .map((e) => e.message);
+    throw new Error(`Episode validation failed:\n${errorMessages.join("\n")}`);
+  }
+
+  return errors;
 }
 
 // =============================================================================
@@ -214,29 +226,29 @@ function validateEpisode(
 // =============================================================================
 
 function collectAssets(registry: PluginRegistry): AssetManifest {
-    const sounds: Record<string, string> = {};
-    const icons: Record<string, string> = {};
-    const images: Record<string, string> = {};
+  const sounds: Record<string, string> = {};
+  const icons: Record<string, string> = {};
+  const images: Record<string, string> = {};
 
-    for (const plugin of registry.plugins) {
-        if (plugin.assets?.sounds) {
-            for (const [id, path] of Object.entries(plugin.assets.sounds)) {
-                sounds[`${plugin.id}.${id}`] = path;
-            }
-        }
-        if (plugin.assets?.icons) {
-            for (const [id, path] of Object.entries(plugin.assets.icons)) {
-                icons[`${plugin.id}.${id}`] = path;
-            }
-        }
-        if (plugin.assets?.images) {
-            for (const [id, path] of Object.entries(plugin.assets.images)) {
-                images[`${plugin.id}.${id}`] = path;
-            }
-        }
+  for (const plugin of registry.plugins) {
+    if (plugin.assets?.sounds) {
+      for (const [id, path] of Object.entries(plugin.assets.sounds)) {
+        sounds[`${plugin.id}.${id}`] = path;
+      }
     }
+    if (plugin.assets?.icons) {
+      for (const [id, path] of Object.entries(plugin.assets.icons)) {
+        icons[`${plugin.id}.${id}`] = path;
+      }
+    }
+    if (plugin.assets?.images) {
+      for (const [id, path] of Object.entries(plugin.assets.images)) {
+        images[`${plugin.id}.${id}`] = path;
+      }
+    }
+  }
 
-    return { sounds, icons, images };
+  return { sounds, icons, images };
 }
 
 // =============================================================================
@@ -244,71 +256,75 @@ function collectAssets(registry: PluginRegistry): AssetManifest {
 // =============================================================================
 
 interface AssetValidationResult {
-    valid: boolean;
-    missing: Array<{ type: "sound" | "icon" | "image"; id: string; path: string }>;
-    warnings: string[];
+  valid: boolean;
+  missing: Array<{
+    type: "sound" | "icon" | "image";
+    id: string;
+    path: string;
+  }>;
+  warnings: string[];
 }
 
 /**
  * Validate that all declared assets exist
- * 
+ *
  * In preview mode: logs warnings for missing assets
  * In render mode with strict: throws error if assets missing
  */
 function validateAssets(
-    assets: AssetManifest,
-    options: PrepareOptions
+  assets: AssetManifest,
+  options: PrepareOptions,
 ): AssetValidationResult {
-    const missing: AssetValidationResult["missing"] = [];
-    const warnings: string[] = [];
+  const missing: AssetValidationResult["missing"] = [];
+  const warnings: string[] = [];
 
-    // Check sounds
-    for (const [id, path] of Object.entries(assets.sounds || {})) {
-        // Basic path validation - in browser, we can't check file existence
-        // But we can validate path format
-        if (!path || typeof path !== "string") {
-            missing.push({ type: "sound", id, path: path ?? "undefined" });
-        } else if (!path.startsWith("/") && !path.startsWith("http")) {
-            warnings.push(`Sound '${id}' has invalid path format: ${path}`);
-        }
+  // Check sounds
+  for (const [id, path] of Object.entries(assets.sounds || {})) {
+    // Basic path validation - in browser, we can't check file existence
+    // But we can validate path format
+    if (!path || typeof path !== "string") {
+      missing.push({ type: "sound", id, path: path ?? "undefined" });
+    } else if (!path.startsWith("/") && !path.startsWith("http")) {
+      warnings.push(`Sound '${id}' has invalid path format: ${path}`);
     }
+  }
 
-    // Check icons
-    for (const [id, path] of Object.entries(assets.icons || {})) {
-        if (!path || typeof path !== "string") {
-            missing.push({ type: "icon", id, path: path ?? "undefined" });
-        }
+  // Check icons
+  for (const [id, path] of Object.entries(assets.icons || {})) {
+    if (!path || typeof path !== "string") {
+      missing.push({ type: "icon", id, path: path ?? "undefined" });
     }
+  }
 
-    // Check images
-    for (const [id, path] of Object.entries(assets.images || {})) {
-        if (!path || typeof path !== "string") {
-            missing.push({ type: "image", id, path: path ?? "undefined" });
-        }
+  // Check images
+  for (const [id, path] of Object.entries(assets.images || {})) {
+    if (!path || typeof path !== "string") {
+      missing.push({ type: "image", id, path: path ?? "undefined" });
     }
+  }
 
-    // Log warnings in preview mode
-    if (missing.length > 0 || warnings.length > 0) {
-        if (options.mode === "preview") {
-            for (const m of missing) {
-                console.warn(`[Asset] Missing ${m.type}: ${m.id} (${m.path})`);
-            }
-            for (const w of warnings) {
-                console.warn(`[Asset] ${w}`);
-            }
-        } else if (options.strict && missing.length > 0) {
-            // In render mode with strict, throw error
-            throw new Error(
-                `Missing assets:\\n${missing.map(m => `  ${m.type}: ${m.id}`).join("\\n")}`
-            );
-        }
+  // Log warnings in preview mode
+  if (missing.length > 0 || warnings.length > 0) {
+    if (options.mode === "preview") {
+      for (const m of missing) {
+        console.warn(`[Asset] Missing ${m.type}: ${m.id} (${m.path})`);
+      }
+      for (const w of warnings) {
+        console.warn(`[Asset] ${w}`);
+      }
+    } else if (options.strict && missing.length > 0) {
+      // In render mode with strict, throw error
+      throw new Error(
+        `Missing assets:\\n${missing.map((m) => `  ${m.type}: ${m.id}`).join("\\n")}`,
+      );
     }
+  }
 
-    return {
-        valid: missing.length === 0,
-        missing,
-        warnings,
-    };
+  return {
+    valid: missing.length === 0,
+    missing,
+    warnings,
+  };
 }
 
 // =============================================================================
@@ -316,133 +332,137 @@ function validateAssets(
 // =============================================================================
 
 export interface EpisodeInput {
-    id: string;
-    durationInFrames: number;
-    fps: number;
-    events: RuntimeEvent[];
-    sceneIR?: SceneIRLike;
-    initialWorld?: WorldState;
-    title?: string;
+  id: string;
+  durationInFrames: number;
+  fps: number;
+  events: RuntimeEvent[];
+  sceneIR?: SceneIRLike;
+  initialWorld?: WorldState;
+  title?: string;
 }
 
 /**
  * EpisodeDefinition - DSL episode output (from episode() call)
  */
 export interface EpisodeDefinition {
-    episodeId: string;
-    fps?: number;
-    durationInFrames?: number;
-    devices: Array<{
-        deviceId: string;
-        platform?: "ios" | "android";
-        appId?: string;
-        profileId?: string;
-        conversations?: any[];
-        beats?: any[];
-    }>;
+  episodeId: string;
+  fps?: number;
+  durationInFrames?: number;
+  devices: Array<{
+    deviceId: string;
+    platform?: "ios" | "android";
+    appId?: string;
+    profileId?: string;
+    conversations?: any[];
+    beats?: any[];
+  }>;
 }
 
 /**
  * Check if input is an EpisodeDefinition (from DSL)
  */
-function isEpisodeDefinition(input: EpisodeInput | EpisodeDefinition): input is EpisodeDefinition {
-    return 'episodeId' in input && Array.isArray((input as any).devices);
+function isEpisodeDefinition(
+  input: EpisodeInput | EpisodeDefinition,
+): input is EpisodeDefinition {
+  return "episodeId" in input && Array.isArray((input as any).devices);
 }
 
 /**
  * prepareEpisode - The single entry point for creating a CompiledEpisode
- * 
+ *
  * Accepts EITHER:
  * - EpisodeDefinition (from DSL) - compiles internally
  * - EpisodeInput (legacy) - uses pre-compiled events
- * 
+ *
  * @param input - Episode definition or pre-compiled input
  * @param plugins - Array of plugins to register
  * @param options - Prepare options
  * @returns CompiledEpisode ready for rendering
  */
 export function prepareEpisode(
-    input: EpisodeInput | EpisodeDefinition,
-    plugins: TokovoPluginContract[] = [],
-    options: PrepareOptions = {}
+  input: EpisodeInput | EpisodeDefinition,
+  plugins: TokovoPluginContract[] = [],
+  options: PrepareOptions = {},
 ): CompiledEpisode {
-    const { strict = true, mode = "preview", includeDebug = true } = options;
-    const effectiveOptions = { ...options, strict, mode };
+  const { strict = true, mode = "preview", includeDebug = true } = options;
+  const effectiveOptions = { ...options, strict, mode };
 
-    // 1. Build plugin registry
-    const registry = buildPluginRegistry(plugins);
+  // 1. Build plugin registry
+  const registry = buildPluginRegistry(plugins);
 
-    // 2. Handle EpisodeDefinition vs EpisodeInput
-    let episodeInput: EpisodeInput;
+  // 2. Handle EpisodeDefinition vs EpisodeInput
+  let episodeInput: EpisodeInput;
 
-    if (isEpisodeDefinition(input)) {
-        // NEW: Compile internally
-        if (!compileEpisode) {
-            throw new Error(
-                "[prepareEpisode] EpisodeDefinition passed but @tokovo/compiler not available. " +
-                "Either install @tokovo/compiler or pass pre-compiled EpisodeInput."
-            );
-        }
-
-        console.log("[prepareEpisode] Compiling episode internally...");
-        const { timeline } = compileEpisode(input);
-
-        episodeInput = {
-            id: input.episodeId,
-            fps: input.fps || 30,
-            durationInFrames: input.durationInFrames || 600,
-            events: timeline.ops as RuntimeEvent[],
-            sceneIR: {
-                id: input.episodeId,
-                fps: input.fps,
-                durationInFrames: input.durationInFrames,
-                devices: input.devices.map(d => ({
-                    id: d.deviceId,
-                    platform: d.platform,
-                    appId: d.appId,
-                    profileId: d.profileId,
-                    conversations: d.conversations,
-                })),
-            },
-        };
-    } else {
-        // Legacy: Already compiled
-        episodeInput = input;
+  if (isEpisodeDefinition(input)) {
+    // NEW: Compile internally
+    if (!compileEpisode) {
+      throw new Error(
+        "[prepareEpisode] EpisodeDefinition passed but @tokovo/compiler not available. " +
+          "Either install @tokovo/compiler or pass pre-compiled EpisodeInput.",
+      );
     }
 
-    // 3. Create or use initial world
-    const sceneIR: SceneIRLike = episodeInput.sceneIR || { id: episodeInput.id };
-    const initialWorld = episodeInput.initialWorld || deriveInitialWorld(sceneIR, registry);
+    console.log("[prepareEpisode] Compiling episode internally...");
+    const { timeline } = compileEpisode(input);
 
-    // 4. Sort events
-    const sortedEvents = sortEvents(episodeInput.events);
-
-    // 5. Validate
-    validateEpisode({ events: sortedEvents, initialWorld }, effectiveOptions);
-
-    // 6. Collect assets
-    const assets = collectAssets(registry);
-
-    // 7. Build compiled episode
-    const compiled: CompiledEpisode = {
-        id: episodeInput.id,
-        title: episodeInput.title,
-        durationInFrames: episodeInput.durationInFrames,
-        fps: episodeInput.fps,
-        initialWorld,
-        events: sortedEvents,
-        assets,
+    episodeInput = {
+      id: input.episodeId,
+      fps: input.fps || 30,
+      durationInFrames: input.durationInFrames || 600,
+      events: timeline.ops as RuntimeEvent[],
+      sceneIR: {
+        id: input.episodeId,
+        fps: input.fps,
+        durationInFrames: input.durationInFrames,
+        devices: input.devices.map((d) => ({
+          id: d.deviceId,
+          platform: d.platform,
+          appId: d.appId,
+          profileId: d.profileId,
+          conversations: d.conversations,
+        })),
+      },
     };
+  } else {
+    // Legacy: Already compiled
+    episodeInput = input;
+  }
 
-    // 8. Add debug info
-    if (includeDebug) {
-        compiled.debug = {
-            buildTimestamp: Date.now(),
-            sourceEpisodeId: episodeInput.id,
-        };
-    }
+  // 3. Create or use initial world
+  const sceneIR: SceneIRLike = episodeInput.sceneIR || { id: episodeInput.id };
+  const initialWorld =
+    episodeInput.initialWorld || deriveInitialWorld(sceneIR, registry);
 
-    return compiled;
+  // 4. Sort events
+  const sortedEvents = sortEvents(episodeInput.events);
+
+  // 5. Validate
+  validateEpisode({ events: sortedEvents, initialWorld }, effectiveOptions);
+
+  // 6. Collect assets
+  const assets = collectAssets(registry);
+
+  // 7. Build compiled episode with event index for O(1) lookups
+  const compiled: CompiledEpisode = {
+    id: episodeInput.id,
+    title: episodeInput.title,
+    durationInFrames: episodeInput.durationInFrames,
+    fps: episodeInput.fps,
+    initialWorld,
+    events: sortedEvents,
+    eventIndex: createEventIndex(sortedEvents as any),
+    assets,
+  };
+
+  // 8. Add debug info
+  if (includeDebug) {
+    compiled.debug = {
+      buildTimestamp: Date.now(),
+      sourceEpisodeId: episodeInput.id,
+    };
+  }
+
+  return compiled;
 }
 
 // =============================================================================
@@ -450,35 +470,49 @@ export function prepareEpisode(
 // =============================================================================
 
 export interface RunOptions {
-    mode: "preview" | "render";
-    onError?: (error: Error, event: RuntimeEvent) => void;
+  mode: "preview" | "render";
+  onError?: (error: Error, event: RuntimeEvent) => void;
 }
 
 /**
  * run - Apply events up to frame and return world state
- * 
+ *
  * @param episode - CompiledEpisode from prepareEpisode()
  * @param frame - Current frame number
  * @param options - Run options
  * @returns WorldState at the given frame
  */
 export function runEpisode(
-    episode: CompiledEpisode,
-    frame: number,
-    options: RunOptions = { mode: "preview" }
+  episode: CompiledEpisode,
+  frame: number,
+  options: RunOptions = { mode: "preview" },
 ): WorldState {
-    // Get events up to current frame
-    const eventsToApply = episode.events.filter(e => e.at <= frame);
-
-    // Run replay
-    // Note: RuntimeEvent and TimelineEvent are structurally compatible
-    // The type systems diverged historically but both work with replay()
-    return replay(episode.initialWorld, eventsToApply as any, frame);
+  // Run replay with events - let replay() handle the filtering
+  // Note: RuntimeEvent and TimelineEvent are structurally compatible
+  // The type systems diverged historically but both work with replay()
+  return replay(
+    episode.initialWorld,
+    episode.events as any,
+    frame,
+    { mode: options.mode },
+    episode.eventIndex,
+  );
 }
 
 // =============================================================================
 // RE-EXPORT TYPES
 // =============================================================================
 
-export type { CompiledEpisode, PrepareOptions, AssetManifest } from "../types/compiled-episode";
-export type { RuntimeEvent, AppRuntimeEvent, DeviceRuntimeEvent, CameraRuntimeEvent, AudioRuntimeEvent, KeyboardRuntimeEvent } from "../types/runtime-event";
+export type {
+  CompiledEpisode,
+  PrepareOptions,
+  AssetManifest,
+} from "../types/compiled-episode";
+export type {
+  RuntimeEvent,
+  AppRuntimeEvent,
+  DeviceRuntimeEvent,
+  CameraRuntimeEvent,
+  AudioRuntimeEvent,
+  KeyboardRuntimeEvent,
+} from "../types/runtime-event";

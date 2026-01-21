@@ -1,12 +1,12 @@
 /**
  * Production Episodes
- * 
+ *
  * Import this file to auto-register all production episodes.
- * 
+ *
  * @example
  * // In Root.tsx:
  * import "@tokovo/episodes/src/production";
- * 
+ *
  * @see docs-v2/EPISODE-ARCH.md
  */
 
@@ -19,6 +19,6 @@ import "./complete-showcase.episode";
 import "./profile-focus-demo.episode";
 import "./bakchodi-gang.episode";
 import "./instagram-dm-demo.episode";
+import "./cheating-exposed.episode";
 
 // Add new episodes here as they are created
-

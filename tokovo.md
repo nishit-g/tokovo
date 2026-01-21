@@ -59,6 +59,44 @@ apps/
     remotion.config.ts
     tsconfig.json
 packages/
+  apps-instagram/
+    src/
+      config/
+        index.ts
+        theme.ts
+      dsl/
+        index.ts
+        track-builder.ts
+      ir/
+        index.ts
+        payloads.ts
+        track-event.ts
+      lowering/
+        handler.ts
+        index.ts
+      runtime/
+        index.ts
+        initial-state.ts
+        reducer.ts
+      types/
+        index.ts
+        state.ts
+      views/
+        ios/
+          BottomNav.tsx
+          DMScreen.tsx
+          Header.tsx
+          HomeScreen.tsx
+          index.ts
+          Post.tsx
+          Stories.tsx
+        index.ts
+        InstagramApp.tsx
+      anchors.ts
+      index.ts
+      plugin.ts
+    package.json
+    tsconfig.json
   apps-whatsapp/
     src/
       assets/
@@ -92,10 +130,11 @@ packages/
           TabNavigation.tsx
           theme.ts
           TypingIndicator.tsx
+        BubbleTail.tsx
         ChatsListScreen.tsx
+        DateSeparator.tsx
         Header.tsx
         index.ts
-        iOSStatusBar.tsx
         LinkPreview.tsx
         MediaBubbles.tsx
         MessageBubble.tsx
@@ -172,9 +211,11 @@ packages/
           README.md
         index.ts
         strategy.ts
+      anchors.ts
       index.ts
       layout.ts
       plugin.ts
+      styles.ts
     LAYOUT_LOGIC.md
     package.json
     README.md
@@ -266,6 +307,7 @@ packages/
         notification.ts
         plugin-contract.ts
         runtime-event.ts
+        statusbar-theme.ts
         world-state.ts
       utils/
         event-utils.ts
@@ -617,8 +659,10 @@ packages/
     src/
       production/
         bakchodi-bros.episode.ts
+        bakchodi-gang.episode.ts
         complete-showcase.episode.ts
         index.ts
+        instagram-dm-demo.episode.ts
         keyboard-typing-demo.episode.ts
         notification-demo.episode.ts
         profile-focus-demo.episode.ts
@@ -796,6 +840,15 @@ turbo.json
 
 # Files
 
+## File: apps/video-runner/src/index.ts
+````typescript
+import { registerRoot } from "remotion";
+import { RemotionRoot } from "./Root";
+import "@tokovo/device-keyboard"; // Register keyboard audio rules
+
+registerRoot(RemotionRoot);
+````
+
 ## File: apps/video-runner/remotion.config.ts
 ````typescript
 import { Config } from "@remotion/cli/config";
@@ -818,6 +871,26 @@ Config.setOverwriteOutput(true);
         "remotion.config.ts"
     ]
 }
+````
+
+## File: packages/apps-whatsapp/src/assets/metadata.tsx
+````typescript
+import React from "react";
+import { AppMetadata } from "@tokovo/core";
+
+export const WhatsAppIcon = (
+    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="white">
+        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+    </svg>
+);
+
+export const WhatsAppMetadata: Partial<AppMetadata> & { name: string } = {
+    name: "WhatsApp",
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: WhatsAppIcon,
+    viewStrategy: "CHAT"
+};
 ````
 
 ## File: packages/apps-whatsapp/src/components/icons/index.tsx
@@ -889,784 +962,495 @@ export const PauseIcon = () => (
 );
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/Header.tsx
+## File: packages/apps-whatsapp/src/components/ios/ChatListHeader.tsx
 ````typescript
-import { UI_CONSTANTS } from "../../config/layout-config";
+import React from "react";
+import { CameraFillIcon, NewChatIcon, SearchIcon, FilterIcon } from "./Icons";
 import { getTheme } from "./theme";
 
-export const Header: React.FC<{
-    contactName: string;
-    avatarUrl?: string;
-    status: string;
+export const ChatListHeader: React.FC<{
     safeAreaTop?: number;
-}> = ({ contactName, avatarUrl, status, safeAreaTop = 47 }) => {
+}> = ({ safeAreaTop = 47 }) => {
     const theme = getTheme("ios");
-
-    // Total header height = Safe Area + Content Height
-    const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
-    const totalHeight = safeAreaTop + contentHeight;
 
     return (
         <div style={{
-            height: totalHeight,
-            backgroundColor: theme.colors.headerBg,
-            paddingTop: safeAreaTop,
-            display: "flex",
-            alignItems: "center",
-            paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
-            paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
-            borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+            backgroundColor: "rgba(255, 255, 255, 0.92)", // Translucent
             backdropFilter: "blur(20px)",
-            position: "relative",
+            WebkitBackdropFilter: "blur(20px)",
+            display: "flex",
+            flexDirection: "column",
             zIndex: 100,
-            boxSizing: 'border-box'
+            position: "sticky",
+            top: 0,
+            borderBottom: "0.5px solid rgba(0,0,0,0.15)"
         }}>
-            {/* Back Button */}
+            {/* Top Bar: Edit & Actions */}
             <div style={{
-                marginRight: 5,
-                color: theme.colors.primary,
-                display: 'flex',
-                alignItems: 'center'
+                paddingTop: safeAreaTop,
+                paddingLeft: 20,
+                paddingRight: 20,
+                height: 44 + safeAreaTop, // Standard nav bar height + safe area
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                boxSizing: 'border-box'
             }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M11.5 19L4.5 12L11.5 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span style={{ fontSize: 17, marginLeft: -2 }}>95</span>
-            </div>
-
-            {/* Avatar */}
-            <div style={{
-                width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
-                height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
-                borderRadius: "50%",
-                backgroundColor: "#ddd",
-                marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
-                overflow: "hidden",
-                flexShrink: 0
-            }}>
-                {avatarUrl ? (
-                    <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                ) : (
-                    <div style={{ width: "100%", height: "100%", background: "#ccc" }} />
-                )}
-            </div>
-
-            {/* Name & Status */}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                {/* Edit Button */}
                 <div style={{
-                    fontSize: 16, // Standard 16pt
-                    fontWeight: "600",
-                    color: "#000",
-                    lineHeight: "20px"
+                    color: theme.colors.primary,
+                    fontSize: 17,
+                    fontWeight: "400",
+                    cursor: "pointer"
                 }}>
-                    {contactName}
+                    Edit
                 </div>
-                <div style={{
-                    fontSize: 12, // Standard 12pt caption
-                    color: "#666",
-                    lineHeight: "14px"
-                }}>
-                    {status}
+
+                {/* Right Actions */}
+                <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+                    <div style={{ cursor: "pointer" }}>
+                        <CameraFillIcon color={theme.colors.primary} />
+                    </div>
+                    <div style={{
+                        width: 24,
+                        height: 24,
+                        borderRadius: "50%",
+                        backgroundColor: "rgba(0,0,0,0.05)", // Subtle background for plus
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer"
+                    }}>
+                        <NewChatIcon color={theme.colors.primary} />
+                    </div>
                 </div>
             </div>
 
-            {/* Actions */}
-            <div style={{ display: "flex", gap: 20, paddingRight: 5 }}>
-                {/* Video Call */}
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                    <path d="M15 10L20 6V18L15 14V10Z" stroke={theme.colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M4 8H11C11.55 8 12 8.45 12 9V15C12 15.55 11.55 16 11 16H4C3.45 16 3 15.55 3 15V9C3 8.45 3.45 8 4 8Z" stroke={theme.colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {/* Phone Call */}
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                    <path d="M22 16.92V19.92C22 20.4706 21.5532 20.916 21.0028 20.916C20.6725 20.916 16.6 20 16.6 20C16.6 20 13 18.5 10 15.5C7 12.5 5.5 8.9 5.5 8.9C5.5 8.9 4.6 4.8 4.6 4.47C4.6 3.92 5.04543 3.47 5.59259 3.47H8.59259C8.97495 3.47 9.32432 3.72221 9.44477 4.08354C9.55998 4.42878 9.8 5 9.8 5C9.8 5 10.3 6.3 10.5 6.7C10.7 7.1 10.5 7.6 10.2 7.9L8.90001 9.2C8.90001 9.2 10.6 13.9 14.3 17.6C18 21.3 22.8 23 22.8 23L24.1 21.7C24.4 21.4 24.9 21.2 25.3 21.4C25.7 21.6 27 22.1 27 22.1C27 22.1 27.5 22.3 27.9 22.5C28.2 22.6 28.5 22.9 28.5 23.3V26.3" stroke={theme.colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M22 16.92V19.92C22 20.4723 21.5523 20.92 21.0001 20.92C18.6791 20.92 14.6296 20.1751 11.2 16.8C7.77035 13.4249 7.02543 9.37543 7.02543 7.05445C7.02543 6.50222 7.47314 6.05445 8.02543 6.05445H11.0254" stroke={theme.colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    {/* Simplified path for phone */}
-                    <path d="M22 16.92V19.92C22 20.47 21.55 20.92 21 20.92C16.93 20.92 13.19 19.33 10.3 16.44C7.41 13.55 5.82 9.81 5.82 5.74C5.82 5.19 6.27 4.74 6.82 4.74H9.82C10.2 4.74 10.55 4.97 10.71 5.31C11 5.92 11.35 6.8 11.64 7.63C11.82 8.14 11.75 8.7 11.37 9.08L9.74 10.71C11.83 14.89 15.19 18.25 19.37 20.34L21 18.71C21.38 18.33 21.94 18.26 22.45 18.44C23.28 18.73 24.16 19.08 24.77 19.37C25.11 19.53 25.34 19.88 25.34 20.26V23.26" stroke={theme.colors.primary} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+            {/* Large Title */}
+            <div style={{
+                padding: "8px 20px 12px 20px",
+                fontSize: 34,
+                fontWeight: "bold",
+                color: "#000",
+                display: "flex",
+                alignItems: "center"
+            }}>
+                Chats
+            </div>
+
+            {/* Search Bar */}
+            <div style={{ padding: "0 20px 12px 20px" }}>
+                <div style={{
+                    backgroundColor: "rgba(118, 118, 128, 0.12)",
+                    borderRadius: 10,
+                    height: 36,
+                    display: "flex",
+                    alignItems: "center",
+                    padding: "0 8px"
+                }}>
+                    <SearchIcon color="#8E8E93" />
+                    <input
+                        type="text"
+                        placeholder="Search"
+                        style={{
+                            border: "none",
+                            background: "transparent",
+                            fontSize: 17,
+                            marginLeft: 6,
+                            color: "#000",
+                            outline: "none",
+                            width: "100%",
+                            flex: 1
+                        }}
+                    />
+                </div>
+            </div>
+
+            {/* Filter Tabs (Chips) */}
+            <div style={{
+                padding: "0 20px 12px 20px",
+                display: "flex",
+                gap: 8,
+            }}>
+                {["All", "Unread", "Groups"].map((filter, index) => (
+                    <div key={filter} style={{
+                        padding: "6px 14px",
+                        backgroundColor: index === 0 ? "rgba(118, 118, 128, 0.12)" : "transparent",
+                        borderRadius: 16,
+                        fontSize: 15,
+                        fontWeight: index === 0 ? "600" : "400",
+                        color: index === 0 ? "#006ee6" : "#8E8E93", // Active green/blue tint? iOS Whatsapp uses Green for active chip text actually, or default grey bg
+                        cursor: "pointer",
+                        // WhatsApp style: selected is slightly darker grey bg with green text, unselected is plain text? 
+                        // Actually WA iOS: "All", "Unread", "Groups" are chips. Active (All) is usually default. 
+                        // Let's stick to a clean look: Selected = Grey BG + Green/Blue Text. Unselected = Grey Text.
+                    }}>
+                        {filter}
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/InputArea.tsx
+## File: packages/apps-whatsapp/src/components/ios/ChatListItem.tsx
 ````typescript
 import React from "react";
+import { DoubleCheckIcon } from "./Icons";
+import { UI_CONSTANTS } from "../../config/layout-config";
+
+interface ChatListItemProps {
+    id: string;
+    name: string;
+    avatarUrl?: string;
+    lastMessage?: string;
+    timestamp?: string;
+    unreadCount?: number;
+    status?: "sent" | "delivered" | "read";
+    isGroup?: boolean; // For future group icon support
+    isTyping?: boolean; // For "Typing..." state
+    isLast?: boolean; // To hide separator on last item
+}
+
+export const ChatListItem: React.FC<ChatListItemProps> = ({
+    name,
+    avatarUrl,
+    lastMessage,
+    timestamp,
+    unreadCount = 0,
+    status,
+    isTyping,
+    isLast
+}) => {
+    return (
+        <div style={{
+            display: "flex",
+            backgroundColor: "white",
+            cursor: "pointer",
+            height: 76,
+            alignItems: "center",
+        }}>
+            {/* Avatar (Left, Fixed) */}
+            <div style={{
+                width: 76,
+                height: 76,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+            }}>
+                <div style={{
+                    width: 60,
+                    height: 60,
+                    borderRadius: "50%",
+                    backgroundColor: "#E0E0E0",
+                    overflow: "hidden",
+                }}>
+                    {avatarUrl ? (
+                        <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    ) : (
+                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#ccc", color: "white", fontSize: 24 }}>
+                            {name.charAt(0)}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Content (Right, with Separator) */}
+            <div style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                height: "100%",
+                paddingRight: 16, // Right Margin
+                borderBottom: isLast ? "none" : "0.5px solid #C6C6C8", // Separator
+                minWidth: 0
+            }}>
+                {/* Top Row: Name and Time */}
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, alignItems: "baseline" }}>
+                    <div style={{
+                        fontWeight: "600",
+                        fontSize: 17,
+                        color: "#000",
+                        letterSpacing: "-0.24px",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginRight: 8
+                    }}>
+                        {name}
+                    </div>
+                    <div style={{
+                        fontSize: 14,
+                        color: unreadCount > 0 ? "#007AFF" : "#8E8E93",
+                        flexShrink: 0
+                    }}>
+                        {timestamp}
+                    </div>
+                </div>
+
+                {/* Bottom Row: Message and Status */}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div style={{
+                        fontSize: 15,
+                        color: "#8E8E93",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        maxWidth: "90%",
+                        letterSpacing: "-0.24px"
+                    }}>
+                        {isTyping ? (
+                            <span style={{ color: "#007AFF" }}>typing...</span>
+                        ) : (
+                            <>
+                                {status && !unreadCount && (
+                                    <span style={{ display: "flex", alignItems: "center" }}>
+                                        <DoubleCheckIcon read={status === "read"} size={16} />
+                                    </span>
+                                )}
+                                <span>{lastMessage}</span>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Unread Badge */}
+                    {unreadCount > 0 && (
+                        <div style={{
+                            backgroundColor: "#007AFF",
+                            color: "white",
+                            borderRadius: "50%",
+                            minWidth: 20,
+                            height: 20,
+                            padding: "0 5px",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 14,
+                            fontWeight: "600",
+                            lineHeight: 1
+                        }}>
+                            {unreadCount}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/Icons.tsx
+````typescript
+import React from "react";
+import { Theme } from "./theme";
+
+// Standard icon size for touch targets is ~44x44, icons themselves usually 24x24 or 30x30
+
+export const ChevronLeftIcon = ({ color }: { color: string }) => (
+    <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
+        <path d="M10 2L2 10L10 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const VideoCallIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 28 20" fill="none">
+        <rect x="1" y="3" width="18" height="14" rx="3" stroke={color} strokeWidth="1.8" />
+        <path d="M19 8L26 4V16L19 12V8Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PhoneCallIcon = ({ color }: { color: string }) => (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const PlusCircleIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
+        <circle cx="15" cy="15" r="14" stroke={color} strokeWidth="1.8" />
+        <path d="M15 8V22M8 15H22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const CameraFillIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="20" viewBox="0 0 28 24" fill={color}>
+        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
+    </svg>
+);
+
+export const MicrophoneFillIcon = ({ color }: { color: string }) => (
+    <svg width="18" height="24" viewBox="0 0 22 30" fill={color}>
+        <rect x="6" y="2" width="10" height="16" rx="5" />
+        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none" />
+        <path d="M11 23V28M8 28H14" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+export const DoubleCheckIcon = ({ read, size = 16 }: { read?: boolean; size?: number }) => (
+    <svg width={size} height={size * 0.6} viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ==========================================
+// UI ICONS
+// ==========================================
+
+export const SearchIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M21 21L16.65 16.65" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const FilterIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const ArchiveIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M20.5 5H3.5C2.67157 5 2 5.67157 2 6.5V8H22V6.5C22 5.67157 21.3284 5 20.5 5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M3 8V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M10 12L12 14L14 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M12 14V10" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const NewChatIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M12 5V19M5 12H19" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    // Note: iOS standard is often a square with pencil, but plus is used too. Keeping plus for simplicity or circle-plus.
+    // iOS WhatsApp top-right is actually a square with a pencil (Compose).
+);
+
+export const ComposeIcon = ({ color }: { color: string }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+// ==========================================
+// TAB BAR ICONS
+// ==========================================
+
+export const UpdatesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth={filled ? "0" : "2"} fill={filled ? color : "none"} />
+        {filled ? (
+            <path d="M12 6V12L16 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        ) : null}
+        {!filled ? (<circle cx="12" cy="12" r="2" fill={color} />) : null}
+        {/* Simplified conceptual icon for Updates/Status */}
+    </svg>
+);
+
+export const CallsTabIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M22 16.92V19.92C22 20.4706 21.5532 20.916 21.0028 20.916C20.6725 20.916 16.6 20 16.6 20C16.6 20 13 18.5 10 15.5C7 12.5 5.5 8.9 5.5 8.9C5.5 8.9 4.6 4.8 4.6 4.47C4.6 3.92 5.04543 3.47 5.59259 3.47H8.59259C8.97495 3.47 9.32432 3.72221 9.44477 4.08354C9.55998 4.42878 9.8 5 9.8 5C9.8 5 10.3 6.3 10.5 6.7C10.7 7.1 10.5 7.6 10.2 7.9L8.90001 9.2C8.90001 9.2 10.6 13.9 14.3 17.6C18 21.3 22.8 23 22.8 23L24.1 21.7C24.4 21.4 24.9 21.2 25.3 21.4C25.7 21.6 27 22.1 27 22.1C27 22.1 27.5 22.3 27.9 22.5C28.2 22.6 28.5 22.9 28.5 23.3V26.3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const CommunitiesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.01 6.11683 19.0101 7.005C19.0103 7.89318 18.7127 8.75618 18.1682 9.45788C17.6237 10.1596 16.861 10.6601 16 10.88" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+
+export const ChatsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11H21 11.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    // Just using a single chat bubble for simplicity, standard "Chats" icon is two bubbles often.
+);
+
+export const SettingsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
+        <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M19.4 15C19.78 14.53 20 13.92 20 13.25V10.75C20 10.08 19.78 9.47 19.4 9L21.06 6.13C21.36 5.61 21.19 4.95 20.67 4.65L18.5 3.4C17.98 3.1 17.32 3.27 17.02 3.79L15.35 6.66C14.77 6.42 14.16 6.27 13.52 6.22L13.16 2.94C13.09 2.34 12.59 1.9 12 1.9H9.5C8.91 1.9 8.41 2.34 8.34 2.94L7.98 6.22C7.34 6.27 6.73 6.42 6.15 6.66L4.48 3.79C4.18 3.27 3.52 3.1 3 3.4L0.830002 4.65C0.310002 4.95 0.140002 5.61 0.440002 6.13L2.1 9C1.72 9.47 1.5 10.08 1.5 10.75V13.25C1.5 13.92 1.72 14.53 2.1 15L0.440002 17.87C0.140002 18.39 0.310002 19.05 0.830002 19.35L3 20.6C3.52 20.9 4.18 20.73 4.48 20.21L6.15 17.34C6.73 17.58 7.34 17.73 7.98 17.78L8.34 21.06C8.41 21.66 8.91 22.1 9.5 22.1H12C12.59 22.1 13.09 21.66 13.16 21.06L13.52 17.78C14.16 17.73 14.77 17.58 15.35 17.34L17.02 20.21C17.32 20.73 17.98 20.9 18.5 20.6L20.67 19.35C21.19 19.05 21.36 18.39 21.06 17.87L19.4 15Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
+````
+
+## File: packages/apps-whatsapp/src/components/ios/TabNavigation.tsx
+````typescript
+import React from "react";
+import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons";
 import { getTheme } from "./theme";
-import { PlusCircleIcon, CameraFillIcon, MicrophoneFillIcon } from "./Icons";
 
-// Logical height for Input Area
-// ~48-50px for the input field itself
-// Total bar height depending on content, usually ~60-80px + safe area
-
-export const InputArea: React.FC<{
-    text?: string;
-    showCursor?: boolean;
+export const TabNavigation: React.FC<{
+    activeTab?: string;
     safeAreaBottom?: number;
-}> = ({ text = "", showCursor = false, safeAreaBottom = 34 }) => {
+}> = ({ activeTab = "chats", safeAreaBottom = 34 }) => {
     const theme = getTheme("ios");
+    const primaryColor = theme.colors.primary; // Blue usually
+    const inactiveColor = "#8E8E93";
 
-    const hasContent = text.length > 0;
-
-    // Standard iOS bottom padding (home indicator) is 34px
-    const paddingBottom = Math.max(safeAreaBottom, 20);
+    const tabs = [
+        { id: "updates", label: "Updates", Icon: UpdatesIcon },
+        { id: "calls", label: "Calls", Icon: CallsTabIcon },
+        { id: "communities", label: "Communities", Icon: CommunitiesIcon },
+        { id: "chats", label: "Chats", Icon: ChatsIcon },
+        { id: "settings", label: "Settings", Icon: SettingsIcon },
+    ];
 
     return (
         <div style={{
-            backgroundColor: "#F6F6F6", // Or #FFFFFF depending on exact version
-            borderTop: "1px solid rgba(0,0,0,0.1)",
-            padding: `10px 16px ${paddingBottom}px 16px`,
+            backgroundColor: "rgba(250, 250, 250, 0.9)", // Translucent bar
+            backdropFilter: "blur(20px)",
+            borderTop: "0.5px solid rgba(0,0,0,0.3)",
             display: "flex",
-            alignItems: "center",
-            gap: 12, // Standard gap
+            justifyContent: "space-between",
+            paddingBottom: safeAreaBottom,
+            paddingTop: 8,
+            paddingLeft: 16,
+            paddingRight: 16,
             position: "absolute",
             bottom: 0,
             left: 0,
             right: 0,
-            backdropFilter: "blur(20px)", // Glassmorphism
+            zIndex: 1000
         }}>
-            {/* Plus Button */}
-            <div style={{ paddingBottom: 6 }}>
-                <PlusCircleIcon color={theme.colors.primary} />
-            </div>
-
-            {/* Input Field */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20, // Rounded pill
-                border: "1px solid rgba(0,0,0,0.1)",
-                padding: "8px 12px",
-                minHeight: 36,
-                display: "flex",
-                alignItems: "center"
-            }}>
-                <span style={{
-                    fontSize: 16,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-                    color: "#000",
-                    lineHeight: "20px"
-                }}>
-                    {text}
-                    {showCursor && (
-                        <span style={{
-                            display: "inline-block",
-                            width: 2,
-                            height: 18,
-                            backgroundColor: theme.colors.primary,
-                            marginLeft: 1,
-                            verticalAlign: "middle",
-                            animation: "blink 1s step-end infinite"
-                        }} />
-                    )}
-                </span>
-                {!hasContent && (
-                    <span style={{
-                        fontSize: 16,
-                        color: "#C7C7CC",
-                        position: "absolute",
-                        pointerEvents: "none"
-                    }}>
-                        Message
-                    </span>
-                )}
-            </div>
-
-            {/* Right Icons: Camera if empty, Mic if typing (or both in some versions) */}
-            {hasContent ? (
-                // Send button implies Mic usually transforms or just send icon
-                <div style={{ paddingBottom: 6 }}>
-                    {/* Using Mic for now as visual placeholder, strictly speaking it changes to Send */}
-                    <MicrophoneFillIcon color={theme.colors.primary} />
-                </div>
-            ) : (
-                <div style={{ display: "flex", gap: 16, paddingBottom: 6 }}>
-                    <CameraFillIcon color={theme.colors.primary} />
-                    <MicrophoneFillIcon color={theme.colors.primary} />
-                </div>
-            )}
-
-            <style>{`
-                @keyframes blink {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0; }
-                }
-            `}</style>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-whatsapp/src/components/ios/MessageContent.tsx
-````typescript
-import React from "react";
-import { MessageData } from "../../types";
-import { getTheme } from "./theme";
-
-// Sub-components can be extracted to separate files if they grow complex
-
-const TextContent: React.FC<{ text: string }> = ({ text }) => (
-    <div style={{
-        fontSize: 16,
-        lineHeight: "21px",
-        color: "#000",
-        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
-        wordWrap: "break-word",
-        whiteSpace: "pre-wrap"
-    }}>
-        {text}
-    </div>
-);
-
-const ImageContent: React.FC<{ url: string; caption?: string }> = ({ url, caption }) => (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-        <img
-            src={url}
-            alt="Shared image"
-            style={{
-                borderRadius: 8,
-                maxWidth: "100%",
-                marginBottom: caption ? 4 : 0,
-                display: "block"
-            }}
-        />
-        {caption && <TextContent text={caption} />}
-    </div>
-);
-
-const VideoContent: React.FC<{ url?: string; thumbnail?: string; caption?: string; duration?: number }> = ({ url, thumbnail, caption, duration }) => (
-    <div style={{ display: "flex", flexDirection: "column" }}>
-        <div style={{ position: "relative", borderRadius: 8, overflow: "hidden" }}>
-            <img
-                src={thumbnail || "https://placehold.co/300x200?text=Video"}
-                alt="Video thumbnail"
-                style={{ width: "100%", display: "block" }}
-            />
-            {/* Play Button Overlay */}
-            <div style={{
-                position: "absolute", inset: 0,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                backgroundColor: "rgba(0,0,0,0.3)"
-            }}>
-                <div style={{
-                    width: 48, height: 48, borderRadius: 24,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    display: "flex", alignItems: "center", justifyContent: "center"
-                }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white">
-                        <path d="M8 5v14l11-7z" />
-                    </svg>
-                </div>
-            </div>
-            {duration && (
-                <span style={{
-                    position: "absolute", bottom: 8, left: 8,
-                    fontSize: 12, color: "white", padding: "2px 6px",
-                    backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 4
-                }}>
-                    {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}
-                </span>
-            )}
-        </div>
-        {caption && <div style={{ marginTop: 4 }}><TextContent text={caption} /></div>}
-    </div>
-);
-
-const SystemContent: React.FC<{ text: string }> = ({ text }) => {
-    const theme = getTheme("ios");
-    return (
-        <div style={{
-            alignSelf: "center",
-            backgroundColor: "rgba(0,0,0,0.2)", // "Encyclopedia" style
-            borderRadius: 8,
-            padding: "4px 8px",
-            fontSize: 12,
-            color: "#333", // Or theme.colors.systemText
-            marginBottom: 8,
-            marginTop: 8,
-            textAlign: "center",
-            maxWidth: "80%",
-            boxShadow: "0 1px 1px rgba(255,255,255,0.4)"
-        }}>
-            {text}
-        </div>
-    );
-};
-
-
-export const MessageContent: React.FC<{ message: MessageData }> = ({ message }) => {
-    switch (message.type) {
-        case "text":
-            return <TextContent text={message.text} />;
-        case "image":
-            return <ImageContent url={message.imageUrl} caption={message.caption} />;
-        case "video":
-            return <VideoContent url={message.videoUrl} thumbnail={message.thumbnailUrl} duration={message.duration} caption={message.caption} />;
-
-        // case "voice": return <VoiceContent ... /> // TODO
-
-        case "system":
-            return <SystemContent text={message.text} />;
-
-        default:
-            return <TextContent text="[Unsupported message type]" />;
-    }
-};
-````
-
-## File: packages/apps-whatsapp/src/components/ios/MessageList.tsx
-````typescript
-import React, { useEffect, useRef } from "react";
-import { getTheme } from "./theme";
-import { MessageBubble } from "./MessageBubble";
-import { useMessageGrouping } from "../../hooks/useMessageGrouping";
-import { MessageData } from "../../types";
-
-import { TypingIndicator } from "./TypingIndicator";
-
-interface MessageListProps {
-    messages: MessageData[];
-    ownerName?: string;
-    isTyping?: boolean;
-}
-
-export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me", isTyping }) => {
-    const theme = getTheme("ios");
-
-    // Architecture Layer 1: Semantic Grouping
-    const groups = useMessageGrouping(messages, ownerName);
-    const containerRef = useRef<HTMLDivElement>(null);
-    const lastMessageId = messages[messages.length - 1]?.id;
-
-    // Auto-scroll to bottom when new messages arrive or typing status changes
-    useEffect(() => {
-        if (containerRef.current) {
-            containerRef.current.scrollTop = containerRef.current.scrollHeight;
-        }
-    }, [messages.length, lastMessageId, isTyping]);
-
-    return (
-        <div
-            ref={containerRef}
-            style={{
-                flex: 1,
-                backgroundColor: theme.colors.chatBg,
-                backgroundImage: "url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png')",
-                backgroundSize: "400px",
-                display: "flex",
-                flexDirection: "column",
-                padding: "10px 16px",
-                // Remove 'gap' here because we control it via margins for precise rhythm
-                overflowY: "auto",
-                WebkitOverflowScrolling: "touch",
-                paddingBottom: 100
-            }}>
-            {groups.map((group) => {
-                const isSystem = group.senderId === "system";
+            {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                const color = isActive ? primaryColor : inactiveColor;
 
                 return (
-                    <div
-                        key={group.id}
-                        style={{
-                            // Architecture Layer 2: Visual Rhythm
-                            // 12px gap between separate speakers
-                            // System messages might want different spacing
-                            marginTop: isSystem ? 8 : 12,
-                            display: "flex",
-                            flexDirection: "column",
-                            // No gap here, we use marginBottom: 2 on bubbles for tight packing
-                        }}
-                    >
-                        {group.messages.map((item, idx) => (
-                            <MessageBubble
-                                key={item.data.id || idx}
-                                message={item.data}
-                                isMe={group.isMe}
-                                isFirst={item.isFirst}
-                                isLast={item.isLast}
-                            />
-                        ))}
+                    <div key={tab.id} style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        cursor: "pointer",
+                        flex: 1
+                    }}>
+                        <tab.Icon color={color} filled={isActive} />
+                        <div style={{
+                            fontSize: 10,
+                            marginTop: 4,
+                            fontWeight: "500",
+                            color: color
+                        }}>
+                            {tab.label}
+                        </div>
                     </div>
                 );
             })}
-
-            {isTyping && (
-                <div style={{ marginTop: 12 }}>
-                    <TypingIndicator />
-                </div>
-            )}
         </div>
     );
 };
-````
-
-## File: packages/apps-whatsapp/src/components/ios/theme.ts
-````typescript
-export const iOSTokens = {
-    colors: {
-        primary: "#007AFF",
-        secondary: "#8E8E93",
-        background: "#FFFFFF",
-        headerBg: "rgba(246, 246, 246, 0.9)", // Translucent
-        chatBg: "#ECE5DD",
-
-        // Bubbles
-        bubbleMyBg: "#DCF8C6", // Or E7FFDB (Whatsapp web)
-        bubbleOtherBg: "#FFFFFF",
-        bubbleText: "#000000",
-        bubbleTime: "rgba(0,0,0,0.45)",
-
-        separator: "rgba(0,0,0,0.1)"
-    },
-    // Logical Standard Typography
-    typography: {
-        body: { fontSize: 16, lineHeight: "21px" },
-        caption: { fontSize: 11, lineHeight: "13px" },
-        headerTitle: { fontSize: 17, fontWeight: "600" },
-        headerSubtitle: { fontSize: 12 }
-    }
-};
-
-export type Theme = typeof iOSTokens;
-
-export function getTheme(platform: "ios" | "android"): Theme {
-    return iOSTokens; // Placeholder, easy to expand
-}
-````
-
-## File: packages/apps-whatsapp/src/components/ios/TypingIndicator.tsx
-````typescript
-import React from "react";
-
-export const TypingIndicator: React.FC = () => {
-    return (
-        <div style={{
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            padding: "12px 14px",
-            backgroundColor: "#FFFFFF",
-            borderRadius: "18px",
-            borderBottomLeftRadius: "4px", // Tail anchor
-            width: "fit-content",
-            boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-            height: 36,
-            minWidth: 64,
-            justifyContent: "center",
-            gap: 4
-        }}>
-            {/* Tail */}
-            <div style={{
-                position: "absolute",
-                left: -6,
-                bottom: 0,
-                width: 12,
-                height: 20,
-                backgroundColor: "#FFFFFF",
-                borderBottomRightRadius: "60%",
-                zIndex: -1,
-                clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 100%)" // Simple tail approximation
-            }} />
-            <div style={{
-                position: "absolute",
-                left: -9,
-                bottom: 0,
-                width: 10,
-                height: 10,
-                backgroundColor: "transparent", // Corner cutout
-                boxShadow: "5px 5px 0 2px #FFFFFF",
-                borderBottomRightRadius: "50%",
-                zIndex: -1
-            }} />
-
-            <div className="typing-dot" style={{ animationDelay: "0ms" }} />
-            <div className="typing-dot" style={{ animationDelay: "150ms" }} />
-            <div className="typing-dot" style={{ animationDelay: "300ms" }} />
-
-            <style>{`
-    .typing - dot {
-    width: 7px;
-    height: 7px;
-    background - color: #B4B4B4;
-    border - radius: 50 %;
-    animation: whatsappTyping 1.4s infinite ease -in -out both;
-}
-@keyframes whatsappTyping {
-    0 % { transform: scale(1); opacity: 0.5; }
-    50 % { transform: scale(1.15); opacity: 0.9; }
-    100 % { transform: scale(1); opacity: 0.5; }
-}
-`}</style>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-whatsapp/src/components/index.ts
-````typescript
-/**
- * WhatsApp Components Index
- * 
- * Re-exports all WhatsApp UI components for easy importing.
- */
-
-// Icons
-export * from "./icons";
-
-// Components
-export { Header, type HeaderProps } from "./Header";
-export { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
-
-// Media Bubbles
-export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble } from "./MediaBubbles";
-
-// Chats List Screen
-export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
-
-// iOS Status Bar
-export { iOSStatusBar, BubbleTail } from "./iOSStatusBar";
-
-// Advanced Features (Phase 16)
-export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";
-export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPreview";
-export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
-````
-
-## File: packages/apps-whatsapp/src/components/iOSStatusBar.tsx
-````typescript
-/**
- * iOS Status Bar Component
- * 
- * Pixel-perfect iOS 17+ status bar with:
- * - Dynamic Island (iPhone 14 Pro+) or notch
- * - Time, signal, WiFi, battery indicators
- * - Works without Remotion dependency
- */
-
-import React from "react";
-
-// =============================================================================
-// STATUS BAR ICONS (Pixel-Perfect iOS 17 Style)
-// =============================================================================
-
-interface StatusBarIconsProps {
-    signalStrength?: number;  // 0-4 bars
-    wifiStrength?: number;    // 0-3 bars
-    batteryPercent?: number;  // 0-100
-    isCharging?: boolean;
-    darkMode?: boolean;
-}
-
-// Cellular signal bars
-const CellularIcon: React.FC<{ strength?: number; color?: string }> = ({
-    strength = 4,
-    color = "#000"
-}) => (
-    <svg width="51" height="36" viewBox="0 0 17 12" fill={color}>
-        <rect x="0" y="8" width="3" height="4" rx="0.5" opacity={strength >= 1 ? 1 : 0.3} />
-        <rect x="4" y="5" width="3" height="7" rx="0.5" opacity={strength >= 2 ? 1 : 0.3} />
-        <rect x="8" y="2" width="3" height="10" rx="0.5" opacity={strength >= 3 ? 1 : 0.3} />
-        <rect x="12" y="0" width="3" height="12" rx="0.5" opacity={strength >= 4 ? 1 : 0.3} />
-    </svg>
-);
-
-// WiFi icon
-const WifiIcon: React.FC<{ strength?: number; color?: string }> = ({
-    strength = 3,
-    color = "#000"
-}) => (
-    <svg width="48" height="36" viewBox="0 0 16 12" fill="none" stroke={color} strokeWidth="1.5">
-        <path d="M8 10.5a1 1 0 100-2 1 1 0 000 2z" fill={color} opacity={strength >= 1 ? 1 : 0.3} />
-        <path d="M5.5 8c1.4-1.4 3.6-1.4 5 0" opacity={strength >= 2 ? 1 : 0.3} />
-        <path d="M3 5.5c2.8-2.8 7.2-2.8 10 0" opacity={strength >= 3 ? 1 : 0.3} />
-    </svg>
-);
-
-// Battery icon with percent
-const BatteryIcon: React.FC<{
-    percent?: number;
-    isCharging?: boolean;
-    color?: string
-}> = ({
-    percent = 100,
-    isCharging = false,
-    color = "#000"
-}) => {
-        const fillWidth = Math.max(0, Math.min(100, percent)) / 100 * 21;
-        const fillColor = percent <= 20 ? "#FF3B30" : (isCharging ? "#30D158" : color);
-
-        return (
-            <svg width="75" height="36" viewBox="0 0 25 12" fill="none">
-                {/* Battery body */}
-                <rect x="0" y="0" width="22" height="12" rx="2.5" stroke={color} strokeWidth="1" />
-                {/* Battery fill */}
-                <rect x="1" y="1" width={fillWidth} height="10" rx="1.5" fill={fillColor} />
-                {/* Battery cap */}
-                <rect x="23" y="3.5" width="2" height="5" rx="0.5" fill={color} opacity="0.4" />
-                {/* Charging bolt */}
-                {isCharging && (
-                    <path d="M12 2L9 6h3l-1 4 4-5h-3l1-3z" fill="#fff" />
-                )}
-            </svg>
-        );
-    };
-
-// =============================================================================
-// iOS STATUS BAR COMPONENT
-// =============================================================================
-
-export interface iOSStatusBarProps {
-    time?: string;
-    signalStrength?: number;
-    wifiStrength?: number;
-    batteryPercent?: number;
-    isCharging?: boolean;
-    carrier?: string;
-    darkMode?: boolean;
-    hasDynamicIsland?: boolean;  // iPhone 14 Pro+ style
-}
-
-export const iOSStatusBar: React.FC<iOSStatusBarProps> = ({
-    time,
-    signalStrength = 4,
-    wifiStrength = 3,
-    batteryPercent = 85,
-    isCharging = false,
-    carrier = "",
-    darkMode = false,
-    hasDynamicIsland = true,
-}) => {
-    // Default time
-    const displayTime = time || "9:41";
-    const color = darkMode ? "#FFFFFF" : "#000000";
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 144,  // iOS status bar height at 3x
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "0 54px",
-            zIndex: 1000,
-            backgroundColor: "transparent",
-        }}>
-            {/* Left section - Time (or Dynamic Island placeholder) */}
-            <div style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-            }}>
-                <span style={{
-                    fontSize: 51,
-                    fontWeight: 600,
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                    color,
-                    letterSpacing: "-0.5px",
-                }}>
-                    {displayTime}
-                </span>
-            </div>
-
-            {/* Center - Dynamic Island (iPhone 14 Pro+) */}
-            {hasDynamicIsland && (
-                <div style={{
-                    width: 360,
-                    height: 111,
-                    backgroundColor: "#000000",
-                    borderRadius: 60,
-                    position: "absolute",
-                    left: "50%",
-                    top: 36,
-                    transform: "translateX(-50%)",
-                }} />
-            )}
-
-            {/* Right section - Icons */}
-            <div style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                gap: 15,
-            }}>
-                <CellularIcon strength={signalStrength} color={color} />
-                <WifiIcon strength={wifiStrength} color={color} />
-                <BatteryIcon
-                    percent={batteryPercent}
-                    isCharging={isCharging}
-                    color={color}
-                />
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// AUTHENTIC WHATSAPP BUBBLE TAIL (SVG)
-// =============================================================================
-
-interface BubbleTailProps {
-    isMe: boolean;
-    color: string;
-}
-
-/**
- * Authentic WhatsApp iOS bubble tail
- * The tail is a curved triangle that appears at the top of the first message
- */
-export const BubbleTail: React.FC<BubbleTailProps> = ({ isMe, color }) => {
-    if (isMe) {
-        // Right-side tail (my messages)
-        return (
-            <svg
-                width="24"
-                height="30"
-                viewBox="0 0 8 10"
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    right: -8,
-                }}
-            >
-                <path
-                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
-                    fill={color}
-                />
-            </svg>
-        );
-    } else {
-        // Left-side tail (other's messages)
-        return (
-            <svg
-                width="24"
-                height="30"
-                viewBox="0 0 8 10"
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: -8,
-                    transform: "scaleX(-1)",
-                }}
-            >
-                <path
-                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
-                    fill={color}
-                />
-            </svg>
-        );
-    }
-};
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export default iOSStatusBar;
 ````
 
 ## File: packages/apps-whatsapp/src/components/LinkPreview.tsx
@@ -1855,137 +1639,6 @@ export const MiniLinkPreview: React.FC<{ url: string }> = ({ url }) => {
 export default LinkPreview;
 ````
 
-## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
-````typescript
-/**
- * WhatsApp Message Bubble Component
- * 
- * Authentic iOS WhatsApp message styling with:
- * - Timestamps and read receipts
- * - Reply/Quote UI for quoted messages
- * - Reactions (tapbacks) display
- */
-
-import React from "react";
-import { ChatMessageLayout } from "@tokovo/core";
-import { DoubleCheckIcon } from "./icons";
-import { ReplyQuote, ReplyToData } from "./ReplyQuote";
-import { ReactionsBar, Reaction } from "./Reactions";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface MessageData {
-    id: string;
-    from: string;
-    text?: string;
-    timestamp?: string;
-    read?: boolean;
-    type?: "text" | "image" | "voice" | "system" | "video" | "gif";
-    // Reply/Quote
-    replyTo?: ReplyToData;
-    // Reactions (tapbacks)
-    reactions?: Reaction[];
-}
-
-export interface MessageBubbleProps {
-    msg: MessageData;
-    layout: ChatMessageLayout;
-}
-
-// =============================================================================
-// MESSAGE BUBBLE
-// =============================================================================
-
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
-    const isMe = msg.from === "me";
-    const { opacity, translateX, translateY, rect } = layout;
-
-    // Safety check - layout should always have rect if computed correctly
-    if (!rect) return null;
-
-    const hasReactions = msg.reactions && msg.reactions.length > 0;
-
-    return (
-        <div style={{
-            position: "absolute",
-            top: rect.y,
-            left: rect.x,
-            width: rect.width,
-            // maxWidth: "78%", // Controlled by layout engine now
-            opacity,
-            transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
-            zIndex: 1, // Ensure bubbles are above background
-        }}>
-            {/* Bubble with tail */}
-            <div style={{
-                position: "relative",
-                backgroundColor: isMe ? "#E7FFDB" : "#FFFFFF",
-                padding: "24px 36px",
-                borderRadius: 24,
-                // Asymmetric corners for tail effect
-                borderTopLeftRadius: isMe ? 24 : 6,
-                borderTopRightRadius: isMe ? 6 : 24,
-                borderBottomLeftRadius: 24,
-                borderBottomRightRadius: 24,
-                boxShadow: "0 1px 0.5px rgba(0,0,0,0.13)",
-                display: "flex",
-                flexDirection: "column",
-                gap: 6,
-                // Add bottom margin if reactions present
-                marginBottom: hasReactions ? 24 : 0,
-            }}>
-                {/* Reply/Quote - Shows quoted message if replying */}
-                {msg.replyTo && (
-                    <ReplyQuote
-                        replyTo={msg.replyTo}
-                        isMyMessage={isMe}
-                    />
-                )}
-
-                {/* Message text */}
-                <span style={{
-                    fontSize: 48,
-                    lineHeight: "66px",
-                    color: "#111B21",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                    wordWrap: "break-word"
-                }}>
-                    {msg.text}
-                </span>
-
-                {/* Timestamp + Read receipts */}
-                <div style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: 9,
-                    marginTop: 3
-                }}>
-                    <span style={{
-                        fontSize: 33,
-                        color: "#667781",
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-                    }}>
-                        {msg.timestamp || "10:42"}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={msg.read !== false} />}
-                </div>
-            </div>
-
-            {/* Reactions Bar - Shows below the bubble */}
-            {hasReactions && (
-                <ReactionsBar
-                    reactions={msg.reactions!}
-                    isMyMessage={isMe}
-                />
-            )}
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/components/Reactions.tsx
 ````typescript
 /**
@@ -2156,768 +1809,6 @@ export const ReactionPicker: React.FC<ReactionPickerProps> = ({
 };
 
 export default ReactionsBar;
-````
-
-## File: packages/apps-whatsapp/src/components/ReplyQuote.tsx
-````typescript
-/**
- * Reply Quote Component
- * 
- * Renders quoted/replied-to message above the current message.
- * Matches WhatsApp iOS styling with the colored bar.
- */
-
-import React from "react";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-interface ReplyQuoteProps {
-    replyTo: ReplyToData;
-    isMyMessage?: boolean;
-    onClick?: () => void;
-}
-
-// =============================================================================
-// REPLY QUOTE
-// =============================================================================
-
-/**
- * Displays the quoted message within a bubble.
- * Appears above the actual message content with a colored bar.
- */
-export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
-    replyTo,
-    isMyMessage = false,
-    onClick,
-}) => {
-    // Color based on who sent the original
-    const barColor = replyTo.from === "me" ? "#25D366" : "#34B7F1";
-
-    return (
-        <div
-            onClick={onClick}
-            style={{
-                display: "flex",
-                gap: 0,
-                backgroundColor: isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)",
-                borderRadius: 18,
-                overflow: "hidden",
-                marginBottom: 12,
-                cursor: onClick ? "pointer" : "default",
-            }}
-        >
-            {/* Colored bar */}
-            <div style={{
-                width: 12,
-                backgroundColor: barColor,
-                flexShrink: 0,
-            }} />
-
-            {/* Content */}
-            <div style={{
-                flex: 1,
-                padding: "15px 18px",
-                display: "flex",
-                alignItems: "center",
-                gap: 18,
-            }}>
-                {/* Text content */}
-                <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Sender name */}
-                    <div style={{
-                        fontSize: 36,
-                        fontWeight: 600,
-                        color: barColor,
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                        marginBottom: 6,
-                    }}>
-                        {replyTo.from === "me" ? "You" : replyTo.from}
-                    </div>
-
-                    {/* Message preview */}
-                    <div style={{
-                        fontSize: 39,
-                        color: "#667781",
-                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                    }}>
-                        {/* Type icon */}
-                        {replyTo.type === "image" && (
-                            <>
-                                <CameraIcon />
-                                <span>Photo</span>
-                            </>
-                        )}
-                        {replyTo.type === "video" && (
-                            <>
-                                <VideoIcon />
-                                <span>Video</span>
-                            </>
-                        )}
-                        {replyTo.type === "voice" && (
-                            <>
-                                <MicIcon />
-                                <span>Voice message</span>
-                            </>
-                        )}
-                        {(!replyTo.type || replyTo.type === "text") && (
-                            <span>{replyTo.text}</span>
-                        )}
-                    </div>
-                </div>
-
-                {/* Thumbnail for media */}
-                {replyTo.thumbnailUrl && (
-                    <div style={{
-                        width: 120,
-                        height: 120,
-                        borderRadius: 12,
-                        backgroundImage: `url(${replyTo.thumbnailUrl})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        flexShrink: 0,
-                    }} />
-                )}
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// ICONS
-// =============================================================================
-
-const CameraIcon = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
-        <path d="M21 6h-3.17L16 4h-6v2h5.12l1.83 2H21v12H5V10H3v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM8 14c0 2.76 2.24 5 5 5s5-2.24 5-5-2.24-5-5-5-5 2.24-5 5zm5-3c1.65 0 3 1.35 3 3s-1.35 3-3 3-3-1.35-3-3 1.35-3 3-3zM5 6h3V4H5V1H3v3H0v2h3v3h2V6z" />
-    </svg>
-);
-
-const VideoIcon = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
-        <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
-    </svg>
-);
-
-const MicIcon = () => (
-    <svg width="36" height="36" viewBox="0 0 24 24" fill="#667781">
-        <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" />
-    </svg>
-);
-
-export default ReplyQuote;
-````
-
-## File: packages/apps-whatsapp/src/config/layout-config.ts
-````typescript
-/**
- * WhatsApp Layout Configuration
- * 
- * Production-grade configurable message heights, spacing, and animations.
- * All values are in device pixels (3x scale for retina).
- * 
- * DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No heuristics.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-// =============================================================================
-// MESSAGE TYPE ENUMERATION
-// =============================================================================
-
-export type MessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "gif"
-    | "voice"
-    | "system"
-    | "deleted"
-    | "typing"
-    | "screenshot_alert"
-    | "call_missed";
-
-export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
-
-// =============================================================================
-// SPACING CONFIGURATION (SOURCE OF TRUTH)
-// =============================================================================
-
-/**
- * Authoritative Layout Constants.
- * These are the Source of Truth for both Calculation and Rendering.
- * All units in device pixels (3x retina).
- */
-export const LAYOUT_CONSTANTS = {
-    BUBBLE_PADDING_V: 24,     // Top/Bottom padding inside bubble (8px visual)
-    BUBBLE_PADDING_H: 36,     // Left/Right padding inside bubble
-    LINE_HEIGHT: 66,          // Text line height (22px visual)
-    FONT_SIZE: 51,            // Text font size
-    TIMESTAMP_HEIGHT: 36,     // Footer area height
-    SENDER_NAME_HEIGHT: 45,   // Height of sender name area
-
-    // Spacing Tiers (The 3-Tier Model)
-    GAP_MINIMAL: 24,           // 2px visual (Visual Run / Burst)
-    GAP_RUN_BREAK: 24,        // 6px visual (Same Sender, New Block/Reply)
-    GAP_NORMAL: 24,           // 12px visual (Sender Switch)
-
-    // System Spacing
-    GAP_SYSTEM: 24,           // 9px visual
-
-    // Typography / Metrics
-    AVG_CHAR_WIDTH: 26,       // Increased from 24 to 26 to be more conservative about wrapping
-
-    // Typing Indicator
-    TYPING_BUBBLE_HEIGHT: 72, // Inner height
-    TYPING_BUBBLE_PADDING_V: 27, // Vertical padding
-};
-
-/**
- * UI Constants (Header, Input, etc.)
- * Source of Truth for both React Components and Layout Engine.
- */
-export const UI_CONSTANTS = {
-    // Header
-    HEADER_CONTENT_HEIGHT: 60,
-    HEADER_AVATAR_SIZE: 37,
-    HEADER_AVATAR_MARGIN_RIGHT: 10,
-    HEADER_PADDING_X: 10,
-    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
-
-    // Input Area
-    INPUT_MIN_HEIGHT: 60, // Standard single line
-};
-
-/**
- * Simplified Per-Message-Type Configuration
- */
-export interface MessageTypeConfig {
-    category: MessageCategory;
-    gapBefore?: number; // Force specific gap (used for System messages)
-    gapAfter?: number;  // Force specific gap
-}
-
-export interface SpacingConfig {
-    typeOverrides: Record<MessageType, MessageTypeConfig>;
-    global: GlobalSpacing;
-}
-
-// =============================================================================
-// HEIGHT & WIDTH CONFIGURATION
-// =============================================================================
-
-export interface MessageHeightConfig {
-    /** Base height calculation */
-    base: number;
-    /** For text: Line height */
-    lineHeight?: number;
-    /** For text: Characters per line for wrapping */
-    charsPerLine?: number;
-    /** For media: Height with caption */
-    withCaption?: number;
-}
-
-export interface MessageWidthConfig {
-    /** Max width as percentage of viewport (0-1) */
-    maxPercent: number;
-    /** Minimum width in pixels */
-    min: number;
-    /** Fixed width (optional) */
-    fixed?: number;
-}
-
-export interface MessageSchema {
-    height: MessageHeightConfig;
-    width: MessageWidthConfig;
-}
-
-// =============================================================================
-// HEIGHT ADDITIONS (The "Legos")
-// =============================================================================
-
-export interface HeightAdditions {
-    reaction: number;
-    reply: number;
-    linkPreview: number;
-    senderName: number;
-}
-
-// =============================================================================
-// SCROLL & ANIMATION
-// =============================================================================
-
-export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
-
-export interface ScrollConfig {
-    lockToBottom: boolean;
-    smoothScrollDuration: number;
-    easing: EasingFunction;
-    newMessageScrollDelay: number;
-    overscanTop: number;
-    overscanBottom: number;
-    maxScrollSpeed: number;
-}
-
-export interface AnimationConfig {
-    messageAppearDuration: number;
-    messageAppearOffset: number;
-    typingPulseDuration: number;
-    voiceWaveformSpeed: number;
-}
-
-export interface GlobalSpacing {
-    topPadding: number;
-    bottomPadding: number;
-    bubbleMargin: number;
-}
-
-// =============================================================================
-// COMPLETE CONFIG STRUCT
-// =============================================================================
-
-export interface MessageLayoutConfig {
-    messageTypes: Record<MessageType, MessageSchema>;
-    additions: HeightAdditions;
-    scroll: ScrollConfig;
-    animation: AnimationConfig;
-    spacing: SpacingConfig;
-}
-
-// =============================================================================
-// DEFAULT CONFIGURATION (The Values)
-// =============================================================================
-
-const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
-    text: { category: "text" },
-    image: { category: "media" },
-    video: { category: "media" },
-    gif: { category: "media" },
-    voice: { category: "audio" },
-    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    deleted: { category: "text" },
-    // Typing behaves like a sender run-break (e.g. interruption)
-    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
-    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
-};
-
-export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
-    messageTypes: {
-        text: {
-            height: {
-                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
-                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
-                // capacity dynamic via measureTextBlock (unitsPerLine)
-            },
-            width: {
-                maxPercent: 0.78,
-                min: 150,
-            },
-        },
-        image: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        video: {
-            height: { base: 600, withCaption: 700 },
-            width: { maxPercent: 0.78, min: 300 },
-        },
-        gif: {
-            height: { base: 500 },
-            width: { maxPercent: 0.78, min: 250 },
-        },
-        voice: {
-            height: { base: 180 },
-            width: { fixed: 450, maxPercent: 0.78, min: 450 },
-        },
-        system: {
-            height: { base: 80 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        deleted: {
-            height: { base: 100 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-        typing: {
-            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
-            width: { fixed: 150, maxPercent: 0.3, min: 150 },
-        },
-        screenshot_alert: {
-            height: { base: 80 },
-            width: { maxPercent: 0.7, min: 250 },
-        },
-        call_missed: {
-            height: { base: 120 },
-            width: { maxPercent: 0.6, min: 200 },
-        },
-    },
-    additions: {
-        reaction: 36,
-        reply: 90,
-        linkPreview: 180,
-        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
-    },
-    scroll: {
-        lockToBottom: true,
-        smoothScrollDuration: 15,
-        easing: "easeOut",
-        newMessageScrollDelay: 3,
-        overscanTop: 200,
-        overscanBottom: 200,
-        maxScrollSpeed: 60,
-    },
-    animation: {
-        messageAppearDuration: 12,
-        messageAppearOffset: 30,
-        typingPulseDuration: 45,
-        voiceWaveformSpeed: 2,
-    },
-    spacing: {
-        typeOverrides: DEFAULT_TYPE_OVERRIDES,
-        global: {
-            topPadding: 48,
-            bottomPadding: 120,
-            bubbleMargin: 36,
-        },
-    },
-};
-
-// =============================================================================
-// HEIGHT CALCULATION
-// =============================================================================
-
-export interface MessageForHeight {
-    type?: MessageType;
-    text?: string;
-    caption?: string;
-    from?: string;
-    prevFrom?: string;
-    isGroupChat?: boolean;
-    reactions?: unknown[];
-    replyTo?: unknown;
-    linkPreview?: unknown;
-}
-
-export function calculateMessageHeight(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    let height = 0;
-
-    // Base height
-    if (msgType === "text" || msgType === "deleted") {
-        const text = msg.text || "";
-        // Use unified measurement logic
-        const { lines } = measureTextBlock(text, viewportWidth, config);
-        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
-    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
-        // Dynamic Media Height (Option B)
-        // Measure caption to determine how much vertical space to add to base image
-        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
-        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
-        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
-        // Add timestamp footer height + margin (timestamp sits below caption)
-        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
-        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
-    } else {
-        height = typeConfig.height.base;
-    }
-
-    // Additions
-    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
-    if (msg.replyTo) height += config.additions.reply;
-    if (msg.linkPreview) height += config.additions.linkPreview;
-
-    if (shouldShowSenderName({
-        from: msg.from,
-        type: msgType,
-        isGroupChat: msg.isGroupChat,
-        prevFrom: msg.prevFrom
-    })) {
-        height += config.additions.senderName;
-    }
-
-    return height;
-}
-
-// =============================================================================
-// SMART GAP CALCULATION (THE TRUTH TABLE)
-// =============================================================================
-
-export interface MessageForGap {
-    type?: MessageType;
-    from?: string;
-    at?: number;
-    hasReply?: boolean;
-    hasReactions?: boolean;
-    hasLinkPreview?: boolean;
-}
-
-export interface GapContext {
-    prevMessage: MessageForGap;
-    nextMessage: MessageForGap;
-}
-
-export function calculateSmartGap(
-    context: GapContext,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const { prevMessage, nextMessage } = context;
-    const prevType = (prevMessage.type || "text") as MessageType;
-    const nextType = (nextMessage.type || "text") as MessageType;
-
-    // Check type-specific processing (only System messages act as special exceptions now)
-    const prevOverride = config.spacing.typeOverrides[prevType];
-    const nextOverride = config.spacing.typeOverrides[nextType];
-
-    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
-    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
-
-    // Visual Run Logic
-    const sameSender = prevMessage.from === nextMessage.from;
-    const isVisualRun = sameSender &&
-        prevType === "text" &&
-        nextType === "text" &&
-        !prevMessage.hasReply &&
-        !nextMessage.hasReply &&
-        !prevMessage.hasReactions &&
-        !nextMessage.hasReactions &&
-        !prevMessage.hasLinkPreview &&
-        !nextMessage.hasLinkPreview;
-
-    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
-    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
-    return LAYOUT_CONSTANTS.GAP_NORMAL;
-}
-
-// Compatibility Shim
-export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
-    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
-}
-
-// =============================================================================
-// MEASUREMENT HELPERS (Deterministic constants)
-// =============================================================================
-
-export interface TextBlockMetrics {
-    lines: number;
-    bubbleWidth: number;
-    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
-}
-
-/* DESIGN PHILOSOPHY: "Pure Math"
- * - No multipliers.
- * - No runtime DOM measurement. Deterministic constants.
- * - Exact pixel values defined in LAYOUT_CONSTANTS.
- * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
- */
-
-/**
- * Deterministic, no-DOM text measurement.
- * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
- * not the paragraph total weight or always-full-capacity width.
- *
- * Weighted units:
- * - space: 0.6
- * - ascii/basic: 1.0
- * - wide (CJK etc): 1.5
- * - emoji surrogate pair: 1.8
- */
-export function measureTextBlock(
-    text: string,
-    viewportWidth: number = 1170, // Default reference width
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): TextBlockMetrics {
-    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
-
-    // 1) Constraints
-    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
-    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
-
-    // Safety clamp so we never divide by 0 / go negative on tiny screens
-    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
-
-    // 2) Capacity (INTEGER, consistent everywhere)
-    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
-    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
-
-    // 3) Measure
-    // Split paragraphs by explicit newline. Newline always forces a line break.
-    const paragraphs = text.split("\n");
-
-    let totalLines = 0;
-    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
-
-    for (const paragraph of paragraphs) {
-        // Explicit blank line => counts as 1 line
-        if (paragraph.length === 0) {
-            totalLines += 1;
-            maxLineUnits = Math.max(maxLineUnits, 0);
-            continue;
-        }
-
-        // Wrap simulation in weighted units
-        let lineUnits = 0;
-        let linesInParagraph = 1;
-
-        for (let i = 0; i < paragraph.length; i++) {
-            const code = paragraph.charCodeAt(i);
-
-            // Weight function (deterministic)
-            let w = 1.0;
-
-            // space
-            if (code === 32) {
-                w = 0.6;
-            } else if (code >= 65 && code <= 90) {
-                // Uppercase A-Z
-                w = 1.3;
-            } else {
-                // emoji surrogate pair
-                const isHigh = code >= 0xd800 && code <= 0xdbff;
-                if (isHigh && i + 1 < paragraph.length) {
-                    const next = paragraph.charCodeAt(i + 1);
-                    const isLow = next >= 0xdc00 && next <= 0xdfff;
-                    if (isLow) {
-                        w = 1.8;
-                        i++; // consume low surrogate
-                    } else if (code > 255) {
-                        w = 1.5;
-                    }
-                } else if (code > 255) {
-                    // wide-ish (CJK etc.)
-                    w = 1.5;
-                }
-            }
-
-            // If adding this char overflows the line => wrap
-            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
-            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
-            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
-                maxLineUnits = Math.max(maxLineUnits, lineUnits);
-                linesInParagraph += 1;
-                lineUnits = w;
-            } else {
-                lineUnits += w;
-            }
-
-            // Track widest line as we go
-            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
-            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-        }
-
-        // finalize paragraph
-        totalLines += linesInParagraph;
-        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
-    }
-
-    // Ensure at least one line for empty string
-    if (totalLines === 0) totalLines = 1;
-
-    // 4) Convert widest line units -> pixels
-    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
-
-    // Clamp bubble width to: [minWidth, maxBubbleWidth]
-    const bubbleWidth = Math.min(
-        maxBubbleWidth,
-        Math.max(computedWidth, typeConfig.width.min)
-    );
-
-    return { lines: totalLines, bubbleWidth, unitsPerLine };
-}
-
-export function calculateBubbleWidth(
-    msg: MessageForHeight,
-    viewportWidth: number,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): number {
-    const msgType = (msg.type || "text") as MessageType;
-    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
-
-    if (typeConfig.width.fixed) return typeConfig.width.fixed;
-
-    if (msgType === "text" || msgType === "deleted") {
-        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
-        return bubbleWidth;
-    }
-
-    // Media & others: Use standard clamping
-    // Calculates a width based on percentage, but ensures it's at least 'min'
-    // and optionally upper-bounded if we strictly wanted to (not currently in config)
-    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
-    return Math.max(typeConfig.width.min, idealWidth);
-}
-
-// =============================================================================
-// ANIMATION & LAYOUT HELPERS
-// =============================================================================
-
-export function applyEasing(progress: number, easing: EasingFunction): number {
-    switch (easing) {
-        case "linear": return progress;
-        case "easeOut": return 1 - Math.pow(1 - progress, 3);
-        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
-        case "spring":
-            const c4 = (2 * Math.PI) / 3;
-            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
-        default: return progress;
-    }
-}
-
-export function isMessageCentered(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system";
-}
-
-export function doesMessageBreakGrouping(
-    type: MessageType,
-    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
-): boolean {
-    const category = config.spacing.typeOverrides[type]?.category;
-    return category === "system" || category === "ephemeral"; // System & Typing break grouping
-}
-
-export interface SenderNameContext {
-    from?: string;
-    type?: string;
-    isGroupChat?: boolean;
-    prevFrom?: string;
-}
-
-export function shouldShowSenderName(ctx: SenderNameContext): boolean {
-    if (!ctx.isGroupChat) return false;
-    if (!ctx.from) return false;
-    if (ctx.from === "me") return false;
-    if (ctx.from === "system") return false;
-    if (ctx.type === "system") return false;
-
-    // Show if previous sender was different (or no previous sender, or generic BREAK token)
-    return ctx.from !== ctx.prevFrom;
-}
 ````
 
 ## File: packages/apps-whatsapp/src/config/polish.ts
@@ -4584,6 +3475,23 @@ Core logic for the Tokovo engine.
 }
 ````
 
+## File: packages/device-keyboard/src/assets/sounds.ts
+````typescript
+/**
+ * Device Keyboard Sound Registry
+ * 
+ * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
+ */
+
+import { SoundRegistry } from "@tokovo/core";
+
+// Register Keyboard sounds
+SoundRegistry.registerMany({
+    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+    "keyboard_click": "typing.mp3",
+});
+````
+
 ## File: packages/device-keyboard/src/components/IOSKeyboard.tsx
 ````typescript
 /**
@@ -5441,6 +4349,76 @@ export const IOSKeyboard: React.FC<IOSKeyboardProps> = ({
 };
 
 export default IOSKeyboard;
+````
+
+## File: packages/devices/src/pixel/Frame.tsx
+````typescript
+import React from "react";
+import { PixelProfile } from "./profile";
+
+export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
+    const { width, height } = PixelProfile.dimensions;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: "black",
+            borderRadius: 60, // Less rounded than iPhone
+            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
+            position: "relative",
+            overflow: "hidden",
+            display: "flex",
+            flexDirection: "column",
+        }}>
+            {/* Status Bar Area */}
+            <div style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                right: 0,
+                height: 100,
+                zIndex: 1000,
+                pointerEvents: "none",
+                padding: "30px 40px 0 40px"
+            }}>
+                {statusBar}
+            </div>
+
+            {/* Camera Hole Punch */}
+            <div style={{
+                position: "absolute",
+                top: 36, // 12 * 3
+                left: "50%",
+                transform: "translateX(-50%)",
+                width: 36, // 12 * 3
+                height: 36, // 12 * 3
+                backgroundColor: "black",
+                borderRadius: "50%",
+                zIndex: 1001
+            }} />
+
+            {/* Screen Content */}
+            <div style={{
+                flex: 1,
+                backgroundColor: "#121212", // Dark mode default for Android
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                color: "white",
+                // Strict clipping
+                overflow: "hidden",
+                borderRadius: 60, // Match outer
+                clipPath: "inset(0px round 60px)",
+                transform: "translateZ(0)",
+                willChange: "transform",
+            }}>
+
+                {children}
+            </div>
+        </div>
+    );
+};
 ````
 
 ## File: packages/devices/src/registry.ts
@@ -8225,6 +7203,117 @@ export class CameraBuilder {
 }
 ````
 
+## File: packages/dsl/src/author/device-builder.ts
+````typescript
+/**
+ * Device Builder
+ * 
+ * Fluent API for defining a device's story.
+ * Manages conversation context and beat collection.
+ */
+
+import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
+import { BeatBuilder } from "./beat-builder";
+
+/**
+ * Beat callback function.
+ */
+export type BeatFn = (b: BeatBuilder) => void;
+
+/**
+ * Device builder collects conversations and beats for a device.
+ */
+export class DeviceBuilder {
+    private readonly deviceId: string;
+    private readonly profileId: string;
+    private appId: string = "app_whatsapp"; // Default app
+    private ownerName: string | undefined;  // For multi-POV
+    private readonly conversations: ConversationDef[] = [];
+    private readonly beats: Beat[] = [];
+    private currentConversationId: string | undefined;
+
+    constructor(deviceId: string, profileId: string = "iphone16") {
+        this.deviceId = deviceId;
+        this.profileId = profileId;
+    }
+
+    /**
+     * Set the owner name for this device (for multi-POV stories).
+     * The owner's messages appear on the right side.
+     */
+    owner(name: string): this {
+        this.ownerName = name;
+        return this;
+    }
+
+    /**
+     * Set the app for this device.
+     */
+    app(appId: string): this {
+        this.appId = appId;
+        return this;
+    }
+
+    /**
+     * Define a conversation.
+     * Also sets it as the current conversation for subsequent beats.
+     */
+    conversation(id: string, config?: {
+        name?: string;
+        avatar?: string;
+        type?: "dm" | "group";
+        initialMessages?: Array<{ text: string; from: string; at?: string }>;
+    }): this {
+        const def: ConversationDef = {
+            id,
+            name: config?.name,
+            avatar: config?.avatar,
+            type: config?.type ?? "dm",
+            initialMessages: config?.initialMessages,
+        };
+        this.conversations.push(def);
+        this.currentConversationId = id;
+        return this;
+    }
+
+    /**
+     * Define a beat (named group of actions).
+     */
+    beat(name: string, fn: BeatFn): this {
+        if (!this.currentConversationId) {
+            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
+        }
+
+        const builder = new BeatBuilder(
+            this.deviceId,
+            this.appId,
+            this.currentConversationId
+        );
+        fn(builder);
+
+        this.beats.push({
+            name,
+            ops: builder.getOps(),
+        });
+
+        return this;
+    }
+
+    /**
+     * Build the device scene.
+     */
+    build(): DeviceScene {
+        return {
+            deviceId: this.deviceId,
+            profileId: this.profileId,
+            appId: this.appId,
+            conversations: this.conversations,
+            beats: this.beats,
+        };
+    }
+}
+````
+
 ## File: packages/dsl/src/author/episode-builder.ts
 ````typescript
 /**
@@ -8676,6 +7765,230 @@ export const DEMO_TRACKS: Record<string, SpotifyTrackInfo> = {
 };
 ````
 
+## File: packages/dsl/src/events/call.ts
+````typescript
+/**
+ * Phone Call DSL Events
+ * 
+ * Event factories for phone call simulation.
+ * Supports incoming, outgoing, answer, decline, end, and call controls.
+ */
+
+import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
+import { createTrace, Trace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+// =============================================================================
+// CALL EVENT TYPES
+// =============================================================================
+
+export interface CallIncomingEvent {
+    at: number;
+    kind: "CALL";
+    type: "INCOMING";
+    deviceId?: string;
+    callerId: string;
+    callerName: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    callerMetadata?: CallerMetadata;
+    trace: Trace;
+}
+
+export interface CallAnswerEvent {
+    at: number;
+    kind: "CALL";
+    type: "ANSWER";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallDeclineEvent {
+    at: number;
+    kind: "CALL";
+    type: "DECLINE";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallEndEvent {
+    at: number;
+    kind: "CALL";
+    type: "END";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleMuteEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_MUTE";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleSpeakerEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_SPEAKER";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export interface CallToggleHoldEvent {
+    at: number;
+    kind: "CALL";
+    type: "TOGGLE_HOLD";
+    deviceId?: string;
+    trace: Trace;
+}
+
+export type CallEvent =
+    | CallIncomingEvent
+    | CallAnswerEvent
+    | CallDeclineEvent
+    | CallEndEvent
+    | CallToggleMuteEvent
+    | CallToggleSpeakerEvent
+    | CallToggleHoldEvent;
+
+// =============================================================================
+// CALL EVENT FACTORIES
+// =============================================================================
+
+export interface IncomingCallOptions {
+    callerAvatar?: string;
+    isVideo?: boolean;
+    callType?: CallType;
+    displayMode?: CallDisplayMode;
+    posterImage?: string;
+    posterNameFont?: string;
+    deviceId?: string;
+}
+
+/**
+ * Phone Call DSL - Event factories for phone call simulation
+ */
+export const call = {
+    /**
+     * Trigger an incoming phone call
+     * 
+     * @example
+     * dsl.call.incoming(0, "alice", "Alice Smith", { displayMode: "fullscreen" })
+     * dsl.call.incoming(0, "bob", "Bob", { displayMode: "overlay", posterImage: "/bob.jpg" })
+     */
+    incoming: (
+        at: number,
+        callerId: string,
+        callerName: string,
+        opts?: IncomingCallOptions
+    ): CallIncomingEvent => ({
+        at,
+        kind: "CALL",
+        type: "INCOMING",
+        trace: createTrace(Tracer.capture()),
+        callerId,
+        callerName,
+        callerAvatar: opts?.callerAvatar,
+        isVideo: opts?.isVideo ?? false,
+        callType: opts?.callType ?? "voice",
+        displayMode: opts?.displayMode ?? "fullscreen",
+        deviceId: opts?.deviceId,
+        callerMetadata: opts?.posterImage ? {
+            posterImage: opts.posterImage,
+            posterStyle: "modern",
+            posterNameFont: opts.posterNameFont,
+        } : undefined,
+    }),
+
+    /**
+     * Answer an incoming call
+     * 
+     * @example
+     * dsl.call.answer(100)
+     */
+    answer: (at: number, deviceId?: string): CallAnswerEvent => ({
+        at,
+        kind: "CALL",
+        type: "ANSWER",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Decline an incoming call
+     * 
+     * @example
+     * dsl.call.decline(50)
+     */
+    decline: (at: number, deviceId?: string): CallDeclineEvent => ({
+        at,
+        kind: "CALL",
+        type: "DECLINE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * End an active call
+     * 
+     * @example
+     * dsl.call.end(300)
+     */
+    end: (at: number, deviceId?: string): CallEndEvent => ({
+        at,
+        kind: "CALL",
+        type: "END",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle mute on active call
+     * 
+     * @example
+     * dsl.call.toggleMute(150)
+     */
+    toggleMute: (at: number, deviceId?: string): CallToggleMuteEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_MUTE",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle speaker on active call
+     * 
+     * @example
+     * dsl.call.toggleSpeaker(160)
+     */
+    toggleSpeaker: (at: number, deviceId?: string): CallToggleSpeakerEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_SPEAKER",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+
+    /**
+     * Toggle hold on active call
+     * 
+     * @example
+     * dsl.call.toggleHold(200)
+     */
+    toggleHold: (at: number, deviceId?: string): CallToggleHoldEvent => ({
+        at,
+        kind: "CALL",
+        type: "TOGGLE_HOLD",
+        trace: createTrace(Tracer.capture()),
+        deviceId,
+    }),
+};
+````
+
 ## File: packages/dsl/src/events/index.ts
 ````typescript
 /**
@@ -8758,6 +8071,138 @@ export const dsl = {
     navigation,
     os,
     notification,
+};
+````
+
+## File: packages/dsl/src/events/messages.ts
+````typescript
+/**
+ * Message Event Factories
+ * 
+ * Low-level event creators for messaging (WhatsApp, etc).
+ */
+
+import { TimelineEvent } from "@tokovo/core";
+import { createTrace } from "@tokovo/ir";
+import { Tracer } from "../tracer";
+
+/** Message status for tick progression */
+export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
+
+/**
+ * Message event factories
+ */
+export const messages = {
+    /**
+     * Send a message (from device owner)
+     */
+    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
+        at,
+        kind: "MessageSent", // V2 IR
+        deviceId: options.deviceId || "primary",
+        trace: createTrace(Tracer.capture()),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
+
+    /**
+     * Receive a message (from someone else)
+     */
+    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
+        at,
+        kind: "MessageReceived", // V2 IR
+        deviceId: options.deviceId || "primary",
+        trace: createTrace(Tracer.capture()),
+        appId: options.appId || "app_whatsapp",
+        conversationId,
+        silent: options.silent,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
+
+    /**
+     * Start typing indicator
+     */
+    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "TypingStarted",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
+
+    /**
+     * Stop typing indicator
+     */
+    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "TypingEnded",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        actor: from
+    } as const),
+
+    /**
+     * Send an image
+     */
+    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "MessageSent",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from: "me",
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "sent"
+        }
+    } as const),
+
+    /**
+     * Receive an image
+     */
+    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
+        at,
+        kind: "MessageReceived",
+        deviceId,
+        trace: createTrace(Tracer.capture()),
+        appId,
+        conversationId,
+        message: {
+            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+            from,
+            text: caption || "",
+            imageUrl,
+            timestamp: Date.now().toString(),
+            status: "delivered"
+        }
+    } as const),
+
+    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
+    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
+        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
+    } as any)
 };
 ````
 
@@ -9245,6 +8690,79 @@ export function getTypingEndFrame(
 
     // Each typo adds extra frames for backspace
     return startFrame + (text.length * framesPerChar) + (typoCount * (framesPerChar + 3));
+}
+````
+
+## File: packages/dsl/src/tracer.ts
+````typescript
+// Source map support removed for browser compatibility
+
+import { Trace } from "@tokovo/ir";
+
+/**
+ * Tracer
+ * 
+ * Auto-captures stack traces to link IR events to DSL source code.
+ */
+export class Tracer {
+    /**
+     * Capture the current stack trace and return a Trace object.
+     * @param offsetFrames Number of frames to skip (default 1 to skip capture call itself)
+     */
+    static capture(offsetFrames = 1): Partial<Trace> {
+        const stack = new Error().stack;
+        if (!stack) return {};
+
+        // DEBUG: Uncomment to see raw stack
+        // console.log("RAW STACK:", stack);
+
+        const lines = stack.split('\n');
+
+        // Find the first frame outside of the DSL package
+        // We look for logic that is NOT in node_modules and NOT in our own internal files
+        for (let i = offsetFrames + 1; i < lines.length; i++) {
+            const line = lines[i];
+
+            // Skip internal node frames
+            if (line.includes('(node:') || line.includes('(internal/')) continue;
+
+            // Skip node_modules
+            if (line.includes('node_modules')) continue;
+
+            // Skip our own DSL internals (if mapped)
+            if (line.includes('/dsl/src/')) continue;
+            if (line.includes('/dsl/dist/')) continue;
+
+            // This should be the user code
+            const source = this.parseFrame(line);
+            if (source) {
+                return {
+                    source
+                };
+            }
+        }
+
+        return {};
+    }
+
+    /**
+     * Parse a stack frame line to extract file and line number.
+     * Format: "    at Function.method (/path/to/file.ts:123:45)"
+     *      or "    at /path/to/file.ts:123:45"
+     */
+    private static parseFrame(line: string): { file: string; line: number } | undefined {
+        // Regex to match file path, line, and column
+        // Matches: (path):line:col
+        const match = line.match(/\((.+):(\d+):(\d+)\)$/) || line.match(/at\s+(.+):(\d+):(\d+)$/);
+
+        if (match) {
+            return {
+                file: match[1],
+                line: parseInt(match[2], 10)
+            };
+        }
+        return undefined;
+    }
 }
 ````
 
@@ -9827,6 +9345,30 @@ export function createTrace(partial: Partial<Trace>): Trace {
         sceneOpIndex: partial.sceneOpIndex ?? 0,
         source: partial.source,
     };
+}
+````
+
+## File: packages/ir/package.json
+````json
+{
+    "name": "@tokovo/ir",
+    "version": "0.0.1",
+    "description": "Tokovo IR types - Scene IR (semantic) and Timeline IR (execution)",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "files": [
+        "dist"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "dev": "tsc --watch"
+    },
+    "dependencies": {
+        "zod": "^4.2.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0"
+    }
 }
 ````
 
@@ -12941,33 +12483,1316 @@ packages:
 }
 ````
 
-## File: apps/video-runner/src/index.ts
+## File: packages/apps-instagram/src/config/index.ts
 ````typescript
-import { registerRoot } from "remotion";
-import { RemotionRoot } from "./Root";
-import "@tokovo/device-keyboard"; // Register keyboard audio rules
+/**
+ * Instagram Config
+ */
 
-registerRoot(RemotionRoot);
+export * from "./theme";
 ````
 
-## File: packages/apps-whatsapp/src/assets/metadata.tsx
+## File: packages/apps-instagram/src/config/theme.ts
 ````typescript
-import React from "react";
-import { AppMetadata } from "@tokovo/core";
+/**
+ * Instagram Theme Configuration
+ * 
+ * Colors, fonts, spacing for iOS Instagram style.
+ */
 
-export const WhatsAppIcon = (
-    <svg width="100%" height="100%" viewBox="0 0 24 24" fill="white">
-        <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z" />
+// =============================================================================
+// COLORS
+// =============================================================================
+
+export const instagramColors = {
+    // Backgrounds
+    background: "#FFFFFF",
+    backgroundSecondary: "#FAFAFA",
+
+    // Text
+    textPrimary: "#262626",
+    textSecondary: "#8E8E8E",
+    textLink: "#0095F6",
+
+    // Brand
+    brandPrimary: "#E1306C", // Instagram gradient pink
+    brandSecondary: "#833AB4", // Purple
+    brandTertiary: "#FD1D1D", // Red-orange
+    brandBlue: "#0095F6", // Link blue
+
+    // UI Elements
+    border: "#DBDBDB",
+    divider: "#EFEFEF",
+    icon: "#262626",
+    iconSecondary: "#8E8E8E",
+
+    // Stories gradient ring
+    storiesGradient: "linear-gradient(45deg, #FD1D1D 0%, #E1306C 33%, #833AB4 66%, #405DE6 100%)",
+
+    // DM bubbles
+    dmBubbleIncoming: "#EFEFEF",
+    dmBubbleOutgoing: "#0095F6",
+    dmTextIncoming: "#262626",
+    dmTextOutgoing: "#FFFFFF",
+};
+
+// =============================================================================
+// TYPOGRAPHY
+// =============================================================================
+
+export const instagramTypography = {
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif",
+
+    // Sizes (logical pixels)
+    username: { fontSize: 14, fontWeight: 600 },
+    caption: { fontSize: 14, fontWeight: 400 },
+    timestamp: { fontSize: 11, fontWeight: 400 },
+    likes: { fontSize: 14, fontWeight: 600 },
+    comment: { fontSize: 14, fontWeight: 400 },
+    navIcon: { fontSize: 24 },
+};
+
+// =============================================================================
+// SPACING
+// =============================================================================
+
+export const instagramSpacing = {
+    screenPadding: 16,
+    postPadding: 12,
+    avatarSize: 32,
+    storyAvatarSize: 64,
+    iconSize: 24,
+    bottomNavHeight: 50,
+    headerHeight: 44,
+};
+
+// =============================================================================
+// THEME OBJECT
+// =============================================================================
+
+export const instagramTheme = {
+    colors: instagramColors,
+    typography: instagramTypography,
+    spacing: instagramSpacing,
+};
+
+export type InstagramTheme = typeof instagramTheme;
+````
+
+## File: packages/apps-instagram/src/dsl/index.ts
+````typescript
+/**
+ * Instagram DSL
+ */
+
+export { InstagramTrackBuilder, InstagramPointBuilder, InstagramSpanBuilder } from "./track-builder";
+````
+
+## File: packages/apps-instagram/src/dsl/track-builder.ts
+````typescript
+/**
+ * Instagram v2 Track Builder
+ * 
+ * Provides DSL verbs for Instagram interactions:
+ * - receive() - Incoming DM
+ * - send() - Outgoing DM
+ * - like() - Like a post
+ * - comment() - Comment on a post
+ * - navigate() - Switch screens
+ */
+
+import type { InstagramPayloads } from "../ir/payloads";
+import type { InstagramTrackEvent } from "../ir/track-event";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+type GetDeclarationOrder = () => number;
+
+// =============================================================================
+// POINT BUILDER (at)
+// =============================================================================
+
+export class InstagramPointBuilder {
+    constructor(
+        private _frame: number,
+        private _fps: number,
+        private _deviceId: string,
+        private _events: InstagramTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    private emit<T extends keyof InstagramPayloads>(
+        type: T,
+        payload: InstagramPayloads[T]
+    ): void {
+        this._events.push({
+            kind: "APP",
+            appId: "app_instagram",
+            type,
+            payload,
+            at: this._frame,
+            deviceId: this._deviceId,
+            _declarationOrder: this._getOrder(),
+        } as InstagramTrackEvent);
+    }
+
+    // =========================================================================
+    // NAVIGATION
+    // =========================================================================
+
+    /** Navigate to a screen */
+    navigate(screen: "home" | "dms" | "search" | "reels" | "profile"): void {
+        this.emit("NAVIGATE", { screen });
+    }
+
+    /** Open a DM thread */
+    openDM(threadId: string): void {
+        this.emit("OPEN_DM", { threadId });
+    }
+
+    // =========================================================================
+    // FEED
+    // =========================================================================
+
+    /** New post appears in feed */
+    newPost(
+        author: { username: string; avatar: string; verified?: boolean },
+        image: string,
+        caption?: string
+    ): void {
+        this.emit("NEW_POST", { author, image, caption });
+    }
+
+    /** Like a post */
+    like(postId: string): void {
+        this.emit("LIKE_POST", { postId });
+    }
+
+    /** Comment on a post */
+    comment(postId: string, text: string): void {
+        this.emit("COMMENT", { postId, text });
+    }
+
+    /** Save a post */
+    save(postId: string): void {
+        this.emit("SAVE_POST", { postId });
+    }
+
+    // =========================================================================
+    // DIRECT MESSAGES
+    // =========================================================================
+
+    /** Receive a DM */
+    receive(
+        from: { username: string; avatar: string },
+        content: string,
+        options?: { threadId?: string; contentType?: "text" | "image" }
+    ): void {
+        const threadId = options?.threadId || `thread_${from.username}`;
+        this.emit("RECEIVE_DM", {
+            threadId,
+            from,
+            content,
+            contentType: options?.contentType || "text",
+        });
+    }
+
+    /** Send a DM */
+    send(
+        to: { username: string; avatar: string },
+        content: string,
+        options?: { threadId?: string; contentType?: "text" | "image" }
+    ): void {
+        const threadId = options?.threadId || `thread_${to.username}`;
+        this.emit("SEND_DM", {
+            threadId,
+            to,
+            content,
+            contentType: options?.contentType || "text",
+        });
+    }
+}
+
+// =============================================================================
+// SPAN BUILDER (span)
+// =============================================================================
+
+export class InstagramSpanBuilder {
+    constructor(
+        private _startFrame: number,
+        private _endFrame: number,
+        private _deviceId: string,
+        private _events: InstagramTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    private emit<T extends keyof InstagramPayloads>(
+        type: T,
+        payload: InstagramPayloads[T]
+    ): void {
+        this._events.push({
+            kind: "APP",
+            appId: "app_instagram",
+            type,
+            payload,
+            at: this._startFrame,
+            duration: this._endFrame - this._startFrame,
+            deviceId: this._deviceId,
+            _declarationOrder: this._getOrder(),
+        } as InstagramTrackEvent);
+    }
+
+    /** Show typing indicator for a DM thread */
+    typing(threadId: string): void {
+        // Start typing
+        this._events.push({
+            kind: "APP",
+            appId: "app_instagram",
+            type: "DM_TYPING",
+            payload: { threadId, isTyping: true },
+            at: this._startFrame,
+            deviceId: this._deviceId,
+            _declarationOrder: this._getOrder(),
+        } as InstagramTrackEvent);
+
+        // End typing
+        this._events.push({
+            kind: "APP",
+            appId: "app_instagram",
+            type: "DM_TYPING_END",
+            payload: { threadId },
+            at: this._endFrame,
+            deviceId: this._deviceId,
+            _declarationOrder: this._getOrder(),
+        } as InstagramTrackEvent);
+    }
+}
+
+// =============================================================================
+// MAIN TRACK BUILDER
+// =============================================================================
+
+export class InstagramTrackBuilder {
+    _events: InstagramTrackEvent[] = [];
+
+    constructor(
+        private _fps: number,
+        private _deviceId: string,
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    /** Set current time for next event */
+    at(time: string | number): InstagramPointBuilder {
+        const frame = this.parseTime(time);
+        return new InstagramPointBuilder(
+            frame,
+            this._fps,
+            this._deviceId,
+            this._events,
+            this._getOrder
+        );
+    }
+
+    /** Set a time span for events with duration */
+    span(start: string | number, end: string | number): InstagramSpanBuilder {
+        const startFrame = this.parseTime(start);
+        const endFrame = this.parseTime(end);
+        return new InstagramSpanBuilder(
+            startFrame,
+            endFrame,
+            this._deviceId,
+            this._events,
+            this._getOrder
+        );
+    }
+
+    private parseTime(time: string | number): number {
+        if (typeof time === "number") return Math.round(time);
+        const trimmed = time.trim();
+        if (trimmed.endsWith("ms")) {
+            return Math.round((parseFloat(trimmed.slice(0, -2)) / 1000) * this._fps);
+        }
+        if (trimmed.endsWith("s")) {
+            return Math.round(parseFloat(trimmed.slice(0, -1)) * this._fps);
+        }
+        return Math.round(parseFloat(trimmed));
+    }
+}
+````
+
+## File: packages/apps-instagram/src/ir/index.ts
+````typescript
+/**
+ * Instagram IR
+ */
+
+export * from "./payloads";
+export * from "./track-event";
+````
+
+## File: packages/apps-instagram/src/ir/payloads.ts
+````typescript
+/**
+ * Instagram Event Payloads (IR)
+ */
+
+export interface InstagramPayloads {
+    // Navigation
+    NAVIGATE: { screen: string; threadId?: string };
+    OPEN_DM: { threadId: string };
+
+    // Feed
+    NEW_POST: {
+        id?: string;
+        author: { username: string; avatar: string; verified?: boolean };
+        image: string;
+        caption?: string;
+        likes?: number;
+    };
+    LIKE_POST: { postId: string };
+    COMMENT: { postId: string; text: string; author?: { username: string; avatar: string } };
+    SAVE_POST: { postId: string };
+
+    // DMs
+    RECEIVE_DM: {
+        threadId: string;
+        from: { username: string; avatar: string };
+        content: string;
+        contentType?: "text" | "image" | "reel" | "post";
+    };
+    SEND_DM: {
+        threadId: string;
+        to: { username: string; avatar: string };
+        content: string;
+        contentType?: "text" | "image" | "reel" | "post";
+    };
+    DM_TYPING: { threadId: string; isTyping?: boolean };
+    DM_TYPING_END: { threadId: string };
+}
+````
+
+## File: packages/apps-instagram/src/ir/track-event.ts
+````typescript
+/**
+ * Instagram Track Event Type
+ */
+
+import type { InstagramPayloads } from "./payloads";
+
+export interface InstagramTrackEvent<T extends keyof InstagramPayloads = keyof InstagramPayloads> {
+    at: number;
+    duration?: number;
+    deviceId: string;
+    kind: "APP";
+    appId: "app_instagram";
+    type: T;
+    payload: InstagramPayloads[T];
+    _declarationOrder: number;
+}
+````
+
+## File: packages/apps-instagram/src/lowering/index.ts
+````typescript
+/**
+ * Instagram Lowering
+ */
+
+export { instagramV2Lowering, lowerInstagramEvent } from "./handler";
+````
+
+## File: packages/apps-instagram/src/runtime/index.ts
+````typescript
+/**
+ * Instagram Runtime
+ */
+
+export { instagramReducer } from "./reducer";
+export {
+    createInstagramInitialState,
+    createInstagramWorldState,
+    createPost,
+    createThread,
+    createStory,
+} from "./initial-state";
+````
+
+## File: packages/apps-instagram/src/runtime/initial-state.ts
+````typescript
+/**
+ * Instagram Initial State Factory
+ * 
+ * Creates the initial state for the Instagram plugin.
+ */
+
+import type { InstagramState, InstagramWorldState, InstagramPost, InstagramThread, InstagramStory } from "../types";
+
+// =============================================================================
+// INITIAL STATE FACTORY
+// =============================================================================
+
+/**
+ * Create Instagram app state.
+ * Called by PluginManager when registering the plugin.
+ */
+export function createInstagramInitialState(): InstagramState {
+    return {
+        screen: "home",
+        activeThreadId: undefined,
+    };
+}
+
+/**
+ * Create initial Instagram world state for DSL.
+ * Allows episode to configure initial feed, stories, and threads.
+ */
+export function createInstagramWorldState(config?: {
+    feed?: InstagramPost[];
+    stories?: InstagramStory[];
+    threads?: InstagramThread[];
+}): InstagramWorldState {
+    return {
+        feed: config?.feed ?? [],
+        stories: config?.stories ?? [],
+        threads: config?.threads ?? [],
+    };
+}
+
+/**
+ * Create a post helper.
+ */
+export function createPost(
+    id: string,
+    author: { username: string; avatar: string; verified?: boolean },
+    image: string,
+    caption: string,
+    options?: { likes?: number; timestamp?: string }
+): InstagramPost {
+    return {
+        id,
+        author,
+        image,
+        caption,
+        likes: options?.likes ?? 0,
+        comments: [],
+        timestamp: options?.timestamp ?? "1h",
+        liked: false,
+        saved: false,
+    };
+}
+
+/**
+ * Create a thread helper.
+ */
+export function createThread(
+    id: string,
+    participant: { username: string; avatar: string },
+    options?: { unread?: boolean }
+): InstagramThread {
+    return {
+        id,
+        participant,
+        messages: [],
+        unread: options?.unread ?? false,
+    };
+}
+
+/**
+ * Create a story helper.
+ */
+export function createStory(
+    id: string,
+    author: { username: string; avatar: string },
+    options?: { hasUnseenStory?: boolean }
+): InstagramStory {
+    return {
+        id,
+        author,
+        viewed: false,
+        hasUnseenStory: options?.hasUnseenStory ?? true,
+    };
+}
+````
+
+## File: packages/apps-instagram/src/types/index.ts
+````typescript
+/**
+ * Instagram Types
+ */
+
+export * from "./state";
+````
+
+## File: packages/apps-instagram/src/views/ios/BottomNav.tsx
+````typescript
+/**
+ * Instagram Bottom Navigation (iOS)
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+import type { InstagramScreen } from "../../types";
+
+interface BottomNavProps {
+    activeTab: InstagramScreen;
+}
+
+// Icons
+const HomeIcon = ({ active }: { active?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={active ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        {!active && <polyline points="9 22 9 12 15 12 15 22" />}
     </svg>
 );
 
-export const WhatsAppMetadata: Partial<AppMetadata> & { name: string } = {
-    name: "WhatsApp",
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: WhatsAppIcon,
-    viewStrategy: "CHAT"
+const SearchIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </svg>
+);
+
+const ReelsIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <rect x="2" y="2" width="20" height="20" rx="2" />
+        <line x1="8" y1="2" x2="8" y2="22" />
+        <line x1="16" y1="2" x2="16" y2="22" />
+        <line x1="2" y1="8" x2="22" y2="8" />
+        <polygon points="10 11 10 17 14 14 10 11" fill="currentColor" />
+    </svg>
+);
+
+const ShopIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" />
+        <line x1="3" y1="6" x2="21" y2="6" />
+        <path d="M16 10a4 4 0 0 1-8 0" />
+    </svg>
+);
+
+const ProfileIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+        <circle cx="12" cy="7" r="4" />
+    </svg>
+);
+
+export const BottomNav: React.FC<BottomNavProps> = ({ activeTab }) => {
+    const theme = instagramTheme;
+
+    const tabs = [
+        { id: "home", icon: HomeIcon },
+        { id: "search", icon: SearchIcon },
+        { id: "reels", icon: ReelsIcon },
+        { id: "shop", icon: ShopIcon },
+        { id: "profile", icon: ProfileIcon },
+    ] as const;
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: theme.spacing.bottomNavHeight,
+            backgroundColor: theme.colors.background,
+            borderTop: `1px solid ${theme.colors.divider}`,
+            display: "flex",
+            justifyContent: "space-around",
+            alignItems: "center",
+            paddingBottom: 20, // Safe area
+        }}>
+            {tabs.map(({ id, icon: Icon }) => (
+                <div
+                    key={id}
+                    style={{
+                        color: activeTab === id ? theme.colors.textPrimary : theme.colors.iconSecondary,
+                        cursor: "pointer",
+                    }}
+                >
+                    <Icon active={activeTab === id} />
+                </div>
+            ))}
+        </div>
+    );
 };
+````
+
+## File: packages/apps-instagram/src/views/ios/Header.tsx
+````typescript
+/**
+ * Instagram Header (iOS)
+ * 
+ * Top bar with Instagram logo and action icons.
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+
+interface HeaderProps {
+    onMessengerPress?: () => void;
+}
+
+// Instagram logo as SVG path
+const InstagramLogo = () => (
+    <svg height="29" viewBox="0 0 103 29" fill="currentColor">
+        <path d="M52.8 12.8c-3.5 0-5.7 2.6-5.7 6.4 0 3.8 2.1 6.4 5.7 6.4 3.5 0 5.7-2.6 5.7-6.4 0-3.8-2.2-6.4-5.7-6.4zm0 10.3c-2 0-3.1-1.6-3.1-3.9 0-2.3 1.1-3.9 3.1-3.9 2 0 3.1 1.6 3.1 3.9 0 2.3-1.1 3.9-3.1 3.9zM31.4 12.8c-3.5 0-5.7 2.6-5.7 6.4 0 3.8 2.2 6.4 5.7 6.4s5.7-2.6 5.7-6.4c0-3.8-2.2-6.4-5.7-6.4zm0 10.3c-2 0-3.1-1.6-3.1-3.9 0-2.3 1.1-3.9 3.1-3.9 2 0 3.1 1.6 3.1 3.9 0 2.3-1.1 3.9-3.1 3.9zM1.3 6.5H4v18.2H1.3zM6.3 13.2h2.5v1.7h.1c.7-1.2 2-2.1 3.9-2.1 2.8 0 4.6 1.5 4.6 4.8v7.1h-2.7v-6.6c0-1.9-.9-2.8-2.5-2.8-1.7 0-3.2 1.1-3.2 3.2v6.2H6.3V13.2zM19.6 21.3h2.7c.2 1.3 1.2 2.1 2.8 2.1s2.5-.7 2.5-1.7c0-1.1-.9-1.5-2.2-1.8l-1.8-.4c-2.4-.5-3.9-1.5-3.9-3.7 0-2.4 2-4 4.9-4 3.5 0 5.1 1.8 5.3 3.9h-2.6c-.2-1-1-1.7-2.6-1.7-1.4 0-2.3.6-2.3 1.5 0 .9.7 1.3 1.9 1.6l1.8.4c2.6.6 4.2 1.6 4.2 3.9 0 2.6-2.2 4.2-5.3 4.2-3.4 0-5.4-1.8-5.4-4.3zM41.6 13.2v1.6h.1c.8-1.3 2.1-2 3.7-2 1.6 0 3 .8 3.6 2.2.8-1.3 2.4-2.2 4.1-2.2 2.7 0 4.4 1.6 4.4 4.4v7.5h-2.7v-6.8c0-1.6-.8-2.6-2.4-2.6-1.6 0-2.9 1.1-2.9 3v6.4h-2.7v-6.8c0-1.6-.8-2.6-2.3-2.6-1.6 0-2.9 1.1-2.9 3v6.4h-2.7V13.2h2.7zM59.4 19.2c0-3.8 2.3-6.4 5.8-6.4 3.6 0 5.5 2.5 5.5 5.8v1h-8.6c.2 2.2 1.3 3.5 3.4 3.5 1.5 0 2.5-.7 2.9-1.8h2.6c-.6 2.4-2.6 4-5.5 4-3.7 0-6.1-2.6-6.1-6.1zm2.8-1.1h5.8c-.1-1.9-1.2-3-2.9-3-1.7 0-2.7 1.1-2.9 3zM74.2 6.5h2.7v18.2h-2.7zM94.4 19.2c0-3.8 2.3-6.4 5.8-6.4 3.6 0 5.5 2.5 5.5 5.8v1h-8.6c.2 2.2 1.3 3.5 3.4 3.5 1.5 0 2.5-.7 2.9-1.8h2.6c-.6 2.4-2.6 4-5.5 4-3.7 0-6.1-2.6-6.1-6.1zm2.8-1.1h5.8c-.1-1.9-1.2-3-2.9-3-1.7 0-2.7 1.1-2.9 3zM78.8 13.2h2.5v1.7h.1c.7-1.2 2-2.1 3.9-2.1 2.8 0 4.6 1.5 4.6 4.8v7.1H87v-6.6c0-1.9-.9-2.8-2.5-2.8-1.7 0-3.2 1.1-3.2 3.2v6.2h-2.7l.2-11.5z" />
+    </svg>
+);
+
+// Heart icon (notifications)
+const HeartIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+// Messenger icon
+const MessengerIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+export const Header: React.FC<HeaderProps> = ({ onMessengerPress }) => {
+    const theme = instagramTheme;
+
+    return (
+        <div
+            data-anchor="header"
+            style={{
+                height: theme.spacing.headerHeight,
+                backgroundColor: theme.colors.background,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingLeft: theme.spacing.screenPadding,
+                paddingRight: theme.spacing.screenPadding,
+                borderBottom: `1px solid ${theme.colors.divider}`,
+            }}
+        >
+            {/* Logo */}
+            <div style={{ color: theme.colors.textPrimary }}>
+                <InstagramLogo />
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 20 }}>
+                <div style={{ color: theme.colors.icon, cursor: "pointer" }}>
+                    <HeartIcon />
+                </div>
+                <div
+                    style={{ color: theme.colors.icon, cursor: "pointer" }}
+                    onClick={onMessengerPress}
+                >
+                    <MessengerIcon />
+                </div>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/ios/index.ts
+````typescript
+/**
+ * Instagram iOS Views
+ */
+
+export { Header } from "./Header";
+export { BottomNav } from "./BottomNav";
+export { Stories } from "./Stories";
+export { Post } from "./Post";
+export { HomeScreen } from "./HomeScreen";
+export { DMScreen } from "./DMScreen";
+````
+
+## File: packages/apps-instagram/src/views/ios/Post.tsx
+````typescript
+/**
+ * Instagram Post Component (iOS)
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+import type { InstagramPost } from "../../types";
+
+interface PostProps {
+    post: InstagramPost;
+}
+
+// Icons
+const HeartIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "#ED4956" : "none"} stroke={filled ? "#ED4956" : "currentColor"} strokeWidth="2">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+    </svg>
+);
+
+const CommentIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+    </svg>
+);
+
+const ShareIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <line x1="22" y1="2" x2="11" y2="13" />
+        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+    </svg>
+);
+
+const BookmarkIcon = ({ filled }: { filled?: boolean }) => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+);
+
+export const Post: React.FC<PostProps> = ({ post }) => {
+    const theme = instagramTheme;
+
+    return (
+        <div
+            data-post-id={post.id}
+            style={{
+                backgroundColor: theme.colors.background,
+                borderBottom: `1px solid ${theme.colors.divider}`,
+            }}
+        >
+            {/* Header */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: theme.spacing.postPadding,
+            }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    {/* Avatar */}
+                    <div style={{
+                        width: theme.spacing.avatarSize,
+                        height: theme.spacing.avatarSize,
+                        borderRadius: "50%",
+                        backgroundColor: theme.colors.backgroundSecondary,
+                        backgroundImage: post.author.avatar ? `url(${post.author.avatar})` : undefined,
+                        backgroundSize: "cover",
+                    }} />
+                    {/* Username */}
+                    <div>
+                        <span style={{
+                            ...theme.typography.username,
+                            color: theme.colors.textPrimary,
+                        }}>
+                            {post.author.username}
+                            {post.author.verified && " ✓"}
+                        </span>
+                    </div>
+                </div>
+                {/* More */}
+                <div style={{ color: theme.colors.textPrimary }}>•••</div>
+            </div>
+
+            {/* Image */}
+            <div style={{
+                width: "100%",
+                aspectRatio: "1",
+                backgroundColor: theme.colors.backgroundSecondary,
+                backgroundImage: post.image ? `url(${post.image})` : undefined,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+            }} />
+
+            {/* Actions */}
+            <div style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                padding: theme.spacing.postPadding,
+            }}>
+                <div style={{ display: "flex", gap: 16, color: theme.colors.icon }}>
+                    <HeartIcon filled={post.liked} />
+                    <CommentIcon />
+                    <ShareIcon />
+                </div>
+                <div style={{ color: theme.colors.icon }}>
+                    <BookmarkIcon filled={post.saved} />
+                </div>
+            </div>
+
+            {/* Likes */}
+            {post.likes > 0 && (
+                <div style={{
+                    paddingLeft: theme.spacing.postPadding,
+                    paddingRight: theme.spacing.postPadding,
+                    paddingBottom: 8,
+                }}>
+                    <span style={{
+                        ...theme.typography.likes,
+                        color: theme.colors.textPrimary,
+                    }}>
+                        {post.likes.toLocaleString()} likes
+                    </span>
+                </div>
+            )}
+
+            {/* Caption */}
+            {post.caption && (
+                <div style={{
+                    paddingLeft: theme.spacing.postPadding,
+                    paddingRight: theme.spacing.postPadding,
+                    paddingBottom: 8,
+                }}>
+                    <span style={{
+                        ...theme.typography.username,
+                        color: theme.colors.textPrimary,
+                    }}>
+                        {post.author.username}
+                    </span>
+                    {" "}
+                    <span style={{
+                        ...theme.typography.caption,
+                        color: theme.colors.textPrimary,
+                    }}>
+                        {post.caption}
+                    </span>
+                </div>
+            )}
+
+            {/* Comments preview */}
+            {post.comments.length > 0 && (
+                <div style={{
+                    paddingLeft: theme.spacing.postPadding,
+                    paddingRight: theme.spacing.postPadding,
+                    paddingBottom: 8,
+                }}>
+                    <span style={{
+                        ...theme.typography.caption,
+                        color: theme.colors.textSecondary,
+                    }}>
+                        View all {post.comments.length} comments
+                    </span>
+                </div>
+            )}
+
+            {/* Timestamp */}
+            <div style={{
+                paddingLeft: theme.spacing.postPadding,
+                paddingRight: theme.spacing.postPadding,
+                paddingBottom: theme.spacing.postPadding,
+            }}>
+                <span style={{
+                    ...theme.typography.timestamp,
+                    color: theme.colors.textSecondary,
+                    textTransform: "uppercase",
+                }}>
+                    {post.timestamp}
+                </span>
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/ios/Stories.tsx
+````typescript
+/**
+ * Instagram Stories Row (iOS)
+ * 
+ * Horizontal scroll of story avatars with gradient rings.
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+import type { InstagramStory } from "../../types";
+
+interface StoriesProps {
+    stories: InstagramStory[];
+}
+
+export const Stories: React.FC<StoriesProps> = ({ stories }) => {
+    const theme = instagramTheme;
+
+    return (
+        <div
+            data-anchor="stories"
+            style={{
+                height: 100,
+                backgroundColor: theme.colors.background,
+                borderBottom: `1px solid ${theme.colors.divider}`,
+                display: "flex",
+                alignItems: "center",
+                paddingLeft: theme.spacing.screenPadding,
+                gap: 16,
+                overflowX: "auto",
+            }}
+        >
+            {/* Your Story (Add) */}
+            <div style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                minWidth: 70,
+            }}>
+                <div style={{
+                    width: theme.spacing.storyAvatarSize,
+                    height: theme.spacing.storyAvatarSize,
+                    borderRadius: "50%",
+                    backgroundColor: theme.colors.backgroundSecondary,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 24,
+                    color: theme.colors.textSecondary,
+                    position: "relative",
+                }}>
+                    <span>👤</span>
+                    {/* Plus badge */}
+                    <div style={{
+                        position: "absolute",
+                        bottom: -2,
+                        right: -2,
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        backgroundColor: theme.colors.brandBlue,
+                        border: `2px solid ${theme.colors.background}`,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "white",
+                        fontSize: 12,
+                        fontWeight: "bold",
+                    }}>
+                        +
+                    </div>
+                </div>
+                <span style={{
+                    fontSize: 11,
+                    marginTop: 4,
+                    color: theme.colors.textPrimary,
+                }}>
+                    Your story
+                </span>
+            </div>
+
+            {/* Other Stories */}
+            {stories.map((story) => (
+                <div
+                    key={story.id}
+                    style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        minWidth: 70,
+                    }}
+                >
+                    {/* Gradient ring container */}
+                    <div style={{
+                        width: theme.spacing.storyAvatarSize + 6,
+                        height: theme.spacing.storyAvatarSize + 6,
+                        borderRadius: "50%",
+                        background: story.hasUnseenStory
+                            ? theme.colors.storiesGradient
+                            : theme.colors.border,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        {/* Inner white ring */}
+                        <div style={{
+                            width: theme.spacing.storyAvatarSize + 2,
+                            height: theme.spacing.storyAvatarSize + 2,
+                            borderRadius: "50%",
+                            backgroundColor: theme.colors.background,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                        }}>
+                            {/* Avatar */}
+                            <div style={{
+                                width: theme.spacing.storyAvatarSize,
+                                height: theme.spacing.storyAvatarSize,
+                                borderRadius: "50%",
+                                backgroundColor: theme.colors.backgroundSecondary,
+                                backgroundImage: story.author.avatar ? `url(${story.author.avatar})` : undefined,
+                                backgroundSize: "cover",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 24,
+                            }}>
+                                {!story.author.avatar && "👤"}
+                            </div>
+                        </div>
+                    </div>
+                    <span style={{
+                        fontSize: 11,
+                        marginTop: 4,
+                        color: theme.colors.textPrimary,
+                        maxWidth: 64,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                    }}>
+                        {story.author.username}
+                    </span>
+                </div>
+            ))}
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/index.ts
+````typescript
+/**
+ * Instagram Views
+ */
+
+export { InstagramApp } from "./InstagramApp";
+export * from "./ios";
+````
+
+## File: packages/apps-instagram/src/anchors.ts
+````typescript
+/**
+ * Instagram Anchor Provider
+ * 
+ * Provides semantic anchors for camera focus operations.
+ * 
+ * Usage in DSL:
+ *   camera.focus("app_instagram:last-post");
+ *   camera.focus("app_instagram:post-{id}");
+ *   camera.focus("app_instagram:dm-input");
+ * 
+ * NOTE: Full anchor implementation deferred. This is a placeholder.
+ */
+
+// =============================================================================
+// ANCHOR IDS (for documentation and future use)
+// =============================================================================
+
+export const INSTAGRAM_ANCHORS = {
+    HEADER: "header",
+    STORIES: "stories",
+    LAST_POST: "last-post",
+    POST: "post", // post-{id}
+    DM_INPUT: "dm-input",
+    DM: "dm", // dm-{id}
+} as const;
+
+// =============================================================================
+// PLACEHOLDER ANCHOR PROVIDER
+// =============================================================================
+
+/**
+ * Anchor provider for Instagram.
+ * Currently a placeholder - will be expanded when anchor system is unified.
+ */
+export const instagramAnchorProvider = {
+    appId: "app_instagram",
+
+    // Future: implement getAnchors matching the core interface
+};
+
+export function registerInstagramAnchors(): void {
+    console.log("[Instagram] Anchor provider registered (placeholder)");
+}
+````
+
+## File: packages/apps-instagram/src/index.ts
+````typescript
+/**
+ * @tokovo/apps-instagram
+ * 
+ * Instagram app plugin for Tokovo.
+ */
+
+// Plugin
+export { InstagramPlugin, registerInstagramPlugin } from "./plugin";
+
+// Types
+export * from "./types";
+
+// Runtime
+export * from "./runtime";
+
+// DSL
+export * from "./dsl";
+
+// Views
+export * from "./views";
+
+// Anchors
+export { instagramAnchorProvider, INSTAGRAM_ANCHORS } from "./anchors";
+
+// Config
+export { instagramTheme } from "./config";
+````
+
+## File: packages/apps-instagram/src/plugin.ts
+````typescript
+/**
+ * Instagram Plugin - Enterprise Contract
+ * 
+ * Self-contained plugin following WhatsApp pattern:
+ * - Tier A: id, version, displayName, reducer, views
+ * - Tier B: lowering handler, layouts
+ * - Tier C: DSL extension (b.use() pattern)
+ */
+
+import React from "react";
+import { PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract } from "@tokovo/core/src/types/plugin-contract";
+
+// Runtime Layer
+import { instagramReducer } from "./runtime/reducer";
+import { createInstagramInitialState } from "./runtime/initial-state";
+
+// Views Layer
+import { InstagramApp } from "./views";
+
+// Lowering Layer
+import { instagramV2Lowering } from "./lowering";
+
+// DSL Layer
+import { InstagramTrackBuilder } from "./dsl";
+
+// =============================================================================
+// PLUGIN ASSETS
+// =============================================================================
+
+const instagramAssets = {
+    sounds: {
+        "dm_in": "plugins/instagram/dm_received.wav",
+        "dm_out": "plugins/instagram/dm_sent.wav",
+        "like": "plugins/instagram/like.wav",
+    },
+    icons: {
+        "app_icon": "/icons/instagram.svg",
+    },
+};
+
+// =============================================================================
+// ENTERPRISE PLUGIN CONTRACT
+// =============================================================================
+
+export const InstagramPlugin: TokovoPluginContract<"app_instagram"> & {
+    appView: React.FC<any>;
+    name: string;
+    v2Lowering: typeof instagramV2Lowering;
+    sounds: Record<string, string>;
+} = {
+    // === TIER A: Identity ===
+    id: "app_instagram" as const,
+    version: "1.0.0",
+    displayName: "Instagram",
+    name: "Instagram",
+
+    // === TIER A: Runtime ===
+    reducer: instagramReducer as any,
+    views: {
+        AppRoot: InstagramApp,
+        strategies: {
+            ios: {
+                HomeScreen: InstagramApp,
+            },
+        },
+    } as any,
+    appView: InstagramApp,
+    createInitialState: createInstagramInitialState,
+
+    // === SOUNDS ===
+    sounds: {
+        "app_instagram.dm_in": "plugins/instagram/dm_received.wav",
+        "app_instagram.dm_out": "plugins/instagram/dm_sent.wav",
+        "app_instagram.like": "plugins/instagram/like.wav",
+    },
+
+    // === TIER A: Assets ===
+    assets: instagramAssets,
+
+    // === TIER B: Lowering ===
+    v2Lowering: instagramV2Lowering,
+
+    // === TIER C: DSL ===
+    dsl: {
+        TrackBuilder: InstagramTrackBuilder,
+    } as any,
+};
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export function registerInstagramPlugin(): void {
+    PluginManager.register(InstagramPlugin as any);
+    console.log("[InstagramPlugin] Registered");
+}
+
+export default InstagramPlugin;
+````
+
+## File: packages/apps-instagram/package.json
+````json
+{
+    "name": "@tokovo/apps-instagram",
+    "version": "0.1.0",
+    "description": "Instagram app plugin for Tokovo",
+    "main": "src/index.ts",
+    "types": "src/index.ts",
+    "scripts": {
+        "build": "tsc",
+        "typecheck": "tsc --noEmit"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "react": "^18.3.1"
+    },
+    "devDependencies": {
+        "@types/react": "^18.2.0",
+        "typescript": "^5.3.3"
+    },
+    "peerDependencies": {
+        "react": "^18.0.0",
+        "remotion": "^4.0.0"
+    }
+}
+````
+
+## File: packages/apps-instagram/tsconfig.json
+````json
+{
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": {
+        "outDir": "./dist",
+        "rootDir": "./src",
+        "skipLibCheck": true,
+        "jsx": "react-jsx"
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
+````
+
+## File: packages/apps-whatsapp/src/assets/sounds.ts
+````typescript
+/**
+ * WhatsApp Sound Registry
+ * 
+ * Maps semantic sound IDs to physical file paths in the public directory.
+ * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
+ */
+
+import { SoundRegistry } from "@tokovo/core";
+
+// Register WhatsApp-specific sounds
+SoundRegistry.registerMany({
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+});
 ````
 
 ## File: packages/apps-whatsapp/src/camera/behaviors.ts
@@ -13940,289 +14765,6 @@ export const TypingIndicator: React.FC<TypingIndicatorProps> = ({
 export default TypingIndicator;
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/ChatListHeader.tsx
-````typescript
-import React from "react";
-import { CameraFillIcon, NewChatIcon, SearchIcon, FilterIcon } from "./Icons";
-import { getTheme } from "./theme";
-
-export const ChatListHeader: React.FC<{
-    safeAreaTop?: number;
-}> = ({ safeAreaTop = 47 }) => {
-    const theme = getTheme("ios");
-
-    return (
-        <div style={{
-            backgroundColor: "rgba(255, 255, 255, 0.92)", // Translucent
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-            display: "flex",
-            flexDirection: "column",
-            zIndex: 100,
-            position: "sticky",
-            top: 0,
-            borderBottom: "0.5px solid rgba(0,0,0,0.15)"
-        }}>
-            {/* Top Bar: Edit & Actions */}
-            <div style={{
-                paddingTop: safeAreaTop,
-                paddingLeft: 20,
-                paddingRight: 20,
-                height: 44 + safeAreaTop, // Standard nav bar height + safe area
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                boxSizing: 'border-box'
-            }}>
-                {/* Edit Button */}
-                <div style={{
-                    color: theme.colors.primary,
-                    fontSize: 17,
-                    fontWeight: "400",
-                    cursor: "pointer"
-                }}>
-                    Edit
-                </div>
-
-                {/* Right Actions */}
-                <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-                    <div style={{ cursor: "pointer" }}>
-                        <CameraFillIcon color={theme.colors.primary} />
-                    </div>
-                    <div style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: "50%",
-                        backgroundColor: "rgba(0,0,0,0.05)", // Subtle background for plus
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer"
-                    }}>
-                        <NewChatIcon color={theme.colors.primary} />
-                    </div>
-                </div>
-            </div>
-
-            {/* Large Title */}
-            <div style={{
-                padding: "8px 20px 12px 20px",
-                fontSize: 34,
-                fontWeight: "bold",
-                color: "#000",
-                display: "flex",
-                alignItems: "center"
-            }}>
-                Chats
-            </div>
-
-            {/* Search Bar */}
-            <div style={{ padding: "0 20px 12px 20px" }}>
-                <div style={{
-                    backgroundColor: "rgba(118, 118, 128, 0.12)",
-                    borderRadius: 10,
-                    height: 36,
-                    display: "flex",
-                    alignItems: "center",
-                    padding: "0 8px"
-                }}>
-                    <SearchIcon color="#8E8E93" />
-                    <input
-                        type="text"
-                        placeholder="Search"
-                        style={{
-                            border: "none",
-                            background: "transparent",
-                            fontSize: 17,
-                            marginLeft: 6,
-                            color: "#000",
-                            outline: "none",
-                            width: "100%",
-                            flex: 1
-                        }}
-                    />
-                </div>
-            </div>
-
-            {/* Filter Tabs (Chips) */}
-            <div style={{
-                padding: "0 20px 12px 20px",
-                display: "flex",
-                gap: 8,
-            }}>
-                {["All", "Unread", "Groups"].map((filter, index) => (
-                    <div key={filter} style={{
-                        padding: "6px 14px",
-                        backgroundColor: index === 0 ? "rgba(118, 118, 128, 0.12)" : "transparent",
-                        borderRadius: 16,
-                        fontSize: 15,
-                        fontWeight: index === 0 ? "600" : "400",
-                        color: index === 0 ? "#006ee6" : "#8E8E93", // Active green/blue tint? iOS Whatsapp uses Green for active chip text actually, or default grey bg
-                        cursor: "pointer",
-                        // WhatsApp style: selected is slightly darker grey bg with green text, unselected is plain text? 
-                        // Actually WA iOS: "All", "Unread", "Groups" are chips. Active (All) is usually default. 
-                        // Let's stick to a clean look: Selected = Grey BG + Green/Blue Text. Unselected = Grey Text.
-                    }}>
-                        {filter}
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-};
-````
-
-## File: packages/apps-whatsapp/src/components/ios/ChatListItem.tsx
-````typescript
-import React from "react";
-import { DoubleCheckIcon } from "./Icons";
-import { UI_CONSTANTS } from "../../config/layout-config";
-
-interface ChatListItemProps {
-    id: string;
-    name: string;
-    avatarUrl?: string;
-    lastMessage?: string;
-    timestamp?: string;
-    unreadCount?: number;
-    status?: "sent" | "delivered" | "read";
-    isGroup?: boolean; // For future group icon support
-    isTyping?: boolean; // For "Typing..." state
-    isLast?: boolean; // To hide separator on last item
-}
-
-export const ChatListItem: React.FC<ChatListItemProps> = ({
-    name,
-    avatarUrl,
-    lastMessage,
-    timestamp,
-    unreadCount = 0,
-    status,
-    isTyping,
-    isLast
-}) => {
-    return (
-        <div style={{
-            display: "flex",
-            backgroundColor: "white",
-            cursor: "pointer",
-            height: 76,
-            alignItems: "center",
-        }}>
-            {/* Avatar (Left, Fixed) */}
-            <div style={{
-                width: 76,
-                height: 76,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-            }}>
-                <div style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    backgroundColor: "#E0E0E0",
-                    overflow: "hidden",
-                }}>
-                    {avatarUrl ? (
-                        <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#ccc", color: "white", fontSize: 24 }}>
-                            {name.charAt(0)}
-                        </div>
-                    )}
-                </div>
-            </div>
-
-            {/* Content (Right, with Separator) */}
-            <div style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                height: "100%",
-                paddingRight: 16, // Right Margin
-                borderBottom: isLast ? "none" : "0.5px solid #C6C6C8", // Separator
-                minWidth: 0
-            }}>
-                {/* Top Row: Name and Time */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, alignItems: "baseline" }}>
-                    <div style={{
-                        fontWeight: "600",
-                        fontSize: 17,
-                        color: "#000",
-                        letterSpacing: "-0.24px",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        marginRight: 8
-                    }}>
-                        {name}
-                    </div>
-                    <div style={{
-                        fontSize: 14,
-                        color: unreadCount > 0 ? "#007AFF" : "#8E8E93",
-                        flexShrink: 0
-                    }}>
-                        {timestamp}
-                    </div>
-                </div>
-
-                {/* Bottom Row: Message and Status */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{
-                        fontSize: 15,
-                        color: "#8E8E93",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        maxWidth: "90%",
-                        letterSpacing: "-0.24px"
-                    }}>
-                        {isTyping ? (
-                            <span style={{ color: "#007AFF" }}>typing...</span>
-                        ) : (
-                            <>
-                                {status && !unreadCount && (
-                                    <span style={{ display: "flex", alignItems: "center" }}>
-                                        <DoubleCheckIcon read={status === "read"} size={16} />
-                                    </span>
-                                )}
-                                <span>{lastMessage}</span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Unread Badge */}
-                    {unreadCount > 0 && (
-                        <div style={{
-                            backgroundColor: "#007AFF",
-                            color: "white",
-                            borderRadius: "50%",
-                            minWidth: 20,
-                            height: 20,
-                            padding: "0 5px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 14,
-                            fontWeight: "600",
-                            lineHeight: 1
-                        }}>
-                            {unreadCount}
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
-};
-````
-
 ## File: packages/apps-whatsapp/src/components/ios/GroupHeader.tsx
 ````typescript
 /**
@@ -14566,349 +15108,258 @@ export const SimpleTypingIndicator: React.FC<{ isTyping: boolean }> = ({
 export default GroupTypingIndicator;
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/Icons.tsx
+## File: packages/apps-whatsapp/src/components/ios/MessageContent.tsx
 ````typescript
 import React from "react";
-import { Theme } from "./theme";
-
-// Standard icon size for touch targets is ~44x44, icons themselves usually 24x24 or 30x30
-
-export const ChevronLeftIcon = ({ color }: { color: string }) => (
-    <svg width="12" height="20" viewBox="0 0 12 20" fill="none">
-        <path d="M10 2L2 10L10 18" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const VideoCallIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 28 20" fill="none">
-        <rect x="1" y="3" width="18" height="14" rx="3" stroke={color} strokeWidth="1.8" />
-        <path d="M19 8L26 4V16L19 12V8Z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
-    </svg>
-);
-
-export const PhoneCallIcon = ({ color }: { color: string }) => (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-        <path d="M18.5 14.3V16.8C18.5 17.4 18.1 17.9 17.5 18C17.1 18 16.7 18 16.3 18C8.5 17.3 2.7 11.5 2 3.7C2 3.3 2 2.9 2 2.5C2.1 1.9 2.6 1.5 3.2 1.5H5.7C6.2 1.5 6.6 1.8 6.7 2.3C6.8 3 7 3.7 7.2 4.3C7.3 4.7 7.2 5.1 6.9 5.4L5.7 6.6C6.9 8.8 8.7 10.6 10.9 11.8L12.1 10.6C12.4 10.3 12.8 10.2 13.2 10.3C13.8 10.5 14.5 10.7 15.2 10.8C15.7 10.9 16 11.3 16 11.8V14.3H18.5Z" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const PlusCircleIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 30 30" fill="none">
-        <circle cx="15" cy="15" r="14" stroke={color} strokeWidth="1.8" />
-        <path d="M15 8V22M8 15H22" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-export const CameraFillIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="20" viewBox="0 0 28 24" fill={color}>
-        <path d="M4 6C2.9 6 2 6.9 2 8V20C2 21.1 2.9 22 4 22H24C25.1 22 26 21.1 26 20V8C26 6.9 25.1 6 24 6H20L18 3H10L8 6H4ZM14 18C11.2 18 9 15.8 9 13C9 10.2 11.2 8 14 8C16.8 8 19 10.2 19 13C19 15.8 16.8 18 14 18Z" />
-    </svg>
-);
-
-export const MicrophoneFillIcon = ({ color }: { color: string }) => (
-    <svg width="18" height="24" viewBox="0 0 22 30" fill={color}>
-        <rect x="6" y="2" width="10" height="16" rx="5" />
-        <path d="M4 14V15C4 19.4 7.6 23 12 23C16.4 23 20 19.4 20 15V14" stroke={color} strokeWidth="2" strokeLinecap="round" fill="none" />
-        <path d="M11 23V28M8 28H14" stroke={color} strokeWidth="2" strokeLinecap="round" />
-    </svg>
-);
-
-export const DoubleCheckIcon = ({ read, size = 16 }: { read?: boolean; size?: number }) => (
-    <svg width={size} height={size * 0.6} viewBox="0 0 16 10" fill="none">
-        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : "#8696A0"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-// ==========================================
-// UI ICONS
-// ==========================================
-
-export const SearchIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M21 21L16.65 16.65" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const FilterIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M22 3H2L10 12.46V19L14 21V12.46L22 3Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const ArchiveIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M20.5 5H3.5C2.67157 5 2 5.67157 2 6.5V8H22V6.5C22 5.67157 21.3284 5 20.5 5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M3 8V19C3 20.1046 3.89543 21 5 21H19C20.1046 21 21 20.1046 21 19V8" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M10 12L12 14L14 12" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 14V10" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const NewChatIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M12 5V19M5 12H19" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-    // Note: iOS standard is often a square with pencil, but plus is used too. Keeping plus for simplicity or circle-plus.
-    // iOS WhatsApp top-right is actually a square with a pencil (Compose).
-);
-
-export const ComposeIcon = ({ color }: { color: string }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <path d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M18.5 2.5C18.8978 2.10217 19.4374 1.87868 20 1.87868C20.5626 1.87868 21.1022 2.10217 21.5 2.5C21.8978 2.89782 22.1213 3.43739 22.1213 4C22.1213 4.56261 21.8978 5.10218 21.5 5.5L12 15L8 16L9 12L18.5 2.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-// ==========================================
-// TAB BAR ICONS
-// ==========================================
-
-export const UpdatesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-        <circle cx="12" cy="12" r="10" stroke={color} strokeWidth={filled ? "0" : "2"} fill={filled ? color : "none"} />
-        {filled ? (
-            <path d="M12 6V12L16 16" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        ) : null}
-        {!filled ? (<circle cx="12" cy="12" r="2" fill={color} />) : null}
-        {/* Simplified conceptual icon for Updates/Status */}
-    </svg>
-);
-
-export const CallsTabIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
-        <path d="M22 16.92V19.92C22 20.4706 21.5532 20.916 21.0028 20.916C20.6725 20.916 16.6 20 16.6 20C16.6 20 13 18.5 10 15.5C7 12.5 5.5 8.9 5.5 8.9C5.5 8.9 4.6 4.8 4.6 4.47C4.6 3.92 5.04543 3.47 5.59259 3.47H8.59259C8.97495 3.47 9.32432 3.72221 9.44477 4.08354C9.55998 4.42878 9.8 5 9.8 5C9.8 5 10.3 6.3 10.5 6.7C10.7 7.1 10.5 7.6 10.2 7.9L8.90001 9.2C8.90001 9.2 10.6 13.9 14.3 17.6C18 21.3 22.8 23 22.8 23L24.1 21.7C24.4 21.4 24.9 21.2 25.3 21.4C25.7 21.6 27 22.1 27 22.1C27 22.1 27.5 22.3 27.9 22.5C28.2 22.6 28.5 22.9 28.5 23.3V26.3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const CommunitiesIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
-        <path d="M17 21V19C17 17.9391 16.5786 16.9217 15.8284 16.1716C15.0783 15.4214 14.0609 15 13 15H5C3.93913 15 2.92172 15.4214 2.17157 16.1716C1.42143 16.9217 1 17.9391 1 19V21" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M9 11C11.2091 11 13 9.20914 13 7C13 4.79086 11.2091 3 9 3C6.79086 3 5 4.79086 5 7C5 9.20914 6.79086 11 9 11Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M23 21V19C22.9993 18.1137 22.7044 17.2528 22.1614 16.5523C21.6184 15.8519 20.8581 15.3516 20 15.13" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M16 3.13C16.8604 3.35031 17.623 3.85071 18.1676 4.55232C18.7122 5.25392 19.01 6.11683 19.0101 7.005C19.0103 7.89318 18.7127 8.75618 18.1682 9.45788C17.6237 10.1596 16.861 10.6601 16 10.88" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-
-export const ChatsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
-        <path d="M21 11.5C21.0034 12.8199 20.6951 14.1219 20.1 15.3C19.3944 16.7118 18.3098 17.8992 16.9674 18.7293C15.6251 19.5594 14.0782 19.9994 12.5 20C11.1801 20.0035 9.87812 19.6951 8.7 19.1L3 21L4.9 15.3C4.30493 14.1219 3.99656 12.8199 4 11.5C4.00061 9.92179 4.44061 8.37488 5.27072 7.03258C6.10083 5.69028 7.28825 4.6056 8.7 3.90003C9.87812 3.30496 11.1801 2.99659 12.5 3.00003H13C15.0843 3.11502 17.053 3.99479 18.5291 5.47089C20.0052 6.94699 20.885 8.91568 21 11H21 11.5Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-    // Just using a single chat bubble for simplicity, standard "Chats" icon is two bubbles often.
-);
-
-export const SettingsIcon = ({ color, filled }: { color: string, filled?: boolean }) => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill={filled ? color : "none"}>
-        <circle cx="12" cy="12" r="3" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M19.4 15C19.78 14.53 20 13.92 20 13.25V10.75C20 10.08 19.78 9.47 19.4 9L21.06 6.13C21.36 5.61 21.19 4.95 20.67 4.65L18.5 3.4C17.98 3.1 17.32 3.27 17.02 3.79L15.35 6.66C14.77 6.42 14.16 6.27 13.52 6.22L13.16 2.94C13.09 2.34 12.59 1.9 12 1.9H9.5C8.91 1.9 8.41 2.34 8.34 2.94L7.98 6.22C7.34 6.27 6.73 6.42 6.15 6.66L4.48 3.79C4.18 3.27 3.52 3.1 3 3.4L0.830002 4.65C0.310002 4.95 0.140002 5.61 0.440002 6.13L2.1 9C1.72 9.47 1.5 10.08 1.5 10.75V13.25C1.5 13.92 1.72 14.53 2.1 15L0.440002 17.87C0.140002 18.39 0.310002 19.05 0.830002 19.35L3 20.6C3.52 20.9 4.18 20.73 4.48 20.21L6.15 17.34C6.73 17.58 7.34 17.73 7.98 17.78L8.34 21.06C8.41 21.66 8.91 22.1 9.5 22.1H12C12.59 22.1 13.09 21.66 13.16 21.06L13.52 17.78C14.16 17.73 14.77 17.58 15.35 17.34L17.02 20.21C17.32 20.73 17.98 20.9 18.5 20.6L20.67 19.35C21.19 19.05 21.36 18.39 21.06 17.87L19.4 15Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
-````
-
-## File: packages/apps-whatsapp/src/components/ios/MessageBubble.tsx
-````typescript
-import React from "react";
-import { getTheme } from "./theme";
-import { DoubleCheckIcon } from "./Icons";
-import { MessageContent } from "./MessageContent";
+import { Play } from "lucide-react";
 import { MessageData } from "../../types";
+import { getTheme } from "./theme";
 
-interface MessageBubbleProps {
-    message: MessageData;
-    isMe: boolean;
-    isFirst: boolean;
-    isLast: boolean;
-    /** Group chat mode - enables sender name display */
-    isGroupChat?: boolean;
-    /** Sender name to display (for group chats) */
-    senderName?: string;
-    /** Sender name color (for group chats) */
-    senderColor?: string;
-    /** Whether to show sender name for this specific message */
-    showSenderName?: boolean;
-}
+// Sub-components can be extracted to separate files if they grow complex
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
-    message,
-    isMe,
-    isFirst,
-    isLast,
-    isGroupChat = false,
-    senderName,
-    senderColor,
-    showSenderName = false,
-}) => {
-    const theme = getTheme("ios");
-    const isSystem = message.type === "system";
+const TextContent: React.FC<{ text: string }> = ({ text }) => (
+    <div style={{
+        fontSize: 16,
+        lineHeight: "21px",
+        color: "var(--app-wa-bubble-text)",
+        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+        wordWrap: "break-word",
+        whiteSpace: "pre-wrap"
+    }}>
+        {text}
+    </div>
+);
 
-    // Determine if we should show sender name for this bubble
-    // Only show for "other" messages in group chats, at the start of a run
-    const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
+const ImageContent: React.FC<{ url: string; caption?: string }> = ({ url, caption }) => (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+        <img
+            src={url}
+            alt="Shared image"
+            style={{
+                borderRadius: 8,
+                maxWidth: "100%",
+                marginBottom: caption ? 4 : 0,
+                display: "block"
+            }}
+        />
+        {caption && <TextContent text={caption} />}
+    </div>
+);
 
-    if (isSystem) {
-        // System messages render outside the bubble flow directly
-        return <MessageContent message={message} />;
-    }
-
-    // Only show tail for the FIRST message in a group
-    const showTail = isFirst;
-
-    // Corner Radius Logic
-    // Top-Left: Sharp if Receiver & First
-    // Top-Right: Sharp if Sender & First
-    const borderTopLeft = !isMe && isFirst ? 0 : 16;
-    const borderTopRight = isMe && isFirst ? 0 : 16;
-    // Bottoms are generally rounded unless we want extremely tight "stack" look
-    // Standard WhatsApp iOS rounds all bottoms.
-
-    return (
-        <div style={{
-            alignSelf: isMe ? "flex-end" : "flex-start",
-            maxWidth: "75%", // Standard width constraint
-            position: "relative",
-            marginBottom: 2, // Tight bubble spacing
-            display: "flex",
-            flexDirection: "column"
-        }}>
+const VideoContent: React.FC<{ url?: string; thumbnail?: string; caption?: string; duration?: number }> = ({ url, thumbnail, caption, duration }) => (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+        <div style={{ position: "relative", borderRadius: 8, overflow: "hidden" }}>
+            <img
+                src={thumbnail || "https://placehold.co/300x200?text=Video"}
+                alt="Video thumbnail"
+                style={{ width: "100%", display: "block" }}
+            />
+            {/* Play Button Overlay */}
             <div style={{
-                backgroundColor: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
-                borderRadius: 16,
-                borderTopLeftRadius: borderTopLeft,
-                borderTopRightRadius: borderTopRight,
-                // Refined padding: 6px standard
-                padding: "6px 7px 8px 9px",
-                boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
-                display: "flex",
-                flexDirection: "column",
-                minWidth: 80
+                position: "absolute", inset: 0,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                backgroundColor: "rgba(0,0,0,0.3)"
             }}>
-                {/* Sender Name (Group Chats Only) */}
-                {shouldShowSender && (
-                    <span style={{
-                        fontSize: 13,
-                        fontWeight: 500,
-                        color: senderColor || "#00A884",
-                        marginBottom: 2,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                )}
-
-                {/* Content Layer */}
-                <MessageContent message={message} />
-
-                {/* Metadata Row (Time + Read) */}
                 <div style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: 4,
-                    marginTop: 2,
-                    // float: "right" // Could float for "compact" text, but flex row is safer
+                    width: 48, height: 48, borderRadius: 24,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    display: "flex", alignItems: "center", justifyContent: "center"
                 }}>
-                    <span style={{
-                        fontSize: 11,
-                        color: theme.colors.secondary, // Greenish on My, Gray on Other?
-                        // Actually on "My" bubble, time is also theme-colored usually
-                    }}>
-                        {message.timestamp || "10:00"}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={message.status === "read"} size={14} />}
+                    <Play size={24} color="white" fill="white" style={{ marginLeft: 2 }} />
                 </div>
             </div>
-
-            {/* SVG Tail */}
-            {showTail && (
-                <svg
-                    width="12" height="20" // Logical size for tail
-                    viewBox="0 0 12 20"
-                    style={{
-                        position: "absolute",
-                        [isMe ? "right" : "left"]: -6, // Overlap slightly to merge
-                        top: 0,
-                        fill: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
-                        transform: isMe ? "scaleX(1)" : "scaleX(-1)",
-                        zIndex: -1 // Behind
-                    }}
-                >
-                    {/* Authentic WhatsApp Tail Path approximation */}
-                    <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
-                    {/* Note: This is a simplified path for the demo. SVG paths for actual WA tail are complex bezier curves */}
-                </svg>
+            {duration && (
+                <span style={{
+                    position: "absolute", bottom: 8, left: 8,
+                    fontSize: 12, color: "white", padding: "2px 6px",
+                    backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 4
+                }}>
+                    {Math.floor(duration / 60)}:{Math.floor(duration % 60).toString().padStart(2, '0')}
+                </span>
             )}
+        </div>
+        {caption && <div style={{ marginTop: 4 }}><TextContent text={caption} /></div>}
+    </div>
+);
+
+const SystemContent: React.FC<{ text: string }> = ({ text }) => {
+    const theme = getTheme("ios");
+    return (
+        <div style={{
+            alignSelf: "center",
+            backgroundColor: "var(--app-wa-header-bg)", // "Encyclopedia" style
+            borderRadius: 8,
+            padding: "4px 8px",
+            fontSize: 12,
+            color: "var(--app-wa-bubble-timestamp)", // Or theme.colors.systemText
+            marginBottom: 8,
+            marginTop: 8,
+            textAlign: "center",
+            maxWidth: "80%",
+            boxShadow: "0 1px 1px rgba(0,0,0,0.1)"
+        }}>
+            {text}
+        </div>
+    );
+};
+
+
+export const MessageContent: React.FC<{ message: MessageData }> = ({ message }) => {
+    switch (message.type) {
+        case "text":
+            return <TextContent text={message.text} />;
+        case "image":
+            return <ImageContent url={message.imageUrl} caption={message.caption} />;
+        case "video":
+            return <VideoContent url={message.videoUrl} thumbnail={message.thumbnailUrl} duration={message.duration} caption={message.caption} />;
+
+        // case "voice": return <VoiceContent ... /> // TODO
+
+        case "system":
+            return <SystemContent text={message.text} />;
+
+        default:
+            return <TextContent text="[Unsupported message type]" />;
+    }
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/TypingIndicator.tsx
+````typescript
+import React from "react";
+import { getTheme } from "./theme";
+
+export const TypingIndicator: React.FC = () => {
+    const theme = getTheme("ios");
+
+    // Dot animation style
+    const dotStyle = {
+        width: 7,
+        height: 7,
+        borderRadius: "50%",
+        backgroundColor: "#B6B6BB", // iOS gray color for dots
+        animation: "typingBounce 1.4s infinite ease-in-out both",
+        margin: "0 1.5px" // tight spacing
+    };
+
+    return (
+        <div style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            padding: "10px 18px", // Matches message bubble padding
+            backgroundColor: theme.colors.bubbleOtherBg, // Theme background
+            borderRadius: 18,
+            borderBottomLeftRadius: 4, // Tail anchor
+            width: "fit-content",
+            boxShadow: "0 1px 1px rgba(0,0,0,0.05)",
+            height: 36,
+            marginLeft: 6 // Align with other messages
+        }}>
+
+            {/* Dots Container */}
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <div style={{ ...dotStyle, animationDelay: "0s" }} />
+                <div style={{ ...dotStyle, animationDelay: "0.2s" }} />
+                <div style={{ ...dotStyle, animationDelay: "0.4s" }} />
+            </div>
+
+            {/* CSS Animation Keyframes */}
+            <style>{`
+                @keyframes typingBounce {
+                    0%, 80%, 100% { 
+                        transform: scale(0.6); 
+                        opacity: 0.4;
+                    }
+                    40% { 
+                        transform: scale(1.0); 
+                        opacity: 1;
+                    }
+                }
+            `}</style>
+            {/* Tail SVG - Authentic left-side tail */}
+            <svg
+                width="12" height="20"
+                viewBox="0 0 12 20"
+                style={{
+                    position: "absolute",
+                    left: -6,
+                    bottom: 0,
+                    fill: theme.colors.bubbleOtherBg,
+                    transform: "scaleX(-1)", // Flip for left side
+                    zIndex: -1
+                }}
+            >
+                <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
+            </svg>
         </div>
     );
 };
 ````
 
-## File: packages/apps-whatsapp/src/components/ios/TabNavigation.tsx
+## File: packages/apps-whatsapp/src/components/BubbleTail.tsx
 ````typescript
+/**
+ * WhatsApp Bubble Tail
+ * 
+ * Authentic WhatsApp iOS bubble tail SVG.
+ * The tail is a curved triangle that appears at the top of the first message.
+ */
+
 import React from "react";
-import { UpdatesIcon, CallsTabIcon, CommunitiesIcon, ChatsIcon, SettingsIcon } from "./Icons";
-import { getTheme } from "./theme";
 
-export const TabNavigation: React.FC<{
-    activeTab?: string;
-    safeAreaBottom?: number;
-}> = ({ activeTab = "chats", safeAreaBottom = 34 }) => {
-    const theme = getTheme("ios");
-    const primaryColor = theme.colors.primary; // Blue usually
-    const inactiveColor = "#8E8E93";
+interface BubbleTailProps {
+    isMe: boolean;
+    color: string;
+}
 
-    const tabs = [
-        { id: "updates", label: "Updates", Icon: UpdatesIcon },
-        { id: "calls", label: "Calls", Icon: CallsTabIcon },
-        { id: "communities", label: "Communities", Icon: CommunitiesIcon },
-        { id: "chats", label: "Chats", Icon: ChatsIcon },
-        { id: "settings", label: "Settings", Icon: SettingsIcon },
-    ];
-
-    return (
-        <div style={{
-            backgroundColor: "rgba(250, 250, 250, 0.9)", // Translucent bar
-            backdropFilter: "blur(20px)",
-            borderTop: "0.5px solid rgba(0,0,0,0.3)",
-            display: "flex",
-            justifyContent: "space-between",
-            paddingBottom: safeAreaBottom,
-            paddingTop: 8,
-            paddingLeft: 16,
-            paddingRight: 16,
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            zIndex: 1000
-        }}>
-            {tabs.map((tab) => {
-                const isActive = activeTab === tab.id;
-                const color = isActive ? primaryColor : inactiveColor;
-
-                return (
-                    <div key={tab.id} style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        cursor: "pointer",
-                        flex: 1
-                    }}>
-                        <tab.Icon color={color} filled={isActive} />
-                        <div style={{
-                            fontSize: 10,
-                            marginTop: 4,
-                            fontWeight: "500",
-                            color: color
-                        }}>
-                            {tab.label}
-                        </div>
-                    </div>
-                );
-            })}
-        </div>
-    );
+/**
+ * Authentic WhatsApp iOS bubble tail
+ */
+export const BubbleTail: React.FC<BubbleTailProps> = ({ isMe, color }) => {
+    if (isMe) {
+        // Right-side tail (my messages)
+        return (
+            <svg
+                width="24"
+                height="30"
+                viewBox="0 0 8 10"
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    right: -8,
+                }}
+            >
+                <path
+                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
+                    fill={color}
+                />
+            </svg>
+        );
+    } else {
+        // Left-side tail (other's messages)
+        return (
+            <svg
+                width="24"
+                height="30"
+                viewBox="0 0 8 10"
+                style={{
+                    position: "absolute",
+                    top: 0,
+                    left: -8,
+                    transform: "scaleX(-1)",
+                }}
+            >
+                <path
+                    d="M0 0 C4 0 8 4 8 10 L0 10 Z"
+                    fill={color}
+                />
+            </svg>
+        );
+    }
 };
+
+export default BubbleTail;
 ````
 
 ## File: packages/apps-whatsapp/src/components/ChatsListScreen.tsx
@@ -15398,611 +15849,312 @@ const SettingsIcon: React.FC<{ active: boolean }> = ({ active }) => (
 export default ChatsListScreen;
 ````
 
-## File: packages/apps-whatsapp/src/components/Header.tsx
+## File: packages/apps-whatsapp/src/components/MessageBubble.tsx
 ````typescript
 /**
- * WhatsApp Header Component
+ * WhatsApp Message Bubble Component
  * 
- * Authentic iOS WhatsApp navigation bar with configurable contact info.
+ * Authentic iOS WhatsApp message styling with:
+ * - Timestamps and read receipts
+ * - Reply/Quote UI for quoted messages
+ * - Reactions (tapbacks) display
  */
 
 import React from "react";
-import { Platform, getAppConfig } from "@tokovo/core";
-import { ChevronLeftIcon, VideoCallIcon, PhoneCallIcon } from "./icons";
+import { ChatMessageLayout } from "@tokovo/core";
+import { Check, CheckCheck, Clock } from "lucide-react";
+import { ReplyQuote, ReplyToData } from "./ReplyQuote";
+import { ReactionsBar, Reaction } from "./Reactions";
+import { LAYOUT_CONSTANTS } from "../config/layout-config";
 
-// Stub for getTokens (to be implemented properly)
-const getTokens = (_platform: Platform) => ({
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-});
+// =============================================================================
+// TYPES
+// =============================================================================
 
-export interface HeaderProps {
-    contactName: string;
-    avatarUrl?: string;
-    status?: string;
-    platform?: Platform;
+export interface MessageData {
+    id: string;
+    from: string;
+    text?: string;
+    timestamp?: string;
+    read?: boolean;
+    status?: "sent" | "delivered" | "read" | "pending";
+    type?: "text" | "image" | "voice" | "system" | "video" | "gif";
+    replyTo?: ReplyToData;
+    reactions?: Reaction[];
 }
 
-export const Header: React.FC<HeaderProps> = ({
-    contactName,
-    avatarUrl,
-    status = "online",
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
+export interface MessageBubbleProps {
+    msg: MessageData;
+    layout: ChatMessageLayout;
+}
+
+// =============================================================================
+// STATUS ICON HELPER
+// =============================================================================
+
+const StatusIcon = ({ status, read, isMe }: { status?: string; read?: boolean; isMe: boolean }) => {
+    if (!isMe) return null;
+
+    // Legacy support for 'read' boolean
+    const effectiveStatus = status || (read ? "read" : "delivered");
+
+    const iconProps = { size: 16, strokeWidth: 2 };
+
+    switch (effectiveStatus) {
+        case "pending":
+            return <Clock {...iconProps} color="var(--wa-text-secondary)" />;
+        case "sent":
+            return <Check {...iconProps} color="var(--wa-text-secondary)" />;
+        case "delivered":
+            return <CheckCheck {...iconProps} color="var(--wa-text-secondary)" />;
+        case "read":
+            return <CheckCheck {...iconProps} color="var(--wa-color-primary)" />;
+        default:
+            return null;
+    }
+};
+
+// =============================================================================
+// MESSAGE BUBBLE
+// =============================================================================
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ msg, layout }) => {
+    const isMe = msg.from === "me";
+    const { opacity, translateX, translateY, rect } = layout;
+
+    if (!rect) return null;
+
+    const hasReactions = msg.reactions && msg.reactions.length > 0;
+
+    // Border Radius Logic
+    // iOS bubbles have large radius (18px) usually.
+    // Tails are handled by reducing ONE corner to a small radius (e.g. 6px) OR using a specialized SVG tail.
+    // For CSS-only approach:
+    // Me: TopRight is small (6px), rest are large (18px).
+    // Other: TopLeft is small (6px), rest are large (18px).
+    // Note: In real WhatsApp, the tail is distinct from the corner, but this approximation is standard for web.
+
+    const radiusL = "var(--wa-corner-radius-l)"; // 18px
+    const radiusS = "var(--wa-corner-radius-s)"; // 6px
+
+    const borderRadius = isMe
+        ? `${radiusL} ${radiusS} ${radiusL} ${radiusL}`
+        : `${radiusS} ${radiusL} ${radiusL} ${radiusL}`;
 
     return (
-        <div style={{
-            height: config.headerHeight,
-            backgroundColor: config.headerBg,
-            display: "flex",
-            alignItems: "center",
-            padding: `0 ${config.bubbleMarginHorizontal}px`,
-            marginTop: config.statusBarHeight,
-            borderBottom: "1px solid rgba(0,0,0,0.1)",
-            zIndex: 10,
-            fontFamily: tokens.fontFamily
-        }}>
-            {/* Back button with unread count */}
-            <div style={{ display: "flex", alignItems: "center", gap: 0 }}>
-                <ChevronLeftIcon />
-                <span style={{
-                    fontSize: config.headerTitleSize,
-                    color: platform === "ios" ? "#007AFF" : "#FFFFFF",
-                    fontWeight: "400"
-                }}>
-                    4
-                </span>
-            </div>
-
-            {/* Avatar + Name + Status (centered group) */}
-            <div style={{
-                flex: 1,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginLeft: -60
-            }}>
-                {/* Avatar */}
-                <div style={{
-                    width: config.avatarSize,
-                    height: config.avatarSize,
-                    borderRadius: "50%",
-                    background: avatarUrl
-                        ? `url(${avatarUrl}) center/cover`
-                        : "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-                    marginRight: config.avatarMargin,
+        <div
+            // Anchor ID for Camera System
+            data-anchor-id={msg.id}
+            style={{
+                position: "absolute",
+                top: rect.y,
+                left: rect.x,
+                width: rect.width,
+                opacity,
+                transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
+                zIndex: 1,
+            }}
+        >
+            {/* Main Bubble Container */}
+            <div
+                className={hasReactions ? "wa-bubble-has-reactions" : ""}
+                style={{
+                    position: "relative",
+                    backgroundColor: isMe ? "var(--wa-bubble-out-bg)" : "var(--wa-bubble-in-bg)",
+                    padding: `${LAYOUT_CONSTANTS.BUBBLE_PADDING_V}px ${LAYOUT_CONSTANTS.BUBBLE_PADDING_H}px`,
+                    borderRadius: borderRadius,
+                    boxShadow: "var(--wa-shadow-sm)",
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    color: "white",
-                    fontSize: config.avatarSize * 0.4,
-                    fontWeight: "600"
+                    flexDirection: "column",
+                    gap: 6,
+                    marginBottom: hasReactions ? 24 : 0,
+                    // If no reactions, we still need to respect layout height, which includes margin if calculated
+                }}
+            >
+                {/* Reply/Quote */}
+                {msg.replyTo && (
+                    <ReplyQuote
+                        replyTo={msg.replyTo}
+                        isMyMessage={isMe}
+                    />
+                )}
+
+                {/* Message Text */}
+                <span style={{
+                    fontSize: LAYOUT_CONSTANTS.FONT_SIZE,
+                    lineHeight: `${LAYOUT_CONSTANTS.LINE_HEIGHT}px`,
+                    color: "var(--wa-text-primary)",
+                    fontFamily: "var(--wa-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif)",
+                    wordWrap: "break-word",
+                    whiteSpace: "pre-wrap", // Preserve formatting
                 }}>
-                    {!avatarUrl && contactName.charAt(0).toUpperCase()}
-                </div>
+                    {msg.text}
+                </span>
 
-                {/* Name & Status */}
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start" }}>
+                {/* Footer: Time + Status */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 6,
+                    marginTop: 4, // Slight separation from text
+                    height: LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT - 10, // Adjust for visual alignment
+                }}>
                     <span style={{
-                        fontSize: config.headerTitleSize,
-                        fontWeight: "600",
-                        color: platform === "ios" ? "#000000" : "#FFFFFF",
-                        letterSpacing: -0.5
+                        fontSize: 33, // 11px visual
+                        color: isMe ? "var(--wa-bubble-time)" : "var(--wa-text-secondary)",
+                        fontFamily: "var(--wa-font-family)",
+                        marginBottom: 1, // Visual tweak
                     }}>
-                        {contactName}
+                        {msg.timestamp || "10:42"}
                     </span>
-                    <span style={{
-                        fontSize: config.headerSubtitleSize,
-                        color: platform === "ios" ? "#8E8E93" : "rgba(255,255,255,0.7)"
-                    }}>
-                        {status}
-                    </span>
+
+                    <StatusIcon
+                        status={msg.status}
+                        read={msg.read}
+                        isMe={isMe}
+                    />
                 </div>
             </div>
 
-            {/* Action icons */}
-            <div style={{ display: "flex", gap: config.headerIconGap, alignItems: "center" }}>
-                <VideoCallIcon />
-                <PhoneCallIcon />
-            </div>
+            {/* Reactions Bar */}
+            {hasReactions && (
+                <ReactionsBar
+                    reactions={msg.reactions!}
+                    isMyMessage={isMe}
+                />
+            )}
         </div>
     );
 };
 ````
 
-## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
+## File: packages/apps-whatsapp/src/components/ReplyQuote.tsx
 ````typescript
 import React from "react";
-import { getAppConfig, Platform } from "@tokovo/core";
+import { Camera, Video, Mic } from "lucide-react";
 
-// Stub for getTokens (to be implemented properly)
-const getTokens = (_platform: Platform) => ({
-    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
-});
-
-// ============================================================================
-// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
-// ============================================================================
-
-interface ImageMessageBubbleProps {
-    imageUrl: string;
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
+export interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
 }
 
-export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
-    imageUrl,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
+interface ReplyQuoteProps {
+    replyTo: ReplyToData;
+    isMyMessage?: boolean;
+    onClick?: () => void;
+}
+
+export const ReplyQuote: React.FC<ReplyQuoteProps> = ({
+    replyTo,
+    isMyMessage = false,
+    onClick,
 }) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
+    // Color based on who sent the original
+    // Use CSS vars for these brand colors? Or keep specific brand colors?
+    // Whatsapp usually uses specific colors for names.
+    const barColor = replyTo.from === "me" ? "var(--app-wa-bubble-my-bg)" : "var(--app-wa-primary)";
 
     return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Image container */}
-            <div style={{
-                position: "relative",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-                // Square bottom corners if caption is below
-                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
-                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
+        <div
+            onClick={onClick}
+            style={{
+                display: "flex",
+                gap: 0,
+                backgroundColor: isMyMessage ? "rgba(0,0,0,0.05)" : "rgba(0,0,0,0.03)",
+                borderRadius: 18,
                 overflow: "hidden",
-            }}>
-                <img
-                    src={imageUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
+                marginBottom: 12,
+                cursor: onClick ? "pointer" : "default",
+            }}
+        >
+            {/* Colored bar */}
+            <div style={{
+                width: 12,
+                backgroundColor: barColor,
+                flexShrink: 0,
+            }} />
 
-                {/* Timestamp overlay on image (when no caption) */}
-                {!caption && (
+            {/* Content */}
+            <div style={{
+                flex: 1,
+                padding: "15px 18px",
+                display: "flex",
+                alignItems: "center",
+                gap: 18,
+            }}>
+                {/* Text content */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Sender name */}
                     <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
+                        fontSize: 36,
+                        fontWeight: 600,
+                        color: barColor,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        marginBottom: 6,
+                    }}>
+                        {replyTo.from === "me" ? "You" : replyTo.from}
+                    </div>
+
+                    {/* Message preview */}
+                    <div style={{
+                        fontSize: 39,
+                        color: "var(--app-wa-bubble-text)",
+                        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                         display: "flex",
                         alignItems: "center",
                         gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
-                        borderRadius: 12,
+                        opacity: 0.7
                     }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    {/* Timestamp + Read receipts */}
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
+                        {/* Type icon */}
+                        {replyTo.type === "image" && (
+                            <>
+                                <Camera size={36} color="var(--app-wa-bubble-text)" />
+                                <span>Photo</span>
+                            </>
+                        )}
+                        {replyTo.type === "video" && (
+                            <>
+                                <Video size={36} color="var(--app-wa-bubble-text)" />
+                                <span>Video</span>
+                            </>
+                        )}
+                        {replyTo.type === "voice" && (
+                            <>
+                                <Mic size={36} color="var(--app-wa-bubble-text)" />
+                                <span>Voice message</span>
+                            </>
+                        )}
+                        {(!replyTo.type || replyTo.type === "text") && (
+                            <span>{replyTo.text}</span>
+                        )}
                     </div>
                 </div>
-            )}
-        </div>
-    );
-};
 
-// ============================================================================
-// VIDEO MESSAGE BUBBLE - With Play Overlay
-// ============================================================================
-
-interface VideoMessageBubbleProps {
-    thumbnailUrl: string;
-    duration: number; // in seconds
-    caption?: string;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    isPlaying?: boolean;
-    playProgress?: number;
-    platform?: Platform;
-}
-
-export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
-    thumbnailUrl,
-    duration,
-    caption,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    isPlaying = false,
-    playProgress = 0,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    const formatDuration = (secs: number) => {
-        const mins = Math.floor(secs / 60);
-        const s = secs % 60;
-        return `${mins}:${s.toString().padStart(2, '0')}`;
-    };
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* Video thumbnail container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={thumbnailUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 600,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* Play button overlay */}
-                {!isPlaying && (
+                {/* Thumbnail for media */}
+                {replyTo.thumbnailUrl && (
                     <div style={{
-                        position: "absolute",
-                        top: "50%",
-                        left: "50%",
-                        transform: "translate(-50%, -50%)",
                         width: 120,
                         height: 120,
-                        backgroundColor: "rgba(0,0,0,0.6)",
-                        borderRadius: "50%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                    }}>
-                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
-                            <path d="M8 5v14l11-7z" />
-                        </svg>
-                    </div>
-                )}
-
-                {/* Duration badge */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    left: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
-                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
-                    </svg>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {formatDuration(duration)}
-                    </span>
-                </div>
-
-                {/* Timestamp overlay (when no caption) */}
-                {!caption && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 12,
-                        right: 12,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 9,
-                        backgroundColor: "rgba(0,0,0,0.5)",
-                        padding: "6px 12px",
                         borderRadius: 12,
-                    }}>
-                        <span style={{
-                            fontSize: 28,
-                            color: "#FFFFFF",
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} light />}
-                    </div>
+                        backgroundImage: `url(${replyTo.thumbnailUrl})`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        flexShrink: 0,
+                    }} />
                 )}
-
-                {/* Progress bar during playback */}
-                {isPlaying && (
-                    <div style={{
-                        position: "absolute",
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: 6,
-                        backgroundColor: "rgba(255,255,255,0.3)",
-                    }}>
-                        <div style={{
-                            height: "100%",
-                            width: `${(playProgress / duration) * 100}%`,
-                            backgroundColor: "#25D366",
-                        }} />
-                    </div>
-                )}
-            </div>
-
-            {/* Caption if present */}
-            {caption && (
-                <div style={{
-                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
-                }}>
-                    <span style={{
-                        fontSize: config.messageTextSize,
-                        lineHeight: `${config.messageLineHeight}px`,
-                        color: config.bubbleTextColor,
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {caption}
-                    </span>
-
-                    <div style={{
-                        display: "flex",
-                        justifyContent: "flex-end",
-                        alignItems: "center",
-                        gap: config.bubbleGap * 0.75,
-                        marginTop: 6,
-                    }}>
-                        <span style={{
-                            fontSize: config.timestampSize,
-                            color: config.timestampColor,
-                            fontFamily: tokens.fontFamily,
-                        }}>
-                            {timestamp}
-                        </span>
-                        {isMe && <DoubleCheckIcon read={read} />}
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
-
-// ============================================================================
-// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
-// ============================================================================
-
-interface GifMessageBubbleProps {
-    gifUrl: string;
-    width?: number;
-    height?: number;
-    isMe: boolean;
-    senderName?: string;
-    timestamp?: string;
-    read?: boolean;
-    platform?: Platform;
-}
-
-export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
-    gifUrl,
-    isMe,
-    senderName,
-    timestamp = "10:42",
-    read = false,
-    platform = "ios"
-}) => {
-    const config = getAppConfig("whatsapp", platform) as any;
-    const tokens = getTokens(platform);
-
-    return (
-        <div style={{
-            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
-            borderRadius: config.bubbleRadius,
-            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
-            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
-            boxShadow: config.bubbleShadow,
-            overflow: "hidden",
-            // Width is controlled by layout container
-            width: "100%",
-        }}>
-            {/* Sender Name (Group Chat) */}
-            {senderName && !isMe && (
-                <div style={{
-                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
-                    backgroundColor: "transparent"
-                }}>
-                    <span style={{
-                        fontSize: config.senderNameSize,
-                        fontWeight: 600,
-                        color: config.senderNameColor,
-                        fontFamily: tokens.fontFamily,
-                        display: "block",
-                    }}>
-                        {senderName}
-                    </span>
-                </div>
-            )}
-
-            {/* GIF container */}
-            <div style={{
-                position: "relative",
-                overflow: "hidden",
-                // Square top corners if sender name is above
-                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
-                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
-            }}>
-                <img
-                    src={gifUrl}
-                    style={{
-                        width: "100%",
-                        height: "auto",
-                        maxHeight: 500,
-                        objectFit: "cover",
-                        display: "block",
-                    }}
-                    alt=""
-                />
-
-                {/* GIF badge */}
-                <div style={{
-                    position: "absolute",
-                    top: 12,
-                    left: 12,
-                    backgroundColor: "rgba(0,0,0,0.6)",
-                    padding: "4px 12px",
-                    borderRadius: 8,
-                }}>
-                    <span style={{
-                        fontSize: 24,
-                        fontWeight: 700,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                        letterSpacing: 1,
-                    }}>
-                        GIF
-                    </span>
-                </div>
-
-                {/* Timestamp overlay */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 12,
-                    right: 12,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 9,
-                    backgroundColor: "rgba(0,0,0,0.5)",
-                    padding: "6px 12px",
-                    borderRadius: 12,
-                }}>
-                    <span style={{
-                        fontSize: 28,
-                        color: "#FFFFFF",
-                        fontFamily: tokens.fontFamily,
-                    }}>
-                        {timestamp}
-                    </span>
-                    {isMe && <DoubleCheckIcon read={read} light />}
-                </div>
             </div>
         </div>
     );
 };
 
-// ============================================================================
-// SHARED: Double Check Icon for read receipts
-// ============================================================================
-
-const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
-    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
-        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-);
+export default ReplyQuote;
 ````
 
 ## File: packages/apps-whatsapp/src/config/color-utils.ts
@@ -16131,6 +16283,603 @@ export * from "./whatsapp-theme";
 export * from "./polish";
 export * from "./colors";
 export * from "./color-utils";
+````
+
+## File: packages/apps-whatsapp/src/config/layout-config.ts
+````typescript
+/**
+ * WhatsApp Layout Configuration
+ * 
+ * Production-grade configurable message heights, spacing, and animations.
+ * All values are in device pixels (3x scale for retina).
+ * 
+ * DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No heuristics.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
+// =============================================================================
+// MESSAGE TYPE ENUMERATION
+// =============================================================================
+
+export type MessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "gif"
+    | "voice"
+    | "system"
+    | "deleted"
+    | "typing"
+    | "screenshot_alert"
+    | "call_missed";
+
+export type MessageCategory = "text" | "media" | "audio" | "system" | "ephemeral";
+
+// =============================================================================
+// SPACING CONFIGURATION (SOURCE OF TRUTH)
+// =============================================================================
+
+/**
+ * Authoritative Layout Constants.
+ * These are the Source of Truth for both Calculation and Rendering.
+ * All units in device pixels (3x retina).
+ */
+export const LAYOUT_CONSTANTS = {
+    BUBBLE_PADDING_V: 21,     // 7px visual (iOS tight padding)
+    BUBBLE_PADDING_H: 36,     // 12px visual (Left/Right padding)
+    LINE_HEIGHT: 66,          // 22px visual (Standard iOS Body ledding)
+    FONT_SIZE: 51,            // 17px visual (Standard iOS Body size)
+    TIMESTAMP_HEIGHT: 45,     // 15px visual (Footer area with checkmarks)
+    SENDER_NAME_HEIGHT: 45,   // 15px visual
+
+    // Spacing Tiers (The 3-Tier Model)
+    GAP_MINIMAL: 6,           // 2px visual (Visual Run / Burst - very tight)
+    GAP_RUN_BREAK: 24,        // 8px visual (Same Sender, New Block/Reply)
+    GAP_NORMAL: 36,           // 12px visual (Sender Switch)
+
+    // System Spacing
+    GAP_SYSTEM: 30,           // 10px visual
+
+    // Typography / Metrics
+    AVG_CHAR_WIDTH: 27,       // Calibrated for SF Pro Text 17pt
+
+    // Typing Indicator
+    TYPING_BUBBLE_HEIGHT: 72, // 24px visual
+    TYPING_BUBBLE_PADDING_V: 24,
+};
+
+/**
+ * UI Constants (Header, Input, etc.)
+ * Source of Truth for both React Components and Layout Engine.
+ */
+export const UI_CONSTANTS = {
+    // Header
+    HEADER_CONTENT_HEIGHT: 60,
+    HEADER_AVATAR_SIZE: 37,
+    HEADER_AVATAR_MARGIN_RIGHT: 10,
+    HEADER_PADDING_X: 10,
+    HEADER_BACK_BUTTON_WIDTH: 24, // Approx
+
+    // Input Area
+    INPUT_MIN_HEIGHT: 60, // Standard single line
+};
+
+/**
+ * Simplified Per-Message-Type Configuration
+ */
+export interface MessageTypeConfig {
+    category: MessageCategory;
+    gapBefore?: number; // Force specific gap (used for System messages)
+    gapAfter?: number;  // Force specific gap
+}
+
+export interface SpacingConfig {
+    typeOverrides: Record<MessageType, MessageTypeConfig>;
+    global: GlobalSpacing;
+}
+
+// =============================================================================
+// HEIGHT & WIDTH CONFIGURATION
+// =============================================================================
+
+export interface MessageHeightConfig {
+    /** Base height calculation */
+    base: number;
+    /** For text: Line height */
+    lineHeight?: number;
+    /** For text: Characters per line for wrapping */
+    charsPerLine?: number;
+    /** For media: Height with caption */
+    withCaption?: number;
+}
+
+export interface MessageWidthConfig {
+    /** Max width as percentage of viewport (0-1) */
+    maxPercent: number;
+    /** Minimum width in pixels */
+    min: number;
+    /** Fixed width (optional) */
+    fixed?: number;
+}
+
+export interface MessageSchema {
+    height: MessageHeightConfig;
+    width: MessageWidthConfig;
+}
+
+// =============================================================================
+// HEIGHT ADDITIONS (The "Legos")
+// =============================================================================
+
+export interface HeightAdditions {
+    reaction: number;
+    reply: number;
+    linkPreview: number;
+    senderName: number;
+}
+
+// =============================================================================
+// SCROLL & ANIMATION
+// =============================================================================
+
+export type EasingFunction = "linear" | "easeOut" | "easeInOut" | "spring";
+
+export interface ScrollConfig {
+    lockToBottom: boolean;
+    smoothScrollDuration: number;
+    easing: EasingFunction;
+    newMessageScrollDelay: number;
+    overscanTop: number;
+    overscanBottom: number;
+    maxScrollSpeed: number;
+}
+
+export interface AnimationConfig {
+    messageAppearDuration: number;
+    messageAppearOffset: number;
+    typingPulseDuration: number;
+    voiceWaveformSpeed: number;
+}
+
+export interface GlobalSpacing {
+    topPadding: number;
+    bottomPadding: number;
+    bubbleMargin: number;
+}
+
+// =============================================================================
+// COMPLETE CONFIG STRUCT
+// =============================================================================
+
+export interface MessageLayoutConfig {
+    messageTypes: Record<MessageType, MessageSchema>;
+    additions: HeightAdditions;
+    scroll: ScrollConfig;
+    animation: AnimationConfig;
+    spacing: SpacingConfig;
+}
+
+// =============================================================================
+// DEFAULT CONFIGURATION (The Values)
+// =============================================================================
+
+const DEFAULT_TYPE_OVERRIDES: Record<MessageType, MessageTypeConfig> = {
+    text: { category: "text" },
+    image: { category: "media" },
+    video: { category: "media" },
+    gif: { category: "media" },
+    voice: { category: "audio" },
+    system: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    deleted: { category: "text" },
+    // Typing behaves like a sender run-break (e.g. interruption)
+    typing: { category: "ephemeral", gapBefore: LAYOUT_CONSTANTS.GAP_RUN_BREAK, gapAfter: LAYOUT_CONSTANTS.GAP_RUN_BREAK },
+    screenshot_alert: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+    call_missed: { category: "system", gapBefore: LAYOUT_CONSTANTS.GAP_SYSTEM, gapAfter: LAYOUT_CONSTANTS.GAP_SYSTEM },
+};
+
+export const DEFAULT_LAYOUT_CONFIG: MessageLayoutConfig = {
+    messageTypes: {
+        text: {
+            height: {
+                base: LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2 + LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT,
+                lineHeight: LAYOUT_CONSTANTS.LINE_HEIGHT,
+                // capacity dynamic via measureTextBlock (unitsPerLine)
+            },
+            width: {
+                maxPercent: 0.78,
+                min: 150,
+            },
+        },
+        image: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        video: {
+            height: { base: 600, withCaption: 700 },
+            width: { maxPercent: 0.78, min: 300 },
+        },
+        gif: {
+            height: { base: 500 },
+            width: { maxPercent: 0.78, min: 250 },
+        },
+        voice: {
+            height: { base: 180 },
+            width: { fixed: 450, maxPercent: 0.78, min: 450 },
+        },
+        system: {
+            height: { base: 80 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        deleted: {
+            height: { base: 100 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+        typing: {
+            height: { base: LAYOUT_CONSTANTS.TYPING_BUBBLE_HEIGHT + (LAYOUT_CONSTANTS.TYPING_BUBBLE_PADDING_V * 2) },
+            width: { fixed: 150, maxPercent: 0.3, min: 150 },
+        },
+        screenshot_alert: {
+            height: { base: 80 },
+            width: { maxPercent: 0.7, min: 250 },
+        },
+        call_missed: {
+            height: { base: 120 },
+            width: { maxPercent: 0.6, min: 200 },
+        },
+    },
+    additions: {
+        reaction: 36,
+        reply: 90,
+        linkPreview: 180,
+        senderName: LAYOUT_CONSTANTS.SENDER_NAME_HEIGHT,
+    },
+    scroll: {
+        lockToBottom: true,
+        smoothScrollDuration: 15,
+        easing: "easeOut",
+        newMessageScrollDelay: 3,
+        overscanTop: 200,
+        overscanBottom: 200,
+        maxScrollSpeed: 60,
+    },
+    animation: {
+        messageAppearDuration: 12,
+        messageAppearOffset: 30,
+        typingPulseDuration: 45,
+        voiceWaveformSpeed: 2,
+    },
+    spacing: {
+        typeOverrides: DEFAULT_TYPE_OVERRIDES,
+        global: {
+            topPadding: 48,
+            bottomPadding: 120,
+            bubbleMargin: 36,
+        },
+    },
+};
+
+// =============================================================================
+// HEIGHT CALCULATION
+// =============================================================================
+
+export interface MessageForHeight {
+    type?: MessageType;
+    text?: string;
+    caption?: string;
+    from?: string;
+    prevFrom?: string;
+    isGroupChat?: boolean;
+    reactions?: unknown[];
+    replyTo?: unknown;
+    linkPreview?: unknown;
+}
+
+export function calculateMessageHeight(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    let height = 0;
+
+    // Base height
+    if (msgType === "text" || msgType === "deleted") {
+        const text = msg.text || "";
+        // Use unified measurement logic
+        const { lines } = measureTextBlock(text, viewportWidth, config);
+        height = typeConfig.height.base + (lines * (typeConfig.height.lineHeight || LAYOUT_CONSTANTS.LINE_HEIGHT));
+    } else if ((msgType === "image" || msgType === "video") && msg.caption) {
+        // Dynamic Media Height (Option B)
+        // Measure caption to determine how much vertical space to add to base image
+        const { lines } = measureTextBlock(msg.caption, viewportWidth, config);
+        const captionHeight = lines * LAYOUT_CONSTANTS.LINE_HEIGHT;
+        const captionPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_V * 2;
+        // Add timestamp footer height + margin (timestamp sits below caption)
+        const timestampHeight = LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT + 32;
+        height = typeConfig.height.base + captionHeight + captionPadding + timestampHeight;
+    } else {
+        height = typeConfig.height.base;
+    }
+
+    // Additions
+    if (msg.reactions && msg.reactions.length > 0) height += config.additions.reaction;
+    if (msg.replyTo) height += config.additions.reply;
+    if (msg.linkPreview) height += config.additions.linkPreview;
+
+    if (shouldShowSenderName({
+        from: msg.from,
+        type: msgType,
+        isGroupChat: msg.isGroupChat,
+        prevFrom: msg.prevFrom
+    })) {
+        height += config.additions.senderName;
+    }
+
+    return height;
+}
+
+// =============================================================================
+// SMART GAP CALCULATION (THE TRUTH TABLE)
+// =============================================================================
+
+export interface MessageForGap {
+    type?: MessageType;
+    from?: string;
+    at?: number;
+    hasReply?: boolean;
+    hasReactions?: boolean;
+    hasLinkPreview?: boolean;
+}
+
+export interface GapContext {
+    prevMessage: MessageForGap;
+    nextMessage: MessageForGap;
+}
+
+export function calculateSmartGap(
+    context: GapContext,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const { prevMessage, nextMessage } = context;
+    const prevType = (prevMessage.type || "text") as MessageType;
+    const nextType = (nextMessage.type || "text") as MessageType;
+
+    // Check type-specific processing (only System messages act as special exceptions now)
+    const prevOverride = config.spacing.typeOverrides[prevType];
+    const nextOverride = config.spacing.typeOverrides[nextType];
+
+    if (prevOverride?.gapAfter != null) return prevOverride.gapAfter;
+    if (nextOverride?.gapBefore != null) return nextOverride.gapBefore;
+
+    // Visual Run Logic
+    const sameSender = prevMessage.from === nextMessage.from;
+    const isVisualRun = sameSender &&
+        prevType === "text" &&
+        nextType === "text" &&
+        !prevMessage.hasReply &&
+        !nextMessage.hasReply &&
+        !prevMessage.hasReactions &&
+        !nextMessage.hasReactions &&
+        !prevMessage.hasLinkPreview &&
+        !nextMessage.hasLinkPreview;
+
+    if (isVisualRun) return LAYOUT_CONSTANTS.GAP_MINIMAL;
+    if (sameSender) return LAYOUT_CONSTANTS.GAP_RUN_BREAK;
+    return LAYOUT_CONSTANTS.GAP_NORMAL;
+}
+
+// Compatibility Shim
+export function calculateGapBetween(prev: MessageForGap, next: MessageForGap): number {
+    return calculateSmartGap({ prevMessage: prev, nextMessage: next });
+}
+
+// =============================================================================
+// MEASUREMENT HELPERS (Deterministic constants)
+// =============================================================================
+
+export interface TextBlockMetrics {
+    lines: number;
+    bubbleWidth: number;
+    unitsPerLine: number; // Renamed from charsPerLine to reflect weighted units
+}
+
+/* DESIGN PHILOSOPHY: "Pure Math"
+ * - No multipliers.
+ * - No runtime DOM measurement. Deterministic constants.
+ * - Exact pixel values defined in LAYOUT_CONSTANTS.
+ * - Gaps are determined strictly by "Visual Runs" (see LAYOUT_LOGIC.md).
+ */
+
+/**
+ * Deterministic, no-DOM text measurement.
+ * Key fix: bubble width uses the WIDEST wrapped line weight (maxLineWeight),
+ * not the paragraph total weight or always-full-capacity width.
+ *
+ * Weighted units:
+ * - space: 0.6
+ * - ascii/basic: 1.0
+ * - wide (CJK etc): 1.5
+ * - emoji surrogate pair: 1.8
+ */
+export function measureTextBlock(
+    text: string,
+    viewportWidth: number = 1170, // Default reference width
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): TextBlockMetrics {
+    const typeConfig = config.messageTypes.text; // Text config is the source of truth for text metrics
+
+    // 1) Constraints
+    const maxBubbleWidth = viewportWidth * typeConfig.width.maxPercent;
+    const horizontalPadding = LAYOUT_CONSTANTS.BUBBLE_PADDING_H * 2;
+
+    // Safety clamp so we never divide by 0 / go negative on tiny screens
+    const availableTextWidth = Math.max(1, maxBubbleWidth - horizontalPadding);
+
+    // 2) Capacity (INTEGER, consistent everywhere)
+    const avgCharWidth = LAYOUT_CONSTANTS.AVG_CHAR_WIDTH;
+    const unitsPerLine = Math.max(1, Math.floor(availableTextWidth / avgCharWidth));
+
+    // 3) Measure
+    // Split paragraphs by explicit newline. Newline always forces a line break.
+    const paragraphs = text.split("\n");
+
+    let totalLines = 0;
+    let maxLineUnits = 0; // the single most "wide" wrapped line across all paragraphs
+
+    for (const paragraph of paragraphs) {
+        // Explicit blank line => counts as 1 line
+        if (paragraph.length === 0) {
+            totalLines += 1;
+            maxLineUnits = Math.max(maxLineUnits, 0);
+            continue;
+        }
+
+        // Wrap simulation in weighted units
+        let lineUnits = 0;
+        let linesInParagraph = 1;
+
+        for (let i = 0; i < paragraph.length; i++) {
+            const code = paragraph.charCodeAt(i);
+
+            // Weight function (deterministic)
+            let w = 1.0;
+
+            // space
+            if (code === 32) {
+                w = 0.6;
+            } else if (code >= 65 && code <= 90) {
+                // Uppercase A-Z
+                w = 1.3;
+            } else {
+                // emoji surrogate pair
+                const isHigh = code >= 0xd800 && code <= 0xdbff;
+                if (isHigh && i + 1 < paragraph.length) {
+                    const next = paragraph.charCodeAt(i + 1);
+                    const isLow = next >= 0xdc00 && next <= 0xdfff;
+                    if (isLow) {
+                        w = 1.8;
+                        i++; // consume low surrogate
+                    } else if (code > 255) {
+                        w = 1.5;
+                    }
+                } else if (code > 255) {
+                    // wide-ish (CJK etc.)
+                    w = 1.5;
+                }
+            }
+
+            // If adding this char overflows the line => wrap
+            // NOTE: If the char itself is heavier than capacity, we still place it on a new line
+            // and clamp the recorded width to capacity (because bubble cannot exceed maxBubbleWidth).
+            if (lineUnits > 0 && lineUnits + w > unitsPerLine) {
+                maxLineUnits = Math.max(maxLineUnits, lineUnits);
+                linesInParagraph += 1;
+                lineUnits = w;
+            } else {
+                lineUnits += w;
+            }
+
+            // Track widest line as we go
+            // We clamp width contribution to at most unitsPerLine because bubble width is clamped anyway.
+            maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+        }
+
+        // finalize paragraph
+        totalLines += linesInParagraph;
+        maxLineUnits = Math.max(maxLineUnits, Math.min(lineUnits, unitsPerLine));
+    }
+
+    // Ensure at least one line for empty string
+    if (totalLines === 0) totalLines = 1;
+
+    // 4) Convert widest line units -> pixels
+    const computedWidth = maxLineUnits * avgCharWidth + horizontalPadding;
+
+    // Clamp bubble width to: [minWidth, maxBubbleWidth]
+    const bubbleWidth = Math.min(
+        maxBubbleWidth,
+        Math.max(computedWidth, typeConfig.width.min)
+    );
+
+    return { lines: totalLines, bubbleWidth, unitsPerLine };
+}
+
+export function calculateBubbleWidth(
+    msg: MessageForHeight,
+    viewportWidth: number,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): number {
+    const msgType = (msg.type || "text") as MessageType;
+    const typeConfig = config.messageTypes[msgType] || config.messageTypes.text;
+
+    if (typeConfig.width.fixed) return typeConfig.width.fixed;
+
+    if (msgType === "text" || msgType === "deleted") {
+        const { bubbleWidth } = measureTextBlock(msg.text || "", viewportWidth, config);
+        return bubbleWidth;
+    }
+
+    // Media & others: Use standard clamping
+    // Calculates a width based on percentage, but ensures it's at least 'min'
+    // and optionally upper-bounded if we strictly wanted to (not currently in config)
+    const idealWidth = viewportWidth * typeConfig.width.maxPercent;
+    return Math.max(typeConfig.width.min, idealWidth);
+}
+
+// =============================================================================
+// ANIMATION & LAYOUT HELPERS
+// =============================================================================
+
+export function applyEasing(progress: number, easing: EasingFunction): number {
+    switch (easing) {
+        case "linear": return progress;
+        case "easeOut": return 1 - Math.pow(1 - progress, 3);
+        case "easeInOut": return progress < 0.5 ? 4 * progress * progress * progress : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        case "spring":
+            const c4 = (2 * Math.PI) / 3;
+            return progress === 0 ? 0 : progress === 1 ? 1 : Math.pow(2, -10 * progress) * Math.sin((progress * 10 - 0.75) * c4) + 1;
+        default: return progress;
+    }
+}
+
+export function isMessageCentered(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system";
+}
+
+export function doesMessageBreakGrouping(
+    type: MessageType,
+    config: MessageLayoutConfig = DEFAULT_LAYOUT_CONFIG
+): boolean {
+    const category = config.spacing.typeOverrides[type]?.category;
+    return category === "system" || category === "ephemeral"; // System & Typing break grouping
+}
+
+export interface SenderNameContext {
+    from?: string;
+    type?: string;
+    isGroupChat?: boolean;
+    prevFrom?: string;
+}
+
+export function shouldShowSenderName(ctx: SenderNameContext): boolean {
+    if (!ctx.isGroupChat) return false;
+    if (!ctx.from) return false;
+    if (ctx.from === "me") return false;
+    if (ctx.from === "system") return false;
+    if (ctx.type === "system") return false;
+
+    // Show if previous sender was different (or no previous sender, or generic BREAK token)
+    return ctx.from !== ctx.prevFrom;
+}
 ````
 
 ## File: packages/apps-whatsapp/src/dsl/extension.ts
@@ -17495,101 +18244,6 @@ export const whatsappLowering: LoweringHandler = {
 };
 ````
 
-## File: packages/apps-whatsapp/src/lowering/v2/handler.ts
-````typescript
-/**
- * WhatsApp V2 Lowering
- *
- * Converts V2 TrackEvents to RuntimeEvents.
- * This is the V2 interface that takes TrackEvent directly.
- */
-
-import type { TrackEvent } from "@tokovo/ir";
-import type { RuntimeEvent } from "@tokovo/core";
-
-/**
- * V2 Lowering interface for track-based compiler.
- */
-export interface V2LoweringHandler {
-    lower: (event: TrackEvent) => RuntimeEvent[];
-}
-
-/**
- * WhatsApp V2 lowering - converts WhatsApp TrackEvents to RuntimeEvents.
- */
-export const whatsappV2Lowering: V2LoweringHandler = {
-    lower(event: TrackEvent): RuntimeEvent[] {
-        const e = event as any;
-        const base = {
-            at: e.at,
-            kind: "APP" as const,
-            appId: e.appId,
-            deviceId: e.deviceId,
-        };
-
-        switch (e.type) {
-            case "MESSAGE_RECEIVED":
-                return [{
-                    ...base,
-                    type: "MESSAGE_RECEIVED",
-                    conversationId: e.payload.conversationId,
-                    from: e.payload.from,
-                    text: e.payload.text,
-                } as any];
-
-            case "MESSAGE_SENT":
-                return [{
-                    ...base,
-                    type: "MESSAGE_SENT",
-                    conversationId: e.payload.conversationId,
-                    text: e.payload.text,
-                } as any];
-
-            case "TYPING_START":
-                return [{
-                    ...base,
-                    type: "TYPING_START",
-                    conversationId: e.payload.conversationId,
-                    from: e.payload.actor,
-                } as any];
-
-            case "TYPING_END":
-                return [{
-                    ...base,
-                    type: "TYPING_END",
-                    conversationId: e.payload.conversationId,
-                    from: e.payload.actor,
-                } as any];
-
-            case "IMAGE_RECEIVED":
-                return [{
-                    ...base,
-                    type: "RECEIVE_IMAGE",
-                    payload: e.payload,
-                } as any];
-
-            case "REACT":
-                return [{
-                    ...base,
-                    type: "REACT",
-                    payload: e.payload,
-                } as any];
-
-            case "READ":
-                return [{
-                    ...base,
-                    type: "READ_MESSAGES",
-                    payload: { conversationId: e.payload.conversationId },
-                } as any];
-
-            default:
-                console.warn(`[whatsappV2Lowering] Unknown event type: ${e.type}`);
-                return [];
-        }
-    }
-};
-````
-
 ## File: packages/apps-whatsapp/src/lowering/index.ts
 ````typescript
 /**
@@ -17775,522 +18429,6 @@ export function createInitialConversation(
         unreadCount: 0,
         typing: {},
     };
-}
-````
-
-## File: packages/apps-whatsapp/src/runtime/reducer.ts
-````typescript
-/**
- * WhatsApp Runtime Reducer
- * 
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
- * 
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
- */
-
-import {
-    TimelineEvent,
-    WorldState,
-    ReducerRegistry,
-    APP_IDS
-} from "@tokovo/core";
-
-// Import WhatsApp-specific types (all app types now live in plugin)
-import {
-    WhatsAppMessage,
-    WhatsAppConversation,
-    WhatsAppState,
-    WhatsAppMessageType,
-    WhatsAppGroupMember,
-} from "../types";
-
-// Import group operation types
-import {
-    GROUP_EVENT_TYPES,
-    isWhatsAppGroupEvent,
-    isGroupMemberAddPayload,
-    isGroupMemberRemovePayload,
-    isGroupAdminChangePayload,
-    GroupMemberAddPayload,
-    GroupMemberRemovePayload,
-    GroupAdminChangePayload,
-} from "../ir/group-ops";
-
-// =============================================================================
-// TYPE-SAFE ACCESSORS
-// =============================================================================
-
-/**
- * Get WhatsApp conversations from WorldState with type safety.
- */
-function getConversations(draft: WorldState): Record<string, WhatsAppConversation> {
-    return draft.conversations as Record<string, WhatsAppConversation>;
-}
-
-/**
- * Get or create WhatsApp app state with type safety.
- */
-function getAppState(draft: WorldState): WhatsAppState {
-    if (!draft.appState) {
-        draft.appState = {};
-    }
-    if (!draft.appState.app_whatsapp) {
-        draft.appState.app_whatsapp = {};
-    }
-    return draft.appState.app_whatsapp as WhatsAppState;
-}
-
-/**
- * Generate a timestamp string from frame number.
- * Simulates time progression starting from 10:42.
- * Each message increments by 1-3 minutes for realism.
- */
-function generateTimestamp(frame: number, messageIndex: number): string {
-    // Base time: 10:42
-    const baseHour = 10;
-    const baseMinute = 42;
-
-    // Add 1-2 minutes per message for realistic progression
-    const totalMinutes = baseMinute + messageIndex * 2;
-    const hours = baseHour + Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
-
-    return `${hours}:${minutes.toString().padStart(2, "0")}`;
-}
-
-/**
- * WhatsApp reducer - handles all WhatsApp events
- */
-export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
-    // Handle CustomOp events with WhatsApp namespace
-    if (event.kind === "Custom") {
-        handleCustomOp(draft, event as any);
-        return;
-    }
-
-    // Only handle APP events for WhatsApp
-    if (event.kind !== "APP") return;
-
-    // Type assertion for APP events with extended payload
-    const appEvent = event as TimelineEvent & {
-        appId: string;
-        conversationId?: string;
-        from?: string;
-        text?: string;
-        message?: Partial<WhatsAppMessage>;
-        // Media-specific fields
-        imageUrl?: string;
-        thumbnailUrl?: string;
-        videoUrl?: string;
-        gifUrl?: string;
-        caption?: string;
-        // Group-specific fields
-        memberId?: string;
-        memberName?: string;
-        addedBy?: string;
-        removedBy?: string;
-        // Voice-specific fields
-        duration?: number;
-        // Read receipt fields
-        messageId?: string;
-        // Navigation fields
-        screen?: string;
-        // Device context
-        deviceId?: string;
-    };
-
-    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
-
-    // Use string type for event.type to allow extended event types
-    const eventType = event.type as string;
-
-    // Handle navigation events (no conversation required)
-    if (eventType === "SCREEN_NAVIGATED" || eventType === "NAVIGATE" || eventType === "SCREEN_CHANGE") {
-        const appState = getAppState(draft);
-
-        // Update the current screen
-        const screen = appEvent.screen || "chat";
-        appState.screen = screen;
-
-        // Map screen to generic ViewKind
-        appState.viewMode = screen === "chat" ? "CHAT" : "TRANSITION";
-
-        // If navigating to a specific conversation
-        if (appEvent.conversationId) {
-            appState.conversationId = appEvent.conversationId;
-        }
-
-        return;
-    }
-
-    // Get conversation ID from event
-    const conversationId = appEvent.conversationId;
-    if (!conversationId) return;
-
-    // Get conversations with type safety
-    const conversations = getConversations(draft);
-
-    // Ensure conversation exists
-    if (!conversations[conversationId]) {
-        conversations[conversationId] = {
-            id: conversationId,
-            messages: []
-        } as WhatsAppConversation;
-    }
-    const conversation = conversations[conversationId];
-
-    switch (eventType) {
-        case "MESSAGE_RECEIVED":
-        case "MESSAGE_SENT": {
-            // V2 ENTERPRISE: Read from event.payload first
-            // V1 LEGACY: Fallback to root-level fields for backward compatibility
-            const payload = (appEvent as any).payload || {};
-            const msgPayload = appEvent.message || {};
-
-            // Extract fields: V2 payload takes priority, then root, then message object
-            const fromUser = eventType === "MESSAGE_SENT"
-                ? "me"
-                : (payload.from || appEvent.from || "unknown");
-            const textContent = payload.text || appEvent.text || msgPayload.text;
-            const msgType = (payload.messageType || msgPayload.type || "text") as WhatsAppMessageType;
-            const msgId = payload.messageId || msgPayload.id || `msg_${event.at}_${fromUser}`;
-
-            // Generate timestamp based on message index
-            const messageIndex = conversation.messages.length;
-            const timestamp = generateTimestamp(event.at, messageIndex);
-
-            const newMessage: WhatsAppMessage = {
-                id: msgId,
-                from: fromUser,
-                type: msgType,
-                text: textContent,
-                at: event.at,
-                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
-                edited: msgPayload.edited,
-                timestamp,
-            };
-
-            // Handle media-specific fields based on type
-            switch (msgType) {
-                case "image":
-                    newMessage.imageUrl = payload.url || msgPayload.imageUrl || appEvent.imageUrl;
-                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
-                    break;
-                case "video":
-                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
-                    newMessage.videoUrl = payload.url || msgPayload.videoUrl || appEvent.videoUrl;
-                    newMessage.duration = payload.durationSeconds || msgPayload.duration || appEvent.duration || 0;
-                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
-                    break;
-                case "gif":
-                    newMessage.gifUrl = payload.url || msgPayload.gifUrl || appEvent.gifUrl;
-                    break;
-            }
-
-            (conversation.messages as any[]).push(newMessage);
-
-            break;
-        }
-
-
-        case "TYPING_START": {
-            if (!conversation.typing) conversation.typing = {};
-            // V2: payload.actor, V1: root-level from
-            const typingPayload = (appEvent as any).payload || {};
-            const actor = typingPayload.actor || appEvent.from;
-            if (actor) {
-                conversation.typing[actor] = true;
-            }
-            break;
-        }
-
-        case "TYPING_END": {
-            // V2: payload.actor, V1: root-level from
-            const typingPayload = (appEvent as any).payload || {};
-            const actor = typingPayload.actor || appEvent.from;
-            if (conversation.typing && actor) {
-                delete conversation.typing[actor];
-            }
-            break;
-        }
-
-
-        case "GROUP_MEMBER_ADDED": {
-            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedBy} added ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: addedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (!conversation.members) conversation.members = [];
-            conversation.members.push({
-                id: appEvent.memberId || "",
-                name: appEvent.memberName || ""
-            });
-            break;
-        }
-
-        case "GROUP_MEMBER_REMOVED": {
-            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${appEvent.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text: `${removedBy} removed ${appEvent.memberName}`,
-                targetMember: appEvent.memberName,
-                actorName: removedBy,
-                at: event.at
-            } as WhatsAppMessage);
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    (m: { id: string }) => m.id !== appEvent.memberId
-                );
-            }
-            break;
-        }
-
-        case "VOICE_MESSAGE_RECEIVED": {
-            (conversation.messages as any[]).push({
-                id: `voice_${event.at}_${appEvent.from}`,
-                from: appEvent.from || "unknown",
-                type: "voice",
-                duration: appEvent.duration,
-                at: event.at,
-                status: "delivered"
-            } as WhatsAppMessage);
-            break;
-        }
-
-        case "MESSAGE_READ": {
-            if (appEvent.messageId) {
-                // Cast to WhatsAppMessage[] since core's messages is now unknown[]
-                const messages = conversation.messages as WhatsAppMessage[];
-                const msg = messages.find(m => m.id === appEvent.messageId);
-                if (msg) {
-                    msg.status = "read";
-                }
-            }
-            break;
-        }
-
-        case "REACTION_ADDED": {
-            // Find the message and add/update the reaction
-            if (appEvent.messageId) {
-                const messages = conversation.messages as WhatsAppMessage[];
-                const msg = messages.find(m => m.id === appEvent.messageId) as any;
-                if (msg) {
-                    // Initialize reactions array if needed
-                    if (!msg.reactions) {
-                        msg.reactions = [];
-                    }
-
-                    const emoji = (appEvent as any).emoji || "❤️";
-                    const fromMe = (appEvent as any).fromMe || false;
-
-                    // Check if this emoji already exists
-                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
-                    if (existing) {
-                        existing.count += 1;
-                        if (fromMe) existing.fromMe = true;
-                    } else {
-                        msg.reactions.push({
-                            emoji,
-                            count: 1,
-                            fromMe,
-                        });
-                    }
-                }
-            }
-            break;
-        }
-
-        case "INPUT_CHANGE": {
-            // "OS-Level Input Management"
-            // The OS has dispatched this event with the raw text from the keyboard.
-            // We update the local conversation draft state.
-            const text = (appEvent as any).payload?.text;
-            if (conversation) {
-                (conversation as any).draftText = text;
-            }
-            break;
-        }
-    }
-}
-
-// =============================================================================
-// CUSTOM OP HANDLERS (WhatsApp-namespaced events)
-// =============================================================================
-
-interface CustomOpEvent {
-    at: number;
-    kind: "Custom";
-    deviceId?: string;
-    appId?: string;
-    eventType: string;
-    payload?: Record<string, any>;
-}
-
-/**
- * Handle CustomOp events with WhatsApp namespace.
- * Uses the event factory pattern from ir/group-ops.ts
- */
-function handleCustomOp(draft: WorldState, event: CustomOpEvent): void {
-    // Only handle whatsapp-namespaced events
-    if (!event.eventType?.startsWith("whatsapp.")) return;
-    if (event.appId && event.appId !== APP_IDS.WHATSAPP) return;
-
-    const payload = event.payload;
-    if (!payload) return;
-
-    const conversationId = payload.conversationId;
-    if (!conversationId) return;
-
-    // Get conversations with type safety
-    const conversations = getConversations(draft);
-
-    // Ensure conversation exists
-    if (!conversations[conversationId]) {
-        conversations[conversationId] = {
-            id: conversationId,
-            messages: [],
-            type: "group"  // CustomOps are typically group operations
-        } as WhatsAppConversation;
-    }
-    const conversation = conversations[conversationId];
-
-    switch (event.eventType) {
-        case GROUP_EVENT_TYPES.MEMBER_ADDED: {
-            if (!isGroupMemberAddPayload(event.eventType, payload)) break;
-
-            // Add member if not already present
-            if (!conversation.members) conversation.members = [];
-            if (!conversation.members.find(m => m.id === payload.member.id)) {
-                conversation.members.push({
-                    id: payload.member.id,
-                    name: payload.member.name,
-                    avatar: payload.member.avatar,
-                });
-            }
-
-            // Add system message
-            const addedByName = payload.addedBy === "me" ? "You" : payload.addedBy;
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_added_${payload.member.id}`,
-                from: "system",
-                type: "system",
-                systemType: "member_added",
-                text: `${addedByName} added ${payload.member.name}`,
-                targetMember: payload.member.name,
-                actorName: payload.addedBy,
-                at: event.at,
-            });
-            break;
-        }
-
-        case GROUP_EVENT_TYPES.MEMBER_REMOVED: {
-            if (!isGroupMemberRemovePayload(event.eventType, payload)) break;
-
-            // Remove member from list
-            if (conversation.members) {
-                conversation.members = conversation.members.filter(
-                    m => m.id !== payload.memberId
-                );
-            }
-
-            // Add system message
-            const wasMe = payload.memberId === "me";
-            const removedByName = payload.removedBy === "me" ? "You" : payload.removedBy;
-
-            const text = wasMe
-                ? "You left the group"
-                : `${removedByName} removed ${payload.memberName}`;
-
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_removed_${payload.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "member_removed",
-                text,
-                targetMember: payload.memberName,
-                actorName: payload.removedBy,
-                at: event.at,
-            });
-            break;
-        }
-
-        case GROUP_EVENT_TYPES.ADMIN_CHANGED: {
-            if (!isGroupAdminChangePayload(event.eventType, payload)) break;
-
-            // Update admin list
-            if (!conversation.admins) conversation.admins = [];
-
-            if (payload.action === "promote") {
-                if (!conversation.admins.includes(payload.memberId)) {
-                    conversation.admins.push(payload.memberId);
-                }
-            } else {
-                conversation.admins = conversation.admins.filter(
-                    id => id !== payload.memberId
-                );
-            }
-
-            // Optionally add system message for admin changes
-            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
-            const memberName = payload.memberName || payload.memberId;
-            const action = payload.action === "promote" ? "made" : "removed";
-            const role = payload.action === "promote" ? "an admin" : "as admin";
-
-            (conversation.messages as any[]).push({
-                id: `sys_${event.at}_admin_${payload.memberId}`,
-                from: "system",
-                type: "system",
-                systemType: "admin_change",
-                text: `${changedByName} ${action} ${memberName} ${role}`,
-                targetMember: memberName,
-                actorName: payload.changedBy,
-                at: event.at,
-            });
-            break;
-        }
-
-        case GROUP_EVENT_TYPES.INFO_UPDATED: {
-            // Handle group info updates (name, avatar, description)
-            const field = payload.field;
-            const newValue = payload.newValue;
-            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
-
-            if (field === "name") {
-                conversation.name = newValue;
-                (conversation.messages as any[]).push({
-                    id: `sys_${event.at}_name_changed`,
-                    from: "system",
-                    type: "system",
-                    systemType: "group_name_changed",
-                    text: `${changedByName} changed the group name to "${newValue}"`,
-                    at: event.at,
-                });
-            } else if (field === "avatar") {
-                conversation.avatar = newValue;
-            }
-            break;
-        }
-    }
 }
 ````
 
@@ -18714,195 +18852,160 @@ export type {
 } from "./events";
 ````
 
-## File: packages/apps-whatsapp/src/types/messages.ts
+## File: packages/apps-whatsapp/src/ui/screens/ios/ChatListScreen.tsx
 ````typescript
-/**
- * WhatsApp Message Types
- * 
- * All message-related type definitions.
- */
+import React from "react";
+import { WorldState } from "@tokovo/core";
+import { ArchiveIcon } from "../../../components/ios/Icons";
+import { ChatListHeader } from "../../../components/ios/ChatListHeader";
+import { TabNavigation } from "../../../components/ios/TabNavigation";
+import { ChatListItem } from "../../../components/ios/ChatListItem";
+import { UI_CONSTANTS } from "../../../config/layout-config";
+import { WhatsAppConversation } from "../../../types";
 
-// =============================================================================
-// MESSAGE TYPE ENUM
-// =============================================================================
-
-export type WhatsAppMessageType =
-    | "text"
-    | "image"
-    | "video"
-    | "voice"
-    | "system"
-    | "gif"
-    | "deleted"
-    | "call_missed"
-    | "screenshot_alert";
-
-// =============================================================================
-// BASE MESSAGE
-// =============================================================================
-
-export interface BaseMessage {
-    id: string;
-    from: string;
-    timestamp?: string;
-    status?: "sending" | "sent" | "delivered" | "read";
-    at?: number;
+export interface ChatListScreenProps {
+    world: WorldState;
+    safeAreaInsets?: {
+        top: number;
+        bottom: number;
+        left: number;
+        right: number;
+    };
+    width: number;
+    height: number;
 }
 
-// =============================================================================
-// SPECIFIC MESSAGE TYPES
-// =============================================================================
+export const ChatListScreen: React.FC<ChatListScreenProps> = ({
+    world,
+    safeAreaInsets,
+    width,
+    height
+}) => {
+    // 1. Calculate Safe Areas (Resolution Independence)
+    // Receive logical dimensions from parent
+    const designWidth = 393;
+    const targetWidth = width || 1179;
+    const scale = targetWidth / designWidth;
 
-export interface TextMessage extends BaseMessage {
-    type: "text";
-    text: string;
-}
+    const physicalSafeTop = safeAreaInsets?.top ?? 177;
+    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
 
-export interface ImageMessage extends BaseMessage {
-    type: "image";
-    imageUrl: string;
-    caption?: string;
-}
+    const safeAreaTop = physicalSafeTop / scale;
+    const safeAreaBottom = physicalSafeBottom / scale;
 
-export interface VideoMessage extends BaseMessage {
-    type: "video";
-    videoUrl: string;
-    thumbnailUrl?: string;
-    duration?: number;
-    caption?: string;
-    isPlaying?: boolean;
-    playProgress?: number;
-}
+    // 2. Data Preparation - Cast to WhatsApp conversation type
+    const conversations = (Object.values(world.conversations || {}) as WhatsAppConversation[]).sort((a, b) => {
+        // Sort by last message timestamp (descending) mechanism to be added
+        // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
+        return 0;
+        // TODO: Add proper sorting when timestamp logic is solidified in core/episodes
+    });
 
-export interface VoiceMessage extends BaseMessage {
-    type: "voice";
-    duration: number;
-    isPlaying?: boolean;
-    playProgress?: number;
-}
+    return (
+        <div style={{
+            display: "flex",
+            flexDirection: "column",
+            height: "100%",
+            backgroundColor: "#FFFFFF",
+            position: "relative",
+        }}>
+            {/* Header (Sticky) */}
+            <ChatListHeader safeAreaTop={safeAreaTop} />
 
-export interface GifMessage extends BaseMessage {
-    type: "gif";
-    gifUrl: string;
-}
+            {/* Scrollable Content */}
+            <div style={{
+                flex: 1,
+                overflowY: "auto",
+                // Padding bottom for Tab Bar
+                paddingBottom: 85 + safeAreaBottom,
+                backgroundColor: "#FFFFFF",
+                WebkitOverflowScrolling: "touch", // Smooth scrolling
+            }}>
+                {/* Archived Row */}
+                <div style={{
+                    display: "flex",
+                    height: 56, // Slightly shorter than chat row
+                    alignItems: "center",
+                    paddingLeft: 20,
+                    paddingRight: 16,
+                    cursor: "pointer",
+                }}>
+                    {/* Icon */}
+                    <div style={{
+                        width: 30, // Smaller visual weight
+                        display: "flex",
+                        justifyContent: "center",
+                        marginRight: 24 // Align with text start of chat items (which is 76 + ? actually chat item avatar is 60, left margin 20? No. 
+                        // Chat Item: Left padding 0 (in container), Avatar 76 width centered. 
+                        // So center of avatar is at 38px. 
+                        // Archived text should probably align with Name? 
+                        // Let's standard iOS: "Archived" appears on left? 
+                        // Actually standard WhatsApp: "Archived" is a specific row.
+                        // Let's simpler: Icon + Text.
+                    }}>
+                        {/* No Icon for standard row, just text "Archived" and number on right? 
+                           WhatsApp iOS 2024: Top row is "Archived" with an Archive Box icon on the very left (margin) or right?
+                           Actually it's "Archived" text on left, number on right.
+                           LET'S DO: Archive Icon (Grey) + "Archived" Text.
+                        */}
+                        <ArchiveIcon color="#8E8E93" />
+                    </div>
 
-export interface SystemMessage extends BaseMessage {
-    type: "system";
-    text: string;
-    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed" | "date_change";
-    targetMember?: string;
-    actorName?: string;
-}
+                    <div style={{
+                        flex: 1,
+                        height: "100%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        borderBottom: "0.5px solid #C6C6C8",
+                        fontSize: 17,
+                        fontWeight: "600",
+                        color: "#000",
+                        marginLeft: 12
+                    }}>
+                        <span>Archived</span>
+                        <span style={{ color: "#8E8E93", fontWeight: "400", marginRight: 8 }}>1</span>
+                    </div>
+                </div>
 
-export interface DeletedMessage extends BaseMessage {
-    type: "deleted";
-}
+                {/* Conversations List */}
+                <div style={{ paddingLeft: 16 }}> {/* Left padding for inset separators */}
+                    {conversations.length > 0 ? conversations.map((conv, i) => {
+                        // Runtime cast to access standard or plugin-specific fields
+                        const rawMessages = conv.messages as any[];
+                        const lastMsg = rawMessages && rawMessages.length > 0
+                            ? rawMessages[rawMessages.length - 1]
+                            : null;
 
-// =============================================================================
-// DISCRIMINATED UNION
-// =============================================================================
+                        return (
+                            <ChatListItem
+                                key={conv.id}
+                                id={conv.id}
+                                name={conv.name || "Unknown"}
+                                avatarUrl={conv.avatar}
+                                lastMessage={lastMsg?.text || (lastMsg?.imageUrl ? "Photo" : lastMsg ? "Media" : "")}
+                                timestamp={lastMsg?.timestamp || "Yesterday"}
+                                unreadCount={conv.unreadCount || 0}
+                                status={lastMsg?.from === "me" ? "read" : undefined} // Mock status logic
+                                isTyping={conv.typing && Object.values(conv.typing).some(Boolean)}
+                                // Is last item?
+                                isLast={i === conversations.length - 1}
+                            />
+                        );
+                    }) : (
+                        // Empty State
+                        <div style={{ padding: 40, textAlign: "center", color: "#999" }}>
+                            No conversations yet
+                        </div>
+                    )}
+                </div>
+            </div>
 
-export type MessageData =
-    | TextMessage
-    | ImageMessage
-    | VideoMessage
-    | VoiceMessage
-    | GifMessage
-    | SystemMessage
-    | DeletedMessage;
-
-// =============================================================================
-// REACTION & REPLY TYPES
-// =============================================================================
-
-export interface WhatsAppReaction {
-    emoji: string;
-    count: number;
-    fromMe?: boolean;
-}
-
-export interface ReplyToData {
-    messageId: string;
-    text: string;
-    from: string;
-    type?: "text" | "image" | "video" | "voice";
-    thumbnailUrl?: string;
-}
-
-export interface LinkPreviewData {
-    url: string;
-    title?: string;
-    description?: string;
-    image?: string;
-    siteName?: string;
-}
-
-// =============================================================================
-// EXTENDED MESSAGE (with reactions, replies)
-// =============================================================================
-
-export interface WhatsAppMessage extends BaseMessage {
-    type: WhatsAppMessageType;
-    text?: string;
-    imageUrl?: string;
-    thumbnailUrl?: string;
-    videoUrl?: string;
-    gifUrl?: string;
-    caption?: string;
-    duration?: number;
-    isPlaying?: boolean;
-    playProgress?: number;
-    edited?: boolean;
-    systemType?: string;
-    targetMember?: string;
-    actorName?: string;
-    reactions?: WhatsAppReaction[];
-    replyTo?: ReplyToData;
-    linkPreview?: LinkPreviewData;
-}
-````
-
-## File: packages/apps-whatsapp/src/types/state.ts
-````typescript
-/**
- * WhatsApp App State Types
- * 
- * Plugin state and world state helpers.
- */
-
-import type { WhatsAppConversation } from "./conversation";
-
-// =============================================================================
-// APP STATE
-// =============================================================================
-
-export interface WhatsAppState {
-    conversationId?: string;
-    screen?: string;
-    viewMode?: "CHAT" | "LIST" | "TRANSITION";
-}
-
-// =============================================================================
-// WORLD STATE HELPERS
-// =============================================================================
-
-/**
- * Cast WorldState.conversations to WhatsApp conversations.
- */
-export function asWhatsAppConversations(
-    conversations: Record<string, unknown>
-): Record<string, WhatsAppConversation> {
-    return conversations as Record<string, WhatsAppConversation>;
-}
-
-/**
- * Cast WorldState.appState.app_whatsapp to WhatsAppState.
- */
-export function asWhatsAppState(
-    appState: Record<string, unknown>
-): WhatsAppState | undefined {
-    return (appState?.app_whatsapp || appState?.whatsapp) as WhatsAppState | undefined;
-}
+            {/* Tab Navigation (Fixed Bottom) */}
+            <TabNavigation activeTab="chats" safeAreaBottom={safeAreaBottom} />
+        </div>
+    );
+};
 ````
 
 ## File: packages/apps-whatsapp/src/ui/strategies/android.tsx
@@ -19967,29 +20070,6 @@ export function computeChatLayout(
             groups: semanticGroups
         }
     };
-}
-````
-
-## File: packages/apps-whatsapp/package.json
-````json
-{
-    "name": "@tokovo/apps-whatsapp",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "react": "^18.2.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0"
-    }
 }
 ````
 
@@ -21347,6 +21427,322 @@ export type { PluginLowering, LoweringContext } from "./lowering";
  */
 
 export * from "./registry";
+````
+
+## File: packages/core/src/audio/auto-sound.ts
+````typescript
+/**
+ * Auto-Sound Rules - Automatically derive sounds from app/device events
+ * 
+ * Converts semantic events (MESSAGE_RECEIVED, TYPING_START) into sound cues or actions.
+ * This is what makes the audio feel "automatic" and cinematic.
+ */
+
+import { TimelineEvent, SoundCue, AudioBus } from "../types";
+import { createSoundCue, createUISoundCue } from "./mixer";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export type AutoSoundAction = "PLAY_ONE_SHOT" | "START_LOOP" | "STOP_SOUND";
+
+export interface AutoSoundRule {
+    // Match conditions
+    match: {
+        kind: string;
+        type?: string;
+        appId?: string;
+        from?: string | "*";  // "*" = any sender
+    };
+
+    // Action config
+    action: AutoSoundAction;
+
+    // For PLAY/START action
+    sound?: string;
+    bus?: AudioBus;
+
+    // For STOP action (references the ID created by START_LOOP)
+    stopId?: string;
+
+    // Dynamic ID Template (e.g., "typing_{conversationId}_{from}")
+    // Useful for linking START and STOP actions
+    idTemplate?: string;
+
+    // Optional overrides
+    volume?: number;
+    loop?: boolean;
+    // Dynamic Duration (e.g. for typing loops based on text length)
+    durationFrom?: {
+        key: string;       // Event property to read (e.g. "text.length")
+        factor?: number;   // Multiplier (default 1)
+        min?: number;      // Minimum duration
+    };
+    duration?: number;
+    duckMusic?: boolean;
+    priority?: number;
+}
+
+// =============================================================================
+// REGISTRY
+// =============================================================================
+
+class AutoSoundRegistryClass {
+    // Index by kind for O(1) matching
+    private rulesByKind = new Map<string, AutoSoundRule[]>();
+    // Keep flat list for legacy `getAll` (though we should deprecate usage)
+    private allRules: AutoSoundRule[] = [];
+
+    /**
+     * Register new auto-sound rules (used by plugins)
+     */
+    register(newRules: AutoSoundRule[]) {
+        for (const rule of newRules) {
+            const kind = rule.match.kind;
+            if (!this.rulesByKind.has(kind)) {
+                this.rulesByKind.set(kind, []);
+            }
+            this.rulesByKind.get(kind)!.push(rule);
+        }
+        this.allRules.push(...newRules);
+    }
+
+    /**
+     * Get rules for a specific event kind (Optimization)
+     */
+    getRulesForKind(kind: string): AutoSoundRule[] {
+        return this.rulesByKind.get(kind) || [];
+    }
+
+    /**
+     * Get all registered rules
+     */
+    getAll(): AutoSoundRule[] {
+        return this.allRules;
+    }
+
+    /**
+     * Clear registry (useful for hot reload/testing)
+     */
+    clear() {
+        this.rulesByKind.clear();
+        this.allRules = [];
+    }
+}
+
+export const AutoSoundRegistry = new AutoSoundRegistryClass();
+
+// =============================================================================
+// HELPER FUNCTIONS
+// =============================================================================
+
+/**
+ * Check if a rule matches an event
+ */
+function matchesRule(event: TimelineEvent, rule: AutoSoundRule): boolean {
+    // Check kind
+    if (event.kind !== rule.match.kind) {
+        // console.log("Mismatch kind", event.kind, rule.match.kind);
+        return false;
+    }
+
+    // Check type
+    if (rule.match.type && (event as any).type !== rule.match.type) {
+        return false;
+    }
+
+    // Check appId
+    if (rule.match.appId && (event as any).appId !== rule.match.appId) {
+        return false;
+    }
+
+    // Check from
+    if (rule.match.from) {
+        const eventFrom = (event as any).from;
+        if (rule.match.from === "*") {
+            // Match any sender EXCEPT "me"
+            if (eventFrom === "me") return false;
+        } else if (eventFrom !== rule.match.from) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
+ * Resolve dynamic ID template
+ */
+function resolveIdTemplate(template: string, event: any): string {
+    return template.replace(/\{(\w+)\}/g, (_, key) => {
+        return event[key] || "unknown";
+    });
+}
+
+function getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((o, key) => (o && typeof o[key] !== 'undefined') ? o[key] : undefined, obj);
+}
+
+
+// =============================================================================
+// DERIVATION FUNCTIONS
+// =============================================================================
+
+export interface AudioInstruction {
+    action: AutoSoundAction;
+    soundId?: string;     // The asset ID
+    instanceId?: string;  // The runtime ID (for stopping)
+    cue?: SoundCue;       // The full cue object (for playing)
+}
+
+/**
+ * Derive audio instructions from an event
+ */
+export function deriveAudioInstructions(
+    event: TimelineEvent,
+    rules: AutoSoundRule[] = AutoSoundRegistry.getAll()
+): AudioInstruction[] {
+    const instructions: AudioInstruction[] = [];
+
+    // Check SILENT override from DSL
+    if ((event as any).silent) {
+        return [];
+    }
+
+
+
+    for (const rule of rules) {
+        if (matchesRule(event, rule)) {
+            // dynamic ID resolution
+            const instanceId = rule.idTemplate
+                ? resolveIdTemplate(rule.idTemplate, event)
+                : rule.stopId // For STOP actions, use the target ID
+                    ? resolveIdTemplate(rule.stopId, event)
+                    : `auto_${event.at}_${rule.sound}`;
+
+            if (rule.action === "STOP_SOUND") {
+                instructions.push({
+                    action: "STOP_SOUND",
+                    instanceId: instanceId
+                });
+                continue;
+            }
+
+            // For PLAY or START_LOOP
+            if (!rule.sound) continue;
+
+            // Calculate Duration
+            let duration = rule.duration;
+            if (rule.durationFrom) {
+                const val = getNestedValue(event, rule.durationFrom.key);
+                if (typeof val === "number") {
+                    duration = Math.max(
+                        rule.durationFrom.min || 0,
+                        val * (rule.durationFrom.factor || 1)
+                    );
+                } else if (typeof val === "string") {
+                    duration = Math.max(
+                        rule.durationFrom.min || 0,
+                        val.length * (rule.durationFrom.factor || 1)
+                    );
+                }
+            }
+
+            const baseCue = rule.duckMusic
+                ? createUISoundCue(rule.sound, event.at, {
+                    volume: rule.volume,
+                    loop: rule.action === "START_LOOP" || rule.loop,
+                    duration: duration,
+                    priority: rule.priority,
+                    deviceId: (event as any).deviceId
+                })
+                : createSoundCue(rule.sound, event.at, {
+                    bus: rule.bus || "sfx",
+                    volume: rule.volume,
+                    loop: rule.action === "START_LOOP" || rule.loop,
+                    duration: duration,
+                    priority: rule.priority,
+                    deviceId: (event as any).deviceId
+                });
+
+            instructions.push({
+                action: rule.action,
+                soundId: rule.sound,
+                instanceId: instanceId,
+                cue: baseCue
+            });
+        }
+    }
+
+
+    return instructions;
+}
+````
+
+## File: packages/core/src/audio/index.ts
+````typescript
+/**
+ * Audio System - Production-grade audio mixing for Tokovo
+ * 
+ * Exports all audio-related modules:
+ * - Mixer: Bus routing, ducking, envelopes
+ * - Policies: Spam gate, concurrency, priority
+ * - Auto-Sound: Derive sounds from events
+ * - Music Bed: Background music with crossfade
+ */
+
+// Mixer
+export {
+    computeSoundVolume,
+    computeBusStates,
+    computeBusDuckMultiplier,
+    applyEnvelope,
+    createSoundCue,
+    createUISoundCue,
+    createVoiceSoundCue,
+    type BusState,
+    type MixerContext,
+} from "./mixer";
+
+// Policies
+export {
+    SpamGate,
+    enforceBusConcurrency,
+    getDefaultPriority,
+    sortByPriority,
+    shouldInterrupt,
+    checkAllPolicies,
+    DEFAULT_POLICY_CONFIG,
+    PRIORITY_LEVELS,
+    type PolicyConfig,
+    type PolicyResult,
+} from "./policies";
+
+// Auto-Sound
+export {
+    AutoSoundRegistry,
+    deriveAudioInstructions,
+    type AutoSoundRule,
+    type AutoSoundAction,
+    type AudioInstruction,
+} from "./auto-sound";
+
+// Music Bed
+export {
+    computeCrossfade,
+    createMusicBed,
+    createTenseMusicBed,
+    createDramaticMusicBed,
+    createCalmMusicBed,
+    getMusicByMood,
+    suggestMood,
+    type CrossfadeState,
+    type MoodTag,
+} from "./music-bed";
+
+// Sound paths
+export { getSoundPath } from "./sounds";
 ````
 
 ## File: packages/core/src/engine/handlers/call.ts
@@ -24009,6 +24405,136 @@ export interface NotificationQueueState {
 }
 ````
 
+## File: packages/core/src/types/statusbar-theme.ts
+````typescript
+/**
+ * Status Bar Theme Types
+ * 
+ * Enterprise-grade theming for device status bar.
+ * Supports presets ("light", "dark") or full customization.
+ * 
+ * @example
+ * ```typescript
+ * // Preset
+ * const theme: StatusBarTheme = "dark";
+ * 
+ * // Custom
+ * const theme: StatusBarTheme = {
+ *     backgroundColor: "#25D366",
+ *     iconColor: "#FFFFFF",
+ *     timeColor: "#FFFFFF",
+ * };
+ * ```
+ */
+
+// =============================================================================
+// PRESET TYPES
+// =============================================================================
+
+/**
+ * Built-in status bar presets.
+ */
+export type StatusBarPreset = "light" | "dark" | "transparent";
+
+// =============================================================================
+// CUSTOM THEME
+// =============================================================================
+
+/**
+ * Custom status bar theme with full color control.
+ */
+export interface StatusBarCustomTheme {
+    /** Background color (e.g., "#25D366" for WhatsApp green) */
+    backgroundColor?: string;
+    /** Icon color for battery, wifi, signal (e.g., "#FFFFFF") */
+    iconColor?: string;
+    /** Time text color (defaults to iconColor if not set) */
+    timeColor?: string;
+    /** Optional blur effect for glassmorphism */
+    blur?: boolean;
+    /** Background opacity (0-1, for transparent effects) */
+    opacity?: number;
+}
+
+// =============================================================================
+// COMBINED TYPE
+// =============================================================================
+
+/**
+ * Status bar theme - preset or custom.
+ */
+export type StatusBarTheme = StatusBarPreset | StatusBarCustomTheme;
+
+// =============================================================================
+// RESOLVED THEME
+// =============================================================================
+
+/**
+ * Fully resolved theme with all colors specified.
+ * This is what the StatusBar component receives after resolution.
+ */
+export interface ResolvedStatusBarTheme {
+    backgroundColor: string;
+    iconColor: string;
+    timeColor: string;
+    blur: boolean;
+    opacity: number;
+}
+
+// =============================================================================
+// PRESETS
+// =============================================================================
+
+/**
+ * Built-in preset definitions.
+ */
+export const STATUS_BAR_PRESETS: Record<StatusBarPreset, ResolvedStatusBarTheme> = {
+    light: {
+        backgroundColor: "transparent",
+        iconColor: "#000000",
+        timeColor: "#000000",
+        blur: false,
+        opacity: 1,
+    },
+    dark: {
+        backgroundColor: "transparent",
+        iconColor: "#FFFFFF",
+        timeColor: "#FFFFFF",
+        blur: false,
+        opacity: 1,
+    },
+    transparent: {
+        backgroundColor: "transparent",
+        iconColor: "#FFFFFF",
+        timeColor: "#FFFFFF",
+        blur: false,
+        opacity: 1,
+    },
+};
+
+// =============================================================================
+// RESOLVER
+// =============================================================================
+
+/**
+ * Resolve a StatusBarTheme to fully specified colors.
+ */
+export function resolveStatusBarTheme(theme: StatusBarTheme): ResolvedStatusBarTheme {
+    if (typeof theme === "string") {
+        return STATUS_BAR_PRESETS[theme] || STATUS_BAR_PRESETS.light;
+    }
+
+    // Custom theme - merge with light preset as base
+    return {
+        backgroundColor: theme.backgroundColor ?? "transparent",
+        iconColor: theme.iconColor ?? "#000000",
+        timeColor: theme.timeColor ?? theme.iconColor ?? "#000000",
+        blur: theme.blur ?? false,
+        opacity: theme.opacity ?? 1,
+    };
+}
+````
+
 ## File: packages/core/src/types/world-state.ts
 ````typescript
 /**
@@ -24695,6 +25221,31 @@ export const DURATION_FRAMES = {
     /** 10 seconds */
     TEN_SECONDS: secondsToFrames(10),
 } as const;
+````
+
+## File: packages/core/package.json
+````json
+{
+    "name": "@tokovo/core",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/device-camera": "workspace:*",
+        "immer": "^10.0.0",
+        "react": "18.2.0",
+        "zod": "^4.2.1"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
 ## File: packages/device-calls/src/adapters/anchors.ts
@@ -30544,18 +31095,6 @@ export function handleSwitchLayout(
 }
 ````
 
-## File: packages/device-keyboard/src/runtime/index.ts
-````typescript
-/**
- * Keyboard Runtime Exports
- */
-
-export * from "./reducer";
-export * from "./selectors";
-export * from "./initial-state";
-export * from "./handlers";
-````
-
 ## File: packages/device-keyboard/src/runtime/initial-state.ts
 ````typescript
 /**
@@ -31031,54 +31570,6 @@ export const IOSPrediction = {
 export default IOSPrediction;
 ````
 
-## File: packages/device-keyboard/src/views/ios/theme.ts
-````typescript
-/**
- * iOS Keyboard Theme
- */
-
-import type { KeyboardTheme } from "../../config/theme";
-
-export const IOS_LIGHT_THEME: KeyboardTheme = {
-    keyBg: "#FFFFFF",
-    specialKeyBg: "#B3B6BE",
-    keyText: "#000000",
-    popupBg: "#FFFFFF",
-    containerBg: "rgba(209, 211, 217, 0.96)",
-    dividerColor: "rgba(0, 0, 0, 0.1)",
-    accentColor: "#007AFF",
-    keyShadow: "0 1px 0 rgba(0, 0, 0, 0.3)",
-    pressedKeyBg: "#E5E5E5",
-};
-
-export const IOS_DARK_THEME: KeyboardTheme = {
-    keyBg: "#6D6D72",
-    specialKeyBg: "#3A3A3C",
-    keyText: "#FFFFFF",
-    popupBg: "#6D6D72",
-    containerBg: "rgba(28, 28, 30, 0.94)",
-    dividerColor: "rgba(255, 255, 255, 0.1)",
-    accentColor: "#0A84FF",
-    keyShadow: "0 1px 0 rgba(0, 0, 0, 0.45)",
-    pressedKeyBg: "#4A4A4D",
-};
-
-export function getIOSTheme(variant: "light" | "dark"): KeyboardTheme {
-    return variant === "light" ? IOS_LIGHT_THEME : IOS_DARK_THEME;
-}
-
-export function getThemeColors(variant: "light" | "dark", isSpecial: boolean, isPressed: boolean) {
-    const theme = getIOSTheme(variant);
-
-    return {
-        keyBg: isPressed ? theme.pressedKeyBg : (isSpecial ? theme.specialKeyBg : theme.keyBg),
-        keyText: theme.keyText,
-        popupBg: theme.popupBg,
-        shadow: theme.keyShadow,
-    };
-}
-````
-
 ## File: packages/device-keyboard/src/views/index.ts
 ````typescript
 /**
@@ -31183,6 +31674,39 @@ class KeyboardStrategyRegistryClass {
 }
 
 export const KeyboardStrategyRegistry = new KeyboardStrategyRegistryClass();
+````
+
+## File: packages/device-keyboard/package.json
+````json
+{
+    "name": "@tokovo/device-keyboard",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "exports": {
+        ".": "./src/index.ts",
+        "./*": "./src/*.ts"
+    },
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "react": "18.2.0",
+        "lucide-react": "^0.263.1"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "remotion": "4.0.265"
+    },
+    "peerDependencies": {
+        "remotion": ">=4.0.0"
+    }
+}
 ````
 
 ## File: packages/device-keyboard/README.md
@@ -32834,6 +33358,20 @@ export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: Re
                 willChange: "transform",
             }}>
                 {children}
+
+                {/* Home Indicator - The horizontal bar at the bottom */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 24, // 8px * 3 scale
+                    left: "50%",
+                    transform: "translateX(-50%)",
+                    width: 405, // 135px * 3 scale (iOS spec ~134-140px)
+                    height: 15, // 5px * 3 scale
+                    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent black
+                    borderRadius: 9, // Rounded ends
+                    zIndex: 9999, // Always on top
+                    pointerEvents: "none",
+                }} />
             </div>
         </div>
     );
@@ -33037,76 +33575,6 @@ export const DEVICE_EVENT_TYPES = [
  */
 
 export { deviceV2Lowering, DEVICE_EVENT_TYPES } from "./handler";
-````
-
-## File: packages/devices/src/pixel/Frame.tsx
-````typescript
-import React from "react";
-import { PixelProfile } from "./profile";
-
-export const PixelFrame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = PixelProfile.dimensions;
-
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 60, // Less rounded than iPhone
-            boxShadow: "0 0 0 15px #3a3a3a, 0 0 0 18px #000", // Thinner borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-        }}>
-            {/* Status Bar Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 100,
-                zIndex: 1000,
-                pointerEvents: "none",
-                padding: "30px 40px 0 40px"
-            }}>
-                {statusBar}
-            </div>
-
-            {/* Camera Hole Punch */}
-            <div style={{
-                position: "absolute",
-                top: 36, // 12 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 36, // 12 * 3
-                height: 36, // 12 * 3
-                backgroundColor: "black",
-                borderRadius: "50%",
-                zIndex: 1001
-            }} />
-
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "#121212", // Dark mode default for Android
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                color: "white",
-                // Strict clipping
-                overflow: "hidden",
-                borderRadius: 60, // Match outer
-                clipPath: "inset(0px round 60px)",
-                transform: "translateZ(0)",
-                willChange: "transform",
-            }}>
-
-                {children}
-            </div>
-        </div>
-    );
-};
 ````
 
 ## File: packages/devices/src/pixel/profile.ts
@@ -33367,107 +33835,6 @@ export {
 } from "./statusbar-registry";
 ````
 
-## File: packages/devices/src/registries/statusbar-registry.ts
-````typescript
-/**
- * StatusBar Strategy Registry
- * 
- * Registry for StatusBar visual strategies (iOS, Android, Ghibli, etc.)
- * 
- * @example
- * ```typescript
- * StatusBarStrategyRegistry.register("ghibli", GhibliStatusBarStrategy);
- * const Strategy = StatusBarStrategyRegistry.get("ghibli");
- * ```
- */
-
-import type React from "react";
-import type { DeviceOSState } from "@tokovo/core";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface StatusBarNotificationIcon {
-    appId: string;
-    count: number;
-    icon?: string;
-}
-
-export interface StatusBarStrategyProps {
-    /** Device OS state */
-    os?: DeviceOSState;
-    /** Manual time override */
-    time?: string;
-    /** Theme */
-    theme?: "light" | "dark";
-    /** Battery percentage override */
-    batteryPercentage?: number;
-    /** Notification icons (Android) */
-    notificationIcons?: StatusBarNotificationIcon[];
-}
-
-export type StatusBarStrategyComponent = React.FC<StatusBarStrategyProps>;
-
-// =============================================================================
-// REGISTRY IMPLEMENTATION
-// =============================================================================
-
-class StatusBarStrategyRegistryImpl {
-    private strategies = new Map<string, StatusBarStrategyComponent>();
-
-    /**
-     * Register a status bar strategy
-     * @param variant The variant ID (e.g., "ios", "android", "ghibli")
-     * @param component The strategy React component
-     */
-    register(variant: string, component: StatusBarStrategyComponent): void {
-        if (this.strategies.has(variant)) {
-            console.warn(`[StatusBarStrategyRegistry] Overwriting strategy: ${variant}`);
-        }
-        this.strategies.set(variant, component);
-        console.log(`[StatusBarStrategyRegistry] Registered: ${variant}`);
-    }
-
-    /**
-     * Get a strategy by variant
-     */
-    get(variant: string): StatusBarStrategyComponent | undefined {
-        return this.strategies.get(variant);
-    }
-
-    /**
-     * Get strategy with fallback
-     */
-    getWithFallback(variant: string, fallback: string = "ios"): StatusBarStrategyComponent | undefined {
-        return this.strategies.get(variant) || this.strategies.get(fallback);
-    }
-
-    /**
-     * Check if a strategy is registered
-     */
-    has(variant: string): boolean {
-        return this.strategies.has(variant);
-    }
-
-    /**
-     * List all registered variant IDs
-     */
-    list(): string[] {
-        return Array.from(this.strategies.keys());
-    }
-
-    /**
-     * Clear all strategies (for testing)
-     */
-    clear(): void {
-        this.strategies.clear();
-    }
-}
-
-export const StatusBarStrategyRegistry = new StatusBarStrategyRegistryImpl();
-````
-
 ## File: packages/devices/src/strategies/AndroidStatusBarStrategy.tsx
 ````typescript
 /**
@@ -33577,85 +33944,6 @@ export const AndroidStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
 export { IOSStatusBarStrategy } from "./IOSStatusBarStrategy";
 export { AndroidStatusBarStrategy } from "./AndroidStatusBarStrategy";
 export * from "./shared-icons";
-````
-
-## File: packages/devices/src/strategies/IOSStatusBarStrategy.tsx
-````typescript
-/**
- * iOS StatusBar Strategy
- * 
- * Authentic iOS-style status bar with SF Pro fonts.
- */
-
-import React from "react";
-import type { StatusBarStrategyProps } from "../registries";
-import {
-    SignalBarsIcon,
-    WifiIcon,
-    BatteryIcon,
-    DNDIcon,
-    NetworkTypeLabel,
-    formatTime,
-} from "./shared-icons";
-
-export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
-    os,
-    time = "9:41",
-    theme = "light",
-    batteryPercentage = 100,
-}) => {
-    // Read from device.os if available, otherwise use props
-    const displayTime = os ? formatTime(os.clock) : time;
-    const displayBattery = os?.battery ?? batteryPercentage;
-    const isCharging = os?.charging ?? false;
-    const network = os?.network ?? "wifi";
-    const wifiStrength = os?.wifiStrength ?? 3;
-    const cellStrength = os?.cellStrength ?? 4;
-    const isDND = os?.dnd ?? false;
-
-    const textColor = theme === "dark" ? "white" : "black";
-
-    return (
-        <div style={{
-            width: "100%",
-            height: 132,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "flex-start",
-            padding: "45px 72px 0 72px",
-            boxSizing: "border-box",
-            color: textColor,
-            position: "absolute",
-            top: 0,
-            left: 0,
-            zIndex: 20
-        }}>
-            {/* Left side - Time */}
-            <div style={{
-                fontSize: 51,
-                fontWeight: "600",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                letterSpacing: 0.5
-            }}>
-                {displayTime}
-            </div>
-
-            {/* Right side - Status icons */}
-            <div style={{
-                display: "flex",
-                gap: 15,
-                alignItems: "center",
-                marginTop: 6
-            }}>
-                {isDND && <DNDIcon color={textColor} />}
-                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
-                <SignalBarsIcon color={textColor} strength={cellStrength} />
-                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
-                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
-            </div>
-        </div>
-    );
-};
 ````
 
 ## File: packages/devices/src/strategies/shared-icons.tsx
@@ -35387,117 +35675,6 @@ class TrackBuilderImpl implements TrackBuilder {
 }
 ````
 
-## File: packages/dsl/src/author/device-builder.ts
-````typescript
-/**
- * Device Builder
- * 
- * Fluent API for defining a device's story.
- * Manages conversation context and beat collection.
- */
-
-import { DeviceScene, ConversationDef, Beat } from "@tokovo/ir";
-import { BeatBuilder } from "./beat-builder";
-
-/**
- * Beat callback function.
- */
-export type BeatFn = (b: BeatBuilder) => void;
-
-/**
- * Device builder collects conversations and beats for a device.
- */
-export class DeviceBuilder {
-    private readonly deviceId: string;
-    private readonly profileId: string;
-    private appId: string = "app_whatsapp"; // Default app
-    private ownerName: string | undefined;  // For multi-POV
-    private readonly conversations: ConversationDef[] = [];
-    private readonly beats: Beat[] = [];
-    private currentConversationId: string | undefined;
-
-    constructor(deviceId: string, profileId: string = "iphone16") {
-        this.deviceId = deviceId;
-        this.profileId = profileId;
-    }
-
-    /**
-     * Set the owner name for this device (for multi-POV stories).
-     * The owner's messages appear on the right side.
-     */
-    owner(name: string): this {
-        this.ownerName = name;
-        return this;
-    }
-
-    /**
-     * Set the app for this device.
-     */
-    app(appId: string): this {
-        this.appId = appId;
-        return this;
-    }
-
-    /**
-     * Define a conversation.
-     * Also sets it as the current conversation for subsequent beats.
-     */
-    conversation(id: string, config?: {
-        name?: string;
-        avatar?: string;
-        type?: "dm" | "group";
-        initialMessages?: Array<{ text: string; from: string; at?: string }>;
-    }): this {
-        const def: ConversationDef = {
-            id,
-            name: config?.name,
-            avatar: config?.avatar,
-            type: config?.type ?? "dm",
-            initialMessages: config?.initialMessages,
-        };
-        this.conversations.push(def);
-        this.currentConversationId = id;
-        return this;
-    }
-
-    /**
-     * Define a beat (named group of actions).
-     */
-    beat(name: string, fn: BeatFn): this {
-        if (!this.currentConversationId) {
-            throw new Error(`beat("${name}") called but no conversation defined. Call conversation() first.`);
-        }
-
-        const builder = new BeatBuilder(
-            this.deviceId,
-            this.appId,
-            this.currentConversationId
-        );
-        fn(builder);
-
-        this.beats.push({
-            name,
-            ops: builder.getOps(),
-        });
-
-        return this;
-    }
-
-    /**
-     * Build the device scene.
-     */
-    build(): DeviceScene {
-        return {
-            deviceId: this.deviceId,
-            profileId: this.profileId,
-            appId: this.appId,
-            conversations: this.conversations,
-            beats: this.beats,
-        };
-    }
-}
-````
-
 ## File: packages/dsl/src/core/tracks/audio.ts
 ````typescript
 /**
@@ -35784,238 +35961,6 @@ export type {
     NetworkOptions,
     NotificationOptions,
 } from "./os";
-````
-
-## File: packages/dsl/src/core/tracks/os.ts
-````typescript
-/**
- * OS Track Builder - Device state control
- *
- * Controls device-level state like time, battery,
- * network, notifications, and DND mode.
- */
-
-import type { OSTrackEvent } from "@tokovo/ir";
-import { parseTimeToFrames } from "../../utils/time";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-type GetDeclarationOrder = () => number;
-
-export type NetworkType = "wifi" | "5G" | "4G" | "3G" | "none";
-
-export interface OSStateOptions {
-    time?: Date | number;
-    battery?: number;
-    charging?: boolean;
-    network?: NetworkType;
-    strength?: number;
-    dnd?: boolean;
-    lowPowerMode?: boolean;
-}
-
-export interface BatteryOptions {
-    charging?: boolean;
-}
-
-export interface NetworkOptions {
-    strength?: number;
-}
-
-export interface NotificationOptions {
-    appId: string;
-    title: string;
-    body: string;
-    icon?: string;
-    mode?: "headsup" | "lockscreen" | "both";
-}
-
-// =============================================================================
-// POINT BUILDER (at)
-// =============================================================================
-
-export class OSPointBuilder {
-    private readonly frame: number;
-    private readonly fps: number;
-    private readonly events: OSTrackEvent[];
-    private readonly getOrder: GetDeclarationOrder;
-
-    constructor(
-        frame: number,
-        fps: number,
-        events: OSTrackEvent[],
-        getOrder: GetDeclarationOrder
-    ) {
-        this.frame = frame;
-        this.fps = fps;
-        this.events = events;
-        this.getOrder = getOrder;
-    }
-
-    /**
-     * Set full OS state.
-     */
-    set(options: OSStateOptions): void {
-        const time = options.time instanceof Date
-            ? options.time.getTime()
-            : options.time;
-
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "SET_STATE",
-            payload: {
-                time,
-                battery: options.battery,
-                charging: options.charging,
-                network: options.network,
-                strength: options.strength,
-                dnd: options.dnd,
-                lowPowerMode: options.lowPowerMode,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Set device time.
-     */
-    time(date: Date | number): void {
-        const time = date instanceof Date ? date.getTime() : date;
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "SET_TIME",
-            payload: { time },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Set battery level.
-     */
-    battery(level: number, options: BatteryOptions = {}): void {
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "SET_BATTERY",
-            payload: {
-                level,
-                charging: options.charging,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Set network status.
-     */
-    network(type: NetworkType, options: NetworkOptions = {}): void {
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "SET_NETWORK",
-            payload: {
-                type,
-                strength: options.strength,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Set Do Not Disturb mode.
-     */
-    dnd(enabled: boolean): void {
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "SET_DND",
-            payload: { enabled },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Show a notification.
-     */
-    notification(options: NotificationOptions): void {
-        const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2)}`;
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "NOTIFICATION_SHOW",
-            payload: {
-                id,
-                appId: options.appId,
-                title: options.title,
-                body: options.body,
-                icon: options.icon,
-                mode: options.mode,
-            },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Dismiss a notification.
-     */
-    dismissNotification(id: string): void {
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "NOTIFICATION_DISMISS",
-            payload: { id },
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-
-    /**
-     * Dismiss all notifications.
-     */
-    dismissAllNotifications(): void {
-        const event: OSTrackEvent = {
-            at: this.frame,
-            kind: "OS",
-            type: "NOTIFICATION_DISMISS_ALL",
-            payload: {},
-            _declarationOrder: this.getOrder(),
-        };
-        this.events.push(event);
-    }
-}
-
-// =============================================================================
-// OS TRACK BUILDER
-// =============================================================================
-
-export class OSTrackBuilder {
-    readonly _events: OSTrackEvent[] = [];
-    private readonly fps: number;
-    private readonly getOrder: GetDeclarationOrder;
-
-    constructor(fps: number, getOrder: GetDeclarationOrder) {
-        this.fps = fps;
-        this.getOrder = getOrder;
-    }
-
-    /**
-     * Create a point (instant) operation at a specific time.
-     */
-    at(time: string | number): OSPointBuilder {
-        const frame = parseTimeToFrames(time, this.fps);
-        return new OSPointBuilder(frame, this.fps, this._events, this.getOrder);
-    }
-}
 ````
 
 ## File: packages/dsl/src/core/episode.ts
@@ -36406,230 +36351,6 @@ export const audio = {
         volume,
         loop,
     } as any),
-};
-````
-
-## File: packages/dsl/src/events/call.ts
-````typescript
-/**
- * Phone Call DSL Events
- * 
- * Event factories for phone call simulation.
- * Supports incoming, outgoing, answer, decline, end, and call controls.
- */
-
-import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
-import { createTrace, Trace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
-
-// =============================================================================
-// CALL EVENT TYPES
-// =============================================================================
-
-export interface CallIncomingEvent {
-    at: number;
-    kind: "CALL";
-    type: "INCOMING";
-    deviceId?: string;
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo?: boolean;
-    callType?: CallType;
-    displayMode?: CallDisplayMode;
-    callerMetadata?: CallerMetadata;
-    trace: Trace;
-}
-
-export interface CallAnswerEvent {
-    at: number;
-    kind: "CALL";
-    type: "ANSWER";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallDeclineEvent {
-    at: number;
-    kind: "CALL";
-    type: "DECLINE";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallEndEvent {
-    at: number;
-    kind: "CALL";
-    type: "END";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleMuteEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_MUTE";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleSpeakerEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_SPEAKER";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export interface CallToggleHoldEvent {
-    at: number;
-    kind: "CALL";
-    type: "TOGGLE_HOLD";
-    deviceId?: string;
-    trace: Trace;
-}
-
-export type CallEvent =
-    | CallIncomingEvent
-    | CallAnswerEvent
-    | CallDeclineEvent
-    | CallEndEvent
-    | CallToggleMuteEvent
-    | CallToggleSpeakerEvent
-    | CallToggleHoldEvent;
-
-// =============================================================================
-// CALL EVENT FACTORIES
-// =============================================================================
-
-export interface IncomingCallOptions {
-    callerAvatar?: string;
-    isVideo?: boolean;
-    callType?: CallType;
-    displayMode?: CallDisplayMode;
-    posterImage?: string;
-    posterNameFont?: string;
-    deviceId?: string;
-}
-
-/**
- * Phone Call DSL - Event factories for phone call simulation
- */
-export const call = {
-    /**
-     * Trigger an incoming phone call
-     * 
-     * @example
-     * dsl.call.incoming(0, "alice", "Alice Smith", { displayMode: "fullscreen" })
-     * dsl.call.incoming(0, "bob", "Bob", { displayMode: "overlay", posterImage: "/bob.jpg" })
-     */
-    incoming: (
-        at: number,
-        callerId: string,
-        callerName: string,
-        opts?: IncomingCallOptions
-    ): CallIncomingEvent => ({
-        at,
-        kind: "CALL",
-        type: "INCOMING",
-        trace: createTrace(Tracer.capture()),
-        callerId,
-        callerName,
-        callerAvatar: opts?.callerAvatar,
-        isVideo: opts?.isVideo ?? false,
-        callType: opts?.callType ?? "voice",
-        displayMode: opts?.displayMode ?? "fullscreen",
-        deviceId: opts?.deviceId,
-        callerMetadata: opts?.posterImage ? {
-            posterImage: opts.posterImage,
-            posterStyle: "modern",
-            posterNameFont: opts.posterNameFont,
-        } : undefined,
-    }),
-
-    /**
-     * Answer an incoming call
-     * 
-     * @example
-     * dsl.call.answer(100)
-     */
-    answer: (at: number, deviceId?: string): CallAnswerEvent => ({
-        at,
-        kind: "CALL",
-        type: "ANSWER",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
-
-    /**
-     * Decline an incoming call
-     * 
-     * @example
-     * dsl.call.decline(50)
-     */
-    decline: (at: number, deviceId?: string): CallDeclineEvent => ({
-        at,
-        kind: "CALL",
-        type: "DECLINE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
-
-    /**
-     * End an active call
-     * 
-     * @example
-     * dsl.call.end(300)
-     */
-    end: (at: number, deviceId?: string): CallEndEvent => ({
-        at,
-        kind: "CALL",
-        type: "END",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
-
-    /**
-     * Toggle mute on active call
-     * 
-     * @example
-     * dsl.call.toggleMute(150)
-     */
-    toggleMute: (at: number, deviceId?: string): CallToggleMuteEvent => ({
-        at,
-        kind: "CALL",
-        type: "TOGGLE_MUTE",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
-
-    /**
-     * Toggle speaker on active call
-     * 
-     * @example
-     * dsl.call.toggleSpeaker(160)
-     */
-    toggleSpeaker: (at: number, deviceId?: string): CallToggleSpeakerEvent => ({
-        at,
-        kind: "CALL",
-        type: "TOGGLE_SPEAKER",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
-
-    /**
-     * Toggle hold on active call
-     * 
-     * @example
-     * dsl.call.toggleHold(200)
-     */
-    toggleHold: (at: number, deviceId?: string): CallToggleHoldEvent => ({
-        at,
-        kind: "CALL",
-        type: "TOGGLE_HOLD",
-        trace: createTrace(Tracer.capture()),
-        deviceId,
-    }),
 };
 ````
 
@@ -41290,79 +41011,6 @@ export class OSTrackBuilder {
 }
 ````
 
-## File: packages/dsl/src/tracer.ts
-````typescript
-// Source map support removed for browser compatibility
-
-import { Trace } from "@tokovo/ir";
-
-/**
- * Tracer
- * 
- * Auto-captures stack traces to link IR events to DSL source code.
- */
-export class Tracer {
-    /**
-     * Capture the current stack trace and return a Trace object.
-     * @param offsetFrames Number of frames to skip (default 1 to skip capture call itself)
-     */
-    static capture(offsetFrames = 1): Partial<Trace> {
-        const stack = new Error().stack;
-        if (!stack) return {};
-
-        // DEBUG: Uncomment to see raw stack
-        // console.log("RAW STACK:", stack);
-
-        const lines = stack.split('\n');
-
-        // Find the first frame outside of the DSL package
-        // We look for logic that is NOT in node_modules and NOT in our own internal files
-        for (let i = offsetFrames + 1; i < lines.length; i++) {
-            const line = lines[i];
-
-            // Skip internal node frames
-            if (line.includes('(node:') || line.includes('(internal/')) continue;
-
-            // Skip node_modules
-            if (line.includes('node_modules')) continue;
-
-            // Skip our own DSL internals (if mapped)
-            if (line.includes('/dsl/src/')) continue;
-            if (line.includes('/dsl/dist/')) continue;
-
-            // This should be the user code
-            const source = this.parseFrame(line);
-            if (source) {
-                return {
-                    source
-                };
-            }
-        }
-
-        return {};
-    }
-
-    /**
-     * Parse a stack frame line to extract file and line number.
-     * Format: "    at Function.method (/path/to/file.ts:123:45)"
-     *      or "    at /path/to/file.ts:123:45"
-     */
-    private static parseFrame(line: string): { file: string; line: number } | undefined {
-        // Regex to match file path, line, and column
-        // Matches: (path):line:col
-        const match = line.match(/\((.+):(\d+):(\d+)\)$/) || line.match(/at\s+(.+):(\d+):(\d+)$/);
-
-        if (match) {
-            return {
-                file: match[1],
-                line: parseInt(match[2], 10)
-            };
-        }
-        return undefined;
-    }
-}
-````
-
 ## File: packages/episodes/src/production/bakchodi-bros.episode.ts
 ````typescript
 /**
@@ -41539,6 +41187,83 @@ export default defineEpisode({
         .section("club_twist", "27s", "50s")
         .section("giving_in", "50s", "60s")
 
+        .build(),
+});
+````
+
+## File: packages/episodes/src/production/instagram-dm-demo.episode.ts
+````typescript
+/**
+ * Instagram DM Demo Episode
+ * 
+ * Demonstrates the Instagram app plugin with:
+ * - Home feed with posts
+ * - Stories bar
+ * - DM messages
+ */
+
+import { defineEpisode } from "../types/episode-definition";
+import { episode } from "@tokovo/dsl/src/v2";
+import { InstagramTrackBuilder } from "@tokovo/apps-instagram";
+
+// Declaration order counter
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+// =============================================================================
+// EPISODE DEFINITION
+// =============================================================================
+
+export default defineEpisode({
+    meta: {
+        id: "instagram-dm-demo",
+        title: "Instagram DM Demo 📸",
+        description: "Demo of Instagram home screen and DMs",
+        category: "production",
+        tags: ["instagram", "dm", "social"],
+    },
+    config: {
+        format: "1080x1920",
+        durationInFrames: 300, // 10 seconds
+        apps: ["app_instagram"],
+    },
+    build: () => episode("instagram-dm-demo", {
+        fps: 30,
+        duration: "10s",
+        title: "Instagram DM Demo",
+    })
+        .device("phone", "iphone16", {
+            app: "app_instagram",
+            os: {
+                time: new Date("2024-12-18T14:30:00"),
+                battery: 85,
+                network: "5G",
+            },
+        })
+        // Instagram track
+        .track("app_instagram", () => {
+            return new InstagramTrackBuilder(30, "phone", getOrder);
+        }, ig => {
+            // Start on home
+            ig.at("0s").navigate("home");
+
+            // After 3 seconds, receive a DM
+            ig.at("3s").receive(
+                { username: "alex.j", avatar: "" },
+                "Hey! Did you see the new update?",
+                { threadId: "thread_alex" }
+            );
+
+            // After 5 seconds, open the DM thread
+            ig.at("5s").openDM("thread_alex");
+
+            // After 7 seconds, send a reply
+            ig.at("7s").send(
+                { username: "alex.j", avatar: "" },
+                "Yeah it looks awesome! 🔥",
+                { threadId: "thread_alex" }
+            );
+        })
         .build(),
 });
 ````
@@ -45545,30 +45270,6 @@ export function isMarkerEvent(e: TrackEvent): e is MarkerTrackEvent {
 
 export function isAppEvent(e: TrackEvent): e is AppTrackEventRegistry[keyof AppTrackEventRegistry] {
     return (e as { kind: string }).kind === "APP";
-}
-````
-
-## File: packages/ir/package.json
-````json
-{
-    "name": "@tokovo/ir",
-    "version": "0.0.1",
-    "description": "Tokovo IR types - Scene IR (semantic) and Timeline IR (execution)",
-    "main": "dist/index.js",
-    "types": "dist/index.d.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "zod": "^4.2.1"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
 }
 ````
 
@@ -50714,297 +50415,1433 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 }
 ````
 
-## File: packages/apps-whatsapp/src/assets/sounds.ts
-````typescript
-/**
- * WhatsApp Sound Registry
- * 
- * Maps semantic sound IDs to physical file paths in the public directory.
- * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
- */
-
-import { SoundRegistry } from "@tokovo/core";
-
-// Register WhatsApp-specific sounds
-SoundRegistry.registerMany({
-    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-});
+## File: apps/video-runner/package.json
+````json
+{
+    "name": "video-runner",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "npx remotion studio",
+        "dev": "npx remotion studio",
+        "build": "npx remotion render",
+        "upgrade": "remotion upgrade",
+        "test": "eslint src --ext ts,tsx"
+    },
+    "dependencies": {
+        "@remotion/cli": "4.0.380",
+        "@tokovo/compiler": "workspace:*",
+        "@tokovo/device-calls": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/core": "workspace:*",
+        "@tokovo/devices": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
+        "@tokovo/device-notifications": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/episodes": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/renderer": "workspace:*",
+        "react": "18.2.0",
+        "react-dom": "18.2.0",
+        "remotion": "4.0.380",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/react": "18.2.0",
+        "@types/web": "^0.0.61",
+        "eslint": "^8.0.0",
+        "prettier": "^3.0.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
-## File: packages/apps-whatsapp/src/dsl/track-builder.ts
+## File: packages/apps-instagram/src/lowering/handler.ts
 ````typescript
 /**
- * WhatsApp v2 Track Builder - App-specific track for WhatsApp events
+ * Instagram Lowering Handler
  * 
- * @description Provides DSL verbs for WhatsApp interactions:
- * - receive() - Incoming message
- * - send() - Outgoing message  
- * - typing() - Typing indicator
- * - react() - Emoji reaction
- * 
- * @see docs-v2/DSL_REVAMP.md#app-track-plugin-system
+ * Transforms DSL track events into runtime events.
+ * Events pass through with payload kept intact for reducer.
  */
 
-import type { WhatsAppPayloads, WhatsAppTrackEvent, TrackMessageRef } from "@tokovo/ir";
+import type { InstagramTrackEvent } from "../ir/track-event";
+
+// =============================================================================
+// LOWERING HANDLER
+// =============================================================================
+
+export interface LoweringContext {
+    fps: number;
+    pluginLowerers?: Map<string, any>; // Match the main context interface
+}
+
+/**
+ * Lower Instagram track events to runtime events.
+ * The payload is kept intact - reducer accesses event.payload.x
+ */
+export function lowerInstagramEvent(
+    event: InstagramTrackEvent,
+    _ctx: LoweringContext
+): RuntimeInstagramEvent[] {
+    // Pass through event with payload intact (not spread)
+    return [{
+        kind: "APP" as const,
+        appId: "app_instagram" as const,
+        type: event.type,
+        at: event.at,
+        deviceId: event.deviceId,
+        payload: event.payload, // Keep payload wrapped!
+    }];
+}
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-type GetDeclarationOrder = () => number;
-
-export interface ReceiveOptions {
-    silent?: boolean;
-    replyTo?: TrackMessageRef;
+interface RuntimeInstagramEvent {
+    kind: "APP";
+    appId: "app_instagram";
+    type: string;
+    at: number;
+    deviceId: string;
+    payload: Record<string, unknown>;
 }
 
-export interface SendOptions {
-    silent?: boolean;
+// =============================================================================
+// EXPORT
+// =============================================================================
+
+export const instagramV2Lowering = {
+    eventKinds: ["APP"],
+    targets: ["app_instagram"],
+    lower: lowerInstagramEvent,
+};
+````
+
+## File: packages/apps-instagram/src/types/state.ts
+````typescript
+/**
+ * Instagram State Types
+ * 
+ * Core state shape for the Instagram plugin.
+ */
+
+// =============================================================================
+// SCREEN & NAVIGATION
+// =============================================================================
+
+export type InstagramScreen = "home" | "search" | "reels" | "shop" | "profile" | "dms" | "dm_thread";
+
+export interface InstagramState {
+    screen: InstagramScreen;
+    activeThreadId?: string;
+    /** StatusBar theme - "light" | "dark" | full custom theme */
+    statusBarTheme?: "light" | "dark" | {
+        backgroundColor?: string;
+        iconColor?: string;
+        timeColor?: string;
+    };
 }
 
-export interface ImageOptions {
+// =============================================================================
+// USER / AUTHOR
+// =============================================================================
+
+export interface InstagramUser {
+    username: string;
+    displayName?: string;
+    avatar: string;
+    verified?: boolean;
+}
+
+// =============================================================================
+// POST
+// =============================================================================
+
+export interface InstagramPost {
+    id: string;
+    author: InstagramUser;
+    image: string;
+    caption: string;
+    likes: number;
+    comments: InstagramComment[];
+    timestamp: string;
+    liked?: boolean;
+    saved?: boolean;
+}
+
+export interface InstagramComment {
+    id: string;
+    author: InstagramUser;
+    text: string;
+    likes: number;
+    timestamp: string;
+}
+
+// =============================================================================
+// STORIES
+// =============================================================================
+
+export interface InstagramStory {
+    id: string;
+    author: InstagramUser;
+    viewed: boolean;
+    hasUnseenStory: boolean;
+}
+
+// =============================================================================
+// DIRECT MESSAGES
+// =============================================================================
+
+export interface InstagramThread {
+    id: string;
+    participant: InstagramUser;
+    messages: InstagramDM[];
+    unread: boolean;
+    typing?: boolean;
+}
+
+export interface InstagramDM {
+    id: string;
+    sender: "me" | string;
+    type: "text" | "image" | "reel" | "post" | "voice";
+    content: string;
+    timestamp: string;
+    read?: boolean;
+}
+
+// =============================================================================
+// WORLD STATE EXTENSION
+// =============================================================================
+
+export interface InstagramWorldState {
+    feed: InstagramPost[];
+    stories: InstagramStory[];
+    threads: InstagramThread[];
+}
+````
+
+## File: packages/apps-instagram/src/views/ios/DMScreen.tsx
+````typescript
+/**
+ * Instagram DM Thread Screen (iOS)
+ * 
+ * NOTE: Safe area top is handled by InstagramApp router.
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+import type { InstagramThread, InstagramDM } from "../../types";
+
+interface DMScreenProps {
+    thread: InstagramThread;
+    width: number;
+    height: number;
+    safeAreaBottom?: number;
+}
+
+// Back arrow
+const BackIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polyline points="15 18 9 12 15 6" />
+    </svg>
+);
+
+// Video call
+const VideoIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <polygon points="23 7 16 12 23 17 23 7" />
+        <rect x="1" y="5" width="15" height="14" rx="2" ry="2" />
+    </svg>
+);
+
+// Voice call
+const PhoneIcon = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+    </svg>
+);
+
+export const DMScreen: React.FC<DMScreenProps> = ({
+    thread,
+    width,
+    height,
+    safeAreaBottom = 34,
+}) => {
+    const theme = instagramTheme;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: theme.colors.background,
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: theme.typography.fontFamily,
+        }}>
+            {/* Header */}
+            <div style={{
+                height: 60,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                paddingLeft: 8,
+                paddingRight: 16,
+                borderBottom: `1px solid ${theme.colors.divider}`,
+                flexShrink: 0,
+            }}>
+                {/* Left: Back + Avatar + Name */}
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ color: theme.colors.textPrimary }}>
+                        <BackIcon />
+                    </div>
+                    <div style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        backgroundColor: theme.colors.backgroundSecondary,
+                        backgroundImage: thread.participant.avatar ? `url(${thread.participant.avatar})` : undefined,
+                        backgroundSize: "cover",
+                    }} />
+                    <span style={{
+                        ...theme.typography.username,
+                        color: theme.colors.textPrimary,
+                    }}>
+                        {thread.participant.username}
+                    </span>
+                </div>
+
+                {/* Right: Actions */}
+                <div style={{ display: "flex", gap: 16, color: theme.colors.textPrimary }}>
+                    <PhoneIcon />
+                    <VideoIcon />
+                </div>
+            </div>
+
+            {/* Messages */}
+            <div style={{
+                flex: 1,
+                overflowY: "auto",
+                padding: 16,
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+            }}>
+                {thread.messages.map((msg) => (
+                    <MessageBubble key={msg.id} message={msg} />
+                ))}
+
+                {/* Typing indicator */}
+                {thread.typing && (
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "8px 12px",
+                        backgroundColor: theme.colors.dmBubbleIncoming,
+                        borderRadius: 18,
+                        alignSelf: "flex-start",
+                        maxWidth: "60%",
+                    }}>
+                        <span style={{ fontSize: 14 }}>•••</span>
+                    </div>
+                )}
+            </div>
+
+            {/* Input bar */}
+            <div
+                data-anchor="dm-input"
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    padding: 12,
+                    paddingBottom: 12 + safeAreaBottom,
+                    gap: 12,
+                    borderTop: `1px solid ${theme.colors.divider}`,
+                    backgroundColor: theme.colors.background,
+                    flexShrink: 0,
+                }}
+            >
+                {/* Camera */}
+                <div style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    backgroundColor: theme.colors.brandBlue,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    color: "white",
+                }}>
+                    📷
+                </div>
+
+                {/* Text input */}
+                <div style={{
+                    flex: 1,
+                    height: 36,
+                    borderRadius: 18,
+                    border: `1px solid ${theme.colors.border}`,
+                    paddingLeft: 16,
+                    paddingRight: 16,
+                    display: "flex",
+                    alignItems: "center",
+                    color: theme.colors.textSecondary,
+                    fontSize: 14,
+                }}>
+                    Message...
+                </div>
+
+                {/* Mic */}
+                <div style={{ color: theme.colors.textPrimary }}>🎤</div>
+                {/* Image */}
+                <div style={{ color: theme.colors.textPrimary }}>🖼️</div>
+            </div>
+        </div>
+    );
+};
+
+// Message Bubble
+const MessageBubble: React.FC<{ message: InstagramDM }> = ({ message }) => {
+    const theme = instagramTheme;
+    const isMe = message.sender === "me";
+
+    return (
+        <div
+            data-dm-id={message.id}
+            style={{
+                display: "flex",
+                justifyContent: isMe ? "flex-end" : "flex-start",
+            }}
+        >
+            <div style={{
+                maxWidth: "70%",
+                padding: "10px 14px",
+                borderRadius: 18,
+                backgroundColor: isMe ? theme.colors.dmBubbleOutgoing : theme.colors.dmBubbleIncoming,
+                color: isMe ? theme.colors.dmTextOutgoing : theme.colors.dmTextIncoming,
+                fontSize: 14,
+                lineHeight: 1.4,
+            }}>
+                {message.content}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-instagram/src/views/ios/HomeScreen.tsx
+````typescript
+/**
+ * Instagram Home Screen (iOS)
+ * 
+ * Main feed with header, stories, and posts.
+ * NOTE: Safe area top is handled by InstagramApp router.
+ */
+
+import React from "react";
+import { instagramTheme } from "../../config/theme";
+import { Header } from "./Header";
+import { Stories } from "./Stories";
+import { Post } from "./Post";
+import { BottomNav } from "./BottomNav";
+import type { InstagramPost, InstagramStory } from "../../types";
+
+interface HomeScreenProps {
+    feed: InstagramPost[];
+    stories: InstagramStory[];
+    width: number;
+    height: number;
+    safeAreaBottom?: number;
+}
+
+export const HomeScreen: React.FC<HomeScreenProps> = ({
+    feed,
+    stories,
+    width,
+    height,
+    safeAreaBottom = 34,
+}) => {
+    const theme = instagramTheme;
+
+    return (
+        <div style={{
+            width,
+            height,
+            backgroundColor: theme.colors.background,
+            display: "flex",
+            flexDirection: "column",
+            fontFamily: theme.typography.fontFamily,
+            overflow: "hidden",
+        }}>
+            {/* Header */}
+            <Header />
+
+            {/* Content area */}
+            <div style={{
+                flex: 1,
+                overflowY: "auto",
+                paddingBottom: safeAreaBottom + theme.spacing.bottomNavHeight + 20,
+            }}>
+                {/* Stories */}
+                <Stories stories={stories} />
+
+                {/* Feed */}
+                {feed.map((post) => (
+                    <Post key={post.id} post={post} />
+                ))}
+
+                {/* Empty state */}
+                {feed.length === 0 && (
+                    <div style={{
+                        padding: 40,
+                        textAlign: "center",
+                        color: theme.colors.textSecondary,
+                        fontSize: 16,
+                    }}>
+                        No posts yet
+                    </div>
+                )}
+            </div>
+
+            {/* Bottom Navigation */}
+            <BottomNav activeTab="home" />
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/theme.ts
+````typescript
+export const iOSTokens = {
+    colors: {
+        primary: "var(--wa-color-primary)",
+        secondary: "var(--wa-text-secondary)",
+        background: "var(--wa-bg-primary)",
+        headerBg: "var(--wa-bg-header)",
+        chatBg: "var(--wa-bg-chat)",
+
+        // Bubbles
+        bubbleMyBg: "var(--wa-bubble-out-bg)",
+        bubbleOtherBg: "var(--wa-bubble-in-bg)",
+        bubbleText: "var(--wa-text-primary)",
+        bubbleTime: "var(--wa-text-secondary)",
+
+        separator: "var(--wa-separator)"
+    },
+    // Logical Standard Typography
+    typography: {
+        body: { fontSize: 16, lineHeight: "21px" },
+        caption: { fontSize: 11, lineHeight: "13px" },
+        headerTitle: { fontSize: 17, fontWeight: "600" },
+        headerSubtitle: { fontSize: 12 }
+    }
+};
+
+export type Theme = typeof iOSTokens;
+
+export function getTheme(platform: "ios" | "android"): Theme {
+    return iOSTokens; // Placeholder, easy to expand
+}
+````
+
+## File: packages/apps-whatsapp/src/components/DateSeparator.tsx
+````typescript
+/**
+ * DateSeparator Component
+ * 
+ * Displays date headers in the conversation (Today, Yesterday, etc.)
+ * Authentic WhatsApp iOS/Android style.
+ */
+
+import React from "react";
+import { getAppConfig, Platform } from "@tokovo/core";
+
+interface DateSeparatorProps {
+    text: string;
+    platform?: Platform;
+}
+
+export const DateSeparator: React.FC<DateSeparatorProps> = ({
+    text = "Today"
+}) => {
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "16px 0",
+        }}>
+            <div
+                className="wa-ios-blur"
+                style={{
+                    backgroundColor: "var(--wa-bg-header)", // Use header blur bg or specific pill bg
+                    padding: "8px 24px",
+                    borderRadius: 16,
+                    boxShadow: "var(--wa-shadow-sm)",
+                }}>
+                <span style={{
+                    fontSize: 26, // ~9px visual
+                    fontWeight: 500,
+                    color: "var(--wa-text-secondary)",
+                    fontFamily: "var(--wa-ios-font)",
+                    letterSpacing: 0.2,
+                    textTransform: "uppercase",
+                }}>
+                    {text}
+                </span>
+            </div>
+        </div>
+    );
+};
+
+export default DateSeparator;
+````
+
+## File: packages/apps-whatsapp/src/components/Header.tsx
+````typescript
+/**
+ * WhatsApp Header Component
+ * 
+ * Authentic iOS WhatsApp navigation bar.
+ * Design:
+ * [Back] [Avatar] [Name/Status] ......... [Video] [Phone]
+ */
+
+import React from "react";
+import { ChevronLeft, Video, Phone } from "lucide-react";
+import { LAYOUT_CONSTANTS, UI_CONSTANTS } from "../config/layout-config";
+
+export interface HeaderProps {
+    contactName: string;
+    avatarUrl?: string;
+    status?: string;
+}
+
+export const Header: React.FC<HeaderProps> = ({
+    contactName,
+    avatarUrl,
+    status = "online"
+}) => {
+    // Icons configuration
+    const iconColor = "var(--wa-color-primary)";
+    const iconProps = { size: 27, strokeWidth: 1.5, color: iconColor }; // Thin iOS style stroke
+
+    return (
+        <div
+            // Header Anchor
+            data-anchor-id="header"
+            style={{
+                height: "var(--wa-header-height)",
+                backgroundColor: "var(--wa-bg-header)",
+                backdropFilter: "blur(20px)",
+                WebkitBackdropFilter: "blur(20px)",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 8px 0 8px", // iOS has minimal padding, buttons hug edges
+                marginTop: "var(--wa-status-bar-height)", // Spacing for dynamic island/status bar
+                borderBottom: "0.5px solid var(--wa-separator)",
+                zIndex: 100,
+                position: "relative",
+                fontFamily: "var(--wa-ios-font)"
+            }}
+        >
+            {/* Left Group: Back + Unread Count */}
+            <div
+                style={{
+                    display: "flex",
+                    alignItems: "center",
+                    minWidth: 70, // Hit target area
+                    cursor: "pointer",
+                    color: "var(--wa-color-primary)"
+                }}
+            >
+                <ChevronLeft size={33} strokeWidth={2} style={{ marginLeft: -6 }} />
+                <span style={{
+                    fontSize: 27, // ~17px visual
+                    fontWeight: 400,
+                    marginLeft: -2,
+                    display: "flex",
+                    alignItems: "center",
+                    paddingBottom: 2 // visual adjustment
+                }}>
+                    99
+                </span>
+            </div>
+
+            {/* Center Group: Avatar + Info (Tappable Profile Area) */}
+            <div
+                data-anchor-id="profile"
+                style={{
+                    flex: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "flex-start", // iOS aligns left next to back button
+                    marginLeft: 0,
+                    cursor: "pointer",
+                    overflow: "hidden"
+                }}
+            >
+                {/* Avatar */}
+                <div style={{
+                    width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
+                    height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
+                    borderRadius: "50%",
+                    background: avatarUrl
+                        ? `url(${avatarUrl}) center/cover`
+                        : "linear-gradient(135deg, #8E8E93 0%, #B0B0B5 100%)", // Default gray fallback
+                    marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
+                    flexShrink: 0,
+                    border: "0.5px solid rgba(0,0,0,0.1)" // Subtle border
+                }} />
+
+                {/* Name & Status */}
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    overflow: "hidden"
+                }}>
+                    <span style={{
+                        fontSize: 27, // ~16px visual
+                        fontWeight: 600,
+                        color: "var(--wa-text-primary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        lineHeight: 1.2
+                    }}>
+                        {contactName}
+                    </span>
+                    <span style={{
+                        fontSize: 18, // ~12px visual
+                        color: "var(--wa-text-secondary)",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        lineHeight: 1.2,
+                        marginTop: 1
+                    }}>
+                        {status}
+                    </span>
+                </div>
+            </div>
+
+            {/* Right Group: Actions */}
+            <div style={{
+                display: "flex",
+                gap: 24, // Wider spacing on iOS
+                alignItems: "center",
+                paddingRight: 8
+            }}>
+                <Video {...iconProps} />
+                <Phone {...iconProps} size={24} /> {/* Phone icon is visually slightly smaller */}
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/index.ts
+````typescript
+/**
+ * WhatsApp Components Index
+ * 
+ * Re-exports all WhatsApp UI components for easy importing.
+ */
+
+// Icons
+export * from "./icons";
+
+// Components
+export { Header, type HeaderProps } from "./Header";
+export { MessageBubble, type MessageBubbleProps } from "./MessageBubble";
+
+// Media Bubbles
+export { ImageMessageBubble, VideoMessageBubble, GifMessageBubble, VoiceMessageBubble } from "./MediaBubbles";
+
+// Date Separator
+export { DateSeparator } from "./DateSeparator";
+
+// Chats List Screen
+export { ChatsListScreen, type ChatPreview } from "./ChatsListScreen";
+
+// Bubble Tail (extracted from iOSStatusBar)
+export { BubbleTail } from "./BubbleTail";
+
+// Advanced Features (Phase 16)
+export { ReactionsBar, ReactionPicker, type Reaction, COMMON_REACTIONS } from "./Reactions";
+export { LinkPreview, MiniLinkPreview, type LinkPreviewData } from "./LinkPreview";
+export { ReplyQuote, type ReplyToData } from "./ReplyQuote";
+````
+
+## File: packages/apps-whatsapp/src/components/MediaBubbles.tsx
+````typescript
+import React from "react";
+import { getAppConfig, Platform } from "@tokovo/core";
+
+// Stub for getTokens (to be implemented properly)
+const getTokens = (_platform: Platform) => ({
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+});
+
+// ============================================================================
+// IMAGE MESSAGE BUBBLE - Authentic WhatsApp iOS Style
+// ============================================================================
+
+interface ImageMessageBubbleProps {
+    imageUrl: string;
     caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
+}
+
+export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
+    imageUrl,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Image container */}
+            <div style={{
+                position: "relative",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+                // Square bottom corners if caption is below
+                borderBottomLeftRadius: caption ? 0 : config.bubbleRadius,
+                borderBottomRightRadius: caption ? 0 : config.bubbleRadius,
+                overflow: "hidden",
+            }}>
+                <img
+                    src={imageUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Timestamp overlay on image (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    {/* Timestamp + Read receipts */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// VIDEO MESSAGE BUBBLE - With Play Overlay
+// ============================================================================
+
+interface VideoMessageBubbleProps {
+    thumbnailUrl: string;
+    duration: number; // in seconds
+    caption?: string;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number;
+    platform?: Platform;
+}
+
+export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
+    thumbnailUrl,
+    duration,
+    caption,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* Video thumbnail container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={thumbnailUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 600,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* Play button overlay */}
+                {!isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        top: "50%",
+                        left: "50%",
+                        transform: "translate(-50%, -50%)",
+                        width: 120,
+                        height: 120,
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                    }}>
+                        <svg width="54" height="54" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    </div>
+                )}
+
+                {/* Duration badge */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    left: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="#FFFFFF">
+                        <path d="M8 6.82v10.36c0 .79.87 1.27 1.54.84l8.14-5.18a1 1 0 0 0 0-1.69l-8.14-5.17A.998.998 0 0 0 8 6.82z" />
+                    </svg>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {formatDuration(duration)}
+                    </span>
+                </div>
+
+                {/* Timestamp overlay (when no caption) */}
+                {!caption && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 12,
+                        right: 12,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 9,
+                        backgroundColor: "rgba(0,0,0,0.5)",
+                        padding: "6px 12px",
+                        borderRadius: 12,
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: "#FFFFFF",
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} light />}
+                    </div>
+                )}
+
+                {/* Progress bar during playback */}
+                {isPlaying && (
+                    <div style={{
+                        position: "absolute",
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: 6,
+                        backgroundColor: "rgba(255,255,255,0.3)",
+                    }}>
+                        <div style={{
+                            height: "100%",
+                            width: `${(playProgress / duration) * 100}%`,
+                            backgroundColor: "#25D366",
+                        }} />
+                    </div>
+                )}
+            </div>
+
+            {/* Caption if present */}
+            {caption && (
+                <div style={{
+                    padding: `${config.bubblePadding}px ${config.bubblePaddingHorizontal}px`,
+                }}>
+                    <span style={{
+                        fontSize: config.messageTextSize,
+                        lineHeight: `${config.messageLineHeight}px`,
+                        color: config.bubbleTextColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {caption}
+                    </span>
+
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "flex-end",
+                        alignItems: "center",
+                        gap: config.bubbleGap * 0.75,
+                        marginTop: 6,
+                    }}>
+                        <span style={{
+                            fontSize: config.timestampSize,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {timestamp}
+                        </span>
+                        {isMe && <DoubleCheckIcon read={read} />}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+// ============================================================================
+// GIF MESSAGE BUBBLE - Auto-playing with GIPHY badge
+// ============================================================================
+
+interface GifMessageBubbleProps {
+    gifUrl: string;
+    width?: number;
     height?: number;
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    platform?: Platform;
 }
 
-export interface TypingOptions {
-    actor?: string;
+export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
+    gifUrl,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
+
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            overflow: "hidden",
+            // Width is controlled by layout container
+            width: "100%",
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{
+                    padding: `${config.bubblePaddingHorizontal}px ${config.bubblePaddingHorizontal}px 4px`,
+                    backgroundColor: "transparent"
+                }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
+
+            {/* GIF container */}
+            <div style={{
+                position: "relative",
+                overflow: "hidden",
+                // Square top corners if sender name is above
+                borderTopLeftRadius: senderName ? 0 : config.bubbleRadius,
+                borderTopRightRadius: senderName ? 0 : config.bubbleRadius,
+            }}>
+                <img
+                    src={gifUrl}
+                    style={{
+                        width: "100%",
+                        height: "auto",
+                        maxHeight: 500,
+                        objectFit: "cover",
+                        display: "block",
+                    }}
+                    alt=""
+                />
+
+                {/* GIF badge */}
+                <div style={{
+                    position: "absolute",
+                    top: 12,
+                    left: 12,
+                    backgroundColor: "rgba(0,0,0,0.6)",
+                    padding: "4px 12px",
+                    borderRadius: 8,
+                }}>
+                    <span style={{
+                        fontSize: 24,
+                        fontWeight: 700,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                        letterSpacing: 1,
+                    }}>
+                        GIF
+                    </span>
+                </div>
+
+                {/* Timestamp overlay */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 12,
+                    right: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    backgroundColor: "rgba(0,0,0,0.5)",
+                    padding: "6px 12px",
+                    borderRadius: 12,
+                }}>
+                    <span style={{
+                        fontSize: 28,
+                        color: "#FFFFFF",
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {timestamp}
+                    </span>
+                    {isMe && <DoubleCheckIcon read={read} light />}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
+// VOICE MESSAGE BUBBLE - With Waveform Animation
+// ============================================================================
+
+interface VoiceMessageBubbleProps {
+    duration: number; // in seconds
+    isMe: boolean;
+    senderName?: string;
+    timestamp?: string;
+    read?: boolean;
+    isPlaying?: boolean;
+    playProgress?: number; // 0-1
+    platform?: Platform;
 }
 
-// =============================================================================
-// POINT BUILDER (at)
-// =============================================================================
+export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+    duration,
+    isMe,
+    senderName,
+    timestamp = "10:42",
+    read = false,
+    isPlaying = false,
+    playProgress = 0,
+    platform = "ios"
+}) => {
+    const config = getAppConfig("whatsapp", platform) as any;
+    const tokens = getTokens(platform);
 
-export class WhatsAppPointBuilder {
-    constructor(
-        private _frame: number,
-        private _fps: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _events: WhatsAppTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
+    const formatDuration = (secs: number) => {
+        const mins = Math.floor(secs / 60);
+        const s = secs % 60;
+        return `${mins}:${s.toString().padStart(2, '0')}`;
+    };
 
-    /**
-     * Receive a message from someone.
-     */
-    receive(from: string, text: string, options: ReceiveOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                text,
-                silent: options.silent,
-                replyTo: options.replyTo,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+    // Generate waveform bars (deterministic based on duration)
+    const waveformBars = Array.from({ length: 35 }, (_, i) => {
+        // Create realistic voice pattern using sin + noise
+        const seed = (duration * 13 + i * 7) % 100;
+        const baseHeight = 0.3 + 0.5 * Math.sin((i / 35) * Math.PI);
+        const noise = (seed % 30) / 100;
+        return Math.min(1, Math.max(0.15, baseHeight + noise));
+    });
 
-    /**
-     * Send a message.
-     */
-    send(text: string, options: SendOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                text,
-                silent: options.silent,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+    const playedBars = Math.floor(playProgress * waveformBars.length);
 
-    /**
-     * Receive an image.
-     */
-    receiveImage(from: string, url: string, options: ImageOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "IMAGE_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                url,
-                caption: options.caption,
-                height: options.height,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+    return (
+        <div style={{
+            backgroundColor: isMe ? config.bubbleMyColor : config.bubbleOtherColor,
+            borderRadius: config.bubbleRadius,
+            borderTopLeftRadius: isMe ? config.bubbleRadius : config.bubbleTailRadius,
+            borderTopRightRadius: isMe ? config.bubbleTailRadius : config.bubbleRadius,
+            boxShadow: config.bubbleShadow,
+            padding: config.bubblePaddingHorizontal,
+            minWidth: 480,
+        }}>
+            {/* Sender Name (Group Chat) */}
+            {senderName && !isMe && (
+                <div style={{ marginBottom: 8 }}>
+                    <span style={{
+                        fontSize: config.senderNameSize,
+                        fontWeight: 600,
+                        color: config.senderNameColor,
+                        fontFamily: tokens.fontFamily,
+                    }}>
+                        {senderName}
+                    </span>
+                </div>
+            )}
 
-    /**
-     * React to a message.
-     */
-    react(messageRef: TrackMessageRef, emoji: string): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "REACT",
-            payload: {
-                messageRef,
-                emoji,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+            {/* Voice message content */}
+            <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 16,
+            }}>
+                {/* Avatar / Microphone icon */}
+                <div style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: "50%",
+                    backgroundColor: isMe ? "#128C7E" : "#00A884",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                }}>
+                    {isPlaying ? (
+                        // Pause icon
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <rect x="6" y="4" width="4" height="16" rx="1" />
+                            <rect x="14" y="4" width="4" height="16" rx="1" />
+                        </svg>
+                    ) : (
+                        // Play icon
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="#FFFFFF">
+                            <path d="M8 5v14l11-7z" />
+                        </svg>
+                    )}
+                </div>
 
-    /**
-     * Mark conversation as read.
-     */
-    read(): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "READ",
-            payload: {
-                conversationId: this._conversationId,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
-}
+                {/* Waveform visualization */}
+                <div style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                }}>
+                    {/* Waveform bars */}
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 3,
+                        height: 60,
+                    }}>
+                        {waveformBars.map((height, i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    width: 6,
+                                    height: `${height * 100}%`,
+                                    backgroundColor: i < playedBars
+                                        ? (isMe ? "#128C7E" : "#00A884")
+                                        : (isMe ? "rgba(18, 140, 126, 0.3)" : "rgba(0, 168, 132, 0.3)"),
+                                    borderRadius: 3,
+                                    transition: "background-color 0.1s",
+                                }}
+                            />
+                        ))}
+                    </div>
 
-// =============================================================================
-// SPAN BUILDER (span)
-// =============================================================================
+                    {/* Duration + Timestamp */}
+                    <div style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                    }}>
+                        <span style={{
+                            fontSize: 28,
+                            color: config.timestampColor,
+                            fontFamily: tokens.fontFamily,
+                        }}>
+                            {isPlaying
+                                ? formatDuration(Math.floor(playProgress * duration))
+                                : formatDuration(duration)
+                            }
+                        </span>
 
-export class WhatsAppSpanBuilder {
-    constructor(
-        private _startFrame: number,
-        private _endFrame: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _events: WhatsAppTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
+                        <div style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                        }}>
+                            {/* Microphone icon */}
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill={isMe ? "#128C7E" : "#00A884"}>
+                                <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
+                            </svg>
 
-    /**
-     * Show typing indicator for the span duration.
-     * NOTE: Use keyboard track for actual key animation.
-     */
-    typing(actor: string = "them"): void {
-        this._events.push(
-            {
-                at: this._startFrame,
-                duration: this._endFrame - this._startFrame,
-                deviceId: this._deviceId,
-                kind: "APP",
-                appId: "app_whatsapp",
-                type: "TYPING_START",
-                payload: {
-                    conversationId: this._conversationId,
-                    actor,
-                },
-                _declarationOrder: this._getOrder(),
-            },
-            {
-                at: this._endFrame,
-                deviceId: this._deviceId,
-                kind: "APP",
-                appId: "app_whatsapp",
-                type: "TYPING_END",
-                payload: {
-                    conversationId: this._conversationId,
-                    actor,
-                },
-                _declarationOrder: this._getOrder(),
-            }
-        );
-    }
-}
+                            <span style={{
+                                fontSize: config.timestampSize,
+                                color: config.timestampColor,
+                                fontFamily: tokens.fontFamily,
+                            }}>
+                                {timestamp}
+                            </span>
+                            {isMe && <DoubleCheckIcon read={read} />}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
 
-// =============================================================================
-// WHATSAPP TRACK BUILDER
-// =============================================================================
+// ============================================================================
+// SHARED: Double Check Icon for read receipts
+// ============================================================================
 
-/**
- * Parse time to frames.
- */
-function parseTime(time: string | number, fps: number): number {
-    if (typeof time === "number") return Math.round(time);
-    const trimmed = time.trim();
-    if (trimmed.endsWith("ms")) {
-        return Math.round((parseFloat(trimmed.slice(0, -2)) / 1000) * fps);
-    }
-    if (trimmed.endsWith("s")) {
-        return Math.round(parseFloat(trimmed.slice(0, -1)) * fps);
-    }
-    return Math.round(parseFloat(trimmed));
-}
-
-export class WhatsAppTrackBuilder {
-    _events: WhatsAppTrackEvent[] = [];
-
-    constructor(
-        private _fps: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _getOrder: GetDeclarationOrder
-    ) { }
-
-    /**
-     * Create a point (instant) operation at a specific time.
-     */
-    at(time: string | number): WhatsAppPointBuilder {
-        const frame = parseTime(time, this._fps);
-        return new WhatsAppPointBuilder(
-            frame,
-            this._fps,
-            this._deviceId,
-            this._conversationId,
-            this._events,
-            this._getOrder
-        );
-    }
-
-    /**
-     * Create a span (duration) operation between two times.
-     */
-    span(start: string | number, end: string | number): WhatsAppSpanBuilder {
-        const startFrame = parseTime(start, this._fps);
-        const endFrame = parseTime(end, this._fps);
-        return new WhatsAppSpanBuilder(
-            startFrame,
-            endFrame,
-            this._deviceId,  // FIXED: was passing _fps by mistake!
-            this._conversationId,
-            this._events,
-            this._getOrder
-        );
-    }
-}
-
-/**
- * Create a new WhatsApp track builder factory.
- */
-export function createWhatsAppTrackBuilder(
-    fps: number,
-    deviceId: string,
-    conversationId: string,
-    getOrder: GetDeclarationOrder
-): WhatsAppTrackBuilder {
-    return new WhatsAppTrackBuilder(fps, deviceId, conversationId, getOrder);
-}
+const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({ read = false, light = false }) => (
+    <svg width="36" height="24" viewBox="0 0 16 10" fill="none">
+        <path d="M1 5L4 8L10 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M5 5L8 8L14 2" stroke={read ? "#53BDEB" : (light ? "#FFFFFF" : "#8696A0")} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+);
 ````
 
 ## File: packages/apps-whatsapp/src/runtime/adapters/anchors.ts
@@ -51117,6 +51954,158 @@ export const WhatsAppAnchors: AnchorProvider = {
 };
 ````
 
+## File: packages/apps-whatsapp/src/types/messages.ts
+````typescript
+/**
+ * WhatsApp Message Types
+ * 
+ * All message-related type definitions.
+ */
+
+// =============================================================================
+// MESSAGE TYPE ENUM
+// =============================================================================
+
+export type WhatsAppMessageType =
+    | "text"
+    | "image"
+    | "video"
+    | "voice"
+    | "system"
+    | "gif"
+    | "deleted"
+    | "call_missed"
+    | "screenshot_alert";
+
+// =============================================================================
+// BASE MESSAGE
+// =============================================================================
+
+export interface BaseMessage {
+    id: string;
+    from: string;
+    timestamp?: string;
+    status?: "sending" | "sent" | "delivered" | "read";
+    at?: number;
+    /** Reactions (tapbacks) on this message */
+    reactions?: WhatsAppReaction[];
+    /** Reply-to reference if this message is a reply */
+    replyTo?: ReplyToData;
+}
+
+// =============================================================================
+// SPECIFIC MESSAGE TYPES
+// =============================================================================
+
+export interface TextMessage extends BaseMessage {
+    type: "text";
+    text: string;
+}
+
+export interface ImageMessage extends BaseMessage {
+    type: "image";
+    imageUrl: string;
+    caption?: string;
+}
+
+export interface VideoMessage extends BaseMessage {
+    type: "video";
+    videoUrl: string;
+    thumbnailUrl?: string;
+    duration?: number;
+    caption?: string;
+    isPlaying?: boolean;
+    playProgress?: number;
+}
+
+export interface VoiceMessage extends BaseMessage {
+    type: "voice";
+    duration: number;
+    isPlaying?: boolean;
+    playProgress?: number;
+}
+
+export interface GifMessage extends BaseMessage {
+    type: "gif";
+    gifUrl: string;
+}
+
+export interface SystemMessage extends BaseMessage {
+    type: "system";
+    text: string;
+    systemType?: "member_added" | "member_removed" | "admin_change" | "group_created" | "group_name_changed" | "date_change";
+    targetMember?: string;
+    actorName?: string;
+}
+
+export interface DeletedMessage extends BaseMessage {
+    type: "deleted";
+}
+
+// =============================================================================
+// DISCRIMINATED UNION
+// =============================================================================
+
+export type MessageData =
+    | TextMessage
+    | ImageMessage
+    | VideoMessage
+    | VoiceMessage
+    | GifMessage
+    | SystemMessage
+    | DeletedMessage;
+
+// =============================================================================
+// REACTION & REPLY TYPES
+// =============================================================================
+
+export interface WhatsAppReaction {
+    emoji: string;
+    count: number;
+    fromMe?: boolean;
+}
+
+export interface ReplyToData {
+    messageId: string;
+    text: string;
+    from: string;
+    type?: "text" | "image" | "video" | "voice";
+    thumbnailUrl?: string;
+}
+
+export interface LinkPreviewData {
+    url: string;
+    title?: string;
+    description?: string;
+    image?: string;
+    siteName?: string;
+}
+
+// =============================================================================
+// EXTENDED MESSAGE (with reactions, replies)
+// =============================================================================
+
+export interface WhatsAppMessage extends BaseMessage {
+    type: WhatsAppMessageType;
+    text?: string;
+    imageUrl?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    gifUrl?: string;
+    caption?: string;
+    duration?: number;
+    isPlaying?: boolean;
+    playProgress?: number;
+    edited?: boolean;
+    systemType?: string;
+    targetMember?: string;
+    actorName?: string;
+    reactions?: WhatsAppReaction[];
+    replyTo?: ReplyToData;
+    linkPreview?: LinkPreviewData;
+}
+````
+
 ## File: packages/apps-whatsapp/src/ui/screens/ios/ChatScreen.tsx
 ````typescript
 import React from "react";
@@ -51168,7 +52157,10 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
             from: m.from,
             timestamp: m.timestamp,
             status: m.status,
-            at: m.at
+            at: m.at,
+            // Pass through reactions and replyTo for UI rendering
+            reactions: m.reactions,
+            replyTo: m.replyTo,
         };
 
         switch (m.type) {
@@ -51221,6 +52213,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
                 messages={messages}
                 ownerName={world.devices?.[deviceId || "main_phone"]?.ownerName || "me"}
                 isTyping={conversation?.typing && Object.keys(conversation.typing).some(id => id !== "me")}
+                isGroupChat={conversation?.type === "group"}
             />
 
             <InputArea
@@ -51237,6 +52230,7 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 ````typescript
 import React from "react";
 import { WorldState, AppSurface } from "@tokovo/core";
+import { injectWhatsAppStyles } from "../styles";
 
 // Screens
 import { ChatScreen } from "./screens/ios/ChatScreen";
@@ -51270,7 +52264,8 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
 }) => {
     // 1. Resolve App State & Screen
     const appState = (world.appState?.["app_whatsapp"] || world.appState?.["whatsapp"]) as WhatsAppState;
-    const currentScreen = appState?.screen || "chat"; // Default to chat for now
+    // CRITICAL: Core navigation.ts sets 'currentScreen', not 'screen'!
+    const currentScreen = appState?.currentScreen || appState?.screen || "chat";
 
     // 2. Resolve Dimensions (Resolution Independence)
     // Receive logical dimensions from parent (TokovoRenderer's AppSurface)
@@ -51310,6 +52305,10 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
     }
 
     // 4. Return Content (Hoisted AppSurface handles scaling now)
+    React.useEffect(() => {
+        injectWhatsAppStyles();
+    }, []);
+
     return (
         <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
             {activeScreenContent}
@@ -51321,6 +52320,30 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
 export const ui = {
     WhatsappChatView
 };
+````
+
+## File: packages/apps-whatsapp/package.json
+````json
+{
+    "name": "@tokovo/apps-whatsapp",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "lucide-react": "^0.263.1",
+        "react": "^18.2.0"
+    },
+    "devDependencies": {
+        "@types/node": "^20.0.0",
+        "@types/react": "18.2.0",
+        "typescript": "^5.0.0"
+    }
+}
 ````
 
 ## File: packages/compiler/src/index.ts
@@ -51370,322 +52393,6 @@ export type {
 export { compile, CompilerContext, Cursor } from "./legacy";
 export type { CompileResult, CompileOptions, CompilerConfig } from "./legacy";
 export * from "./legacy/passes";
-````
-
-## File: packages/core/src/audio/auto-sound.ts
-````typescript
-/**
- * Auto-Sound Rules - Automatically derive sounds from app/device events
- * 
- * Converts semantic events (MESSAGE_RECEIVED, TYPING_START) into sound cues or actions.
- * This is what makes the audio feel "automatic" and cinematic.
- */
-
-import { TimelineEvent, SoundCue, AudioBus } from "../types";
-import { createSoundCue, createUISoundCue } from "./mixer";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export type AutoSoundAction = "PLAY_ONE_SHOT" | "START_LOOP" | "STOP_SOUND";
-
-export interface AutoSoundRule {
-    // Match conditions
-    match: {
-        kind: string;
-        type?: string;
-        appId?: string;
-        from?: string | "*";  // "*" = any sender
-    };
-
-    // Action config
-    action: AutoSoundAction;
-
-    // For PLAY/START action
-    sound?: string;
-    bus?: AudioBus;
-
-    // For STOP action (references the ID created by START_LOOP)
-    stopId?: string;
-
-    // Dynamic ID Template (e.g., "typing_{conversationId}_{from}")
-    // Useful for linking START and STOP actions
-    idTemplate?: string;
-
-    // Optional overrides
-    volume?: number;
-    loop?: boolean;
-    // Dynamic Duration (e.g. for typing loops based on text length)
-    durationFrom?: {
-        key: string;       // Event property to read (e.g. "text.length")
-        factor?: number;   // Multiplier (default 1)
-        min?: number;      // Minimum duration
-    };
-    duration?: number;
-    duckMusic?: boolean;
-    priority?: number;
-}
-
-// =============================================================================
-// REGISTRY
-// =============================================================================
-
-class AutoSoundRegistryClass {
-    // Index by kind for O(1) matching
-    private rulesByKind = new Map<string, AutoSoundRule[]>();
-    // Keep flat list for legacy `getAll` (though we should deprecate usage)
-    private allRules: AutoSoundRule[] = [];
-
-    /**
-     * Register new auto-sound rules (used by plugins)
-     */
-    register(newRules: AutoSoundRule[]) {
-        for (const rule of newRules) {
-            const kind = rule.match.kind;
-            if (!this.rulesByKind.has(kind)) {
-                this.rulesByKind.set(kind, []);
-            }
-            this.rulesByKind.get(kind)!.push(rule);
-        }
-        this.allRules.push(...newRules);
-    }
-
-    /**
-     * Get rules for a specific event kind (Optimization)
-     */
-    getRulesForKind(kind: string): AutoSoundRule[] {
-        return this.rulesByKind.get(kind) || [];
-    }
-
-    /**
-     * Get all registered rules
-     */
-    getAll(): AutoSoundRule[] {
-        return this.allRules;
-    }
-
-    /**
-     * Clear registry (useful for hot reload/testing)
-     */
-    clear() {
-        this.rulesByKind.clear();
-        this.allRules = [];
-    }
-}
-
-export const AutoSoundRegistry = new AutoSoundRegistryClass();
-
-// =============================================================================
-// HELPER FUNCTIONS
-// =============================================================================
-
-/**
- * Check if a rule matches an event
- */
-function matchesRule(event: TimelineEvent, rule: AutoSoundRule): boolean {
-    // Check kind
-    if (event.kind !== rule.match.kind) {
-        // console.log("Mismatch kind", event.kind, rule.match.kind);
-        return false;
-    }
-
-    // Check type
-    if (rule.match.type && (event as any).type !== rule.match.type) {
-        return false;
-    }
-
-    // Check appId
-    if (rule.match.appId && (event as any).appId !== rule.match.appId) {
-        return false;
-    }
-
-    // Check from
-    if (rule.match.from) {
-        const eventFrom = (event as any).from;
-        if (rule.match.from === "*") {
-            // Match any sender EXCEPT "me"
-            if (eventFrom === "me") return false;
-        } else if (eventFrom !== rule.match.from) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
-/**
- * Resolve dynamic ID template
- */
-function resolveIdTemplate(template: string, event: any): string {
-    return template.replace(/\{(\w+)\}/g, (_, key) => {
-        return event[key] || "unknown";
-    });
-}
-
-function getNestedValue(obj: any, path: string): any {
-    return path.split('.').reduce((o, key) => (o && typeof o[key] !== 'undefined') ? o[key] : undefined, obj);
-}
-
-
-// =============================================================================
-// DERIVATION FUNCTIONS
-// =============================================================================
-
-export interface AudioInstruction {
-    action: AutoSoundAction;
-    soundId?: string;     // The asset ID
-    instanceId?: string;  // The runtime ID (for stopping)
-    cue?: SoundCue;       // The full cue object (for playing)
-}
-
-/**
- * Derive audio instructions from an event
- */
-export function deriveAudioInstructions(
-    event: TimelineEvent,
-    rules: AutoSoundRule[] = AutoSoundRegistry.getAll()
-): AudioInstruction[] {
-    const instructions: AudioInstruction[] = [];
-
-    // Check SILENT override from DSL
-    if ((event as any).silent) {
-        return [];
-    }
-
-
-
-    for (const rule of rules) {
-        if (matchesRule(event, rule)) {
-            // dynamic ID resolution
-            const instanceId = rule.idTemplate
-                ? resolveIdTemplate(rule.idTemplate, event)
-                : rule.stopId // For STOP actions, use the target ID
-                    ? resolveIdTemplate(rule.stopId, event)
-                    : `auto_${event.at}_${rule.sound}`;
-
-            if (rule.action === "STOP_SOUND") {
-                instructions.push({
-                    action: "STOP_SOUND",
-                    instanceId: instanceId
-                });
-                continue;
-            }
-
-            // For PLAY or START_LOOP
-            if (!rule.sound) continue;
-
-            // Calculate Duration
-            let duration = rule.duration;
-            if (rule.durationFrom) {
-                const val = getNestedValue(event, rule.durationFrom.key);
-                if (typeof val === "number") {
-                    duration = Math.max(
-                        rule.durationFrom.min || 0,
-                        val * (rule.durationFrom.factor || 1)
-                    );
-                } else if (typeof val === "string") {
-                    duration = Math.max(
-                        rule.durationFrom.min || 0,
-                        val.length * (rule.durationFrom.factor || 1)
-                    );
-                }
-            }
-
-            const baseCue = rule.duckMusic
-                ? createUISoundCue(rule.sound, event.at, {
-                    volume: rule.volume,
-                    loop: rule.action === "START_LOOP" || rule.loop,
-                    duration: duration,
-                    priority: rule.priority,
-                    deviceId: (event as any).deviceId
-                })
-                : createSoundCue(rule.sound, event.at, {
-                    bus: rule.bus || "sfx",
-                    volume: rule.volume,
-                    loop: rule.action === "START_LOOP" || rule.loop,
-                    duration: duration,
-                    priority: rule.priority,
-                    deviceId: (event as any).deviceId
-                });
-
-            instructions.push({
-                action: rule.action,
-                soundId: rule.sound,
-                instanceId: instanceId,
-                cue: baseCue
-            });
-        }
-    }
-
-
-    return instructions;
-}
-````
-
-## File: packages/core/src/audio/index.ts
-````typescript
-/**
- * Audio System - Production-grade audio mixing for Tokovo
- * 
- * Exports all audio-related modules:
- * - Mixer: Bus routing, ducking, envelopes
- * - Policies: Spam gate, concurrency, priority
- * - Auto-Sound: Derive sounds from events
- * - Music Bed: Background music with crossfade
- */
-
-// Mixer
-export {
-    computeSoundVolume,
-    computeBusStates,
-    computeBusDuckMultiplier,
-    applyEnvelope,
-    createSoundCue,
-    createUISoundCue,
-    createVoiceSoundCue,
-    type BusState,
-    type MixerContext,
-} from "./mixer";
-
-// Policies
-export {
-    SpamGate,
-    enforceBusConcurrency,
-    getDefaultPriority,
-    sortByPriority,
-    shouldInterrupt,
-    checkAllPolicies,
-    DEFAULT_POLICY_CONFIG,
-    PRIORITY_LEVELS,
-    type PolicyConfig,
-    type PolicyResult,
-} from "./policies";
-
-// Auto-Sound
-export {
-    AutoSoundRegistry,
-    deriveAudioInstructions,
-    type AutoSoundRule,
-    type AutoSoundAction,
-    type AudioInstruction,
-} from "./auto-sound";
-
-// Music Bed
-export {
-    computeCrossfade,
-    createMusicBed,
-    createTenseMusicBed,
-    createDramaticMusicBed,
-    createCalmMusicBed,
-    getMusicByMood,
-    suggestMood,
-    type CrossfadeState,
-    type MoodTag,
-} from "./music-bed";
-
-// Sound paths
-export { getSoundPath } from "./sounds";
 ````
 
 ## File: packages/core/src/audio/sounds.ts
@@ -51739,6 +52446,37 @@ export function getSoundPath(soundId: string): string {
 }
 
 export { SoundRegistry };
+````
+
+## File: packages/core/src/director-lite/index.ts
+````typescript
+/**
+ * DirectorLite - Re-exports from @tokovo/device-camera
+ * 
+ * Legacy backward compatibility layer.
+ * All new code should import directly from @tokovo/device-camera.
+ * 
+ * @deprecated Import from "@tokovo/device-camera" instead
+ */
+
+export {
+    deriveDirectorEffects,
+    extractSignals,
+    ViralDramaV1,
+} from "@tokovo/device-camera";
+
+export type {
+    DirectorSignal,
+    DirectorSignalType,
+    DirectorLayoutModel,
+    DirectorOutput,
+    DerivedCameraEffect,
+    DirectorDebug,
+    DeriveContext,
+    DirectorStrategy,
+    Rule,
+    // Note: LayoutRect is exported from ../types/layout (via @tokovo/core types barrel)
+} from "@tokovo/device-camera";
 ````
 
 ## File: packages/core/src/engine/handlers/index.ts
@@ -53543,31 +54281,6 @@ export function validatePlugin(plugin: TokovoPlugin): void {
 }
 ````
 
-## File: packages/core/package.json
-````json
-{
-    "name": "@tokovo/core",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/device-camera": "workspace:*",
-        "immer": "^10.0.0",
-        "react": "18.2.0",
-        "zod": "^4.2.1"
-    },
-    "devDependencies": {
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "typescript": "^5.0.0"
-    }
-}
-````
-
 ## File: packages/device-calls/src/components/ios/ActiveCallIOS.tsx
 ````typescript
 /**
@@ -55108,21 +55821,35 @@ export { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering";
 export { DeviceCameraPlugin, registerCameraPlugin } from "./plugin";
 ````
 
-## File: packages/device-keyboard/src/assets/sounds.ts
+## File: packages/device-keyboard/src/assets/audio-rules.ts
 ````typescript
-/**
- * Device Keyboard Sound Registry
- * 
- * NOTE: Paths are relative to `public/sounds/` because Core `getSoundPath` auto-prepends "sounds/".
- */
+import { AutoSoundRule } from "@tokovo/core";
 
-import { SoundRegistry } from "@tokovo/core";
+export const keyboardAudioRules: AutoSoundRule[] = [
+    // === V2 OPS ===
+    // Matches "KeyboardType" events from new DSL
+    // DISABLED: Rely on discrete KeyDown clicks instead of loops for manual typing
+    // {
+    //     match: { kind: "KeyboardType" },
+    //     action: "START_LOOP",
+    //     sound: "keyboard_typing_loop",
+    //     volume: 0.8,
+    //     durationFrom: {
+    //         key: "text.length",
+    //         factor: 4, // 4 frames per char
+    //         min: 15    // Min 15 frames
+    //     },
+    //     idTemplate: "typing_loop_{at}"
+    // },
+    {
+        match: { kind: "APP", appId: "keyboard", type: "KEY_DOWN" },
+        action: "PLAY_ONE_SHOT",
+        sound: "keyboard_typing_loop",
+        volume: 0.6
+    },
 
-// Register Keyboard sounds
-SoundRegistry.registerMany({
-    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
-    "keyboard_click": "typing.mp3",
-});
+
+];
 ````
 
 ## File: packages/device-keyboard/src/camera/behaviors.ts
@@ -55492,6 +56219,84 @@ export interface KeyboardInputOp {
 }
 ````
 
+## File: packages/device-keyboard/src/runtime/index.ts
+````typescript
+/**
+ * Keyboard Runtime Exports
+ */
+
+export * from "../reducer";
+export * from "./selectors";
+export * from "./initial-state";
+export * from "./handlers";
+````
+
+## File: packages/device-keyboard/src/views/ios/theme.ts
+````typescript
+/**
+ * iOS Keyboard Theme
+ *
+ * Precise iOS 17/18 Color Palette
+ */
+
+import type { KeyboardTheme } from "../../config/theme";
+
+export const IOS_LIGHT_THEME: KeyboardTheme = {
+    keyBg: "#FCFCFC", // Slightly off-white for plastic feel
+    specialKeyBg: "#B6BCC6", // Soft gray
+    keyText: "#000000",
+    popupBg: "#FCFCFC",
+    containerBg: "#D1D3D9", // No border, just the slab color
+    dividerColor: "rgba(0, 0, 0, 0.1)", // Very subtle
+    accentColor: "#007AFF",
+    keyShadow: "0 1px 1px rgba(0,0,0,0.3)", // Soft lift, not hard drop
+    pressedKeyBg: "#B6BCC6", // Matches special key on press
+};
+
+export const IOS_DARK_THEME: KeyboardTheme = {
+    keyBg: "#6D6D72",
+    specialKeyBg: "#3A3A3C",
+    keyText: "#FFFFFF",
+    popupBg: "#6D6D72",
+    containerBg: "#1C1C1E",
+    dividerColor: "rgba(255, 255, 255, 0.1)",
+    accentColor: "#0A84FF",
+    keyShadow: "0 1px 1px rgba(0,0,0,0.4)",
+    pressedKeyBg: "#535356",
+};
+
+export function getIOSTheme(variant: "light" | "dark"): KeyboardTheme {
+    return variant === "light" ? IOS_LIGHT_THEME : IOS_DARK_THEME;
+}
+
+export function getThemeColors(variant: "light" | "dark", isSpecial: boolean, isPressed: boolean) {
+    const theme = getIOSTheme(variant);
+
+    let bg = theme.keyBg;
+    if (isSpecial) {
+        bg = theme.specialKeyBg;
+        // Special keys behavior on press:
+        // Light Mode: Gray -> White
+        // Dark Mode: Dark Gray -> Light Gray (or lighter dark)
+        if (isPressed) bg = variant === "light" ? "#FFFFFF" : "#535356";
+    } else {
+        // Normal Keys
+        // Light Mode: White -> Gray
+        // Dark Mode: Gray -> Lighter Gray
+        if (isPressed) bg = theme.pressedKeyBg;
+    }
+
+    // Explicit override for "return" blue key if implemented later, but sticking to standard gray for now.
+
+    return {
+        keyBg: bg,
+        keyText: theme.keyText,
+        popupBg: theme.popupBg,
+        shadow: isPressed ? "none" : theme.keyShadow, // Shadow disappears on press
+    };
+}
+````
+
 ## File: packages/device-keyboard/src/views/KeyboardSurface.tsx
 ````typescript
 import React from "react";
@@ -55562,39 +56367,6 @@ function normalizePlatform(p: string): string {
     if (p.startsWith("iphone") || p === "ios") return "ios";
     if (p.startsWith("pixel") || p === "android") return "android";
     return p;
-}
-````
-
-## File: packages/device-keyboard/package.json
-````json
-{
-    "name": "@tokovo/device-keyboard",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "exports": {
-        ".": "./src/index.ts",
-        "./*": "./src/*.ts"
-    },
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "react": "18.2.0",
-        "lucide-react": "^0.263.1"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "remotion": "4.0.265"
-    },
-    "peerDependencies": {
-        "remotion": ">=4.0.0"
-    }
 }
 ````
 
@@ -56137,6 +56909,219 @@ export const NotificationScheduler = {
 };
 ````
 
+## File: packages/devices/src/registries/statusbar-registry.ts
+````typescript
+/**
+ * StatusBar Strategy Registry
+ * 
+ * Registry for StatusBar visual strategies (iOS, Android, Ghibli, etc.)
+ * 
+ * @example
+ * ```typescript
+ * StatusBarStrategyRegistry.register("ghibli", GhibliStatusBarStrategy);
+ * const Strategy = StatusBarStrategyRegistry.get("ghibli");
+ * ```
+ */
+
+import type React from "react";
+import type { DeviceOSState, ResolvedStatusBarTheme } from "@tokovo/core";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface StatusBarNotificationIcon {
+    appId: string;
+    count: number;
+    icon?: string;
+}
+
+/**
+ * Props passed to StatusBar strategy components.
+ * Uses ResolvedStatusBarTheme for full color control.
+ */
+export interface StatusBarStrategyProps {
+    /** Device OS state */
+    os?: DeviceOSState;
+    /** Manual time override */
+    time?: string;
+    /** 
+     * Theme - can be:
+     * - "light" | "dark" (legacy presets)
+     * - Full ResolvedStatusBarTheme object with colors
+     */
+    theme?: "light" | "dark" | ResolvedStatusBarTheme;
+    /** Battery percentage override */
+    batteryPercentage?: number;
+    /** Notification icons (Android) */
+    notificationIcons?: StatusBarNotificationIcon[];
+}
+
+export type StatusBarStrategyComponent = React.FC<StatusBarStrategyProps>;
+
+// =============================================================================
+// REGISTRY IMPLEMENTATION
+// =============================================================================
+
+class StatusBarStrategyRegistryImpl {
+    private strategies = new Map<string, StatusBarStrategyComponent>();
+
+    /**
+     * Register a status bar strategy
+     * @param variant The variant ID (e.g., "ios", "android", "ghibli")
+     * @param component The strategy React component
+     */
+    register(variant: string, component: StatusBarStrategyComponent): void {
+        if (this.strategies.has(variant)) {
+            console.warn(`[StatusBarStrategyRegistry] Overwriting strategy: ${variant}`);
+        }
+        this.strategies.set(variant, component);
+        console.log(`[StatusBarStrategyRegistry] Registered: ${variant}`);
+    }
+
+    /**
+     * Get a strategy by variant
+     */
+    get(variant: string): StatusBarStrategyComponent | undefined {
+        return this.strategies.get(variant);
+    }
+
+    /**
+     * Get strategy with fallback
+     */
+    getWithFallback(variant: string, fallback: string = "ios"): StatusBarStrategyComponent | undefined {
+        return this.strategies.get(variant) || this.strategies.get(fallback);
+    }
+
+    /**
+     * Check if a strategy is registered
+     */
+    has(variant: string): boolean {
+        return this.strategies.has(variant);
+    }
+
+    /**
+     * List all registered variant IDs
+     */
+    list(): string[] {
+        return Array.from(this.strategies.keys());
+    }
+
+    /**
+     * Clear all strategies (for testing)
+     */
+    clear(): void {
+        this.strategies.clear();
+    }
+}
+
+export const StatusBarStrategyRegistry = new StatusBarStrategyRegistryImpl();
+````
+
+## File: packages/devices/src/strategies/IOSStatusBarStrategy.tsx
+````typescript
+/**
+ * iOS StatusBar Strategy
+ * 
+ * Authentic iOS-style status bar with SF Pro fonts.
+ * Supports full theme customization.
+ */
+
+import React from "react";
+import { resolveStatusBarTheme, STATUS_BAR_PRESETS } from "@tokovo/core";
+import type { StatusBarStrategyProps } from "../registries";
+import {
+    SignalBarsIcon,
+    WifiIcon,
+    BatteryIcon,
+    DNDIcon,
+    NetworkTypeLabel,
+    formatTime,
+} from "./shared-icons";
+
+/**
+ * Resolve theme prop to actual colors.
+ * Handles:
+ * - "light" | "dark" → preset colors
+ * - ResolvedStatusBarTheme → use directly
+ */
+function resolveThemeColors(theme: StatusBarStrategyProps["theme"]): { textColor: string; bgColor: string } {
+    if (typeof theme === "string" || !theme) {
+        const preset = STATUS_BAR_PRESETS[theme || "light"];
+        return {
+            textColor: preset.iconColor,
+            bgColor: preset.backgroundColor,
+        };
+    }
+    // Full theme object
+    return {
+        textColor: theme.iconColor,
+        bgColor: theme.backgroundColor,
+    };
+}
+
+export const IOSStatusBarStrategy: React.FC<StatusBarStrategyProps> = ({
+    os,
+    time = "9:41",
+    theme = "light",
+    batteryPercentage = 100,
+}) => {
+    // Read from device.os if available, otherwise use props
+    const displayTime = os ? formatTime(os.clock) : time;
+    const displayBattery = os?.battery ?? batteryPercentage;
+    const isCharging = os?.charging ?? false;
+    const network = os?.network ?? "wifi";
+    const wifiStrength = os?.wifiStrength ?? 3;
+    const cellStrength = os?.cellStrength ?? 4;
+    const isDND = os?.dnd ?? false;
+
+    // Resolve theme to actual colors
+    const { textColor, bgColor } = resolveThemeColors(theme);
+
+    return (
+        <div style={{
+            width: "100%",
+            height: 132,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "45px 72px 0 72px",
+            boxSizing: "border-box",
+            color: textColor,
+            backgroundColor: bgColor,
+            position: "absolute",
+            top: 0,
+            left: 0,
+            zIndex: 20
+        }}>
+            {/* Left side - Time */}
+            <div style={{
+                fontSize: 51,
+                fontWeight: "600",
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+                letterSpacing: 0.5
+            }}>
+                {displayTime}
+            </div>
+
+            {/* Right side - Status icons */}
+            <div style={{
+                display: "flex",
+                gap: 15,
+                alignItems: "center",
+                marginTop: 6
+            }}>
+                {isDND && <DNDIcon color={textColor} />}
+                {network !== "wifi" && <NetworkTypeLabel network={network} color={textColor} />}
+                <SignalBarsIcon color={textColor} strength={cellStrength} />
+                {network === "wifi" && <WifiIcon color={textColor} strength={wifiStrength} />}
+                <BatteryIcon color={textColor} percentage={displayBattery} charging={isCharging} />
+            </div>
+        </div>
+    );
+};
+````
+
 ## File: packages/devices/src/reducer.ts
 ````typescript
 import { produce } from "immer";
@@ -56625,136 +57610,311 @@ export class CameraTrackBuilder {
 }
 ````
 
-## File: packages/dsl/src/events/messages.ts
+## File: packages/dsl/src/core/tracks/os.ts
 ````typescript
 /**
- * Message Event Factories
- * 
- * Low-level event creators for messaging (WhatsApp, etc).
+ * OS Track Builder - Device state control
+ *
+ * Controls device-level state like time, battery,
+ * network, notifications, and DND mode.
  */
 
-import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
+import type { OSTrackEvent } from "@tokovo/ir";
+import { parseTimeToFrames } from "../../utils/time";
 
-/** Message status for tick progression */
-export type MessageStatus = "sending" | "sent" | "delivered" | "read" | "failed";
+// =============================================================================
+// TYPES
+// =============================================================================
 
-/**
- * Message event factories
- */
-export const messages = {
-    /**
-     * Send a message (from device owner)
-     */
-    send: (at: number, conversationId: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
-        at,
-        kind: "MessageSent", // V2 IR
-        deviceId: options.deviceId || "primary",
-        trace: createTrace(Tracer.capture()),
-        appId: options.appId || "app_whatsapp",
-        conversationId,
-        silent: options.silent,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
+type GetDeclarationOrder = () => number;
 
-    /**
-     * Receive a message (from someone else)
-     */
-    receive: (at: number, conversationId: string, from: string, text: string, options: { appId?: string, deviceId?: string, silent?: boolean } = {}) => ({
-        at,
-        kind: "MessageReceived", // V2 IR
-        deviceId: options.deviceId || "primary",
-        trace: createTrace(Tracer.capture()),
-        appId: options.appId || "app_whatsapp",
-        conversationId,
-        silent: options.silent,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
+export type NetworkType = "wifi" | "5G" | "4G" | "3G" | "none";
 
-    /**
-     * Start typing indicator
-     */
-    typingStart: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingStarted",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
+export interface OSStateOptions {
+    time?: Date | number;
+    battery?: number;
+    charging?: boolean;
+    network?: NetworkType;
+    strength?: number;
+    dnd?: boolean;
+    lowPowerMode?: boolean;
+}
+
+export interface BatteryOptions {
+    charging?: boolean;
+}
+
+export interface NetworkOptions {
+    strength?: number;
+}
+
+export interface NotificationOptions {
+    appId: string;
+    title: string;
+    body: string;
+    icon?: string;
+    mode?: "headsup" | "lockscreen" | "both";
+}
+
+// =============================================================================
+// POINT BUILDER (at)
+// =============================================================================
+
+export class OSPointBuilder {
+    private readonly frame: number;
+    private readonly fps: number;
+    private readonly events: OSTrackEvent[];
+    private readonly getOrder: GetDeclarationOrder;
+
+    constructor(
+        frame: number,
+        fps: number,
+        events: OSTrackEvent[],
+        getOrder: GetDeclarationOrder
+    ) {
+        this.frame = frame;
+        this.fps = fps;
+        this.events = events;
+        this.getOrder = getOrder;
+    }
 
     /**
-     * Stop typing indicator
+     * Set full OS state.
      */
-    typingEnd: (at: number, conversationId: string, from: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "TypingEnded",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        actor: from
-    } as const),
+    set(options: OSStateOptions): void {
+        const time = options.time instanceof Date
+            ? options.time.getTime()
+            : options.time;
+
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "SET_STATE",
+            payload: {
+                time,
+                battery: options.battery,
+                charging: options.charging,
+                network: options.network,
+                strength: options.strength,
+                dnd: options.dnd,
+                lowPowerMode: options.lowPowerMode,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
 
     /**
-     * Send an image
+     * Set device time.
      */
-    sendImage: (at: number, conversationId: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageSent",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from: "me",
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "sent"
-        }
-    } as const),
+    time(date: Date | number): void {
+        const time = date instanceof Date ? date.getTime() : date;
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "SET_TIME",
+            payload: { time },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
 
     /**
-     * Receive an image
+     * Set battery level.
      */
-    receiveImage: (at: number, conversationId: string, from: string, imageUrl: string, caption?: string, appId = "app_whatsapp", deviceId = "primary") => ({
-        at,
-        kind: "MessageReceived",
-        deviceId,
-        trace: createTrace(Tracer.capture()),
-        appId,
-        conversationId,
-        message: {
-            id: `msg_${Math.random().toString(36).substr(2, 9)}`,
-            from,
-            text: caption || "",
-            imageUrl,
-            timestamp: Date.now().toString(),
-            status: "delivered"
-        }
-    } as const),
+    battery(level: number, options: BatteryOptions = {}): void {
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "SET_BATTERY",
+            payload: {
+                level,
+                charging: options.charging,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
 
-    // Status updates omitted for brevity/compatibility (retain legacy if needed, but these are V2 compliant core events)
-    markRead: (at: number, conversationId: string, messageId: string, appId = "app_whatsapp") => ({
-        at, kind: "APP", type: "MESSAGE_STATUS", trace: createTrace(Tracer.capture()), appId, conversationId, messageId, status: "read"
-    } as any)
-};
+    /**
+     * Set network status.
+     */
+    network(type: NetworkType, options: NetworkOptions = {}): void {
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "SET_NETWORK",
+            payload: {
+                type,
+                strength: options.strength,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Set Do Not Disturb mode.
+     */
+    dnd(enabled: boolean): void {
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "SET_DND",
+            payload: { enabled },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Show a notification.
+     */
+    notification(options: NotificationOptions): void {
+        const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "NOTIFICATION_SHOW",
+            payload: {
+                id,
+                appId: options.appId,
+                title: options.title,
+                body: options.body,
+                icon: options.icon,
+                mode: options.mode,
+            },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Dismiss a notification.
+     */
+    dismissNotification(id: string): void {
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "NOTIFICATION_DISMISS",
+            payload: { id },
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    /**
+     * Dismiss all notifications.
+     */
+    dismissAllNotifications(): void {
+        const event: OSTrackEvent = {
+            at: this.frame,
+            kind: "OS",
+            type: "NOTIFICATION_DISMISS_ALL",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        };
+        this.events.push(event);
+    }
+
+    // =========================================================================
+    // DEVICE NAVIGATION (Inter-App)
+    // =========================================================================
+
+    /**
+     * Open an app (switch to foreground).
+     * Emits DEVICE:OPEN_APP → sets device.foregroundAppId
+     */
+    openApp(appId: string): void {
+        // DEVICE events are handled by core navigation.ts
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,  // Cross-kind event
+            type: "OPEN_APP",
+            payload: { appId },
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Close the current app (return to launcher).
+     * Emits DEVICE:CLOSE_APP
+     */
+    closeApp(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "CLOSE_APP",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Go to home screen.
+     * Emits DEVICE:GO_HOME
+     */
+    goHome(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "GO_HOME",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Lock the device.
+     * Emits DEVICE:LOCK
+     */
+    lock(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "LOCK",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+
+    /**
+     * Unlock the device.
+     * Emits DEVICE:UNLOCK
+     */
+    unlock(): void {
+        this.events.push({
+            at: this.frame,
+            kind: "DEVICE" as any,
+            type: "UNLOCK",
+            payload: {},
+            _declarationOrder: this.getOrder(),
+        } as any);
+    }
+}
+
+// =============================================================================
+// OS TRACK BUILDER
+// =============================================================================
+
+export class OSTrackBuilder {
+    readonly _events: OSTrackEvent[] = [];
+    private readonly fps: number;
+    private readonly getOrder: GetDeclarationOrder;
+
+    constructor(fps: number, getOrder: GetDeclarationOrder) {
+        this.fps = fps;
+        this.getOrder = getOrder;
+    }
+
+    /**
+     * Create a point (instant) operation at a specific time.
+     */
+    at(time: string | number): OSPointBuilder {
+        const frame = parseTimeToFrames(time, this.fps);
+        return new OSPointBuilder(frame, this.fps, this._events, this.getOrder);
+    }
+}
 ````
 
 ## File: packages/dsl/src/helpers/audio.ts
@@ -57497,6 +58657,278 @@ export { episode as trackEpisode } from "./core";
 // Do not import legacy directly - it shows deprecation warnings
 ````
 
+## File: packages/episodes/src/production/bakchodi-gang.episode.ts
+````typescript
+/**
+ * Bakchodi Gang - ULTIMATE EDITION 🇮🇳🔥
+ * 
+ * Using EVERY DSL feature:
+ * ✅ WhatsApp: receive, send, typing, reactions, dateSeparator, sendVoice, receiveImage
+ * ✅ Keyboard: show, type, hide
+ * ✅ Calls: incoming, answer, end
+ * ✅ Notifications: show, dismiss, tap (proper DSL!)
+ * ✅ Camera: focus, shake, animate, reset
+ * ✅ OS: time, battery, openApp, goHome
+ * 
+ * Story: Boys planning party, interrupted by call from Mom, then back to planning!
+ */
+
+import { defineEpisode } from "../types/episode-definition";
+import { episode } from "@tokovo/dsl/src/v2";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+import { CallTrackBuilder } from "@tokovo/device-calls/src/dsl/track-builder";
+import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
+import { NotificationTrackBuilder } from "@tokovo/device-notifications/src/dsl/track-builder";
+
+// Declaration order counter
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+// =============================================================================
+// BAKCHODI GANG - ULTIMATE EDITION
+// =============================================================================
+
+export default defineEpisode({
+    meta: {
+        id: "bakchodi-gang",
+        title: "Bakchodi Gang - Ultimate 🇮🇳",
+        description: "Complete showcase with calls, keyboard, navigation!",
+        category: "production",
+        tags: ["whatsapp", "group", "indian", "call", "keyboard", "demo"],
+    },
+    config: {
+        format: "1080x1920",
+        durationInFrames: 1200, // 40s * 30fps
+        apps: ["app_whatsapp"],
+    },
+    build: () => episode("bakchodi-gang", {
+        fps: 30,
+        duration: "40s",
+        title: "Bakchodi Gang - Ultimate 🇮🇳",
+        description: "The boys are planning, but Mom calls...",
+    })
+        // Device setup
+        .device("phone", "iphone16", {
+            app: "app_whatsapp",
+            conversations: [
+                {
+                    id: "group_bakchodi",
+                    name: "Bakchodi Gang 🔥",
+                    type: "group",
+                    avatar: "https://api.dicebear.com/7.x/shapes/svg?seed=gang",
+                    participants: ["Rahul", "Aditya", "Priya", "Rohan"],
+                },
+            ],
+            os: {
+                time: new Date("2024-12-20T23:30:00"),
+                battery: 42,
+                network: "wifi",
+            },
+        })
+
+        // === WHATSAPP TRACK ===
+        .track("app_whatsapp", () => {
+            return new WhatsAppTrackBuilder(30, "phone", "group_bakchodi", getOrder);
+        }, wa => {
+            // === NAVIGATION: Start on chat list (0s) ===
+            wa.openChatList("0s");
+
+            // === NAVIGATION: Switch to conversation (1s) ===
+            wa.switchTo("group_bakchodi", "1s");
+
+            // SCENE 1: The Planning (1s - 12s)
+            wa.dateSeparator("Today"); // TrackBuilder method, no at() needed
+            wa.at("2s").receive("Aditya", "Bhai party kab? 🎉");
+
+            wa.span("3s", "4s").typing("them");
+            wa.at("4s").receive("Rahul", "Kal raat? Meri treat! 💰");
+
+            wa.span("5s", "6s").typing("them");
+            wa.at("6s").receive("Priya", "Rahul ne kaha treat? Screenshot le lo 📸");
+
+            wa.at("7s").react({ index: -1 }, "😂"); // React to Priya's screenshot message
+
+            // User types reply (keyboard will show)
+            wa.span("8s", "10s").typing("me");
+            wa.at("10s").send("Hahahaha bhai teri toh lag gayi! 🤣");
+
+            // SCENE 2: After the call (25s - 38s)
+            wa.at("25s").receive("Aditya", "Bhai tune phone kyun cut kiya? 😤");
+
+            wa.span("26s", "27s").typing("me");
+            wa.at("27s").send("Mom ka call tha, ghar aana hai 😅");
+
+            wa.at("28s").receive("Rohan", "Typical 😂😂", {
+                replyTo: {
+                    id: "prev-msg",
+                    text: "Mom ka call tha, ghar aana hai 😅",
+                    from: "me"
+                }
+            });
+
+            wa.at("29s").receiveImage("Priya", "https://picsum.photos/400/300", { caption: "Party vibes 🎊" });
+
+            wa.at("30s").react({ index: -1 }, "🔥"); // React to Priya's photo
+
+            wa.span("31s", "32s").typing("them");
+            wa.at("32s").receive("Rahul", "Theek hai 11 baje pakka milte hai 🕚");
+
+            wa.at("33s").sendVoice(3);
+
+            // Send a GIF
+            wa.at("34s").sendGif("https://media.giphy.com/media/celebration/giphy.gif");
+
+            wa.at("35s").receive("Aditya", "DONE! Letssss goooo!!! 🚀🔥");
+
+            wa.at("36s").react({ index: -1 }, "🙌"); // React to finale
+
+            wa.at("37s").read();
+
+            // === NAVIGATION: Go back to chat list (38s) ===
+            wa.openChatList("38s");
+        })
+
+        // === KEYBOARD TRACK ===
+        .track("keyboard", () => {
+            return new KeyboardTrackBuilder(30, "phone", getOrder);
+        }, kb => {
+            // Keyboard appears when user types (adjusted to match new timing)
+            kb.at("8s").show({ layout: "qwerty" });
+            kb.span("8.5s", "10s").type("Hahahaha bhai teri toh lag gayi! 🤣", { speed: "fast" });
+            kb.at("10.5s").hide();
+
+            // Typing after call
+            kb.at("26s").show();
+            kb.span("26.2s", "27s").type("Mom ka call tha, ghar aana hai 😅", { speed: "normal" });
+            kb.at("27.5s").hide();
+        })
+
+        // === CALL TRACK (Mom calls!) ===
+        .track("calls", () => {
+            return new CallTrackBuilder(30, "phone", getOrder);
+        }, call => {
+            // SCENE 3: Mom's call interrupts! (12s - 24s)
+            call.at("12s").incoming({
+                callerId: "mom",
+                callerName: "Mom ❤️",
+                callerAvatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=mom",
+                isVideo: false,
+                callType: "voice",
+                displayMode: "fullscreen",
+            });
+
+            // Answer after 3 seconds
+            call.at("15s").answer();
+
+            // Short call then hang up
+            call.at("22s").end({ reason: "ended" });
+        })
+
+        // === NOTIFICATION TRACK (proper DSL!) ===
+        .track("notifications", () => {
+            return new NotificationTrackBuilder(30, "phone", getOrder);
+        }, notif => {
+            // Instagram notification pops while chatting
+            notif.at("8s").show({
+                id: "notif_instagram_1",
+                appId: "app_instagram",
+                title: "Instagram",
+                body: "virat.kohli liked your photo 🏏",
+                icon: "https://api.dicebear.com/7.x/shapes/svg?seed=insta",
+            });
+
+            // User dismisses it after 2s
+            notif.at("10s").swipe("notif_instagram_1", "left", "dismiss");
+
+            // Another notification during call
+            notif.at("18s").show({
+                id: "notif_twitter_1",
+                appId: "app_twitter",
+                title: "Twitter",
+                body: "@elonmusk replied to your tweet 🚀",
+            });
+
+            // Dismiss after call ends
+            notif.at("24s").dismiss("notif_twitter_1");
+        })
+
+        // === CAMERA TRACK ===
+        .camera(cam => {
+            cam.at("0s").set({ scale: 1 });
+
+            // Focus on treat message
+            cam.at("3s").animate({ scale: 1.15, duration: "0.5s", easing: "easeOut" });
+
+            // Screenshot roast - shake!
+            cam.at("5s").shake({ intensityX: 4, intensityY: 3, frequency: 15, decay: 0.8, duration: "0.3s" });
+
+            // Pull back before call
+            cam.at("10s").animate({ scale: 1.0, duration: "0.5s" });
+
+            // After call - excitement
+            cam.at("25s").animate({ scale: 1.2, y: -40, duration: "0.6s", easing: "cinematic" });
+
+            // Photo moment
+            cam.at("29s").focus("lastMessage", { scale: 1.25, duration: "0.4s" });
+
+            // Final hype shake
+            cam.at("35s").shake({ intensityX: 6, intensityY: 5, frequency: 20, decay: 0.9, duration: "0.5s" });
+
+            // Smooth end
+            cam.at("37s").reset({ duration: "2s", easing: "easeOut" });
+        })
+
+        // === AUDIO TRACK ===
+        .audio(audio => {
+            audio.span("0s", "12s").bgm("upbeat_casual", { volume: 0.08, fadeOut: "1s" });
+            audio.span("25s", "40s").bgm("celebration", { volume: 0.1, fadeIn: "1s", fadeOut: "2s" });
+        })
+
+        // === OS TRACK ===
+        .os(os => {
+            // Time progression
+            os.at("0s").time(new Date("2024-12-20T23:30:00"));
+            os.at("12s").time(new Date("2024-12-20T23:31:00"));
+            os.at("25s").time(new Date("2024-12-20T23:33:00"));
+            os.at("35s").time(new Date("2024-12-20T23:34:00"));
+
+            // Battery drain
+            os.at("15s").battery(40);
+            os.at("30s").battery(38);
+
+            // Instagram notification while chatting
+            os.at("8s").notification({
+                appId: "app_instagram",
+                title: "Instagram",
+                body: "virat.kohli liked your photo 🏏",
+            });
+
+            // === NAVIGATION ===
+            // Call interrupts - phone app takes over (handled by call track)
+            // Back to WhatsApp after call
+            os.at("24s").openApp("app_whatsapp");
+        })
+
+        // === MARKERS ===
+        .mark("opening", "1s")
+        .mark("treat_announcement", "3s")
+        .mark("screenshot_roast", "5s")
+        .mark("call_incoming", "12s")
+        .mark("call_answered", "15s")
+        .mark("call_ended", "22s")
+        .mark("back_to_chat", "25s")
+        .mark("photo_shared", "29s")
+        .mark("voice_message", "33s")
+        .mark("finale", "35s")
+
+        .section("planning", "0s", "12s")
+        .section("mom_calls", "12s", "24s")
+        .section("back_to_party", "24s", "40s")
+
+        .build(),
+});
+````
+
 ## File: packages/episodes/src/production/complete-showcase.episode.ts
 ````typescript
 /**
@@ -57812,6 +59244,50 @@ export default defineEpisode({
 // import "./camera-test.episode";
 
 import "./test.episode";
+````
+
+## File: packages/ir/src/index.ts
+````typescript
+/**
+ * @tokovo/ir
+ *
+ * Intermediate Representations for Tokovo DSL.
+ *
+ * V2 Track-based IR (RECOMMENDED):
+ * - TrackEvent: Typed track event union
+ * - TrackEpisodeIR: Episode intermediate representation
+ * - Payloads: Strongly-typed payload maps
+ *
+ * Legacy (DEPRECATED):
+ * - SceneIR: Beat-based semantic IR
+ * - TimelineOp: Timeline operations
+ */
+
+// =============================================================================
+// TRACE (Always available)
+// =============================================================================
+
+export * from "./trace";
+
+// =============================================================================
+// V2 TRACK-BASED IR (RECOMMENDED)
+// =============================================================================
+
+export * from "./v2";
+
+// =============================================================================
+// UTILITIES
+// =============================================================================
+
+export * from "./utils";
+
+// =============================================================================
+// LEGACY (DEPRECATED - Will be removed in v3)
+// =============================================================================
+
+// Re-export legacy for backward compatibility
+// These can be imported from "@tokovo/ir/legacy" when we add subpath exports
+export * from "./legacy";
 ````
 
 ## File: packages/renderer/src/engines/useLayoutEngine.ts
@@ -58267,201 +59743,616 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
 }
 ````
 
-## File: apps/video-runner/package.json
-````json
-{
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/compiler": "workspace:*",
-        "@tokovo/device-calls": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*",
-        "@tokovo/device-notifications": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
+## File: packages/apps-instagram/src/runtime/reducer.ts
+````typescript
+/**
+ * Instagram Runtime Reducer
+ * 
+ * Handles all Instagram-specific events.
+ * Events arrive with data in `payload` field.
+ */
+
+import type { WorldState, TimelineEvent, FeatureReducer } from "@tokovo/core";
+import type {
+    InstagramState,
+    InstagramDM,
+    InstagramPost,
+    InstagramComment,
+    InstagramThread,
+    InstagramWorldState
+} from "../types";
+
+// =============================================================================
+// TYPE-SAFE ACCESSORS
+// =============================================================================
+
+function getAppState(draft: WorldState): InstagramState {
+    if (!draft.appState) {
+        draft.appState = {};
+    }
+    if (!draft.appState["app_instagram"]) {
+        draft.appState["app_instagram"] = {
+            screen: "home",
+            activeThreadId: undefined,
+            statusBarTheme: "dark", // Instagram uses dark theme
+        };
+    }
+    return draft.appState["app_instagram"] as InstagramState;
+}
+
+function getInstagramData(draft: WorldState): InstagramWorldState {
+    const extendedDraft = draft as WorldState & { instagram?: InstagramWorldState };
+    if (!extendedDraft.instagram) {
+        extendedDraft.instagram = {
+            feed: [],
+            stories: [],
+            threads: [],
+        };
+    }
+    return extendedDraft.instagram;
+}
+
+function generateTimestamp(frame: number, draft: WorldState): string {
+    const fps = (draft as any).config?.fps ?? 30;
+    const baseTime = new Date("2024-12-18T14:30:00");
+    const elapsedMs = (frame / fps) * 1000;
+    const currentTime = new Date(baseTime.getTime() + elapsedMs);
+    return currentTime.toLocaleTimeString("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true
+    }).toLowerCase();
+}
+
+// =============================================================================
+// REDUCER
+// =============================================================================
+
+export function instagramReducer(draft: WorldState, event: TimelineEvent): void {
+    const eventAny = event as any;
+
+    // Only handle APP events for Instagram
+    if (eventAny.kind === "APP" && eventAny.appId !== "app_instagram") {
+        return;
+    }
+
+    const payload = eventAny.payload || {};
+    const eventType = eventAny.type;
+    const appState = getAppState(draft);
+    const data = getInstagramData(draft);
+
+    switch (eventType) {
+        // =====================================================================
+        // NAVIGATION
+        // =====================================================================
+        case "NAVIGATE": {
+            appState.screen = payload.screen;
+            appState.statusBarTheme = "dark"; // Instagram dark theme
+            if (payload.threadId) {
+                appState.activeThreadId = payload.threadId;
+            }
+            break;
+        }
+
+        case "OPEN_DM": {
+            appState.screen = "dm_thread";
+            appState.activeThreadId = payload.threadId;
+            appState.statusBarTheme = "dark"; // Instagram dark theme
+            const thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
+            if (thread) {
+                thread.unread = false;
+            }
+            break;
+        }
+
+        // =====================================================================
+        // FEED
+        // =====================================================================
+        case "NEW_POST": {
+            const post: InstagramPost = {
+                id: payload.id || `post_${event.at}`,
+                author: payload.author,
+                image: payload.image,
+                caption: payload.caption || "",
+                likes: payload.likes || 0,
+                comments: [],
+                timestamp: generateTimestamp(event.at, draft),
+                liked: false,
+                saved: false,
+            };
+            data.feed.unshift(post);
+            break;
+        }
+
+        case "LIKE_POST": {
+            const post = data.feed.find((p: InstagramPost) => p.id === payload.postId);
+            if (post) {
+                post.liked = !post.liked;
+                post.likes += post.liked ? 1 : -1;
+            }
+            break;
+        }
+
+        case "COMMENT": {
+            const post = data.feed.find((p: InstagramPost) => p.id === payload.postId);
+            if (post) {
+                const comment: InstagramComment = {
+                    id: `comment_${event.at}`,
+                    author: payload.author || { username: "me", avatar: "" },
+                    text: payload.text,
+                    likes: 0,
+                    timestamp: generateTimestamp(event.at, draft),
+                };
+                post.comments.push(comment);
+            }
+            break;
+        }
+
+        case "SAVE_POST": {
+            const post = data.feed.find((p: InstagramPost) => p.id === payload.postId);
+            if (post) {
+                post.saved = !post.saved;
+            }
+            break;
+        }
+
+        // =====================================================================
+        // DIRECT MESSAGES
+        // =====================================================================
+        case "RECEIVE_DM": {
+            let thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
+
+            if (!thread) {
+                thread = {
+                    id: payload.threadId,
+                    participant: payload.from,
+                    messages: [],
+                    unread: true,
+                };
+                data.threads.push(thread);
+            }
+
+            const dm: InstagramDM = {
+                id: `dm_${event.at}_recv`,
+                sender: payload.from.username,
+                type: payload.contentType || "text",
+                content: payload.content,
+                timestamp: generateTimestamp(event.at, draft),
+                read: false,
+            };
+            thread.messages.push(dm);
+            thread.unread = true;
+            break;
+        }
+
+        case "SEND_DM": {
+            let thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
+
+            if (!thread) {
+                thread = {
+                    id: payload.threadId,
+                    participant: payload.to,
+                    messages: [],
+                    unread: false,
+                };
+                data.threads.push(thread);
+            }
+
+            const dm: InstagramDM = {
+                id: `dm_${event.at}_sent`,
+                sender: "me",
+                type: payload.contentType || "text",
+                content: payload.content,
+                timestamp: generateTimestamp(event.at, draft),
+                read: true,
+            };
+            thread.messages.push(dm);
+            break;
+        }
+
+        case "DM_TYPING": {
+            const thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
+            if (thread) {
+                thread.typing = payload.isTyping ?? true;
+            }
+            break;
+        }
+
+        case "DM_TYPING_END": {
+            const thread = data.threads.find((t: InstagramThread) => t.id === payload.threadId);
+            if (thread) {
+                thread.typing = false;
+            }
+            break;
+        }
     }
 }
+
+export { instagramReducer as default };
 ````
 
-## File: packages/apps-whatsapp/src/ui/screens/ios/ChatListScreen.tsx
+## File: packages/apps-instagram/src/views/InstagramApp.tsx
 ````typescript
-import React from "react";
-import { WorldState } from "@tokovo/core";
-import { ArchiveIcon } from "../../../components/ios/Icons";
-import { ChatListHeader } from "../../../components/ios/ChatListHeader";
-import { TabNavigation } from "../../../components/ios/TabNavigation";
-import { ChatListItem } from "../../../components/ios/ChatListItem";
-import { UI_CONSTANTS } from "../../../config/layout-config";
-import { WhatsAppConversation } from "../../../types";
+/**
+ * Instagram App Router
+ * 
+ * Main entry point for Instagram app.
+ * Routes between screens based on appState.screen.
+ * 
+ * ARCHITECTURE: Safe area is handled centrally here.
+ * All child screens receive the full content area (inside safe area).
+ */
 
-export interface ChatListScreenProps {
+import React from "react";
+import type { WorldState } from "@tokovo/core";
+import { HomeScreen } from "./ios/HomeScreen";
+import { DMScreen } from "./ios/DMScreen";
+import type { InstagramState, InstagramWorldState, InstagramThread } from "../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+interface InstagramAppProps {
     world: WorldState;
+    t?: number;
+    layout?: any;
+    platform?: "ios" | "android";
+    deviceId?: string;
     safeAreaInsets?: {
         top: number;
         bottom: number;
         left: number;
         right: number;
     };
-    width: number;
-    height: number;
 }
 
-export const ChatListScreen: React.FC<ChatListScreenProps> = ({
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+// iPhone 16 Pro logical dimensions
+const DESIGN_WIDTH = 393;
+const DESIGN_HEIGHT = 852;
+
+// Safe area for iPhone 16 Pro (Dynamic Island)
+const DEFAULT_SAFE_AREA = {
+    top: 59,     // Dynamic Island
+    bottom: 34,  // Home indicator
+    left: 0,
+    right: 0,
+};
+
+// =============================================================================
+// COMPONENT
+// =============================================================================
+
+export const InstagramApp: React.FC<InstagramAppProps> = ({
     world,
-    safeAreaInsets,
-    width,
-    height
+    t = 0,
+    platform = "ios",
+    deviceId,
+    safeAreaInsets = DEFAULT_SAFE_AREA,
 }) => {
-    // 1. Calculate Safe Areas (Resolution Independence)
-    // Receive logical dimensions from parent
-    const designWidth = 393;
-    const targetWidth = width || 1179;
-    const scale = targetWidth / designWidth;
+    // Get app state
+    const appState = (world.appState?.["app_instagram"]) as InstagramState | undefined;
+    const screen = appState?.screen || "home";
+    const activeThreadId = appState?.activeThreadId;
 
-    const physicalSafeTop = safeAreaInsets?.top ?? 177;
-    const physicalSafeBottom = safeAreaInsets?.bottom ?? 102;
+    // Get Instagram data
+    const instagramData = (world as any).instagram as InstagramWorldState | undefined;
+    const feed = instagramData?.feed ?? [];
+    const stories = instagramData?.stories ?? [];
+    const threads = instagramData?.threads ?? [];
 
-    const safeAreaTop = physicalSafeTop / scale;
-    const safeAreaBottom = physicalSafeBottom / scale;
+    // Calculate content area (inside safe area)
+    const contentWidth = DESIGN_WIDTH - safeAreaInsets.left - safeAreaInsets.right;
+    const contentHeight = DESIGN_HEIGHT - safeAreaInsets.top - safeAreaInsets.bottom;
 
-    // 2. Data Preparation - Cast to WhatsApp conversation type
-    const conversations = (Object.values(world.conversations || {}) as WhatsAppConversation[]).sort((a, b) => {
-        // Sort by last message timestamp (descending) mechanism to be added
-        // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
-        return 0;
-        // TODO: Add proper sorting when timestamp logic is solidified in core/episodes
-    });
+    // Container style - full device logical space
+    const containerStyle: React.CSSProperties = {
+        width: DESIGN_WIDTH,
+        height: DESIGN_HEIGHT,
+        backgroundColor: "#000",
+        position: "relative",
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+    };
+
+    // Safe area top spacer (for Dynamic Island / notch)
+    const safeAreaTopStyle: React.CSSProperties = {
+        height: safeAreaInsets.top,
+        flexShrink: 0,
+        backgroundColor: "#000",
+    };
+
+    // Content area style
+    const contentAreaStyle: React.CSSProperties = {
+        flex: 1,
+        position: "relative",
+        overflow: "hidden",
+    };
+
+    // Render current screen
+    const renderScreen = () => {
+        switch (screen) {
+            case "dm_thread": {
+                const thread = threads.find((t: InstagramThread) => t.id === activeThreadId);
+                if (thread) {
+                    return (
+                        <DMScreen
+                            thread={thread}
+                            width={contentWidth}
+                            height={contentHeight}
+                            safeAreaBottom={safeAreaInsets.bottom}
+                        />
+                    );
+                }
+                // Fallback to home if thread not found
+                return (
+                    <HomeScreen
+                        feed={feed}
+                        stories={stories}
+                        width={contentWidth}
+                        height={contentHeight}
+                        safeAreaBottom={safeAreaInsets.bottom}
+                    />
+                );
+            }
+
+            case "home":
+            default:
+                return (
+                    <HomeScreen
+                        feed={feed}
+                        stories={stories}
+                        width={contentWidth}
+                        height={contentHeight}
+                        safeAreaBottom={safeAreaInsets.bottom}
+                    />
+                );
+        }
+    };
 
     return (
-        <div style={{
-            display: "flex",
-            flexDirection: "column",
-            height: "100%",
-            backgroundColor: "#FFFFFF",
-            position: "relative",
-        }}>
-            {/* Header (Sticky) */}
-            <ChatListHeader safeAreaTop={safeAreaTop} />
+        <div style={containerStyle}>
+            {/* Safe area top spacer */}
+            <div style={safeAreaTopStyle} />
 
-            {/* Scrollable Content */}
-            <div style={{
-                flex: 1,
-                overflowY: "auto",
-                // Padding bottom for Tab Bar
-                paddingBottom: 85 + safeAreaBottom,
-                backgroundColor: "#FFFFFF",
-                WebkitOverflowScrolling: "touch", // Smooth scrolling
-            }}>
-                {/* Archived Row */}
-                <div style={{
-                    display: "flex",
-                    height: 56, // Slightly shorter than chat row
-                    alignItems: "center",
-                    paddingLeft: 20,
-                    paddingRight: 16,
-                    cursor: "pointer",
-                }}>
-                    {/* Icon */}
-                    <div style={{
-                        width: 30, // Smaller visual weight
-                        display: "flex",
-                        justifyContent: "center",
-                        marginRight: 24 // Align with text start of chat items (which is 76 + ? actually chat item avatar is 60, left margin 20? No. 
-                        // Chat Item: Left padding 0 (in container), Avatar 76 width centered. 
-                        // So center of avatar is at 38px. 
-                        // Archived text should probably align with Name? 
-                        // Let's standard iOS: "Archived" appears on left? 
-                        // Actually standard WhatsApp: "Archived" is a specific row.
-                        // Let's simpler: Icon + Text.
-                    }}>
-                        {/* No Icon for standard row, just text "Archived" and number on right? 
-                           WhatsApp iOS 2024: Top row is "Archived" with an Archive Box icon on the very left (margin) or right?
-                           Actually it's "Archived" text on left, number on right.
-                           LET'S DO: Archive Icon (Grey) + "Archived" Text.
-                        */}
-                        <ArchiveIcon color="#8E8E93" />
-                    </div>
-
-                    <div style={{
-                        flex: 1,
-                        height: "100%",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        borderBottom: "0.5px solid #C6C6C8",
-                        fontSize: 17,
-                        fontWeight: "600",
-                        color: "#000",
-                        marginLeft: 12
-                    }}>
-                        <span>Archived</span>
-                        <span style={{ color: "#8E8E93", fontWeight: "400", marginRight: 8 }}>1</span>
-                    </div>
-                </div>
-
-                {/* Conversations List */}
-                <div style={{ paddingLeft: 16 }}> {/* Left padding for inset separators */}
-                    {conversations.length > 0 ? conversations.map((conv, i) => {
-                        // Runtime cast to access standard or plugin-specific fields
-                        const rawMessages = conv.messages as any[];
-                        const lastMsg = rawMessages && rawMessages.length > 0
-                            ? rawMessages[rawMessages.length - 1]
-                            : null;
-
-                        return (
-                            <ChatListItem
-                                key={conv.id}
-                                id={conv.id}
-                                name={conv.name || "Unknown"}
-                                avatarUrl={conv.avatar}
-                                lastMessage={lastMsg?.text || (lastMsg?.imageUrl ? "Photo" : lastMsg ? "Media" : "")}
-                                timestamp={lastMsg?.timestamp || "Yesterday"}
-                                unreadCount={conv.unreadCount || 0}
-                                status={lastMsg?.from === "me" ? "read" : undefined} // Mock status logic
-                                isTyping={conv.typing && Object.values(conv.typing).some(Boolean)}
-                                // Is last item?
-                                isLast={i === conversations.length - 1}
-                            />
-                        );
-                    }) : (
-                        // Empty State
-                        <div style={{ padding: 40, textAlign: "center", color: "#999" }}>
-                            No conversations yet
-                        </div>
-                    )}
-                </div>
+            {/* Content area */}
+            <div style={contentAreaStyle}>
+                {renderScreen()}
             </div>
-
-            {/* Tab Navigation (Fixed Bottom) */}
-            <TabNavigation activeTab="chats" safeAreaBottom={safeAreaBottom} />
         </div>
     );
 };
+
+export default InstagramApp;
+````
+
+## File: packages/apps-whatsapp/src/assets/audio-rules.ts
+````typescript
+import { AutoSoundRule } from "@tokovo/core";
+import { APP_IDS } from "@tokovo/core";
+
+export const whatsappAudioRules: AutoSoundRule[] = [
+    // === RUNTIME EVENTS (after lowering, kind=APP) ===
+    {
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_SENT" },
+        action: "PLAY_ONE_SHOT",
+        sound: "app_whatsapp.message_out",
+        bus: "ui",
+        duckMusic: true
+    },
+    {
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_RECEIVED" },
+        action: "PLAY_ONE_SHOT",
+        sound: "app_whatsapp.message_in",
+        bus: "ui",
+        duckMusic: true
+    },
+    {
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_START" },
+        action: "START_LOOP",
+        sound: "app_whatsapp.typing_loop",
+        bus: "sfx",
+        volume: 0.4,
+        idTemplate: "typing_{conversationId}_{from}"
+    },
+    {
+        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_END" },
+        action: "STOP_SOUND",
+        stopId: "typing_{conversationId}_{from}"
+    },
+
+];
+````
+
+## File: packages/apps-whatsapp/src/lowering/v2/handler.ts
+````typescript
+/**
+ * WhatsApp V2 Lowering
+ *
+ * Converts V2 TrackEvents to RuntimeEvents.
+ * This is the V2 interface that takes TrackEvent directly.
+ */
+
+import type { TrackEvent } from "@tokovo/ir";
+import type { RuntimeEvent } from "@tokovo/core";
+
+/**
+ * V2 Lowering interface for track-based compiler.
+ */
+export interface V2LoweringHandler {
+    lower: (event: TrackEvent) => RuntimeEvent[];
+}
+
+/**
+ * WhatsApp V2 lowering - converts WhatsApp TrackEvents to RuntimeEvents.
+ */
+export const whatsappV2Lowering: V2LoweringHandler = {
+    lower(event: TrackEvent): RuntimeEvent[] {
+        const e = event as any;
+        const base = {
+            at: e.at,
+            kind: "APP" as const,
+            appId: e.appId,
+            deviceId: e.deviceId,
+        };
+
+        switch (e.type) {
+            case "MESSAGE_RECEIVED":
+                return [{
+                    ...base,
+                    type: "MESSAGE_RECEIVED",
+                    conversationId: e.payload.conversationId,
+                    from: e.payload.from,
+                    text: e.payload.text,
+                    payload: e.payload, // Pass full payload for replyTo, etc.
+                } as any];
+
+            case "MESSAGE_SENT":
+                return [{
+                    ...base,
+                    type: "MESSAGE_SENT",
+                    conversationId: e.payload.conversationId,
+                    text: e.payload.text,
+                    payload: e.payload, // Pass full payload for replyTo, etc.
+                } as any];
+
+            case "TYPING_START":
+                return [{
+                    ...base,
+                    type: "TYPING_START",
+                    conversationId: e.payload.conversationId,
+                    from: e.payload.actor,
+                } as any];
+
+            case "TYPING_END":
+                return [{
+                    ...base,
+                    type: "TYPING_END",
+                    conversationId: e.payload.conversationId,
+                    from: e.payload.actor,
+                } as any];
+
+            case "IMAGE_RECEIVED":
+                return [{
+                    ...base,
+                    type: "RECEIVE_IMAGE",
+                    payload: e.payload,
+                } as any];
+
+            case "REACT":
+                return [{
+                    ...base,
+                    type: "REACT",
+                    conversationId: e.payload.conversationId,  // Required at root!
+                    payload: e.payload,
+                } as any];
+
+            case "READ":
+                return [{
+                    ...base,
+                    type: "READ_MESSAGES",
+                    payload: { conversationId: e.payload.conversationId },
+                } as any];
+
+            // Pass through media events directly
+            case "IMAGE_SENT":
+            case "VIDEO_RECEIVED":
+            case "VIDEO_SENT":
+            case "VOICE_RECEIVED":
+            case "VOICE_SENT":
+            case "GIF_RECEIVED":
+            case "GIF_SENT":
+            case "DATE_SEPARATOR":
+                return [{
+                    ...base,
+                    type: e.type,
+                    payload: e.payload,
+                    conversationId: e.payload?.conversationId,
+                } as any];
+
+            // Navigation events - pass to core navigation handler
+            case "CONVERSATION_OPENED":
+                return [{
+                    ...base,
+                    type: e.type,
+                    conversationId: e.payload?.conversationId,  // Root level for reducer!
+                    payload: e.payload,
+                } as any];
+
+            case "NAVIGATE_SCREEN":
+            case "GO_BACK":
+                return [{
+                    ...base,
+                    type: e.type,
+                    payload: e.payload,
+                } as any];
+
+            default:
+                console.warn(`[whatsappV2Lowering] Unknown event type: ${e.type}`);
+                return [];
+        }
+    }
+};
+````
+
+## File: packages/apps-whatsapp/src/types/state.ts
+````typescript
+/**
+ * WhatsApp App State Types
+ * 
+ * Plugin state and world state helpers.
+ */
+
+import type { WhatsAppConversation } from "./conversation";
+
+// =============================================================================
+// APP STATE
+// =============================================================================
+
+export interface WhatsAppState {
+    conversationId?: string;
+    screen?: string;  // Legacy
+
+    // Navigation (set by core navigation.ts)
+    currentScreen?: "main" | "chat" | "chats" | "profile" | string;
+    currentConversationId?: string;
+
+    viewMode?: "CHAT" | "LIST" | "TRANSITION";
+
+    /** StatusBar theme - "light" | "dark" | full custom theme */
+    statusBarTheme?: "light" | "dark" | {
+        backgroundColor?: string;
+        iconColor?: string;
+        timeColor?: string;
+    };
+}
+
+// =============================================================================
+// WORLD STATE HELPERS
+// =============================================================================
+
+/**
+ * Cast WorldState.conversations to WhatsApp conversations.
+ */
+export function asWhatsAppConversations(
+    conversations: Record<string, unknown>
+): Record<string, WhatsAppConversation> {
+    return conversations as Record<string, WhatsAppConversation>;
+}
+
+/**
+ * Cast WorldState.appState.app_whatsapp to WhatsAppState.
+ */
+export function asWhatsAppState(
+    appState: Record<string, unknown>
+): WhatsAppState | undefined {
+    return (appState?.app_whatsapp || appState?.whatsapp) as WhatsAppState | undefined;
+}
 ````
 
 ## File: packages/compiler/package.json
@@ -58678,37 +60569,6 @@ export {
     getRegisteredAppIds,
     clearAnchorProviders,
 };
-````
-
-## File: packages/core/src/director-lite/index.ts
-````typescript
-/**
- * DirectorLite - Re-exports from @tokovo/device-camera
- * 
- * Legacy backward compatibility layer.
- * All new code should import directly from @tokovo/device-camera.
- * 
- * @deprecated Import from "@tokovo/device-camera" instead
- */
-
-export {
-    deriveDirectorEffects,
-    extractSignals,
-    ViralDramaV1,
-} from "@tokovo/device-camera";
-
-export type {
-    DirectorSignal,
-    DirectorSignalType,
-    DirectorLayoutModel,
-    DirectorOutput,
-    DerivedCameraEffect,
-    DirectorDebug,
-    DeriveContext,
-    DirectorStrategy,
-    Rule,
-    // Note: LayoutRect is exported from ../types/layout (via @tokovo/core types barrel)
-} from "@tokovo/device-camera";
 ````
 
 ## File: packages/core/src/engine/handlers/audio.ts
@@ -59562,54 +61422,6 @@ export interface AnchorSnapshot {
 }
 ````
 
-## File: packages/core/src/types/index.ts
-````typescript
-/**
- * Types Index - Enterprise Types
- * 
- * @description Central export for all core types.
- * Domain-organized type files for maintainability.
- */
-
-// =============================================================================
-// DOMAIN TYPES (New - Split from types.ts)
-// =============================================================================
-
-// Notification system
-export * from "./notification";
-
-// Device, OS, Keyboard, Call
-export * from "./device";
-
-// Camera effects and transforms
-export * from "./camera";
-
-// Audio system
-export * from "./audio";
-
-// Layout system
-export * from "./layout";
-
-// WorldState
-export * from "./world-state";
-
-// =============================================================================
-// ENTERPRISE TYPES (Existing)
-// =============================================================================
-
-// RuntimeEvent - Payload-based event system
-export * from "./runtime-event";
-
-// CompiledEpisode - The only runtime input
-export * from "./compiled-episode";
-
-// Plugin Contract - Tiered plugin system
-export * from "./plugin-contract";
-
-// Anchor types - V2 camera positioning
-export * from "./anchor";
-````
-
 ## File: packages/core/src/tokens.ts
 ````typescript
 /**
@@ -60329,37 +62141,6 @@ export function getActiveEffects(state: CameraState, frame: number): CameraEffec
 }
 ````
 
-## File: packages/device-keyboard/src/assets/audio-rules.ts
-````typescript
-import { AutoSoundRule } from "@tokovo/core";
-
-export const keyboardAudioRules: AutoSoundRule[] = [
-    // === V2 OPS ===
-    // Matches "KeyboardType" events from new DSL
-    // DISABLED: Rely on discrete KeyDown clicks instead of loops for manual typing
-    // {
-    //     match: { kind: "KeyboardType" },
-    //     action: "START_LOOP",
-    //     sound: "keyboard_typing_loop",
-    //     volume: 0.8,
-    //     durationFrom: {
-    //         key: "text.length",
-    //         factor: 4, // 4 frames per char
-    //         min: 15    // Min 15 frames
-    //     },
-    //     idTemplate: "typing_loop_{at}"
-    // },
-    {
-        match: { kind: "APP", appId: "keyboard", type: "KEY_DOWN" },
-        action: "PLAY_ONE_SHOT",
-        sound: "keyboard_typing_loop",
-        volume: 0.6
-    },
-
-
-];
-````
-
 ## File: packages/device-keyboard/src/lowering/handler.ts
 ````typescript
 /**
@@ -60607,426 +62388,6 @@ export function createKeyboardInitialState(): KeyboardState {
 }
 ````
 
-## File: packages/device-keyboard/src/views/ios/IOSKeyboard.tsx
-````typescript
-/**
- * iOS Keyboard Components
- * 
- * Modular iOS keyboard implementation.
- * 
- * ARCHITECTURE:
- * - IOSKeyboard: Main composed component
- * - IOSKey: Individual key with press state
- * - IOSKeyRow: Row of keys
- * - IOSKeyPopup: Popup overlay on press
- * - IOSPredictionBar: Suggestion bar
- */
-
-import React from "react";
-import { useCurrentFrame, interpolate, Easing } from "remotion";
-import type { KeyboardState } from "../../types/state";
-import { QWERTY_ROWS, getKeyWidth } from "../../config/layouts/qwerty";
-import { NUMBERS_ROWS } from "../../config/layouts/numbers";
-import { KEYBOARD_ANIMATION } from "../../config/animation";
-import { getThemeColors, getIOSTheme } from "./theme";
-import { renderKeyIcon } from "./icons";
-import { IOSPrediction } from "./prediction";
-import { KeyboardStrategyRegistry } from "../strategy";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-interface KeyboardProps {
-    keyboard: KeyboardState;
-    variant: "light" | "dark";
-    t: number;
-}
-
-interface KeyProps {
-    label: string;
-    isPressed: boolean;
-    width?: number;
-    isSpecial?: boolean;
-    variant: "light" | "dark";
-}
-
-interface KeyPopupProps {
-    label: string;
-    variant: "light" | "dark";
-    keyWidth: number;
-}
-
-interface KeyRowProps {
-    keys: string[];
-    currentKey: string | null;
-    variant: "light" | "dark";
-    rowIndex: number;
-}
-
-interface PredictionBarProps {
-    suggestions: string[];
-    variant: "light" | "dark";
-    highlightedIndex?: number | null;
-}
-
-// =============================================================================
-// KEY COMPONENT
-// =============================================================================
-
-export const IOSKey: React.FC<KeyProps> = ({
-    label,
-    isPressed,
-    width = 33,
-    isSpecial = false,
-    variant,
-}) => {
-    const colors = getThemeColors(variant, isSpecial, isPressed);
-    const iconStyle = { width: "50%", height: "50%", display: "block" as const };
-
-    // Check if we should show an icon
-    const icon = renderKeyIcon(label, iconStyle);
-    const fontSize = label === "space" ? 16 : label.length > 1 ? 16 : 25;
-
-    // Key popup for non-special single chars
-    const showPopup = isPressed && label.length === 1 && !isSpecial;
-
-    return (
-        <div style={{
-            position: "relative",
-            width,
-            height: 42,
-            margin: "0 3px",
-            zIndex: showPopup ? 100 : 1,
-        }}>
-            {showPopup && (
-                <IOSKeyPopup label={label} variant={variant} keyWidth={width} />
-            )}
-
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: colors.keyBg,
-                borderRadius: 5,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize,
-                fontWeight: isSpecial ? 300 : 400,
-                color: colors.keyText,
-                boxShadow: colors.shadow,
-                transition: "background-color 0.05s",
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-            }}>
-                {icon || (label === "space" ? "" : label)}
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// KEY POPUP
-// =============================================================================
-
-export const IOSKeyPopup: React.FC<KeyPopupProps> = ({ label, variant, keyWidth }) => {
-    const theme = getIOSTheme(variant);
-    const POPUP_WIDTH = keyWidth + 24;
-    const POPUP_HEIGHT = 100;
-
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 0,
-            left: "50%",
-            width: POPUP_WIDTH,
-            height: POPUP_HEIGHT,
-            transform: "translateX(-50%)",
-            pointerEvents: "none",
-            zIndex: 200,
-            filter: "drop-shadow(0px 2px 4px rgba(0,0,0,0.25))",
-        }}>
-            <svg
-                width="100%"
-                height="100%"
-                viewBox="0 0 100 130"
-                preserveAspectRatio="none"
-                style={{ overflow: "visible" }}
-            >
-                <path
-                    d="M 20 130 L 80 130 L 80 80 Q 80 60 100 60 L 100 15 Q 100 0 85 0 L 15 0 Q 0 0 0 15 L 0 60 Q 20 60 20 80 Z"
-                    fill={theme.popupBg}
-                />
-            </svg>
-
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: 60,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 36,
-                color: theme.keyText,
-                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-                fontWeight: 400,
-                paddingBottom: 5,
-            }}>
-                {label.toUpperCase()}
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// KEY ROW
-// =============================================================================
-
-export const IOSKeyRow: React.FC<KeyRowProps> = ({ keys, currentKey, variant, rowIndex }) => {
-    const SPECIAL_KEYS = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="];
-
-    return (
-        <div style={{
-            display: "flex",
-            justifyContent: "center",
-            width: "100%",
-            marginBottom: 10,
-        }}>
-            {keys.map((key, index) => {
-                const isSpecial = SPECIAL_KEYS.includes(key);
-                const isSpace = key === "space";
-                const isPressed =
-                    currentKey?.toLowerCase() === key.toLowerCase() ||
-                    (key === "⌫" && currentKey === "⌫") ||
-                    (isSpace && currentKey === " ");
-
-                return (
-                    <IOSKey
-                        key={`${key}-${index}`}
-                        label={key}
-                        isPressed={isPressed}
-                        width={getKeyWidth(key)}
-                        isSpecial={isSpecial}
-                        variant={variant}
-                    />
-                );
-            })}
-        </div>
-    );
-};
-
-// =============================================================================
-// PREDICTION BAR
-// =============================================================================
-
-export const IOSPredictionBar: React.FC<PredictionBarProps> = ({
-    suggestions,
-    variant,
-    highlightedIndex = 1,
-}) => {
-    const theme = getIOSTheme(variant);
-
-    return (
-        <div style={{
-            height: 48,
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0 10px",
-            marginBottom: 4,
-        }}>
-            {suggestions.map((word, i) => (
-                <div key={i} style={{
-                    flex: 1,
-                    margin: "0 4px",
-                    textAlign: "center",
-                    fontSize: 17,
-                    color: i === highlightedIndex ? theme.accentColor : theme.keyText,
-                    fontWeight: 400,
-                    letterSpacing: -0.3,
-                    height: "100%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    position: "relative",
-                    fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-                }}>
-                    {i < 2 && (
-                        <div style={{
-                            position: "absolute",
-                            right: -4,
-                            height: "40%",
-                            width: 1,
-                            backgroundColor: theme.dividerColor,
-                        }} />
-                    )}
-                    {i === highlightedIndex ? `"${word}"` : word}
-                </div>
-            ))}
-        </div>
-    );
-};
-
-// =============================================================================
-// MAIN KEYBOARD COMPONENT
-// =============================================================================
-
-export const IOSKeyboard: React.FC<KeyboardProps> = ({
-    keyboard,
-    variant = "light",
-}) => {
-    const frame = useCurrentFrame();
-    const theme = getIOSTheme(variant);
-
-    // Animation for slide in/out
-    const transitionStart = keyboard.visibilityChangedAt ?? 0;
-    const targetValue = keyboard.visible ? 1 : 0;
-    const startValue = keyboard.visible ? 0 : 1;
-
-    // Quiescent state: no transition has occurred yet
-    const slideProgress = transitionStart < 0
-        ? (keyboard.visible ? 1 : 0)
-        : interpolate(
-            frame,
-            [transitionStart, transitionStart + KEYBOARD_ANIMATION.SLIDE_DURATION_FRAMES],
-            [startValue, targetValue],
-            {
-                extrapolateLeft: "clamp",
-                extrapolateRight: "clamp",
-                easing: Easing.bezier(
-                    KEYBOARD_ANIMATION.EASING[0],
-                    KEYBOARD_ANIMATION.EASING[1],
-                    KEYBOARD_ANIMATION.EASING[2],
-                    KEYBOARD_ANIMATION.EASING[3]
-                ),
-            }
-        );
-
-    const translateY = interpolate(slideProgress, [0, 1], [100, 0]);
-    const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
-
-    // =========================================================================
-    // DERIVED STATE (Enterprise Pattern)
-    // =========================================================================
-    // When a TYPING_SEQUENCE is active, derive currentKey and inputText from
-    // the schedule based on current frame. This is more efficient than storing
-    // intermediate state and follows Remotion's "derive from frame" philosophy.
-
-    const schedule = keyboard.typingSchedule;
-
-    // Derive current key from schedule (which key is being pressed at this frame)
-    const derivedCurrentKey = React.useMemo(() => {
-        if (!schedule) return keyboard.currentKey;
-
-        // Find the key that's being pressed at this frame
-        // Key is "pressed" for ~4 frames after its scheduled frame
-        const keyHoldDuration = 4;
-        const activeEntry = schedule.entries.find(
-            entry => frame >= entry.frame && frame < entry.frame + keyHoldDuration
-        );
-
-        return activeEntry?.key ?? null;
-    }, [schedule, frame, keyboard.currentKey]);
-
-    // Derive input text from schedule (what has been typed up to this frame)
-    const derivedInputText = React.useMemo(() => {
-        if (!schedule) return keyboard.inputText;
-
-        // Build text from all characters typed before current frame
-        return schedule.entries
-            .filter(entry => entry.frame <= frame)
-            .map(entry => entry.key)
-            .join("");
-    }, [schedule, frame, keyboard.inputText]);
-
-    // Use derived values
-    const currentKey = derivedCurrentKey;
-    const inputText = derivedInputText;
-
-    if (!keyboard.visible && slideProgress === 0) return null;
-
-    // Get rows based on layout
-    const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
-
-    // Get suggestions from derived inputText
-    const suggestions = IOSPrediction.getSuggestions(inputText, 42);
-
-    return (
-        <div style={{
-            position: "absolute",
-            bottom: 0,
-            left: 0,
-            width: "100%",
-            height: "auto",
-            transform: `translateY(${translateY}%)`,
-            opacity,
-            zIndex: 1000,
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "flex-end",
-            overflow: "hidden",
-        }}>
-            <div style={{
-                width: 393,
-                backgroundColor: theme.containerBg,
-                backdropFilter: "blur(50px)",
-                WebkitBackdropFilter: "blur(50px)",
-                paddingTop: 8,
-                paddingBottom: 34,
-                boxShadow: "0 -1px 0 rgba(0,0,0,0.1)",
-                display: "flex",
-                flexDirection: "column",
-            }}>
-                {/* Prediction Bar */}
-                <IOSPredictionBar
-                    suggestions={suggestions}
-                    variant={variant}
-                    highlightedIndex={keyboard.highlightedSuggestion ?? 1}
-                />
-
-                {/* Keyboard Rows - now uses derived currentKey */}
-                <div style={{
-                    flex: 1,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-evenly",
-                    padding: "0 6px",
-                }}>
-                    {rows.map((row, index) => (
-                        <IOSKeyRow
-                            key={index}
-                            keys={row}
-                            currentKey={currentKey}
-                            variant={variant}
-                            rowIndex={index}
-                        />
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-// =============================================================================
-// REGISTER STRATEGY
-// =============================================================================
-
-KeyboardStrategyRegistry.register("ios", {
-    Keyboard: IOSKeyboard,
-    Key: IOSKey,
-    KeyPopup: IOSKeyPopup,
-    PredictionBar: IOSPredictionBar,
-    theme: getIOSTheme("light"),
-    getSuggestions: IOSPrediction.getSuggestions,
-});
-
-export default IOSKeyboard;
-````
-
 ## File: packages/device-keyboard/src/plugin.ts
 ````typescript
 /**
@@ -61131,6 +62492,244 @@ export function registerKeyboardPlugin(): void {
 }
 
 export default KeyboardPlugin;
+````
+
+## File: packages/device-keyboard/src/reducer.ts
+````typescript
+import {
+    WorldState,
+    TimelineEvent,
+    ReducerRegistry,
+    FeatureReducer
+} from "@tokovo/core";
+
+/**
+ * processKeyboardEvent
+ * 
+ * Handles all KEYBOARD specific events.
+ * Manages the virtual keyboard state in `device.keyboard`.
+ * Automatically injects INPUT_CHANGE events into the foreground app.
+ */
+export const keyboardReducer: FeatureReducer = (
+    draft: WorldState,
+    event: TimelineEvent,
+    index?: number
+) => {
+    // Shared Device Access
+    const eventAny = event as any;
+    const deviceId = eventAny.deviceId || Object.keys(draft.devices)[0];
+    const device = draft.devices[deviceId];
+    if (!device) return;
+
+    // INITIALIZATION: The "Gold Standard" of robustness.
+    // Ensure device.keyboard always exists if a keyboard event is being processed.
+    if (!device.keyboard) {
+        device.keyboard = {
+            visible: false,
+            layout: "qwerty",
+            currentKey: null,
+            keyPressedAt: null,
+            inputText: "",
+            cursorPosition: 0,
+            cursorVisible: true,
+            visibilityChangedAt: -1,
+            suggestions: [],
+            highlightedSuggestion: null,
+            selectionStart: null,
+            selectionEnd: null,
+            keyPressVisual: null,
+        } as any;
+    }
+
+    const keyboard = device.keyboard!;
+
+    // Handle V2 Ops
+    if (event.kind === "KeyboardType") {
+        const e = event as import("@tokovo/ir").KeyboardTypeOp;
+        // Append text (simulating typing)
+        const textToAppend = e.text;
+        const pos = keyboard.cursorPosition;
+        const currentText = keyboard.inputText;
+        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
+
+        keyboard.inputText = newText;
+        keyboard.cursorPosition = pos + textToAppend.length;
+
+        // AUTOMATION: Inject into App
+        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+
+        // AUDIO: Handled by AutoSound Rules
+        return;
+    }
+
+    if (event.kind === "KeyboardInput") {
+        const e = event as import("@tokovo/ir").KeyboardInputOp;
+        if (e.type === "keyDown") {
+            keyboard.currentKey = e.key;
+            keyboard.keyPressedAt = event.at;
+
+            // Handle Backspace logic for V2
+            if (e.key === "Backspace") {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+
+            // AUDIO: Handled by AutoSound Rules
+        } else {
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
+        }
+        return;
+    }
+
+    // Handle V2 Ops & Legacy Ops
+    // We remove the strict kind guard to allow this to act as both a FeatureReducer 
+    // and an AppReducer for kind: "APP", appId: "keyboard".
+
+    const eventType = (event as any).type;
+
+    switch (eventType) {
+        case "SHOW":
+            keyboard.visible = true;
+            keyboard.layout = (event as any).layout || "qwerty";
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
+            keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "HIDE":
+            keyboard.visible = false;
+            keyboard.currentKey = null;
+            keyboard.visibilityChangedAt = event.at;
+            break;
+
+        case "KEY_DOWN": {
+            const key = (event as any).key;
+            keyboard.currentKey = key;
+            keyboard.keyPressedAt = event.at;
+
+            // Handle character insertion for printable keys
+            if (key.length === 1) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                const newText = text.slice(0, pos) + key + text.slice(pos);
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos + 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            } else if (key === "Backspace") {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                if (pos > 0) {
+                    const newText = text.slice(0, pos - 1) + text.slice(pos);
+                    keyboard.inputText = newText;
+                    keyboard.cursorPosition = pos - 1;
+                    // Inject into App
+                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+                }
+            }
+            break;
+        }
+
+        case "KEY_UP":
+            keyboard.currentKey = null;
+            keyboard.keyPressedAt = null;
+            break;
+
+        case "TYPE_CHAR": {
+            const char = (event as any).char;
+            // Add character to input
+            const pos = keyboard.cursorPosition;
+            const text = keyboard.inputText;
+            const newText = text.slice(0, pos) + char + text.slice(pos);
+            keyboard.inputText = newText;
+            keyboard.cursorPosition = pos + 1;
+            keyboard.currentKey = char;
+            keyboard.keyPressedAt = event.at;
+
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "BACKSPACE": {
+            if (keyboard.cursorPosition > 0) {
+                const pos = keyboard.cursorPosition;
+                const text = keyboard.inputText;
+                const newText = text.slice(0, pos - 1) + text.slice(pos);
+                keyboard.inputText = newText;
+                keyboard.cursorPosition = pos - 1;
+
+                // AUTOMATION: Inject into App
+                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
+            }
+            keyboard.currentKey = "⌫";
+            keyboard.keyPressedAt = event.at;
+            // AUDIO: Handled by AutoSound Rules
+            break;
+        }
+
+        case "SET_TEXT": {
+            const text = (event as any).text;
+            keyboard.inputText = text;
+            keyboard.cursorPosition = text.length;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, text, event.at);
+            break;
+        }
+
+        case "TYPING_SEQUENCE": {
+            // Enterprise pattern: Store schedule, renderer derives key press from frame
+            const e = event as any;
+            keyboard.typingSchedule = {
+                entries: e.schedule,
+                text: e.text,
+                startFrame: e.startFrame,
+                endFrame: e.endFrame,
+            };
+            // Set final text immediately (renderer will animate progressively)
+            keyboard.inputText = e.text;
+            keyboard.cursorPosition = e.text.length;
+            // AUTOMATION: Inject final text into App (apps can derive if needed)
+            injectInputToApp(draft, device.foregroundAppId, e.text, e.endFrame);
+            break;
+        }
+
+        case "CLEAR":
+            keyboard.inputText = "";
+            keyboard.cursorPosition = 0;
+            keyboard.typingSchedule = null;
+            // AUTOMATION: Inject into App
+            injectInputToApp(draft, device.foregroundAppId, "", event.at);
+            break;
+    }
+};
+
+/**
+ * Helper to push input changes to the active app
+ */
+function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
+    if (!appId) return;
+    const reducer = ReducerRegistry.getAppReducer(appId);
+    if (reducer) {
+        reducer(draft, { // Use legacy event format expected by apps
+            kind: "APP",
+            type: "INPUT_CHANGE",
+            appId,
+            payload: { text },
+            at
+        } as any);
+    }
+}
 ````
 
 ## File: packages/device-notifications/src/index.ts
@@ -61549,50 +63148,6 @@ export {
 } from "../utils";
 ````
 
-## File: packages/ir/src/index.ts
-````typescript
-/**
- * @tokovo/ir
- *
- * Intermediate Representations for Tokovo DSL.
- *
- * V2 Track-based IR (RECOMMENDED):
- * - TrackEvent: Typed track event union
- * - TrackEpisodeIR: Episode intermediate representation
- * - Payloads: Strongly-typed payload maps
- *
- * Legacy (DEPRECATED):
- * - SceneIR: Beat-based semantic IR
- * - TimelineOp: Timeline operations
- */
-
-// =============================================================================
-// TRACE (Always available)
-// =============================================================================
-
-export * from "./trace";
-
-// =============================================================================
-// V2 TRACK-BASED IR (RECOMMENDED)
-// =============================================================================
-
-export * from "./v2";
-
-// =============================================================================
-// UTILITIES
-// =============================================================================
-
-export * from "./utils";
-
-// =============================================================================
-// LEGACY (DEPRECATED - Will be removed in v3)
-// =============================================================================
-
-// Re-export legacy for backward compatibility
-// These can be imported from "@tokovo/ir/legacy" when we add subpath exports
-export * from "./legacy";
-````
-
 ## File: packages/renderer/src/index.ts
 ````typescript
 /**
@@ -61664,336 +63219,1106 @@ export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEn
 export { registerBuiltInAnchorProviders, getAllAnchors } from "./anchor-providers";
 ````
 
-## File: apps/video-runner/src/EpisodeRenderer.tsx
+## File: packages/apps-whatsapp/src/components/ios/Header.tsx
+````typescript
+import { ChevronLeft, Video, Phone } from "lucide-react";
+import { UI_CONSTANTS } from "../../config/layout-config";
+import { getTheme } from "./theme";
+
+export const Header: React.FC<{
+    contactName: string;
+    avatarUrl?: string;
+    status: string;
+    safeAreaTop?: number;
+}> = ({ contactName, avatarUrl, status, safeAreaTop = 47 }) => {
+    const theme = getTheme("ios");
+
+    // Total header height = Safe Area + Content Height
+    const contentHeight = UI_CONSTANTS.HEADER_CONTENT_HEIGHT;
+    const totalHeight = safeAreaTop + contentHeight;
+
+    return (
+        <div
+            data-anchor="header"
+            style={{
+                height: totalHeight,
+                backgroundColor: theme.colors.headerBg,
+                paddingTop: safeAreaTop,
+                display: "flex",
+                alignItems: "center",
+                paddingLeft: UI_CONSTANTS.HEADER_PADDING_X,
+                paddingRight: UI_CONSTANTS.HEADER_PADDING_X,
+                borderBottom: `0.5px solid ${theme.colors.separator}`,
+                backdropFilter: "blur(20px)",
+                position: "relative",
+                zIndex: 100,
+                boxSizing: 'border-box'
+            }}
+        >
+            {/* Back Button (Black Chevron) */}
+            <div style={{
+                marginRight: 8,
+                color: "#000000",
+                display: 'flex',
+                alignItems: 'center',
+                cursor: 'pointer'
+            }}>
+                <ChevronLeft size={34} color="#000000" style={{ marginLeft: -8 }} />
+                {/* Actually, user said 'black icons', but standard iOS is Blue. 
+                    However, let's look at the reference image. 
+                    Wait, if I can't see the image I must trust the user 'black icons'.
+                    But '9:41' status bar is typically black.
+                    Let's go with Blue Chevron (Standard) but remove the '95'.
+                    User said 'different color and black icons'. 
+                    Maybe they mean the Video/Phone icons are black?
+                */}
+            </div>
+
+            {/* Avatar */}
+            <div
+                data-anchor="profile"
+                style={{
+                    width: UI_CONSTANTS.HEADER_AVATAR_SIZE,
+                    height: UI_CONSTANTS.HEADER_AVATAR_SIZE,
+                    borderRadius: "50%",
+                    backgroundColor: "#ddd",
+                    marginRight: UI_CONSTANTS.HEADER_AVATAR_MARGIN_RIGHT,
+                    overflow: "hidden",
+                    flexShrink: 0
+                }}
+            >
+                {avatarUrl ? (
+                    <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                ) : (
+                    <div style={{ width: "100%", height: "100%", background: "#ccc" }} />
+                )}
+            </div>
+
+            {/* Name & Status */}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                <div style={{
+                    fontSize: 16, // Standard 16pt
+                    fontWeight: "600",
+                    color: theme.colors.bubbleText, // Use theme text
+                    lineHeight: "20px"
+                }}>
+                    {contactName}
+                </div>
+                <div style={{
+                    fontSize: 12, // Standard 12pt caption
+                    color: theme.colors.secondary,
+                    lineHeight: "14px"
+                }}>
+                    {status}
+                </div>
+            </div>
+
+            {/* Actions (Black/Dark Gray as requested) */}
+            <div style={{ display: "flex", gap: 24, paddingRight: 8 }}>
+                <Video size={24} color="#000000" strokeWidth={1.5} />
+                <Phone size={22} color="#000000" strokeWidth={1.5} />
+            </div>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/InputArea.tsx
+````typescript
+import React from "react";
+import { Keyboard, Camera, Mic, Send } from "lucide-react";
+import { getTheme } from "./theme";
+
+// Logical height for Input Area
+// ~48-50px for the input field itself
+// Total bar height depending on content, usually ~60-80px + safe area
+
+export const InputArea: React.FC<{
+    text?: string;
+    showCursor?: boolean;
+    safeAreaBottom?: number;
+}> = ({ text = "", showCursor = false, safeAreaBottom = 34 }) => {
+    const theme = getTheme("ios");
+
+    const hasContent = text.length > 0;
+
+    // Standard iOS bottom padding (home indicator) is 34px
+    const paddingBottom = Math.max(safeAreaBottom, 20);
+
+    return (
+        <div
+            data-anchor="input"
+            style={{
+                backgroundColor: theme.colors.headerBg, // Solid Beige to match Chat/Header
+                borderTop: "none", // Seamless look
+                padding: `6px 16px ${paddingBottom}px 10px`, // Tighter vertical padding
+                display: "flex",
+                alignItems: "flex-end", // Align to bottom for multiline growth
+                gap: 12,
+                position: "absolute",
+                bottom: 0,
+                left: 0,
+                right: 0,
+                minHeight: 50
+            }}
+        >
+            {/* Keyboard Icon (Black) - Bottom aligned */}
+            <div style={{ paddingBottom: 8, cursor: "pointer" }}>
+                <Keyboard size={28} color="#000000" strokeWidth={1.5} />
+            </div>
+
+            {/* Input Pill */}
+            <div
+                data-anchor="typing"
+                style={{
+                    flex: 1,
+                    backgroundColor: "#FFFFFF", // White Pill
+                    borderRadius: 24, // Fully rounded
+                    border: "1px solid rgba(0,0,0,0.05)",
+                    padding: "4px 4px 4px 12px", // Right padding is small to fit sticker
+                    minHeight: 38, // Slightly taller
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 3 // Lift slightly
+                }}
+            >
+                <div style={{ flex: 1, padding: "5px 0" }}>
+                    <span style={{
+                        fontSize: 16,
+                        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+                        color: hasContent ? "#000" : "#C7C7CC",
+                        lineHeight: "20px",
+                        display: "block"
+                    }}>
+                        {hasContent ? text : ""}
+                        {showCursor && (
+                            <span style={{
+                                display: "inline-block",
+                                width: 2,
+                                height: 18,
+                                backgroundColor: theme.colors.primary,
+                                marginLeft: 1,
+                                verticalAlign: "middle",
+                                animation: "blink 1s step-end infinite"
+                            }} />
+                        )}
+                        {!hasContent && !showCursor && "Message"}
+                    </span>
+                </div>
+
+                {/* Sticker Icon (Right Side inside Input) */}
+                <div style={{
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: 30,
+                    width: 30,
+                    marginRight: 4
+                }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M19 19L22 22" stroke="#000000" strokeWidth={1.5} strokeLinecap="round" />
+                        <path d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z" stroke="#000000" strokeWidth={1.5} />
+                        <path d="M9 10L9.01 10" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+                        <path d="M15 10L15.01 10" stroke="#000000" strokeWidth={2} strokeLinecap="round" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Right Icons: Camera and Mic */}
+            {hasContent ? (
+                // Send button 
+                <div style={{ paddingBottom: 6, cursor: "pointer" }}>
+                    <div style={{
+                        width: 34,
+                        height: 34,
+                        backgroundColor: theme.colors.primary,
+                        borderRadius: "50%",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center"
+                    }}>
+                        <Send size={18} color="#FFF" fill="#FFF" style={{ marginLeft: 2 }} />
+                    </div>
+                </div>
+            ) : (
+                <div style={{ display: "flex", gap: 16, paddingBottom: 8, alignItems: "center" }}>
+                    {/* Camera */}
+                    <Camera size={26} color="#000000" strokeWidth={1.5} />
+                    {/* Mic */}
+                    <Mic size={24} color="#000000" strokeWidth={1.5} />
+                </div>
+            )}
+
+            <style>{`
+                @keyframes blink {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0; }
+                }
+            `}</style>
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/components/ios/MessageList.tsx
+````typescript
+import React, { useEffect, useRef } from "react";
+import { getTheme } from "./theme";
+import { MessageBubble } from "./MessageBubble";
+import { useMessageGrouping } from "../../hooks/useMessageGrouping";
+import { MessageData } from "../../types";
+
+import { TypingIndicator } from "./TypingIndicator";
+
+interface MessageListProps {
+    messages: MessageData[];
+    ownerName?: string;
+    isTyping?: boolean;
+    isGroupChat?: boolean;
+}
+
+export const MessageList: React.FC<MessageListProps> = ({ messages, ownerName = "me", isTyping, isGroupChat = false }) => {
+    const theme = getTheme("ios");
+
+    // Architecture Layer 1: Semantic Grouping
+    const groups = useMessageGrouping(messages, ownerName);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const lastMessageId = messages[messages.length - 1]?.id;
+
+    // Auto-scroll to bottom when new messages arrive or typing status changes
+    useEffect(() => {
+        if (containerRef.current) {
+            containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+    }, [messages.length, lastMessageId, isTyping]);
+
+    return (
+        <div
+            ref={containerRef}
+            data-anchor="list"
+            style={{
+                flex: 1,
+                backgroundColor: theme.colors.chatBg,
+                // Optional: Wallpaper pattern could be a CSS variable too or separate component
+                // Doodle Pattern (CSS radial gradient approximation of doodle)
+                backgroundImage: "radial-gradient(circle at 10% 20%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 90% 80%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 30% 60%, rgba(0,0,0,0.13) 1.5px, transparent 1.5px), radial-gradient(circle at 70% 30%, rgba(0,0,0,0.13) 1px, transparent 1px)",
+                backgroundSize: "60px 60px", // Repeat pattern
+                display: "flex",
+                flexDirection: "column",
+                padding: "10px 16px",
+                // Remove 'gap' here because we control it via margins for precise rhythm
+                overflowY: "auto",
+                WebkitOverflowScrolling: "touch",
+                paddingBottom: 100
+            }}>
+            {groups.map((group) => {
+                const isSystem = group.senderId === "system";
+
+                return (
+                    <div
+                        key={group.id}
+                        style={{
+                            // Architecture Layer 2: Visual Rhythm
+                            // 12px gap between separate speakers (Visual Run Break)
+                            // System messages might want different spacing
+                            marginTop: isSystem ? 12 : 6, // Refined: 12px visual gap is standard, but margins collapse?
+                            // Actually, let's stick to simple vertical rhythm.
+                            marginBottom: 6,
+                            display: "flex",
+                            flexDirection: "column",
+                            // No gap here, we use marginBottom: 2 on bubbles for tight packing
+                        }}
+                    >
+                        {group.messages.map((item, idx) => (
+                            <MessageBubble
+                                key={item.data.id || idx}
+                                message={item.data}
+                                isMe={group.isMe}
+                                isFirst={item.isFirst}
+                                isLast={item.isLast}
+                                isGroupChat={isGroupChat}
+                                senderName={item.data.from}
+                                showSenderName={isGroupChat && !group.isMe && item.isFirst}
+                            />
+                        ))}
+                    </div>
+                );
+            })}
+
+            {isTyping && (
+                <div style={{ marginTop: 12 }}>
+                    <TypingIndicator />
+                </div>
+            )}
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/dsl/track-builder.ts
 ````typescript
 /**
- * EpisodeRenderer - Universal Episode Rendering Component
+ * WhatsApp v2 Track Builder - App-specific track for WhatsApp events
  * 
- * This SINGLE component renders ALL episodes. No more individual video files.
+ * @description Provides DSL verbs for WhatsApp interactions:
+ * - receive() - Incoming message
+ * - send() - Outgoing message  
+ * - typing() - Typing indicator
+ * - react() - Emoji reaction
  * 
- * Features:
- * - Receives episodeId via props
- * - Resolves episode from registry
- * - Handles preparation, rendering, errors
- * - Uses Remotion best practices (delayRender, etc.)
- * 
- * @see docs-v2/EPISODE-ARCH.md
+ * @see docs-v2/DSL_REVAMP.md#app-track-plugin-system
  */
 
-import React, { useMemo, useState, useEffect } from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, delayRender, continueRender } from "remotion";
-import { runEpisode, createEventIndex } from "@tokovo/core";
-import { prepareTrackEpisode, type PreparedTrackEpisode } from "@tokovo/compiler";
-import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
-import { iPhone16Profile } from "@tokovo/devices";
-import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
-import { KeyboardPlugin } from "@tokovo/device-keyboard";
-import { episodeRegistry, getFormat, type EpisodeDefinition } from "@tokovo/episodes";
+import type { TrackMessageRef } from "@tokovo/ir";
 
-// Import device reducers (side-effects)
-import "@tokovo/devices";
-import "@tokovo/device-keyboard";
+// Local type for WhatsApp track events
+type WhatsAppTrackEvent = {
+    at: number;
+    duration?: number;
+    deviceId: string;
+    kind: "APP";
+    appId: "app_whatsapp";
+    type: string;
+    payload: Record<string, any>;
+    _declarationOrder: number;
+};
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-export type EpisodeRendererProps = {
-    episodeId: string;
-};
+type GetDeclarationOrder = () => number;
 
-// =============================================================================
-// CALCULATE METADATA (for Remotion's calculateMetadata prop)
-// =============================================================================
+export interface ReceiveOptions {
+    silent?: boolean;
+    replyTo?: TrackMessageRef;
+}
 
-/**
- * Calculate metadata for dynamic composition configuration.
- * Used by Remotion's calculateMetadata prop.
- */
-export async function calculateEpisodeMetadata({ props }: { props: EpisodeRendererProps }) {
-    const episode = episodeRegistry.get(props.episodeId);
-    if (!episode) {
-        console.warn(`[calculateEpisodeMetadata] Episode not found: ${props.episodeId}`);
-        return {};
-    }
+export interface SendOptions {
+    silent?: boolean;
+}
 
-    const format = typeof episode.config.format === "string"
-        ? getFormat(episode.config.format as any)
-        : episode.config.format;
+export interface ImageOptions {
+    caption?: string;
+    height?: number;
+}
 
-    return {
-        durationInFrames: episode.config.durationInFrames,
-        fps: format.fps,
-        width: format.width,
-        height: format.height,
-    };
+export interface TypingOptions {
+    actor?: string;
 }
 
 // =============================================================================
-// PLUGIN RESOLVER
+// POINT BUILDER (at)
 // =============================================================================
 
-/**
- * Resolve plugins from app IDs.
- * TODO: Make this dynamic based on episode.config.apps
- */
-function resolvePlugins(appIds: string[]) {
-    const plugins: any[] = [];
+export class WhatsAppPointBuilder {
+    constructor(
+        private _frame: number,
+        private _fps: number,
+        private _deviceId: string,
+        private _conversationId: string,
+        private _events: WhatsAppTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
 
-    if (appIds.includes("app_whatsapp")) {
-        plugins.push(WhatsAppPluginV2);
+    /**
+     * Receive a message from someone.
+     */
+    receive(from: string, text: string, options: ReceiveOptions = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                text,
+                silent: options.silent,
+                replyTo: options.replyTo,
+            },
+            _declarationOrder: this._getOrder(),
+        });
     }
-    if (appIds.includes("keyboard")) {
-        plugins.push(KeyboardPlugin);
-    }
-    // Add more plugin mappings as needed
 
-    return plugins;
+    /**
+     * Send a message.
+     */
+    send(text: string, options: SendOptions = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "MESSAGE_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                text,
+                silent: options.silent,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive an image.
+     */
+    receiveImage(from: string, url: string, options: ImageOptions = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "IMAGE_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                url,
+                caption: options.caption,
+                height: options.height,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send an image.
+     */
+    sendImage(url: string, options: ImageOptions = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "IMAGE_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                caption: options.caption,
+                messageType: "image",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a video.
+     */
+    receiveVideo(from: string, url: string, options: { duration?: number; caption?: string } = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VIDEO_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                url,
+                duration: options.duration ?? 10,
+                caption: options.caption,
+                messageType: "video",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a video.
+     */
+    sendVideo(url: string, options: { duration?: number; caption?: string } = {}): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VIDEO_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                duration: options.duration ?? 10,
+                caption: options.caption,
+                messageType: "video",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a voice note.
+     */
+    receiveVoice(from: string, duration: number): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VOICE_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                duration,
+                messageType: "voice",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a voice note.
+     */
+    sendVoice(duration: number): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "VOICE_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                duration,
+                messageType: "voice",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Receive a GIF.
+     */
+    receiveGif(from: string, url: string): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GIF_RECEIVED",
+            payload: {
+                conversationId: this._conversationId,
+                from,
+                url,
+                messageType: "gif",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Send a GIF.
+     */
+    sendGif(url: string): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GIF_SENT",
+            payload: {
+                conversationId: this._conversationId,
+                url,
+                messageType: "gif",
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * React to a message.
+     */
+    react(messageRef: TrackMessageRef, emoji: string): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "REACT",
+            payload: {
+                conversationId: this._conversationId,  // Required for reducer!
+                messageRef,
+                emoji,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
+
+    /**
+     * Mark conversation as read.
+     */
+    read(): void {
+        this._events.push({
+            at: this._frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "READ",
+            payload: {
+                conversationId: this._conversationId,
+            },
+            _declarationOrder: this._getOrder(),
+        });
+    }
 }
 
 // =============================================================================
-// EPISODE RENDERER COMPONENT
+// SPAN BUILDER (span)
 // =============================================================================
 
-// Wrapper that forces remount when episodeId changes
-export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
-    // Get the active composition ID from Remotion
-    const videoConfig = useVideoConfig();
-    const activeCompositionId = (videoConfig as any).id;
+export class WhatsAppSpanBuilder {
+    constructor(
+        private _startFrame: number,
+        private _endFrame: number,
+        private _deviceId: string,
+        private _conversationId: string,
+        private _events: WhatsAppTrackEvent[],
+        private _getOrder: GetDeclarationOrder
+    ) { }
 
-    // DEBUG: Log the raw prop value
-    console.log(`[EpisodeRenderer WRAPPER] episodeId="${episodeId}", activeComposition="${activeCompositionId}"`);
-
-    // Only render if this composition is the active one
-    // This prevents Remotion from rendering all compositions simultaneously
-    if (activeCompositionId && activeCompositionId !== episodeId) {
-        return null; // Not the active composition, skip rendering
-    }
-
-    // Key forces complete remount when episodeId changes
-    return <EpisodeRendererInner key={episodeId} episodeId={episodeId} />;
-};
-
-// Inner component that does the actual rendering
-const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
-    const frame = useCurrentFrame();
-    const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));
-    const [prepared, setPrepared] = useState<PreparedTrackEpisode | null>(null);
-    const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
-    const [error, setError] = useState<Error | null>(null);
-
-    // === PREPARE EPISODE (runs once on mount) ===
-    useEffect(() => {
-        console.log(`[EpisodeRenderer] 🎬 MOUNTING: ${episodeId}`);
-        try {
-            const ep = episodeRegistry.get(episodeId);
-            console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
-                episodeId,
-                found: !!ep,
-                foundId: ep?.meta?.id,
-                title: ep?.meta?.title,
-            });
-            if (!ep) {
-                throw new Error(`Episode not found: ${episodeId}`);
+    /**
+     * Show typing indicator for the span duration.
+     * NOTE: Use keyboard track for actual key animation.
+     */
+    typing(actor: string = "them"): void {
+        this._events.push(
+            {
+                at: this._startFrame,
+                duration: this._endFrame - this._startFrame,
+                deviceId: this._deviceId,
+                kind: "APP",
+                appId: "app_whatsapp",
+                type: "TYPING_START",
+                payload: {
+                    conversationId: this._conversationId,
+                    actor,
+                },
+                _declarationOrder: this._getOrder(),
+            },
+            {
+                at: this._endFrame,
+                deviceId: this._deviceId,
+                kind: "APP",
+                appId: "app_whatsapp",
+                type: "TYPING_END",
+                payload: {
+                    conversationId: this._conversationId,
+                    actor,
+                },
+                _declarationOrder: this._getOrder(),
             }
-            setEpisode(ep);
-
-            console.log(`[EpisodeRenderer] Building episode: ${episodeId}`);
-            const ir = ep.build();
-
-            console.log(`[EpisodeRenderer] Preparing episode: ${episodeId}`);
-            const plugins = resolvePlugins(ep.config.apps);
-            const result = prepareTrackEpisode(ir, plugins);
-
-            console.log(`[EpisodeRenderer] Episode ready: ${episodeId}`, {
-                events: result.events.length,
-                devices: Object.keys(result.initialWorld?.devices || {}).length,
-            });
-
-            setPrepared(result);
-            continueRender(handle);
-        } catch (e) {
-            console.error(`[EpisodeRenderer] Failed to prepare: ${episodeId}`, e);
-            setError(e as Error);
-            continueRender(handle);
-        }
-    }, [episodeId, handle]);
-
-    // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
-    // (React rules of hooks - hooks must be called unconditionally)
-
-    // === RUN EPISODE AT CURRENT FRAME ===
-    const world = useMemo(() => {
-        if (!prepared) return null;
-        return runEpisode(prepared as any, frame, { mode: "preview" });
-    }, [prepared, frame]);
-
-    // === CREATE EVENT INDEX ===
-    const eventIndex = useMemo(() => {
-        if (!prepared) return null;
-        return createEventIndex(prepared.events as any);
-    }, [prepared]);
-
-    // === CALCULATE FORMAT AND SCALE ===
-    const { format, scale } = useMemo(() => {
-        if (!episode) {
-            return { format: null, scale: 1 };
-        }
-        const fmt = typeof episode.config.format === "string"
-            ? getFormat(episode.config.format as any)
-            : episode.config.format;
-        const s = Math.min(
-            fmt.width / iPhone16Profile.dimensions.width,
-            fmt.height / iPhone16Profile.dimensions.height
         );
-        return { format: fmt, scale: s };
-    }, [episode]);
+    }
+}
 
-    // === ERROR STATE ===
-    if (error) {
-        return (
-            <AbsoluteFill style={errorStyle}>
-                <div style={{ fontSize: 80, marginBottom: 24 }}>⚠️</div>
-                <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>
-                    Episode Failed to Load
-                </h1>
-                <div style={{ color: "#8892B0", fontSize: 18, marginBottom: 32 }}>
-                    Episode: <code>{episodeId}</code>
-                </div>
-                <div style={errorBoxStyle}>
-                    <code style={{ color: "#FF6B6B", fontSize: 14, whiteSpace: "pre-wrap" }}>
-                        {error.message}
-                    </code>
-                </div>
-                {error.stack && (
-                    <details style={{ marginTop: 24, color: "#8892B0", maxWidth: 800 }}>
-                        <summary style={{ cursor: "pointer" }}>Stack Trace</summary>
-                        <pre style={{ fontSize: 10, overflow: "auto", maxHeight: 150 }}>
-                            {error.stack}
-                        </pre>
-                    </details>
-                )}
-            </AbsoluteFill>
+// =============================================================================
+// WHATSAPP TRACK BUILDER
+// =============================================================================
+
+/**
+ * Parse time to frames.
+ */
+function parseTime(time: string | number, fps: number): number {
+    if (typeof time === "number") return Math.round(time);
+    const trimmed = time.trim();
+    if (trimmed.endsWith("ms")) {
+        return Math.round((parseFloat(trimmed.slice(0, -2)) / 1000) * fps);
+    }
+    if (trimmed.endsWith("s")) {
+        return Math.round(parseFloat(trimmed.slice(0, -1)) * fps);
+    }
+    return Math.round(parseFloat(trimmed));
+}
+
+export class WhatsAppTrackBuilder {
+    _events: WhatsAppTrackEvent[] = [];
+
+    constructor(
+        private _fps: number,
+        private _deviceId: string,
+        private _conversationId: string,
+        private _getOrder: GetDeclarationOrder
+    ) { }
+
+    /**
+     * Create a point (instant) operation at a specific time.
+     */
+    at(time: string | number): WhatsAppPointBuilder {
+        const frame = parseTime(time, this._fps);
+        return new WhatsAppPointBuilder(
+            frame,
+            this._fps,
+            this._deviceId,
+            this._conversationId,
+            this._events,
+            this._getOrder
         );
     }
 
-    // === LOADING STATE ===
-    if (!prepared || !episode || !world || !eventIndex) {
-        const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
-        return (
-            <AbsoluteFill style={loadingStyle}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
-                <div style={{ fontSize: 20, color: "#8696A0", opacity }}>
-                    Loading {episodeId}...
-                </div>
-            </AbsoluteFill>
+    /**
+     * Create a span (duration) operation between two times.
+     */
+    span(start: string | number, end: string | number): WhatsAppSpanBuilder {
+        const startFrame = parseTime(start, this._fps);
+        const endFrame = parseTime(end, this._fps);
+        return new WhatsAppSpanBuilder(
+            startFrame,
+            endFrame,
+            this._deviceId,  // FIXED: was passing _fps by mistake!
+            this._conversationId,
+            this._events,
+            this._getOrder
         );
     }
 
-    // === RENDER ===
-    return (
-        <AbsoluteFill style={{ backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
-            <AudioLayer world={world} t={frame} />
-            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
-                <TokovoRenderer
-                    world={world}
-                    t={frame}
-                    debug={false}
-                    eventIndex={eventIndex}
-                    directorEnabled={true}
-                    directorDebug={false}
-                />
-            </div>
-            {/* DEBUG: Show which episode is actually rendering */}
-            <div style={{
-                position: "absolute",
-                top: 10,
-                left: 10,
-                background: "rgba(0,0,0,0.7)",
-                color: "#00ff00",
-                padding: "4px 8px",
-                borderRadius: 4,
-                fontSize: 12,
-                fontFamily: "monospace",
-                zIndex: 9999,
-            }}>
-                📺 {episode?.meta?.id} | {episode?.meta?.title}
-            </div>
-        </AbsoluteFill>
-    );
-};
+    /**
+     * Switch to a different conversation at a specific time.
+     * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
+     */
+    switchTo(conversationId: string, time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "CONVERSATION_OPENED",
+            payload: {
+                conversationId,
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+        // Update internal conversation ID for subsequent methods
+        (this as any)._conversationId = conversationId;
+    }
 
+    /**
+     * Open the chat list screen at a specific time.
+     * Emits core NAVIGATE_SCREEN event (handled by navigation.ts)
+     */
+    openChatList(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "NAVIGATE_SCREEN",
+            payload: {
+                screen: "chats",
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
 
-// =============================================================================
-// STYLES
-// =============================================================================
+    /**
+     * Go back to previous screen at a specific time.
+     * Emits core GO_BACK event (handled by navigation.ts)
+     */
+    goBack(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "GO_BACK",
+            payload: {},
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
 
-const errorStyle: React.CSSProperties = {
-    background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 48,
-    fontFamily: "SF Pro Display, -apple-system, sans-serif",
-};
+    /**
+     * Open profile screen at a specific time.
+     */
+    openProfile(time: string | number = "0s"): void {
+        const frame = parseTime(time, this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "NAVIGATE_SCREEN",
+            payload: {
+                screen: "profile",
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
 
-const errorBoxStyle: React.CSSProperties = {
-    background: "rgba(255, 107, 107, 0.1)",
-    border: "1px solid rgba(255, 107, 107, 0.3)",
-    borderRadius: 12,
-    padding: 24,
-    maxWidth: 800,
-    width: "100%",
-};
+    /**
+     * Add a date separator (e.g., "Today", "Yesterday").
+     */
+    dateSeparator(text: string = "Today"): void {
+        const frame = parseTime("0s", this._fps);
+        this._events.push({
+            at: frame,
+            deviceId: this._deviceId,
+            kind: "APP",
+            appId: "app_whatsapp",
+            type: "DATE_SEPARATOR",
+            payload: {
+                conversationId: this._conversationId,
+                text,
+            },
+            _declarationOrder: this._getOrder(),
+        } as any);
+    }
+}
 
-const loadingStyle: React.CSSProperties = {
-    background: "#0B141A",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-};
-
-export default EpisodeRenderer;
+/**
+ * Create a new WhatsApp track builder factory.
+ */
+export function createWhatsAppTrackBuilder(
+    fps: number,
+    deviceId: string,
+    conversationId: string,
+    getOrder: GetDeclarationOrder
+): WhatsAppTrackBuilder {
+    return new WhatsAppTrackBuilder(fps, deviceId, conversationId, getOrder);
+}
 ````
 
-## File: packages/apps-whatsapp/src/assets/audio-rules.ts
+## File: packages/apps-whatsapp/src/anchors.ts
 ````typescript
-import { AutoSoundRule } from "@tokovo/core";
-import { APP_IDS } from "@tokovo/core";
+/**
+ * WhatsApp Anchor Provider
+ * 
+ * Provides semantic anchors for camera focus operations.
+ * Anchors are computed at runtime based on message layout.
+ * 
+ * Usage in DSL:
+ *   camera.focus("app_whatsapp:last-message");
+ *   camera.focus("app_whatsapp:message-{id}");
+ *   camera.focus("app_whatsapp:profile");
+ *   camera.focus("app_whatsapp:header");
+ */
 
-export const whatsappAudioRules: AutoSoundRule[] = [
-    // === RUNTIME EVENTS (after lowering, kind=APP) ===
-    {
-        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_SENT" },
-        action: "PLAY_ONE_SHOT",
-        sound: "app_whatsapp.message_out",
-        bus: "ui",
-        duckMusic: true
-    },
-    {
-        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_RECEIVED" },
-        action: "PLAY_ONE_SHOT",
-        sound: "app_whatsapp.message_in",
-        bus: "ui",
-        duckMusic: true
-    },
-    {
-        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_START" },
-        action: "START_LOOP",
-        sound: "app_whatsapp.typing_loop",
-        bus: "sfx",
-        volume: 0.4,
-        idTemplate: "typing_{conversationId}_{from}"
-    },
-    {
-        match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_END" },
-        action: "STOP_SOUND",
-        stopId: "typing_{conversationId}_{from}"
-    },
+import type { AnchorProvider, AnchorMap, DOMRect } from "@tokovo/core";
 
-];
+// =============================================================================
+// ANCHOR IDS
+// =============================================================================
+
+export const WHATSAPP_ANCHORS = {
+    HEADER: "header",
+    PROFILE: "profile",
+    INPUT: "input",
+    TYPING: "typing",
+    LAST_MESSAGE: "last-message",
+    MESSAGE: "message", // message-{id}
+} as const;
+
+// =============================================================================
+// ANCHOR PROVIDER
+// =============================================================================
+
+/**
+ * WhatsApp anchor provider implementation.
+ * Returns anchor points for camera focus.
+ */
+export const whatsappAnchorProvider: AnchorProvider = {
+    appId: "app_whatsapp",
+
+    /**
+     * Compute anchors from current DOM layout.
+     * Called by the anchor system when camera.focus is triggered.
+     */
+    getAnchors(containerRef: HTMLElement | null): AnchorMap {
+        if (!containerRef) return {};
+
+        const anchors: AnchorMap = {};
+
+        // Header anchor
+        const header = containerRef.querySelector('[data-anchor="header"]');
+        if (header) {
+            anchors["header"] = getElementRect(header as HTMLElement, containerRef);
+        }
+
+        // Profile anchor (avatar in header)
+        const profile = containerRef.querySelector('[data-anchor="profile"]');
+        if (profile) {
+            anchors["profile"] = getElementRect(profile as HTMLElement, containerRef);
+        }
+
+        // Input bar anchor
+        const input = containerRef.querySelector('[data-anchor="input"]');
+        if (input) {
+            anchors["input"] = getElementRect(input as HTMLElement, containerRef);
+        }
+
+        // Typing indicator anchor
+        const typing = containerRef.querySelector('[data-anchor="typing"]');
+        if (typing) {
+            anchors["typing"] = getElementRect(typing as HTMLElement, containerRef);
+        }
+
+        // Message anchors (all messages with data-message-id)
+        const messages = containerRef.querySelectorAll('[data-message-id]');
+        let lastMessageId: string | null = null;
+
+        messages.forEach((msg) => {
+            const msgElement = msg as HTMLElement;
+            const messageId = msgElement.dataset.messageId;
+            if (messageId) {
+                anchors[`message-${messageId}`] = getElementRect(msgElement, containerRef);
+                lastMessageId = messageId;
+            }
+        });
+
+        // Last message shorthand
+        if (lastMessageId) {
+            anchors["last-message"] = anchors[`message-${lastMessageId}`];
+        }
+
+        return anchors;
+    },
+};
+
+// =============================================================================
+// HELPERS
+// =============================================================================
+
+/**
+ * Get element rect relative to container.
+ */
+function getElementRect(element: HTMLElement, container: HTMLElement): DOMRect {
+    const elemRect = element.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+
+    return {
+        x: elemRect.left - containerRect.left,
+        y: elemRect.top - containerRect.top,
+        width: elemRect.width,
+        height: elemRect.height,
+        top: elemRect.top - containerRect.top,
+        left: elemRect.left - containerRect.left,
+        right: elemRect.right - containerRect.left,
+        bottom: elemRect.bottom - containerRect.top,
+    } as DOMRect;
+}
+
+/**
+ * Register WhatsApp anchors with the anchor system.
+ */
+export function registerWhatsAppAnchors(): void {
+    // Registration happens via plugin system
+    console.log("[WhatsApp] Anchor provider registered");
+}
+````
+
+## File: packages/apps-whatsapp/src/styles.ts
+````typescript
+export const injectWhatsAppStyles = () => {
+    if (typeof document === 'undefined') return;
+    if (document.getElementById('tokovo-whatsapp-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'tokovo-whatsapp-styles';
+    style.innerHTML = `
+        :root {
+            /* 
+             * WhatsApp iOS Theme - "Tokovo Production Grade"
+             * Based on iOS 17/18 specs
+             */
+
+            /* --- Brand Colors --- */
+            --wa-color-primary: #007AFF;         /* iOS Blue */
+            --wa-color-accent: #34C759;          /* iOS Green */
+            --wa-color-destructive: #FF3B30;     /* iOS Red */
+
+            /* --- Backgrounds --- */
+            --wa-bg-primary: #FFFFFF;
+            --wa-bg-secondary: #F2F2F7;          /* System Grouped Background */
+            --wa-bg-tertiary: #FFFFFF;
+            --wa-bg-header: #f4f1eb; /* Solid Beige */
+            --wa-bg-input: #F2F2F7;
+            
+            /* --- Chat Background --- */
+            --wa-bg-chat: #f4f1eb;               /* Classic Beige */
+            --wa-doodle-opacity: 0.08;           /* Subtle doodle pattern */
+            
+            /* --- Bubbles --- */
+            --wa-bubble-in-bg: #FFFFFF;
+            --wa-bubble-out-bg: #E7FFDB;         /* Classic Green Hint */
+            --wa-bubble-in-pressed: #F2F2F7;
+            --wa-bubble-out-pressed: #D3EFC4;
+
+            /* --- Text --- */
+            --wa-text-primary: #000000;
+            --wa-text-secondary: #8E8E93;
+            --wa-text-tertiary: #C7C7CC;
+            --wa-text-on-color: #FFFFFF;
+            
+            /* --- Separators --- */
+            --wa-separator: rgba(60, 60, 67, 0.29); /* iOS Separator */
+            --wa-separator-non-opaque: #C6C6C8;
+
+            /* --- Status Bar --- */
+            --wa-status-bar-height: 47px; /* Dynamic Island area */
+            
+            /* --- Dimensions & Spacing --- */
+            --wa-header-height: 44px;
+            --wa-input-height: 56px;
+            --wa-corner-radius-l: 18px;    /* Bubble radius */
+            --wa-corner-radius-m: 12px;
+            --wa-corner-radius-s: 6px;
+
+            /* --- Shadows --- */
+            --wa-shadow-sm: 0 1px 2px rgba(0,0,0,0.05); /* Subtle bubble shadow */
+        }
+
+        /* DARK MODE - iOS Standard */
+        [data-theme='dark'] {
+            /* --- Brand Colors --- */
+            --wa-color-primary: #0A84FF;
+            --wa-color-accent: #30D158;
+            --wa-color-destructive: #FF453A;
+
+            /* --- Backgrounds --- */
+            --wa-bg-primary: #000000;
+            --wa-bg-secondary: #1C1C1E;
+            --wa-bg-tertiary: #2C2C2E;
+            --wa-bg-header: rgba(10, 10, 10, 0.94);
+            --wa-bg-input: #1C1C1E;
+
+            /* --- Chat Background --- */
+            --wa-bg-chat: #0B141A;
+            --wa-doodle-opacity: 0.06;
+
+            /* --- Bubbles --- */
+            --wa-bubble-in-bg: #1F2C34;          /* Dark Gray Blue */
+            --wa-bubble-out-bg: #005C4B;         /* Dark Teal */
+            --wa-bubble-in-pressed: #2A3942;
+            --wa-bubble-out-pressed: #025043;
+
+            /* --- Text --- */
+            --wa-text-primary: #FFFFFF;
+            --wa-text-secondary: #8E8E93;
+            --wa-text-tertiary: #48484A;
+            --wa-text-on-color: #FFFFFF;
+
+            /* --- Separators --- */
+            --wa-separator: rgba(84, 84, 88, 0.65);
+            --wa-separator-non-opaque: #38383A;
+            
+            /* --- Shadows --- */
+            --wa-shadow-sm: 0 1px 1px rgba(0,0,0,0.2); 
+        }
+
+        /* UTILITIES */
+        .wa-ios-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+        
+        .wa-ios-font {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+    `;
+    document.head.appendChild(style);
+};
 ````
 
 ## File: packages/compiler/src/v2/prepare.ts
@@ -62357,6 +64682,57 @@ export type { LayoutStrategy } from "./layout";
 // Note: AnchorRegistry is exported from ../anchors (not duplicated here)
 ````
 
+## File: packages/core/src/types/index.ts
+````typescript
+/**
+ * Types Index - Enterprise Types
+ * 
+ * @description Central export for all core types.
+ * Domain-organized type files for maintainability.
+ */
+
+// =============================================================================
+// DOMAIN TYPES (New - Split from types.ts)
+// =============================================================================
+
+// Notification system
+export * from "./notification";
+
+// Device, OS, Keyboard, Call
+export * from "./device";
+
+// Camera effects and transforms
+export * from "./camera";
+
+// Audio system
+export * from "./audio";
+
+// Layout system
+export * from "./layout";
+
+// WorldState
+export * from "./world-state";
+
+// =============================================================================
+// ENTERPRISE TYPES (Existing)
+// =============================================================================
+
+// RuntimeEvent - Payload-based event system
+export * from "./runtime-event";
+
+// CompiledEpisode - The only runtime input
+export * from "./compiled-episode";
+
+// Plugin Contract - Tiered plugin system
+export * from "./plugin-contract";
+
+// Anchor types - V2 camera positioning
+export * from "./anchor";
+
+// StatusBar theming
+export * from "./statusbar-theme";
+````
+
 ## File: packages/device-camera/src/processors/index.ts
 ````typescript
 /**
@@ -62630,9 +65006,119 @@ export function processActiveEffects(
 }
 ````
 
-## File: packages/device-camera/tsconfig.tsbuildinfo
-````
-{"fileNames":["../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.webworker.importscripts.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.scripthost.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.core.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.generator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.proxy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.reflect.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.array.include.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asyncgenerator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.bigint.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.number.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.weakref.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.disposable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.iterator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.float16.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.full.d.ts","./src/types/index.ts","./src/anchors/types.ts","./src/anchors/registry.ts","./src/anchors/resolver.ts","./src/anchors/index.ts","./src/utils/index.ts","./src/processors/index.ts","./src/director-lite/types.ts","./src/director-lite/strategy.ts","./src/director-lite/derive.ts","./src/director-lite/signals.ts","./src/director-lite/index.ts","./src/reducer/index.ts","./src/presets.ts","./src/lowering/handler.ts","./src/lowering/index.ts","./src/plugin.ts","./src/index.ts","./src/processors/types.ts","./src/processors/reset.ts","./src/processors/shake.ts","./src/processors/track.ts","./src/processors/zoom.ts","../../node_modules/.pnpm/@types+estree@1.0.8/node_modules/@types/estree/index.d.ts","../../node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema/index.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/use-at-your-own-risk.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/index.d.ts","../../node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/disposable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/indexable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/iterators.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.typedarray.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/abortcontroller.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/domexception.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/events.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/header.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/readable.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/file.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/fetch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/formdata.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/connector.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-origin.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool-stats.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/handlers.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/balanced-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-interceptor.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/env-http-proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-handler.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/api.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/interceptors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/util.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cookies.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/patch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/websocket.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/eventsource.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/filereader.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/diagnostics-channel.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/content-type.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cache.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/fetch.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert/strict.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/async_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/child_process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/cluster.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/console.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/constants.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/crypto.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dgram.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/diagnostics_channel.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/domain.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http2.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/https.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/inspector.generated.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/module.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/net.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/os.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/path.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/perf_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/punycode.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/querystring.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/repl.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/sea.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/consumers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/web.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/string_decoder.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/test.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tls.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/trace_events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tty.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/url.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/util.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/v8.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/vm.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/wasi.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/worker_threads.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/zlib.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/index.d.ts"],"fileIdsList":[[110,113,120,166],[110,111,112,120,166],[113,120,166],[120,166],[120,163,166],[120,165,166],[166],[120,166,171,199],[120,166,167,172,177,185,196,207],[120,166,167,168,177,185],[115,116,117,120,166],[120,166,169,208],[120,166,170,171,178,186],[120,166,171,196,204],[120,166,172,174,177,185],[120,165,166,173],[120,166,174,175],[120,166,176,177],[120,165,166,177],[120,166,177,178,179,196,207],[120,166,177,178,179,192,196,199],[120,166,174,177,180,185,196,207],[120,166,177,178,180,181,185,196,204,207],[120,166,180,182,196,204,207],[118,119,120,121,122,123,124,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,177,183],[120,166,184,207,212],[120,166,174,177,185,196],[120,166,186],[120,166,187],[120,165,166,188],[120,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,190],[120,166,191],[120,166,177,192,193],[120,166,192,194,208,210],[120,166,177,196,197,199],[120,166,198,199],[120,166,196,197],[120,166,199],[120,166,200],[120,163,166,196,201],[120,166,177,202,203],[120,166,202,203],[120,166,171,185,196,204],[120,166,205],[120,166,185,206],[120,166,180,191,207],[120,166,171,208],[120,166,196,209],[120,166,184,210],[120,166,211],[120,161,166],[120,161,166,177,179,188,196,199,207,210,212],[120,166,196,213],[120,133,137,166,207],[120,133,166,196,207],[120,128,166],[120,130,133,166,204,207],[120,166,185,204],[120,166,214],[120,128,166,214],[120,130,133,166,185,207],[120,125,126,129,132,166,177,196,207],[120,133,140,166],[120,125,131,166],[120,133,154,155,166],[120,129,133,166,199,207,214],[120,154,166,214],[120,127,128,166,214],[120,133,166],[120,127,128,129,130,131,132,133,134,135,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,155,156,157,158,159,160,166],[120,133,148,166],[120,133,140,141,166],[120,131,133,141,142,166],[120,132,166],[120,125,128,133,166],[120,133,137,141,142,166],[120,137,166],[120,131,133,136,166,207],[120,125,130,133,140,166],[120,166,196],[120,128,133,154,166,212,214],[88,89,90,120,166],[88,120,166],[88,89,120,166],[87,92,94,95,120,166],[87,94,95,96,97,120,166],[94,120,166],[87,91,92,93,98,99,100,102,103,120,166],[101,120,166],[99,120,166],[87,88,90,92,120,166],[87,92,105,120,166],[87,120,166]],"fileInfos":[{"version":"c430d44666289dae81f30fa7b2edebf186ecc91a2d4c71266ea6ae76388792e1","affectsGlobalScope":true,"impliedFormat":1},{"version":"45b7ab580deca34ae9729e97c13cfd999df04416a79116c3bfb483804f85ded4","impliedFormat":1},{"version":"3facaf05f0c5fc569c5649dd359892c98a85557e3e0c847964caeb67076f4d75","impliedFormat":1},{"version":"e44bb8bbac7f10ecc786703fe0a6a4b952189f908707980ba8f3c8975a760962","impliedFormat":1},{"version":"5e1c4c362065a6b95ff952c0eab010f04dcd2c3494e813b493ecfd4fcb9fc0d8","impliedFormat":1},{"version":"68d73b4a11549f9c0b7d352d10e91e5dca8faa3322bfb77b661839c42b1ddec7","impliedFormat":1},{"version":"5efce4fc3c29ea84e8928f97adec086e3dc876365e0982cc8479a07954a3efd4","impliedFormat":1},{"version":"feecb1be483ed332fad555aff858affd90a48ab19ba7272ee084704eb7167569","impliedFormat":1},{"version":"ee7bad0c15b58988daa84371e0b89d313b762ab83cb5b31b8a2d1162e8eb41c2","impliedFormat":1},{"version":"27bdc30a0e32783366a5abeda841bc22757c1797de8681bbe81fbc735eeb1c10","impliedFormat":1},{"version":"8fd575e12870e9944c7e1d62e1f5a73fcf23dd8d3a321f2a2c74c20d022283fe","impliedFormat":1},{"version":"2ab096661c711e4a81cc464fa1e6feb929a54f5340b46b0a07ac6bbf857471f0","impliedFormat":1},{"version":"080941d9f9ff9307f7e27a83bcd888b7c8270716c39af943532438932ec1d0b9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2e80ee7a49e8ac312cc11b77f1475804bee36b3b2bc896bead8b6e1266befb43","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7a3c8b952931daebdfc7a2897c53c0a1c73624593fa070e46bd537e64dcd20a","affectsGlobalScope":true,"impliedFormat":1},{"version":"80e18897e5884b6723488d4f5652167e7bb5024f946743134ecc4aa4ee731f89","affectsGlobalScope":true,"impliedFormat":1},{"version":"cd034f499c6cdca722b60c04b5b1b78e058487a7085a8e0d6fb50809947ee573","affectsGlobalScope":true,"impliedFormat":1},{"version":"c57796738e7f83dbc4b8e65132f11a377649c00dd3eee333f672b8f0a6bea671","affectsGlobalScope":true,"impliedFormat":1},{"version":"dc2df20b1bcdc8c2d34af4926e2c3ab15ffe1160a63e58b7e09833f616efff44","affectsGlobalScope":true,"impliedFormat":1},{"version":"515d0b7b9bea2e31ea4ec968e9edd2c39d3eebf4a2d5cbd04e88639819ae3b71","affectsGlobalScope":true,"impliedFormat":1},{"version":"0559b1f683ac7505ae451f9a96ce4c3c92bdc71411651ca6ddb0e88baaaad6a3","affectsGlobalScope":true,"impliedFormat":1},{"version":"0dc1e7ceda9b8b9b455c3a2d67b0412feab00bd2f66656cd8850e8831b08b537","affectsGlobalScope":true,"impliedFormat":1},{"version":"ce691fb9e5c64efb9547083e4a34091bcbe5bdb41027e310ebba8f7d96a98671","affectsGlobalScope":true,"impliedFormat":1},{"version":"8d697a2a929a5fcb38b7a65594020fcef05ec1630804a33748829c5ff53640d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ff2a353abf8a80ee399af572debb8faab2d33ad38c4b4474cff7f26e7653b8d","affectsGlobalScope":true,"impliedFormat":1},{"version":"fb0f136d372979348d59b3f5020b4cdb81b5504192b1cacff5d1fbba29378aa1","affectsGlobalScope":true,"impliedFormat":1},{"version":"d15bea3d62cbbdb9797079416b8ac375ae99162a7fba5de2c6c505446486ac0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"68d18b664c9d32a7336a70235958b8997ebc1c3b8505f4f1ae2b7e7753b87618","affectsGlobalScope":true,"impliedFormat":1},{"version":"eb3d66c8327153d8fa7dd03f9c58d351107fe824c79e9b56b462935176cdf12a","affectsGlobalScope":true,"impliedFormat":1},{"version":"38f0219c9e23c915ef9790ab1d680440d95419ad264816fa15009a8851e79119","affectsGlobalScope":true,"impliedFormat":1},{"version":"69ab18c3b76cd9b1be3d188eaf8bba06112ebbe2f47f6c322b5105a6fbc45a2e","affectsGlobalScope":true,"impliedFormat":1},{"version":"a680117f487a4d2f30ea46f1b4b7f58bef1480456e18ba53ee85c2746eeca012","affectsGlobalScope":true,"impliedFormat":1},{"version":"2f11ff796926e0832f9ae148008138ad583bd181899ab7dd768a2666700b1893","affectsGlobalScope":true,"impliedFormat":1},{"version":"4de680d5bb41c17f7f68e0419412ca23c98d5749dcaaea1896172f06435891fc","affectsGlobalScope":true,"impliedFormat":1},{"version":"954296b30da6d508a104a3a0b5d96b76495c709785c1d11610908e63481ee667","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac9538681b19688c8eae65811b329d3744af679e0bdfa5d842d0e32524c73e1c","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a969edff4bd52585473d24995c5ef223f6652d6ef46193309b3921d65dd4376","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e9fbd7030c440b33d021da145d3232984c8bb7916f277e8ffd3dc2e3eae2bdb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811ec78f7fefcabbda4bfa93b3eb67d9ae166ef95f9bff989d964061cbf81a0c","affectsGlobalScope":true,"impliedFormat":1},{"version":"717937616a17072082152a2ef351cb51f98802fb4b2fdabd32399843875974ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7e7d9b7b50e5f22c915b525acc5a49a7a6584cf8f62d0569e557c5cfc4b2ac2","affectsGlobalScope":true,"impliedFormat":1},{"version":"71c37f4c9543f31dfced6c7840e068c5a5aacb7b89111a4364b1d5276b852557","affectsGlobalScope":true,"impliedFormat":1},{"version":"576711e016cf4f1804676043e6a0a5414252560eb57de9faceee34d79798c850","affectsGlobalScope":true,"impliedFormat":1},{"version":"89c1b1281ba7b8a96efc676b11b264de7a8374c5ea1e6617f11880a13fc56dc6","affectsGlobalScope":true,"impliedFormat":1},{"version":"74f7fa2d027d5b33eb0471c8e82a6c87216223181ec31247c357a3e8e2fddc5b","affectsGlobalScope":true,"impliedFormat":1},{"version":"d6d7ae4d1f1f3772e2a3cde568ed08991a8ae34a080ff1151af28b7f798e22ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"063600664504610fe3e99b717a1223f8b1900087fab0b4cad1496a114744f8df","affectsGlobalScope":true,"impliedFormat":1},{"version":"934019d7e3c81950f9a8426d093458b65d5aff2c7c1511233c0fd5b941e608ab","affectsGlobalScope":true,"impliedFormat":1},{"version":"52ada8e0b6e0482b728070b7639ee42e83a9b1c22d205992756fe020fd9f4a47","affectsGlobalScope":true,"impliedFormat":1},{"version":"3bdefe1bfd4d6dee0e26f928f93ccc128f1b64d5d501ff4a8cf3c6371200e5e6","affectsGlobalScope":true,"impliedFormat":1},{"version":"59fb2c069260b4ba00b5643b907ef5d5341b167e7d1dbf58dfd895658bda2867","affectsGlobalScope":true,"impliedFormat":1},{"version":"639e512c0dfc3fad96a84caad71b8834d66329a1f28dc95e3946c9b58176c73a","affectsGlobalScope":true,"impliedFormat":1},{"version":"368af93f74c9c932edd84c58883e736c9e3d53cec1fe24c0b0ff451f529ceab1","affectsGlobalScope":true,"impliedFormat":1},{"version":"af3dd424cf267428f30ccfc376f47a2c0114546b55c44d8c0f1d57d841e28d74","affectsGlobalScope":true,"impliedFormat":1},{"version":"995c005ab91a498455ea8dfb63aa9f83fa2ea793c3d8aa344be4a1678d06d399","affectsGlobalScope":true,"impliedFormat":1},{"version":"959d36cddf5e7d572a65045b876f2956c973a586da58e5d26cde519184fd9b8a","affectsGlobalScope":true,"impliedFormat":1},{"version":"965f36eae237dd74e6cca203a43e9ca801ce38824ead814728a2807b1910117d","affectsGlobalScope":true,"impliedFormat":1},{"version":"3925a6c820dcb1a06506c90b1577db1fdbf7705d65b62b99dce4be75c637e26b","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a3d63ef2b853447ec4f749d3f368ce642264246e02911fcb1590d8c161b8005","affectsGlobalScope":true,"impliedFormat":1},{"version":"8cdf8847677ac7d20486e54dd3fcf09eda95812ac8ace44b4418da1bbbab6eb8","affectsGlobalScope":true,"impliedFormat":1},{"version":"8444af78980e3b20b49324f4a16ba35024fef3ee069a0eb67616ea6ca821c47a","affectsGlobalScope":true,"impliedFormat":1},{"version":"3287d9d085fbd618c3971944b65b4be57859f5415f495b33a6adc994edd2f004","affectsGlobalScope":true,"impliedFormat":1},{"version":"b4b67b1a91182421f5df999988c690f14d813b9850b40acd06ed44691f6727ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"df83c2a6c73228b625b0beb6669c7ee2a09c914637e2d35170723ad49c0f5cd4","affectsGlobalScope":true,"impliedFormat":1},{"version":"436aaf437562f276ec2ddbee2f2cdedac7664c1e4c1d2c36839ddd582eeb3d0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e3c06ea092138bf9fa5e874a1fdbc9d54805d074bee1de31b99a11e2fec239d","affectsGlobalScope":true,"impliedFormat":1},{"version":"87dc0f382502f5bbce5129bdc0aea21e19a3abbc19259e0b43ae038a9fc4e326","affectsGlobalScope":true,"impliedFormat":1},{"version":"b1cb28af0c891c8c96b2d6b7be76bd394fddcfdb4709a20ba05a7c1605eea0f9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2fef54945a13095fdb9b84f705f2b5994597640c46afeb2ce78352fab4cb3279","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac77cb3e8c6d3565793eb90a8373ee8033146315a3dbead3bde8db5eaf5e5ec6","affectsGlobalScope":true,"impliedFormat":1},{"version":"56e4ed5aab5f5920980066a9409bfaf53e6d21d3f8d020c17e4de584d29600ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ece9f17b3866cc077099c73f4983bddbcb1dc7ddb943227f1ec070f529dedd1","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a6282c8827e4b9a95f4bf4f5c205673ada31b982f50572d27103df8ceb8013c","affectsGlobalScope":true,"impliedFormat":1},{"version":"1c9319a09485199c1f7b0498f2988d6d2249793ef67edda49d1e584746be9032","affectsGlobalScope":true,"impliedFormat":1},{"version":"e3a2a0cee0f03ffdde24d89660eba2685bfbdeae955a6c67e8c4c9fd28928eeb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811c71eee4aa0ac5f7adf713323a5c41b0cf6c4e17367a34fbce379e12bbf0a4","affectsGlobalScope":true,"impliedFormat":1},{"version":"51ad4c928303041605b4d7ae32e0c1ee387d43a24cd6f1ebf4a2699e1076d4fa","affectsGlobalScope":true,"impliedFormat":1},{"version":"60037901da1a425516449b9a20073aa03386cce92f7a1fd902d7602be3a7c2e9","affectsGlobalScope":true,"impliedFormat":1},{"version":"d4b1d2c51d058fc21ec2629fff7a76249dec2e36e12960ea056e3ef89174080f","affectsGlobalScope":true,"impliedFormat":1},{"version":"22adec94ef7047a6c9d1af3cb96be87a335908bf9ef386ae9fd50eeb37f44c47","affectsGlobalScope":true,"impliedFormat":1},{"version":"196cb558a13d4533a5163286f30b0509ce0210e4b316c56c38d4c0fd2fb38405","affectsGlobalScope":true,"impliedFormat":1},{"version":"73f78680d4c08509933daf80947902f6ff41b6230f94dd002ae372620adb0f60","affectsGlobalScope":true,"impliedFormat":1},{"version":"c5239f5c01bcfa9cd32f37c496cf19c61d69d37e48be9de612b541aac915805b","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e7f8264d0fb4c5339605a15daadb037bf238c10b654bb3eee14208f860a32ea","affectsGlobalScope":true,"impliedFormat":1},{"version":"782dec38049b92d4e85c1585fbea5474a219c6984a35b004963b00beb1aab538","affectsGlobalScope":true,"impliedFormat":1},{"version":"bde31fd423cd93b0eff97197a3f66df7c93e8c0c335cbeb113b7ff1ac35c23f4","impliedFormat":1},{"version":"48b3b8b8d97f7d23ed1a4782657a4035ae1bd953cbc51e8453b5dffcd3959b71","signature":"51ccfb61148b7f2f6909812b1b7159e42157c39d5a86ee5c4f2637e29c0fcc01"},{"version":"dfcd389a6bab366fa5a520042f49fe0039a2fee6ec0f3a14ab79182d87a4e2c6","signature":"9b1521dc296b55e6a2a51536eafe56c8c3a9e09057071cd1a238c9348200e5e3"},{"version":"01729c605ccb4a309ef00062a23d46a7ff3e529d8bb4bed44d55e8961c123a3e","signature":"8c01fe82f497636f0a512983301dc1f0e023dc95042e79ce9772b952b3f379ba"},{"version":"868ec29ad02e61b82d0142ce689363c2de0c656a1871863174b8a9fc836f0392","signature":"d67b2969917d86eea8f3c6064cb0c41fd97050f74316c6af32f57a818c50d147"},{"version":"e34e3bea4bb28011894599887ed6324c774df53ea95a1005ab2a5d6d1313f434","signature":"2f7240974a13feb51dcfb82e98f18c19c34a305b118e61ebc3fbe8261f2e8bdd"},{"version":"50cac1f7bb4193fcce54ddcdf0e8ef75199b273d1bd5cc4ae2a6c538d0603436","signature":"aa331bfd775aa7f7d843eb3ab67866961ccbd22603f707413754dc9fba216c08"},{"version":"899ee3f26c138885986d7b04814949725b125361e4213df03ec0b3f9877ab8c2","signature":"6847e485b08dc33a5d08a241f4401e09f0a0ff02a8afc97eef8835a3c54e74a0"},{"version":"08dcaf353b848cc5d673bb4b52776f2808ba4af4192e4b495218efba54c89a81","signature":"65176d057ac38f5398e7e4dc976e1cb32a8ed8212daaf866c1e11e1b6ad1f195"},{"version":"02ea6089e32ce6a82bed8134aa007e575dfd16cc0a270248459b4b3cd77a0c16","signature":"2cff0f47a9df649303a2eebdc93509d22328ba637773ce8811cae0c34d2939aa"},{"version":"15d9f7de8ac4dd2b603de77a2d945c11e64f74f7c7829561d3e8b427d3c5811a","signature":"55e5818bc6cbd20f88f26945bd717d1038cf78b1d868840c737e46a92a53ae7e"},{"version":"34462201bd579b9fe51baf8752da29db87582de2b1153b422f0d2dc6e69ea93e","signature":"be8cb3b164f11b63430cd1278c9d2e6906dbe428ecbba1753b683da5d51ce741"},{"version":"a453a18888b61a5bd5852ac4c30de1015a8f02e142814bbaedc019e2b052c3d6","signature":"f42d8838e79aacedd22ad383900185f896224c66067677ec66d3b88aa9f111b4"},{"version":"bc3cabe12c19bea24d148e394e30d316548e5c427828a325af3f7b41fb0adc60","signature":"14c5339bc6b6cc234d903eba7e051a05128d32fdb67fe9a00fe28c8ed5a777f9"},{"version":"e734d863ea49079bd785bef95b2879404b81f5d82a4efeb4fe46a4898c09a74c","signature":"e1ec54e2380448538c8f99bd859f3a772069511a36150afdeaa2d01abaa99243"},{"version":"bd36f20e75598369b740269b580ccf2e61fb560866afe76df5f19823382e279a","signature":"29ea4ca6ea4b5f1f83b8d76f61775cf9ffc07c24757b048ed512622c6fc65a44"},{"version":"e02e29766ec2254c31a9d6ba7ab0e566178f024a9d1d03f348fd879939d7a657","signature":"4ef6cee2bccf72863fb0875a26d125dda4e2b382371642687481d9f5284467a4"},{"version":"8d617caa67a5d6659c0ae8ea4b4583c5952a2b03ecc83d609c4eda7048290645","signature":"1061345cd792c0f141f49073cf6724ec67babd9ff1b3f0605ae9dda7da67c109"},{"version":"13c63057bf769e4bac0f07ab85b37b8351bd934b39374c709b303a2bb8a53c9f","signature":"378677c113999e1817e9126cdc302dbaf7cdc2e624b190c7afe2e8711e821ac0"},{"version":"b82fdebe2a642e93eb1816b353482aad286e83b13b8016614488cfaea5f2831c","signature":"70ae801d524f6b22676db3cd303dd63793e0281d8de9172e902bbcf47395b373"},{"version":"eae6e8df7034e09dc8c49836c996dfee10b0a3931c3001feb8a6d3df8119ae04","signature":"dc705b2994d881bd6a656bf89e749ad486605659b0fe3be6376ed16366babe6e"},{"version":"4c7870ee095003bc1f516c71a51cd740facaf856720c70aa222fffe59e6b4ba3","signature":"ca98ccac320cc234a22cc278f6a1f1ad20c99af31230efde224f7dc7cc13caba"},{"version":"2b4071c63de850bbfc060e299d82d7af1ad22d754a3154b79758559c0a5c050c","signature":"f96b484f8dc4df74800857261d36b8042d9b843f42c8bc7adc27fbcfe936bae2"},{"version":"751250daca14385b2780c58c762dfa6d6f2d188086f1863c986b21df1a791fd4","signature":"0a78a5fcad7e8d00496edab48e6007ac93d20c2d5a3c9e1e4f547c5855a53854"},{"version":"151ff381ef9ff8da2da9b9663ebf657eac35c4c9a19183420c05728f31a6761d","impliedFormat":1},{"version":"f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1","impliedFormat":1},{"version":"a4a39b5714adfcadd3bbea6698ca2e942606d833bde62ad5fb6ec55f5e438ff8","impliedFormat":1},{"version":"bbc1d029093135d7d9bfa4b38cbf8761db505026cc458b5e9c8b74f4000e5e75","impliedFormat":1},{"version":"1f68ab0e055994eb337b67aa87d2a15e0200951e9664959b3866ee6f6b11a0fe","impliedFormat":1},{"version":"70521b6ab0dcba37539e5303104f29b721bfb2940b2776da4cc818c07e1fefc1","affectsGlobalScope":true,"impliedFormat":1},{"version":"ab41ef1f2cdafb8df48be20cd969d875602483859dc194e9c97c8a576892c052","affectsGlobalScope":true,"impliedFormat":1},{"version":"d153a11543fd884b596587ccd97aebbeed950b26933ee000f94009f1ab142848","affectsGlobalScope":true,"impliedFormat":1},{"version":"21d819c173c0cf7cc3ce57c3276e77fd9a8a01d35a06ad87158781515c9a438a","impliedFormat":1},{"version":"98cffbf06d6bab333473c70a893770dbe990783904002c4f1a960447b4b53dca","affectsGlobalScope":true,"impliedFormat":1},{"version":"ba481bca06f37d3f2c137ce343c7d5937029b2468f8e26111f3c9d9963d6568d","affectsGlobalScope":true,"impliedFormat":1},{"version":"6d9ef24f9a22a88e3e9b3b3d8c40ab1ddb0853f1bfbd5c843c37800138437b61","affectsGlobalScope":true,"impliedFormat":1},{"version":"1db0b7dca579049ca4193d034d835f6bfe73096c73663e5ef9a0b5779939f3d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"9798340ffb0d067d69b1ae5b32faa17ab31b82466a3fc00d8f2f2df0c8554aaa","affectsGlobalScope":true,"impliedFormat":1},{"version":"f26b11d8d8e4b8028f1c7d618b22274c892e4b0ef5b3678a8ccbad85419aef43","affectsGlobalScope":true,"impliedFormat":1},{"version":"5929864ce17fba74232584d90cb721a89b7ad277220627cc97054ba15a98ea8f","impliedFormat":1},{"version":"763fe0f42b3d79b440a9b6e51e9ba3f3f91352469c1e4b3b67bfa4ff6352f3f4","impliedFormat":1},{"version":"25c8056edf4314820382a5fdb4bb7816999acdcb929c8f75e3f39473b87e85bc","impliedFormat":1},{"version":"c464d66b20788266e5353b48dc4aa6bc0dc4a707276df1e7152ab0c9ae21fad8","impliedFormat":1},{"version":"78d0d27c130d35c60b5e5566c9f1e5be77caf39804636bc1a40133919a949f21","impliedFormat":1},{"version":"c6fd2c5a395f2432786c9cb8deb870b9b0e8ff7e22c029954fabdd692bff6195","impliedFormat":1},{"version":"1d6e127068ea8e104a912e42fc0a110e2aa5a66a356a917a163e8cf9a65e4a75","impliedFormat":1},{"version":"5ded6427296cdf3b9542de4471d2aa8d3983671d4cac0f4bf9c637208d1ced43","impliedFormat":1},{"version":"7f182617db458e98fc18dfb272d40aa2fff3a353c44a89b2c0ccb3937709bfb5","impliedFormat":1},{"version":"cadc8aced301244057c4e7e73fbcae534b0f5b12a37b150d80e5a45aa4bebcbd","impliedFormat":1},{"version":"385aab901643aa54e1c36f5ef3107913b10d1b5bb8cbcd933d4263b80a0d7f20","impliedFormat":1},{"version":"9670d44354bab9d9982eca21945686b5c24a3f893db73c0dae0fd74217a4c219","impliedFormat":1},{"version":"0b8a9268adaf4da35e7fa830c8981cfa22adbbe5b3f6f5ab91f6658899e657a7","impliedFormat":1},{"version":"11396ed8a44c02ab9798b7dca436009f866e8dae3c9c25e8c1fbc396880bf1bb","impliedFormat":1},{"version":"ba7bc87d01492633cb5a0e5da8a4a42a1c86270e7b3d2dea5d156828a84e4882","impliedFormat":1},{"version":"4893a895ea92c85345017a04ed427cbd6a1710453338df26881a6019432febdd","impliedFormat":1},{"version":"c21dc52e277bcfc75fac0436ccb75c204f9e1b3fa5e12729670910639f27343e","impliedFormat":1},{"version":"13f6f39e12b1518c6650bbb220c8985999020fe0f21d818e28f512b7771d00f9","impliedFormat":1},{"version":"9b5369969f6e7175740bf51223112ff209f94ba43ecd3bb09eefff9fd675624a","impliedFormat":1},{"version":"4fe9e626e7164748e8769bbf74b538e09607f07ed17c2f20af8d680ee49fc1da","impliedFormat":1},{"version":"24515859bc0b836719105bb6cc3d68255042a9f02a6022b3187948b204946bd2","impliedFormat":1},{"version":"ea0148f897b45a76544ae179784c95af1bd6721b8610af9ffa467a518a086a43","impliedFormat":1},{"version":"24c6a117721e606c9984335f71711877293a9651e44f59f3d21c1ea0856f9cc9","impliedFormat":1},{"version":"dd3273ead9fbde62a72949c97dbec2247ea08e0c6952e701a483d74ef92d6a17","impliedFormat":1},{"version":"405822be75ad3e4d162e07439bac80c6bcc6dbae1929e179cf467ec0b9ee4e2e","impliedFormat":1},{"version":"0db18c6e78ea846316c012478888f33c11ffadab9efd1cc8bcc12daded7a60b6","impliedFormat":1},{"version":"e61be3f894b41b7baa1fbd6a66893f2579bfad01d208b4ff61daef21493ef0a8","impliedFormat":1},{"version":"bd0532fd6556073727d28da0edfd1736417a3f9f394877b6d5ef6ad88fba1d1a","impliedFormat":1},{"version":"89167d696a849fce5ca508032aabfe901c0868f833a8625d5a9c6e861ef935d2","impliedFormat":1},{"version":"615ba88d0128ed16bf83ef8ccbb6aff05c3ee2db1cc0f89ab50a4939bfc1943f","impliedFormat":1},{"version":"a4d551dbf8746780194d550c88f26cf937caf8d56f102969a110cfaed4b06656","impliedFormat":1},{"version":"8bd86b8e8f6a6aa6c49b71e14c4ffe1211a0e97c80f08d2c8cc98838006e4b88","impliedFormat":1},{"version":"317e63deeb21ac07f3992f5b50cdca8338f10acd4fbb7257ebf56735bf52ab00","impliedFormat":1},{"version":"4732aec92b20fb28c5fe9ad99521fb59974289ed1e45aecb282616202184064f","impliedFormat":1},{"version":"2e85db9e6fd73cfa3d7f28e0ab6b55417ea18931423bd47b409a96e4a169e8e6","impliedFormat":1},{"version":"c46e079fe54c76f95c67fb89081b3e399da2c7d109e7dca8e4b58d83e332e605","impliedFormat":1},{"version":"bf67d53d168abc1298888693338cb82854bdb2e69ef83f8a0092093c2d562107","impliedFormat":1},{"version":"2cbe0621042e2a68c7cbce5dfed3906a1862a16a7d496010636cdbdb91341c0f","affectsGlobalScope":true,"impliedFormat":1},{"version":"e2677634fe27e87348825bb041651e22d50a613e2fdf6a4a3ade971d71bac37e","impliedFormat":1},{"version":"7394959e5a741b185456e1ef5d64599c36c60a323207450991e7a42e08911419","impliedFormat":1},{"version":"8c0bcd6c6b67b4b503c11e91a1fb91522ed585900eab2ab1f61bba7d7caa9d6f","impliedFormat":1},{"version":"8cd19276b6590b3ebbeeb030ac271871b9ed0afc3074ac88a94ed2449174b776","affectsGlobalScope":true,"impliedFormat":1},{"version":"696eb8d28f5949b87d894b26dc97318ef944c794a9a4e4f62360cd1d1958014b","impliedFormat":1},{"version":"3f8fa3061bd7402970b399300880d55257953ee6d3cd408722cb9ac20126460c","impliedFormat":1},{"version":"35ec8b6760fd7138bbf5809b84551e31028fb2ba7b6dc91d95d098bf212ca8b4","affectsGlobalScope":true,"impliedFormat":1},{"version":"5524481e56c48ff486f42926778c0a3cce1cc85dc46683b92b1271865bcf015a","impliedFormat":1},{"version":"68bd56c92c2bd7d2339457eb84d63e7de3bd56a69b25f3576e1568d21a162398","affectsGlobalScope":true,"impliedFormat":1},{"version":"3e93b123f7c2944969d291b35fed2af79a6e9e27fdd5faa99748a51c07c02d28","impliedFormat":1},{"version":"9d19808c8c291a9010a6c788e8532a2da70f811adb431c97520803e0ec649991","impliedFormat":1},{"version":"87aad3dd9752067dc875cfaa466fc44246451c0c560b820796bdd528e29bef40","impliedFormat":1},{"version":"4aacb0dd020eeaef65426153686cc639a78ec2885dc72ad220be1d25f1a439df","impliedFormat":1},{"version":"f0bd7e6d931657b59605c44112eaf8b980ba7f957a5051ed21cb93d978cf2f45","impliedFormat":1},{"version":"8db0ae9cb14d9955b14c214f34dae1b9ef2baee2fe4ce794a4cd3ac2531e3255","affectsGlobalScope":true,"impliedFormat":1},{"version":"15fc6f7512c86810273af28f224251a5a879e4261b4d4c7e532abfbfc3983134","impliedFormat":1},{"version":"58adba1a8ab2d10b54dc1dced4e41f4e7c9772cbbac40939c0dc8ce2cdb1d442","impliedFormat":1},{"version":"2fd4c143eff88dabb57701e6a40e02a4dbc36d5eb1362e7964d32028056a782b","impliedFormat":1},{"version":"714435130b9015fae551788df2a88038471a5a11eb471f27c4ede86552842bc9","impliedFormat":1},{"version":"855cd5f7eb396f5f1ab1bc0f8580339bff77b68a770f84c6b254e319bbfd1ac7","impliedFormat":1},{"version":"5650cf3dace09e7c25d384e3e6b818b938f68f4e8de96f52d9c5a1b3db068e86","impliedFormat":1},{"version":"1354ca5c38bd3fd3836a68e0f7c9f91f172582ba30ab15bb8c075891b91502b7","affectsGlobalScope":true,"impliedFormat":1},{"version":"27fdb0da0daf3b337c5530c5f266efe046a6ceb606e395b346974e4360c36419","impliedFormat":1},{"version":"2d2fcaab481b31a5882065c7951255703ddbe1c0e507af56ea42d79ac3911201","impliedFormat":1},{"version":"afbe24ab0d74694372baa632ecb28bb375be53f3be53f9b07ecd7fc994907de5","impliedFormat":1},{"version":"ca867399f7db82df981d6915bcbb2d81131d7d1ef683bc782b59f71dda59bc85","affectsGlobalScope":true,"impliedFormat":1},{"version":"00877fef624f3171c2e44944fb63a55e2a9f9120d7c8b5eb4181c263c9a077cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e043a1bc8fbf2a255bccf9bf27e0f1caf916c3b0518ea34aa72357c0afd42ec","impliedFormat":1},{"version":"b4f70ec656a11d570e1a9edce07d118cd58d9760239e2ece99306ee9dfe61d02","impliedFormat":1},{"version":"3bc2f1e2c95c04048212c569ed38e338873f6a8593930cf5a7ef24ffb38fc3b6","impliedFormat":1},{"version":"6e70e9570e98aae2b825b533aa6292b6abd542e8d9f6e9475e88e1d7ba17c866","impliedFormat":1},{"version":"f9d9d753d430ed050dc1bf2667a1bab711ccbb1c1507183d794cc195a5b085cc","impliedFormat":1},{"version":"9eece5e586312581ccd106d4853e861aaaa1a39f8e3ea672b8c3847eedd12f6e","impliedFormat":1},{"version":"47ab634529c5955b6ad793474ae188fce3e6163e3a3fb5edd7e0e48f14435333","impliedFormat":1},{"version":"37ba7b45141a45ce6e80e66f2a96c8a5ab1bcef0fc2d0f56bb58df96ec67e972","impliedFormat":1},{"version":"45650f47bfb376c8a8ed39d4bcda5902ab899a3150029684ee4c10676d9fbaee","impliedFormat":1},{"version":"0225ecb9ed86bdb7a2c7fd01f1556906902929377b44483dc4b83e03b3ef227d","affectsGlobalScope":true,"impliedFormat":1},{"version":"74cf591a0f63db318651e0e04cb55f8791385f86e987a67fd4d2eaab8191f730","impliedFormat":1},{"version":"5eab9b3dc9b34f185417342436ec3f106898da5f4801992d8ff38ab3aff346b5","impliedFormat":1},{"version":"12ed4559eba17cd977aa0db658d25c4047067444b51acfdcbf38470630642b23","affectsGlobalScope":true,"impliedFormat":1},{"version":"f3ffabc95802521e1e4bcba4c88d8615176dc6e09111d920c7a213bdda6e1d65","impliedFormat":1},{"version":"f9ab232778f2842ffd6955f88b1049982fa2ecb764d129ee4893cbc290f41977","impliedFormat":1},{"version":"ae56f65caf3be91108707bd8dfbccc2a57a91feb5daabf7165a06a945545ed26","impliedFormat":1},{"version":"a136d5de521da20f31631a0a96bf712370779d1c05b7015d7019a9b2a0446ca9","impliedFormat":1},{"version":"c3b41e74b9a84b88b1dca61ec39eee25c0dbc8e7d519ba11bb070918cfacf656","affectsGlobalScope":true,"impliedFormat":1},{"version":"4737a9dc24d0e68b734e6cfbcea0c15a2cfafeb493485e27905f7856988c6b29","affectsGlobalScope":true,"impliedFormat":1},{"version":"36d8d3e7506b631c9582c251a2c0b8a28855af3f76719b12b534c6edf952748d","impliedFormat":1},{"version":"1ca69210cc42729e7ca97d3a9ad48f2e9cb0042bada4075b588ae5387debd318","impliedFormat":1},{"version":"f5ebe66baaf7c552cfa59d75f2bfba679f329204847db3cec385acda245e574e","impliedFormat":1},{"version":"ed59add13139f84da271cafd32e2171876b0a0af2f798d0c663e8eeb867732cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"05db535df8bdc30d9116fe754a3473d1b6479afbc14ae8eb18b605c62677d518","impliedFormat":1},{"version":"b1810689b76fd473bd12cc9ee219f8e62f54a7d08019a235d07424afbf074d25","impliedFormat":1}],"root":[[87,109]],"options":{"composite":true,"declaration":true,"declarationMap":true,"esModuleInterop":true,"jsx":4,"module":99,"outDir":"./dist","rootDir":"./src","skipLibCheck":true,"sourceMap":true,"strict":true,"target":99},"referencedMap":[[114,1],[113,2],[112,3],[110,4],[111,4],[163,5],[164,5],[165,6],[120,7],[166,8],[167,9],[168,10],[115,4],[118,11],[116,4],[117,4],[169,12],[170,13],[171,14],[172,15],[173,16],[174,17],[175,17],[176,18],[177,19],[178,20],[179,21],[121,4],[119,4],[180,22],[181,23],[182,24],[214,25],[183,26],[184,27],[185,28],[186,29],[187,30],[188,31],[189,32],[190,33],[191,34],[192,35],[193,35],[194,36],[195,4],[196,37],[198,38],[197,39],[199,40],[200,41],[201,42],[202,43],[203,44],[204,45],[205,46],[206,47],[207,48],[208,49],[209,50],[210,51],[211,52],[122,4],[123,4],[124,4],[162,53],[212,54],[213,55],[84,4],[85,4],[15,4],[13,4],[14,4],[19,4],[18,4],[2,4],[20,4],[21,4],[22,4],[23,4],[24,4],[25,4],[26,4],[27,4],[3,4],[28,4],[29,4],[4,4],[30,4],[34,4],[31,4],[32,4],[33,4],[35,4],[36,4],[37,4],[5,4],[38,4],[39,4],[40,4],[41,4],[6,4],[45,4],[42,4],[43,4],[44,4],[46,4],[7,4],[47,4],[52,4],[53,4],[48,4],[49,4],[50,4],[51,4],[8,4],[57,4],[54,4],[55,4],[56,4],[58,4],[9,4],[59,4],[60,4],[61,4],[63,4],[62,4],[64,4],[65,4],[10,4],[66,4],[67,4],[68,4],[11,4],[69,4],[70,4],[71,4],[72,4],[73,4],[1,4],[74,4],[75,4],[12,4],[79,4],[77,4],[82,4],[81,4],[86,4],[76,4],[80,4],[78,4],[83,4],[17,4],[16,4],[140,56],[150,57],[139,56],[160,58],[131,59],[130,60],[159,61],[153,62],[158,63],[133,64],[147,65],[132,66],[156,67],[128,68],[127,61],[157,69],[129,70],[134,71],[135,4],[138,71],[125,4],[161,72],[151,73],[142,74],[143,75],[145,76],[141,77],[144,78],[154,61],[136,79],[137,80],[146,81],[126,82],[149,73],[148,71],[152,4],[155,83],[91,84],[89,85],[90,86],[88,4],[96,87],[98,88],[97,89],[95,89],[94,4],[104,90],[101,4],[102,91],[103,92],[100,4],[93,93],[106,94],[107,94],[108,94],[105,95],[109,94],[99,95],[87,4],[92,95]],"latestChangedDtsFile":"./dist/types/index.d.ts","version":"5.9.3"}
+## File: packages/device-keyboard/src/index.ts
+````typescript
+/**
+ * @tokovo/device-keyboard
+ * 
+ * Enterprise virtual keyboard plugin for Tokovo.
+ * 
+ * @example
+ * ```typescript
+ * import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
+ * 
+ * episode("demo", { fps: 30, duration: "30s" })
+ *     .track("keyboard",
+ *         () => new KeyboardTrackBuilder(30, "phone", getOrder),
+ *         kb => {
+ *             kb.at("4s").show();
+ *             kb.span("5s", "10s").type("Hello!", { speed: "normal" });
+ *             kb.at("12s").hide();
+ *         }
+ *     )
+ * ```
+ */
+
+// =============================================================================
+// PLUGIN
+// =============================================================================
+
+export { KeyboardPlugin, registerKeyboardPlugin, type DeviceKeyboardPlugin } from "./plugin";
+
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export * from "./types";
+
+// =============================================================================
+// CONFIG
+// =============================================================================
+
+export * from "./config";
+
+// =============================================================================
+// IR
+// =============================================================================
+
+export * from "./ir";
+
+// =============================================================================
+// DSL
+// =============================================================================
+
+export { KeyboardTrackBuilder } from "./dsl/track-builder";
+export * from "./dsl/helpers";
+
+// =============================================================================
+// RUNTIME
+// =============================================================================
+
+export { keyboardReducer } from "./reducer";
+export * from "./runtime/selectors";
+export { createKeyboardInitialState } from "./runtime/initial-state";
+
+// =============================================================================
+// VIEWS
+// =============================================================================
+
+export { KeyboardSurface } from "./views/KeyboardSurface";
+export { KeyboardStrategyRegistry, type KeyboardUIStrategy } from "./views/strategy";
+// Re-export iOS components (themes are in config/)
+export { IOSKeyboard, IOSKey, IOSKeyRow, IOSKeyPopup, IOSPredictionBar } from "./views/ios";
+export { IOSPrediction } from "./views/ios/prediction";
+
+// =============================================================================
+// CAMERA
+// =============================================================================
+
+export { KeyboardBehavior, getKeyboardIntent } from "./camera/behaviors";
+export { KeyboardAnchors, getKeyRect } from "./runtime/adapters/anchors";
+
+// =============================================================================
+// LOWERING
+// =============================================================================
+
+export { keyboardV2Lowering, lowerKeyboardEvent } from "./lowering";
+
+// =============================================================================
+// ASSETS
+// =============================================================================
+
+export { keyboardAudioRules } from "./assets/audio-rules";
+
+// =============================================================================
+// AUTO-REGISTRATION
+// =============================================================================
+
+import { ReducerRegistry, AutoSoundRegistry, SoundRegistry } from "@tokovo/core";
+import { keyboardReducer } from "./reducer";
+import { keyboardAudioRules } from "./assets/audio-rules";
+
+// Keyboard sound paths
+const keyboardSounds = {
+    "keyboard_click": "core/keyboard/typing_loop.wav",
+    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
+};
+
+// Register on import
+ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
+ReducerRegistry.registerAppReducer("keyboard", keyboardReducer); // NEW: Enable APP event routing
+AutoSoundRegistry.register(keyboardAudioRules);
+SoundRegistry.registerMany(keyboardSounds);
+
+// Import components to register strategies
+import "./views/ios/IOSKeyboard";
 ````
 
 ## File: packages/episodes/src/production/keyboard-typing-demo.episode.ts
@@ -63091,367 +65577,1397 @@ function lerp(a: number, b: number, t: number): number {
 }
 ````
 
-## File: packages/device-keyboard/src/reducer.ts
+## File: apps/video-runner/src/EpisodeRenderer.tsx
 ````typescript
-import {
-    WorldState,
-    TimelineEvent,
-    ReducerRegistry,
-    FeatureReducer
-} from "@tokovo/core";
-
 /**
- * processKeyboardEvent
+ * EpisodeRenderer - Universal Episode Rendering Component
  * 
- * Handles all KEYBOARD specific events.
- * Manages the virtual keyboard state in `device.keyboard`.
- * Automatically injects INPUT_CHANGE events into the foreground app.
+ * This SINGLE component renders ALL episodes. No more individual video files.
+ * 
+ * Features:
+ * - Receives episodeId via props
+ * - Resolves episode from registry
+ * - Handles preparation, rendering, errors
+ * - Uses Remotion best practices (delayRender, etc.)
+ * 
+ * @see docs-v2/EPISODE-ARCH.md
  */
-export const keyboardReducer: FeatureReducer = (
-    draft: WorldState,
-    event: TimelineEvent,
-    index?: number
-) => {
-    // Shared Device Access
-    const eventAny = event as any;
-    const deviceId = eventAny.deviceId || Object.keys(draft.devices)[0];
-    const device = draft.devices[deviceId];
-    if (!device) return;
 
-    // INITIALIZATION: The "Gold Standard" of robustness.
-    // Ensure device.keyboard always exists if a keyboard event is being processed.
-    if (!device.keyboard) {
-        device.keyboard = {
-            visible: false,
-            layout: "qwerty",
-            currentKey: null,
-            keyPressedAt: null,
-            inputText: "",
-            cursorPosition: 0,
-            cursorVisible: true,
-            visibilityChangedAt: -1,
-            suggestions: [],
-            highlightedSuggestion: null,
-            selectionStart: null,
-            selectionEnd: null,
-            keyPressVisual: null,
-        } as any;
-    }
+import React, { useMemo, useState, useEffect } from "react";
+import { AbsoluteFill, useCurrentFrame, useVideoConfig, delayRender, continueRender } from "remotion";
+import { runEpisode, createEventIndex } from "@tokovo/core";
+import { prepareTrackEpisode, type PreparedTrackEpisode } from "@tokovo/compiler";
+import { TokovoRenderer, AudioLayer } from "@tokovo/renderer";
+import { iPhone16Profile } from "@tokovo/devices";
+import { WhatsAppPluginV2 } from "@tokovo/apps-whatsapp";
+import { InstagramPlugin } from "@tokovo/apps-instagram";
+import { KeyboardPlugin } from "@tokovo/device-keyboard";
+import { episodeRegistry, getFormat, type EpisodeDefinition } from "@tokovo/episodes";
 
-    const keyboard = device.keyboard!;
+// Import device reducers (side-effects)
+import "@tokovo/devices";
+import "@tokovo/device-keyboard";
 
-    // Handle V2 Ops
-    if (event.kind === "KeyboardType") {
-        const e = event as import("@tokovo/ir").KeyboardTypeOp;
-        // Append text (simulating typing)
-        const textToAppend = e.text;
-        const pos = keyboard.cursorPosition;
-        const currentText = keyboard.inputText;
-        const newText = currentText.slice(0, pos) + textToAppend + currentText.slice(pos);
+// =============================================================================
+// TYPES
+// =============================================================================
 
-        keyboard.inputText = newText;
-        keyboard.cursorPosition = pos + textToAppend.length;
-
-        // AUTOMATION: Inject into App
-        injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-
-        // AUDIO: Handled by AutoSound Rules
-        return;
-    }
-
-    if (event.kind === "KeyboardInput") {
-        const e = event as import("@tokovo/ir").KeyboardInputOp;
-        if (e.type === "keyDown") {
-            keyboard.currentKey = e.key;
-            keyboard.keyPressedAt = event.at;
-
-            // Handle Backspace logic for V2
-            if (e.key === "Backspace") {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                if (pos > 0) {
-                    const newText = text.slice(0, pos - 1) + text.slice(pos);
-                    keyboard.inputText = newText;
-                    keyboard.cursorPosition = pos - 1;
-                    // Inject into App
-                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-                }
-            }
-
-            // AUDIO: Handled by AutoSound Rules
-        } else {
-            keyboard.currentKey = null;
-            keyboard.keyPressedAt = null;
-        }
-        return;
-    }
-
-    // Handle V2 Ops & Legacy Ops
-    // We remove the strict kind guard to allow this to act as both a FeatureReducer 
-    // and an AppReducer for kind: "APP", appId: "keyboard".
-
-    const eventType = (event as any).type;
-
-    switch (eventType) {
-        case "SHOW":
-            keyboard.visible = true;
-            keyboard.layout = (event as any).layout || "qwerty";
-            keyboard.inputText = "";
-            keyboard.cursorPosition = 0;
-            keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "HIDE":
-            keyboard.visible = false;
-            keyboard.currentKey = null;
-            keyboard.visibilityChangedAt = event.at;
-            break;
-
-        case "KEY_DOWN": {
-            const key = (event as any).key;
-            keyboard.currentKey = key;
-            keyboard.keyPressedAt = event.at;
-
-            // Handle character insertion for printable keys
-            if (key.length === 1) {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                const newText = text.slice(0, pos) + key + text.slice(pos);
-                keyboard.inputText = newText;
-                keyboard.cursorPosition = pos + 1;
-
-                // AUTOMATION: Inject into App
-                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            } else if (key === "Backspace") {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                if (pos > 0) {
-                    const newText = text.slice(0, pos - 1) + text.slice(pos);
-                    keyboard.inputText = newText;
-                    keyboard.cursorPosition = pos - 1;
-                    // Inject into App
-                    injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-                }
-            }
-            break;
-        }
-
-        case "KEY_UP":
-            keyboard.currentKey = null;
-            keyboard.keyPressedAt = null;
-            break;
-
-        case "TYPE_CHAR": {
-            const char = (event as any).char;
-            // Add character to input
-            const pos = keyboard.cursorPosition;
-            const text = keyboard.inputText;
-            const newText = text.slice(0, pos) + char + text.slice(pos);
-            keyboard.inputText = newText;
-            keyboard.cursorPosition = pos + 1;
-            keyboard.currentKey = char;
-            keyboard.keyPressedAt = event.at;
-
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            // AUDIO: Handled by AutoSound Rules
-            break;
-        }
-
-        case "BACKSPACE": {
-            if (keyboard.cursorPosition > 0) {
-                const pos = keyboard.cursorPosition;
-                const text = keyboard.inputText;
-                const newText = text.slice(0, pos - 1) + text.slice(pos);
-                keyboard.inputText = newText;
-                keyboard.cursorPosition = pos - 1;
-
-                // AUTOMATION: Inject into App
-                injectInputToApp(draft, device.foregroundAppId, newText, event.at);
-            }
-            keyboard.currentKey = "⌫";
-            keyboard.keyPressedAt = event.at;
-            // AUDIO: Handled by AutoSound Rules
-            break;
-        }
-
-        case "SET_TEXT": {
-            const text = (event as any).text;
-            keyboard.inputText = text;
-            keyboard.cursorPosition = text.length;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, text, event.at);
-            break;
-        }
-
-        case "TYPING_SEQUENCE": {
-            // Enterprise pattern: Store schedule, renderer derives key press from frame
-            const e = event as any;
-            keyboard.typingSchedule = {
-                entries: e.schedule,
-                text: e.text,
-                startFrame: e.startFrame,
-                endFrame: e.endFrame,
-            };
-            // Set final text immediately (renderer will animate progressively)
-            keyboard.inputText = e.text;
-            keyboard.cursorPosition = e.text.length;
-            // AUTOMATION: Inject final text into App (apps can derive if needed)
-            injectInputToApp(draft, device.foregroundAppId, e.text, e.endFrame);
-            break;
-        }
-
-        case "CLEAR":
-            keyboard.inputText = "";
-            keyboard.cursorPosition = 0;
-            keyboard.typingSchedule = null;
-            // AUTOMATION: Inject into App
-            injectInputToApp(draft, device.foregroundAppId, "", event.at);
-            break;
-    }
+export type EpisodeRendererProps = {
+    episodeId: string;
 };
 
+// =============================================================================
+// CALCULATE METADATA (for Remotion's calculateMetadata prop)
+// =============================================================================
+
 /**
- * Helper to push input changes to the active app
+ * Calculate metadata for dynamic composition configuration.
+ * Used by Remotion's calculateMetadata prop.
  */
-function injectInputToApp(draft: WorldState, appId: string | undefined, text: string, at: number) {
-    if (!appId) return;
-    const reducer = ReducerRegistry.getAppReducer(appId);
-    if (reducer) {
-        reducer(draft, { // Use legacy event format expected by apps
-            kind: "APP",
-            type: "INPUT_CHANGE",
-            appId,
-            payload: { text },
-            at
-        } as any);
+export async function calculateEpisodeMetadata({ props }: { props: EpisodeRendererProps }) {
+    const episode = episodeRegistry.get(props.episodeId);
+    if (!episode) {
+        console.warn(`[calculateEpisodeMetadata] Episode not found: ${props.episodeId}`);
+        return {};
+    }
+
+    const format = typeof episode.config.format === "string"
+        ? getFormat(episode.config.format as any)
+        : episode.config.format;
+
+    return {
+        durationInFrames: episode.config.durationInFrames,
+        fps: format.fps,
+        width: format.width,
+        height: format.height,
+    };
+}
+
+// =============================================================================
+// PLUGIN RESOLVER
+// =============================================================================
+
+/**
+ * Resolve plugins from app IDs.
+ * TODO: Make this dynamic based on episode.config.apps
+ */
+function resolvePlugins(appIds: string[]) {
+    const plugins: any[] = [];
+
+    if (appIds.includes("app_whatsapp")) {
+        plugins.push(WhatsAppPluginV2);
+    }
+    if (appIds.includes("app_instagram")) {
+        plugins.push(InstagramPlugin);
+    }
+    if (appIds.includes("keyboard")) {
+        plugins.push(KeyboardPlugin);
+    }
+    // Add more plugin mappings as needed
+
+    return plugins;
+}
+
+// =============================================================================
+// EPISODE RENDERER COMPONENT
+// =============================================================================
+
+// Wrapper that forces remount when episodeId changes
+export const EpisodeRenderer: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
+    // Get the active composition ID from Remotion
+    const videoConfig = useVideoConfig();
+    const activeCompositionId = (videoConfig as any).id;
+
+    // DEBUG: Log the raw prop value
+    console.log(`[EpisodeRenderer WRAPPER] episodeId="${episodeId}", activeComposition="${activeCompositionId}"`);
+
+    // Only render if this composition is the active one
+    // This prevents Remotion from rendering all compositions simultaneously
+    if (activeCompositionId && activeCompositionId !== episodeId) {
+        return null; // Not the active composition, skip rendering
+    }
+
+    // Key forces complete remount when episodeId changes
+    return <EpisodeRendererInner key={episodeId} episodeId={episodeId} />;
+};
+
+// Inner component that does the actual rendering
+const EpisodeRendererInner: React.FC<EpisodeRendererProps> = ({ episodeId }) => {
+    const frame = useCurrentFrame();
+    const [handle] = useState(() => delayRender(`Loading episode: ${episodeId}`));
+    const [prepared, setPrepared] = useState<PreparedTrackEpisode | null>(null);
+    const [episode, setEpisode] = useState<EpisodeDefinition | null>(null);
+    const [error, setError] = useState<Error | null>(null);
+
+    // === PREPARE EPISODE (runs once on mount) ===
+    useEffect(() => {
+        console.log(`[EpisodeRenderer] 🎬 MOUNTING: ${episodeId}`);
+        try {
+            const ep = episodeRegistry.get(episodeId);
+            console.log(`[EpisodeRenderer] 📦 Got from registry:`, {
+                episodeId,
+                found: !!ep,
+                foundId: ep?.meta?.id,
+                title: ep?.meta?.title,
+            });
+            if (!ep) {
+                throw new Error(`Episode not found: ${episodeId}`);
+            }
+            setEpisode(ep);
+
+            console.log(`[EpisodeRenderer] Building episode: ${episodeId}`);
+            const ir = ep.build();
+
+            console.log(`[EpisodeRenderer] Preparing episode: ${episodeId}`);
+            const plugins = resolvePlugins(ep.config.apps);
+            const result = prepareTrackEpisode(ir, plugins);
+
+            console.log(`[EpisodeRenderer] Episode ready: ${episodeId}`, {
+                events: result.events.length,
+                devices: Object.keys(result.initialWorld?.devices || {}).length,
+            });
+
+            setPrepared(result);
+            continueRender(handle);
+        } catch (e) {
+            console.error(`[EpisodeRenderer] Failed to prepare: ${episodeId}`, e);
+            setError(e as Error);
+            continueRender(handle);
+        }
+    }, [episodeId, handle]);
+
+    // === ALL HOOKS MUST BE CALLED BEFORE CONDITIONAL RETURNS ===
+    // (React rules of hooks - hooks must be called unconditionally)
+
+    // === RUN EPISODE AT CURRENT FRAME ===
+    const world = useMemo(() => {
+        if (!prepared) return null;
+        return runEpisode(prepared as any, frame, { mode: "preview" });
+    }, [prepared, frame]);
+
+    // === CREATE EVENT INDEX ===
+    const eventIndex = useMemo(() => {
+        if (!prepared) return null;
+        return createEventIndex(prepared.events as any);
+    }, [prepared]);
+
+    // === CALCULATE FORMAT AND SCALE ===
+    const { format, scale } = useMemo(() => {
+        if (!episode) {
+            return { format: null, scale: 1 };
+        }
+        const fmt = typeof episode.config.format === "string"
+            ? getFormat(episode.config.format as any)
+            : episode.config.format;
+        const s = Math.min(
+            fmt.width / iPhone16Profile.dimensions.width,
+            fmt.height / iPhone16Profile.dimensions.height
+        );
+        return { format: fmt, scale: s };
+    }, [episode]);
+
+    // === ERROR STATE ===
+    if (error) {
+        return (
+            <AbsoluteFill style={errorStyle}>
+                <div style={{ fontSize: 80, marginBottom: 24 }}>⚠️</div>
+                <h1 style={{ color: "#FF6B6B", fontSize: 32, marginBottom: 16 }}>
+                    Episode Failed to Load
+                </h1>
+                <div style={{ color: "#8892B0", fontSize: 18, marginBottom: 32 }}>
+                    Episode: <code>{episodeId}</code>
+                </div>
+                <div style={errorBoxStyle}>
+                    <code style={{ color: "#FF6B6B", fontSize: 14, whiteSpace: "pre-wrap" }}>
+                        {error.message}
+                    </code>
+                </div>
+                {error.stack && (
+                    <details style={{ marginTop: 24, color: "#8892B0", maxWidth: 800 }}>
+                        <summary style={{ cursor: "pointer" }}>Stack Trace</summary>
+                        <pre style={{ fontSize: 10, overflow: "auto", maxHeight: 150 }}>
+                            {error.stack}
+                        </pre>
+                    </details>
+                )}
+            </AbsoluteFill>
+        );
+    }
+
+    // === LOADING STATE ===
+    if (!prepared || !episode || !world || !eventIndex) {
+        const opacity = 0.5 + 0.5 * Math.sin((frame * Math.PI) / 30);
+        return (
+            <AbsoluteFill style={loadingStyle}>
+                <div style={{ fontSize: 48, marginBottom: 16 }}>🎬</div>
+                <div style={{ fontSize: 20, color: "#8696A0", opacity }}>
+                    Loading {episodeId}...
+                </div>
+            </AbsoluteFill>
+        );
+    }
+
+    // === RENDER ===
+    return (
+        <AbsoluteFill style={{ backgroundColor: "#0a0a0f", justifyContent: "center", alignItems: "center" }}>
+            <AudioLayer world={world} t={frame} />
+            <div style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>
+                <TokovoRenderer
+                    world={world}
+                    t={frame}
+                    debug={false}
+                    eventIndex={eventIndex}
+                    directorEnabled={true}
+                    directorDebug={false}
+                />
+            </div>
+            {/* DEBUG: Show which episode is actually rendering */}
+            <div style={{
+                position: "absolute",
+                top: 10,
+                left: 10,
+                background: "rgba(0,0,0,0.7)",
+                color: "#00ff00",
+                padding: "4px 8px",
+                borderRadius: 4,
+                fontSize: 12,
+                fontFamily: "monospace",
+                zIndex: 9999,
+            }}>
+                📺 {episode?.meta?.id} | {episode?.meta?.title}
+            </div>
+        </AbsoluteFill>
+    );
+};
+
+
+// =============================================================================
+// STYLES
+// =============================================================================
+
+const errorStyle: React.CSSProperties = {
+    background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 48,
+    fontFamily: "SF Pro Display, -apple-system, sans-serif",
+};
+
+const errorBoxStyle: React.CSSProperties = {
+    background: "rgba(255, 107, 107, 0.1)",
+    border: "1px solid rgba(255, 107, 107, 0.3)",
+    borderRadius: 12,
+    padding: 24,
+    maxWidth: 800,
+    width: "100%",
+};
+
+const loadingStyle: React.CSSProperties = {
+    background: "#0B141A",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+};
+
+export default EpisodeRenderer;
+````
+
+## File: packages/apps-whatsapp/src/components/ios/MessageBubble.tsx
+````typescript
+import React from "react";
+import { Check, CheckCheck } from "lucide-react";
+import { getTheme } from "./theme";
+import { MessageContent } from "./MessageContent";
+import { MessageData } from "../../types";
+
+interface MessageBubbleProps {
+    message: MessageData;
+    isMe: boolean;
+    isFirst: boolean;
+    isLast: boolean;
+    /** Group chat mode - enables sender name display */
+    isGroupChat?: boolean;
+    /** Sender name to display (for group chats) */
+    senderName?: string;
+    /** Sender name color (for group chats) */
+    senderColor?: string;
+    /** Whether to show sender name for this specific message */
+    showSenderName?: boolean;
+}
+
+export const MessageBubble: React.FC<MessageBubbleProps> = ({
+    message,
+    isMe,
+    isFirst,
+    isLast,
+    isGroupChat = false,
+    senderName,
+    senderColor,
+    showSenderName = false,
+}) => {
+    const theme = getTheme("ios");
+    const isSystem = message.type === "system";
+
+    // Determine if we should show sender name for this bubble
+    // Only show for "other" messages in group chats, at the start of a run
+    const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
+
+    if (isSystem) {
+        // System messages render outside the bubble flow directly
+        return <MessageContent message={message} />;
+    }
+
+    // Only show tail for the FIRST message in a group (Visual Run)
+    const showTail = isFirst;
+
+    // Corner Radius Logic (Visual Run)
+    // Top-Left: Sharp if Receiver & First
+    // Top-Right: Sharp if Sender & First
+    const borderTopLeft = !isMe && isFirst ? 0 : 16;
+    const borderTopRight = isMe && isFirst ? 0 : 16;
+
+    // Bottoms are rounded unless it's a middle/first message in a run, then we might want smaller radius?
+    // standard WhatsApp iOS:
+    // First: Rounded except corner
+    // Middle: Rounded
+    // Last: Rounded
+    // Actually, usually in rapid succession they look 'stacked'. 
+    // For now keeping simple logic: 16px everywhere else.
+
+    // ANCHOR DATA
+    // We attach data-anchor="message" and data-message-id={id} 
+    // so the camera system can find this element.
+
+    return (
+        <div
+            data-anchor="message"
+            data-message-id={message.id}
+            style={{
+                alignSelf: isMe ? "flex-end" : "flex-start",
+                maxWidth: "75%", // Standard width constraint
+                position: "relative",
+                // Visual Run Spacing: 
+                // If isLast (of group), we rely on parent margin. 
+                // Inside group, we use small margin.
+                marginBottom: 2,
+                display: "flex",
+                flexDirection: "column"
+            }}
+        >
+            <div style={{
+                backgroundColor: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
+                borderRadius: 16,
+                borderTopLeftRadius: borderTopLeft,
+                borderTopRightRadius: borderTopRight,
+                // Refined padding: 6px standard
+                padding: "6px 7px 8px 9px",
+                boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
+                display: "flex",
+                flexDirection: "column",
+                minWidth: 80
+            }}>
+                {/* Sender Name (Group Chats Only) */}
+                {shouldShowSender && (
+                    <span style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: senderColor || "#00A884", // Fallback color
+                        marginBottom: 2,
+                        display: "block",
+                    }}>
+                        {senderName}
+                    </span>
+                )}
+
+                {/* Reply-To Preview */}
+                {message.replyTo && (
+                    <div style={{
+                        backgroundColor: "rgba(0, 0, 0, 0.06)",
+                        borderLeft: `3px solid ${theme.colors.primary}`,
+                        borderRadius: 4,
+                        padding: "4px 8px",
+                        marginBottom: 4,
+                        fontSize: 12,
+                        cursor: "pointer"
+                    }}>
+                        <div style={{
+                            color: theme.colors.primary,
+                            fontWeight: 500,
+                            marginBottom: 2,
+                        }}>
+                            {message.replyTo.from || "You"}
+                        </div>
+                        <div style={{
+                            color: theme.colors.bubbleText,
+                            opacity: 0.7,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                            maxWidth: 200,
+                        }}>
+                            {message.replyTo.text || "📷 Photo"}
+                        </div>
+                    </div>
+                )}
+
+                {/* Content Layer */}
+                <div style={{ color: theme.colors.bubbleText }}>
+                    <MessageContent message={message} />
+                </div>
+
+                {/* Metadata Row (Time + Read) */}
+                <div style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    alignItems: "center",
+                    gap: 4,
+                    marginTop: 2,
+                    // float: "right" // Could float for "compact" text, but flex row is safer
+                }}>
+                    <span style={{
+                        fontSize: 11,
+                        color: theme.colors.bubbleTime,
+                    }}>
+                        {message.timestamp || "10:00"}
+                    </span>
+                    {isMe && (
+                        message.status === "read" ?
+                            <CheckCheck size={14} color={theme.colors.primary} /> : // Read Blue
+                            <Check size={14} color={theme.colors.bubbleTime} /> // Sent Gray
+                    )}
+                </div>
+            </div>
+
+            {/* Reactions - Floating pill at bottom-right like WhatsApp */}
+            {message.reactions && message.reactions.length > 0 && (
+                <div style={{
+                    position: "absolute",
+                    bottom: -8,
+                    right: isMe ? 8 : undefined,
+                    left: isMe ? undefined : 8,
+                    display: "flex",
+                    gap: 2,
+                    zIndex: 1,
+                }}>
+                    {message.reactions.map((reaction, idx) => (
+                        <span
+                            key={`${reaction.emoji}_${idx}`}
+                            style={{
+                                background: theme.colors.background, // Match app bg or bubble bg? usually white/app bg
+                                borderRadius: 10,
+                                padding: "2px 6px",
+                                fontSize: 12,
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 2,
+                                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                                border: `1px solid ${theme.colors.separator}`,
+                            }}
+                        >
+                            {reaction.emoji}
+                            {reaction.count > 1 && (
+                                <span style={{ fontSize: 10, color: theme.colors.secondary }}>
+                                    {reaction.count}
+                                </span>
+                            )}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* SVG Tail */}
+            {showTail && (
+                <svg
+                    width="12" height="20" // Logical size for tail
+                    viewBox="0 0 12 20"
+                    style={{
+                        position: "absolute",
+                        [isMe ? "right" : "left"]: -6, // Overlap slightly to merge
+                        top: 0,
+                        fill: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
+                        transform: isMe ? "scaleX(1)" : "scaleX(-1)",
+                        zIndex: -1 // Behind
+                    }}
+                >
+                    {/* Authentic WhatsApp Tail Path approximation */}
+                    <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
+                </svg>
+            )}
+        </div>
+    );
+};
+````
+
+## File: packages/apps-whatsapp/src/runtime/reducer.ts
+````typescript
+/**
+ * WhatsApp Runtime Reducer
+ * 
+ * Handles all WhatsApp-specific events.
+ * Uses explicit type checking for safer event handling.
+ * 
+ * Message types supported:
+ * - text: Regular text messages
+ * - image: Image with optional caption
+ * - video: Video with thumbnail and duration
+ * - gif: Animated GIF
+ * - voice: Voice note with waveform
+ * - system: System messages (member added/removed, etc.)
+ * - deleted: Deleted message placeholder
+ * - call_missed: Missed call indicator
+ * - screenshot_alert: Screenshot notification
+ */
+
+import {
+    TimelineEvent,
+    WorldState,
+    ReducerRegistry,
+    APP_IDS
+} from "@tokovo/core";
+
+// Import WhatsApp-specific types (all app types now live in plugin)
+import {
+    WhatsAppMessage,
+    WhatsAppConversation,
+    WhatsAppState,
+    WhatsAppMessageType,
+    WhatsAppGroupMember,
+} from "../types";
+
+// Import group operation types
+import {
+    GROUP_EVENT_TYPES,
+    isWhatsAppGroupEvent,
+    isGroupMemberAddPayload,
+    isGroupMemberRemovePayload,
+    isGroupAdminChangePayload,
+    GroupMemberAddPayload,
+    GroupMemberRemovePayload,
+    GroupAdminChangePayload,
+} from "../ir/group-ops";
+
+// =============================================================================
+// TYPE-SAFE ACCESSORS
+// =============================================================================
+
+/**
+ * Get WhatsApp conversations from WorldState with type safety.
+ */
+function getConversations(draft: WorldState): Record<string, WhatsAppConversation> {
+    return draft.conversations as Record<string, WhatsAppConversation>;
+}
+
+/**
+ * Get or create WhatsApp app state with type safety.
+ */
+function getAppState(draft: WorldState): WhatsAppState {
+    if (!draft.appState) {
+        draft.appState = {};
+    }
+    if (!draft.appState.app_whatsapp) {
+        draft.appState.app_whatsapp = {};
+    }
+    return draft.appState.app_whatsapp as WhatsAppState;
+}
+
+/**
+ * Generate a realistic timestamp string from frame number.
+ * 
+ * ENTERPRISE PATTERN: Frame-based time simulation using world config
+ * - FPS: Read from world.config.fps (defaults to 30)
+ * - Base time: Read from device OS clock (defaults to 10:42)
+ * - Progression: 1 timeline second = 1 story minute
+ * 
+ * Example at 30fps from 10:42 base:
+ * - frame 0   (0s timeline)  → 10:42
+ * - frame 90  (3s timeline)  → 10:45 (3 min later)
+ * - frame 750 (25s timeline) → 11:07 (25 min later)
+ * 
+ * @param frame - Current frame number
+ * @param draft - WorldState to read config from
+ * @param deviceId - Device ID to get OS clock from (optional)
+ */
+function generateTimestamp(frame: number, draft: WorldState, deviceId?: string): string {
+    // Get FPS from config (enterprise pattern - no hardcoding!)
+    const fps = draft.config?.fps ?? 30;
+
+    // Try to get base time from device OS clock
+    let baseTime: Date;
+    if (deviceId && draft.devices?.[deviceId]?.os?.clock) {
+        baseTime = new Date(draft.devices[deviceId].os!.clock);
+    } else {
+        // Fallback: use 10:42 as default
+        baseTime = new Date("2024-01-01T10:42:00");
+    }
+
+    const baseHour = baseTime.getHours();
+    const baseMinute = baseTime.getMinutes();
+
+    // Convert frames to "story minutes": 1 timeline second = 1 story minute
+    const timelineSeconds = frame / fps;
+    const storyMinutesElapsed = Math.floor(timelineSeconds);
+
+    // Calculate final time
+    const totalMinutes = baseMinute + storyMinutesElapsed;
+    const hours = (baseHour + Math.floor(totalMinutes / 60)) % 24;  // Wrap at 24h
+    const minutes = totalMinutes % 60;
+
+    return `${hours}:${minutes.toString().padStart(2, "0")}`;
+}
+
+/**
+ * WhatsApp reducer - handles all WhatsApp events
+ */
+export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+    // Handle CustomOp events with WhatsApp namespace
+    if (event.kind === "Custom") {
+        handleCustomOp(draft, event as any);
+        return;
+    }
+
+    // Only handle APP events for WhatsApp
+    if (event.kind !== "APP") return;
+
+    // Type assertion for APP events with extended payload
+    const appEvent = event as TimelineEvent & {
+        appId: string;
+        conversationId?: string;
+        from?: string;
+        text?: string;
+        message?: Partial<WhatsAppMessage>;
+        // Media-specific fields
+        imageUrl?: string;
+        thumbnailUrl?: string;
+        videoUrl?: string;
+        gifUrl?: string;
+        caption?: string;
+        // Group-specific fields
+        memberId?: string;
+        memberName?: string;
+        addedBy?: string;
+        removedBy?: string;
+        // Voice-specific fields
+        duration?: number;
+        // Read receipt fields
+        messageId?: string;
+        // Navigation fields
+        screen?: string;
+        // Device context
+        deviceId?: string;
+    };
+
+    if (appEvent.appId !== APP_IDS.WHATSAPP) return;
+
+    // Use string type for event.type to allow extended event types
+    const eventType = event.type as string;
+
+    // Handle navigation events (no conversation required)
+    // V2 DSL uses these event types:
+    //   - NAVIGATE_SCREEN: openChatList(), openProfile()
+    //   - CONVERSATION_OPENED: switchTo()
+    //   - GO_BACK: goBack()
+    if (eventType === "NAVIGATE_SCREEN" || eventType === "SCREEN_NAVIGATED" || eventType === "GO_BACK") {
+        const appState = getAppState(draft);
+        const payload = (appEvent as any).payload || {};
+
+        // Extract screen from payload (V2) or root (V1)
+        const screen = payload.screen || appEvent.screen || "chat";
+        appState.screen = screen;
+        appState.currentScreen = screen;  // UI reads this for navigation
+
+        // Map screen to generic ViewKind
+        if (screen === "chats" || screen === "chatList") {
+            appState.viewMode = "LIST";  // Valid type value
+        } else if (screen === "chat") {
+            appState.viewMode = "CHAT";
+        } else {
+            appState.viewMode = "TRANSITION";  // Profile and others use transition
+        }
+
+        // WhatsApp uses dark status bar (dark icons on light bg #ECE5DD)
+        appState.statusBarTheme = "dark";
+
+        // If navigating to a specific conversation
+        if (payload.conversationId || appEvent.conversationId) {
+            appState.conversationId = payload.conversationId || appEvent.conversationId;
+        }
+
+        return;
+    }
+
+    // Handle CONVERSATION_OPENED (switchTo in DSL)
+    if (eventType === "CONVERSATION_OPENED") {
+        const appState = getAppState(draft);
+        const payload = (appEvent as any).payload || {};
+        const targetConversationId = payload.conversationId || appEvent.conversationId;
+
+        if (targetConversationId) {
+            appState.conversationId = targetConversationId;
+            appState.screen = "chat";
+            appState.currentScreen = "chat";
+            appState.viewMode = "CHAT";
+            appState.statusBarTheme = "dark"; // WhatsApp dark icons on light bg
+        }
+        return;
+    }
+
+    // Get conversation ID from event
+    const conversationId = appEvent.conversationId;
+    if (!conversationId) return;
+
+    // Get conversations with type safety
+    const conversations = getConversations(draft);
+
+    // Ensure conversation exists
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = {
+            id: conversationId,
+            messages: []
+        } as WhatsAppConversation;
+    }
+    const conversation = conversations[conversationId];
+
+    switch (eventType) {
+        case "MESSAGE_RECEIVED":
+        case "MESSAGE_SENT": {
+            // V2 ENTERPRISE: Read from event.payload first
+            // V1 LEGACY: Fallback to root-level fields for backward compatibility
+            const payload = (appEvent as any).payload || {};
+            const msgPayload = appEvent.message || {};
+
+            // Extract fields: V2 payload takes priority, then root, then message object
+            const fromUser = eventType === "MESSAGE_SENT"
+                ? "me"
+                : (payload.from || appEvent.from || "unknown");
+            const textContent = payload.text || appEvent.text || msgPayload.text;
+            const msgType = (payload.messageType || msgPayload.type || "text") as WhatsAppMessageType;
+            const msgId = payload.messageId || msgPayload.id || `msg_${event.at}_${fromUser}`;
+
+            // Generate timestamp from frame, using world config for FPS and device OS for base time
+            const timestamp = generateTimestamp(event.at, draft, appEvent.deviceId);
+
+            const newMessage: WhatsAppMessage = {
+                id: msgId,
+                from: fromUser,
+                type: msgType,
+                text: textContent,
+                at: event.at,
+                status: (msgPayload.status as any) || (eventType === "MESSAGE_SENT" ? "sent" : "delivered"),
+                edited: msgPayload.edited,
+                timestamp,
+            };
+
+            // Handle media-specific fields based on type
+            switch (msgType) {
+                case "image":
+                    newMessage.imageUrl = payload.url || msgPayload.imageUrl || appEvent.imageUrl;
+                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
+                    break;
+                case "video":
+                    newMessage.thumbnailUrl = msgPayload.thumbnailUrl || appEvent.thumbnailUrl;
+                    newMessage.videoUrl = payload.url || msgPayload.videoUrl || appEvent.videoUrl;
+                    newMessage.duration = payload.durationSeconds || msgPayload.duration || appEvent.duration || 0;
+                    newMessage.caption = payload.caption || msgPayload.caption || appEvent.caption;
+                    break;
+                case "gif":
+                    newMessage.gifUrl = payload.url || msgPayload.gifUrl || appEvent.gifUrl;
+                    break;
+            }
+
+            // Handle replyTo (reply quote) - V2 payload takes priority
+            if (payload.replyTo) {
+                newMessage.replyTo = {
+                    messageId: payload.replyTo.messageId || payload.replyTo.id,
+                    text: payload.replyTo.text,
+                    from: payload.replyTo.from,
+                    type: payload.replyTo.type,
+                    thumbnailUrl: payload.replyTo.thumbnailUrl,
+                };
+            }
+
+            (conversation.messages as any[]).push(newMessage);
+
+            break;
+        }
+
+
+        case "TYPING_START": {
+            if (!conversation.typing) conversation.typing = {};
+            // V2: payload.actor, V1: root-level from
+            const typingPayload = (appEvent as any).payload || {};
+            const actor = typingPayload.actor || appEvent.from;
+            if (actor) {
+                conversation.typing[actor] = true;
+            }
+            break;
+        }
+
+        case "TYPING_END": {
+            // V2: payload.actor, V1: root-level from
+            const typingPayload = (appEvent as any).payload || {};
+            const actor = typingPayload.actor || appEvent.from;
+            if (conversation.typing && actor) {
+                delete conversation.typing[actor];
+            }
+            break;
+        }
+
+        // =====================================================================
+        // MEDIA MESSAGES - Images, Videos, Voice, GIFs
+        // =====================================================================
+
+        case "IMAGE_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_me_img`,
+                from: "me",
+                type: "image",
+                imageUrl: payload.url,
+                caption: payload.caption,
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
+                status: "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "VIDEO_RECEIVED":
+        case "VIDEO_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "VIDEO_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_vid`,
+                from: isReceived ? payload.from : "me",
+                type: "video",
+                thumbnailUrl: payload.url,
+                videoUrl: payload.url,
+                duration: payload.duration || 10,
+                caption: payload.caption,
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "VOICE_RECEIVED":
+        case "VOICE_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "VOICE_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_voice`,
+                from: isReceived ? payload.from : "me",
+                type: "voice",
+                duration: payload.duration || 5,
+                isPlaying: false,
+                playProgress: 0,
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        case "GIF_RECEIVED":
+        case "GIF_SENT": {
+            const payload = (appEvent as any).payload || {};
+            const isReceived = eventType === "GIF_RECEIVED";
+            const messageIndex = conversation.messages.length;
+            (conversation.messages as any[]).push({
+                id: `msg_${event.at}_${isReceived ? payload.from : "me"}_gif`,
+                from: isReceived ? payload.from : "me",
+                type: "gif",
+                gifUrl: payload.url,
+                timestamp: generateTimestamp(event.at, draft, appEvent.deviceId),
+                status: isReceived ? "delivered" : "sent",
+                at: event.at,
+            });
+            break;
+        }
+
+        // =====================================================================
+        // DATE SEPARATOR - "Today", "Yesterday", etc.
+        // =====================================================================
+
+        case "DATE_SEPARATOR": {
+            const payload = (appEvent as any).payload || {};
+            (conversation.messages as any[]).push({
+                id: `sep_${event.at}_date`,
+                from: "system",
+                type: "system",
+                systemType: "date_change",
+                text: payload.text || "Today",
+                at: event.at,
+            });
+            break;
+        }
+
+
+        case "GROUP_MEMBER_ADDED": {
+            const addedBy = appEvent.addedBy === "me" ? "You" : appEvent.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedBy} added ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: addedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (!conversation.members) conversation.members = [];
+            conversation.members.push({
+                id: appEvent.memberId || "",
+                name: appEvent.memberName || ""
+            });
+            break;
+        }
+
+        case "GROUP_MEMBER_REMOVED": {
+            const removedBy = appEvent.removedBy === "me" ? "You" : appEvent.removedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${appEvent.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text: `${removedBy} removed ${appEvent.memberName}`,
+                targetMember: appEvent.memberName,
+                actorName: removedBy,
+                at: event.at
+            } as WhatsAppMessage);
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    (m: { id: string }) => m.id !== appEvent.memberId
+                );
+            }
+            break;
+        }
+
+        case "VOICE_MESSAGE_RECEIVED": {
+            (conversation.messages as any[]).push({
+                id: `voice_${event.at}_${appEvent.from}`,
+                from: appEvent.from || "unknown",
+                type: "voice",
+                duration: appEvent.duration,
+                at: event.at,
+                status: "delivered"
+            } as WhatsAppMessage);
+            break;
+        }
+
+        case "MESSAGE_READ": {
+            if (appEvent.messageId) {
+                // Cast to WhatsAppMessage[] since core's messages is now unknown[]
+                const messages = conversation.messages as WhatsAppMessage[];
+                const msg = messages.find(m => m.id === appEvent.messageId);
+                if (msg) {
+                    msg.status = "read";
+                }
+            }
+            break;
+        }
+
+        // V2 DSL: REACT event from track builder
+        // Supports symbolic refs:
+        //   - { messageId: "msg_123" } - exact ID
+        //   - { index: -1 } or { index: "last" } - last message
+        //   - { index: -2 } - second to last
+        //   - { index: 0 } - first message
+        case "REACT": {
+            const payload = (appEvent as any).payload || {};
+            const emoji = payload.emoji || "❤️";
+            const messages = conversation.messages as WhatsAppMessage[];
+
+            let targetMsg: any = null;
+
+            // Check for messageId first
+            const messageId = payload.messageRef?.messageId || payload.messageRef?.id;
+            if (messageId) {
+                targetMsg = messages.find(m => m.id === messageId);
+            }
+
+            // Check for index-based ref (supports "last", negative indices)
+            const indexRef = payload.messageRef?.index;
+            if (!targetMsg && indexRef !== undefined) {
+                if (indexRef === "last" || indexRef === -1) {
+                    targetMsg = messages[messages.length - 1];
+                } else if (typeof indexRef === "number" && indexRef < 0) {
+                    // Negative index from end
+                    targetMsg = messages[messages.length + indexRef];
+                } else if (typeof indexRef === "number") {
+                    // Positive index from start
+                    targetMsg = messages[indexRef];
+                }
+            }
+
+            // Fallback: if no ref specified, react to last message
+            if (!targetMsg && messages.length > 0) {
+                targetMsg = messages[messages.length - 1];
+            }
+
+            if (targetMsg) {
+                if (!targetMsg.reactions) {
+                    targetMsg.reactions = [];
+                }
+
+                const existing = targetMsg.reactions.find((r: any) => r.emoji === emoji);
+                if (existing) {
+                    existing.count += 1;
+                } else {
+                    targetMsg.reactions.push({
+                        emoji,
+                        count: 1,
+                        fromMe: true,
+                    });
+                }
+            }
+            break;
+        }
+        case "REACTION_ADDED": {
+            // Find the message and add/update the reaction
+            if (appEvent.messageId) {
+                const messages = conversation.messages as WhatsAppMessage[];
+                const msg = messages.find(m => m.id === appEvent.messageId) as any;
+                if (msg) {
+                    // Initialize reactions array if needed
+                    if (!msg.reactions) {
+                        msg.reactions = [];
+                    }
+
+                    const emoji = (appEvent as any).emoji || "❤️";
+                    const fromMe = (appEvent as any).fromMe || false;
+
+                    // Check if this emoji already exists
+                    const existing = msg.reactions.find((r: any) => r.emoji === emoji);
+                    if (existing) {
+                        existing.count += 1;
+                        if (fromMe) existing.fromMe = true;
+                    } else {
+                        msg.reactions.push({
+                            emoji,
+                            count: 1,
+                            fromMe,
+                        });
+                    }
+                }
+            }
+            break;
+        }
+
+        case "INPUT_CHANGE": {
+            // "OS-Level Input Management"
+            // The OS has dispatched this event with the raw text from the keyboard.
+            // We update the local conversation draft state.
+            const text = (appEvent as any).payload?.text;
+            if (conversation) {
+                (conversation as any).draftText = text;
+            }
+            break;
+        }
+    }
+}
+
+// =============================================================================
+// CUSTOM OP HANDLERS (WhatsApp-namespaced events)
+// =============================================================================
+
+interface CustomOpEvent {
+    at: number;
+    kind: "Custom";
+    deviceId?: string;
+    appId?: string;
+    eventType: string;
+    payload?: Record<string, any>;
+}
+
+/**
+ * Handle CustomOp events with WhatsApp namespace.
+ * Uses the event factory pattern from ir/group-ops.ts
+ */
+function handleCustomOp(draft: WorldState, event: CustomOpEvent): void {
+    // Only handle whatsapp-namespaced events
+    if (!event.eventType?.startsWith("whatsapp.")) return;
+    if (event.appId && event.appId !== APP_IDS.WHATSAPP) return;
+
+    const payload = event.payload;
+    if (!payload) return;
+
+    const conversationId = payload.conversationId;
+    if (!conversationId) return;
+
+    // Get conversations with type safety
+    const conversations = getConversations(draft);
+
+    // Ensure conversation exists
+    if (!conversations[conversationId]) {
+        conversations[conversationId] = {
+            id: conversationId,
+            messages: [],
+            type: "group"  // CustomOps are typically group operations
+        } as WhatsAppConversation;
+    }
+    const conversation = conversations[conversationId];
+
+    switch (event.eventType) {
+        case GROUP_EVENT_TYPES.MEMBER_ADDED: {
+            if (!isGroupMemberAddPayload(event.eventType, payload)) break;
+
+            // Add member if not already present
+            if (!conversation.members) conversation.members = [];
+            if (!conversation.members.find(m => m.id === payload.member.id)) {
+                conversation.members.push({
+                    id: payload.member.id,
+                    name: payload.member.name,
+                    avatar: payload.member.avatar,
+                });
+            }
+
+            // Add system message
+            const addedByName = payload.addedBy === "me" ? "You" : payload.addedBy;
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_added_${payload.member.id}`,
+                from: "system",
+                type: "system",
+                systemType: "member_added",
+                text: `${addedByName} added ${payload.member.name}`,
+                targetMember: payload.member.name,
+                actorName: payload.addedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.MEMBER_REMOVED: {
+            if (!isGroupMemberRemovePayload(event.eventType, payload)) break;
+
+            // Remove member from list
+            if (conversation.members) {
+                conversation.members = conversation.members.filter(
+                    m => m.id !== payload.memberId
+                );
+            }
+
+            // Add system message
+            const wasMe = payload.memberId === "me";
+            const removedByName = payload.removedBy === "me" ? "You" : payload.removedBy;
+
+            const text = wasMe
+                ? "You left the group"
+                : `${removedByName} removed ${payload.memberName}`;
+
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_removed_${payload.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "member_removed",
+                text,
+                targetMember: payload.memberName,
+                actorName: payload.removedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.ADMIN_CHANGED: {
+            if (!isGroupAdminChangePayload(event.eventType, payload)) break;
+
+            // Update admin list
+            if (!conversation.admins) conversation.admins = [];
+
+            if (payload.action === "promote") {
+                if (!conversation.admins.includes(payload.memberId)) {
+                    conversation.admins.push(payload.memberId);
+                }
+            } else {
+                conversation.admins = conversation.admins.filter(
+                    id => id !== payload.memberId
+                );
+            }
+
+            // Optionally add system message for admin changes
+            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
+            const memberName = payload.memberName || payload.memberId;
+            const action = payload.action === "promote" ? "made" : "removed";
+            const role = payload.action === "promote" ? "an admin" : "as admin";
+
+            (conversation.messages as any[]).push({
+                id: `sys_${event.at}_admin_${payload.memberId}`,
+                from: "system",
+                type: "system",
+                systemType: "admin_change",
+                text: `${changedByName} ${action} ${memberName} ${role}`,
+                targetMember: memberName,
+                actorName: payload.changedBy,
+                at: event.at,
+            });
+            break;
+        }
+
+        case GROUP_EVENT_TYPES.INFO_UPDATED: {
+            // Handle group info updates (name, avatar, description)
+            const field = payload.field;
+            const newValue = payload.newValue;
+            const changedByName = payload.changedBy === "me" ? "You" : payload.changedBy;
+
+            if (field === "name") {
+                conversation.name = newValue;
+                (conversation.messages as any[]).push({
+                    id: `sys_${event.at}_name_changed`,
+                    from: "system",
+                    type: "system",
+                    systemType: "group_name_changed",
+                    text: `${changedByName} changed the group name to "${newValue}"`,
+                    at: event.at,
+                });
+            } else if (field === "avatar") {
+                conversation.avatar = newValue;
+            }
+            break;
+        }
     }
 }
 ````
 
-## File: packages/episodes/src/production/index.ts
+## File: packages/core/src/index.ts
 ````typescript
 /**
- * Production Episodes
+ * @tokovo/core - Enterprise Core Package
  * 
- * Import this file to auto-register all production episodes.
- * 
- * @example
- * // In Root.tsx:
- * import "@tokovo/episodes/src/production";
- * 
- * @see docs-v2/EPISODE-ARCH.md
- */
-
-// Import all production episodes (side-effect: auto-registers via defineEpisode)
-import "./track-demo.episode";
-import "./bakchodi-bros.episode";
-import "./keyboard-typing-demo.episode";
-import "./notification-demo.episode";
-import "./complete-showcase.episode";
-import "./profile-focus-demo.episode";
-
-// Add new episodes here as they are created
-````
-
-## File: packages/episodes/src/index.ts
-````typescript
-/**
- * @tokovo/episodes
- * 
- * Enterprise episode management with auto-discovery.
- * 
- * @example
- * // Create episodes using defineEpisode (auto-registers)
- * import { defineEpisode } from "@tokovo/episodes";
- * 
- * export default defineEpisode({
- *     meta: { id: "demo", title: "Demo", category: "production" },
- *     config: { format: "1080x1920", durationInFrames: 300, apps: [] },
- *     build: () => episode(...).build(),
- * });
- * 
- * // Access all registered episodes
- * import { episodeRegistry } from "@tokovo/episodes";
- * const all = episodeRegistry.all();
- * 
- * @see docs-v2/EPISODE-ARCH.md
+ * @description Central exports for the Tokovo engine runtime.
+ * Domain-organized modules with clean barrel exports.
  */
 
 // =============================================================================
-// REGISTRY (Auto-discovery)
+// TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
-export { episodeRegistry, EpisodeRegistry } from "./registry";
+export * from "./types";
+// Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
+// types.ts re-exports needed types from types/layout.ts for compatibility.
 
 // =============================================================================
-// TYPES & HELPERS
+// ENGINE - Replay loop and handlers
 // =============================================================================
-export { defineEpisode } from "./types";
+export * from "./engine";
+
+// =============================================================================
+// CAMERA - Re-exports from device-camera (named exports only to avoid conflicts)
+// =============================================================================
+// Note: Camera types are already exported via ./types which imports from device-camera.
+// Only export utilities that aren't in types.ts:
+export {
+    cameraReducer,
+    cameraV2Lowering,
+    CAMERA_EVENT_TYPES,
+    processActiveEffects,
+    registerCameraProcessor,
+    applyEasing,
+    easingFunctions,
+    lerp,
+    seededRandom,
+    getPreset,
+    getShotPreset,
+    composeTimeline,
+    getPresetNames,
+    registerAnchorProvider,
+    getAnchorProvider,
+    getAnchorsForApp,
+    getAnchorFraming,
+    resolveAnchorWithFallback,
+    resolveAnchorFully,
+} from "./camera";
+
+// =============================================================================
+// AUDIO - Sound system
+// =============================================================================
+export * from "./audio";
+
+// =============================================================================
+// REGISTRIES - All registration systems
+// Named exports to avoid conflicts with ./plugin
+// =============================================================================
+export {
+    createRegistry,
+    AppRegistry,
+    SoundRegistry,
+    WidgetRegistry,
+    getDynamicIslandWidget,
+    getNotificationWidgets,
+    BehaviorRegistry,
+    AppMetadataRegistry,
+    LayoutRegistry,
+} from "./registries";
+export type { Registry, AppViewProps, AppViewComponent, AppMetadata, LayoutStrategy } from "./registries";
+
+// =============================================================================
+// NOTIFICATIONS - Notification system
+// =============================================================================
+export * from "./notifications";
+
+// =============================================================================
+// PLUGIN - Plugin system
+// Named exports to avoid conflicts with ./registries
+// =============================================================================
+export {
+    PluginManager,
+    PluginManagerClass,
+    definePlugin,
+    registerPlugins,
+} from "./plugin";
 export type {
-    EpisodeMeta,
-    EpisodeConfig,
-    EpisodeDefinition,
-    FormatId,
-    CustomFormat,
-} from "./types";
-export {
-    EpisodeMetaSchema,
-    EpisodeConfigSchema,
-    EpisodeDefinitionSchema,
-} from "./types";
+    TokovoPluginContract,
+    PluginReducer,
+    PluginViews,
+    LoweringHandler,
+    DslExtension,
+    PluginAnchorRegistry,
+    PluginNotificationAdapter,
+    PluginTier,
+    TokovoPlugin,
+    ScreenComponent,
+} from "./plugin";
 
 // =============================================================================
-// FORMAT TEMPLATES
+// UTILS - Utilities
 // =============================================================================
-export {
-    FORMATS,
-    getFormat,
-    listFormats,
-    getFormatsByAspectRatio
-} from "./templates";
-export type { VideoFormat } from "./templates";
+export * from "./utils";
 
 // =============================================================================
-// SCHEMA (Zod validators for episode content)
+// DIRECTOR LITE - Automatic camera
 // =============================================================================
-export * from "./schema";
+export * from "./director-lite";
 
 // =============================================================================
-// LEGACY EPISODES
+// ANCHORS - Semantic positioning
 // =============================================================================
-// Note: Legacy V1 episodes are NOT exported - they use old DSL patterns
-// and will cause runtime errors. Access them directly if needed:
-//   import { bakchodiGangEpisode } from "@tokovo/episodes/src/episodes/bakchodi-gang"
-//
-// To create new episodes, use the V2 pattern with defineEpisode():
-//   import { defineEpisode } from "@tokovo/episodes";
+export * from "./anchors";
+
+// =============================================================================
+// CONSTANTS & TOKENS
+// Note: constants.ts may export Platform, so be careful
+// =============================================================================
+export * from "./constants";
+export * from "./tokens";
+
+// =============================================================================
+// COMPONENTS
+// =============================================================================
+export * from "./components/AppSurface";
+
+// =============================================================================
+// EPISODE PREPARATION
+// =============================================================================
+export * from "./prepare";
 ````
 
-## File: packages/episodes/package.json
-````json
-{
-    "name": "@tokovo/episodes",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/device-calls": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*",
-        "@tokovo/device-notifications": "workspace:*",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0"
-    }
-}
+## File: packages/device-camera/tsconfig.tsbuildinfo
+````
+{"fileNames":["../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es5.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.dom.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.webworker.importscripts.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.scripthost.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.core.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.generator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.iterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.proxy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.reflect.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2015.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.array.include.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2016.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2017.typedarrays.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asyncgenerator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.asynciterable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2018.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.symbol.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2019.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.bigint.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.date.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.symbol.wellknown.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2020.number.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.weakref.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2021.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2022.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2023.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.arraybuffer.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.object.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.regexp.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.es2024.string.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.array.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.collection.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.intl.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.disposable.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.promise.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.iterator.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.float16.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.error.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.sharedmemory.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.decorators.legacy.d.ts","../../node_modules/.pnpm/typescript@5.9.3/node_modules/typescript/lib/lib.esnext.full.d.ts","./src/types/index.ts","./src/anchors/types.ts","./src/anchors/registry.ts","./src/anchors/resolver.ts","./src/anchors/index.ts","./src/utils/index.ts","./src/processors/index.ts","./src/director-lite/types.ts","./src/director-lite/strategy.ts","./src/director-lite/derive.ts","./src/director-lite/signals.ts","./src/director-lite/index.ts","./src/reducer/index.ts","./src/presets.ts","./src/lowering/handler.ts","./src/lowering/index.ts","./src/plugin.ts","./src/index.ts","./src/processors/types.ts","./src/processors/reset.ts","./src/processors/shake.ts","./src/processors/track.ts","./src/processors/zoom.ts","../../node_modules/.pnpm/@types+estree@1.0.8/node_modules/@types/estree/index.d.ts","../../node_modules/.pnpm/@types+json-schema@7.0.15/node_modules/@types/json-schema/index.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/use-at-your-own-risk.d.ts","../../node_modules/.pnpm/@types+eslint@9.6.1/node_modules/@types/eslint/index.d.ts","../../node_modules/.pnpm/@types+eslint-scope@3.7.7/node_modules/@types/eslint-scope/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/disposable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/indexable.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/iterators.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/compatibility/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.typedarray.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/globals.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/abortcontroller.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/domexception.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/events.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/header.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/readable.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/file.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/fetch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/formdata.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/connector.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-dispatcher.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/global-origin.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool-stats.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/handlers.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/balanced-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-interceptor.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-client.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-pool.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/mock-errors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/env-http-proxy-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-handler.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/retry-agent.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/api.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/interceptors.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/util.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cookies.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/patch.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/websocket.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/eventsource.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/filereader.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/diagnostics-channel.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/content-type.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/cache.d.ts","../../node_modules/.pnpm/undici-types@6.21.0/node_modules/undici-types/index.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/web-globals/fetch.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/assert/strict.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/async_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/buffer.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/child_process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/cluster.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/console.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/constants.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/crypto.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dgram.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/diagnostics_channel.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/dns/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/domain.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/fs/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/http2.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/https.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/inspector.generated.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/module.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/net.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/os.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/path.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/perf_hooks.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/process.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/punycode.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/querystring.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/readline/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/repl.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/sea.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/consumers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/stream/web.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/string_decoder.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/test.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/timers/promises.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tls.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/trace_events.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/tty.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/url.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/util.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/v8.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/vm.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/wasi.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/worker_threads.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/zlib.d.ts","../../node_modules/.pnpm/@types+node@20.19.25/node_modules/@types/node/index.d.ts"],"fileIdsList":[[110,113,120,166],[110,111,112,120,166],[113,120,166],[120,166],[120,163,166],[120,165,166],[166],[120,166,171,199],[120,166,167,172,177,185,196,207],[120,166,167,168,177,185],[115,116,117,120,166],[120,166,169,208],[120,166,170,171,178,186],[120,166,171,196,204],[120,166,172,174,177,185],[120,165,166,173],[120,166,174,175],[120,166,176,177],[120,165,166,177],[120,166,177,178,179,196,207],[120,166,177,178,179,192,196,199],[120,166,174,177,180,185,196,207],[120,166,177,178,180,181,185,196,204,207],[120,166,180,182,196,204,207],[118,119,120,121,122,123,124,162,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,177,183],[120,166,184,207,212],[120,166,174,177,185,196],[120,166,186],[120,166,187],[120,165,166,188],[120,163,164,165,166,167,168,169,170,171,172,173,174,175,176,177,178,179,180,181,182,183,184,185,186,187,188,189,190,191,192,193,194,195,196,197,198,199,200,201,202,203,204,205,206,207,208,209,210,211,212,213],[120,166,190],[120,166,191],[120,166,177,192,193],[120,166,192,194,208,210],[120,166,177,196,197,199],[120,166,198,199],[120,166,196,197],[120,166,199],[120,166,200],[120,163,166,196,201],[120,166,177,202,203],[120,166,202,203],[120,166,171,185,196,204],[120,166,205],[120,166,185,206],[120,166,180,191,207],[120,166,171,208],[120,166,196,209],[120,166,184,210],[120,166,211],[120,161,166],[120,161,166,177,179,188,196,199,207,210,212],[120,166,196,213],[120,133,137,166,207],[120,133,166,196,207],[120,128,166],[120,130,133,166,204,207],[120,166,185,204],[120,166,214],[120,128,166,214],[120,130,133,166,185,207],[120,125,126,129,132,166,177,196,207],[120,133,140,166],[120,125,131,166],[120,133,154,155,166],[120,129,133,166,199,207,214],[120,154,166,214],[120,127,128,166,214],[120,133,166],[120,127,128,129,130,131,132,133,134,135,137,138,139,140,141,142,143,144,145,146,147,148,149,150,151,152,153,155,156,157,158,159,160,166],[120,133,148,166],[120,133,140,141,166],[120,131,133,141,142,166],[120,132,166],[120,125,128,133,166],[120,133,137,141,142,166],[120,137,166],[120,131,133,136,166,207],[120,125,130,133,140,166],[120,166,196],[120,128,133,154,166,212,214],[88,89,90,120,166],[88,120,166],[88,89,120,166],[87,92,94,95,120,166],[87,94,95,96,97,120,166],[94,120,166],[87,91,92,93,98,99,100,102,103,120,166],[101,120,166],[99,120,166],[87,88,90,92,120,166],[87,92,105,120,166],[87,120,166]],"fileInfos":[{"version":"c430d44666289dae81f30fa7b2edebf186ecc91a2d4c71266ea6ae76388792e1","affectsGlobalScope":true,"impliedFormat":1},{"version":"45b7ab580deca34ae9729e97c13cfd999df04416a79116c3bfb483804f85ded4","impliedFormat":1},{"version":"3facaf05f0c5fc569c5649dd359892c98a85557e3e0c847964caeb67076f4d75","impliedFormat":1},{"version":"e44bb8bbac7f10ecc786703fe0a6a4b952189f908707980ba8f3c8975a760962","impliedFormat":1},{"version":"5e1c4c362065a6b95ff952c0eab010f04dcd2c3494e813b493ecfd4fcb9fc0d8","impliedFormat":1},{"version":"68d73b4a11549f9c0b7d352d10e91e5dca8faa3322bfb77b661839c42b1ddec7","impliedFormat":1},{"version":"5efce4fc3c29ea84e8928f97adec086e3dc876365e0982cc8479a07954a3efd4","impliedFormat":1},{"version":"feecb1be483ed332fad555aff858affd90a48ab19ba7272ee084704eb7167569","impliedFormat":1},{"version":"ee7bad0c15b58988daa84371e0b89d313b762ab83cb5b31b8a2d1162e8eb41c2","impliedFormat":1},{"version":"27bdc30a0e32783366a5abeda841bc22757c1797de8681bbe81fbc735eeb1c10","impliedFormat":1},{"version":"8fd575e12870e9944c7e1d62e1f5a73fcf23dd8d3a321f2a2c74c20d022283fe","impliedFormat":1},{"version":"2ab096661c711e4a81cc464fa1e6feb929a54f5340b46b0a07ac6bbf857471f0","impliedFormat":1},{"version":"080941d9f9ff9307f7e27a83bcd888b7c8270716c39af943532438932ec1d0b9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2e80ee7a49e8ac312cc11b77f1475804bee36b3b2bc896bead8b6e1266befb43","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7a3c8b952931daebdfc7a2897c53c0a1c73624593fa070e46bd537e64dcd20a","affectsGlobalScope":true,"impliedFormat":1},{"version":"80e18897e5884b6723488d4f5652167e7bb5024f946743134ecc4aa4ee731f89","affectsGlobalScope":true,"impliedFormat":1},{"version":"cd034f499c6cdca722b60c04b5b1b78e058487a7085a8e0d6fb50809947ee573","affectsGlobalScope":true,"impliedFormat":1},{"version":"c57796738e7f83dbc4b8e65132f11a377649c00dd3eee333f672b8f0a6bea671","affectsGlobalScope":true,"impliedFormat":1},{"version":"dc2df20b1bcdc8c2d34af4926e2c3ab15ffe1160a63e58b7e09833f616efff44","affectsGlobalScope":true,"impliedFormat":1},{"version":"515d0b7b9bea2e31ea4ec968e9edd2c39d3eebf4a2d5cbd04e88639819ae3b71","affectsGlobalScope":true,"impliedFormat":1},{"version":"0559b1f683ac7505ae451f9a96ce4c3c92bdc71411651ca6ddb0e88baaaad6a3","affectsGlobalScope":true,"impliedFormat":1},{"version":"0dc1e7ceda9b8b9b455c3a2d67b0412feab00bd2f66656cd8850e8831b08b537","affectsGlobalScope":true,"impliedFormat":1},{"version":"ce691fb9e5c64efb9547083e4a34091bcbe5bdb41027e310ebba8f7d96a98671","affectsGlobalScope":true,"impliedFormat":1},{"version":"8d697a2a929a5fcb38b7a65594020fcef05ec1630804a33748829c5ff53640d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ff2a353abf8a80ee399af572debb8faab2d33ad38c4b4474cff7f26e7653b8d","affectsGlobalScope":true,"impliedFormat":1},{"version":"fb0f136d372979348d59b3f5020b4cdb81b5504192b1cacff5d1fbba29378aa1","affectsGlobalScope":true,"impliedFormat":1},{"version":"d15bea3d62cbbdb9797079416b8ac375ae99162a7fba5de2c6c505446486ac0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"68d18b664c9d32a7336a70235958b8997ebc1c3b8505f4f1ae2b7e7753b87618","affectsGlobalScope":true,"impliedFormat":1},{"version":"eb3d66c8327153d8fa7dd03f9c58d351107fe824c79e9b56b462935176cdf12a","affectsGlobalScope":true,"impliedFormat":1},{"version":"38f0219c9e23c915ef9790ab1d680440d95419ad264816fa15009a8851e79119","affectsGlobalScope":true,"impliedFormat":1},{"version":"69ab18c3b76cd9b1be3d188eaf8bba06112ebbe2f47f6c322b5105a6fbc45a2e","affectsGlobalScope":true,"impliedFormat":1},{"version":"a680117f487a4d2f30ea46f1b4b7f58bef1480456e18ba53ee85c2746eeca012","affectsGlobalScope":true,"impliedFormat":1},{"version":"2f11ff796926e0832f9ae148008138ad583bd181899ab7dd768a2666700b1893","affectsGlobalScope":true,"impliedFormat":1},{"version":"4de680d5bb41c17f7f68e0419412ca23c98d5749dcaaea1896172f06435891fc","affectsGlobalScope":true,"impliedFormat":1},{"version":"954296b30da6d508a104a3a0b5d96b76495c709785c1d11610908e63481ee667","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac9538681b19688c8eae65811b329d3744af679e0bdfa5d842d0e32524c73e1c","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a969edff4bd52585473d24995c5ef223f6652d6ef46193309b3921d65dd4376","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e9fbd7030c440b33d021da145d3232984c8bb7916f277e8ffd3dc2e3eae2bdb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811ec78f7fefcabbda4bfa93b3eb67d9ae166ef95f9bff989d964061cbf81a0c","affectsGlobalScope":true,"impliedFormat":1},{"version":"717937616a17072082152a2ef351cb51f98802fb4b2fdabd32399843875974ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"d7e7d9b7b50e5f22c915b525acc5a49a7a6584cf8f62d0569e557c5cfc4b2ac2","affectsGlobalScope":true,"impliedFormat":1},{"version":"71c37f4c9543f31dfced6c7840e068c5a5aacb7b89111a4364b1d5276b852557","affectsGlobalScope":true,"impliedFormat":1},{"version":"576711e016cf4f1804676043e6a0a5414252560eb57de9faceee34d79798c850","affectsGlobalScope":true,"impliedFormat":1},{"version":"89c1b1281ba7b8a96efc676b11b264de7a8374c5ea1e6617f11880a13fc56dc6","affectsGlobalScope":true,"impliedFormat":1},{"version":"74f7fa2d027d5b33eb0471c8e82a6c87216223181ec31247c357a3e8e2fddc5b","affectsGlobalScope":true,"impliedFormat":1},{"version":"d6d7ae4d1f1f3772e2a3cde568ed08991a8ae34a080ff1151af28b7f798e22ca","affectsGlobalScope":true,"impliedFormat":1},{"version":"063600664504610fe3e99b717a1223f8b1900087fab0b4cad1496a114744f8df","affectsGlobalScope":true,"impliedFormat":1},{"version":"934019d7e3c81950f9a8426d093458b65d5aff2c7c1511233c0fd5b941e608ab","affectsGlobalScope":true,"impliedFormat":1},{"version":"52ada8e0b6e0482b728070b7639ee42e83a9b1c22d205992756fe020fd9f4a47","affectsGlobalScope":true,"impliedFormat":1},{"version":"3bdefe1bfd4d6dee0e26f928f93ccc128f1b64d5d501ff4a8cf3c6371200e5e6","affectsGlobalScope":true,"impliedFormat":1},{"version":"59fb2c069260b4ba00b5643b907ef5d5341b167e7d1dbf58dfd895658bda2867","affectsGlobalScope":true,"impliedFormat":1},{"version":"639e512c0dfc3fad96a84caad71b8834d66329a1f28dc95e3946c9b58176c73a","affectsGlobalScope":true,"impliedFormat":1},{"version":"368af93f74c9c932edd84c58883e736c9e3d53cec1fe24c0b0ff451f529ceab1","affectsGlobalScope":true,"impliedFormat":1},{"version":"af3dd424cf267428f30ccfc376f47a2c0114546b55c44d8c0f1d57d841e28d74","affectsGlobalScope":true,"impliedFormat":1},{"version":"995c005ab91a498455ea8dfb63aa9f83fa2ea793c3d8aa344be4a1678d06d399","affectsGlobalScope":true,"impliedFormat":1},{"version":"959d36cddf5e7d572a65045b876f2956c973a586da58e5d26cde519184fd9b8a","affectsGlobalScope":true,"impliedFormat":1},{"version":"965f36eae237dd74e6cca203a43e9ca801ce38824ead814728a2807b1910117d","affectsGlobalScope":true,"impliedFormat":1},{"version":"3925a6c820dcb1a06506c90b1577db1fdbf7705d65b62b99dce4be75c637e26b","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a3d63ef2b853447ec4f749d3f368ce642264246e02911fcb1590d8c161b8005","affectsGlobalScope":true,"impliedFormat":1},{"version":"8cdf8847677ac7d20486e54dd3fcf09eda95812ac8ace44b4418da1bbbab6eb8","affectsGlobalScope":true,"impliedFormat":1},{"version":"8444af78980e3b20b49324f4a16ba35024fef3ee069a0eb67616ea6ca821c47a","affectsGlobalScope":true,"impliedFormat":1},{"version":"3287d9d085fbd618c3971944b65b4be57859f5415f495b33a6adc994edd2f004","affectsGlobalScope":true,"impliedFormat":1},{"version":"b4b67b1a91182421f5df999988c690f14d813b9850b40acd06ed44691f6727ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"df83c2a6c73228b625b0beb6669c7ee2a09c914637e2d35170723ad49c0f5cd4","affectsGlobalScope":true,"impliedFormat":1},{"version":"436aaf437562f276ec2ddbee2f2cdedac7664c1e4c1d2c36839ddd582eeb3d0a","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e3c06ea092138bf9fa5e874a1fdbc9d54805d074bee1de31b99a11e2fec239d","affectsGlobalScope":true,"impliedFormat":1},{"version":"87dc0f382502f5bbce5129bdc0aea21e19a3abbc19259e0b43ae038a9fc4e326","affectsGlobalScope":true,"impliedFormat":1},{"version":"b1cb28af0c891c8c96b2d6b7be76bd394fddcfdb4709a20ba05a7c1605eea0f9","affectsGlobalScope":true,"impliedFormat":1},{"version":"2fef54945a13095fdb9b84f705f2b5994597640c46afeb2ce78352fab4cb3279","affectsGlobalScope":true,"impliedFormat":1},{"version":"ac77cb3e8c6d3565793eb90a8373ee8033146315a3dbead3bde8db5eaf5e5ec6","affectsGlobalScope":true,"impliedFormat":1},{"version":"56e4ed5aab5f5920980066a9409bfaf53e6d21d3f8d020c17e4de584d29600ad","affectsGlobalScope":true,"impliedFormat":1},{"version":"4ece9f17b3866cc077099c73f4983bddbcb1dc7ddb943227f1ec070f529dedd1","affectsGlobalScope":true,"impliedFormat":1},{"version":"0a6282c8827e4b9a95f4bf4f5c205673ada31b982f50572d27103df8ceb8013c","affectsGlobalScope":true,"impliedFormat":1},{"version":"1c9319a09485199c1f7b0498f2988d6d2249793ef67edda49d1e584746be9032","affectsGlobalScope":true,"impliedFormat":1},{"version":"e3a2a0cee0f03ffdde24d89660eba2685bfbdeae955a6c67e8c4c9fd28928eeb","affectsGlobalScope":true,"impliedFormat":1},{"version":"811c71eee4aa0ac5f7adf713323a5c41b0cf6c4e17367a34fbce379e12bbf0a4","affectsGlobalScope":true,"impliedFormat":1},{"version":"51ad4c928303041605b4d7ae32e0c1ee387d43a24cd6f1ebf4a2699e1076d4fa","affectsGlobalScope":true,"impliedFormat":1},{"version":"60037901da1a425516449b9a20073aa03386cce92f7a1fd902d7602be3a7c2e9","affectsGlobalScope":true,"impliedFormat":1},{"version":"d4b1d2c51d058fc21ec2629fff7a76249dec2e36e12960ea056e3ef89174080f","affectsGlobalScope":true,"impliedFormat":1},{"version":"22adec94ef7047a6c9d1af3cb96be87a335908bf9ef386ae9fd50eeb37f44c47","affectsGlobalScope":true,"impliedFormat":1},{"version":"196cb558a13d4533a5163286f30b0509ce0210e4b316c56c38d4c0fd2fb38405","affectsGlobalScope":true,"impliedFormat":1},{"version":"73f78680d4c08509933daf80947902f6ff41b6230f94dd002ae372620adb0f60","affectsGlobalScope":true,"impliedFormat":1},{"version":"c5239f5c01bcfa9cd32f37c496cf19c61d69d37e48be9de612b541aac915805b","affectsGlobalScope":true,"impliedFormat":1},{"version":"8e7f8264d0fb4c5339605a15daadb037bf238c10b654bb3eee14208f860a32ea","affectsGlobalScope":true,"impliedFormat":1},{"version":"782dec38049b92d4e85c1585fbea5474a219c6984a35b004963b00beb1aab538","affectsGlobalScope":true,"impliedFormat":1},{"version":"bde31fd423cd93b0eff97197a3f66df7c93e8c0c335cbeb113b7ff1ac35c23f4","impliedFormat":1},{"version":"48b3b8b8d97f7d23ed1a4782657a4035ae1bd953cbc51e8453b5dffcd3959b71","signature":"51ccfb61148b7f2f6909812b1b7159e42157c39d5a86ee5c4f2637e29c0fcc01"},{"version":"dfcd389a6bab366fa5a520042f49fe0039a2fee6ec0f3a14ab79182d87a4e2c6","signature":"9b1521dc296b55e6a2a51536eafe56c8c3a9e09057071cd1a238c9348200e5e3"},{"version":"01729c605ccb4a309ef00062a23d46a7ff3e529d8bb4bed44d55e8961c123a3e","signature":"8c01fe82f497636f0a512983301dc1f0e023dc95042e79ce9772b952b3f379ba"},{"version":"868ec29ad02e61b82d0142ce689363c2de0c656a1871863174b8a9fc836f0392","signature":"d67b2969917d86eea8f3c6064cb0c41fd97050f74316c6af32f57a818c50d147"},{"version":"e34e3bea4bb28011894599887ed6324c774df53ea95a1005ab2a5d6d1313f434","signature":"2f7240974a13feb51dcfb82e98f18c19c34a305b118e61ebc3fbe8261f2e8bdd"},{"version":"50cac1f7bb4193fcce54ddcdf0e8ef75199b273d1bd5cc4ae2a6c538d0603436","signature":"aa331bfd775aa7f7d843eb3ab67866961ccbd22603f707413754dc9fba216c08"},{"version":"774b3de0133aaa2d4cb7cf0668a4f360dfb2c753838615bf9119efc1da1da50c","signature":"6847e485b08dc33a5d08a241f4401e09f0a0ff02a8afc97eef8835a3c54e74a0"},{"version":"08dcaf353b848cc5d673bb4b52776f2808ba4af4192e4b495218efba54c89a81","signature":"65176d057ac38f5398e7e4dc976e1cb32a8ed8212daaf866c1e11e1b6ad1f195"},{"version":"02ea6089e32ce6a82bed8134aa007e575dfd16cc0a270248459b4b3cd77a0c16","signature":"2cff0f47a9df649303a2eebdc93509d22328ba637773ce8811cae0c34d2939aa"},{"version":"15d9f7de8ac4dd2b603de77a2d945c11e64f74f7c7829561d3e8b427d3c5811a","signature":"55e5818bc6cbd20f88f26945bd717d1038cf78b1d868840c737e46a92a53ae7e"},{"version":"34462201bd579b9fe51baf8752da29db87582de2b1153b422f0d2dc6e69ea93e","signature":"be8cb3b164f11b63430cd1278c9d2e6906dbe428ecbba1753b683da5d51ce741"},{"version":"a453a18888b61a5bd5852ac4c30de1015a8f02e142814bbaedc019e2b052c3d6","signature":"f42d8838e79aacedd22ad383900185f896224c66067677ec66d3b88aa9f111b4"},{"version":"8daa8b5403c499029b45d428a4efc98488e68c1b04527912d8e6feeafed3c652","signature":"14c5339bc6b6cc234d903eba7e051a05128d32fdb67fe9a00fe28c8ed5a777f9"},{"version":"e734d863ea49079bd785bef95b2879404b81f5d82a4efeb4fe46a4898c09a74c","signature":"e1ec54e2380448538c8f99bd859f3a772069511a36150afdeaa2d01abaa99243"},{"version":"bd36f20e75598369b740269b580ccf2e61fb560866afe76df5f19823382e279a","signature":"29ea4ca6ea4b5f1f83b8d76f61775cf9ffc07c24757b048ed512622c6fc65a44"},{"version":"e02e29766ec2254c31a9d6ba7ab0e566178f024a9d1d03f348fd879939d7a657","signature":"4ef6cee2bccf72863fb0875a26d125dda4e2b382371642687481d9f5284467a4"},{"version":"8d617caa67a5d6659c0ae8ea4b4583c5952a2b03ecc83d609c4eda7048290645","signature":"1061345cd792c0f141f49073cf6724ec67babd9ff1b3f0605ae9dda7da67c109"},{"version":"13c63057bf769e4bac0f07ab85b37b8351bd934b39374c709b303a2bb8a53c9f","signature":"378677c113999e1817e9126cdc302dbaf7cdc2e624b190c7afe2e8711e821ac0"},{"version":"b82fdebe2a642e93eb1816b353482aad286e83b13b8016614488cfaea5f2831c","signature":"70ae801d524f6b22676db3cd303dd63793e0281d8de9172e902bbcf47395b373"},{"version":"eae6e8df7034e09dc8c49836c996dfee10b0a3931c3001feb8a6d3df8119ae04","signature":"dc705b2994d881bd6a656bf89e749ad486605659b0fe3be6376ed16366babe6e"},{"version":"4c7870ee095003bc1f516c71a51cd740facaf856720c70aa222fffe59e6b4ba3","signature":"ca98ccac320cc234a22cc278f6a1f1ad20c99af31230efde224f7dc7cc13caba"},{"version":"2b4071c63de850bbfc060e299d82d7af1ad22d754a3154b79758559c0a5c050c","signature":"f96b484f8dc4df74800857261d36b8042d9b843f42c8bc7adc27fbcfe936bae2"},{"version":"751250daca14385b2780c58c762dfa6d6f2d188086f1863c986b21df1a791fd4","signature":"0a78a5fcad7e8d00496edab48e6007ac93d20c2d5a3c9e1e4f547c5855a53854"},{"version":"151ff381ef9ff8da2da9b9663ebf657eac35c4c9a19183420c05728f31a6761d","impliedFormat":1},{"version":"f3d8c757e148ad968f0d98697987db363070abada5f503da3c06aefd9d4248c1","impliedFormat":1},{"version":"a4a39b5714adfcadd3bbea6698ca2e942606d833bde62ad5fb6ec55f5e438ff8","impliedFormat":1},{"version":"bbc1d029093135d7d9bfa4b38cbf8761db505026cc458b5e9c8b74f4000e5e75","impliedFormat":1},{"version":"1f68ab0e055994eb337b67aa87d2a15e0200951e9664959b3866ee6f6b11a0fe","impliedFormat":1},{"version":"70521b6ab0dcba37539e5303104f29b721bfb2940b2776da4cc818c07e1fefc1","affectsGlobalScope":true,"impliedFormat":1},{"version":"ab41ef1f2cdafb8df48be20cd969d875602483859dc194e9c97c8a576892c052","affectsGlobalScope":true,"impliedFormat":1},{"version":"d153a11543fd884b596587ccd97aebbeed950b26933ee000f94009f1ab142848","affectsGlobalScope":true,"impliedFormat":1},{"version":"21d819c173c0cf7cc3ce57c3276e77fd9a8a01d35a06ad87158781515c9a438a","impliedFormat":1},{"version":"98cffbf06d6bab333473c70a893770dbe990783904002c4f1a960447b4b53dca","affectsGlobalScope":true,"impliedFormat":1},{"version":"ba481bca06f37d3f2c137ce343c7d5937029b2468f8e26111f3c9d9963d6568d","affectsGlobalScope":true,"impliedFormat":1},{"version":"6d9ef24f9a22a88e3e9b3b3d8c40ab1ddb0853f1bfbd5c843c37800138437b61","affectsGlobalScope":true,"impliedFormat":1},{"version":"1db0b7dca579049ca4193d034d835f6bfe73096c73663e5ef9a0b5779939f3d0","affectsGlobalScope":true,"impliedFormat":1},{"version":"9798340ffb0d067d69b1ae5b32faa17ab31b82466a3fc00d8f2f2df0c8554aaa","affectsGlobalScope":true,"impliedFormat":1},{"version":"f26b11d8d8e4b8028f1c7d618b22274c892e4b0ef5b3678a8ccbad85419aef43","affectsGlobalScope":true,"impliedFormat":1},{"version":"5929864ce17fba74232584d90cb721a89b7ad277220627cc97054ba15a98ea8f","impliedFormat":1},{"version":"763fe0f42b3d79b440a9b6e51e9ba3f3f91352469c1e4b3b67bfa4ff6352f3f4","impliedFormat":1},{"version":"25c8056edf4314820382a5fdb4bb7816999acdcb929c8f75e3f39473b87e85bc","impliedFormat":1},{"version":"c464d66b20788266e5353b48dc4aa6bc0dc4a707276df1e7152ab0c9ae21fad8","impliedFormat":1},{"version":"78d0d27c130d35c60b5e5566c9f1e5be77caf39804636bc1a40133919a949f21","impliedFormat":1},{"version":"c6fd2c5a395f2432786c9cb8deb870b9b0e8ff7e22c029954fabdd692bff6195","impliedFormat":1},{"version":"1d6e127068ea8e104a912e42fc0a110e2aa5a66a356a917a163e8cf9a65e4a75","impliedFormat":1},{"version":"5ded6427296cdf3b9542de4471d2aa8d3983671d4cac0f4bf9c637208d1ced43","impliedFormat":1},{"version":"7f182617db458e98fc18dfb272d40aa2fff3a353c44a89b2c0ccb3937709bfb5","impliedFormat":1},{"version":"cadc8aced301244057c4e7e73fbcae534b0f5b12a37b150d80e5a45aa4bebcbd","impliedFormat":1},{"version":"385aab901643aa54e1c36f5ef3107913b10d1b5bb8cbcd933d4263b80a0d7f20","impliedFormat":1},{"version":"9670d44354bab9d9982eca21945686b5c24a3f893db73c0dae0fd74217a4c219","impliedFormat":1},{"version":"0b8a9268adaf4da35e7fa830c8981cfa22adbbe5b3f6f5ab91f6658899e657a7","impliedFormat":1},{"version":"11396ed8a44c02ab9798b7dca436009f866e8dae3c9c25e8c1fbc396880bf1bb","impliedFormat":1},{"version":"ba7bc87d01492633cb5a0e5da8a4a42a1c86270e7b3d2dea5d156828a84e4882","impliedFormat":1},{"version":"4893a895ea92c85345017a04ed427cbd6a1710453338df26881a6019432febdd","impliedFormat":1},{"version":"c21dc52e277bcfc75fac0436ccb75c204f9e1b3fa5e12729670910639f27343e","impliedFormat":1},{"version":"13f6f39e12b1518c6650bbb220c8985999020fe0f21d818e28f512b7771d00f9","impliedFormat":1},{"version":"9b5369969f6e7175740bf51223112ff209f94ba43ecd3bb09eefff9fd675624a","impliedFormat":1},{"version":"4fe9e626e7164748e8769bbf74b538e09607f07ed17c2f20af8d680ee49fc1da","impliedFormat":1},{"version":"24515859bc0b836719105bb6cc3d68255042a9f02a6022b3187948b204946bd2","impliedFormat":1},{"version":"ea0148f897b45a76544ae179784c95af1bd6721b8610af9ffa467a518a086a43","impliedFormat":1},{"version":"24c6a117721e606c9984335f71711877293a9651e44f59f3d21c1ea0856f9cc9","impliedFormat":1},{"version":"dd3273ead9fbde62a72949c97dbec2247ea08e0c6952e701a483d74ef92d6a17","impliedFormat":1},{"version":"405822be75ad3e4d162e07439bac80c6bcc6dbae1929e179cf467ec0b9ee4e2e","impliedFormat":1},{"version":"0db18c6e78ea846316c012478888f33c11ffadab9efd1cc8bcc12daded7a60b6","impliedFormat":1},{"version":"e61be3f894b41b7baa1fbd6a66893f2579bfad01d208b4ff61daef21493ef0a8","impliedFormat":1},{"version":"bd0532fd6556073727d28da0edfd1736417a3f9f394877b6d5ef6ad88fba1d1a","impliedFormat":1},{"version":"89167d696a849fce5ca508032aabfe901c0868f833a8625d5a9c6e861ef935d2","impliedFormat":1},{"version":"615ba88d0128ed16bf83ef8ccbb6aff05c3ee2db1cc0f89ab50a4939bfc1943f","impliedFormat":1},{"version":"a4d551dbf8746780194d550c88f26cf937caf8d56f102969a110cfaed4b06656","impliedFormat":1},{"version":"8bd86b8e8f6a6aa6c49b71e14c4ffe1211a0e97c80f08d2c8cc98838006e4b88","impliedFormat":1},{"version":"317e63deeb21ac07f3992f5b50cdca8338f10acd4fbb7257ebf56735bf52ab00","impliedFormat":1},{"version":"4732aec92b20fb28c5fe9ad99521fb59974289ed1e45aecb282616202184064f","impliedFormat":1},{"version":"2e85db9e6fd73cfa3d7f28e0ab6b55417ea18931423bd47b409a96e4a169e8e6","impliedFormat":1},{"version":"c46e079fe54c76f95c67fb89081b3e399da2c7d109e7dca8e4b58d83e332e605","impliedFormat":1},{"version":"bf67d53d168abc1298888693338cb82854bdb2e69ef83f8a0092093c2d562107","impliedFormat":1},{"version":"2cbe0621042e2a68c7cbce5dfed3906a1862a16a7d496010636cdbdb91341c0f","affectsGlobalScope":true,"impliedFormat":1},{"version":"e2677634fe27e87348825bb041651e22d50a613e2fdf6a4a3ade971d71bac37e","impliedFormat":1},{"version":"7394959e5a741b185456e1ef5d64599c36c60a323207450991e7a42e08911419","impliedFormat":1},{"version":"8c0bcd6c6b67b4b503c11e91a1fb91522ed585900eab2ab1f61bba7d7caa9d6f","impliedFormat":1},{"version":"8cd19276b6590b3ebbeeb030ac271871b9ed0afc3074ac88a94ed2449174b776","affectsGlobalScope":true,"impliedFormat":1},{"version":"696eb8d28f5949b87d894b26dc97318ef944c794a9a4e4f62360cd1d1958014b","impliedFormat":1},{"version":"3f8fa3061bd7402970b399300880d55257953ee6d3cd408722cb9ac20126460c","impliedFormat":1},{"version":"35ec8b6760fd7138bbf5809b84551e31028fb2ba7b6dc91d95d098bf212ca8b4","affectsGlobalScope":true,"impliedFormat":1},{"version":"5524481e56c48ff486f42926778c0a3cce1cc85dc46683b92b1271865bcf015a","impliedFormat":1},{"version":"68bd56c92c2bd7d2339457eb84d63e7de3bd56a69b25f3576e1568d21a162398","affectsGlobalScope":true,"impliedFormat":1},{"version":"3e93b123f7c2944969d291b35fed2af79a6e9e27fdd5faa99748a51c07c02d28","impliedFormat":1},{"version":"9d19808c8c291a9010a6c788e8532a2da70f811adb431c97520803e0ec649991","impliedFormat":1},{"version":"87aad3dd9752067dc875cfaa466fc44246451c0c560b820796bdd528e29bef40","impliedFormat":1},{"version":"4aacb0dd020eeaef65426153686cc639a78ec2885dc72ad220be1d25f1a439df","impliedFormat":1},{"version":"f0bd7e6d931657b59605c44112eaf8b980ba7f957a5051ed21cb93d978cf2f45","impliedFormat":1},{"version":"8db0ae9cb14d9955b14c214f34dae1b9ef2baee2fe4ce794a4cd3ac2531e3255","affectsGlobalScope":true,"impliedFormat":1},{"version":"15fc6f7512c86810273af28f224251a5a879e4261b4d4c7e532abfbfc3983134","impliedFormat":1},{"version":"58adba1a8ab2d10b54dc1dced4e41f4e7c9772cbbac40939c0dc8ce2cdb1d442","impliedFormat":1},{"version":"2fd4c143eff88dabb57701e6a40e02a4dbc36d5eb1362e7964d32028056a782b","impliedFormat":1},{"version":"714435130b9015fae551788df2a88038471a5a11eb471f27c4ede86552842bc9","impliedFormat":1},{"version":"855cd5f7eb396f5f1ab1bc0f8580339bff77b68a770f84c6b254e319bbfd1ac7","impliedFormat":1},{"version":"5650cf3dace09e7c25d384e3e6b818b938f68f4e8de96f52d9c5a1b3db068e86","impliedFormat":1},{"version":"1354ca5c38bd3fd3836a68e0f7c9f91f172582ba30ab15bb8c075891b91502b7","affectsGlobalScope":true,"impliedFormat":1},{"version":"27fdb0da0daf3b337c5530c5f266efe046a6ceb606e395b346974e4360c36419","impliedFormat":1},{"version":"2d2fcaab481b31a5882065c7951255703ddbe1c0e507af56ea42d79ac3911201","impliedFormat":1},{"version":"afbe24ab0d74694372baa632ecb28bb375be53f3be53f9b07ecd7fc994907de5","impliedFormat":1},{"version":"ca867399f7db82df981d6915bcbb2d81131d7d1ef683bc782b59f71dda59bc85","affectsGlobalScope":true,"impliedFormat":1},{"version":"00877fef624f3171c2e44944fb63a55e2a9f9120d7c8b5eb4181c263c9a077cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"9e043a1bc8fbf2a255bccf9bf27e0f1caf916c3b0518ea34aa72357c0afd42ec","impliedFormat":1},{"version":"b4f70ec656a11d570e1a9edce07d118cd58d9760239e2ece99306ee9dfe61d02","impliedFormat":1},{"version":"3bc2f1e2c95c04048212c569ed38e338873f6a8593930cf5a7ef24ffb38fc3b6","impliedFormat":1},{"version":"6e70e9570e98aae2b825b533aa6292b6abd542e8d9f6e9475e88e1d7ba17c866","impliedFormat":1},{"version":"f9d9d753d430ed050dc1bf2667a1bab711ccbb1c1507183d794cc195a5b085cc","impliedFormat":1},{"version":"9eece5e586312581ccd106d4853e861aaaa1a39f8e3ea672b8c3847eedd12f6e","impliedFormat":1},{"version":"47ab634529c5955b6ad793474ae188fce3e6163e3a3fb5edd7e0e48f14435333","impliedFormat":1},{"version":"37ba7b45141a45ce6e80e66f2a96c8a5ab1bcef0fc2d0f56bb58df96ec67e972","impliedFormat":1},{"version":"45650f47bfb376c8a8ed39d4bcda5902ab899a3150029684ee4c10676d9fbaee","impliedFormat":1},{"version":"0225ecb9ed86bdb7a2c7fd01f1556906902929377b44483dc4b83e03b3ef227d","affectsGlobalScope":true,"impliedFormat":1},{"version":"74cf591a0f63db318651e0e04cb55f8791385f86e987a67fd4d2eaab8191f730","impliedFormat":1},{"version":"5eab9b3dc9b34f185417342436ec3f106898da5f4801992d8ff38ab3aff346b5","impliedFormat":1},{"version":"12ed4559eba17cd977aa0db658d25c4047067444b51acfdcbf38470630642b23","affectsGlobalScope":true,"impliedFormat":1},{"version":"f3ffabc95802521e1e4bcba4c88d8615176dc6e09111d920c7a213bdda6e1d65","impliedFormat":1},{"version":"f9ab232778f2842ffd6955f88b1049982fa2ecb764d129ee4893cbc290f41977","impliedFormat":1},{"version":"ae56f65caf3be91108707bd8dfbccc2a57a91feb5daabf7165a06a945545ed26","impliedFormat":1},{"version":"a136d5de521da20f31631a0a96bf712370779d1c05b7015d7019a9b2a0446ca9","impliedFormat":1},{"version":"c3b41e74b9a84b88b1dca61ec39eee25c0dbc8e7d519ba11bb070918cfacf656","affectsGlobalScope":true,"impliedFormat":1},{"version":"4737a9dc24d0e68b734e6cfbcea0c15a2cfafeb493485e27905f7856988c6b29","affectsGlobalScope":true,"impliedFormat":1},{"version":"36d8d3e7506b631c9582c251a2c0b8a28855af3f76719b12b534c6edf952748d","impliedFormat":1},{"version":"1ca69210cc42729e7ca97d3a9ad48f2e9cb0042bada4075b588ae5387debd318","impliedFormat":1},{"version":"f5ebe66baaf7c552cfa59d75f2bfba679f329204847db3cec385acda245e574e","impliedFormat":1},{"version":"ed59add13139f84da271cafd32e2171876b0a0af2f798d0c663e8eeb867732cf","affectsGlobalScope":true,"impliedFormat":1},{"version":"05db535df8bdc30d9116fe754a3473d1b6479afbc14ae8eb18b605c62677d518","impliedFormat":1},{"version":"b1810689b76fd473bd12cc9ee219f8e62f54a7d08019a235d07424afbf074d25","impliedFormat":1}],"root":[[87,109]],"options":{"composite":true,"declaration":true,"declarationMap":true,"esModuleInterop":true,"jsx":4,"module":99,"outDir":"./dist","rootDir":"./src","skipLibCheck":true,"sourceMap":true,"strict":true,"target":99},"referencedMap":[[114,1],[113,2],[112,3],[110,4],[111,4],[163,5],[164,5],[165,6],[120,7],[166,8],[167,9],[168,10],[115,4],[118,11],[116,4],[117,4],[169,12],[170,13],[171,14],[172,15],[173,16],[174,17],[175,17],[176,18],[177,19],[178,20],[179,21],[121,4],[119,4],[180,22],[181,23],[182,24],[214,25],[183,26],[184,27],[185,28],[186,29],[187,30],[188,31],[189,32],[190,33],[191,34],[192,35],[193,35],[194,36],[195,4],[196,37],[198,38],[197,39],[199,40],[200,41],[201,42],[202,43],[203,44],[204,45],[205,46],[206,47],[207,48],[208,49],[209,50],[210,51],[211,52],[122,4],[123,4],[124,4],[162,53],[212,54],[213,55],[84,4],[85,4],[15,4],[13,4],[14,4],[19,4],[18,4],[2,4],[20,4],[21,4],[22,4],[23,4],[24,4],[25,4],[26,4],[27,4],[3,4],[28,4],[29,4],[4,4],[30,4],[34,4],[31,4],[32,4],[33,4],[35,4],[36,4],[37,4],[5,4],[38,4],[39,4],[40,4],[41,4],[6,4],[45,4],[42,4],[43,4],[44,4],[46,4],[7,4],[47,4],[52,4],[53,4],[48,4],[49,4],[50,4],[51,4],[8,4],[57,4],[54,4],[55,4],[56,4],[58,4],[9,4],[59,4],[60,4],[61,4],[63,4],[62,4],[64,4],[65,4],[10,4],[66,4],[67,4],[68,4],[11,4],[69,4],[70,4],[71,4],[72,4],[73,4],[1,4],[74,4],[75,4],[12,4],[79,4],[77,4],[82,4],[81,4],[86,4],[76,4],[80,4],[78,4],[83,4],[17,4],[16,4],[140,56],[150,57],[139,56],[160,58],[131,59],[130,60],[159,61],[153,62],[158,63],[133,64],[147,65],[132,66],[156,67],[128,68],[127,61],[157,69],[129,70],[134,71],[135,4],[138,71],[125,4],[161,72],[151,73],[142,74],[143,75],[145,76],[141,77],[144,78],[154,61],[136,79],[137,80],[146,81],[126,82],[149,73],[148,71],[152,4],[155,83],[91,84],[89,85],[90,86],[88,4],[96,87],[98,88],[97,89],[95,89],[94,4],[104,90],[101,4],[102,91],[103,92],[100,4],[93,93],[106,94],[107,94],[108,94],[105,95],[109,94],[99,95],[87,4],[92,95]],"latestChangedDtsFile":"./dist/types/index.d.ts","version":"5.9.3"}
 ````
 
 ## File: packages/compiler/src/v2/lowering.ts
@@ -63913,386 +67429,6 @@ export function lowerEpisode(
 }
 ````
 
-## File: packages/device-keyboard/src/index.ts
-````typescript
-/**
- * @tokovo/device-keyboard
- * 
- * Enterprise virtual keyboard plugin for Tokovo.
- * 
- * @example
- * ```typescript
- * import { KeyboardTrackBuilder } from "@tokovo/device-keyboard";
- * 
- * episode("demo", { fps: 30, duration: "30s" })
- *     .track("keyboard",
- *         () => new KeyboardTrackBuilder(30, "phone", getOrder),
- *         kb => {
- *             kb.at("4s").show();
- *             kb.span("5s", "10s").type("Hello!", { speed: "normal" });
- *             kb.at("12s").hide();
- *         }
- *     )
- * ```
- */
-
-// =============================================================================
-// PLUGIN
-// =============================================================================
-
-export { KeyboardPlugin, registerKeyboardPlugin, type DeviceKeyboardPlugin } from "./plugin";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export * from "./types";
-
-// =============================================================================
-// CONFIG
-// =============================================================================
-
-export * from "./config";
-
-// =============================================================================
-// IR
-// =============================================================================
-
-export * from "./ir";
-
-// =============================================================================
-// DSL
-// =============================================================================
-
-export { KeyboardTrackBuilder } from "./dsl/track-builder";
-export * from "./dsl/helpers";
-
-// =============================================================================
-// RUNTIME
-// =============================================================================
-
-export { keyboardReducer } from "./reducer";
-export * from "./runtime/selectors";
-export { createKeyboardInitialState } from "./runtime/initial-state";
-
-// =============================================================================
-// VIEWS
-// =============================================================================
-
-export { KeyboardSurface } from "./views/KeyboardSurface";
-export { KeyboardStrategyRegistry, type KeyboardUIStrategy } from "./views/strategy";
-// Re-export iOS components (themes are in config/)
-export { IOSKeyboard, IOSKey, IOSKeyRow, IOSKeyPopup, IOSPredictionBar } from "./views/ios";
-export { IOSPrediction } from "./views/ios/prediction";
-
-// =============================================================================
-// CAMERA
-// =============================================================================
-
-export { KeyboardBehavior, getKeyboardIntent } from "./camera/behaviors";
-export { KeyboardAnchors, getKeyRect } from "./runtime/adapters/anchors";
-
-// =============================================================================
-// LOWERING
-// =============================================================================
-
-export { keyboardV2Lowering, lowerKeyboardEvent } from "./lowering";
-
-// =============================================================================
-// ASSETS
-// =============================================================================
-
-export { keyboardAudioRules } from "./assets/audio-rules";
-
-// =============================================================================
-// AUTO-REGISTRATION
-// =============================================================================
-
-import { ReducerRegistry, AutoSoundRegistry, SoundRegistry } from "@tokovo/core";
-import { keyboardReducer } from "./reducer";
-import { keyboardAudioRules } from "./assets/audio-rules";
-
-// Keyboard sound paths
-const keyboardSounds = {
-    "keyboard_click": "core/keyboard/typing_loop.wav",
-    "keyboard_typing_loop": "core/keyboard/typing_loop.wav",
-};
-
-// Register on import
-ReducerRegistry.registerFeatureReducer("KEYBOARD", keyboardReducer);
-ReducerRegistry.registerAppReducer("keyboard", keyboardReducer); // NEW: Enable APP event routing
-AutoSoundRegistry.register(keyboardAudioRules);
-SoundRegistry.registerMany(keyboardSounds);
-
-// Import components to register strategies
-import "./views/ios/IOSKeyboard";
-````
-
-## File: packages/apps-whatsapp/src/plugin.ts
-````typescript
-/**
- * WhatsApp Plugin - Enterprise Contract
- * 
- * Self-contained plugin with all tiers:
- * - Tier A: id, version, displayName, reducer, views
- * - Tier B: lowering handler, layouts
- * - Tier C: DSL extension (b.use() pattern)
- * 
- * @see docs/ARCHITECTURE.md
- */
-
-import { APP_IDS, PluginManager } from "@tokovo/core";
-import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
-
-// Runtime Layer
-import { whatsappReducer } from "./runtime/reducer";
-import { createWhatsAppInitialState } from "./runtime/initial-state";
-
-// Views Layer
-import { WhatsappChatView } from "./ui";
-
-// Lowering Layer (V2 is default)
-import { whatsappLowering, whatsappV2Lowering } from "./lowering";
-
-// DSL Layer
-import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
-
-// Layout Layer
-import { computeChatLayout } from "./layout";
-
-// Assets
-import { whatsappAudioRules } from "./assets/audio-rules";
-
-// Camera
-import { WhatsAppBehavior } from "./camera";
-
-// =============================================================================
-// PLUGIN VIEWS
-// =============================================================================
-
-const whatsappViews: PluginViews = {
-    AppRoot: WhatsappChatView as React.FC<any>,
-    strategies: {
-        ios: {
-            ChatScreen: WhatsappChatView as React.FC<any>,
-        },
-    },
-};
-
-// =============================================================================
-// PLUGIN ASSETS
-// =============================================================================
-
-const whatsappAssets = {
-    sounds: {
-        "message_in": "plugins/whatsapp/received.wav",
-        "message_out": "plugins/whatsapp/sent.wav",
-        "typing_loop": "plugins/whatsapp/typing_loop.wav",
-    },
-    icons: {
-        "app_icon": "/icons/whatsapp.svg",
-    },
-};
-
-// =============================================================================
-// ENTERPRISE PLUGIN CONTRACT
-// =============================================================================
-
-export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
-    appView: any;
-    name: string;
-    v2Lowering: typeof whatsappV2Lowering;
-    behaviors: typeof WhatsAppBehavior;
-    sounds: Record<string, string>;
-} = {
-    // === TIER A: Identity ===
-    id: APP_IDS.WHATSAPP as "app_whatsapp",
-    version: "2.0.0",
-    displayName: "WhatsApp",
-    name: "WhatsApp",
-
-    // === TIER A: Runtime ===
-    reducer: whatsappReducer as any,
-    views: whatsappViews,
-    appView: WhatsappChatView as any,
-    createInitialState: createWhatsAppInitialState,
-
-    // === SOUNDS (for SoundRegistry via PluginManager) ===
-    sounds: {
-        "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-        "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-        "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-    },
-
-    // === TIER A: Assets ===
-    assets: whatsappAssets,
-    audioRules: whatsappAudioRules as any,
-
-    // === TIER B: Lowering ===
-    // NOTE: whatsappLowering requires handles property, using v2Lowering only
-    v2Lowering: whatsappV2Lowering,
-
-    // === TIER B: Layouts ===
-    layouts: [
-        {
-            viewKind: "CHAT",
-            computeLayout: computeChatLayout as any,
-        },
-    ],
-
-    // === TIER B: Behaviors ===
-    behaviors: WhatsAppBehavior,
-
-    // === TIER C: DSL ===
-    dsl: whatsappDsl,
-};
-
-// =============================================================================
-// EXPORTS
-// =============================================================================
-
-export { WhatsAppPluginV2 as WhatsAppPlugin };
-
-export function registerWhatsAppPlugin(): void {
-    PluginManager.register(WhatsAppPluginV2 as any);
-}
-
-export type { WhatsAppDslApi };
-
-export default WhatsAppPluginV2;
-````
-
-## File: packages/core/src/index.ts
-````typescript
-/**
- * @tokovo/core - Enterprise Core Package
- * 
- * @description Central exports for the Tokovo engine runtime.
- * Domain-organized modules with clean barrel exports.
- */
-
-// =============================================================================
-// TYPES - All type definitions (includes camera types from device-camera)
-// =============================================================================
-export * from "./types";
-// Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
-// types.ts re-exports needed types from types/layout.ts for compatibility.
-
-// =============================================================================
-// ENGINE - Replay loop and handlers
-// =============================================================================
-export * from "./engine";
-
-// =============================================================================
-// CAMERA - Re-exports from device-camera (named exports only to avoid conflicts)
-// =============================================================================
-// Note: Camera types are already exported via ./types which imports from device-camera.
-// Only export utilities that aren't in types.ts:
-export {
-    cameraReducer,
-    cameraV2Lowering,
-    CAMERA_EVENT_TYPES,
-    processActiveEffects,
-    registerCameraProcessor,
-    applyEasing,
-    easingFunctions,
-    lerp,
-    seededRandom,
-    getPreset,
-    getShotPreset,
-    composeTimeline,
-    getPresetNames,
-    registerAnchorProvider,
-    getAnchorProvider,
-    getAnchorsForApp,
-    getAnchorFraming,
-    resolveAnchorWithFallback,
-    resolveAnchorFully,
-} from "./camera";
-
-// =============================================================================
-// AUDIO - Sound system
-// =============================================================================
-export * from "./audio";
-
-// =============================================================================
-// REGISTRIES - All registration systems
-// Named exports to avoid conflicts with ./plugin
-// =============================================================================
-export {
-    createRegistry,
-    AppRegistry,
-    SoundRegistry,
-    WidgetRegistry,
-    getDynamicIslandWidget,
-    getNotificationWidgets,
-    BehaviorRegistry,
-    AppMetadataRegistry,
-    LayoutRegistry,
-} from "./registries";
-export type { Registry, AppViewProps, AppViewComponent, AppMetadata, LayoutStrategy } from "./registries";
-
-// =============================================================================
-// NOTIFICATIONS - Notification system
-// =============================================================================
-export * from "./notifications";
-
-// =============================================================================
-// PLUGIN - Plugin system
-// Named exports to avoid conflicts with ./registries
-// =============================================================================
-export {
-    PluginManager,
-    PluginManagerClass,
-    definePlugin,
-    registerPlugins,
-} from "./plugin";
-export type {
-    TokovoPluginContract,
-    PluginReducer,
-    PluginViews,
-    LoweringHandler,
-    DslExtension,
-    PluginAnchorRegistry,
-    PluginNotificationAdapter,
-    PluginTier,
-    TokovoPlugin,
-    ScreenComponent,
-} from "./plugin";
-
-// =============================================================================
-// UTILS - Utilities
-// =============================================================================
-export * from "./utils";
-
-// =============================================================================
-// DIRECTOR LITE - Automatic camera
-// =============================================================================
-export * from "./director-lite";
-
-// =============================================================================
-// ANCHORS - Semantic positioning
-// =============================================================================
-export * from "./anchors";
-
-// =============================================================================
-// CONSTANTS & TOKENS
-// Note: constants.ts may export Platform, so be careful
-// =============================================================================
-export * from "./constants";
-export * from "./tokens";
-
-// =============================================================================
-// COMPONENTS
-// =============================================================================
-export * from "./components/AppSurface";
-
-// =============================================================================
-// EPISODE PREPARATION
-// =============================================================================
-export * from "./prepare";
-````
-
 ## File: packages/core/src/engine.ts
 ````typescript
 /**
@@ -64645,312 +67781,381 @@ export function createInitialWorld(partial: Partial<WorldState> = {}): WorldStat
 export { handleAutoSounds };
 ````
 
-## File: packages/renderer/src/TokovoRenderer.tsx
+## File: packages/episodes/src/index.ts
 ````typescript
 /**
- * TokovoRenderer
- *
- * Thin wiring layer that:
- * 1. Calls Layout Engine to get layout blueprint
- * 2. Calls Camera Engine to get camera transform
- * 3. Paints JSX based on blueprints
- *
- * No compute logic — just orchestration and rendering.
+ * @tokovo/episodes
+ * 
+ * Enterprise episode management with auto-discovery.
+ * 
+ * @example
+ * // Create episodes using defineEpisode (auto-registers)
+ * import { defineEpisode } from "@tokovo/episodes";
+ * 
+ * export default defineEpisode({
+ *     meta: { id: "demo", title: "Demo", category: "production" },
+ *     config: { format: "1080x1920", durationInFrames: 300, apps: [] },
+ *     build: () => episode(...).build(),
+ * });
+ * 
+ * // Access all registered episodes
+ * import { episodeRegistry } from "@tokovo/episodes";
+ * const all = episodeRegistry.all();
+ * 
+ * @see docs-v2/EPISODE-ARCH.md
  */
 
-import React from "react";
-import {
-    WorldState,
-    EventIndex,
-    PluginManager,
-    PluginManagerClass,
-    APP_IDS,
-    AppSurface
-} from "@tokovo/core";
-import {
-    NotificationScheduler,
-    HeadsUpNotification,
-    NotificationInstance
-} from "@tokovo/device-notifications";
-import { PhoneApp } from "@tokovo/device-calls";
-import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
-import { AppRegistry } from "./registry";
-import { NotificationOverlay } from "./overlays";
-import { LockscreenView, HomeScreenView } from "./screens";
-import { VisualDebugger } from "./VisualDebugger";
-import { DynamicIsland } from "./os";
-import { useLayoutEngine } from "./engines/useLayoutEngine";
-import { useCameraEngine } from "./engines/useCameraEngine";
-import { KeyboardSurface } from "@tokovo/device-keyboard";
+// =============================================================================
+// REGISTRY (Auto-discovery)
+// =============================================================================
+export { episodeRegistry, EpisodeRegistry } from "./registry/index";
+
+// =============================================================================
+// TYPES & HELPERS
+// =============================================================================
+export { defineEpisode } from "./types/index";
+export type {
+    EpisodeMeta,
+    EpisodeConfig,
+    EpisodeDefinition,
+    FormatId,
+    CustomFormat,
+} from "./types/index";
+export {
+    EpisodeMetaSchema,
+    EpisodeConfigSchema,
+    EpisodeDefinitionSchema,
+} from "./types/index";
+
+// =============================================================================
+// FORMAT TEMPLATES
+// =============================================================================
+export {
+    FORMATS,
+    getFormat,
+    listFormats,
+    getFormatsByAspectRatio
+} from "./templates/index";
+export type { VideoFormat } from "./templates/index";
+
+// =============================================================================
+// SCHEMA (Zod validators for episode content)
+// =============================================================================
+export * from "./schema";
+
+// =============================================================================
+// LEGACY EPISODES
+// =============================================================================
+// Note: Legacy V1 episodes are NOT exported - they use old DSL patterns
+// and will cause runtime errors. Access them directly if needed:
+//   import { bakchodiGangEpisode } from "@tokovo/episodes/src/episodes/bakchodi-gang"
+//
+// To create new episodes, use the V2 pattern with defineEpisode():
+//   import { defineEpisode } from "@tokovo/episodes";
+````
+
+## File: packages/episodes/package.json
+````json
+{
+    "name": "@tokovo/episodes",
+    "version": "0.0.0",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "lint": "eslint . --ext .ts,.tsx"
+    },
+    "dependencies": {
+        "@tokovo/core": "workspace:*",
+        "@tokovo/dsl": "workspace:*",
+        "@tokovo/ir": "workspace:*",
+        "@tokovo/apps-whatsapp": "workspace:*",
+        "@tokovo/apps-instagram": "workspace:*",
+        "@tokovo/device-calls": "workspace:*",
+        "@tokovo/device-keyboard": "workspace:*",
+        "@tokovo/device-notifications": "workspace:*",
+        "zod": "^3.0.0"
+    },
+    "devDependencies": {
+        "typescript": "^5.0.0",
+        "@types/node": "^20.0.0"
+    }
+}
+````
+
+## File: packages/apps-whatsapp/src/index.ts
+````typescript
+/**
+ * WhatsApp Package - Public API
+ * 
+ * This is the main entry point for the WhatsApp plugin.
+ * All exports follow the Enterprise Gold Standard structure.
+ */
+
+// =============================================================================
+// PLUGIN (Primary Export)
+// =============================================================================
+
+export {
+    WhatsAppPluginV2,
+    WhatsAppPluginV2 as WhatsAppPlugin,
+    registerWhatsAppPlugin,
+    type WhatsAppDslApi,
+} from "./plugin";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-interface NotificationConfig {
-    headsUpDuration?: number;
-    showHeadsUpWhenAppOpen?: boolean;
-}
-
-interface TokovoRendererProps {
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-    pluginManager?: PluginManagerClass;
-}
+export * from "./types";
 
 // =============================================================================
-// TOKOVO RENDERER
+// RUNTIME
 // =============================================================================
 
-export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
-    world,
-    t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
-    eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-    pluginManager,
-}) => {
-    // Resolve Plugin Manager (Injectable > Global Fallback)
-    const pm = pluginManager || PluginManager;
+export {
+    whatsappReducer,
+    createWhatsAppInitialState,
+    selectAppState,
+    selectConversations,
+    selectCurrentConversation,
+    selectMessages,
+    selectLastMessage,
+    selectTypingMembers,
+} from "./runtime";
 
-    const {
-        headsUpDuration = 150,
-        showHeadsUpWhenAppOpen = true,
-    } = notificationConfig;
+// =============================================================================
+// VIEWS
+// =============================================================================
 
-    // ==========================================================================
-    // 1. LAYOUT ENGINE — Get layout blueprint
-    // ==========================================================================
-    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+export * from "./ui";
+// Note: ./views re-exports from ./ui, so we don't export it again
 
-    // Handle error state (device not found)
-    if (layoutOutput.isError) {
-        return (
-            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
-                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
-                    Device not found
-                </div>
-            </div>
-        );
-    }
+// =============================================================================
+// IR (Intermediate Representation)
+// =============================================================================
 
-    const {
-        deviceId,
-        device,
-        appId,
-        viewKind,
-        layout,
-        profile,
-        variant,
-    } = layoutOutput;
+export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
+export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
 
-    // ==========================================================================
-    // 2. CAMERA ENGINE — Get camera transform
-    // ==========================================================================
-    const cameraOutput = useCameraEngine({
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled,
-        directorDebug,
-    });
+// =============================================================================
+// LOWERING
+// =============================================================================
 
-    const { cameraStyle, deviceStyle } = cameraOutput;
+export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
 
-    // ==========================================================================
-    // 3. HELPER: Find active heads-up notification
-    // ==========================================================================
-    // ==========================================================================
-    // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
-    // ==========================================================================
-    const notificationState = React.useMemo(() => {
-        return NotificationScheduler.schedule(device, t);
-    }, [device, t]);
+// =============================================================================
+// DSL
+// =============================================================================
 
-    const activeHeadsUp = notificationState.headsUp;
+export {
+    whatsappDsl,
+    WhatsAppTrackBuilder,
+    WhatsAppPointBuilder,
+    WhatsAppSpanBuilder,
+    createWhatsAppTrackBuilder,
+} from "./dsl";
+export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
 
-    // DEBUG: Notification State
-    if (debug && t % 30 === 0) {
-        console.log(`[TokovoRenderer] Frame ${t}:`, {
-            totalNotifs: device.os?.notifications?.length,
-            activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
-            isLocked: device.isLocked,
-            appId
-        });
-    }
+// =============================================================================
+// LAYOUT
+// =============================================================================
 
-    const hasActiveCall = device.call && device.call.status !== "ended";
+export { computeChatLayout } from "./layout";
 
-    // DEBUG: Call state
-    if (device.call) {
-        console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
-    }
-    if (hasActiveCall) {
-        console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
-    }
+// =============================================================================
+// CAMERA
+// =============================================================================
 
-    // ==========================================================================
-    // 4. SELECT APP VIEW
-    // ==========================================================================
-    const AppView = appId ? pm.getView(appId) : null;
+export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
 
-    // 5. RENDER — Paint the blueprints
-    // ==========================================================================
+// =============================================================================
+// ASSETS
+// =============================================================================
 
-    // Resolve Device Frame from registry (with fallback to iPhone16)
-    const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
+export { whatsappAudioRules } from "./assets/audio-rules";
 
-    return (
-        <div style={{
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            position: "relative",
-        }}>
-            {/* Camera wrapper — applies cinematic transforms */}
-            <div style={cameraStyle}>
-                {/* Device wrapper — applies layout transforms */}
-                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    <FrameComponent statusBar={<StatusBar os={device.os} variant={variant} />}>
+// =============================================================================
+// SIDE EFFECTS (Auto-registration)
+// =============================================================================
 
-                        {/* ========================================================================= */}
-                        {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
-                        {/* ========================================================================= */}
-                        {(() => {
-                            // A. Active Call takes precedence - use PhoneApp directly from device-calls
-                            if (hasActiveCall) {
-                                const designWidth = 393; // iPhone design width
+import "./ui/strategies";
+import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry, registerAnchorProvider, LayoutRegistry, APP_IDS } from "@tokovo/core";
+import { whatsappAudioRules } from "./assets/audio-rules";
+import { WhatsAppAnchors } from "./runtime/adapters/anchors";
+import { computeChatLayout } from "./layout";
 
-                                return (
-                                    <AppSurface
-                                        designWidth={designWidth}
-                                        targetWidth={profile.dimensions.width}
-                                        targetHeight={profile.dimensions.height}
-                                    >
-                                        <PhoneApp world={world} t={t} platform={variant} deviceId={deviceId} />
-                                    </AppSurface>
-                                );
-                            }
-
-                            // B. Active App (Unlocked)
-                            if (AppView && !device.isLocked) {
-                                const meta = pm.get(appId!)?.metadata;
-                                const designWidth = meta?.designWidth || 393;
-
-                                // Calculate scale factor explicitly to normalize props
-                                const scale = profile.dimensions.width / designWidth;
-
-                                return (
-                                    <AppSurface
-                                        designWidth={designWidth}
-                                        targetWidth={profile.dimensions.width}
-                                        targetHeight={profile.dimensions.height}
-                                        backgroundColor={meta?.themeColor} // Use brand color as splash/bg
-                                    >
-                                        <AppView
-                                            world={world}
-                                            t={t}
-                                            // layout={layout} // Not in AppViewProps standard interface, but might be useful?
-                                            // Ideally apps use hooks: useLayout()
-                                            platform={variant}
-                                            deviceId={deviceId}
-                                            // Normalize Safe Area to Logical Units
-                                            safeAreaInsets={{
-                                                top: (profile.camera?.safeAreaTop || 0) / scale,
-                                                bottom: (profile.camera?.safeAreaBottom || 0) / scale,
-                                                left: 0,
-                                                right: 0
-                                            }}
-                                        />
-                                    </AppSurface>
-                                );
-                            }
-
-                            // C. Valid System States (Lockscreen / Home)
-                            if (!device.isLocked && device.homeScreen) {
-                                return <HomeScreenView config={device.homeScreen} variant={variant} />;
-                            }
-
-                            if (device.isLocked) {
-                                return (
-                                    <LockscreenView
-                                        notifications={device.os?.notifications || []}
-                                        layout={layout}
-                                        variant={variant}
-                                    // TODO: Pass Metadata Registry for icon lookup? 
-                                    // LockscreenView already uses it (Step 642).
-                                    />
-                                );
-                            }
-
-                            // D. Blank Screen
-                            return <div style={{ flex: 1, backgroundColor: "black" }} />;
-                        })()}
-
-
-                        {/* ========================================================================= */}
-                        {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
-                        {/* ========================================================================= */}
-
-                        {/* Lockscreen Notification Overlay */}
-                        <NotificationOverlay
-                            notifications={device.os?.notifications || []}
-                            variant={variant}
-                            layout={layout}
-                        />
-
-                        {/* Heads-Up Notification (Toast) */}
-                        {/* Note: Dynamic Island notification rendering not implemented yet, 
-                            so we always show HeadsUpNotification when there's an active heads-up */}
-                        {activeHeadsUp && !hasActiveCall && (
-                            <HeadsUpNotification
-                                key={activeHeadsUp.id}
-                                notification={activeHeadsUp}
-                                currentTime={t}
-                                variant={variant}
-                                autoDismissAfter={headsUpDuration}
-                                deviceWidth={profile.dimensions.width}
-                            />
-                        )}
-
-                        {/* Dynamic Island (iOS) - Slot Based */}
-                        {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
-                            <DynamicIsland
-                                device={device}
-                                deviceProfile={profile}
-                                world={world}
-                                t={t}
-                            />
-                        )}
-
-                        {/* Virtual Keyboard (Unified Surface) */}
-                        {device.keyboard && (
-                            <KeyboardSurface
-                                keyboard={device.keyboard}
-                                platform={variant}
-                                variant={variant === "ios" ? "light" : "light"}
-                                t={t}
-                                width={profile.dimensions.width}
-                            />
-                        )}
-
-                    </FrameComponent>
-                </div>
-            </div>
-
-            {debug && <VisualDebugger world={world} t={t} />}
-        </div>
-    );
+// WhatsApp sound paths
+const whatsappSounds = {
+    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
 };
+
+AutoSoundRegistry.register(whatsappAudioRules);
+SoundRegistry.registerMany(whatsappSounds);
+
+// Register anchor provider for camera system
+registerAnchorProvider(WhatsAppAnchors);
+
+// Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
+LayoutRegistry.register({
+    appId: APP_IDS.WHATSAPP,
+    viewKind: "CHAT",
+    computeLayout: computeChatLayout,
+});
+
+AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬",
+    viewStrategy: "CHAT",
+});
+
+// =============================================================================
+// LEGACY ALIASES
+// =============================================================================
+
+export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
+
+// =============================================================================
+// DEFAULT
+// =============================================================================
+
+export { default } from "./plugin";
+````
+
+## File: packages/apps-whatsapp/src/plugin.ts
+````typescript
+/**
+ * WhatsApp Plugin - Enterprise Contract
+ * 
+ * Self-contained plugin with all tiers:
+ * - Tier A: id, version, displayName, reducer, views
+ * - Tier B: lowering handler, layouts
+ * - Tier C: DSL extension (b.use() pattern)
+ * 
+ * @see docs/ARCHITECTURE.md
+ */
+
+import { APP_IDS, PluginManager } from "@tokovo/core";
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
+
+// Runtime Layer
+import { whatsappReducer } from "./runtime/reducer";
+import { createWhatsAppInitialState } from "./runtime/initial-state";
+
+// Views Layer
+import { WhatsappChatView } from "./ui";
+
+// Lowering Layer (V2 is default)
+import { whatsappLowering, whatsappV2Lowering } from "./lowering";
+
+// DSL Layer
+import { whatsappDsl, type WhatsAppDslApi } from "./dsl";
+
+// Layout Layer
+import { computeChatLayout } from "./layout";
+
+// Assets
+import { whatsappAudioRules } from "./assets/audio-rules";
+
+// Camera
+import { WhatsAppBehavior } from "./camera";
+
+// =============================================================================
+// PLUGIN VIEWS
+// =============================================================================
+
+const whatsappViews: PluginViews = {
+    AppRoot: WhatsappChatView as React.FC<any>,
+    strategies: {
+        ios: {
+            ChatScreen: WhatsappChatView as React.FC<any>,
+        },
+    },
+};
+
+// =============================================================================
+// PLUGIN ASSETS
+// =============================================================================
+
+const whatsappAssets = {
+    sounds: {
+        "message_in": "plugins/whatsapp/received.wav",
+        "message_out": "plugins/whatsapp/sent.wav",
+        "typing_loop": "plugins/whatsapp/typing_loop.wav",
+    },
+    icons: {
+        "app_icon": "/icons/whatsapp.svg",
+    },
+};
+
+// =============================================================================
+// ENTERPRISE PLUGIN CONTRACT
+// =============================================================================
+
+export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
+    appView: any;
+    name: string;
+    v2Lowering: typeof whatsappV2Lowering;
+    behaviors: typeof WhatsAppBehavior;
+    sounds: Record<string, string>;
+} = {
+    // === TIER A: Identity ===
+    id: APP_IDS.WHATSAPP as "app_whatsapp",
+    version: "2.0.0",
+    displayName: "WhatsApp",
+    name: "WhatsApp",
+
+    // === TIER A: Runtime ===
+    reducer: whatsappReducer as any,
+    views: whatsappViews,
+    appView: WhatsappChatView as any,
+    createInitialState: createWhatsAppInitialState,
+
+    // === SOUNDS (for SoundRegistry via PluginManager) ===
+    sounds: {
+        "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+        "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+        "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+    },
+
+    // === TIER A: Assets ===
+    assets: whatsappAssets,
+    audioRules: whatsappAudioRules as any,
+
+    // === TIER B: Lowering ===
+    // NOTE: whatsappLowering requires handles property, using v2Lowering only
+    v2Lowering: whatsappV2Lowering,
+
+    // === TIER B: Layouts ===
+    layouts: [
+        {
+            viewKind: "CHAT",
+            computeLayout: computeChatLayout as any,
+        },
+    ],
+
+    // === TIER B: Behaviors ===
+    behaviors: WhatsAppBehavior,
+
+    // === TIER C: DSL ===
+    dsl: whatsappDsl,
+};
+
+// =============================================================================
+// EXPORTS
+// =============================================================================
+
+export { WhatsAppPluginV2 as WhatsAppPlugin };
+
+export function registerWhatsAppPlugin(): void {
+    PluginManager.register(WhatsAppPluginV2 as any);
+}
+
+export type { WhatsAppDslApi };
+
+export default WhatsAppPluginV2;
 ````
 
 ## File: packages/core/src/types.ts
@@ -65841,148 +69046,855 @@ export type {
     TransitionLayoutState,
     TransitionLayoutMeta,
 } from "./types/layout";
+
+// StatusBar theming
+export {
+    STATUS_BAR_PRESETS,
+    resolveStatusBarTheme,
+} from "./types/statusbar-theme";
+export type {
+    StatusBarPreset,
+    StatusBarCustomTheme,
+    StatusBarTheme,
+    ResolvedStatusBarTheme,
+} from "./types/statusbar-theme";
 ````
 
-## File: packages/apps-whatsapp/src/index.ts
+## File: packages/device-keyboard/src/views/ios/IOSKeyboard.tsx
 ````typescript
 /**
- * WhatsApp Package - Public API
- * 
- * This is the main entry point for the WhatsApp plugin.
- * All exports follow the Enterprise Gold Standard structure.
+ * IOSKeyboard - Realistic iOS keyboard component
+ * (Revamped for iOS 17/18 Pixel Perfection)
  */
 
+import React, { useMemo } from "react";
+import { useCurrentFrame, interpolate, Easing } from "remotion";
+import { KeyboardProps, KeyProps, KeyPopupProps, PredictionBarProps, KeyboardStrategyRegistry } from "../strategy";
+import { getIOSTheme, getThemeColors } from "./theme";
+import { IOSPrediction } from "./prediction";
+
 // =============================================================================
-// PLUGIN (Primary Export)
+// KEYBOARD LAYOUTS
 // =============================================================================
 
-export {
-    WhatsAppPluginV2,
-    WhatsAppPluginV2 as WhatsAppPlugin,
-    registerWhatsAppPlugin,
-    type WhatsAppDslApi,
-} from "./plugin";
+const QWERTY_ROWS = [
+    ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"],
+    ["a", "s", "d", "f", "g", "h", "j", "k", "l"],
+    ["⇧", "z", "x", "c", "v", "b", "n", "m", "⌫"],
+    ["123", "space", "return"]
+];
+
+const NUMBERS_ROWS = [
+    ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"],
+    ["-", "/", ":", ";", "(", ")", "$", "&", "@", '"'],
+    ["#+=", ".", ",", "?", "!", "'", "⌫"],
+    ["ABC", "space", "return"]
+];
+
+
+// =============================================================================
+// ICONS (SF Symbols - OUTLINE STYLE)
+// =============================================================================
+
+const ShiftIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 3L5 10H9V20H15V10H19L12 3Z" strokeLinejoin="round" />
+    </svg>
+);
+
+const BackspaceIcon = ({ style, color }: { style?: React.CSSProperties, color: string }) => (
+    <svg style={style} viewBox="0 0 44 32" fill="none">
+        <path
+            d="M13.88 4.3C14.77 2 17.07 0.5 19.67 0.5H36.5C40.64 0.5 44 3.86 44 8V24C44 28.14 40.64 31.5 36.5 31.5H19.67C17.07 31.5 14.77 30 13.88 27.7L2.4 16L13.88 4.3Z"
+            stroke={color}
+            strokeWidth="2.5"
+            fill="none"
+        />
+        <path d="M24 10L32 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        <path d="M32 10L24 22" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+);
+
+const MicIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 14C13.6569 14 15 12.6569 15 11V5C15 3.34315 13.6569 2 12 2C10.3431 2 9 3.34315 9 5V11C9 12.6569 10.3431 14 12 14Z" />
+        <path d="M19 10V11C19 14.3648 16.6366 17.1762 13.5 17.8578V20.5C13.5 20.7761 13.2761 21 13 21H11C10.7239 21 10.5 20.7761 10.5 20.5V17.8578C7.36339 17.1762 5 14.3648 5 11V10C5 9.72386 5.22386 9.5 5.5 9.5C5.77614 9.5 6 9.72386 6 10V11C6 14.3137 8.68629 17 12 17C15.3137 17 18 14.3137 18 11V10C18 9.72386 18.2239 9.5 18.5 9.5C18.7761 9.5 19 9.72386 19 10Z" />
+    </svg>
+);
+
+const EmojiIcon = ({ style }: { style?: React.CSSProperties }) => (
+    <svg style={style} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+        <circle cx="12" cy="12" r="10" />
+        <path d="M8 15C8 15 9.5 17 12 17C14.5 17 16 15 16 15" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none" />
+        <circle cx="15" cy="9" r="1.5" fill="currentColor" stroke="none" />
+    </svg>
+);
+
+// =============================================================================
+// TYPING SCHEDULE HELPERS
+// =============================================================================
+
+interface TypingScheduleEntry { key: string; frame: number; }
+interface TypingSchedule { entries: TypingScheduleEntry[]; text: string; startFrame: number; endFrame: number; }
+
+const KEY_PRESS_DURATION = 3;
+
+function deriveCurrentKeyFromSchedule(schedule: TypingSchedule | null | undefined, frame: number): string | null {
+    if (!schedule || !schedule.entries) return null;
+    for (let i = schedule.entries.length - 1; i >= 0; i--) {
+        const entry = schedule.entries[i];
+        if (frame >= entry.frame && frame < entry.frame + KEY_PRESS_DURATION) {
+            return entry.key;
+        }
+    }
+    return null;
+}
+
+/**
+ * Derive progressive text from schedule: Only show characters that have been typed so far.
+ */
+function deriveProgressiveText(schedule: TypingSchedule | null | undefined, frame: number): string {
+    if (!schedule || !schedule.entries) return "";
+    let text = "";
+    for (const entry of schedule.entries) {
+        if (frame >= entry.frame) {
+            text += entry.key;
+        } else {
+            break; // Entries are in order
+        }
+    }
+    return text;
+}
+
+// =============================================================================
+// KEY POPUP - Simple iOS Style (No Complex SVG)
+// =============================================================================
+
+export const IOSKeyPopup: React.FC<KeyPopupProps> = ({ label, variant, keyWidth }) => {
+    const theme = getIOSTheme(variant);
+
+    // Simple rounded rect popup (matches modern iOS)
+    const POPUP_WIDTH = 56;
+    const POPUP_HEIGHT = 56;
+    const leftOffset = (keyWidth - POPUP_WIDTH) / 2;
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 56, // Above the key
+            left: leftOffset,
+            width: POPUP_WIDTH,
+            height: POPUP_HEIGHT,
+            backgroundColor: theme.popupBg,
+            borderRadius: 8,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 32,
+            fontWeight: 300,
+            color: theme.keyText,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
+            pointerEvents: "none",
+        }}>
+            {label}
+        </div>
+    );
+};
+
+// =============================================================================
+// KEY COMPONENT
+// =============================================================================
+
+export const IOSKey: React.FC<KeyProps> = ({
+    label,
+    isPressed,
+    width,
+    isSpecial = false,
+    variant,
+}) => {
+    const colors = getThemeColors(variant, isSpecial, isPressed);
+
+    let fontSize = 25;
+    const fontWeight = 300;
+
+    if (label.length > 1) {
+        fontSize = 16;
+    }
+
+    const displayLabel = label === "space" ? "space" : renderLabel(label, variant, colors.keyText);
+    const showPopup = isPressed && label.length === 1 && !isSpecial;
+
+    return (
+        <div style={{
+            position: "relative",
+            width: width,
+            flexGrow: label === "space" ? 1 : 0,
+            height: 46,
+            // CRITICAL: Remove overflow constraints to allow popup to be visible
+        }}>
+            {/* Pop-up - Renders above key when pressed */}
+            {showPopup && (
+                <IOSKeyPopup label={label} variant={variant} keyWidth={width || 32} />
+            )}
+
+            {/* Key Body */}
+            <div style={{
+                width: "100%",
+                height: "100%",
+                backgroundColor: colors.keyBg,
+                borderRadius: 5,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize,
+                fontWeight,
+                color: colors.keyText,
+                boxShadow: colors.shadow,
+                fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro', sans-serif",
+                cursor: "pointer",
+                WebkitFontSmoothing: "antialiased",
+            }}>
+                {displayLabel}
+            </div>
+        </div>
+    );
+};
+
+// Icon Renderer Helper
+const renderLabel = (label: string, _variant: string, color: string) => {
+    const shiftStyle = { width: 22, height: 20 };
+    const deleteStyle = { width: 24, height: 20 };
+
+    if (label === "") return null;
+    if (label === "⇧") return <ShiftIcon style={shiftStyle} />;
+    if (label === "⌫") return <BackspaceIcon style={deleteStyle} color={color} />;
+    if (label === "return") return "return";
+    if (label === "123") return "123";
+    if (label === "ABC") return "ABC";
+
+    return label;
+}
+
+// =============================================================================
+// KEYBOARD ROW
+// =============================================================================
+
+export const IOSKeyRow: React.FC<{
+    keys: string[];
+    currentKey: string | null;
+    variant: "light" | "dark";
+    rowIndex: number;
+}> = ({ keys, currentKey, variant, rowIndex }) => {
+
+    const ROW_GAP = 6;
+    let paddingX = 0;
+    if (rowIndex === 1) paddingX = 18;
+
+    return (
+        <div style={{
+            display: "flex",
+            justifyContent: "center",
+            width: "100%",
+            gap: ROW_GAP,
+            paddingLeft: paddingX,
+            paddingRight: paddingX,
+            marginBottom: 12,
+            // CRITICAL: Allow overflow for popups
+            overflow: "visible",
+        }}>
+            {keys.map((key, index) => {
+                const isSpecial = ["⇧", "⌫", "123", "ABC", "🌐", "return", "#+="].includes(key);
+                const isSpace = key === "space";
+
+                const isPressed = currentKey?.toLowerCase() === key.toLowerCase() ||
+                    (key === "⌫" && currentKey === "⌫") ||
+                    (isSpace && currentKey === " ");
+
+                let width = 32;
+                if (key === "space") width = 182;
+                if (key === "return" || key === "123" || key === "ABC" || key === "#+=") width = 88;
+                if (key === "⇧" || key === "⌫") width = 46;
+
+                return (
+                    <IOSKey
+                        key={`${key}-${index}`}
+                        label={key}
+                        isPressed={isPressed}
+                        width={width}
+                        isSpecial={isSpecial}
+                        variant={variant}
+                    />
+                );
+            })}
+        </div>
+    );
+};
+
+// =============================================================================
+// PREDICTION BAR
+// =============================================================================
+
+export const IOSPredictionBar: React.FC<PredictionBarProps> = ({
+    suggestions,
+    variant,
+    highlightedIndex = 1,
+}) => {
+    const theme = getIOSTheme(variant);
+
+    return (
+        <div style={{
+            height: 48,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            padding: "0 12px",
+            marginBottom: 8,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif"
+        }}>
+            {suggestions.map((word: string, i: number) => {
+                const isCenter = i === 1;
+                const weight = isCenter ? 400 : 300;
+                const displayText = (isCenter) ? `"${word}"` : word;
+                const color = theme.keyText;
+
+                return (
+                    <div key={i} style={{
+                        flex: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        position: "relative",
+                        height: "100%",
+                    }}>
+                        <span style={{
+                            fontSize: 17,
+                            fontWeight: weight,
+                            color: color,
+                            letterSpacing: -0.2,
+                            opacity: isCenter ? 1 : 0.8
+                        }}>
+                            {displayText}
+                        </span>
+
+                        {i < 2 && (
+                            <div style={{
+                                position: "absolute",
+                                right: 0,
+                                width: 1,
+                                height: 24,
+                                backgroundColor: theme.dividerColor,
+                                opacity: 0.5,
+                            }} />
+                        )}
+                    </div>
+                );
+            })}
+        </div>
+    );
+};
+
+// =============================================================================
+// MAIN KEYBOARD COMPONENT
+// =============================================================================
+
+export const IOSKeyboard: React.FC<KeyboardProps> = ({
+    keyboard,
+    variant = "light",
+}) => {
+    const frame = useCurrentFrame();
+
+    // -------------------------------------------------------------------------
+    // DERIVE STATE FROM TYPING SCHEDULE
+    // -------------------------------------------------------------------------
+    const derivedCurrentKey = useMemo(() => {
+        if (keyboard.typingSchedule) {
+            const schedule = keyboard.typingSchedule;
+            if (frame >= schedule.startFrame && frame <= schedule.endFrame + KEY_PRESS_DURATION) {
+                return deriveCurrentKeyFromSchedule(schedule, frame);
+            }
+        }
+        return keyboard.currentKey;
+    }, [frame, keyboard.typingSchedule, keyboard.currentKey]);
+
+    // Progressive Text: Show characters as they are typed
+    const progressiveText = useMemo(() => {
+        if (keyboard.typingSchedule) {
+            return deriveProgressiveText(keyboard.typingSchedule, frame);
+        }
+        return keyboard.inputText;
+    }, [frame, keyboard.typingSchedule, keyboard.inputText]);
+
+    // -------------------------------------------------------------------------
+    // ANIMATION
+    // -------------------------------------------------------------------------
+    const ANIMATION_DURATION = 14;
+    const transitionStart = keyboard.visibilityChangedAt || 0;
+    const targetValue = keyboard.visible ? 1 : 0;
+    const startValue = keyboard.visible ? 0 : 1;
+
+    const slideProgress = interpolate(
+        frame,
+        [transitionStart, transitionStart + ANIMATION_DURATION],
+        [startValue, targetValue],
+        {
+            extrapolateLeft: "clamp",
+            extrapolateRight: "clamp",
+            easing: Easing.bezier(0.3, 1.15, 0.2, 1),
+        }
+    );
+
+    const translateY = interpolate(slideProgress, [0, 1], [100, 0]);
+    const opacity = interpolate(slideProgress, [0, 0.2, 1], [0, 1, 1]);
+
+    if (!keyboard.visible && slideProgress === 0) return null;
+
+    const rows = keyboard.layout === "numbers" ? NUMBERS_ROWS : QWERTY_ROWS;
+    const theme = getIOSTheme(variant);
+    // Use progressive text for suggestions
+    const suggestions = IOSPrediction.getSuggestions(progressiveText, 42);
+
+    return (
+        <div style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            width: "100%",
+            height: "auto",
+            transform: `translateY(${translateY}%)`,
+            opacity,
+            zIndex: 1000,
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "flex-end",
+            // CRITICAL: Allow popup overflow
+            overflow: "visible",
+        }}>
+            {/* 393px Container */}
+            <div style={{
+                width: 393,
+                backgroundColor: theme.containerBg,
+                paddingTop: 8,
+                paddingBottom: 34,
+                display: "flex",
+                flexDirection: "column",
+                position: "relative",
+                overflow: "visible", // CRITICAL for popups
+            }}>
+
+                {/* Prediction Bar */}
+                <IOSPredictionBar
+                    suggestions={suggestions}
+                    variant={variant}
+                    highlightedIndex={1}
+                />
+
+                {/* Keys Container */}
+                <div style={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "flex-end",
+                    paddingLeft: 12,
+                    paddingRight: 12,
+                    paddingBottom: 4,
+                    overflow: "visible", // CRITICAL for popups
+                }}>
+                    {rows.map((row, index) => (
+                        <IOSKeyRow
+                            key={index}
+                            keys={row}
+                            currentKey={derivedCurrentKey}
+                            variant={variant}
+                            rowIndex={index}
+                        />
+                    ))}
+                </div>
+
+                {/* Floating Bottom Action Icons */}
+                <div style={{
+                    position: "absolute",
+                    bottom: 6,
+                    left: 24,
+                    width: 26,
+                    height: 26,
+                    color: theme.keyText,
+                    opacity: 0.8
+                }}>
+                    <EmojiIcon style={{ width: "100%", height: "100%" }} />
+                </div>
+
+                <div style={{
+                    position: "absolute",
+                    bottom: 6,
+                    right: 24,
+                    width: 22,
+                    height: 30,
+                    color: theme.keyText,
+                    opacity: 0.8
+                }}>
+                    <MicIcon style={{ width: "100%", height: "100%" }} />
+                </div>
+
+            </div>
+        </div>
+    );
+};
+
+export default IOSKeyboard;
+
+// Strategy Registration
+KeyboardStrategyRegistry.register("ios", {
+    Keyboard: IOSKeyboard,
+    Key: IOSKey,
+    KeyPopup: IOSKeyPopup,
+    PredictionBar: IOSPredictionBar,
+    theme: getIOSTheme("light"),
+    getSuggestions: IOSPrediction.getSuggestions,
+});
+````
+
+## File: packages/episodes/src/production/index.ts
+````typescript
+/**
+ * Production Episodes
+ * 
+ * Import this file to auto-register all production episodes.
+ * 
+ * @example
+ * // In Root.tsx:
+ * import "@tokovo/episodes/src/production";
+ * 
+ * @see docs-v2/EPISODE-ARCH.md
+ */
+
+// Import all production episodes (side-effect: auto-registers via defineEpisode)
+import "./track-demo.episode";
+import "./bakchodi-bros.episode";
+import "./keyboard-typing-demo.episode";
+import "./notification-demo.episode";
+import "./complete-showcase.episode";
+import "./profile-focus-demo.episode";
+import "./bakchodi-gang.episode";
+import "./instagram-dm-demo.episode";
+
+// Add new episodes here as they are created
+````
+
+## File: packages/renderer/src/TokovoRenderer.tsx
+````typescript
+/**
+ * TokovoRenderer
+ *
+ * Thin wiring layer that:
+ * 1. Calls Layout Engine to get layout blueprint
+ * 2. Calls Camera Engine to get camera transform
+ * 3. Paints JSX based on blueprints
+ *
+ * No compute logic — just orchestration and rendering.
+ */
+
+import React from "react";
+import {
+    WorldState,
+    EventIndex,
+    PluginManager,
+    PluginManagerClass,
+    APP_IDS,
+    AppSurface
+} from "@tokovo/core";
+import {
+    NotificationScheduler,
+    HeadsUpNotification,
+    NotificationInstance
+} from "@tokovo/device-notifications";
+import { PhoneApp } from "@tokovo/device-calls";
+import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
+import { AppRegistry } from "./registry";
+import { NotificationOverlay } from "./overlays";
+import { LockscreenView, HomeScreenView } from "./screens";
+import { VisualDebugger } from "./VisualDebugger";
+import { DynamicIsland } from "./os";
+import { useLayoutEngine } from "./engines/useLayoutEngine";
+import { useCameraEngine } from "./engines/useCameraEngine";
+import { KeyboardSurface } from "@tokovo/device-keyboard";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
-export * from "./types";
+interface NotificationConfig {
+    headsUpDuration?: number;
+    showHeadsUpWhenAppOpen?: boolean;
+}
+
+interface TokovoRendererProps {
+    world: WorldState;
+    t: number;
+    debug?: boolean;
+    notificationConfig?: NotificationConfig;
+    focusDeviceId?: string;
+    eventIndex?: EventIndex;
+    directorEnabled?: boolean;
+    directorDebug?: boolean;
+    pluginManager?: PluginManagerClass;
+}
 
 // =============================================================================
-// RUNTIME
+// TOKOVO RENDERER
 // =============================================================================
 
-export {
-    whatsappReducer,
-    createWhatsAppInitialState,
-    selectAppState,
-    selectConversations,
-    selectCurrentConversation,
-    selectMessages,
-    selectLastMessage,
-    selectTypingMembers,
-} from "./runtime";
+export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
+    world,
+    t,
+    debug,
+    notificationConfig = {},
+    focusDeviceId,
+    eventIndex,
+    directorEnabled = true,
+    directorDebug = false,
+    pluginManager,
+}) => {
+    // Resolve Plugin Manager (Injectable > Global Fallback)
+    const pm = pluginManager || PluginManager;
 
-// =============================================================================
-// VIEWS
-// =============================================================================
+    const {
+        headsUpDuration = 150,
+        showHeadsUpWhenAppOpen = true,
+    } = notificationConfig;
 
-export * from "./ui";
-// Note: ./views re-exports from ./ui, so we don't export it again
+    // ==========================================================================
+    // 1. LAYOUT ENGINE — Get layout blueprint
+    // ==========================================================================
+    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
 
-// =============================================================================
-// IR (Intermediate Representation)
-// =============================================================================
+    // Handle error state (device not found)
+    if (layoutOutput.isError) {
+        return (
+            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
+                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
+                    Device not found
+                </div>
+            </div>
+        );
+    }
 
-export type { WhatsAppPayloads, WhatsAppTrackEvent } from "./ir";
-export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
+    const {
+        deviceId,
+        device,
+        appId,
+        viewKind,
+        layout,
+        profile,
+        variant,
+    } = layoutOutput;
 
-// =============================================================================
-// LOWERING
-// =============================================================================
+    // ==========================================================================
+    // 2. CAMERA ENGINE — Get camera transform
+    // ==========================================================================
+    const cameraOutput = useCameraEngine({
+        world,
+        t,
+        layoutOutput,
+        eventIndex,
+        directorEnabled,
+        directorDebug,
+    });
 
-export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
+    const { cameraStyle, deviceStyle } = cameraOutput;
 
-// =============================================================================
-// DSL
-// =============================================================================
+    // ==========================================================================
+    // 3. HELPER: Find active heads-up notification
+    // ==========================================================================
+    // ==========================================================================
+    // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
+    // ==========================================================================
+    const notificationState = React.useMemo(() => {
+        return NotificationScheduler.schedule(device, t);
+    }, [device, t]);
 
-export {
-    whatsappDsl,
-    WhatsAppTrackBuilder,
-    WhatsAppPointBuilder,
-    WhatsAppSpanBuilder,
-    createWhatsAppTrackBuilder,
-} from "./dsl";
-export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
+    const activeHeadsUp = notificationState.headsUp;
 
-// =============================================================================
-// LAYOUT
-// =============================================================================
+    // DEBUG: Notification State
+    if (debug && t % 30 === 0) {
+        console.log(`[TokovoRenderer] Frame ${t}:`, {
+            totalNotifs: device.os?.notifications?.length,
+            activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
+            isLocked: device.isLocked,
+            appId
+        });
+    }
 
-export { computeChatLayout } from "./layout";
+    const hasActiveCall = device.call && device.call.status !== "ended";
 
-// =============================================================================
-// CAMERA
-// =============================================================================
+    // DEBUG: Call state
+    if (device.call) {
+        console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
+    }
+    if (hasActiveCall) {
+        console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
+    }
 
-export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
+    // ==========================================================================
+    // 4. SELECT APP VIEW
+    // ==========================================================================
+    const AppView = appId ? pm.getView(appId) : null;
 
-// =============================================================================
-// ASSETS
-// =============================================================================
+    // 5. RENDER — Paint the blueprints
+    // ==========================================================================
 
-export { whatsappAudioRules } from "./assets/audio-rules";
+    // Resolve Device Frame from registry (with fallback to iPhone16)
+    const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
 
-// =============================================================================
-// SIDE EFFECTS (Auto-registration)
-// =============================================================================
+    return (
+        <div style={{
+            width: profile.dimensions.width,
+            height: profile.dimensions.height,
+            position: "relative",
+        }}>
+            {/* Camera wrapper — applies cinematic transforms */}
+            <div style={cameraStyle}>
+                {/* Device wrapper — applies layout transforms */}
+                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+                    {/* Extract statusBarTheme from foreground app's state */}
+                    <FrameComponent statusBar={
+                        <StatusBar
+                            os={device.os}
+                            variant={variant}
+                            theme={(appId && world.appState?.[appId] as any)?.statusBarTheme ?? "light"}
+                        />
+                    }>
 
-import "./ui/strategies";
-import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry, registerAnchorProvider, LayoutRegistry, APP_IDS } from "@tokovo/core";
-import { whatsappAudioRules } from "./assets/audio-rules";
-import { WhatsAppAnchors } from "./runtime/adapters/anchors";
-import { computeChatLayout } from "./layout";
+                        {/* ========================================================================= */}
+                        {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
+                        {/* ========================================================================= */}
+                        {(() => {
+                            // A. Active Call takes precedence - use PhoneApp directly from device-calls
+                            if (hasActiveCall) {
+                                const designWidth = 393; // iPhone design width
 
-// WhatsApp sound paths
-const whatsappSounds = {
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+                                return (
+                                    <AppSurface
+                                        designWidth={designWidth}
+                                        targetWidth={profile.dimensions.width}
+                                        targetHeight={profile.dimensions.height}
+                                    >
+                                        <PhoneApp world={world} t={t} platform={variant} deviceId={deviceId} />
+                                    </AppSurface>
+                                );
+                            }
+
+                            // B. Active App (Unlocked)
+                            if (AppView && !device.isLocked) {
+                                const meta = pm.get(appId!)?.metadata;
+                                const designWidth = meta?.designWidth || 393;
+
+                                // Calculate scale factor explicitly to normalize props
+                                const scale = profile.dimensions.width / designWidth;
+
+                                return (
+                                    <AppSurface
+                                        designWidth={designWidth}
+                                        targetWidth={profile.dimensions.width}
+                                        targetHeight={profile.dimensions.height}
+                                        backgroundColor={meta?.themeColor} // Use brand color as splash/bg
+                                    >
+                                        <AppView
+                                            world={world}
+                                            t={t}
+                                            // layout={layout} // Not in AppViewProps standard interface, but might be useful?
+                                            // Ideally apps use hooks: useLayout()
+                                            platform={variant}
+                                            deviceId={deviceId}
+                                            // Normalize Safe Area to Logical Units
+                                            safeAreaInsets={{
+                                                top: (profile.camera?.safeAreaTop || 0) / scale,
+                                                bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                                                left: 0,
+                                                right: 0
+                                            }}
+                                        />
+                                    </AppSurface>
+                                );
+                            }
+
+                            // C. Valid System States (Lockscreen / Home)
+                            if (!device.isLocked && device.homeScreen) {
+                                return <HomeScreenView config={device.homeScreen} variant={variant} />;
+                            }
+
+                            if (device.isLocked) {
+                                return (
+                                    <LockscreenView
+                                        notifications={device.os?.notifications || []}
+                                        layout={layout}
+                                        variant={variant}
+                                    // TODO: Pass Metadata Registry for icon lookup? 
+                                    // LockscreenView already uses it (Step 642).
+                                    />
+                                );
+                            }
+
+                            // D. Blank Screen
+                            return <div style={{ flex: 1, backgroundColor: "black" }} />;
+                        })()}
+
+
+                        {/* ========================================================================= */}
+                        {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
+                        {/* ========================================================================= */}
+
+                        {/* Lockscreen Notification Overlay */}
+                        <NotificationOverlay
+                            notifications={device.os?.notifications || []}
+                            variant={variant}
+                            layout={layout}
+                        />
+
+                        {/* Heads-Up Notification (Toast) */}
+                        {/* Note: Dynamic Island notification rendering not implemented yet, 
+                            so we always show HeadsUpNotification when there's an active heads-up */}
+                        {activeHeadsUp && !hasActiveCall && (
+                            <HeadsUpNotification
+                                key={activeHeadsUp.id}
+                                notification={activeHeadsUp}
+                                currentTime={t}
+                                variant={variant}
+                                autoDismissAfter={headsUpDuration}
+                                deviceWidth={profile.dimensions.width}
+                            />
+                        )}
+
+                        {/* Dynamic Island (iOS) - Slot Based */}
+                        {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
+                            <DynamicIsland
+                                device={device}
+                                deviceProfile={profile}
+                                world={world}
+                                t={t}
+                            />
+                        )}
+
+                        {/* Virtual Keyboard (Unified Surface) */}
+                        {device.keyboard?.visible && (
+                            <KeyboardSurface
+                                keyboard={device.keyboard}
+                                platform={variant}
+                                variant={variant === "ios" ? "light" : "light"}
+                                t={t}
+                                width={profile.dimensions.width}
+                            />
+                        )}
+
+                    </FrameComponent>
+                </div>
+            </div>
+
+            {debug && <VisualDebugger world={world} t={t} />}
+        </div>
+    );
 };
-
-AutoSoundRegistry.register(whatsappAudioRules);
-SoundRegistry.registerMany(whatsappSounds);
-
-// Register anchor provider for camera system
-registerAnchorProvider(WhatsAppAnchors);
-
-// Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
-LayoutRegistry.register({
-    appId: APP_IDS.WHATSAPP,
-    viewKind: "CHAT",
-    computeLayout: computeChatLayout,
-});
-
-AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT",
-});
-
-// =============================================================================
-// LEGACY ALIASES
-// =============================================================================
-
-export { WhatsAppPluginV2 as WhatsApp } from "./plugin";
-
-// =============================================================================
-// DEFAULT
-// =============================================================================
-
-export { default } from "./plugin";
 ````
 
 ## File: apps/video-runner/src/Root.tsx
@@ -66003,6 +69915,7 @@ import { Composition, Folder } from "remotion";
 import { z } from "zod";
 import { PluginManager, setCompiler } from "@tokovo/core";
 import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { InstagramPlugin } from "@tokovo/apps-instagram";
 import { compile } from "@tokovo/compiler";
 import { episodeRegistry, getFormat } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
@@ -66013,6 +69926,7 @@ import { EpisodeRenderer } from "./EpisodeRenderer";
 
 setCompiler(compile);
 PluginManager.register(WhatsApp);
+PluginManager.register(InstagramPlugin as any);
 
 // =============================================================================
 // PLUGIN IMPORTS (side-effect: auto-registers reducers)
