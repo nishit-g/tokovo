@@ -2,7 +2,7 @@ import React from "react";
 
 export interface LinkPreviewData {
   url: string;
-  title: string;
+  title?: string;
   description?: string;
   image?: string;
   siteName?: string;

@@ -202,23 +202,27 @@ export interface WhatsAppMessage extends BaseMessage {
   isPlaying?: boolean;
   playProgress?: number;
   edited?: boolean;
+  editedAt?: number;
+  originalText?: string;
+  originalType?: WhatsAppMessageType;
+  deletedAt?: number;
+  deletedBy?: string;
   systemType?: string;
   targetMember?: string;
   actorName?: string;
   reactions?: WhatsAppReaction[];
   replyTo?: ReplyToData;
   linkPreview?: LinkPreviewData;
-  // Document specific
+  isForwarded?: boolean;
+  forwardedFrom?: string;
   fileName?: string;
   fileSize?: string;
   fileType?: string;
   pageCount?: number;
   documentUrl?: string;
-  // Contact specific
   contactName?: string;
   contactPhone?: string;
   contactAvatarUrl?: string;
-  // Location specific
   latitude?: number;
   longitude?: number;
   locationName?: string;

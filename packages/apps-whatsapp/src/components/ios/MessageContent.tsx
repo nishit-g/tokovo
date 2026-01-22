@@ -326,15 +326,17 @@ export const MessageContent: React.FC<MessageContentProps> = ({
         </div>
       );
 
-    default:
+    default: {
+      const unknownMessage = message as { text?: string };
       return (
         <TextContent
           text={
-            "text" in message && typeof message.text === "string"
-              ? message.text
+            unknownMessage.text && typeof unknownMessage.text === "string"
+              ? unknownMessage.text
               : "[Unsupported message type]"
           }
         />
       );
+    }
   }
 };
