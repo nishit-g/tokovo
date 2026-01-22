@@ -1,12 +1,12 @@
 /**
  * WhatsApp v2 Track Builder - App-specific track for WhatsApp events
- * 
+ *
  * @description Provides DSL verbs for WhatsApp interactions:
  * - receive() - Incoming message
- * - send() - Outgoing message  
+ * - send() - Outgoing message
  * - typing() - Typing indicator
  * - react() - Emoji reaction
- * 
+ *
  * @see docs-v2/DSL_REVAMP.md#app-track-plugin-system
  */
 
@@ -14,14 +14,15 @@ import type { TrackMessageRef } from "@tokovo/ir";
 
 // Local type for WhatsApp track events
 type WhatsAppTrackEvent = {
-    at: number;
-    duration?: number;
-    deviceId: string;
-    kind: "APP";
-    appId: "app_whatsapp";
-    type: string;
-    payload: Record<string, any>;
-    _declarationOrder: number;
+  at: number;
+  duration?: number;
+  deviceId: string;
+  kind: "APP";
+  appId: "app_whatsapp";
+  type: string;
+  conversationId: string;
+  payload: Record<string, any>;
+  _declarationOrder: number;
 };
 
 // =============================================================================
@@ -31,21 +32,21 @@ type WhatsAppTrackEvent = {
 type GetDeclarationOrder = () => number;
 
 export interface ReceiveOptions {
-    silent?: boolean;
-    replyTo?: TrackMessageRef;
+  silent?: boolean;
+  replyTo?: TrackMessageRef;
 }
 
 export interface SendOptions {
-    silent?: boolean;
+  silent?: boolean;
 }
 
 export interface ImageOptions {
-    caption?: string;
-    height?: number;
+  caption?: string;
+  height?: number;
 }
 
 export interface TypingOptions {
-    actor?: string;
+  actor?: string;
 }
 
 // =============================================================================
@@ -53,252 +54,245 @@ export interface TypingOptions {
 // =============================================================================
 
 export class WhatsAppPointBuilder {
-    constructor(
-        private _frame: number,
-        private _fps: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _events: WhatsAppTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
+  constructor(
+    private _frame: number,
+    private _fps: number,
+    private _deviceId: string,
+    private _conversationId: string,
+    private _events: WhatsAppTrackEvent[],
+    private _getOrder: GetDeclarationOrder,
+  ) {}
 
-    /**
-     * Receive a message from someone.
-     */
-    receive(from: string, text: string, options: ReceiveOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                text,
-                silent: options.silent,
-                replyTo: options.replyTo,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  private _push(type: string, payload: Record<string, any>): void {
+    this._events.push({
+      at: this._frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type,
+      conversationId: this._conversationId,
+      payload: { conversationId: this._conversationId, ...payload },
+      _declarationOrder: this._getOrder(),
+    });
+  }
 
-    /**
-     * Send a message.
-     */
-    send(text: string, options: SendOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "MESSAGE_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                text,
-                silent: options.silent,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  receive(from: string, text: string, options: ReceiveOptions = {}): void {
+    this._push("MESSAGE_RECEIVED", {
+      from,
+      text,
+      silent: options.silent,
+      replyTo: options.replyTo,
+    });
+  }
 
-    /**
-     * Receive an image.
-     */
-    receiveImage(from: string, url: string, options: ImageOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "IMAGE_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                url,
-                caption: options.caption,
-                height: options.height,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  send(text: string, options: SendOptions = {}): void {
+    this._push("MESSAGE_SENT", { text, silent: options.silent });
+  }
 
-    /**
-     * Send an image.
-     */
-    sendImage(url: string, options: ImageOptions = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "IMAGE_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                url,
-                caption: options.caption,
-                messageType: "image",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  receiveImage(from: string, url: string, options: ImageOptions = {}): void {
+    this._push("IMAGE_RECEIVED", {
+      from,
+      url,
+      caption: options.caption,
+      height: options.height,
+    });
+  }
 
-    /**
-     * Receive a video.
-     */
-    receiveVideo(from: string, url: string, options: { duration?: number; caption?: string } = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "VIDEO_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                url,
-                duration: options.duration ?? 10,
-                caption: options.caption,
-                messageType: "video",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  sendImage(url: string, options: ImageOptions = {}): void {
+    this._push("IMAGE_SENT", {
+      url,
+      caption: options.caption,
+      messageType: "image",
+    });
+  }
 
-    /**
-     * Send a video.
-     */
-    sendVideo(url: string, options: { duration?: number; caption?: string } = {}): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "VIDEO_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                url,
-                duration: options.duration ?? 10,
-                caption: options.caption,
-                messageType: "video",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  receiveVideo(
+    from: string,
+    url: string,
+    options: { duration?: number; caption?: string } = {},
+  ): void {
+    this._push("VIDEO_RECEIVED", {
+      from,
+      url,
+      duration: options.duration ?? 10,
+      caption: options.caption,
+      messageType: "video",
+    });
+  }
 
-    /**
-     * Receive a voice note.
-     */
-    receiveVoice(from: string, duration: number): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "VOICE_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                duration,
-                messageType: "voice",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  sendVideo(
+    url: string,
+    options: { duration?: number; caption?: string } = {},
+  ): void {
+    this._push("VIDEO_SENT", {
+      url,
+      duration: options.duration ?? 10,
+      caption: options.caption,
+      messageType: "video",
+    });
+  }
 
-    /**
-     * Send a voice note.
-     */
-    sendVoice(duration: number): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "VOICE_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                duration,
-                messageType: "voice",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  receiveVoice(from: string, duration: number): void {
+    this._push("VOICE_RECEIVED", { from, duration, messageType: "voice" });
+  }
 
-    /**
-     * Receive a GIF.
-     */
-    receiveGif(from: string, url: string): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "GIF_RECEIVED",
-            payload: {
-                conversationId: this._conversationId,
-                from,
-                url,
-                messageType: "gif",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  sendVoice(duration: number): void {
+    this._push("VOICE_SENT", { duration, messageType: "voice" });
+  }
 
-    /**
-     * Send a GIF.
-     */
-    sendGif(url: string): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "GIF_SENT",
-            payload: {
-                conversationId: this._conversationId,
-                url,
-                messageType: "gif",
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  receiveGif(from: string, url: string): void {
+    this._push("GIF_RECEIVED", { from, url, messageType: "gif" });
+  }
 
-    /**
-     * React to a message.
-     */
-    react(messageRef: TrackMessageRef, emoji: string): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "REACT",
-            payload: {
-                conversationId: this._conversationId,  // Required for reducer!
-                messageRef,
-                emoji,
-            },
-            _declarationOrder: this._getOrder(),
-        });
-    }
+  sendGif(url: string): void {
+    this._push("GIF_SENT", { url, messageType: "gif" });
+  }
 
-    /**
-     * Mark conversation as read.
-     */
-    read(): void {
-        this._events.push({
-            at: this._frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "READ",
-            payload: {
-                conversationId: this._conversationId,
-            },
-            _declarationOrder: this._getOrder(),
-        });
+  react(
+    messageRef: TrackMessageRef | { messageIndex: number } | { index: number },
+    emoji: string,
+  ): void {
+    let ref: { index: number };
+    if ("messageIndex" in messageRef) {
+      ref = { index: (messageRef as any).messageIndex };
+    } else if ("index" in messageRef) {
+      ref = { index: (messageRef as any).index };
+    } else {
+      ref = messageRef as any;
     }
+    this._push("REACT", { messageRef: ref, emoji });
+  }
+
+  read(): void {
+    this._push("READ", {});
+  }
+
+  receiveSticker(from: string, url: string): void {
+    this._push("STICKER_RECEIVED", { from, url, messageType: "sticker" });
+  }
+
+  sendSticker(url: string): void {
+    this._push("STICKER_SENT", { url, messageType: "sticker" });
+  }
+
+  receiveDocument(
+    from: string,
+    options: { fileName: string; fileSize: string; fileType?: string },
+  ): void {
+    this._push("DOCUMENT_RECEIVED", {
+      from,
+      fileName: options.fileName,
+      fileSize: options.fileSize,
+      fileType: options.fileType,
+      messageType: "document",
+    });
+  }
+
+  sendDocument(options: {
+    fileName: string;
+    fileSize: string;
+    fileType?: string;
+  }): void {
+    this._push("DOCUMENT_SENT", {
+      fileName: options.fileName,
+      fileSize: options.fileSize,
+      fileType: options.fileType,
+      messageType: "document",
+    });
+  }
+
+  receiveContact(
+    from: string,
+    options: {
+      contactName: string;
+      contactPhone?: string;
+      contactAvatarUrl?: string;
+    },
+  ): void {
+    this._push("CONTACT_RECEIVED", {
+      from,
+      name: options.contactName,
+      phone: options.contactPhone,
+      avatar: options.contactAvatarUrl,
+      messageType: "contact",
+    });
+  }
+
+  sendContact(options: {
+    contactName: string;
+    contactPhone?: string;
+    contactAvatarUrl?: string;
+  }): void {
+    this._push("CONTACT_SENT", {
+      name: options.contactName,
+      phone: options.contactPhone,
+      avatar: options.contactAvatarUrl,
+      messageType: "contact",
+    });
+  }
+
+  receiveLocation(
+    from: string,
+    options: {
+      latitude: number;
+      longitude: number;
+      locationName?: string;
+      locationAddress?: string;
+      mapThumbnailUrl?: string;
+    },
+  ): void {
+    this._push("LOCATION_RECEIVED", {
+      from,
+      lat: options.latitude,
+      lng: options.longitude,
+      name: options.locationName,
+      address: options.locationAddress,
+      mapThumbnailUrl: options.mapThumbnailUrl,
+      messageType: "location",
+    });
+  }
+
+  sendLocation(options: {
+    latitude: number;
+    longitude: number;
+    locationName?: string;
+    locationAddress?: string;
+    mapThumbnailUrl?: string;
+  }): void {
+    this._push("LOCATION_SENT", {
+      lat: options.latitude,
+      lng: options.longitude,
+      name: options.locationName,
+      address: options.locationAddress,
+      mapThumbnailUrl: options.mapThumbnailUrl,
+      messageType: "location",
+    });
+  }
+
+  forward(
+    messageIndex: number,
+    options?: { forwardedFrom?: string; text?: string },
+  ): void {
+    this._push("MESSAGE_FORWARDED", {
+      messageRef: { index: messageIndex },
+      forwardedFrom: options?.forwardedFrom,
+      text: options?.text,
+    });
+  }
+
+  deleteMessage(messageIndex: number): void {
+    this._push("MESSAGE_DELETED", {
+      messageRef: { index: messageIndex },
+      deletedForEveryone: true,
+    });
+  }
+
+  editMessage(messageIndex: number, newText: string): void {
+    this._push("MESSAGE_EDITED", {
+      messageRef: { index: messageIndex },
+      newText,
+    });
+  }
 }
 
 // =============================================================================
@@ -306,48 +300,50 @@ export class WhatsAppPointBuilder {
 // =============================================================================
 
 export class WhatsAppSpanBuilder {
-    constructor(
-        private _startFrame: number,
-        private _endFrame: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _events: WhatsAppTrackEvent[],
-        private _getOrder: GetDeclarationOrder
-    ) { }
+  constructor(
+    private _startFrame: number,
+    private _endFrame: number,
+    private _deviceId: string,
+    private _conversationId: string,
+    private _events: WhatsAppTrackEvent[],
+    private _getOrder: GetDeclarationOrder,
+  ) {}
 
-    /**
-     * Show typing indicator for the span duration.
-     * NOTE: Use keyboard track for actual key animation.
-     */
-    typing(actor: string = "them"): void {
-        this._events.push(
-            {
-                at: this._startFrame,
-                duration: this._endFrame - this._startFrame,
-                deviceId: this._deviceId,
-                kind: "APP",
-                appId: "app_whatsapp",
-                type: "TYPING_START",
-                payload: {
-                    conversationId: this._conversationId,
-                    actor,
-                },
-                _declarationOrder: this._getOrder(),
-            },
-            {
-                at: this._endFrame,
-                deviceId: this._deviceId,
-                kind: "APP",
-                appId: "app_whatsapp",
-                type: "TYPING_END",
-                payload: {
-                    conversationId: this._conversationId,
-                    actor,
-                },
-                _declarationOrder: this._getOrder(),
-            }
-        );
-    }
+  /**
+   * Show typing indicator for the span duration.
+   * NOTE: Use keyboard track for actual key animation.
+   */
+  typing(actor: string = "them"): void {
+    this._events.push(
+      {
+        at: this._startFrame,
+        duration: this._endFrame - this._startFrame,
+        deviceId: this._deviceId,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_START",
+        conversationId: this._conversationId,
+        payload: {
+          conversationId: this._conversationId,
+          actor,
+        },
+        _declarationOrder: this._getOrder(),
+      },
+      {
+        at: this._endFrame,
+        deviceId: this._deviceId,
+        kind: "APP",
+        appId: "app_whatsapp",
+        type: "TYPING_END",
+        conversationId: this._conversationId,
+        payload: {
+          conversationId: this._conversationId,
+          actor,
+        },
+        _declarationOrder: this._getOrder(),
+      },
+    );
+  }
 }
 
 // =============================================================================
@@ -358,161 +354,161 @@ export class WhatsAppSpanBuilder {
  * Parse time to frames.
  */
 function parseTime(time: string | number, fps: number): number {
-    if (typeof time === "number") return Math.round(time);
-    const trimmed = time.trim();
-    if (trimmed.endsWith("ms")) {
-        return Math.round((parseFloat(trimmed.slice(0, -2)) / 1000) * fps);
-    }
-    if (trimmed.endsWith("s")) {
-        return Math.round(parseFloat(trimmed.slice(0, -1)) * fps);
-    }
-    return Math.round(parseFloat(trimmed));
+  if (typeof time === "number") return Math.round(time);
+  const trimmed = time.trim();
+  if (trimmed.endsWith("ms")) {
+    return Math.round((parseFloat(trimmed.slice(0, -2)) / 1000) * fps);
+  }
+  if (trimmed.endsWith("s")) {
+    return Math.round(parseFloat(trimmed.slice(0, -1)) * fps);
+  }
+  return Math.round(parseFloat(trimmed));
 }
 
 export class WhatsAppTrackBuilder {
-    _events: WhatsAppTrackEvent[] = [];
+  _events: WhatsAppTrackEvent[] = [];
 
-    constructor(
-        private _fps: number,
-        private _deviceId: string,
-        private _conversationId: string,
-        private _getOrder: GetDeclarationOrder
-    ) { }
+  constructor(
+    private _fps: number,
+    private _deviceId: string,
+    private _conversationId: string,
+    private _getOrder: GetDeclarationOrder,
+  ) {}
 
-    /**
-     * Create a point (instant) operation at a specific time.
-     */
-    at(time: string | number): WhatsAppPointBuilder {
-        const frame = parseTime(time, this._fps);
-        return new WhatsAppPointBuilder(
-            frame,
-            this._fps,
-            this._deviceId,
-            this._conversationId,
-            this._events,
-            this._getOrder
-        );
-    }
+  /**
+   * Create a point (instant) operation at a specific time.
+   */
+  at(time: string | number): WhatsAppPointBuilder {
+    const frame = parseTime(time, this._fps);
+    return new WhatsAppPointBuilder(
+      frame,
+      this._fps,
+      this._deviceId,
+      this._conversationId,
+      this._events,
+      this._getOrder,
+    );
+  }
 
-    /**
-     * Create a span (duration) operation between two times.
-     */
-    span(start: string | number, end: string | number): WhatsAppSpanBuilder {
-        const startFrame = parseTime(start, this._fps);
-        const endFrame = parseTime(end, this._fps);
-        return new WhatsAppSpanBuilder(
-            startFrame,
-            endFrame,
-            this._deviceId,  // FIXED: was passing _fps by mistake!
-            this._conversationId,
-            this._events,
-            this._getOrder
-        );
-    }
+  /**
+   * Create a span (duration) operation between two times.
+   */
+  span(start: string | number, end: string | number): WhatsAppSpanBuilder {
+    const startFrame = parseTime(start, this._fps);
+    const endFrame = parseTime(end, this._fps);
+    return new WhatsAppSpanBuilder(
+      startFrame,
+      endFrame,
+      this._deviceId, // FIXED: was passing _fps by mistake!
+      this._conversationId,
+      this._events,
+      this._getOrder,
+    );
+  }
 
-    /**
-     * Switch to a different conversation at a specific time.
-     * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
-     */
-    switchTo(conversationId: string, time: string | number = "0s"): void {
-        const frame = parseTime(time, this._fps);
-        this._events.push({
-            at: frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "CONVERSATION_OPENED",
-            payload: {
-                conversationId,
-            },
-            _declarationOrder: this._getOrder(),
-        } as any);
-        // Update internal conversation ID for subsequent methods
-        (this as any)._conversationId = conversationId;
-    }
+  /**
+   * Switch to a different conversation at a specific time.
+   * Emits core CONVERSATION_OPENED event (handled by navigation.ts)
+   */
+  switchTo(conversationId: string, time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "CONVERSATION_OPENED",
+      payload: {
+        conversationId,
+      },
+      _declarationOrder: this._getOrder(),
+    } as any);
+    // Update internal conversation ID for subsequent methods
+    (this as any)._conversationId = conversationId;
+  }
 
-    /**
-     * Open the chat list screen at a specific time.
-     * Emits core NAVIGATE_SCREEN event (handled by navigation.ts)
-     */
-    openChatList(time: string | number = "0s"): void {
-        const frame = parseTime(time, this._fps);
-        this._events.push({
-            at: frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "NAVIGATE_SCREEN",
-            payload: {
-                screen: "chats",
-            },
-            _declarationOrder: this._getOrder(),
-        } as any);
-    }
+  /**
+   * Open the chat list screen at a specific time.
+   * Emits core NAVIGATE_SCREEN event (handled by navigation.ts)
+   */
+  openChatList(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "chats",
+      },
+      _declarationOrder: this._getOrder(),
+    } as any);
+  }
 
-    /**
-     * Go back to previous screen at a specific time.
-     * Emits core GO_BACK event (handled by navigation.ts)
-     */
-    goBack(time: string | number = "0s"): void {
-        const frame = parseTime(time, this._fps);
-        this._events.push({
-            at: frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "GO_BACK",
-            payload: {},
-            _declarationOrder: this._getOrder(),
-        } as any);
-    }
+  /**
+   * Go back to previous screen at a specific time.
+   * Emits core GO_BACK event (handled by navigation.ts)
+   */
+  goBack(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "GO_BACK",
+      payload: {},
+      _declarationOrder: this._getOrder(),
+    } as any);
+  }
 
-    /**
-     * Open profile screen at a specific time.
-     */
-    openProfile(time: string | number = "0s"): void {
-        const frame = parseTime(time, this._fps);
-        this._events.push({
-            at: frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "NAVIGATE_SCREEN",
-            payload: {
-                screen: "profile",
-            },
-            _declarationOrder: this._getOrder(),
-        } as any);
-    }
+  /**
+   * Open profile screen at a specific time.
+   */
+  openProfile(time: string | number = "0s"): void {
+    const frame = parseTime(time, this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "NAVIGATE_SCREEN",
+      payload: {
+        screen: "profile",
+      },
+      _declarationOrder: this._getOrder(),
+    } as any);
+  }
 
-    /**
-     * Add a date separator (e.g., "Today", "Yesterday").
-     */
-    dateSeparator(text: string = "Today"): void {
-        const frame = parseTime("0s", this._fps);
-        this._events.push({
-            at: frame,
-            deviceId: this._deviceId,
-            kind: "APP",
-            appId: "app_whatsapp",
-            type: "DATE_SEPARATOR",
-            payload: {
-                conversationId: this._conversationId,
-                text,
-            },
-            _declarationOrder: this._getOrder(),
-        } as any);
-    }
+  /**
+   * Add a date separator (e.g., "Today", "Yesterday").
+   */
+  dateSeparator(text: string = "Today"): void {
+    const frame = parseTime("0s", this._fps);
+    this._events.push({
+      at: frame,
+      deviceId: this._deviceId,
+      kind: "APP",
+      appId: "app_whatsapp",
+      type: "DATE_SEPARATOR",
+      payload: {
+        conversationId: this._conversationId,
+        text,
+      },
+      _declarationOrder: this._getOrder(),
+    } as any);
+  }
 }
 
 /**
  * Create a new WhatsApp track builder factory.
  */
 export function createWhatsAppTrackBuilder(
-    fps: number,
-    deviceId: string,
-    conversationId: string,
-    getOrder: GetDeclarationOrder
+  fps: number,
+  deviceId: string,
+  conversationId: string,
+  getOrder: GetDeclarationOrder,
 ): WhatsAppTrackBuilder {
-    return new WhatsAppTrackBuilder(fps, deviceId, conversationId, getOrder);
+  return new WhatsAppTrackBuilder(fps, deviceId, conversationId, getOrder);
 }

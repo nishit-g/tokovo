@@ -4,6 +4,11 @@ import {
   VoiceMessageBubble,
   ImageMessageBubble,
   VideoMessageBubble,
+  GifMessageBubble,
+  StickerMessageBubble,
+  DocumentMessageBubble,
+  ContactMessageBubble,
+  LocationMessageBubble,
 } from "../MediaBubbles";
 import { LinkPreview } from "../LinkPreview";
 
@@ -82,6 +87,62 @@ const VoiceContent: React.FC<{
     read={read}
     isPlaying={isPlaying}
     playProgress={playProgress}
+  />
+);
+
+const StickerContent: React.FC<{
+  url: string;
+  isMe?: boolean;
+  timestamp?: string;
+  read?: boolean;
+}> = ({ url, isMe = false, timestamp, read }) => (
+  <StickerMessageBubble
+    stickerUrl={url}
+    isMe={isMe}
+    timestamp={timestamp}
+    read={read}
+  />
+);
+
+const GifContent: React.FC<{
+  url: string;
+  isMe?: boolean;
+  timestamp?: string;
+  read?: boolean;
+}> = ({ url, isMe = false, timestamp, read }) => (
+  <GifMessageBubble
+    gifUrl={url}
+    isMe={isMe}
+    timestamp={timestamp}
+    read={read}
+  />
+);
+
+const DocumentContent: React.FC<{
+  fileName: string;
+  fileSize: string;
+  fileType?: string;
+  pageCount?: number;
+  isMe?: boolean;
+  timestamp?: string;
+  read?: boolean;
+}> = ({
+  fileName,
+  fileSize,
+  fileType,
+  pageCount,
+  isMe = false,
+  timestamp,
+  read,
+}) => (
+  <DocumentMessageBubble
+    fileName={fileName}
+    fileSize={fileSize}
+    fileType={fileType}
+    pageCount={pageCount}
+    isMe={isMe}
+    timestamp={timestamp}
+    read={read}
   />
 );
 
@@ -169,6 +230,65 @@ export const MessageContent: React.FC<MessageContentProps> = ({
         />
       );
 
+    case "sticker":
+      return (
+        <StickerContent
+          url={message.stickerUrl || ""}
+          isMe={isMe}
+          timestamp={timestamp}
+          read={read}
+        />
+      );
+
+    case "gif":
+      return (
+        <GifContent
+          url={message.gifUrl || ""}
+          isMe={isMe}
+          timestamp={timestamp}
+          read={read}
+        />
+      );
+
+    case "document":
+      return (
+        <DocumentContent
+          fileName={message.fileName || "Document"}
+          fileSize={message.fileSize || "0 KB"}
+          fileType={message.fileType}
+          pageCount={message.pageCount}
+          isMe={isMe}
+          timestamp={timestamp}
+          read={read}
+        />
+      );
+
+    case "contact":
+      return (
+        <ContactMessageBubble
+          contactName={message.contactName || "Contact"}
+          contactPhone={message.contactPhone}
+          contactAvatarUrl={message.contactAvatarUrl}
+          isMe={isMe}
+          timestamp={timestamp}
+          read={read}
+        />
+      );
+
+    case "location":
+      return (
+        <LocationMessageBubble
+          latitude={message.latitude || 0}
+          longitude={message.longitude || 0}
+          locationName={message.locationName}
+          locationAddress={message.locationAddress}
+          mapThumbnailUrl={message.mapThumbnailUrl}
+          isMe={isMe}
+          timestamp={timestamp}
+          read={read}
+        />
+      );
+
     case "link":
       return (
         <LinkContent
@@ -183,7 +303,13 @@ export const MessageContent: React.FC<MessageContentProps> = ({
 
     default:
       return (
-        <TextContent text={message.text || "[Unsupported message type]"} />
+        <TextContent
+          text={
+            "text" in message && typeof message.text === "string"
+              ? message.text
+              : "[Unsupported message type]"
+          }
+        />
       );
   }
 };

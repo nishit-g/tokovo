@@ -550,6 +550,74 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
 };
 
 // =============================================================================
+// STICKER MESSAGE BUBBLE
+// =============================================================================
+
+interface StickerMessageBubbleProps {
+  stickerUrl: string;
+  isMe: boolean;
+  timestamp?: string;
+  read?: boolean;
+}
+
+export const StickerMessageBubble: React.FC<StickerMessageBubbleProps> = ({
+  stickerUrl,
+  isMe,
+  timestamp = "10:42",
+  read = false,
+}) => {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: 136,
+        height: 136,
+        // No background, no shadow, no border radius needed on container
+      }}
+    >
+      <img
+        src={stickerUrl}
+        style={{
+          width: "100%",
+          height: "100%",
+          objectFit: "contain",
+          display: "block",
+          // Add a subtle drop shadow to lift sticker off wallpaper
+          filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
+        }}
+        alt="Sticker"
+      />
+
+      {/* Timestamp overlay */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: 4,
+          right: 4,
+          display: "flex",
+          alignItems: "center",
+          gap: 3,
+          backgroundColor: "rgba(0,0,0,0.3)", // Lighter background for sticker overlay
+          padding: "2px 4px",
+          borderRadius: 4,
+        }}
+      >
+        <span
+          style={{
+            fontSize: TIMESTAMP_SIZE,
+            color: "#FFFFFF",
+            fontFamily: FONT_FAMILY,
+          }}
+        >
+          {timestamp}
+        </span>
+        {isMe && <DoubleCheckIcon read={read} light />}
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
 // VOICE MESSAGE BUBBLE
 // =============================================================================
 
@@ -745,6 +813,185 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
 };
 
 // =============================================================================
+// DOCUMENT MESSAGE BUBBLE
+// =============================================================================
+
+interface DocumentMessageBubbleProps {
+  fileName: string;
+  fileSize: string;
+  fileType?: string;
+  pageCount?: number;
+  isMe: boolean;
+  senderName?: string;
+  timestamp?: string;
+  read?: boolean;
+  platform?: Platform;
+}
+
+export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
+  fileName,
+  fileSize,
+  fileType = "pdf",
+  pageCount,
+  isMe,
+  senderName,
+  timestamp = "10:42",
+  read = false,
+}) => {
+  const getIconColor = () => {
+    const type = fileType.toLowerCase();
+    if (type.includes("pdf")) return "#F40F02";
+    if (type.includes("xls") || type.includes("sheet")) return "#1D6F42";
+    if (type.includes("doc") || type.includes("word")) return "#2B579A";
+    if (type.includes("ppt") || type.includes("slide")) return "#D24726";
+    return WA_GRAY;
+  };
+
+  const iconColor = getIconColor();
+
+  return (
+    <div
+      style={{
+        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
+        borderRadius: BUBBLE_RADIUS,
+        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
+        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
+        boxShadow: BUBBLE_SHADOW,
+        padding: BUBBLE_PADDING_H,
+        minWidth: 200,
+        maxWidth: 280,
+      }}
+    >
+      {/* Sender Name */}
+      {senderName && !isMe && (
+        <div style={{ marginBottom: 3 }}>
+          <span
+            style={{
+              fontSize: SENDER_NAME_SIZE,
+              fontWeight: 600,
+              color: WA_TEAL,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {senderName}
+          </span>
+        </div>
+      )}
+
+      {/* Document Content */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: "6px 0",
+        }}
+      >
+        {/* Document Icon (Left) */}
+        <div
+          style={{
+            position: "relative",
+            width: 34,
+            height: 40,
+            flexShrink: 0,
+          }}
+        >
+          {/* File Icon SVG */}
+          <svg width="34" height="40" viewBox="0 0 34 40" fill="none">
+            <path
+              d="M4 0H20L34 14V36C34 38.2 32.2 40 30 40H4C1.8 40 0 38.2 0 36V4C0 1.8 1.8 0 4 0Z"
+              fill={iconColor}
+              fillOpacity="0.15"
+            />
+            <path d="M20 0V14H34" fill={iconColor} fillOpacity="0.3" />
+            <text
+              x="50%"
+              y="65%"
+              textAnchor="middle"
+              fill={iconColor}
+              fontSize="10"
+              fontWeight="bold"
+              fontFamily={FONT_FAMILY}
+              style={{ textTransform: "uppercase" }}
+            >
+              {fileType.slice(0, 3)}
+            </text>
+          </svg>
+        </div>
+
+        {/* File Info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: MESSAGE_TEXT_SIZE,
+              color: "#000000",
+              fontFamily: FONT_FAMILY,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+              lineHeight: 1.3,
+            }}
+          >
+            {fileName}
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              color: WA_GRAY,
+              fontFamily: FONT_FAMILY,
+              marginTop: 1,
+            }}
+          >
+            {pageCount ? `${pageCount} pages • ` : ""}
+            {fileSize} • {fileType.toUpperCase()}
+          </div>
+        </div>
+
+        {/* Download Icon (Right) */}
+        <div
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: `1px solid ${WA_GRAY}40`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={WA_GRAY}>
+            <path d="M12 16L7 11L8.4 9.55L11 12.15V4H13V12.15L15.6 9.55L17 11L12 16ZM6 20V18H18V20H6Z" />
+          </svg>
+        </div>
+      </div>
+
+      {/* Timestamp Row */}
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+          gap: 3,
+          marginTop: 2,
+        }}
+      >
+        <span
+          style={{
+            fontSize: TIMESTAMP_SIZE,
+            color: WA_GRAY,
+            fontFamily: FONT_FAMILY,
+          }}
+        >
+          {timestamp}
+        </span>
+        {isMe && <DoubleCheckIcon read={read} />}
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
 // SHARED: Double Check Icon for read receipts
 // =============================================================================
 
@@ -769,3 +1016,335 @@ const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({
     />
   </svg>
 );
+
+// =============================================================================
+// CONTACT MESSAGE BUBBLE
+// =============================================================================
+
+interface ContactMessageBubbleProps {
+  contactName: string;
+  contactPhone?: string;
+  contactAvatarUrl?: string;
+  isMe: boolean;
+  senderName?: string;
+  timestamp?: string;
+  read?: boolean;
+  platform?: Platform;
+}
+
+export const ContactMessageBubble: React.FC<ContactMessageBubbleProps> = ({
+  contactName,
+  contactPhone,
+  contactAvatarUrl,
+  isMe,
+  senderName,
+  timestamp = "10:42",
+  read = false,
+}) => {
+  return (
+    <div
+      style={{
+        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
+        borderRadius: BUBBLE_RADIUS,
+        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
+        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
+        boxShadow: BUBBLE_SHADOW,
+        overflow: "hidden",
+        minWidth: 200,
+        maxWidth: 280,
+      }}
+    >
+      {senderName && !isMe && (
+        <div
+          style={{
+            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: SENDER_NAME_SIZE,
+              fontWeight: 600,
+              color: WA_TEAL,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {senderName}
+          </span>
+        </div>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          padding: BUBBLE_PADDING_H,
+        }}
+      >
+        {contactAvatarUrl ? (
+          <img
+            src={contactAvatarUrl}
+            alt=""
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              objectFit: "cover",
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              backgroundColor: "#DFE5E7",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="#8696A0">
+              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+            </svg>
+          </div>
+        )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div
+            style={{
+              fontSize: MESSAGE_TEXT_SIZE,
+              fontWeight: 500,
+              color: "#000000",
+              fontFamily: FONT_FAMILY,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {contactName}
+          </div>
+          {contactPhone && (
+            <div
+              style={{
+                fontSize: 13,
+                color: WA_GRAY,
+                fontFamily: FONT_FAMILY,
+                marginTop: 2,
+              }}
+            >
+              {contactPhone}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        style={{
+          borderTop: "1px solid rgba(0,0,0,0.08)",
+          padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px`,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <span
+          style={{
+            fontSize: 14,
+            color: WA_TEAL,
+            fontWeight: 500,
+            fontFamily: FONT_FAMILY,
+          }}
+        >
+          Message
+        </span>
+
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+          }}
+        >
+          <span
+            style={{
+              fontSize: TIMESTAMP_SIZE,
+              color: WA_GRAY,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {timestamp}
+          </span>
+          {isMe && <DoubleCheckIcon read={read} />}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// =============================================================================
+// LOCATION MESSAGE BUBBLE
+// =============================================================================
+
+interface LocationMessageBubbleProps {
+  latitude: number;
+  longitude: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+  isMe: boolean;
+  senderName?: string;
+  timestamp?: string;
+  read?: boolean;
+}
+
+export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
+  locationName,
+  locationAddress,
+  mapThumbnailUrl,
+  isMe,
+  senderName,
+  timestamp = "10:42",
+  read = false,
+}) => {
+  const defaultMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=0,0&zoom=15&size=300x150&maptype=roadmap&key=DEMO`;
+
+  return (
+    <div
+      style={{
+        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
+        borderRadius: BUBBLE_RADIUS,
+        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
+        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
+        boxShadow: BUBBLE_SHADOW,
+        overflow: "hidden",
+        minWidth: 240,
+        maxWidth: 300,
+      }}
+    >
+      {senderName && !isMe && (
+        <div
+          style={{
+            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
+          }}
+        >
+          <span
+            style={{
+              fontSize: SENDER_NAME_SIZE,
+              fontWeight: 600,
+              color: WA_TEAL,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {senderName}
+          </span>
+        </div>
+      )}
+
+      <div
+        style={{
+          width: "100%",
+          height: 140,
+          backgroundColor: "#E8E8E8",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {mapThumbnailUrl ? (
+          <img
+            src={mapThumbnailUrl}
+            alt="Map"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+            }}
+          />
+        ) : (
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: "#D4E4D4",
+            }}
+          >
+            <svg width="48" height="48" viewBox="0 0 24 24" fill={WA_TEAL}>
+              <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+            </svg>
+          </div>
+        )}
+
+        <div
+          style={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -100%)",
+          }}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="#EA4335">
+            <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+          </svg>
+        </div>
+      </div>
+
+      <div
+        style={{
+          padding: BUBBLE_PADDING_H,
+        }}
+      >
+        {locationName && (
+          <div
+            style={{
+              fontSize: MESSAGE_TEXT_SIZE,
+              fontWeight: 500,
+              color: "#000000",
+              fontFamily: FONT_FAMILY,
+              marginBottom: 2,
+            }}
+          >
+            {locationName}
+          </div>
+        )}
+
+        {locationAddress && (
+          <div
+            style={{
+              fontSize: 13,
+              color: WA_GRAY,
+              fontFamily: FONT_FAMILY,
+              marginBottom: 4,
+            }}
+          >
+            {locationAddress}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            alignItems: "center",
+            gap: 3,
+          }}
+        >
+          <span
+            style={{
+              fontSize: TIMESTAMP_SIZE,
+              color: WA_GRAY,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {timestamp}
+          </span>
+          {isMe && <DoubleCheckIcon read={read} />}
+        </div>
+      </div>
+    </div>
+  );
+};

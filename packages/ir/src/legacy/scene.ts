@@ -201,6 +201,22 @@ export interface DeleteMessageOp {
   readonly ref: MessageRef;
 }
 
+/**
+ * Edit a message's text.
+ */
+export interface EditMessageOp {
+  readonly kind: "EditMessage";
+  readonly ref: MessageRef;
+  readonly newText: string;
+}
+
+export interface ForwardMessageOp {
+  readonly kind: "ForwardMessage";
+  readonly ref: MessageRef;
+  readonly toConversationId: string;
+  readonly forwardedFrom?: string;
+}
+
 // =============================================================================
 // MEDIA MESSAGE OPERATIONS
 // =============================================================================
@@ -313,6 +329,70 @@ export interface ReceiveVoiceOp {
   readonly conversationId: string;
   readonly duration: number; // Duration in seconds
   readonly skipAutoTiming?: boolean;
+}
+
+export interface PlayVoiceOp {
+  readonly kind: "PlayVoice";
+  readonly ref?: MessageRef;
+  readonly startAt?: number;
+}
+
+export interface PauseVoiceOp {
+  readonly kind: "PauseVoice";
+  readonly ref?: MessageRef;
+}
+
+// =============================================================================
+// CONVERSATION OPERATIONS
+// =============================================================================
+
+/**
+ * Pin a conversation to the top of the chat list.
+ */
+export interface PinConversationOp {
+  readonly kind: "PinConversation";
+  readonly conversationId: string;
+}
+
+/**
+ * Unpin a conversation.
+ */
+export interface UnpinConversationOp {
+  readonly kind: "UnpinConversation";
+  readonly conversationId: string;
+}
+
+/**
+ * Mute notifications for a conversation.
+ */
+export interface MuteConversationOp {
+  readonly kind: "MuteConversation";
+  readonly conversationId: string;
+  readonly until?: number; // Unix timestamp when mute expires
+}
+
+/**
+ * Unmute notifications for a conversation.
+ */
+export interface UnmuteConversationOp {
+  readonly kind: "UnmuteConversation";
+  readonly conversationId: string;
+}
+
+/**
+ * Archive a conversation.
+ */
+export interface ArchiveConversationOp {
+  readonly kind: "ArchiveConversation";
+  readonly conversationId: string;
+}
+
+/**
+ * Unarchive a conversation.
+ */
+export interface UnarchiveConversationOp {
+  readonly kind: "UnarchiveConversation";
+  readonly conversationId: string;
 }
 
 /**
@@ -581,6 +661,8 @@ export type SceneOp =
   | ReceiveMessageOp
   | ReadMessageOp
   | DeleteMessageOp
+  | EditMessageOp
+  | ForwardMessageOp
   | ConcurrentOp
   // Media operations
   | SendImageOp
@@ -591,6 +673,8 @@ export type SceneOp =
   | ReceiveGifOp
   | SendVoiceOp
   | ReceiveVoiceOp
+  | PlayVoiceOp
+  | PauseVoiceOp
   // POV operations
   | POVSwitchOp
   | SplitPOVOp
@@ -616,7 +700,14 @@ export type SceneOp =
   | ShowKeyboardOp
   | HideKeyboardOp
   | SimulateTypingOp
-  | ClearKeyboardTextOp;
+  | ClearKeyboardTextOp
+  // Conversation operations
+  | PinConversationOp
+  | UnpinConversationOp
+  | MuteConversationOp
+  | UnmuteConversationOp
+  | ArchiveConversationOp
+  | UnarchiveConversationOp;
 
 // =============================================================================
 // SCENE (TOP LEVEL)

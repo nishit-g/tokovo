@@ -20,5 +20,4 @@ import "./profile-focus-demo.episode";
 import "./bakchodi-gang.episode";
 import "./instagram-dm-demo.episode";
 import "./cheating-exposed.episode";
-
-// Add new episodes here as they are created
+import "./feature-showcase.episode";

@@ -17,8 +17,12 @@ export type WhatsAppMessageType =
   | "gif"
   | "link"
   | "deleted"
+  | "sticker"
   | "call_missed"
-  | "screenshot_alert";
+  | "screenshot_alert"
+  | "document"
+  | "contact"
+  | "location";
 
 // =============================================================================
 // BASE MESSAGE
@@ -34,6 +38,10 @@ export interface BaseMessage {
   reactions?: WhatsAppReaction[];
   /** Reply-to reference if this message is a reply */
   replyTo?: ReplyToData;
+  /** Whether the message was forwarded */
+  isForwarded?: boolean;
+  /** Original sender of the forwarded message */
+  forwardedFrom?: string;
 }
 
 // =============================================================================
@@ -73,6 +81,12 @@ export interface GifMessage extends BaseMessage {
   gifUrl: string;
 }
 
+export interface StickerMessage extends BaseMessage {
+  type: "sticker";
+  stickerUrl: string;
+  stickerPack?: string;
+}
+
 export interface SystemMessage extends BaseMessage {
   type: "system";
   text: string;
@@ -97,6 +111,31 @@ export interface LinkMessage extends BaseMessage {
   linkPreview: LinkPreviewData;
 }
 
+export interface DocumentMessage extends BaseMessage {
+  type: "document";
+  fileName: string;
+  fileSize: string;
+  documentUrl: string;
+  fileType?: string;
+  pageCount?: number;
+}
+
+export interface ContactMessage extends BaseMessage {
+  type: "contact";
+  contactName: string;
+  contactPhone?: string;
+  contactAvatarUrl?: string;
+}
+
+export interface LocationMessage extends BaseMessage {
+  type: "location";
+  latitude: number;
+  longitude: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
+}
+
 // =============================================================================
 // DISCRIMINATED UNION
 // =============================================================================
@@ -107,9 +146,13 @@ export type MessageData =
   | VideoMessage
   | VoiceMessage
   | GifMessage
+  | StickerMessage
   | SystemMessage
   | DeletedMessage
-  | LinkMessage;
+  | LinkMessage
+  | DocumentMessage
+  | ContactMessage
+  | LocationMessage;
 
 // =============================================================================
 // REACTION & REPLY TYPES
@@ -148,6 +191,7 @@ export interface WhatsAppMessage extends BaseMessage {
   thumbnailUrl?: string;
   videoUrl?: string;
   gifUrl?: string;
+  stickerUrl?: string;
   caption?: string;
   duration?: number;
   isPlaying?: boolean;
@@ -159,4 +203,20 @@ export interface WhatsAppMessage extends BaseMessage {
   reactions?: WhatsAppReaction[];
   replyTo?: ReplyToData;
   linkPreview?: LinkPreviewData;
+  // Document specific
+  fileName?: string;
+  fileSize?: string;
+  fileType?: string;
+  pageCount?: number;
+  documentUrl?: string;
+  // Contact specific
+  contactName?: string;
+  contactPhone?: string;
+  contactAvatarUrl?: string;
+  // Location specific
+  latitude?: number;
+  longitude?: number;
+  locationName?: string;
+  locationAddress?: string;
+  mapThumbnailUrl?: string;
 }

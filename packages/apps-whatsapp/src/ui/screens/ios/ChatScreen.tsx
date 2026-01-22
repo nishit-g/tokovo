@@ -80,6 +80,53 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         };
       case "voice":
         return { ...base, type: "voice", duration: m.duration || 0 };
+      case "gif":
+        return {
+          ...base,
+          type: "gif",
+          gifUrl: m.gifUrl,
+        };
+      case "sticker":
+        return {
+          ...base,
+          type: "sticker",
+          stickerUrl: m.stickerUrl,
+        };
+      case "document":
+        return {
+          ...base,
+          type: "document",
+          fileName: m.fileName,
+          fileSize: m.fileSize,
+          fileType: m.fileType,
+          documentUrl: m.documentUrl,
+          pageCount: m.pageCount,
+        };
+      case "contact":
+        return {
+          ...base,
+          type: "contact",
+          contactName: m.contactName,
+          contactPhone: m.contactPhone,
+          contactAvatarUrl: m.contactAvatarUrl,
+        };
+      case "location":
+        return {
+          ...base,
+          type: "location",
+          latitude: m.latitude,
+          longitude: m.longitude,
+          locationName: m.locationName,
+          locationAddress: m.locationAddress,
+          mapThumbnailUrl: m.mapThumbnailUrl,
+        };
+      case "link":
+        return {
+          ...base,
+          type: "link",
+          text: m.text,
+          linkPreview: m.linkPreview,
+        };
       case "system":
         return {
           ...base,
