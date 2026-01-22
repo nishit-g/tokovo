@@ -1,11 +1,15 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { ArchiveIcon } from "../../../components/ios/Icons";
+import { ArchiveIcon, ChevronRightIcon } from "../../../components/ios/Icons";
 import { ChatListHeader } from "../../../components/ios/ChatListHeader";
 import { TabNavigation } from "../../../components/ios/TabNavigation";
 import { ChatListItem } from "../../../components/ios/ChatListItem";
-import { UI_CONSTANTS } from "../../../config/layout-config";
+import { whatsappColors, spacing } from "../../../components/ios/theme";
 import { WhatsAppConversation } from "../../../types";
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 export interface ChatListScreenProps {
   world: WorldState;
@@ -19,14 +23,83 @@ export interface ChatListScreenProps {
   height: number;
 }
 
+// =============================================================================
+// ARCHIVED ROW COMPONENT
+// =============================================================================
+
+const ArchivedRow: React.FC<{ count: number }> = ({ count }) => (
+  <div
+    style={{
+      display: "flex",
+      height: 50,
+      alignItems: "center",
+      paddingLeft: spacing.avatarMarginLeft,
+      paddingRight: spacing.contentMarginRight,
+      cursor: "pointer",
+      backgroundColor: whatsappColors.bgPrimary,
+    }}
+  >
+    {/* Archive Icon */}
+    <div
+      style={{
+        width: 28,
+        display: "flex",
+        justifyContent: "center",
+        marginRight: spacing.contentMarginLeft + 4,
+      }}
+    >
+      <ArchiveIcon color={whatsappColors.textSecondary} size={20} />
+    </div>
+
+    {/* Content */}
+    <div
+      style={{
+        flex: 1,
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        borderBottom: `0.5px solid ${whatsappColors.separator}`,
+      }}
+    >
+      <span
+        style={{
+          fontSize: 17,
+          fontWeight: "400",
+          color: whatsappColors.textPrimary,
+        }}
+      >
+        Archived
+      </span>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {count > 0 && (
+          <span
+            style={{
+              fontSize: 15,
+              color: whatsappColors.textSecondary,
+            }}
+          >
+            {count}
+          </span>
+        )}
+        <ChevronRightIcon color={whatsappColors.textSecondary} size={14} />
+      </div>
+    </div>
+  </div>
+);
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
 export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   world,
   safeAreaInsets,
   width,
   height,
 }) => {
-  // 1. Calculate Safe Areas (Resolution Independence)
-  // Receive logical dimensions from parent
+  // Calculate safe areas with sensible defaults
   const designWidth = 393;
   const targetWidth = width || 1179;
   const scale = targetWidth / designWidth;
@@ -37,15 +110,25 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const safeAreaTop = physicalSafeTop / scale;
   const safeAreaBottom = physicalSafeBottom / scale;
 
-  // 2. Data Preparation - Cast to WhatsApp conversation type
+  // Get conversations and sort by recency
   const conversations = (
     Object.values(world.conversations || {}) as WhatsAppConversation[]
   ).sort((a, b) => {
-    // Sort by last message timestamp (descending) mechanism to be added
-    // Ideally we check a.lastMessageAt vs b.lastMessageAt or timestamps
+    // Pinned chats first
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    // Then by timestamp (would need lastMessageAt in type)
     return 0;
-    // TODO: Add proper sorting when timestamp logic is solidified in core/episodes
   });
+
+  // Calculate total unread for tab badge
+  const totalUnread = conversations.reduce(
+    (sum, conv) => sum + (conv.unreadCount || 0),
+    0
+  );
+
+  // Count archived (mock - would need archived flag in data)
+  const archivedCount = 0;
 
   return (
     <div
@@ -53,8 +136,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        backgroundColor: "#FFFFFF",
+        backgroundColor: whatsappColors.bgPrimary,
         position: "relative",
+        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
       }}
     >
       {/* Header (Sticky) */}
@@ -65,79 +149,57 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         style={{
           flex: 1,
           overflow: "hidden",
-          paddingBottom: 85 + safeAreaBottom,
-          backgroundColor: "#FFFFFF",
+          paddingBottom: spacing.tabBarHeight + safeAreaBottom + 10,
+          backgroundColor: whatsappColors.bgPrimary,
         }}
       >
-        {/* Archived Row */}
-        <div
-          style={{
-            display: "flex",
-            height: 56, // Slightly shorter than chat row
-            alignItems: "center",
-            paddingLeft: 20,
-            paddingRight: 16,
-            cursor: "pointer",
-          }}
-        >
-          {/* Icon */}
-          <div
-            style={{
-              width: 30, // Smaller visual weight
-              display: "flex",
-              justifyContent: "center",
-              marginRight: 24, // Align with text start of chat items (which is 76 + ? actually chat item avatar is 60, left margin 20? No.
-              // Chat Item: Left padding 0 (in container), Avatar 76 width centered.
-              // So center of avatar is at 38px.
-              // Archived text should probably align with Name?
-              // Let's standard iOS: "Archived" appears on left?
-              // Actually standard WhatsApp: "Archived" is a specific row.
-              // Let's simpler: Icon + Text.
-            }}
-          >
-            {/* No Icon for standard row, just text "Archived" and number on right? 
-                           WhatsApp iOS 2024: Top row is "Archived" with an Archive Box icon on the very left (margin) or right?
-                           Actually it's "Archived" text on left, number on right.
-                           LET'S DO: Archive Icon (Grey) + "Archived" Text.
-                        */}
-            <ArchiveIcon color="#8E8E93" />
-          </div>
-
-          <div
-            style={{
-              flex: 1,
-              height: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              borderBottom: "0.5px solid #C6C6C8",
-              fontSize: 17,
-              fontWeight: "600",
-              color: "#000",
-              marginLeft: 12,
-            }}
-          >
-            <span>Archived</span>
-            <span
-              style={{ color: "#8E8E93", fontWeight: "400", marginRight: 8 }}
-            >
-              1
-            </span>
-          </div>
-        </div>
+        {/* Archived Row (only show if there are archived chats) */}
+        {archivedCount > 0 && <ArchivedRow count={archivedCount} />}
 
         {/* Conversations List */}
-        <div style={{ paddingLeft: 16 }}>
-          {" "}
-          {/* Left padding for inset separators */}
+        <div>
           {conversations.length > 0 ? (
             conversations.map((conv, i) => {
-              // Runtime cast to access standard or plugin-specific fields
+              // Get last message
               const rawMessages = conv.messages as any[];
               const lastMsg =
                 rawMessages && rawMessages.length > 0
                   ? rawMessages[rawMessages.length - 1]
                   : null;
+
+              // Determine media type
+              let mediaType: "photo" | "video" | "voice" | "document" | null = null;
+              if (lastMsg?.imageUrl) mediaType = "photo";
+              else if (lastMsg?.videoUrl) mediaType = "video";
+              else if (lastMsg?.voiceUrl || lastMsg?.audioUrl) mediaType = "voice";
+              else if (lastMsg?.fileUrl) mediaType = "document";
+
+              // Determine sender name for groups
+              let senderName: string | undefined;
+              if (conv.type === "group" && lastMsg) {
+                if (lastMsg.from === "me") {
+                  senderName = "You";
+                } else if (lastMsg.senderName) {
+                  senderName = lastMsg.senderName;
+                } else if (lastMsg.from) {
+                  // Try to get name from members
+                  const member = conv.members?.find((m: any) => m.id === lastMsg.from);
+                  senderName = member?.name || lastMsg.from;
+                }
+              } else if (lastMsg?.from === "me") {
+                senderName = undefined; // Don't show "You:" for DMs
+              }
+
+              // Determine read status
+              let status: "sent" | "delivered" | "read" | undefined;
+              if (lastMsg?.from === "me") {
+                if (lastMsg.readAt) status = "read";
+                else if (lastMsg.deliveredAt) status = "delivered";
+                else status = "sent";
+              }
+
+              // Check if someone is typing
+              const isTyping = conv.typing && Object.values(conv.typing).some(Boolean);
 
               return (
                 <ChatListItem
@@ -147,30 +209,49 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   avatarUrl={conv.avatar}
                   lastMessage={
                     lastMsg?.text ||
-                    (lastMsg?.imageUrl ? "Photo" : lastMsg ? "Media" : "")
+                    (mediaType ? undefined : lastMsg ? "Media" : "")
                   }
-                  timestamp={lastMsg?.timestamp || "Yesterday"}
+                  timestamp={lastMsg?.timestamp || ""}
                   unreadCount={conv.unreadCount || 0}
-                  status={lastMsg?.from === "me" ? "read" : undefined} // Mock status logic
-                  isTyping={
-                    conv.typing && Object.values(conv.typing).some(Boolean)
-                  }
-                  // Is last item?
+                  status={status}
+                  isGroup={conv.type === "group"}
+                  isTyping={isTyping}
                   isLast={i === conversations.length - 1}
+                  isMuted={conv.isMuted}
+                  isPinned={conv.isPinned}
+                  hasStatus={conv.hasStatus}
+                  mediaType={mediaType}
+                  senderName={senderName}
                 />
               );
             })
           ) : (
             // Empty State
-            <div style={{ padding: 40, textAlign: "center", color: "#999" }}>
-              No conversations yet
+            <div
+              style={{
+                padding: 60,
+                textAlign: "center",
+                color: whatsappColors.textSecondary,
+              }}
+            >
+              <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
+              <div style={{ fontSize: 17, fontWeight: "500" }}>No chats yet</div>
+              <div style={{ fontSize: 14, marginTop: 8 }}>
+                Start a conversation!
+              </div>
             </div>
           )}
         </div>
       </div>
 
       {/* Tab Navigation (Fixed Bottom) */}
-      <TabNavigation activeTab="chats" safeAreaBottom={safeAreaBottom} />
+      <TabNavigation
+        activeTab="chats"
+        safeAreaBottom={safeAreaBottom}
+        unreadChatsCount={totalUnread}
+      />
     </div>
   );
 };
+
+export default ChatListScreen;

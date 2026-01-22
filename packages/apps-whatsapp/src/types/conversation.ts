@@ -33,4 +33,11 @@ export interface WhatsAppConversation {
     unreadCount?: number;
     typing?: Record<string, boolean>;
     draftText?: string;
+    
+    // Chat list display properties
+    isMuted?: boolean;
+    isPinned?: boolean;
+    hasStatus?: boolean;  // Whether the contact has a WhatsApp status
+    isArchived?: boolean;
+    lastMessageAt?: number;  // Timestamp for sorting
 }

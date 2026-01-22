@@ -1,147 +1,343 @@
 import React from "react";
-import { DoubleCheckIcon } from "./Icons";
-import { UI_CONSTANTS } from "../../config/layout-config";
+import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
+import { whatsappColors, typography, spacing } from "./theme";
 
-interface ChatListItemProps {
-    id: string;
-    name: string;
-    avatarUrl?: string;
-    lastMessage?: string;
-    timestamp?: string;
-    unreadCount?: number;
-    status?: "sent" | "delivered" | "read";
-    isGroup?: boolean; // For future group icon support
-    isTyping?: boolean; // For "Typing..." state
-    isLast?: boolean; // To hide separator on last item
+// =============================================================================
+// TYPES
+// =============================================================================
+
+export interface ChatListItemProps {
+  id: string;
+  name: string;
+  avatarUrl?: string;
+  lastMessage?: string;
+  timestamp?: string;
+  unreadCount?: number;
+  status?: "sent" | "delivered" | "read";
+  isGroup?: boolean;
+  isTyping?: boolean;
+  isLast?: boolean;
+  isMuted?: boolean;
+  isPinned?: boolean;
+  hasStatus?: boolean;
+  mediaType?: "photo" | "video" | "voice" | "sticker" | "document" | "gif" | null;
+  senderName?: string;
 }
 
+// =============================================================================
+// HELPER COMPONENTS
+// =============================================================================
+
+const TypingDots: React.FC = () => {
+  return (
+    <span style={{ 
+      color: whatsappColors.primary, 
+      display: "inline-flex", 
+      alignItems: "center",
+      gap: 2,
+    }}>
+      <span className="typing-dot" style={{ animationDelay: "0s" }} />
+      <span className="typing-dot" style={{ animationDelay: "0.2s" }} />
+      <span className="typing-dot" style={{ animationDelay: "0.4s" }} />
+      <style>{`
+        .typing-dot {
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background-color: #25D366;
+          display: inline-block;
+          animation: typingBounce 1.4s infinite ease-in-out;
+        }
+        @keyframes typingBounce {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-4px); opacity: 1; }
+        }
+      `}</style>
+    </span>
+  );
+};
+
+const StatusRing: React.FC<{ size: number }> = ({ size }) => {
+  const strokeWidth = 2;
+  const radius = (size - strokeWidth) / 2;
+  const circ = 2 * Math.PI * radius;
+  
+  return (
+    <svg
+      width={size}
+      height={size}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        transform: "rotate(-90deg)",
+      }}
+    >
+      <circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        fill="none"
+        stroke={whatsappColors.primary}
+        strokeWidth={strokeWidth}
+        strokeDasharray={`${circ * 0.15} ${circ * 0.05}`}
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+};
+
+const getMediaPrefix = (mediaType: ChatListItemProps["mediaType"]): string => {
+  switch (mediaType) {
+    case "photo": return "📷 Photo";
+    case "video": return "🎥 Video";
+    case "voice": return "🎤 Voice message";
+    case "sticker": return "🎭 Sticker";
+    case "document": return "📄 Document";
+    case "gif": return "GIF";
+    default: return "";
+  }
+};
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
 export const ChatListItem: React.FC<ChatListItemProps> = ({
-    name,
-    avatarUrl,
-    lastMessage,
-    timestamp,
-    unreadCount = 0,
-    status,
-    isTyping,
-    isLast
+  name,
+  avatarUrl,
+  lastMessage,
+  timestamp,
+  unreadCount = 0,
+  status,
+  isTyping,
+  isLast,
+  isMuted,
+  isPinned,
+  hasStatus,
+  mediaType,
+  senderName,
 }) => {
-    return (
-        <div style={{
-            display: "flex",
-            backgroundColor: "white",
-            cursor: "pointer",
-            height: 76,
-            alignItems: "center",
-        }}>
-            {/* Avatar (Left, Fixed) */}
-            <div style={{
-                width: 76,
-                height: 76,
+  const hasUnread = unreadCount > 0;
+  
+  const buildMessagePreview = (): React.ReactNode => {
+    if (isTyping) {
+      return <TypingDots />;
+    }
+    
+    if (mediaType) {
+      const prefix = getMediaPrefix(mediaType);
+      if (prefix) {
+        return (
+          <span style={{ color: whatsappColors.textSecondary }}>
+            {senderName && <span style={{ fontWeight: 500 }}>{senderName}: </span>}
+            {prefix}
+          </span>
+        );
+      }
+    }
+    
+    if (senderName) {
+      return (
+        <>
+          <span style={{ fontWeight: 500, color: whatsappColors.textSecondary }}>
+            {senderName}:
+          </span>
+          {" "}
+          <span>{lastMessage}</span>
+        </>
+      );
+    }
+    
+    return lastMessage;
+  };
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        backgroundColor: whatsappColors.bgPrimary,
+        cursor: "pointer",
+        height: spacing.chatListItemHeight,
+        alignItems: "center",
+      }}
+    >
+      {/* Avatar Container */}
+      <div
+        style={{
+          width: spacing.avatarSize + spacing.avatarMarginLeft,
+          height: spacing.chatListItemHeight,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          flexShrink: 0,
+          paddingLeft: spacing.avatarMarginLeft,
+          position: "relative",
+        }}
+      >
+        {hasStatus && (
+          <div style={{ 
+            position: "absolute", 
+            left: spacing.avatarMarginLeft - 2,
+            top: "50%",
+            transform: "translateY(-50%)",
+          }}>
+            <StatusRing size={spacing.avatarSize + 4} />
+          </div>
+        )}
+        
+        <div
+          style={{
+            width: spacing.avatarSize,
+            height: spacing.avatarSize,
+            borderRadius: spacing.avatarRadius,
+            backgroundColor: "#E0E0E0",
+            overflow: "hidden",
+            flexShrink: 0,
+          }}
+        >
+          {avatarUrl ? (
+            <img
+              src={avatarUrl}
+              alt={name}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          ) : (
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                flexShrink: 0,
-            }}>
-                <div style={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    backgroundColor: "#E0E0E0",
-                    overflow: "hidden",
-                }}>
-                    {avatarUrl ? (
-                        <img src={avatarUrl} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                    ) : (
-                        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "#ccc", color: "white", fontSize: 24 }}>
-                            {name.charAt(0)}
-                        </div>
-                    )}
-                </div>
+                background: `hsl(${name.charCodeAt(0) * 10 % 360}, 60%, 70%)`,
+                color: "white",
+                fontSize: 22,
+                fontWeight: 500,
+              }}
+            >
+              {name.charAt(0).toUpperCase()}
             </div>
-
-            {/* Content (Right, with Separator) */}
-            <div style={{
-                flex: 1,
-                display: "flex",
-                flexDirection: "column",
-                justifyContent: "center",
-                height: "100%",
-                paddingRight: 16, // Right Margin
-                borderBottom: isLast ? "none" : "0.5px solid #C6C6C8", // Separator
-                minWidth: 0
-            }}>
-                {/* Top Row: Name and Time */}
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3, alignItems: "baseline" }}>
-                    <div style={{
-                        fontWeight: "600",
-                        fontSize: 17,
-                        color: "#000",
-                        letterSpacing: "-0.24px",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        marginRight: 8
-                    }}>
-                        {name}
-                    </div>
-                    <div style={{
-                        fontSize: 14,
-                        color: unreadCount > 0 ? "#007AFF" : "#8E8E93",
-                        flexShrink: 0
-                    }}>
-                        {timestamp}
-                    </div>
-                </div>
-
-                {/* Bottom Row: Message and Status */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{
-                        fontSize: 15,
-                        color: "#8E8E93",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 4,
-                        maxWidth: "90%",
-                        letterSpacing: "-0.24px"
-                    }}>
-                        {isTyping ? (
-                            <span style={{ color: "#007AFF" }}>typing...</span>
-                        ) : (
-                            <>
-                                {status && !unreadCount && (
-                                    <span style={{ display: "flex", alignItems: "center" }}>
-                                        <DoubleCheckIcon read={status === "read"} size={16} />
-                                    </span>
-                                )}
-                                <span>{lastMessage}</span>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Unread Badge */}
-                    {unreadCount > 0 && (
-                        <div style={{
-                            backgroundColor: "#007AFF",
-                            color: "white",
-                            borderRadius: "50%",
-                            minWidth: 20,
-                            height: 20,
-                            padding: "0 5px",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            fontSize: 14,
-                            fontWeight: "600",
-                            lineHeight: 1
-                        }}>
-                            {unreadCount}
-                        </div>
-                    )}
-                </div>
-            </div>
+          )}
         </div>
-    );
+      </div>
+
+      {/* Content Area */}
+      <div
+        style={{
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          height: "100%",
+          paddingRight: spacing.contentMarginRight,
+          paddingLeft: spacing.contentMarginLeft,
+          borderBottom: isLast ? "none" : `0.5px solid ${whatsappColors.separator}`,
+          minWidth: 0,
+        }}
+      >
+        {/* Top Row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 2,
+          }}
+        >
+          <div
+            style={{
+              ...typography.headline,
+              color: whatsappColors.textPrimary,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              marginRight: 8,
+              flex: 1,
+            }}
+          >
+            {name}
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+            {isMuted && (
+              <MutedIcon size={14} color={whatsappColors.textSecondary} />
+            )}
+            <span
+              style={{
+                ...typography.caption,
+                color: hasUnread ? whatsappColors.primary : whatsappColors.textSecondary,
+              }}
+            >
+              {timestamp}
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Row */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <div
+            style={{
+              ...typography.body,
+              color: whatsappColors.textSecondary,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              flex: 1,
+              minWidth: 0,
+            }}
+          >
+            {status && !hasUnread && !isTyping && (
+              <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+                <DoubleCheckIcon read={status === "read"} size={16} />
+              </span>
+            )}
+            <span style={{ 
+              overflow: "hidden", 
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}>
+              {buildMessagePreview()}
+            </span>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: 8 }}>
+            {isPinned && (
+              <PinIcon size={14} color={whatsappColors.textSecondary} />
+            )}
+            
+            {hasUnread && (
+              <div
+                style={{
+                  backgroundColor: isMuted ? whatsappColors.textSecondary : whatsappColors.primary,
+                  color: "white",
+                  borderRadius: spacing.badgeRadius,
+                  minWidth: spacing.badgeMinWidth,
+                  height: spacing.badgeHeight,
+                  padding: `0 ${spacing.badgePadding}px`,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  ...typography.badge,
+                }}
+              >
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
+
+export default ChatListItem;

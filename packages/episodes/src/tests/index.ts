@@ -14,3 +14,4 @@
 // import "./camera-test.episode";
 
 import "./test.episode";
+import "./chat-list-test";
