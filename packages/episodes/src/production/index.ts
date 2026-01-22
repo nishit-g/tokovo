@@ -22,3 +22,4 @@ import "./instagram-dm-demo.episode";
 import "./cheating-exposed.episode";
 import "./feature-showcase.episode";
 import "./ghibli-showcase.episode";
+import "./cyberpunk-showcase.episode";

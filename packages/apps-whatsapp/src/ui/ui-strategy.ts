@@ -69,20 +69,49 @@ export interface InputAreaProps {
 }
 
 /**
- * Theme tokens for consistent styling
+ * Theme tokens for consistent styling across all components
  */
 export interface UIThemeTokens {
+  // Chat background
   backgroundColor: string;
+  doodlePattern: string;
+  doodleOpacity: number;
+
+  // Message bubbles
   bubbleMyBg: string;
+  bubbleMyText: string;
   bubbleOtherBg: string;
+  bubbleOtherText: string;
+
+  // Header
+  headerBg: string;
+  headerText: string;
+  headerSecondary: string;
+  headerIcon: string;
+
+  // Input area
+  inputBg: string;
+  inputFieldBg: string;
+  inputBorder: string;
+  inputText: string;
+  inputPlaceholder: string;
+  inputIcon: string;
+  inputButtonBg: string;
+  inputButtonIcon: string;
+
+  // System messages
+  systemMessageBg: string;
+  systemMessageText: string;
+
+  // General
   textColor: string;
   secondaryColor: string;
   accentColor: string;
   fontFamily: string;
-  systemMessageBg: string;
-  systemMessageText: string;
-  doodlePattern: string;
-  doodleOpacity: number;
+
+  // Timestamps & metadata
+  timestampColor: string;
+  linkColor: string;
 }
 
 /**
@@ -119,24 +148,15 @@ export interface UIStrategy {
 const strategies: Map<string, UIStrategy> = new Map();
 
 export const UIStrategyRegistry = {
-  /**
-   * Register a UI strategy
-   */
   register(strategy: UIStrategy): void {
     strategies.set(strategy.id, strategy);
     console.log(`[UIStrategy] Registered: ${strategy.id} (${strategy.name})`);
   },
 
-  /**
-   * Get strategy by ID
-   */
   get(id: string): UIStrategy | undefined {
     return strategies.get(id);
   },
 
-  /**
-   * Get strategy or throw
-   */
   require(id: string): UIStrategy {
     const strategy = strategies.get(id);
     if (!strategy) {
@@ -147,16 +167,10 @@ export const UIStrategyRegistry = {
     return strategy;
   },
 
-  /**
-   * List all registered strategies
-   */
   list(): string[] {
     return Array.from(strategies.keys());
   },
 
-  /**
-   * List all strategies with metadata
-   */
   listAll(): Array<{ id: string; name: string; platform: string }> {
     return Array.from(strategies.values()).map((s) => ({
       id: s.id,
@@ -165,24 +179,79 @@ export const UIStrategyRegistry = {
     }));
   },
 
-  /**
-   * Get default strategy for platform
-   */
   forPlatform(platform: "ios" | "android"): UIStrategy {
     const id = platform === "ios" ? "whatsapp-ios" : "whatsapp-android";
-
-    // Try to get the platform-specific strategy
     let strategy = strategies.get(id);
-
-    // Fallback to iOS if Android not registered
     if (!strategy && platform === "android") {
       strategy = strategies.get("whatsapp-ios");
     }
-
     if (!strategy) {
       throw new Error(`No UI strategy registered for platform: ${platform}`);
     }
-
     return strategy;
   },
 };
+
+// =============================================================================
+// THEME CREATION HELPERS
+// =============================================================================
+
+const DEFAULT_TOKENS: UIThemeTokens = {
+  backgroundColor: "#ECE5DD",
+  doodlePattern: "",
+  doodleOpacity: 0.04,
+
+  bubbleMyBg: "#DCF8C6",
+  bubbleMyText: "#000000",
+  bubbleOtherBg: "#FFFFFF",
+  bubbleOtherText: "#000000",
+
+  headerBg: "#075E54",
+  headerText: "#FFFFFF",
+  headerSecondary: "rgba(255,255,255,0.7)",
+  headerIcon: "#FFFFFF",
+
+  inputBg: "#F0F0F0",
+  inputFieldBg: "#FFFFFF",
+  inputBorder: "transparent",
+  inputText: "#000000",
+  inputPlaceholder: "#8E8E93",
+  inputIcon: "#8E8E93",
+  inputButtonBg: "#075E54",
+  inputButtonIcon: "#FFFFFF",
+
+  systemMessageBg: "#FFF3C4",
+  systemMessageText: "#54656F",
+
+  textColor: "#000000",
+  secondaryColor: "#667781",
+  accentColor: "#075E54",
+  fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+
+  timestampColor: "#667781",
+  linkColor: "#027EB5",
+};
+
+export interface ThemeConfig {
+  id: string;
+  name: string;
+  platform?: "ios" | "android" | "custom";
+  tokens: Partial<UIThemeTokens>;
+}
+
+export function createTheme(config: ThemeConfig): UIStrategy {
+  const tokens: UIThemeTokens = { ...DEFAULT_TOKENS, ...config.tokens };
+
+  const strategy: UIStrategy = {
+    id: config.id,
+    name: config.name,
+    platform: config.platform || "custom",
+    Header: undefined as any,
+    MessageBubble: undefined as any,
+    TypingIndicator: undefined as any,
+    InputArea: undefined as any,
+    tokens,
+  };
+
+  return strategy;
+}

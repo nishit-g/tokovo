@@ -1,22 +1,30 @@
 import React from "react";
 import { Check, CheckCheck } from "lucide-react";
-import { getTheme } from "./theme";
 import { MessageContent } from "./MessageContent";
 import { MessageData } from "../../types";
+import { UIThemeTokens } from "../../ui/ui-strategy";
+
+const DEFAULT_BUBBLE_COLORS = {
+  bubbleMyBg: "#DCF8C6",
+  bubbleMyText: "#000000",
+  bubbleOtherBg: "#FFFFFF",
+  bubbleOtherText: "#000000",
+  timestampColor: "#667781",
+  accentColor: "#007AFF",
+  backgroundColor: "#ECE5DD",
+  secondaryColor: "#8E8E93",
+};
 
 interface MessageBubbleProps {
   message: MessageData;
   isMe: boolean;
   isFirst: boolean;
   isLast: boolean;
-  /** Group chat mode - enables sender name display */
   isGroupChat?: boolean;
-  /** Sender name to display (for group chats) */
   senderName?: string;
-  /** Sender name color (for group chats) */
   senderColor?: string;
-  /** Whether to show sender name for this specific message */
   showSenderName?: boolean;
+  tokens?: UIThemeTokens;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -28,8 +36,17 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   senderName,
   senderColor,
   showSenderName = false,
+  tokens,
 }) => {
-  const theme = getTheme("ios");
+  const bubbleMyBg = tokens?.bubbleMyBg || DEFAULT_BUBBLE_COLORS.bubbleMyBg;
+  const bubbleMyText = tokens?.bubbleMyText || DEFAULT_BUBBLE_COLORS.bubbleMyText;
+  const bubbleOtherBg = tokens?.bubbleOtherBg || DEFAULT_BUBBLE_COLORS.bubbleOtherBg;
+  const bubbleOtherText = tokens?.bubbleOtherText || DEFAULT_BUBBLE_COLORS.bubbleOtherText;
+  const timestampColor = tokens?.timestampColor || DEFAULT_BUBBLE_COLORS.timestampColor;
+  const accentColor = tokens?.accentColor || DEFAULT_BUBBLE_COLORS.accentColor;
+  const backgroundColor = tokens?.backgroundColor || DEFAULT_BUBBLE_COLORS.backgroundColor;
+  const secondaryColor = tokens?.secondaryColor || DEFAULT_BUBBLE_COLORS.secondaryColor;
+
   const isSystem = message.type === "system";
   const isSticker = message.type === "sticker";
   const isSelfContainedMedia = [
@@ -42,8 +59,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     "gif",
   ].includes(message.type);
 
-  // Determine if we should show sender name for this bubble
-  // Only show for "other" messages in group chats, at the start of a run
   const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
 
   if (isSystem) {
@@ -136,7 +151,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               <span
                 key={`${reaction.emoji}_${idx}`}
                 style={{
-                  background: theme.colors.background,
+                  background: backgroundColor,
                   borderRadius: 10,
                   padding: "2px 6px",
                   fontSize: 12,
@@ -144,12 +159,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   alignItems: "center",
                   gap: 2,
                   boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-                  border: `1px solid ${theme.colors.separator}`,
+                  border: "1px solid rgba(0,0,0,0.1)",
                 }}
               >
                 {reaction.emoji}
                 {reaction.count > 1 && (
-                  <span style={{ fontSize: 10, color: theme.colors.secondary }}>
+                  <span style={{ fontSize: 10, color: secondaryColor }}>
                     {reaction.count}
                   </span>
                 )}
@@ -200,13 +215,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     >
       <div
         style={{
-          backgroundColor: isMe
-            ? theme.colors.bubbleMyBg
-            : theme.colors.bubbleOtherBg,
+          backgroundColor: isMe ? bubbleMyBg : bubbleOtherBg,
           borderRadius: 16,
           borderTopLeftRadius: borderTopLeft,
           borderTopRightRadius: borderTopRight,
-          // Refined padding: 6px standard
           padding: "6px 7px 8px 9px",
           boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
           display: "flex",
@@ -271,7 +283,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           <div
             style={{
               backgroundColor: "rgba(0, 0, 0, 0.06)",
-              borderLeft: `3px solid ${theme.colors.primary}`,
+              borderLeft: `3px solid ${accentColor}`,
               borderRadius: 4,
               padding: "4px 8px",
               marginBottom: 4,
@@ -281,7 +293,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           >
             <div
               style={{
-                color: theme.colors.primary,
+                color: accentColor,
                 fontWeight: 500,
                 marginBottom: 2,
               }}
@@ -290,7 +302,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
             <div
               style={{
-                color: theme.colors.bubbleText,
+                color: isMe ? bubbleMyText : bubbleOtherText,
                 opacity: 0.7,
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -303,12 +315,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           </div>
         )}
 
-        {/* Content Layer */}
-        <div style={{ color: theme.colors.bubbleText }}>
-          <MessageContent message={message} />
+        <div style={{ color: isMe ? bubbleMyText : bubbleOtherText }}>
+          <MessageContent message={message} tokens={tokens} />
         </div>
 
-        {/* Metadata Row (Time + Read) */}
         <div
           style={{
             display: "flex",
@@ -316,25 +326,22 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             alignItems: "center",
             gap: 4,
             marginTop: 2,
-            // float: "right" // Could float for "compact" text, but flex row is safer
           }}
         >
           <span
             style={{
               fontSize: 11,
-              color: theme.colors.bubbleTime,
+              color: timestampColor,
             }}
           >
             {message.timestamp || "10:00"}
           </span>
-          {
-            isMe &&
-              (message.status === "read" ? (
-                <CheckCheck size={14} color={theme.colors.primary} /> // Read Blue
-              ) : (
-                <Check size={14} color={theme.colors.bubbleTime} />
-              )) // Sent Gray
-          }
+          {isMe &&
+            (message.status === "read" ? (
+              <CheckCheck size={14} color={accentColor} />
+            ) : (
+              <Check size={14} color={timestampColor} />
+            ))}
         </div>
       </div>
 
@@ -355,7 +362,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             <span
               key={`${reaction.emoji}_${idx}`}
               style={{
-                background: theme.colors.background, // Match app bg or bubble bg? usually white/app bg
+                background: backgroundColor,
                 borderRadius: 10,
                 padding: "2px 6px",
                 fontSize: 12,
@@ -363,12 +370,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 alignItems: "center",
                 gap: 2,
                 boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
-                border: `1px solid ${theme.colors.separator}`,
+                border: "1px solid rgba(0,0,0,0.1)",
               }}
             >
               {reaction.emoji}
               {reaction.count > 1 && (
-                <span style={{ fontSize: 10, color: theme.colors.secondary }}>
+                <span style={{ fontSize: 10, color: secondaryColor }}>
                   {reaction.count}
                 </span>
               )}
@@ -377,22 +384,20 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </div>
       )}
 
-      {/* SVG Tail */}
       {showTail && (
         <svg
           width="12"
-          height="20" // Logical size for tail
+          height="20"
           viewBox="0 0 12 20"
           style={{
             position: "absolute",
-            [isMe ? "right" : "left"]: -6, // Overlap slightly to merge
+            [isMe ? "right" : "left"]: -6,
             top: 0,
-            fill: isMe ? theme.colors.bubbleMyBg : theme.colors.bubbleOtherBg,
+            fill: isMe ? bubbleMyBg : bubbleOtherBg,
             transform: isMe ? "scaleX(1)" : "scaleX(-1)",
-            zIndex: -1, // Behind
+            zIndex: -1,
           }}
         >
-          {/* Authentic WhatsApp Tail Path approximation */}
           <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
         </svg>
       )}

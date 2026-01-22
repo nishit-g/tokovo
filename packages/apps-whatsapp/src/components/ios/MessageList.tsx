@@ -1,18 +1,18 @@
 import React, { useEffect, useRef } from "react";
-import { getTheme } from "./theme";
 import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../../hooks/useMessageGrouping";
 import { MessageData } from "../../types";
 import { UIThemeTokens } from "../../ui/ui-strategy";
-
 import { TypingIndicator } from "./TypingIndicator";
+
+const DEFAULT_BG = "#ECE5DD";
 
 interface MessageListProps {
   messages: MessageData[];
   ownerName?: string;
   isTyping?: boolean;
   isGroupChat?: boolean;
-  tokens?: Partial<UIThemeTokens>;
+  tokens?: UIThemeTokens;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -22,9 +22,9 @@ export const MessageList: React.FC<MessageListProps> = ({
   isGroupChat = false,
   tokens,
 }) => {
-  const theme = getTheme("ios");
-  const backgroundColor = tokens?.backgroundColor || theme.colors.chatBg;
+  const backgroundColor = tokens?.backgroundColor || DEFAULT_BG;
   const doodlePattern = tokens?.doodlePattern || "";
+  const doodleOpacity = tokens?.doodleOpacity ?? 0.04;
 
   const groups = useMessageGrouping(messages, ownerName);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -43,8 +43,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       style={{
         flex: 1,
         backgroundColor,
-        backgroundImage: doodlePattern,
-        backgroundSize: "200px 200px",
+        position: "relative",
         display: "flex",
         flexDirection: "column",
         padding: "10px 16px",
@@ -53,6 +52,22 @@ export const MessageList: React.FC<MessageListProps> = ({
         paddingBottom: 100,
       }}
     >
+      {doodlePattern && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundImage: doodlePattern,
+            backgroundSize: "200px 200px",
+            opacity: doodleOpacity,
+            pointerEvents: "none",
+          }}
+        />
+      )}
+
       {groups.map((group) => {
         const isSystem = group.senderId === "system";
 
@@ -60,15 +75,12 @@ export const MessageList: React.FC<MessageListProps> = ({
           <div
             key={group.id}
             style={{
-              // Architecture Layer 2: Visual Rhythm
-              // 12px gap between separate speakers (Visual Run Break)
-              // System messages might want different spacing
-              marginTop: isSystem ? 12 : 6, // Refined: 12px visual gap is standard, but margins collapse?
-              // Actually, let's stick to simple vertical rhythm.
+              marginTop: isSystem ? 12 : 6,
               marginBottom: 6,
               display: "flex",
               flexDirection: "column",
-              // No gap here, we use marginBottom: 2 on bubbles for tight packing
+              position: "relative",
+              zIndex: 1,
             }}
           >
             {group.messages.map((item, idx) => (
@@ -81,6 +93,7 @@ export const MessageList: React.FC<MessageListProps> = ({
                 isGroupChat={isGroupChat}
                 senderName={item.data.from}
                 showSenderName={isGroupChat && !group.isMe && item.isFirst}
+                tokens={tokens}
               />
             ))}
           </div>
@@ -88,7 +101,7 @@ export const MessageList: React.FC<MessageListProps> = ({
       })}
 
       {isTyping && (
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, position: "relative", zIndex: 1 }}>
           <TypingIndicator />
         </div>
       )}

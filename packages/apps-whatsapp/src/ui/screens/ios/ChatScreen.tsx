@@ -179,16 +179,14 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       }}
     >
       {StrategyHeader && conversation ? (
-        <StrategyHeader
-          conversation={conversation}
-          safeAreaTop={safeAreaTop}
-        />
+        <StrategyHeader conversation={conversation} safeAreaTop={safeAreaTop} />
       ) : (
         <DefaultHeader
           contactName={contactName}
           avatarUrl={conversation?.avatar}
           status="online"
           safeAreaTop={safeAreaTop}
+          tokens={tokens}
         />
       )}
 
@@ -210,7 +208,12 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           safeAreaBottom={safeAreaBottom}
         />
       ) : (
-        <DefaultInputArea text="" showCursor={false} safeAreaBottom={safeAreaBottom} />
+        <DefaultInputArea
+          text=""
+          showCursor={false}
+          safeAreaBottom={safeAreaBottom}
+          tokens={tokens}
+        />
       )}
     </div>
   );

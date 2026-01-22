@@ -97,19 +97,48 @@ export const iOSStrategy: UIStrategy = {
   TypingIndicator: IOSTypingIndicatorWrapper,
   InputArea: IOSInputArea as React.FC<InputAreaProps>,
 
-  // iOS Theme Tokens
+  // iOS Theme Tokens - Complete token set
   tokens: {
+    // Chat background
     backgroundColor: "#ECE5DD",
+    doodlePattern: WHATSAPP_DOODLE_PATTERN,
+    doodleOpacity: 0.06,
+
+    // Message bubbles
     bubbleMyBg: "#DCF8C6",
+    bubbleMyText: "#111B21",
     bubbleOtherBg: "#FFFFFF",
+    bubbleOtherText: "#111B21",
+
+    // Header
+    headerBg: "#F6F6F6",
+    headerText: "#111B21",
+    headerSecondary: "#667781",
+    headerIcon: "#007AFF",
+
+    // Input area
+    inputBg: "#F6F6F6",
+    inputFieldBg: "#FFFFFF",
+    inputBorder: "transparent",
+    inputText: "#111B21",
+    inputPlaceholder: "#8E8E93",
+    inputIcon: "#8E8E93",
+    inputButtonBg: "#007AFF",
+    inputButtonIcon: "#FFFFFF",
+
+    // System messages
+    systemMessageBg: "#FDF4C5",
+    systemMessageText: "#54656F",
+
+    // General
     textColor: "#111B21",
     secondaryColor: "#667781",
     accentColor: "#00A884",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
-    systemMessageBg: "#FDF4C5",
-    systemMessageText: "#54656F",
-    doodlePattern: WHATSAPP_DOODLE_PATTERN,
-    doodleOpacity: 0.06,
+
+    // Timestamps & metadata
+    timestampColor: "#667781",
+    linkColor: "#027EB5",
   },
 };
 
