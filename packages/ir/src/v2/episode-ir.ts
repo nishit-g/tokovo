@@ -18,6 +18,10 @@ export interface ConversationConfig {
     avatar?: string;
     type?: "dm" | "group";
     participants?: string[];
+    unreadCount?: number;
+    isMuted?: boolean;
+    isPinned?: boolean;
+    hasStatus?: boolean;
 }
 
 export interface OSConfig {
@@ -35,6 +39,8 @@ export interface DeviceConfig {
     app: string;
     conversations?: ConversationConfig[];
     os?: OSConfig;
+    /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
+    theme?: string;
 }
 
 // =============================================================================

@@ -1,10 +1,11 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { AppSurface } from "@tokovo/core";
-import { Header } from "../../../components/ios/Header";
+import { Header as DefaultHeader } from "../../../components/ios/Header";
 import { MessageList } from "../../../components/ios/MessageList";
-import { InputArea } from "../../../components/ios/InputArea";
+import { InputArea as DefaultInputArea } from "../../../components/ios/InputArea";
 import { TypingIndicator } from "../../../components/ios/TypingIndicator";
+import { UIStrategyRegistry } from "../../ui-strategy";
 import {
   WhatsAppState,
   MessageData,
@@ -14,6 +15,7 @@ import {
 export interface ChatScreenProps {
   world: WorldState;
   deviceId?: string;
+  appTheme?: string;
   safeAreaInsets?: {
     top: number;
     bottom: number;
@@ -27,6 +29,7 @@ export interface ChatScreenProps {
 export const ChatScreen: React.FC<ChatScreenProps> = ({
   world,
   deviceId,
+  appTheme,
   safeAreaInsets,
   width,
   height,
@@ -42,7 +45,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
     | WhatsAppConversation
     | undefined;
 
-  // 2. Prepare Data
+  // 2. Resolve UI Strategy & Tokens
+  const strategy = appTheme
+    ? UIStrategyRegistry.get(appTheme)
+    : UIStrategyRegistry.forPlatform("ios");
+  const tokens = strategy?.tokens;
+
+  const StrategyHeader = strategy?.Header;
+  const StrategyInputArea = strategy?.InputArea;
+
+  // 3. Prepare Data
   const contactName = conversation?.name || "Unknown";
   const rawMessages = (conversation?.messages || []) as any[];
 
@@ -162,16 +174,23 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
         display: "flex",
         flexDirection: "column",
         height: "100%",
-        backgroundColor: "#ECE5DD", // Chat BG
+        backgroundColor: tokens?.backgroundColor || "#ECE5DD",
         position: "relative",
       }}
     >
-      <Header
-        contactName={contactName}
-        avatarUrl={conversation?.avatar}
-        status="online"
-        safeAreaTop={safeAreaTop}
-      />
+      {StrategyHeader && conversation ? (
+        <StrategyHeader
+          conversation={conversation}
+          safeAreaTop={safeAreaTop}
+        />
+      ) : (
+        <DefaultHeader
+          contactName={contactName}
+          avatarUrl={conversation?.avatar}
+          status="online"
+          safeAreaTop={safeAreaTop}
+        />
+      )}
 
       <MessageList
         messages={messages}
@@ -181,9 +200,18 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           Object.keys(conversation.typing).some((id) => id !== "me")
         }
         isGroupChat={conversation?.type === "group"}
+        tokens={tokens}
       />
 
-      <InputArea text="" showCursor={false} safeAreaBottom={safeAreaBottom} />
+      {StrategyInputArea ? (
+        <StrategyInputArea
+          text=""
+          showCursor={false}
+          safeAreaBottom={safeAreaBottom}
+        />
+      ) : (
+        <DefaultInputArea text="" showCursor={false} safeAreaBottom={safeAreaBottom} />
+      )}
     </div>
   );
 };

@@ -55,13 +55,17 @@ export const androidStrategy: UIStrategy = {
 
     // Android Dark Theme Tokens
     tokens: {
-        backgroundColor: "#0B141A",     // Dark background
-        bubbleMyBg: "#005C4B",          // Teal for sent
-        bubbleOtherBg: "#202C33",       // Dark for received
-        textColor: "#E9EDEF",           // Light text
-        secondaryColor: "#8696A0",      // Muted text
-        accentColor: "#00A884",         // WhatsApp teal
+        backgroundColor: "#0B141A",
+        bubbleMyBg: "#005C4B",
+        bubbleOtherBg: "#202C33",
+        textColor: "#E9EDEF",
+        secondaryColor: "#8696A0",
+        accentColor: "#00A884",
         fontFamily: "Roboto, sans-serif",
+        systemMessageBg: "#182229",
+        systemMessageText: "#8696A0",
+        doodlePattern: "",
+        doodleOpacity: 0,
     }
 };
 

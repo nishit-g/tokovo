@@ -212,6 +212,9 @@ export interface DeviceState {
 
     // Scheduler State (V2)
     notificationQueues?: NotificationQueueState;
+
+    // App UI theme/strategy (e.g., "whatsapp-ghibli")
+    appTheme?: string;
 }
 
 // =============================================================================

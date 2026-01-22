@@ -42,6 +42,8 @@ export interface DeviceOptions {
     app: string;
     conversations?: ConversationConfig[];
     os?: OSConfig;
+    /** UI theme/strategy to use (e.g., "whatsapp-ghibli") */
+    theme?: string;
 }
 
 /**
@@ -95,6 +97,7 @@ export class EpisodeBuilder {
             app: options.app,
             conversations: options.conversations,
             os: options.os,
+            theme: options.theme,
         };
         this._devices.push(deviceConfig);
         return this;

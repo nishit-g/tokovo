@@ -100,6 +100,7 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
       foregroundAppId: device.app, // CRITICAL: Renderer checks this!
       isLocked: false, // Device must be unlocked
       platform: device.profile.includes("pixel") ? "android" : "ios",
+      appTheme: device.theme,
       // Initialize keyboard state per device
       keyboard: {
         visible: false,

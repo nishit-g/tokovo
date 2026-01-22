@@ -1,11 +1,10 @@
-
 export const injectWhatsAppStyles = () => {
-    if (typeof document === 'undefined') return;
-    if (document.getElementById('tokovo-whatsapp-styles')) return;
+  if (typeof document === "undefined") return;
+  if (document.getElementById("tokovo-whatsapp-styles")) return;
 
-    const style = document.createElement('style');
-    style.id = 'tokovo-whatsapp-styles';
-    style.innerHTML = `
+  const style = document.createElement("style");
+  style.id = "tokovo-whatsapp-styles";
+  style.innerHTML = `
         :root {
             /* 
              * WhatsApp iOS Theme - "Tokovo Production Grade"
@@ -33,6 +32,10 @@ export const injectWhatsAppStyles = () => {
             --wa-bubble-out-bg: #E7FFDB;         /* Classic Green Hint */
             --wa-bubble-in-pressed: #F2F2F7;
             --wa-bubble-out-pressed: #D3EFC4;
+            
+            /* --- System Messages --- */
+            --wa-system-message-bg: #FDF4C5;
+            --wa-system-message-text: #54656F;
 
             /* --- Text --- */
             --wa-text-primary: #000000;
@@ -81,6 +84,10 @@ export const injectWhatsAppStyles = () => {
             --wa-bubble-out-bg: #005C4B;         /* Dark Teal */
             --wa-bubble-in-pressed: #2A3942;
             --wa-bubble-out-pressed: #025043;
+            
+            /* --- System Messages --- */
+            --wa-system-message-bg: #1D282F;
+            --wa-system-message-text: #8696A0;
 
             /* --- Text --- */
             --wa-text-primary: #FFFFFF;
@@ -107,5 +114,5 @@ export const injectWhatsAppStyles = () => {
             -webkit-font-smoothing: antialiased;
         }
     `;
-    document.head.appendChild(style);
+  document.head.appendChild(style);
 };

@@ -21,3 +21,4 @@ import "./bakchodi-gang.episode";
 import "./instagram-dm-demo.episode";
 import "./cheating-exposed.episode";
 import "./feature-showcase.episode";
+import "./ghibli-showcase.episode";

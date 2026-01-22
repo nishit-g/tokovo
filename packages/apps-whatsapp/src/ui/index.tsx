@@ -63,10 +63,12 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
       break;
     case "chat":
     default:
+      const device = deviceId ? world.devices?.[deviceId] : undefined;
       activeScreenContent = (
         <ChatScreen
           world={world}
           deviceId={deviceId}
+          appTheme={device?.appTheme}
           width={activeWidth}
           height={activeHeight}
           safeAreaInsets={safeAreaInsets}

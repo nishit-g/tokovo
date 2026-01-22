@@ -63,6 +63,7 @@ interface DeviceDefinition {
   platform?: "ios" | "android";
   appId?: string;
   profileId?: string;
+  theme?: string;
   conversations?: Array<{
     id: string;
     name?: string;
@@ -104,6 +105,7 @@ export function deriveInitialWorld(
       foregroundAppId: deviceDef.appId || undefined,
       platform: deviceDef.platform || "ios",
       os: { ...DEFAULT_OS_STATE },
+      appTheme: deviceDef.theme,
     } as any;
 
     // Add conversations

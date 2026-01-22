@@ -1,5 +1,6 @@
 import React from "react";
 import { MessageData, LinkPreviewData } from "../../types";
+import { UIThemeTokens } from "../../ui/ui-strategy";
 import {
   VoiceMessageBubble,
   ImageMessageBubble,
@@ -20,7 +21,7 @@ const TextContent: React.FC<{ text: string }> = ({ text }) => (
     style={{
       fontSize: 16,
       lineHeight: "21px",
-      color: "var(--app-wa-bubble-text)",
+      color: "var(--wa-text-primary)",
       fontFamily: FONT_FAMILY,
       wordWrap: "break-word",
       whiteSpace: "pre-wrap",
@@ -157,20 +158,25 @@ const LinkContent: React.FC<{
   </div>
 );
 
-const SystemContent: React.FC<{ text: string }> = ({ text }) => (
+interface SystemContentProps {
+  text: string;
+  tokens?: Partial<UIThemeTokens>;
+}
+
+const SystemContent: React.FC<SystemContentProps> = ({ text, tokens }) => (
   <div
     style={{
       alignSelf: "center",
-      backgroundColor: "var(--app-wa-header-bg)",
+      backgroundColor: tokens?.systemMessageBg || "var(--wa-system-message-bg)",
       borderRadius: 8,
-      padding: "4px 8px",
+      padding: "6px 12px",
       fontSize: 12,
-      color: "var(--app-wa-bubble-timestamp)",
+      color: tokens?.systemMessageText || "var(--wa-system-message-text)",
       marginBottom: 8,
       marginTop: 8,
       textAlign: "center",
-      maxWidth: "80%",
-      boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
+      maxWidth: "85%",
+      boxShadow: "0 1px 0.5px rgba(11, 20, 26, 0.13)",
     }}
   >
     {text}
@@ -182,6 +188,7 @@ export interface MessageContentProps {
   isMe?: boolean;
   timestamp?: string;
   read?: boolean;
+  tokens?: Partial<UIThemeTokens>;
 }
 
 export const MessageContent: React.FC<MessageContentProps> = ({
@@ -189,6 +196,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   isMe = false,
   timestamp,
   read = false,
+  tokens,
 }) => {
   switch (message.type) {
     case "text":
@@ -299,7 +307,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
       );
 
     case "system":
-      return <SystemContent text={message.text} />;
+      return <SystemContent text={message.text} tokens={tokens} />;
 
     default:
       return (

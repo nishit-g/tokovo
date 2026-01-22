@@ -3,6 +3,7 @@ import { getTheme } from "./theme";
 import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../../hooks/useMessageGrouping";
 import { MessageData } from "../../types";
+import { UIThemeTokens } from "../../ui/ui-strategy";
 
 import { TypingIndicator } from "./TypingIndicator";
 
@@ -11,6 +12,7 @@ interface MessageListProps {
   ownerName?: string;
   isTyping?: boolean;
   isGroupChat?: boolean;
+  tokens?: Partial<UIThemeTokens>;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -18,15 +20,16 @@ export const MessageList: React.FC<MessageListProps> = ({
   ownerName = "me",
   isTyping,
   isGroupChat = false,
+  tokens,
 }) => {
   const theme = getTheme("ios");
+  const backgroundColor = tokens?.backgroundColor || theme.colors.chatBg;
+  const doodlePattern = tokens?.doodlePattern || "";
 
-  // Architecture Layer 1: Semantic Grouping
   const groups = useMessageGrouping(messages, ownerName);
   const containerRef = useRef<HTMLDivElement>(null);
   const lastMessageId = messages[messages.length - 1]?.id;
 
-  // Auto-scroll to bottom when new messages arrive or typing status changes
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
@@ -39,16 +42,12 @@ export const MessageList: React.FC<MessageListProps> = ({
       data-anchor="list"
       style={{
         flex: 1,
-        backgroundColor: theme.colors.chatBg,
-        // Optional: Wallpaper pattern could be a CSS variable too or separate component
-        // Doodle Pattern (CSS radial gradient approximation of doodle)
-        backgroundImage:
-          "radial-gradient(circle at 10% 20%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 90% 80%, rgba(0,0,0,0.13) 1px, transparent 1px), radial-gradient(circle at 30% 60%, rgba(0,0,0,0.13) 1.5px, transparent 1.5px), radial-gradient(circle at 70% 30%, rgba(0,0,0,0.13) 1px, transparent 1px)",
-        backgroundSize: "60px 60px", // Repeat pattern
+        backgroundColor,
+        backgroundImage: doodlePattern,
+        backgroundSize: "200px 200px",
         display: "flex",
         flexDirection: "column",
         padding: "10px 16px",
-        // Remove 'gap' here because we control it via margins for precise rhythm
         overflowY: "auto",
         WebkitOverflowScrolling: "touch",
         paddingBottom: 100,

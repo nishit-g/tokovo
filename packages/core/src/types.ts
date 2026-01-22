@@ -465,6 +465,9 @@ export interface DeviceState {
      * Computed by the Engine, consumed by Renderer.
      */
     notificationQueues?: NotificationQueueState;
+
+    // App UI theme/strategy (e.g., "whatsapp-ghibli")
+    appTheme?: string;
 }
 
 export interface NotificationQueueState {
