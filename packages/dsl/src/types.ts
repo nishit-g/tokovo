@@ -25,21 +25,6 @@ export interface TypingBuilder {
 export type MessageHandle = TrackMessageRef;
 
 /**
- * Track builder for concurrent operations.
- */
-export interface TrackBuilder {
-  wait(duration: string): TrackBuilder;
-  typing(actor: string): TypingBuilder;
-  send(actor: string, text: string): MessageHandle;
-  receive(actor: string, text: string): MessageHandle;
-}
-
-/**
- * Track function for concurrent().
- */
-export type TrackFn = (t: TrackBuilder) => void;
-
-/**
  * Episode configuration.
  */
 export interface EpisodeConfig {
@@ -52,6 +37,6 @@ export interface EpisodeConfig {
  */
 export interface EpisodeDefinition {
   id: string;
-  flow: any; // Using any for now to avoid circular dependency hell with IR
+  flow: any;
   schemaVersion: string;
 }

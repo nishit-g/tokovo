@@ -1,5 +1,5 @@
 import { defineEpisode } from "../types/episode-definition";
-import { episode } from "@tokovo/dsl/src/v2";
+import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
 
 let orderCounter = 0;
@@ -38,7 +38,7 @@ export default defineEpisode({
         os: {
           time: new Date("2077-11-21T23:45:00"),
           battery: 77,
-          network: "6G",
+          network: "5G",
         },
       })
 

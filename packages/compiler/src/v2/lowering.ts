@@ -15,7 +15,19 @@ import type {
   OSTrackEvent,
   MarkerTrackEvent,
 } from "@tokovo/ir";
-import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
+import type {
+  AudioCrossfadeEvent,
+  AudioFadeOutEvent,
+  AudioPlayEvent,
+  AudioRuntimeEvent,
+  AudioStopAllEvent,
+  AudioStopEvent,
+  CallRuntimeEvent,
+  DeviceRuntimeEvent,
+  OSRuntimeEvent,
+  RuntimeEvent,
+  TokovoPlugin,
+} from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
 
 // =============================================================================
@@ -105,7 +117,7 @@ function lowerAppEvent(
 /**
  * Lower audio events.
  */
-function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
+function lowerAudioEvent(event: AudioTrackEvent): AudioRuntimeEvent[] {
   const base = { at: event.at, kind: "AUDIO" as const };
 
   switch (event.type) {
@@ -114,13 +126,11 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "PLAY",
-          payload: {
-            soundId: event.payload.soundId,
-            volume: event.payload.volume,
-            fadeIn: event.payload.fadeIn,
-            loop: true,
-          },
-        } as any,
+          soundId: event.payload.soundId,
+          volume: event.payload.volume,
+          fadeIn: event.payload.fadeIn,
+          loop: true,
+        } satisfies AudioPlayEvent,
       ];
 
     case "BGM_END":
@@ -128,8 +138,8 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "FADE_OUT",
-          payload: { duration: event.payload.fadeOut ?? 30 },
-        } as any,
+          duration: event.payload.fadeOut ?? 30,
+        } satisfies AudioFadeOutEvent,
       ];
 
     case "PLAY":
@@ -137,12 +147,10 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "PLAY",
-          payload: {
-            soundId: event.payload.soundId,
-            volume: event.payload.volume,
-            loop: event.payload.loop,
-          },
-        } as any,
+          soundId: event.payload.soundId,
+          volume: event.payload.volume,
+          loop: event.payload.loop,
+        } satisfies AudioPlayEvent,
       ];
 
     case "STOP":
@@ -150,8 +158,8 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "STOP",
-          payload: { soundId: event.payload.soundId },
-        } as any,
+          soundId: event.payload.soundId,
+        } satisfies AudioStopEvent,
       ];
 
     case "CROSSFADE":
@@ -160,11 +168,9 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
           ...base,
           type: "CROSSFADE",
           duration: event.payload.duration,
-          payload: {
-            soundId: event.payload.soundId,
-            volume: event.payload.volume,
-          },
-        } as any,
+          soundId: event.payload.soundId,
+          volume: event.payload.volume,
+        } satisfies AudioCrossfadeEvent,
       ];
 
     case "FADE_OUT":
@@ -172,12 +178,12 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "FADE_OUT",
-          payload: { duration: event.payload.duration },
-        } as any,
+          duration: event.payload.duration,
+        } satisfies AudioFadeOutEvent,
       ];
 
     case "STOP_ALL":
-      return [{ ...base, type: "STOP_ALL", payload: {} } as any];
+      return [{ ...base, type: "STOP_ALL" } satisfies AudioStopAllEvent];
 
     default:
       return [];
@@ -187,35 +193,38 @@ function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
 /**
  * Lower OS events.
  */
-function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
+function lowerOSEvent(event: OSTrackEvent): OSRuntimeEvent[] {
   const base = { at: event.at, kind: "OS" as const, deviceId: event.deviceId };
 
   switch (event.type) {
-    case "SET_STATE":
     case "SET_TIME":
+      return [{ ...base, type: "SET_TIME", time: event.payload.time }];
+
     case "SET_BATTERY":
-    case "SET_NETWORK":
-    case "SET_DND":
-      return [{ ...base, type: "SET_STATE", payload: event.payload } as any];
-
-    case "NOTIFICATION_SHOW":
-      return [
-        { ...base, type: "SHOW_NOTIFICATION", payload: event.payload } as any,
-      ];
-
-    case "NOTIFICATION_DISMISS":
       return [
         {
           ...base,
-          type: "DISMISS_NOTIFICATION",
-          payload: event.payload,
-        } as any,
+          type: "SET_BATTERY",
+          level: event.payload.level,
+          charging: event.payload.charging,
+        },
       ];
 
-    case "NOTIFICATION_DISMISS_ALL":
+    case "SET_NETWORK":
       return [
-        { ...base, type: "DISMISS_ALL_NOTIFICATIONS", payload: {} } as any,
+        {
+          ...base,
+          type: "SET_NETWORK",
+          network: event.payload.type,
+          strength: event.payload.strength,
+        },
       ];
+
+    case "SET_DND":
+      return [{ ...base, type: "SET_DND", enabled: event.payload.enabled }];
+
+    case "SET_STATE":
+      return [{ ...base, type: "SET_TIME", ...event.payload }];
 
     default:
       return [];
@@ -233,58 +242,80 @@ function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
  * Lower CALL events (phone calls).
  * These come from CallTrackBuilder DSL.
  */
-function lowerCallEvent(event: TrackEvent): RuntimeEvent[] {
-  const e = event as any;
-
-  console.log("[lowerCallEvent] 📞 Lowering CALL event:", e.type, "at", e.at);
-
-  // CALL events are passed through 1:1 with kind: "CALL"
-  const { _declarationOrder, ...rest } = e;
-  const result = [
-    {
-      ...rest,
-      at: e.at,
-      kind: "CALL" as const,
-      deviceId: e.deviceId,
-      type: e.type,
-    },
-  ];
-
-  console.log("[lowerCallEvent] 📤 Output:", result);
-  return result as any[];
-}
-
-/**
- * Lower DEVICE events (notifications, dynamic island, etc.)
- * These come from NotificationTrackBuilder and similar device-level DSLs.
- */
-function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
-  const e = event as any;
-  const base = {
-    at: e.at,
-    kind: "DEVICE" as const,
-    deviceId: e.deviceId,
+function lowerCallEvent(event: TrackEvent): CallRuntimeEvent[] {
+  const e = event as TrackEvent & {
+    type: string;
+    deviceId?: string;
+    callerId?: string;
+    callerName?: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
   };
 
-  switch (e.type) {
-    // Notification events
+  return [
+    {
+      at: e.at,
+      kind: "CALL",
+      type: e.type as CallRuntimeEvent["type"],
+      deviceId: e.deviceId,
+      callerId: e.callerId,
+      callerName: e.callerName,
+      callerAvatar: e.callerAvatar,
+      isVideo: e.isVideo,
+    },
+  ];
+}
+
+interface ExtendedDeviceEvent {
+  at: number;
+  kind: "DEVICE";
+  deviceId: string;
+  type: string;
+  id?: string;
+  appId?: string;
+  title?: string;
+  body?: string;
+  mode?: string;
+  priority?: string;
+  icon?: string;
+  preview?: string;
+  actions?: unknown[];
+  groupKey?: string;
+  threadId?: string;
+  direction?: string;
+  action?: string;
+  actionId?: string;
+  content?: unknown;
+  open?: boolean;
+  text?: string;
+  all?: boolean;
+}
+
+function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
+  const e = event as TrackEvent & Record<string, unknown>;
+  const base = {
+    at: e.at as number,
+    kind: "DEVICE" as const,
+    deviceId: (e.deviceId as string) ?? "device_1",
+  };
+
+  const type = e.type as string;
+
+  switch (type) {
     case "NOTIFICATION_SHOW":
       return [
         {
           ...base,
           type: "SHOW_NOTIFICATION",
-          id: e.id,
-          appId: e.appId,
-          title: e.title,
-          body: e.body,
-          mode: e.mode,
-          priority: e.priority,
-          icon: e.icon,
-          preview: e.preview,
-          actions: e.actions,
-          groupKey: e.groupKey,
-          threadId: e.threadId,
-        } as any,
+          payload: {
+            id: e.id,
+            appId: e.appId,
+            title: e.title,
+            body: e.body,
+            priority: e.priority,
+            icon: e.icon,
+          },
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_DISMISS":
@@ -292,10 +323,8 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "DISMISS_NOTIFICATION",
-          id: e.id,
-          groupKey: e.groupKey,
-          all: e.all,
-        } as any,
+          payload: { id: e.id },
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_TAP":
@@ -303,9 +332,8 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TAP_NOTIFICATION",
-          id: e.id,
-          actionId: e.actionId,
-        } as any,
+          payload: { id: e.id },
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_SWIPE":
@@ -313,10 +341,8 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "SWIPE_NOTIFICATION",
-          id: e.id,
-          direction: e.direction,
-          action: e.action,
-        } as any,
+          payload: { id: e.id },
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_DYNAMIC_ISLAND":
@@ -324,10 +350,8 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "SET_DYNAMIC_ISLAND",
-          mode: e.mode,
-          appId: e.appId,
-          content: e.content,
-        } as any,
+          payload: { visible: true, mode: e.mode },
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_OPEN_PANEL":
@@ -335,8 +359,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TOGGLE_NOTIFICATION_PANEL",
-          open: true,
-        } as any,
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_CLOSE_PANEL":
@@ -344,8 +367,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "TOGGLE_NOTIFICATION_PANEL",
-          open: false,
-        } as any,
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_CLEAR_ALL":
@@ -353,7 +375,7 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "CLEAR_ALL_NOTIFICATIONS",
-        } as any,
+        } as DeviceRuntimeEvent,
       ];
 
     case "NOTIFICATION_REPLY":
@@ -361,13 +383,12 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
         {
           ...base,
           type: "REPLY_NOTIFICATION",
-          id: e.id,
-          text: e.text,
-        } as any,
+          payload: { id: e.id, text: e.text },
+        } as DeviceRuntimeEvent,
       ];
 
     default:
-      console.warn(`[lowering] Unknown DEVICE event type: ${e.type}`);
+      console.warn(`[lowering] Unknown DEVICE event type: ${type}`);
       return [];
   }
 }

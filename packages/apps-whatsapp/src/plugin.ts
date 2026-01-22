@@ -9,7 +9,8 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import { APP_IDS, PluginManager } from "@tokovo/core";
+import { PluginManager } from "@tokovo/core";
+import { WHATSAPP_APP_ID } from "./constants";
 import type { TokovoPluginContract, PluginViews } from "@tokovo/core/src/types/plugin-contract";
 
 // Runtime Layer
@@ -74,7 +75,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
     sounds: Record<string, string>;
 } = {
     // === TIER A: Identity ===
-    id: APP_IDS.WHATSAPP as "app_whatsapp",
+    id: WHATSAPP_APP_ID as "app_whatsapp",
     version: "2.0.0",
     displayName: "WhatsApp",
     name: "WhatsApp",

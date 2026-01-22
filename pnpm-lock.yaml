@@ -96,6 +96,9 @@ importers:
       react:
         specifier: ^18.2.0
         version: 18.2.0
+      remotion:
+        specifier: ^4.0.409
+        version: 4.0.409(react-dom@18.2.0(react@18.2.0))(react@18.2.0)
     devDependencies:
       '@types/node':
         specifier: ^20.0.0
@@ -185,6 +188,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       immer:
         specifier: ^10.0.0
         version: 10.2.0
@@ -1767,6 +1773,12 @@ packages:
 
   remotion@4.0.380:
     resolution: {integrity: sha512-mVrq8dmKjHpIRcvXGo4iUx/n+rea5YQqYouTN8afg8ZGUvA181Q+BiiSHGP+ow7Wx7posPH6OFpqtYn0swbobw==}
+    peerDependencies:
+      react: '>=16.8.0'
+      react-dom: '>=16.8.0'
+
+  remotion@4.0.409:
+    resolution: {integrity: sha512-+NFkLJQcbxOKwosTuyvrQbxWOK+HpP+og3omznDB0S9hsX4BUGL0peanN/6uk4HtVXMHuFs7meUulKviyQ1Egw==}
     peerDependencies:
       react: '>=16.8.0'
       react-dom: '>=16.8.0'
@@ -3596,6 +3608,11 @@ snapshots:
       react-dom: 18.2.0(react@18.2.0)
 
   remotion@4.0.380(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
+    dependencies:
+      react: 18.2.0
+      react-dom: 18.2.0(react@18.2.0)
+
+  remotion@4.0.409(react-dom@18.2.0(react@18.2.0))(react@18.2.0):
     dependencies:
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)

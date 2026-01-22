@@ -10,7 +10,8 @@
         "@tokovo/core": "workspace:*",
         "@tokovo/ir": "workspace:*",
         "lucide-react": "^0.263.1",
-        "react": "^18.2.0"
+        "react": "^18.2.0",
+        "remotion": "^4.0.409"
     },
     "devDependencies": {
         "@types/node": "^20.0.0",

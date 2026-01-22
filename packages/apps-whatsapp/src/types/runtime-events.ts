@@ -201,8 +201,49 @@ export interface VoicePauseRuntimeEvent extends WhatsAppRuntimeEventBase {
 }
 
 export interface GenericWhatsAppRuntimeEvent extends WhatsAppRuntimeEventBase {
-  kind: WhatsAppRuntimeEventKind;
-  payload: Record<string, unknown>;
+  kind: WhatsAppRuntimeEventKind | string;
+  payload: {
+    text?: string;
+    type?: string;
+    id?: string;
+    from?: string;
+    status?: string;
+    edited?: boolean;
+    imageUrl?: string;
+    caption?: string;
+    thumbnailUrl?: string;
+    videoUrl?: string;
+    duration?: number;
+    voiceUrl?: string;
+    waveform?: number[];
+    gifUrl?: string;
+    stickerUrl?: string;
+    documentUrl?: string;
+    fileName?: string;
+    fileSize?: number;
+    contactName?: string;
+    contactPhone?: string;
+    latitude?: number;
+    longitude?: number;
+    locationName?: string;
+    emoji?: string;
+    messageId?: string;
+    originalText?: string;
+    newText?: string;
+    conversationId?: string;
+    screen?: string;
+    actor?: string;
+    memberId?: string;
+    memberName?: string;
+    memberAvatar?: string;
+    date?: string;
+    progress?: number;
+    [key: string]: unknown;
+  };
+  from?: string;
+  text?: string;
+  screen?: string;
+  actor?: string;
   [key: string]: unknown;
 }
 

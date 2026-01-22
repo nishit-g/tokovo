@@ -1,4 +1,5 @@
 import React from "react";
+import { useCurrentFrame, interpolate } from "remotion";
 import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
 import { whatsappColors, typography, spacing } from "./theme";
 
@@ -20,7 +21,14 @@ export interface ChatListItemProps {
   isMuted?: boolean;
   isPinned?: boolean;
   hasStatus?: boolean;
-  mediaType?: "photo" | "video" | "voice" | "sticker" | "document" | "gif" | null;
+  mediaType?:
+    | "photo"
+    | "video"
+    | "voice"
+    | "sticker"
+    | "document"
+    | "gif"
+    | null;
   senderName?: string;
 }
 
@@ -29,30 +37,50 @@ export interface ChatListItemProps {
 // =============================================================================
 
 const TypingDots: React.FC = () => {
+  const frame = useCurrentFrame();
+  const cycleLength = 42;
+
+  const dots = [0, 6, 12].map((delay, i) => {
+    const adjustedFrame = (frame + delay) % cycleLength;
+    const translateY = interpolate(
+      adjustedFrame,
+      [0, 12, 24, 42],
+      [0, -4, 0, 0],
+      { extrapolateRight: "clamp" },
+    );
+    const opacity = interpolate(
+      adjustedFrame,
+      [0, 12, 24, 42],
+      [0.4, 1, 0.4, 0.4],
+      { extrapolateRight: "clamp" },
+    );
+
+    return (
+      <span
+        key={i}
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: "50%",
+          backgroundColor: whatsappColors.primary,
+          display: "inline-block",
+          transform: `translateY(${translateY}px)`,
+          opacity,
+        }}
+      />
+    );
+  });
+
   return (
-    <span style={{ 
-      color: whatsappColors.primary, 
-      display: "inline-flex", 
-      alignItems: "center",
-      gap: 2,
-    }}>
-      <span className="typing-dot" style={{ animationDelay: "0s" }} />
-      <span className="typing-dot" style={{ animationDelay: "0.2s" }} />
-      <span className="typing-dot" style={{ animationDelay: "0.4s" }} />
-      <style>{`
-        .typing-dot {
-          width: 4px;
-          height: 4px;
-          border-radius: 50%;
-          background-color: #25D366;
-          display: inline-block;
-          animation: typingBounce 1.4s infinite ease-in-out;
-        }
-        @keyframes typingBounce {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-4px); opacity: 1; }
-        }
-      `}</style>
+    <span
+      style={{
+        color: whatsappColors.primary,
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 2,
+      }}
+    >
+      {dots}
     </span>
   );
 };
@@ -61,7 +89,7 @@ const StatusRing: React.FC<{ size: number }> = ({ size }) => {
   const strokeWidth = 2;
   const radius = (size - strokeWidth) / 2;
   const circ = 2 * Math.PI * radius;
-  
+
   return (
     <svg
       width={size}
@@ -89,13 +117,20 @@ const StatusRing: React.FC<{ size: number }> = ({ size }) => {
 
 const getMediaPrefix = (mediaType: ChatListItemProps["mediaType"]): string => {
   switch (mediaType) {
-    case "photo": return "📷 Photo";
-    case "video": return "🎥 Video";
-    case "voice": return "🎤 Voice message";
-    case "sticker": return "🎭 Sticker";
-    case "document": return "📄 Document";
-    case "gif": return "GIF";
-    default: return "";
+    case "photo":
+      return "📷 Photo";
+    case "video":
+      return "🎥 Video";
+    case "voice":
+      return "🎤 Voice message";
+    case "sticker":
+      return "🎭 Sticker";
+    case "document":
+      return "📄 Document";
+    case "gif":
+      return "GIF";
+    default:
+      return "";
   }
 };
 
@@ -119,36 +154,39 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
   senderName,
 }) => {
   const hasUnread = unreadCount > 0;
-  
+
   const buildMessagePreview = (): React.ReactNode => {
     if (isTyping) {
       return <TypingDots />;
     }
-    
+
     if (mediaType) {
       const prefix = getMediaPrefix(mediaType);
       if (prefix) {
         return (
           <span style={{ color: whatsappColors.textSecondary }}>
-            {senderName && <span style={{ fontWeight: 500 }}>{senderName}: </span>}
+            {senderName && (
+              <span style={{ fontWeight: 500 }}>{senderName}: </span>
+            )}
             {prefix}
           </span>
         );
       }
     }
-    
+
     if (senderName) {
       return (
         <>
-          <span style={{ fontWeight: 500, color: whatsappColors.textSecondary }}>
+          <span
+            style={{ fontWeight: 500, color: whatsappColors.textSecondary }}
+          >
             {senderName}:
-          </span>
-          {" "}
+          </span>{" "}
           <span>{lastMessage}</span>
         </>
       );
     }
-    
+
     return lastMessage;
   };
 
@@ -176,16 +214,18 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
         }}
       >
         {hasStatus && (
-          <div style={{ 
-            position: "absolute", 
-            left: spacing.avatarMarginLeft - 2,
-            top: "50%",
-            transform: "translateY(-50%)",
-          }}>
+          <div
+            style={{
+              position: "absolute",
+              left: spacing.avatarMarginLeft - 2,
+              top: "50%",
+              transform: "translateY(-50%)",
+            }}
+          >
             <StatusRing size={spacing.avatarSize + 4} />
           </div>
         )}
-        
+
         <div
           style={{
             width: spacing.avatarSize,
@@ -210,7 +250,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background: `hsl(${name.charCodeAt(0) * 10 % 360}, 60%, 70%)`,
+                background: `hsl(${(name.charCodeAt(0) * 10) % 360}, 60%, 70%)`,
                 color: "white",
                 fontSize: 22,
                 fontWeight: 500,
@@ -232,7 +272,9 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
           height: "100%",
           paddingRight: spacing.contentMarginRight,
           paddingLeft: spacing.contentMarginLeft,
-          borderBottom: isLast ? "none" : `0.5px solid ${whatsappColors.separator}`,
+          borderBottom: isLast
+            ? "none"
+            : `0.5px solid ${whatsappColors.separator}`,
           minWidth: 0,
         }}
       >
@@ -259,14 +301,23 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
             {name}
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 4,
+              flexShrink: 0,
+            }}
+          >
             {isMuted && (
               <MutedIcon size={14} color={whatsappColors.textSecondary} />
             )}
             <span
               style={{
                 ...typography.caption,
-                color: hasUnread ? whatsappColors.primary : whatsappColors.textSecondary,
+                color: hasUnread
+                  ? whatsappColors.primary
+                  : whatsappColors.textSecondary,
               }}
             >
               {timestamp}
@@ -297,28 +348,42 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
             }}
           >
             {status && !hasUnread && !isTyping && (
-              <span style={{ display: "flex", alignItems: "center", flexShrink: 0 }}>
+              <span
+                style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
+              >
                 <DoubleCheckIcon read={status === "read"} size={16} />
               </span>
             )}
-            <span style={{ 
-              overflow: "hidden", 
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}>
+            <span
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
               {buildMessagePreview()}
             </span>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0, marginLeft: 8 }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              flexShrink: 0,
+              marginLeft: 8,
+            }}
+          >
             {isPinned && (
               <PinIcon size={14} color={whatsappColors.textSecondary} />
             )}
-            
+
             {hasUnread && (
               <div
                 style={{
-                  backgroundColor: isMuted ? whatsappColors.textSecondary : whatsappColors.primary,
+                  backgroundColor: isMuted
+                    ? whatsappColors.textSecondary
+                    : whatsappColors.primary,
                   color: "white",
                   borderRadius: spacing.badgeRadius,
                   minWidth: spacing.badgeMinWidth,

@@ -1,15 +1,15 @@
 /**
  * Device Types - Device state, OS, keyboard, call
- * 
+ *
  * @description All device-level types including OS state, call, keyboard.
  */
 
 import type {
-    NotificationInstance,
-    NotificationCenterState,
-    DynamicIslandState,
-    StatusBarIcon,
-    NotificationQueueState
+  NotificationInstance,
+  NotificationCenterState,
+  DynamicIslandState,
+  StatusBarIcon,
+  NotificationQueueState,
 } from "./notification";
 
 // =============================================================================
@@ -20,11 +20,11 @@ import type {
  * Plugins can use Module Augmentation to add their own types here.
  */
 export interface AppScreens {
-    [key: string]: string;
+  [key: string]: string;
 }
 
 export interface AppCallTypes {
-    [key: string]: string;
+  [key: string]: string;
 }
 
 // =============================================================================
@@ -32,9 +32,9 @@ export interface AppCallTypes {
 // =============================================================================
 
 export interface BaseAppState {
-    viewMode?: import("./layout").ViewKind;
-    conversationId?: string;
-    activeStoryId?: string;
+  viewMode?: import("./layout").ViewKind;
+  conversationId?: string;
+  activeStoryId?: string;
 }
 
 // =============================================================================
@@ -42,10 +42,10 @@ export interface BaseAppState {
 // =============================================================================
 
 export interface BackgroundAppState {
-    appId: string;
-    startedAt: number;
-    indicator?: "music" | "call" | "recording" | "location";
-    label?: string;
+  appId: string;
+  startedAt: number;
+  indicator?: "music" | "call" | "recording" | "location";
+  label?: string;
 }
 
 // =============================================================================
@@ -53,30 +53,41 @@ export interface BackgroundAppState {
 // =============================================================================
 
 export type CallDisplayMode = "overlay" | "fullscreen" | (string & {});
-export type CallType = "voice" | "video" | "facetime" | "whatsapp" | (string & {});
+export type CallType =
+  | "voice"
+  | "video"
+  | "facetime"
+  | "whatsapp"
+  | (string & {});
 
 export interface CallerMetadata {
-    posterImage?: string;
-    posterColor?: string;
-    posterStyle?: "modern" | "classic" | (string & {});
-    posterNameFont?: string;
+  posterImage?: string;
+  posterColor?: string;
+  posterStyle?: "modern" | "classic" | (string & {});
+  posterNameFont?: string;
 }
 
 export interface CallState {
-    status: "incoming" | "ringing" | "connecting" | "active" | "ended" | "declined";
-    callerId: string;
-    callerName: string;
-    callerAvatar?: string;
-    isVideo?: boolean;
-    callType: CallType;
-    displayMode: CallDisplayMode;
-    callerMetadata?: CallerMetadata;
-    isMuted?: boolean;
-    isSpeakerOn?: boolean;
-    isOnHold?: boolean;
-    startedAt?: number;
-    answeredAt?: number;
-    endedAt?: number;
+  status:
+    | "incoming"
+    | "ringing"
+    | "connecting"
+    | "active"
+    | "ended"
+    | "declined";
+  callerId: string;
+  callerName: string;
+  callerAvatar?: string;
+  isVideo?: boolean;
+  callType: CallType;
+  displayMode: CallDisplayMode;
+  callerMetadata?: CallerMetadata;
+  isMuted?: boolean;
+  isSpeakerOn?: boolean;
+  isOnHold?: boolean;
+  startedAt?: number;
+  answeredAt?: number;
+  endedAt?: number;
 }
 
 // =============================================================================
@@ -86,59 +97,66 @@ export interface CallState {
 export type KeyboardLayout = "qwerty" | "numbers" | "symbols" | "emoji";
 
 export interface KeyboardState {
-    visible: boolean;
-    layout: KeyboardLayout;
-    currentKey: string | null;
-    keyPressedAt: number | null;
-    visibilityChangedAt: number;
-    inputText: string;
-    cursorPosition: number;
-    cursorVisible: boolean;
+  visible: boolean;
+  layout: KeyboardLayout;
+  currentKey: string | null;
+  keyPressedAt: number | null;
+  visibilityChangedAt: number;
+  inputText: string;
+  cursorPosition: number;
+  cursorVisible: boolean;
 }
 
 export const DEFAULT_KEYBOARD_STATE: KeyboardState = {
-    visible: false,
-    layout: "qwerty",
-    currentKey: null,
-    keyPressedAt: null,
-    visibilityChangedAt: 0,
-    inputText: "",
-    cursorPosition: 0,
-    cursorVisible: true,
+  visible: false,
+  layout: "qwerty",
+  currentKey: null,
+  keyPressedAt: null,
+  visibilityChangedAt: 0,
+  inputText: "",
+  cursorPosition: 0,
+  cursorVisible: true,
 };
 
 // =============================================================================
 // DEVICE OS STATE
 // =============================================================================
 
-export type NetworkType = "wifi" | "5G" | "4G" | "LTE" | "3G" | "E" | "no-service";
+export type NetworkType =
+  | "wifi"
+  | "5G"
+  | "4G"
+  | "LTE"
+  | "3G"
+  | "E"
+  | "no-service";
 
 export interface DeviceOSState {
-    clock: number;
-    battery: number;
-    charging: boolean;
-    network: NetworkType;
-    wifiStrength: number;
-    cellStrength: number;
-    dnd: boolean;
-    lowPowerMode: boolean;
-    airplaneMode: boolean;
-    notifications: NotificationInstance[];
-    notificationHistory: NotificationInstance[];
+  clock: number;
+  battery: number;
+  charging: boolean;
+  network: NetworkType;
+  wifiStrength: number;
+  cellStrength: number;
+  dnd: boolean;
+  lowPowerMode: boolean;
+  airplaneMode: boolean;
+  notifications: NotificationInstance[];
+  notificationHistory: NotificationInstance[];
 }
 
 export const DEFAULT_OS_STATE: DeviceOSState = {
-    clock: Date.now(),
-    battery: 85,
-    charging: false,
-    network: "wifi",
-    wifiStrength: 3,
-    cellStrength: 4,
-    dnd: false,
-    lowPowerMode: false,
-    airplaneMode: false,
-    notifications: [],
-    notificationHistory: [],
+  clock: Date.now(),
+  battery: 85,
+  charging: false,
+  network: "wifi",
+  wifiStrength: 3,
+  cellStrength: 4,
+  dnd: false,
+  lowPowerMode: false,
+  airplaneMode: false,
+  notifications: [],
+  notificationHistory: [],
 };
 
 // =============================================================================
@@ -146,11 +164,11 @@ export const DEFAULT_OS_STATE: DeviceOSState = {
 // =============================================================================
 
 export interface DeviceTheme {
-    platform?: "ios" | "android";
-    frameColor?: string;
-    wallpaper?: string;
-    statusBarStyle?: "light" | "dark";
-    accentColor?: string;
+  platform?: "ios" | "android";
+  frameColor?: string;
+  wallpaper?: string;
+  statusBarStyle?: "light" | "dark";
+  accentColor?: string;
 }
 
 // =============================================================================
@@ -158,63 +176,73 @@ export interface DeviceTheme {
 // =============================================================================
 
 export interface HomeScreenConfig {
-    wallpaper?: string;
-    pages: HomeScreenPage[];
-    dock: AppIcon[];
+  wallpaper?: string;
+  pages: HomeScreenPage[];
+  dock: AppIcon[];
 }
 
 export interface HomeScreenPage {
-    apps: (AppIcon | AppFolder)[];
+  apps: (AppIcon | AppFolder)[];
 }
 
 export interface AppIcon {
-    appId: string;
-    label: string;
-    icon: string;
-    badge?: number;
+  appId: string;
+  label: string;
+  icon: string;
+  badge?: number;
 }
 
 export interface AppFolder {
-    type: "folder";
-    name: string;
-    apps: AppIcon[];
+  type: "folder";
+  name: string;
+  apps: AppIcon[];
 }
 
 // =============================================================================
 // DEVICE STATE
 // =============================================================================
 
+export interface DeviceScreenDimensions {
+  width: number;
+  height: number;
+  safeAreaTop: number;
+  safeAreaBottom: number;
+}
+
 export interface DeviceState {
-    id: string;
-    profileId: string;
-    ownerName?: string;
-    isLocked: boolean;
-    foregroundAppId?: string;
+  id: string;
+  profileId: string;
+  ownerName?: string;
+  isLocked: boolean;
+  foregroundAppId?: string;
 
-    // Notifications
-    notifications: NotificationInstance[];
-    notificationCenter?: NotificationCenterState;
-    dynamicIsland?: DynamicIslandState;
-    statusBarIcons?: StatusBarIcon[];
+  /** Screen dimensions copied from device profile at creation */
+  screenDimensions?: DeviceScreenDimensions;
 
-    // Background apps
-    backgroundApps?: BackgroundAppState[];
-    call?: CallState;
-    homeScreen?: HomeScreenConfig;
-    sound?: { activeSoundId?: string };
-    theme?: DeviceTheme;
+  // Notifications
+  notifications: NotificationInstance[];
+  notificationCenter?: NotificationCenterState;
+  dynamicIsland?: DynamicIslandState;
+  statusBarIcons?: StatusBarIcon[];
 
-    // Keyboard
-    keyboard?: KeyboardState;
+  // Background apps
+  backgroundApps?: BackgroundAppState[];
+  call?: CallState;
+  homeScreen?: HomeScreenConfig;
+  sound?: { activeSoundId?: string };
+  theme?: DeviceTheme;
 
-    // OS Layer
-    os?: DeviceOSState;
+  // Keyboard
+  keyboard?: KeyboardState;
 
-    // Scheduler State (V2)
-    notificationQueues?: NotificationQueueState;
+  // OS Layer
+  os?: DeviceOSState;
 
-    // App UI theme/strategy (e.g., "whatsapp-ghibli")
-    appTheme?: string;
+  // Scheduler State (V2)
+  notificationQueues?: NotificationQueueState;
+
+  // App UI theme/strategy (e.g., "whatsapp-ghibli")
+  appTheme?: string;
 }
 
 // =============================================================================

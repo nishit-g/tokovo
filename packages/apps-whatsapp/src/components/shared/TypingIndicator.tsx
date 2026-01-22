@@ -1,4 +1,5 @@
 import React from "react";
+import { useCurrentFrame, interpolate } from "remotion";
 import { useTheme } from "../../theme/ThemeContext";
 
 interface TypingIndicatorProps {
@@ -27,8 +28,8 @@ export const TypingIndicator = React.memo(function TypingIndicator({
       {name && <span>{name}</span>}
       <div style={{ display: "flex", gap: 2 }}>
         <TypingDot delay={0} />
-        <TypingDot delay={0.15} />
-        <TypingDot delay={0.3} />
+        <TypingDot delay={6} />
+        <TypingDot delay={12} />
       </div>
     </div>
   );
@@ -40,6 +41,24 @@ interface TypingDotProps {
 
 function TypingDot({ delay }: TypingDotProps): React.ReactElement {
   const theme = useTheme();
+  const frame = useCurrentFrame();
+
+  const cycleLength = 42;
+  const adjustedFrame = (frame + delay) % cycleLength;
+
+  const translateY = interpolate(
+    adjustedFrame,
+    [0, 12, 24, 42],
+    [0, -4, 0, 0],
+    { extrapolateRight: "clamp" },
+  );
+
+  const opacity = interpolate(
+    adjustedFrame,
+    [0, 12, 24, 42],
+    [0.4, 1, 0.4, 0.4],
+    { extrapolateRight: "clamp" },
+  );
 
   return (
     <span
@@ -48,8 +67,8 @@ function TypingDot({ delay }: TypingDotProps): React.ReactElement {
         height: 6,
         borderRadius: "50%",
         backgroundColor: theme.colors.typingIndicator,
-        animation: `typingBounce 1.4s infinite ease-in-out both`,
-        animationDelay: `${delay}s`,
+        transform: `translateY(${translateY}px)`,
+        opacity,
       }}
     />
   );

@@ -1,6 +1,6 @@
 /**
  * Notification Types - All notification-related types
- * 
+ *
  * @description Notification IR, instances, policies, and center state.
  */
 
@@ -9,13 +9,28 @@
 // =============================================================================
 
 /** Notification priority levels */
-export type NotificationPriority = "passive" | "active" | "timeSensitive" | "critical";
+export type NotificationPriority =
+  | "passive"
+  | "active"
+  | "timeSensitive"
+  | "critical";
 
 /** Notification lifecycle state */
-export type NotificationState = "queued" | "delivered" | "headsUp" | "inShade" | "dismissed";
+export type NotificationState =
+  | "queued"
+  | "pending"
+  | "delivered"
+  | "headsUp"
+  | "inShade"
+  | "onLockscreen"
+  | "dismissed";
 
 /** Notification delivery conditions */
-export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnlocked" | "onlyWhenAppClosed";
+export type NotificationDeliverWhen =
+  | "always"
+  | "onlyWhenLocked"
+  | "onlyWhenUnlocked"
+  | "onlyWhenAppClosed";
 
 // =============================================================================
 // NOTIFICATION IR (Intermediate Representation)
@@ -26,38 +41,38 @@ export type NotificationDeliverWhen = "always" | "onlyWhenLocked" | "onlyWhenUnl
  * What the app sends. Stable, serializable, and device-agnostic.
  */
 export interface NotificationIR {
-    // Identity
+  // Identity
+  id: string;
+  appId: string;
+  channelId?: string;
+
+  // Content
+  title: string;
+  body: string;
+  icon?: string;
+
+  // Media / Rich Content
+  preview?: {
+    kind: "text" | "image" | "video";
+    value: string;
+    aspectRatio?: number;
+  };
+  payload?: Record<string, unknown>;
+
+  // Semantics
+  category?: "message" | "call" | "system" | "reminder";
+  threadKey?: string;
+  groupKey?: string;
+  peopleIds?: string[];
+
+  // Actions
+  actions?: Array<{
     id: string;
-    appId: string;
-    channelId?: string;
-
-    // Content
-    title: string;
-    body: string;
+    label: string;
     icon?: string;
-
-    // Media / Rich Content
-    preview?: {
-        kind: "text" | "image" | "video";
-        value: string;
-        aspectRatio?: number;
-    };
-    payload?: any;
-
-    // Semantics
-    category?: "message" | "call" | "system" | "reminder";
-    threadKey?: string;
-    groupKey?: string;
-    peopleIds?: string[];
-
-    // Actions
-    actions?: Array<{
-        id: string;
-        label: string;
-        icon?: string;
-        destructive?: boolean;
-    }>;
-    replyable?: boolean;
+    destructive?: boolean;
+  }>;
+  replyable?: boolean;
 }
 
 // =============================================================================
@@ -69,25 +84,25 @@ export interface NotificationIR {
  * What the Engine tracks. Includes lifecycle, timestamps, and OS state.
  */
 export interface NotificationInstance {
-    id: string;
-    ir: NotificationIR;
+  id: string;
+  ir: NotificationIR;
 
-    // Lifecycle
-    state: "queued" | "headsUp" | "inShade" | "onLockscreen" | "dismissed";
+  // Lifecycle
+  state: NotificationState;
 
-    // Timestamps (Frame numbers)
-    createdAtFrame: number;
-    deliveredAtFrame?: number;
-    shownAtFrame?: number;
-    dismissedAtFrame?: number;
-    expiresAtFrame?: number;
+  // Timestamps (Frame numbers)
+  createdAtFrame: number;
+  deliveredAtFrame?: number;
+  shownAtFrame?: number;
+  dismissedAtFrame?: number;
+  expiresAtFrame?: number;
 
-    // Encapsulated State from OS
-    deviceId?: string;
+  // Encapsulated State from OS
+  deviceId?: string;
 
-    // Computed Priority / Mode
-    importance?: "low" | "default" | "high" | "critical";
-    mode?: "lockscreen" | "headsup" | "both" | "silent";
+  // Computed Priority / Mode
+  importance?: "low" | "default" | "high" | "critical";
+  mode?: "lockscreen" | "headsup" | "both" | "silent";
 }
 
 // Backward Compatibility
@@ -99,12 +114,12 @@ export type NotificationIR_Alias = NotificationIR;
 // =============================================================================
 
 export interface NotificationGroup {
-    key: string;
-    appId: string;
-    notifications: NotificationInstance[];
-    collapsed: boolean;
-    count: number;
-    latestAt: number;
+  key: string;
+  appId: string;
+  notifications: NotificationInstance[];
+  collapsed: boolean;
+  count: number;
+  latestAt: number;
 }
 
 // =============================================================================
@@ -112,33 +127,43 @@ export interface NotificationGroup {
 // =============================================================================
 
 export interface NotificationPolicyIR {
-    maxHeadsUpVisible: number;
-    headsUpDurationByPriority: Record<NotificationPriority, number>;
-    replaceOnNewFromSameThread: boolean;
-    groupCollapseThreshold: number;
-    autoGroupByApp: boolean;
-    statusBarIconLimit: number;
-    expandDurationMs: number;
+  maxHeadsUpVisible: number;
+  headsUpDurationByPriority: Record<NotificationPriority, number>;
+  replaceOnNewFromSameThread: boolean;
+  groupCollapseThreshold: number;
+  autoGroupByApp: boolean;
+  statusBarIconLimit: number;
+  expandDurationMs: number;
 }
 
 export const IOS_NOTIFICATION_POLICY: NotificationPolicyIR = {
-    maxHeadsUpVisible: 1,
-    headsUpDurationByPriority: { passive: 0, active: 90, timeSensitive: 150, critical: 240 },
-    replaceOnNewFromSameThread: true,
-    groupCollapseThreshold: 3,
-    autoGroupByApp: true,
-    statusBarIconLimit: 0,
-    expandDurationMs: 300,
+  maxHeadsUpVisible: 1,
+  headsUpDurationByPriority: {
+    passive: 0,
+    active: 90,
+    timeSensitive: 150,
+    critical: 240,
+  },
+  replaceOnNewFromSameThread: true,
+  groupCollapseThreshold: 3,
+  autoGroupByApp: true,
+  statusBarIconLimit: 0,
+  expandDurationMs: 300,
 };
 
 export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
-    maxHeadsUpVisible: 1,
-    headsUpDurationByPriority: { passive: 0, active: 120, timeSensitive: 180, critical: 9999 },
-    replaceOnNewFromSameThread: false,
-    groupCollapseThreshold: 4,
-    autoGroupByApp: true,
-    statusBarIconLimit: 5,
-    expandDurationMs: 200,
+  maxHeadsUpVisible: 1,
+  headsUpDurationByPriority: {
+    passive: 0,
+    active: 120,
+    timeSensitive: 180,
+    critical: 9999,
+  },
+  replaceOnNewFromSameThread: false,
+  groupCollapseThreshold: 4,
+  autoGroupByApp: true,
+  statusBarIconLimit: 5,
+  expandDurationMs: 200,
 };
 
 // =============================================================================
@@ -146,17 +171,17 @@ export const ANDROID_NOTIFICATION_POLICY: NotificationPolicyIR = {
 // =============================================================================
 
 export interface NotificationCenterState {
-    items: Notification[];
-    headsUp: string | null;
-    headsUpQueue: string[];
-    groups: NotificationGroup[];
+  items: Notification[];
+  headsUp: string | null;
+  headsUpQueue: string[];
+  groups: NotificationGroup[];
 }
 
 export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
-    items: [],
-    headsUp: null,
-    headsUpQueue: [],
-    groups: [],
+  items: [],
+  headsUp: null,
+  headsUpQueue: [],
+  groups: [],
 };
 
 // =============================================================================
@@ -164,19 +189,32 @@ export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
 // =============================================================================
 
 export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
-export type DynamicIslandContent = "notification" | "music" | "call" | "timer" | null;
+export type DynamicIslandContent =
+  | "notification"
+  | "music"
+  | "call"
+  | "timer"
+  | "recording"
+  | "location"
+  | null;
 
 export interface DynamicIslandState {
-    visible: boolean;
-    mode: DynamicIslandMode;
-    activeContent: DynamicIslandContent;
-    lockedUntil?: number;
+  visible: boolean;
+  mode: DynamicIslandMode;
+  activeContent: DynamicIslandContent;
+  lockedUntil?: number;
+  appId?: string;
+  content?: {
+    title?: string;
+    subtitle?: string;
+    icon?: string;
+  };
 }
 
 export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
-    visible: true,
-    mode: "idle",
-    activeContent: null,
+  visible: true,
+  mode: "idle",
+  activeContent: null,
 };
 
 // =============================================================================
@@ -184,9 +222,9 @@ export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
 // =============================================================================
 
 export interface StatusBarIcon {
-    appId: string;
-    count: number;
-    iconUrl?: string;
+  appId: string;
+  count: number;
+  iconUrl?: string;
 }
 
 // =============================================================================
@@ -194,7 +232,7 @@ export interface StatusBarIcon {
 // =============================================================================
 
 export interface NotificationQueueState {
-    headsUp: NotificationInstance | null;
-    lockScreen: NotificationInstance[];
-    dynamicIsland?: any;
+  headsUp: NotificationInstance | null;
+  lockScreen: NotificationInstance[];
+  dynamicIsland?: DynamicIslandState;
 }

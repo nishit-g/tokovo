@@ -1,70 +1,88 @@
 import React from "react";
-import { DeviceProfile, iPhone16Frame, PixelFrame, StatusBar } from "@tokovo/devices";
-import { DeviceState } from "@tokovo/core";
+import {
+  DeviceProfile,
+  iPhone16Frame,
+  PixelFrame,
+  StatusBar,
+} from "@tokovo/devices";
+import { DeviceState, NotificationInstance } from "@tokovo/core";
 
 interface DeviceFrameProps {
-    profileId: string;
-    isLocked?: boolean;
-    notifications?: any[];
-    children: React.ReactNode;
-    variant?: "ios" | "android";
-    /** Device state - used to read os for StatusBar */
-    device?: DeviceState;
+  profileId: string;
+  isLocked?: boolean;
+  notifications?: NotificationInstance[];
+  children: React.ReactNode;
+  variant?: "ios" | "android";
+  device?: DeviceState;
 }
 
 export const DeviceFrame: React.FC<DeviceFrameProps> = ({
-    profileId,
-    isLocked,
-    notifications,
-    children,
-    variant,
-    device
+  profileId,
+  isLocked,
+  notifications,
+  children,
+  variant,
+  device,
 }) => {
-    // Strategy pattern: Select frame component based on profile ID
-    const FrameComponent = profileId === "iphone16" ? iPhone16Frame :
-        profileId === "pixel" ? PixelFrame : React.Fragment;
+  // Strategy pattern: Select frame component based on profile ID
+  const FrameComponent =
+    profileId === "iphone16"
+      ? iPhone16Frame
+      : profileId === "pixel"
+        ? PixelFrame
+        : React.Fragment;
 
-    // Determine props to pass to the FrameComponent
-    const frameProps = {};
-    if (profileId === "iphone16" || profileId === "pixel") {
-        if (variant) {
-            Object.assign(frameProps, { variant });
-        }
+  // Determine props to pass to the FrameComponent
+  const frameProps = {};
+  if (profileId === "iphone16" || profileId === "pixel") {
+    if (variant) {
+      Object.assign(frameProps, { variant });
     }
+  }
 
-    // StatusBar reads from device.os if available
-    const statusBar = (
-        <StatusBar
-            os={device?.os}
-            variant={variant}
-            theme={variant === "android" ? "dark" : "light"}
-        />
-    );
+  // StatusBar reads from device.os if available
+  const statusBar = (
+    <StatusBar
+      os={device?.os}
+      variant={variant}
+      theme={variant === "android" ? "dark" : "light"}
+    />
+  );
 
-    return (
-        <FrameComponent {...frameProps} statusBar={statusBar}>
-            {children}
-            {isLocked && (
-                <div style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    backgroundColor: "rgba(0,0,0,0.8)",
-                    backdropFilter: "blur(20px)",
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    paddingTop: 300,
-                    color: "white",
-                    zIndex: 2000
-                }}>
-                    <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>Locked</div>
-                    <div style={{ width: "90%", display: "flex", flexDirection: "column", gap: 24 }}>
-                    </div>
-                </div>
-            )}
-        </FrameComponent>
-    );
+  return (
+    <FrameComponent {...frameProps} statusBar={statusBar}>
+      {children}
+      {isLocked && (
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0,0,0,0.8)",
+            backdropFilter: "blur(20px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            paddingTop: 300,
+            color: "white",
+            zIndex: 2000,
+          }}
+        >
+          <div style={{ fontSize: 48, fontWeight: "bold", marginBottom: 60 }}>
+            Locked
+          </div>
+          <div
+            style={{
+              width: "90%",
+              display: "flex",
+              flexDirection: "column",
+              gap: 24,
+            }}
+          ></div>
+        </div>
+      )}
+    </FrameComponent>
+  );
 };

@@ -170,7 +170,7 @@ export interface PluginFormattedNotification {
 
 export interface PluginNotificationAdapter {
   format: (
-    event: RuntimeEvent & { kind: "DEVICE"; type: "SHOW_NOTIFICATION" },
+    notification: import("../types/notification").Notification,
   ) => PluginFormattedNotification;
 }
 
@@ -223,6 +223,7 @@ export interface TokovoPluginContract<AppId extends string = string> {
     sounds?: Record<string, string>;
     icons?: Record<string, string>;
     images?: Record<string, string>;
+    designWidth?: number;
   };
 
   // === TIER A: Audio (RECOMMENDED) ===

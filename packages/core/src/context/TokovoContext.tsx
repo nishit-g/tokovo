@@ -6,13 +6,14 @@ import React, {
 } from "react";
 import type { WorldState } from "../types/world-state";
 import type { DeviceState } from "../types/device";
+import type { LayoutState } from "../types/layout";
 
 interface TokovoContextValue {
   world: WorldState;
   deviceId: string;
   appId: string;
   t: number;
-  layout: any;
+  layout: LayoutState | undefined;
   platform: string;
   safeAreaInsets: {
     top: number;
@@ -30,7 +31,7 @@ interface TokovoProviderProps {
   deviceId: string;
   appId: string;
   t: number;
-  layout?: any;
+  layout?: LayoutState;
   platform?: string;
   safeAreaInsets?: {
     top: number;
@@ -89,12 +90,12 @@ export function useDevice(): DeviceState {
   return device;
 }
 
-export function useAppState<T = any>(): T {
+export function useAppState<T = unknown>(): T {
   const { world, appId } = useTokovoContext();
   return world.appState?.[appId] as T;
 }
 
-export function useLayout<T = any>(): T | undefined {
+export function useLayout<T = unknown>(): T | undefined {
   return useTokovoContext().layout as T | undefined;
 }
 
@@ -118,24 +119,24 @@ export function useSafeAreaInsets() {
   return useTokovoContext().safeAreaInsets;
 }
 
-export function useConversation<T = any>(
+export function useConversation<T extends { id: string } = { id: string }>(
   conversationId: string,
 ): T | undefined {
   const appState = useAppState<{ conversations?: T[] }>();
-  return appState?.conversations?.find((c: any) => c.id === conversationId) as
-    | T
-    | undefined;
+  return appState?.conversations?.find((c) => c.id === conversationId);
 }
 
-export function useActiveConversation<T = any>(): T | undefined {
+export function useActiveConversation<
+  T extends { id: string } = { id: string },
+>(): T | undefined {
   const appState = useAppState<{
     activeConversationId?: string;
     conversations?: T[];
   }>();
   if (!appState?.activeConversationId) return undefined;
   return appState.conversations?.find(
-    (c: any) => c.id === appState.activeConversationId,
-  ) as T | undefined;
+    (c) => c.id === appState.activeConversationId,
+  );
 }
 
 export { TokovoContext };

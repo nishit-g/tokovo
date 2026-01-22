@@ -1,13 +1,19 @@
 import { produce } from "immer";
 import {
-    TimelineEvent,
-    DeviceState,
-    Notification,
-    NotificationPriority,
-    NotificationCenterState,
-    DEFAULT_NOTIFICATION_CENTER,
-    DEFAULT_DYNAMIC_ISLAND,
-    IOS_NOTIFICATION_POLICY,
+  TimelineEvent,
+  DeviceState,
+  Notification,
+  NotificationCenterState,
+  DEFAULT_NOTIFICATION_CENTER,
+  DEFAULT_DYNAMIC_ISLAND,
+  IOS_NOTIFICATION_POLICY,
+  DeviceRuntimeEvent,
+  OpenAppEvent,
+  SetBadgeEvent,
+  SetDynamicIslandEvent,
+  IncomingCallEvent,
+  StartBackgroundAppEvent,
+  StopBackgroundAppEvent,
 } from "@tokovo/core";
 import { ReducerRegistry } from "@tokovo/core";
 
@@ -16,26 +22,30 @@ import { ReducerRegistry } from "@tokovo/core";
 // =============================================================================
 
 function generateNotificationId(event: any): string {
-    return `notif_${event.at}_${event.appId}_${Math.random().toString(36).substr(2, 5)}`;
+  return `notif_${event.at}_${event.appId}_${Math.random().toString(36).substr(2, 5)}`;
 }
 
-function computeGroups(items: Notification[]): NotificationCenterState["groups"] {
-    const groupMap = new Map<string, Notification[]>();
+function computeGroups(
+  items: Notification[],
+): NotificationCenterState["groups"] {
+  const groupMap = new Map<string, Notification[]>();
 
-    items.filter(n => n.state !== "dismissed").forEach(n => {
-        const key = n.groupKey || n.appId;
-        if (!groupMap.has(key)) groupMap.set(key, []);
-        groupMap.get(key)!.push(n);
+  items
+    .filter((n) => n.state !== "dismissed")
+    .forEach((n) => {
+      const key = n.ir.groupKey || n.ir.appId;
+      if (!groupMap.has(key)) groupMap.set(key, []);
+      groupMap.get(key)!.push(n);
     });
 
-    return Array.from(groupMap.entries()).map(([key, notifs]) => ({
-        key,
-        appId: notifs[0].appId,
-        notifications: notifs,
-        collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
-        count: notifs.length,
-        latestAt: Math.max(...notifs.map(n => n.at)),
-    }));
+  return Array.from(groupMap.entries()).map(([key, notifs]) => ({
+    key,
+    appId: notifs[0].ir.appId,
+    notifications: notifs,
+    collapsed: notifs.length >= IOS_NOTIFICATION_POLICY.groupCollapseThreshold,
+    count: notifs.length,
+    latestAt: Math.max(...notifs.map((n) => n.createdAtFrame)),
+  }));
 }
 
 // =============================================================================
@@ -46,140 +56,160 @@ function computeGroups(items: Notification[]): NotificationCenterState["groups"]
  * Device Reducer
  * Handles all DEVICE events: lock/unlock, app open/close, notifications, calls
  */
-export function deviceReducer(devices: Record<string, DeviceState>, event: TimelineEvent): Record<string, DeviceState> {
-    return produce(devices, draft => {
-        if (event.kind !== "DEVICE") return;
+export function deviceReducer(
+  devices: Record<string, DeviceState>,
+  event: TimelineEvent,
+): Record<string, DeviceState> {
+  return produce(devices, (draft) => {
+    if (event.kind !== "DEVICE") return;
 
-        const device = draft[event.deviceId];
-        if (!device) return;
+    const device = draft[event.deviceId];
+    if (!device) return;
 
-        // Initialize notification center if needed with fresh mutable arrays
-        if (!device.notificationCenter) {
-            device.notificationCenter = {
-                ...DEFAULT_NOTIFICATION_CENTER,
-                items: [],
-                groups: [],
-                headsUpQueue: [],
-            };
+    // Initialize notification center if needed with fresh mutable arrays
+    if (!device.notificationCenter) {
+      device.notificationCenter = {
+        ...DEFAULT_NOTIFICATION_CENTER,
+        items: [],
+        groups: [],
+        headsUpQueue: [],
+      };
+    }
+
+    switch (event.type) {
+      // --- Lock/Unlock ---
+      case "LOCK":
+        device.isLocked = true;
+        break;
+      case "UNLOCK":
+        device.isLocked = false;
+        break;
+
+      // --- App Management ---
+      case "OPEN_APP": {
+        const e = event as OpenAppEvent;
+        device.foregroundAppId = e.payload?.appId;
+        break;
+      }
+      case "CLOSE_APP":
+        device.foregroundAppId = undefined;
+        break;
+      case "GO_HOME":
+        device.foregroundAppId = undefined;
+        break;
+
+      // --- Badge ---
+      case "SET_BADGE": {
+        const e = event as SetBadgeEvent;
+        const appId = e.payload?.appId;
+        const count = e.payload?.count ?? 0;
+        if (device.homeScreen && appId) {
+          const dockIcon = device.homeScreen.dock.find(
+            (a) => a.appId === appId,
+          );
+          if (dockIcon) dockIcon.badge = count > 0 ? count : undefined;
+          device.homeScreen.pages.forEach((page) => {
+            page.apps.forEach((item) => {
+              if ("appId" in item && item.appId === appId) {
+                item.badge = count > 0 ? count : undefined;
+              }
+            });
+          });
         }
+        break;
+      }
 
-        switch (event.type) {
-            // --- Lock/Unlock ---
-            case "LOCK":
-                device.isLocked = true;
-                break;
-            case "UNLOCK":
-                device.isLocked = false;
-                break;
+      // =================================================================
+      // NOTIFICATION EVENTS - DELEGATED TO @tokovo/device-notifications
+      // The following cases are intentionally removed/commented out.
+      // See: packages/device-notifications/src/reducer.ts
+      // =================================================================
 
-            // --- App Management ---
-            case "OPEN_APP":
-                device.foregroundAppId = event.appId;
-                break;
-            case "CLOSE_APP":
-                device.foregroundAppId = undefined;
-                break;
-            case "GO_HOME":
-                device.foregroundAppId = undefined;
-                break;
+      // case "SHOW_NOTIFICATION": - handled by device-notifications
+      // case "UPDATE_NOTIFICATION": - handled by device-notifications
+      // case "DISMISS_NOTIFICATION": - handled by device-notifications
+      // case "TAP_NOTIFICATION": - handled by device-notifications
+      // case "SWIPE_NOTIFICATION": - handled by device-notifications
+      // case "REPLY_NOTIFICATION": - handled by device-notifications
+      // case "TOGGLE_NOTIFICATION_PANEL": - handled by device-notifications
+      // case "CLEAR_ALL_NOTIFICATIONS": - handled by device-notifications
 
-            // --- Badge ---
-            case "SET_BADGE":
-                if (device.homeScreen) {
-                    const dockIcon = device.homeScreen.dock.find(a => a.appId === event.appId);
-                    if (dockIcon) dockIcon.badge = event.count > 0 ? event.count : undefined;
-                    device.homeScreen.pages.forEach(page => {
-                        page.apps.forEach(item => {
-                            if ('appId' in item && item.appId === event.appId) {
-                                item.badge = event.count > 0 ? event.count : undefined;
-                            }
-                        });
-                    });
-                }
-                break;
+      case "SET_DYNAMIC_ISLAND": {
+        const e = event as SetDynamicIslandEvent;
+        if (!device.dynamicIsland)
+          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+        device.dynamicIsland.visible = e.payload?.visible ?? true;
+        if (e.payload?.mode) device.dynamicIsland.mode = e.payload.mode;
+        break;
+      }
 
-            // =================================================================
-            // NOTIFICATION EVENTS - DELEGATED TO @tokovo/device-notifications
-            // The following cases are intentionally removed/commented out.
-            // See: packages/device-notifications/src/reducer.ts
-            // =================================================================
+      // --- Call Events ---
+      case "INCOMING_CALL": {
+        const e = event as IncomingCallEvent;
+        device.call = {
+          status: "incoming",
+          callerId: e.payload?.callerId || "unknown",
+          callerName: e.payload?.callerName || "Unknown",
+          callerAvatar: e.payload?.callerAvatar,
+          isVideo: e.payload?.isVideo || false,
+          callType: "voice",
+          displayMode: "fullscreen",
+          startedAt: e.at,
+        };
+        break;
+      }
 
-            // case "SHOW_NOTIFICATION": - handled by device-notifications
-            // case "UPDATE_NOTIFICATION": - handled by device-notifications
-            // case "DISMISS_NOTIFICATION": - handled by device-notifications
-            // case "TAP_NOTIFICATION": - handled by device-notifications
-            // case "SWIPE_NOTIFICATION": - handled by device-notifications
-            // case "REPLY_NOTIFICATION": - handled by device-notifications
-            // case "TOGGLE_NOTIFICATION_PANEL": - handled by device-notifications
-            // case "CLEAR_ALL_NOTIFICATIONS": - handled by device-notifications
-
-            case "SET_DYNAMIC_ISLAND": {
-                const e = event as any;
-                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
-                device.dynamicIsland.visible = e.visible;
-                if (e.mode) device.dynamicIsland.mode = e.mode;
-                break;
-            }
-
-            // --- Call Events ---
-            case "INCOMING_CALL":
-                device.call = {
-                    status: "incoming",
-                    callerId: event.callerId,
-                    callerName: event.callerName,
-                    callerAvatar: event.callerAvatar,
-                    isVideo: event.isVideo || false,
-                    callType: "voice",
-                    displayMode: "fullscreen",
-                    startedAt: event.at
-                };
-                break;
-
-            case "CALL_ANSWERED":
-                if (device.call && device.call.status === "incoming") {
-                    device.call.status = "active";
-                }
-                break;
-
-            case "CALL_ENDED":
-                if (device.call) {
-                    device.call.status = "ended";
-                    device.call.endedAt = event.at;
-                }
-                break;
-
-            // --- Background Apps ---
-            case "START_BACKGROUND_APP": {
-                const e = event as any;
-                if (!device.backgroundApps) device.backgroundApps = [];
-                device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
-                device.backgroundApps.push({
-                    appId: e.appId,
-                    startedAt: e.at,
-                    indicator: e.indicator || "music",
-                    label: e.label,
-                });
-                // Update Dynamic Island to show music
-                if (!device.dynamicIsland) device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
-                device.dynamicIsland.activeContent = e.indicator || "music";
-                device.dynamicIsland.mode = "compact";
-                break;
-            }
-
-            case "STOP_BACKGROUND_APP": {
-                const e = event as any;
-                if (device.backgroundApps) {
-                    device.backgroundApps = device.backgroundApps.filter(a => a.appId !== e.appId);
-                }
-                // Reset Dynamic Island if no more background apps
-                if (device.dynamicIsland && device.backgroundApps?.length === 0) {
-                    device.dynamicIsland.activeContent = null;
-                    device.dynamicIsland.mode = "idle";
-                }
-                break;
-            }
+      case "CALL_ANSWERED":
+        if (device.call && device.call.status === "incoming") {
+          device.call.status = "active";
         }
-    });
+        break;
+
+      case "CALL_ENDED":
+        if (device.call) {
+          device.call.status = "ended";
+          device.call.endedAt = event.at;
+        }
+        break;
+
+      // --- Background Apps ---
+      case "START_BACKGROUND_APP": {
+        const e = event as StartBackgroundAppEvent;
+        const appId = e.payload?.appId;
+        if (!appId) break;
+        if (!device.backgroundApps) device.backgroundApps = [];
+        device.backgroundApps = device.backgroundApps.filter(
+          (a) => a.appId !== appId,
+        );
+        device.backgroundApps.push({
+          appId,
+          startedAt: e.at,
+          indicator: e.payload?.indicator || "music",
+          label: e.payload?.label,
+        });
+        if (!device.dynamicIsland)
+          device.dynamicIsland = { ...DEFAULT_DYNAMIC_ISLAND };
+        device.dynamicIsland.activeContent = e.payload?.indicator || "music";
+        device.dynamicIsland.mode = "compact";
+        break;
+      }
+
+      case "STOP_BACKGROUND_APP": {
+        const e = event as StopBackgroundAppEvent;
+        const appId = e.payload?.appId;
+        if (device.backgroundApps && appId) {
+          device.backgroundApps = device.backgroundApps.filter(
+            (a) => a.appId !== appId,
+          );
+        }
+        if (device.dynamicIsland && device.backgroundApps?.length === 0) {
+          device.dynamicIsland.activeContent = null;
+          device.dynamicIsland.mode = "idle";
+        }
+        break;
+      }
+    }
+  });
 }
 
 // Register itself with the core engine

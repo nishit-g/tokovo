@@ -1,6 +1,6 @@
 /**
  * Notification Types
- * 
+ *
  * Core type definitions for the notification system.
  */
 
@@ -15,53 +15,53 @@ export type NotificationPriority = "low" | "default" | "high" | "urgent";
  * Notification IR - The authoring-time representation
  */
 export interface NotificationIR {
-    /** Unique notification ID */
+  /** Unique notification ID */
+  id: string;
+
+  /** App that owns this notification */
+  appId: string;
+
+  /** Notification title */
+  title: string;
+
+  /** Notification body text */
+  body: string;
+
+  /** Display mode */
+  mode?: NotificationMode;
+
+  /** Priority level */
+  priority?: NotificationPriority;
+
+  /** App icon (URL or emoji) */
+  icon?: string;
+
+  /** Preview content */
+  preview?: {
+    kind: "text" | "image" | "video";
+    value: string;
+    aspectRatio?: number;
+  };
+
+  /** Action buttons */
+  actions?: Array<{
     id: string;
-
-    /** App that owns this notification */
-    appId: string;
-
-    /** Notification title */
-    title: string;
-
-    /** Notification body text */
-    body: string;
-
-    /** Display mode */
-    mode?: NotificationMode;
-
-    /** Priority level */
-    priority?: NotificationPriority;
-
-    /** App icon (URL or emoji) */
+    label: string;
     icon?: string;
+    destructive?: boolean;
+  }>;
 
-    /** Preview content */
-    preview?: {
-        kind: "text" | "image" | "video";
-        value: string;
-        aspectRatio?: number;
-    };
+  /** Group key for stacking */
+  groupKey?: string;
 
-    /** Action buttons */
-    actions?: Array<{
-        id: string;
-        label: string;
-        icon?: string;
-        destructive?: boolean;
-    }>;
+  /** Thread ID for conversations */
+  threadId?: string;
 
-    /** Group key for stacking */
-    groupKey?: string;
+  /** Can reply inline */
+  replyable?: boolean;
 
-    /** Thread ID for conversations */
-    threadId?: string;
-
-    /** Can reply inline */
-    replyable?: boolean;
-
-    /** App-specific metadata */
-    metadata?: Record<string, any>;
+  /** App-specific metadata */
+  metadata?: Record<string, any>;
 }
 
 // =============================================================================
@@ -72,115 +72,104 @@ export type NotificationState = "pending" | "headsUp" | "inShade" | "dismissed";
 
 /**
  * NotificationInstance - Runtime representation with frame timing
- * 
+ *
  * This is the CANONICAL shape used throughout the system.
  * Contains all IR fields PLUS runtime timing/state fields.
  */
 export interface NotificationInstance {
-    // === IDENTITY ===
-    /** Unique ID */
+  // === IDENTITY ===
+  /** Unique ID */
+  id: string;
+
+  /** Device this notification is on */
+  deviceId: string;
+
+  /** App that owns this notification */
+  appId: string;
+
+  // === CONTENT (from IR) ===
+  /** Notification title */
+  title: string;
+
+  /** Notification body text */
+  body: string;
+
+  /** App icon (URL or emoji) */
+  icon?: string;
+
+  /** Preview content */
+  preview?: {
+    kind: "text" | "image" | "video";
+    value: string;
+    aspectRatio?: number;
+  };
+
+  /** Action buttons */
+  actions?: Array<{
     id: string;
-
-    /** Device this notification is on */
-    deviceId: string;
-
-    /** App that owns this notification */
-    appId: string;
-
-    // === CONTENT (from IR) ===
-    /** Notification title */
-    title: string;
-
-    /** Notification body text */
-    body: string;
-
-    /** App icon (URL or emoji) */
+    label: string;
     icon?: string;
+    destructive?: boolean;
+  }>;
 
-    /** Preview content */
-    preview?: {
-        kind: "text" | "image" | "video";
-        value: string;
-        aspectRatio?: number;
-    };
+  /** Can reply inline */
+  replyable?: boolean;
 
-    /** Action buttons */
-    actions?: Array<{
-        id: string;
-        label: string;
-        icon?: string;
-        destructive?: boolean;
-    }>;
+  /** Category (for smart rendering) */
+  category?: string;
 
-    /** Can reply inline */
-    replyable?: boolean;
+  /** App-specific metadata */
+  metadata?: Record<string, any>;
 
-    /** Category (for smart rendering) */
-    category?: string;
+  // === GROUPING ===
+  /** Group key for stacking */
+  groupKey?: string;
 
-    /** App-specific metadata */
-    metadata?: Record<string, any>;
+  /** Thread ID for conversations */
+  threadId?: string;
 
-    // === GROUPING ===
-    /** Group key for stacking */
-    groupKey?: string;
+  // === TIMING ===
+  /** Frame when created/delivered */
+  createdAtFrame: number;
 
-    /** Thread ID for conversations */
-    threadId?: string;
+  /** Frame when shown as heads-up (computed by scheduler) */
+  shownAtFrame?: number;
 
-    // === TIMING ===
-    /** Frame when created/delivered */
-    createdAtFrame: number;
+  /** Frame when dismissed */
+  dismissedAtFrame?: number;
 
-    /** Frame when shown as heads-up (computed by scheduler) */
-    shownAtFrame?: number;
+  // === STATE ===
+  /** Current state */
+  state: NotificationState;
 
-    /** Frame when dismissed */
-    dismissedAtFrame?: number;
+  /** Display mode */
+  mode: NotificationMode;
 
-    // === STATE ===
-    /** Current state */
-    state: NotificationState;
+  /** Priority level */
+  priority: NotificationPriority;
 
-    /** Display mode */
-    mode: NotificationMode;
+  /** Delivery condition */
+  deliverWhen?: "always" | "unlocked" | "locked";
 
-    /** Priority level */
-    priority: NotificationPriority;
+  /** Has been tapped */
+  tapped?: boolean;
 
-    /** Delivery condition */
-    deliverWhen?: "always" | "unlocked" | "locked";
-
-    /** Has been tapped */
-    tapped?: boolean;
-
-    /** Animation state */
-    animationState?: "entering" | "visible" | "exiting" | "dismissed";
-
-    // === OPTIONAL: Legacy nested structure (for backward compat) ===
-    /** @deprecated - Use top-level fields instead */
-    ir?: NotificationIR;
+  /** Animation state */
+  animationState?: "entering" | "visible" | "exiting" | "dismissed";
 }
 
 // =============================================================================
-// DYNAMIC ISLAND
+// DYNAMIC ISLAND - Re-export from core
 // =============================================================================
 
-export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
-
-export interface DynamicIslandState {
-    mode: DynamicIslandMode;
-    appId?: string;
-    content?: {
-        title?: string;
-        subtitle?: string;
-        icon?: string;
-    };
-}
+export type { DynamicIslandState, DynamicIslandMode } from "@tokovo/core";
 
 // =============================================================================
 // RE-EXPORTS
 // =============================================================================
 
 // Re-export FormattedNotification and adapter types
-export type { FormattedNotification, NotificationAdapter } from "./adapter-types";
+export type {
+  FormattedNotification,
+  NotificationAdapter,
+} from "./adapter-types";

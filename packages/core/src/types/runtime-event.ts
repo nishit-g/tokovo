@@ -21,9 +21,7 @@ export type RuntimeEventKind =
   | "CAMERA"
   | "AUDIO"
   | "KEYBOARD"
-  // Extended kinds for full compatibility
   | "OS"
-  | "TOUCH"
   | "CALL"
   | "TRANSITION"
   | "HIGHLIGHT"
@@ -75,7 +73,6 @@ export interface BaseRuntimeEvent {
   _trace?: EventTrace;
   _signal?: EventSignal;
   silent?: boolean;
-  trace?: any;
 }
 
 // =============================================================================
@@ -123,8 +120,31 @@ export type DeviceEventType =
   | "START_BACKGROUND_APP"
   | "STOP_BACKGROUND_APP";
 
-export interface DeviceEventPayload {
-  appId?: string;
+export interface OpenAppPayload {
+  appId: string;
+}
+
+export interface SetBadgePayload {
+  appId: string;
+  count: number;
+}
+
+export interface SetDynamicIslandPayload {
+  visible: boolean;
+  mode?: "idle" | "minimal" | "compact" | "expanded";
+}
+
+export interface IncomingCallPayload {
+  callerId: string;
+  callerName?: string;
+  callerAvatar?: string;
+  isVideo?: boolean;
+}
+
+export interface BackgroundAppPayload {
+  appId: string;
+  indicator?: "music" | "call" | "recording" | "location";
+  label?: string;
 }
 
 export interface NotificationPayload {
@@ -138,7 +158,7 @@ export interface NotificationPayload {
   actions?: Array<{ label: string; action: string }>;
 }
 
-export interface DeviceRuntimeEvent<
+interface BaseDeviceRuntimeEvent<
   Type extends DeviceEventType = DeviceEventType,
   Payload = unknown,
 > extends BaseRuntimeEvent {
@@ -148,8 +168,63 @@ export interface DeviceRuntimeEvent<
   payload?: Payload;
 }
 
+export type OpenAppEvent = BaseDeviceRuntimeEvent<"OPEN_APP", OpenAppPayload>;
+export type SetBadgeEvent = BaseDeviceRuntimeEvent<
+  "SET_BADGE",
+  SetBadgePayload
+>;
+export type SetDynamicIslandEvent = BaseDeviceRuntimeEvent<
+  "SET_DYNAMIC_ISLAND",
+  SetDynamicIslandPayload
+>;
+export type IncomingCallEvent = BaseDeviceRuntimeEvent<
+  "INCOMING_CALL",
+  IncomingCallPayload
+>;
+export type StartBackgroundAppEvent = BaseDeviceRuntimeEvent<
+  "START_BACKGROUND_APP",
+  BackgroundAppPayload
+>;
+export type StopBackgroundAppEvent = BaseDeviceRuntimeEvent<
+  "STOP_BACKGROUND_APP",
+  BackgroundAppPayload
+>;
+export type ShowNotificationEvent = BaseDeviceRuntimeEvent<
+  "SHOW_NOTIFICATION",
+  NotificationPayload
+>;
+
+export type LockEvent = BaseDeviceRuntimeEvent<"LOCK">;
+export type UnlockEvent = BaseDeviceRuntimeEvent<"UNLOCK">;
+export type CloseAppEvent = BaseDeviceRuntimeEvent<"CLOSE_APP">;
+export type GoHomeEvent = BaseDeviceRuntimeEvent<"GO_HOME">;
+export type CallAnsweredEvent = BaseDeviceRuntimeEvent<"CALL_ANSWERED">;
+export type CallEndedEvent = BaseDeviceRuntimeEvent<"CALL_ENDED">;
+
+export type DeviceRuntimeEvent =
+  | LockEvent
+  | UnlockEvent
+  | OpenAppEvent
+  | CloseAppEvent
+  | GoHomeEvent
+  | SetBadgeEvent
+  | SetDynamicIslandEvent
+  | IncomingCallEvent
+  | CallAnsweredEvent
+  | CallEndedEvent
+  | StartBackgroundAppEvent
+  | StopBackgroundAppEvent
+  | ShowNotificationEvent
+  | BaseDeviceRuntimeEvent<"DISMISS_NOTIFICATION">
+  | BaseDeviceRuntimeEvent<"TAP_NOTIFICATION">
+  | BaseDeviceRuntimeEvent<"UPDATE_NOTIFICATION">
+  | BaseDeviceRuntimeEvent<"SWIPE_NOTIFICATION">
+  | BaseDeviceRuntimeEvent<"REPLY_NOTIFICATION">
+  | BaseDeviceRuntimeEvent<"TOGGLE_NOTIFICATION_PANEL">
+  | BaseDeviceRuntimeEvent<"CLEAR_ALL_NOTIFICATIONS">;
+
 // =============================================================================
-// CAMERA EVENT
+// CAMERA EVENT (Flat structure - matches DSL factories and reducers)
 // =============================================================================
 
 export type CameraEventType =
@@ -166,87 +241,168 @@ export type CameraEventType =
   | "LAYOUT"
   | "HOLD";
 
-export interface CameraZoomPayload {
+interface BaseCameraRuntimeEvent extends BaseRuntimeEvent {
+  kind: "CAMERA";
+  type: CameraEventType;
+  deviceId?: string;
+}
+
+export interface CameraZoomEvent extends BaseCameraRuntimeEvent {
+  type: "ZOOM";
   scale: number;
+  duration: number;
   originX?: number;
   originY?: number;
-  duration: number;
   easing?: string;
 }
 
-export interface CameraPanPayload {
+export interface CameraPanEvent extends BaseCameraRuntimeEvent {
+  type: "PAN";
   translateX: number;
   translateY: number;
-  relative?: boolean;
   duration: number;
+  relative?: boolean;
   easing?: string;
 }
 
-export interface CameraShakePayload {
+export interface CameraShakeEvent extends BaseCameraRuntimeEvent {
+  type: "SHAKE";
   intensity: number;
-  frequency?: number;
   duration: number;
+  frequency?: number;
   decay?: number;
 }
 
-export interface CameraFocusPayload {
-  anchorId: string;
+export interface CameraResetEvent extends BaseCameraRuntimeEvent {
+  type: "RESET";
+  duration: number;
+  easing?: string;
+}
+
+export interface CameraHoldEvent extends BaseCameraRuntimeEvent {
+  type: "HOLD";
+  duration: number;
+}
+
+export interface CameraAnchorFocusEvent extends BaseCameraRuntimeEvent {
+  type: "ANCHOR_FOCUS";
+  anchor: string;
+  preset?: string;
+  shake?: number;
+  duration: number;
+  easing?: string;
+}
+
+export interface CameraAnchorTrackEvent extends BaseCameraRuntimeEvent {
+  type: "ANCHOR_TRACK";
+  anchor: string;
+  duration: number;
+  smoothing?: number;
+  preset?: string;
+  easing?: string;
+  zoom?: number;
+}
+
+export interface CameraFocusEvent extends BaseCameraRuntimeEvent {
+  type: "FOCUS";
+  anchorId?: string;
   scale?: number;
   duration?: number;
   easing?: string;
 }
 
-export interface CameraRuntimeEvent<
-  Type extends CameraEventType = CameraEventType,
-  Payload = unknown,
-> extends BaseRuntimeEvent {
-  kind: "CAMERA";
-  type: Type;
-  deviceId?: string;
-  payload: Payload;
+export interface CameraCutEvent extends BaseCameraRuntimeEvent {
+  type: "CUT";
 }
 
+export interface CameraSetLayoutEvent extends BaseCameraRuntimeEvent {
+  type: "SET_LAYOUT";
+  layout: string;
+}
+
+export interface CameraSetViewEvent extends BaseCameraRuntimeEvent {
+  type: "SET_VIEW";
+  view: string;
+}
+
+export interface CameraLayoutEvent extends BaseCameraRuntimeEvent {
+  type: "LAYOUT";
+  layout: string;
+}
+
+export type CameraRuntimeEvent =
+  | CameraZoomEvent
+  | CameraPanEvent
+  | CameraShakeEvent
+  | CameraResetEvent
+  | CameraHoldEvent
+  | CameraAnchorFocusEvent
+  | CameraAnchorTrackEvent
+  | CameraFocusEvent
+  | CameraCutEvent
+  | CameraSetLayoutEvent
+  | CameraSetViewEvent
+  | CameraLayoutEvent;
+
 // =============================================================================
-// AUDIO EVENT
+// AUDIO EVENT (Flat structure - matches lowering output)
 // =============================================================================
 
 export type AudioEventType =
+  | "PLAY"
+  | "STOP"
+  | "FADE_OUT"
+  | "CROSSFADE"
+  | "STOP_ALL"
   | "PLAY_ONE_SHOT"
   | "START_LOOP"
-  | "STOP"
   | "DUCK"
-  | "CROSSFADE"
   | "PLAY_SOUND"
   | "STOP_SOUND"
   | "FADE_VOLUME"
   | "BACKGROUND_MUSIC";
 
-export interface AudioPlayPayload {
+interface BaseAudioRuntimeEvent extends BaseRuntimeEvent {
+  kind: "AUDIO";
+  type: AudioEventType;
+}
+
+export interface AudioPlayEvent extends BaseAudioRuntimeEvent {
+  type: "PLAY";
   soundId: string;
-  instanceId?: string;
   volume?: number;
-  bus?: "voice" | "sfx" | "ui" | "music";
-  deviceId?: string;
+  fadeIn?: number;
+  loop?: boolean;
 }
 
-export interface AudioStopPayload {
-  instanceId: string;
+export interface AudioStopEvent extends BaseAudioRuntimeEvent {
+  type: "STOP";
+  soundId?: string;
 }
 
-export interface AudioDuckPayload {
-  target: "music" | "sfx" | "ui";
-  amount: number;
+export interface AudioFadeOutEvent extends BaseAudioRuntimeEvent {
+  type: "FADE_OUT";
   duration: number;
 }
 
-export interface AudioRuntimeEvent<
-  Type extends AudioEventType = AudioEventType,
-  Payload = unknown,
-> extends BaseRuntimeEvent {
-  kind: "AUDIO";
-  type: Type;
-  payload: Payload;
+export interface AudioCrossfadeEvent extends BaseAudioRuntimeEvent {
+  type: "CROSSFADE";
+  soundId: string;
+  volume?: number;
+  duration: number;
 }
+
+export interface AudioStopAllEvent extends BaseAudioRuntimeEvent {
+  type: "STOP_ALL";
+}
+
+export type AudioRuntimeEvent =
+  | AudioPlayEvent
+  | AudioStopEvent
+  | AudioFadeOutEvent
+  | AudioCrossfadeEvent
+  | AudioStopAllEvent
+  | (BaseAudioRuntimeEvent & Record<string, unknown>);
 
 // =============================================================================
 // KEYBOARD EVENT
@@ -303,26 +459,6 @@ export interface OSRuntimeEvent extends BaseRuntimeEvent {
   network?: string;
   strength?: number;
   enabled?: boolean;
-}
-
-// =============================================================================
-// TOUCH EVENT
-// =============================================================================
-
-export type TouchEventType = "TAP" | "LONG_PRESS" | "DRAG" | "SCROLL";
-
-export interface TouchRuntimeEvent extends BaseRuntimeEvent {
-  kind: "TOUCH";
-  type: TouchEventType;
-  deviceId?: string;
-  x?: number;
-  y?: number;
-  startX?: number;
-  startY?: number;
-  endX?: number;
-  endY?: number;
-  duration?: number;
-  velocity?: number;
 }
 
 // =============================================================================
@@ -396,7 +532,6 @@ export type RuntimeEvent =
   | AudioRuntimeEvent
   | KeyboardRuntimeEvent
   | OSRuntimeEvent
-  | TouchRuntimeEvent
   | CallRuntimeEvent
   | TransitionRuntimeEvent
   | HighlightRuntimeEvent

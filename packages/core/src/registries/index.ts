@@ -30,6 +30,10 @@ export type { CameraIntent, AppBehavior } from "./behavior";
 export { AppMetadataRegistry } from "./metadata";
 export type { AppMetadata } from "./metadata";
 
+// Icon Registry
+export { IconRegistry, getAppIcon } from "./icon";
+export type { IconMetadata, IconVariant, IconSize } from "./icon";
+
 // Layout Registry
 export { LayoutRegistry } from "./layout";
 export type { LayoutStrategy } from "./layout";

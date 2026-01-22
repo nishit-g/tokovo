@@ -15,7 +15,6 @@ import {
   EventIndex,
   PluginManager,
   PluginManagerClass,
-  APP_IDS,
   AppSurface,
   TokovoProvider,
 } from "@tokovo/core";
@@ -25,7 +24,7 @@ import {
   NotificationInstance,
 } from "@tokovo/device-notifications";
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
-import { AppRegistry } from "./registry";
+import { AppRegistry } from "@tokovo/core";
 import { NotificationOverlay } from "./overlays";
 import { LockscreenView, HomeScreenView } from "./screens";
 import { VisualDebugger } from "./VisualDebugger";
@@ -169,10 +168,14 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
               <StatusBar
                 os={device.os}
                 variant={variant}
-                theme={
-                  (appId && (world.appState?.[appId] as any))?.statusBarTheme ??
-                  "light"
-                }
+                theme={(() => {
+                  if (!appId) return "light";
+                  const state = world.appState?.[appId];
+                  if (!state || typeof state === "string") return "light";
+                  const theme = (state as { statusBarTheme?: "light" | "dark" })
+                    .statusBarTheme;
+                  return theme === "dark" ? "dark" : "light";
+                })()}
               />
             }
           >
@@ -182,8 +185,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
             {(() => {
               // Active App (Unlocked)
               if (AppView && !device.isLocked) {
-                const meta = pm.get(appId!)?.metadata;
-                const designWidth = meta?.designWidth || 393;
+                const pluginAssets = pm.get(appId!)?.assets;
+                const designWidth = pluginAssets?.designWidth || 393;
 
                 // Calculate scale factor explicitly to normalize props
                 const scale = profile.dimensions.width / designWidth;
@@ -193,7 +196,7 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                     designWidth={designWidth}
                     targetWidth={profile.dimensions.width}
                     targetHeight={profile.dimensions.height}
-                    backgroundColor={meta?.themeColor}
+                    backgroundColor={undefined}
                   >
                     <TokovoProvider
                       world={world}

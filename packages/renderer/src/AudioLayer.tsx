@@ -85,7 +85,11 @@ const SoundInstance: React.FC<SoundInstanceProps> = ({
   }
 
   // Compute final volume through mixer
-  const finalVolume = computeSoundVolume(sound, currentFrame, busStates as any);
+  const finalVolume = computeSoundVolume(
+    sound,
+    currentFrame,
+    busStates as Record<string, BusState>,
+  );
 
   // Skip if volume is effectively zero
   if (finalVolume < 0.01) {

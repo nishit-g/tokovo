@@ -1,23 +1,23 @@
 import { AutoSoundRule } from "@tokovo/core";
-import { APP_IDS } from "@tokovo/core";
+import { WHATSAPP_APP_ID } from "../constants";
 
 export const whatsappAudioRules: AutoSoundRule[] = [
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_SENT" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "MESSAGE_SENT" },
     action: "PLAY_ONE_SHOT",
     sound: "app_whatsapp.message_out",
     bus: "ui",
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "MESSAGE_RECEIVED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "MESSAGE_RECEIVED" },
     action: "PLAY_ONE_SHOT",
     sound: "app_whatsapp.message_in",
     bus: "ui",
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_START" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "TYPING_START" },
     action: "START_LOOP",
     sound: "app_whatsapp.typing_loop",
     bus: "sfx",
@@ -25,12 +25,12 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     idTemplate: "typing_{conversationId}_{from}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "TYPING_END" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "TYPING_END" },
     action: "STOP_SOUND",
     stopId: "typing_{conversationId}_{from}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_INCOMING" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_INCOMING" },
     action: "START_LOOP",
     sound: "app_whatsapp.call_ringtone",
     bus: "ui",
@@ -39,7 +39,7 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_OUTGOING" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_OUTGOING" },
     action: "START_LOOP",
     sound: "app_whatsapp.call_outgoing",
     bus: "ui",
@@ -48,41 +48,41 @@ export const whatsappAudioRules: AutoSoundRule[] = [
     duckMusic: true,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_CONNECTED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_CONNECTED" },
     action: "STOP_SOUND",
     stopId: "call_ring_{callId}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_CONNECTED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_CONNECTED" },
     action: "STOP_SOUND",
     stopId: "call_out_{callId}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_ENDED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
     action: "PLAY_ONE_SHOT",
     sound: "app_whatsapp.call_end",
     bus: "ui",
     volume: 0.7,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_ENDED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
     action: "STOP_SOUND",
     stopId: "call_ring_{callId}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "CALL_ENDED" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "CALL_ENDED" },
     action: "STOP_SOUND",
     stopId: "call_out_{callId}",
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "VOICE_RECORD_START" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "VOICE_RECORD_START" },
     action: "PLAY_ONE_SHOT",
     sound: "app_whatsapp.ptt_start",
     bus: "ui",
     volume: 0.6,
   },
   {
-    match: { kind: "APP", appId: APP_IDS.WHATSAPP, type: "VOICE_RECORD_SEND" },
+    match: { kind: "APP", appId: WHATSAPP_APP_ID, type: "VOICE_RECORD_SEND" },
     action: "PLAY_ONE_SHOT",
     sound: "app_whatsapp.ptt_send",
     bus: "ui",
@@ -91,7 +91,7 @@ export const whatsappAudioRules: AutoSoundRule[] = [
   {
     match: {
       kind: "APP",
-      appId: APP_IDS.WHATSAPP,
+      appId: WHATSAPP_APP_ID,
       type: "VOICE_RECORD_CANCEL",
     },
     action: "PLAY_ONE_SHOT",

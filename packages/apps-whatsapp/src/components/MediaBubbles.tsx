@@ -751,7 +751,6 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
                         ? "rgba(18, 140, 126, 0.3)"
                         : "rgba(0, 168, 132, 0.3)",
                   borderRadius: 1,
-                  transition: "background-color 0.1s",
                 }}
               />
             ))}

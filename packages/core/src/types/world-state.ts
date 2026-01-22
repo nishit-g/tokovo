@@ -9,20 +9,6 @@ import type { CameraState } from "./camera";
 import type { AudioState, VideoConfig } from "./audio";
 
 // =============================================================================
-// TOUCH STATE
-// =============================================================================
-
-export interface TouchState {
-  id: string;
-  x: number;
-  y: number;
-  startedAt: number;
-  type: "tap" | "long_press" | "drag";
-  endX?: number;
-  endY?: number;
-}
-
-// =============================================================================
 // WORLD STATE
 // =============================================================================
 
@@ -40,7 +26,4 @@ export interface WorldState {
   camera: CameraState;
   audio: AudioState;
   config?: VideoConfig;
-
-  // Active touch points
-  touches?: TouchState[];
 }

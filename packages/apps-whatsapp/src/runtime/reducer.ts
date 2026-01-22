@@ -1,29 +1,5 @@
-/**
- * WhatsApp Runtime Reducer
- *
- * Handles all WhatsApp-specific events.
- * Uses explicit type checking for safer event handling.
- *
- * Message types supported:
- * - text: Regular text messages
- * - image: Image with optional caption
- * - video: Video with thumbnail and duration
- * - gif: Animated GIF
- * - voice: Voice note with waveform
- * - system: System messages (member added/removed, etc.)
- * - deleted: Deleted message placeholder
- * - call_missed: Missed call indicator
- * - screenshot_alert: Screenshot notification
- */
-
-import {
-  TimelineEvent,
-  WorldState,
-  ReducerRegistry,
-  APP_IDS,
-} from "@tokovo/core";
-
-// Import WhatsApp-specific types (all app types now live in plugin)
+import { WHATSAPP_APP_ID } from "../constants";
+import { TimelineEvent, WorldState, ReducerRegistry } from "@tokovo/core";
 import {
   WhatsAppMessage,
   WhatsAppConversation,
@@ -31,6 +7,11 @@ import {
   WhatsAppMessageType,
   WhatsAppGroupMember,
 } from "../types";
+import {
+  GenericWhatsAppRuntimeEvent,
+  RUNTIME_KIND_TO_EVENT_TYPE,
+  WhatsAppRuntimeEventKind,
+} from "../types/runtime-events";
 
 // Import group operation types
 import {
@@ -147,6 +128,7 @@ function generateTimestamp(
  * WhatsApp reducer - handles all WhatsApp events
  */
 export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const e = event as any;
 
   if (e.kind === "Custom") {
@@ -154,41 +136,11 @@ export function whatsappReducer(draft: WorldState, event: TimelineEvent): void {
     return;
   }
 
-  const v2KindToType: Record<string, string> = {
-    MessageReceived: "MESSAGE_RECEIVED",
-    MessageSent: "MESSAGE_SENT",
-    TypingStarted: "TYPING_START",
-    TypingEnded: "TYPING_END",
-    ImageReceived: "IMAGE_RECEIVED",
-    ImageSent: "IMAGE_SENT",
-    VideoReceived: "VIDEO_RECEIVED",
-    VideoSent: "VIDEO_SENT",
-    VoiceReceived: "VOICE_RECEIVED",
-    VoiceSent: "VOICE_SENT",
-    GifReceived: "GIF_RECEIVED",
-    GifSent: "GIF_SENT",
-    StickerReceived: "STICKER_RECEIVED",
-    StickerSent: "STICKER_SENT",
-    DocumentReceived: "DOCUMENT_RECEIVED",
-    DocumentSent: "DOCUMENT_SENT",
-    ContactReceived: "CONTACT_RECEIVED",
-    ContactSent: "CONTACT_SENT",
-    LocationReceived: "LOCATION_RECEIVED",
-    LocationSent: "LOCATION_SENT",
-    React: "REACT",
-    ReadMessages: "READ_MESSAGES",
-    MessageDeleted: "MESSAGE_DELETED",
-    MessageEdited: "MESSAGE_EDITED",
-    MessageForwarded: "MESSAGE_FORWARDED",
-    DateSeparator: "DATE_SEPARATOR",
-    ConversationOpened: "CONVERSATION_OPENED",
-    NavigateScreen: "NAVIGATE_SCREEN",
-  };
-
-  const eventType = v2KindToType[event.kind as string];
+  const eventType: string | undefined =
+    RUNTIME_KIND_TO_EVENT_TYPE[event.kind as WhatsAppRuntimeEventKind];
   if (!eventType) return;
 
-  if (e.appId && e.appId !== APP_IDS.WHATSAPP) return;
+  if (e.appId && e.appId !== WHATSAPP_APP_ID) return;
 
   const conversationId: string | undefined = e.conversationId;
 
@@ -909,7 +861,7 @@ interface CustomOpEvent {
 function handleCustomOp(draft: WorldState, event: CustomOpEvent): void {
   // Only handle whatsapp-namespaced events
   if (!event.eventType?.startsWith("whatsapp.")) return;
-  if (event.appId && event.appId !== APP_IDS.WHATSAPP) return;
+  if (event.appId && event.appId !== WHATSAPP_APP_ID) return;
 
   const payload = event.payload;
   if (!payload) return;

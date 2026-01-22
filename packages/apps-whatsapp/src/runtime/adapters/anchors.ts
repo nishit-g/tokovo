@@ -3,10 +3,11 @@ import {
     AnchorSnapshot,
     LayoutRect,
     ChatLayoutState,
-    APP_IDS
+    
 } from "@tokovo/core";
 
-const APP_ID = APP_IDS.WHATSAPP;
+import { WHATSAPP_APP_ID } from '../../constants';
+const APP_ID = WHATSAPP_APP_ID;
 
 // Production-grade anchor provider converting Layout Engine output to Semantic Anchors
 export const WhatsAppAnchors: AnchorProvider = {

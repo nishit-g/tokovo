@@ -40,14 +40,14 @@ export {
   getAnchorFraming,
   resolveAnchorWithFallback,
   resolveAnchorFully,
-} from "./camera";
+} from "@tokovo/device-camera";
 export type {
   CameraPreset,
   CameraTarget,
   CameraTimeline,
   TimelineStep,
   ShotPresetId,
-} from "./camera";
+} from "@tokovo/device-camera";
 
 // =============================================================================
 // AUDIO - Sound system
@@ -105,6 +105,8 @@ export type {
   PluginTier,
   TokovoPlugin,
   ScreenComponent,
+  WidgetProps,
+  WidgetComponent,
 } from "./plugin";
 
 // =============================================================================
@@ -113,9 +115,24 @@ export type {
 export * from "./utils";
 
 // =============================================================================
-// DIRECTOR LITE - Automatic camera
+// DIRECTOR LITE - Automatic camera (from device-camera)
 // =============================================================================
-export * from "./director-lite";
+export {
+  deriveDirectorEffects,
+  extractSignals,
+  ViralDramaV1,
+} from "@tokovo/device-camera";
+export type {
+  DirectorSignal,
+  DirectorSignalType,
+  DirectorLayoutModel,
+  DirectorOutput,
+  DerivedCameraEffect,
+  DirectorDebug,
+  DeriveContext,
+  DirectorStrategy,
+  Rule,
+} from "@tokovo/device-camera";
 
 // =============================================================================
 // ANCHORS - Semantic positioning

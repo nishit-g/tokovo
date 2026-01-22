@@ -8,7 +8,7 @@
  */
 
 import { defineEpisode } from "../types/episode-definition";
-import { episode } from "@tokovo/dsl/src/v2";
+import { episode } from "@tokovo/dsl";
 import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
 
 let orderCounter = 0;

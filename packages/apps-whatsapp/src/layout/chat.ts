@@ -310,28 +310,13 @@ export function computeChatLayout(
 
   const INPUT_HEIGHT = UI_CONSTANTS.INPUT_MIN_HEIGHT;
 
-  // HEADER CONSTANTS (From Shared Config)
-  // Note: This relies on ChatScreen's default safeAreaInsets if not provided in layout ctx
-  // In layout context, we might not have insets.
-  // Let's assume iPhone 16 default top inset (47) + Content Height (60) = 107
-  // TODO: Pass safeAreaInsets to layout context for perfect alignment
-  const SAFE_AREA_TOP_ASSUMED = 47;
-  const HEADER_HEIGHT =
-    UI_CONSTANTS.HEADER_CONTENT_HEIGHT + SAFE_AREA_TOP_ASSUMED;
+  const safeAreaTop = ctx.safeAreaInsets?.top ?? 47;
+  const HEADER_HEIGHT = UI_CONSTANTS.HEADER_CONTENT_HEIGHT + safeAreaTop;
 
-  // Profile Position Calculation
   const PROFILE_SIZE = UI_CONSTANTS.HEADER_AVATAR_SIZE;
-  // X = Left Padding + Back Button + Margin + Margin (Approximate check against Header.tsx flex)
-  // Header.tsx: paddingLeft(10) + BackBtn(24+5+17+margin) + Avatar
-  // Let's reverse engineer exact X from Header.tsx visual flow:
-  // Pl(10) + BackBtnWrapper(marginRight 5) + Avatar
-  // BackBtnWrapper: Width is roughly 24 (icon) + 17 (text) + gaps
-  const PROFILE_X_OFFSET = 10 + (24 + 17) + 10; // Approx 61px
-
-  // Y = SafeAreaTop + (ContentHeight - AvatarSize)/2
+  const PROFILE_X_OFFSET = 10 + (24 + 17) + 10;
   const PROFILE_Y_OFFSET =
-    SAFE_AREA_TOP_ASSUMED +
-    (UI_CONSTANTS.HEADER_CONTENT_HEIGHT - PROFILE_SIZE) / 2;
+    safeAreaTop + (UI_CONSTANTS.HEADER_CONTENT_HEIGHT - PROFILE_SIZE) / 2;
 
   const inputRect = {
     x: 0,

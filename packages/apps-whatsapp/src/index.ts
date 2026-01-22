@@ -79,7 +79,7 @@ export type {
 // LAYOUT
 // =============================================================================
 
-export { computeChatLayout } from "./layout";
+export { computeChatLayout } from "./layout/chat";
 
 // =============================================================================
 // CAMERA
@@ -108,11 +108,11 @@ import {
   SoundRegistry,
   registerAnchorProvider,
   LayoutRegistry,
-  APP_IDS,
 } from "@tokovo/core";
+import { WHATSAPP_APP_ID } from "./constants";
 import { whatsappAudioRules } from "./assets/audio-rules";
 import { WhatsAppAnchors } from "./runtime/adapters/anchors";
-import { computeChatLayout } from "./layout";
+import { computeChatLayout } from "./layout/chat";
 
 // WhatsApp sound paths
 const whatsappSounds = {
@@ -129,7 +129,7 @@ registerAnchorProvider(WhatsAppAnchors);
 
 // Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
 LayoutRegistry.register({
-  appId: APP_IDS.WHATSAPP,
+  appId: WHATSAPP_APP_ID,
   viewKind: "CHAT",
   computeLayout: computeChatLayout,
 });

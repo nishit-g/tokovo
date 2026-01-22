@@ -83,7 +83,7 @@ export interface NotificationIR {
     value: string;
     aspectRatio?: number;
   };
-  payload?: any; // Custom data for custom renderers
+  payload?: Record<string, unknown>; // Custom data for custom renderers
 
   // Semantics
   category?: "message" | "call" | "system" | "reminder";
@@ -110,8 +110,20 @@ export interface NotificationInstance {
   id: string;
   ir: NotificationIR;
 
+  // Flattened fields from IR (for convenience)
+  appId: string;
+  title: string;
+  body: string;
+  icon?: string;
+
   // Lifecycle
-  state: "queued" | "headsUp" | "inShade" | "onLockscreen" | "dismissed";
+  state:
+    | "queued"
+    | "pending"
+    | "headsUp"
+    | "inShade"
+    | "onLockscreen"
+    | "dismissed";
 
   // Timestamps (Frame numbers)
   createdAtFrame: number;
@@ -126,6 +138,7 @@ export interface NotificationInstance {
   // Computed Priority / Mode
   importance?: "low" | "default" | "high" | "critical";
   mode?: "lockscreen" | "headsup" | "both" | "silent";
+  priority?: "low" | "default" | "high" | "urgent";
 }
 
 // Backward Compatibility / Alias (Deprecated)
@@ -207,30 +220,14 @@ export const DEFAULT_NOTIFICATION_CENTER: NotificationCenterState = {
   groups: [],
 };
 
-// =============================================================================
-// DYNAMIC ISLAND STATE
-// =============================================================================
+export type {
+  DynamicIslandState,
+  DynamicIslandMode,
+  DynamicIslandContent,
+} from "./types/notification";
+export { DEFAULT_DYNAMIC_ISLAND } from "./types/notification";
 
-export type DynamicIslandMode = "idle" | "minimal" | "compact" | "expanded";
-export type DynamicIslandContent =
-  | "notification"
-  | "music"
-  | "call"
-  | "timer"
-  | null;
-
-export interface DynamicIslandState {
-  visible: boolean;
-  mode: DynamicIslandMode;
-  activeContent: DynamicIslandContent;
-  lockedUntil?: number; // Frame lock for animations
-}
-
-export const DEFAULT_DYNAMIC_ISLAND: DynamicIslandState = {
-  visible: true,
-  mode: "idle",
-  activeContent: null,
-};
+import type { DynamicIslandState } from "./types/notification";
 
 // =============================================================================
 // STATUS BAR ICONS (Android)
@@ -391,7 +388,7 @@ export interface KeyboardState {
   /** Highlighted suggestion index */
   highlightedSuggestion: number | null;
   /** Visual pop-up state */
-  keyPressVisual: any | null;
+  keyPressVisual: { key: string; frame: number } | null;
   /** Enterprise: Typing schedule for derived animation */
   typingSchedule: TypingSchedule | null;
 }
@@ -479,6 +476,17 @@ export const DEFAULT_OS_STATE: DeviceOSState = {
 };
 
 // =============================================================================
+// DEVICE SCREEN DIMENSIONS
+// =============================================================================
+
+export interface DeviceScreenDimensions {
+  width: number;
+  height: number;
+  safeAreaTop: number;
+  safeAreaBottom: number;
+}
+
+// =============================================================================
 // DEVICE STATE
 // =============================================================================
 
@@ -488,6 +496,8 @@ export interface DeviceState {
   ownerName?: string;
   isLocked: boolean;
   foregroundAppId?: string;
+
+  screenDimensions?: DeviceScreenDimensions;
 
   // === NOTIFICATIONS (enhanced) ===
   notifications: Notification[]; // Legacy access
@@ -525,7 +535,7 @@ export interface NotificationQueueState {
   /** Notifications currently on lockscreen (ordered) */
   lockScreen: NotificationInstance[];
   /** Dynamic Island state (expanded/compact) */
-  dynamicIsland?: any;
+  dynamicIsland?: DynamicIslandState;
 }
 
 // Device-level theme configuration
@@ -681,12 +691,6 @@ export const DEFAULT_CAMERA_STATE: CameraState = {
   transform: { ...DEFAULT_TRANSFORM },
   deviceTransforms: {},
 };
-
-/** @deprecated */
-export interface CameraViewConfig {
-  type: "APP_VIEW" | "TRANSITION";
-  appId?: AppId;
-}
 
 // =============================================================================
 // AUDIO SYSTEM TYPES (Production-Grade)
@@ -907,6 +911,31 @@ export interface WorldState {
 import type { RuntimeEvent } from "./types/runtime-event";
 export type TimelineEvent = RuntimeEvent;
 
+export type {
+  AudioPlayEvent,
+  AudioStopEvent,
+  AudioFadeOutEvent,
+  AudioCrossfadeEvent,
+  AudioStopAllEvent,
+  AudioRuntimeEvent,
+  CameraZoomEvent,
+  CameraPanEvent,
+  CameraShakeEvent,
+  CameraResetEvent,
+  CameraHoldEvent,
+  CameraAnchorFocusEvent,
+  CameraAnchorTrackEvent,
+  CameraFocusEvent,
+  CameraCutEvent,
+  CameraSetLayoutEvent,
+  CameraSetViewEvent,
+  CameraLayoutEvent,
+  CameraRuntimeEvent,
+  OSRuntimeEvent,
+  CallRuntimeEvent,
+  DeviceRuntimeEvent,
+} from "./types/runtime-event";
+
 // --- Layout System Types ---
 // Re-export from types/layout.ts for backward compatibility
 // (types/index.ts is NOT exported from core/index.ts to avoid duplicates)
@@ -952,3 +981,29 @@ export type {
   StatusBarTheme,
   ResolvedStatusBarTheme,
 } from "./types/statusbar-theme";
+
+// Re-export runtime event types (for typed device events)
+export type {
+  RuntimeEvent,
+  OpenAppEvent,
+  SetBadgeEvent,
+  SetDynamicIslandEvent,
+  IncomingCallEvent,
+  StartBackgroundAppEvent,
+  StopBackgroundAppEvent,
+  ShowNotificationEvent,
+  LockEvent,
+  UnlockEvent,
+  CloseAppEvent,
+  GoHomeEvent,
+  CallAnsweredEvent,
+  CallEndedEvent,
+  OpenAppPayload,
+  SetBadgePayload,
+  SetDynamicIslandPayload,
+  IncomingCallPayload,
+  BackgroundAppPayload,
+  NotificationPayload as RuntimeNotificationPayload,
+} from "./types/runtime-event";
+
+export type { SemanticAnchorId } from "./types/anchor";

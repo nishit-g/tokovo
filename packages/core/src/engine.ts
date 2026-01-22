@@ -17,6 +17,7 @@ import {
   DEFAULT_CAMERA_TRANSFORM,
   DEFAULT_AUDIO_STATE,
 } from "./types";
+import type { CameraTransform } from "@tokovo/device-camera";
 import { TIMING } from "./constants";
 import { EventIndex, getEventsUpTo } from "./utils/event-utils";
 
@@ -30,7 +31,6 @@ import {
   handleAutoSounds,
   processOSEvent,
   processCallEvent,
-  processTouchEvent,
   HandlerContext,
 } from "./engine/handlers";
 
@@ -113,6 +113,12 @@ export function replay(
   }
 
   // Ensure initial state has proper camera and audio state
+  // Handle legacy camera format { type, appId } vs new CameraState
+  interface LegacyCameraConfig {
+    type?: string;
+    appId?: string;
+  }
+  const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
   const initialWithCamera: WorldState = {
     ...initial,
     camera:
@@ -120,8 +126,10 @@ export function replay(
         ? initial.camera
         : {
             ...DEFAULT_CAMERA_STATE,
-            baseView: (initial.camera as any)?.type || "APP_VIEW",
-            appId: (initial.camera as any)?.appId,
+            baseView: (legacyCamera?.type || "APP_VIEW") as
+              | "APP_VIEW"
+              | "TRANSITION",
+            appId: legacyCamera?.appId,
           },
     audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
   };
@@ -176,8 +184,10 @@ export function replay(
     ];
 
     if (v2AppKinds.includes(event.kind as string)) {
-      const e = event as any;
-      const reducer = ReducerRegistry.getAppReducer(e.appId);
+      const e = event as TimelineEvent & { appId?: string };
+      const reducer = e.appId
+        ? ReducerRegistry.getAppReducer(e.appId)
+        : undefined;
       reducer?.(draft, event);
       return;
     }
@@ -200,7 +210,11 @@ export function replay(
         kind: "CAMERA" as const,
         type: normalizedType,
       };
-      processCameraEvent(draft, cameraEvent as any, handlerCtx);
+      processCameraEvent(
+        draft,
+        cameraEvent as Parameters<typeof processCameraEvent>[1],
+        handlerCtx,
+      );
       return;
     }
 
@@ -210,7 +224,8 @@ export function replay(
         if (ReducerRegistry.deviceReducer) {
           draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
         }
-        const devType = (event as any).type;
+        const devEvent = event as TimelineEvent & { type?: string };
+        const devType = devEvent.type;
         if (
           devType &&
           (devType.includes("NOTIFICATION") ||
@@ -245,15 +260,11 @@ export function replay(
       }
 
       case "OS":
-        processOSEvent(draft, event as any, handlerCtx);
-        break;
-
-      case "TOUCH":
-        processTouchEvent(draft, event as any, handlerCtx);
+        processOSEvent(draft, event, handlerCtx);
         break;
 
       case "CALL":
-        processCallEvent(draft, event as any, handlerCtx);
+        processCallEvent(draft, event, handlerCtx);
         break;
     }
 
@@ -267,7 +278,8 @@ export function replay(
       try {
         handleEvent(draft, event, index);
       } catch (error) {
-        const pluginId = (event as any).appId || event.kind;
+        const eventWithAppId = event as TimelineEvent & { appId?: string };
+        const pluginId = eventWithAppId.appId || event.kind;
 
         if (ctx.mode === "render") {
           throw new PluginError(
@@ -309,14 +321,14 @@ export function replay(
       );
       // Camera transform is now computed in renderer using device-camera processors
       // Here we just store the default transform
-      draft.camera.deviceTransforms[deviceId] = DEFAULT_CAMERA_TRANSFORM as any;
+      draft.camera.deviceTransforms[deviceId] =
+        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
     }
 
     const activeDeviceId =
       draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
     draft.camera.transform =
-      draft.camera.deviceTransforms[activeDeviceId] ||
-      (DEFAULT_CAMERA_TRANSFORM as any);
+      draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM;
   });
 }
 

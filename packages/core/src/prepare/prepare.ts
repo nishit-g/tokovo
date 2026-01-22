@@ -24,7 +24,10 @@ import {
 import { replay } from "../engine";
 
 // Type for compile function (optional peer dependency)
-type CompileFunction = (episode: any) => { timeline: { ops: any[] } };
+interface CompileResult {
+  timeline: { ops: RuntimeEvent[] };
+}
+type CompileFunction = (episode: EpisodeDefinition) => CompileResult;
 
 // Compile function is injected at runtime or provided by caller
 let compileEpisode: CompileFunction | null = null;
@@ -102,16 +105,28 @@ export function deriveInitialWorld(
       profileId: deviceDef.profileId || deviceDef.id,
       isLocked: false,
       foregroundAppId: appId || undefined,
-      platform: deviceDef.platform || "ios",
+      notifications: [],
       os: { ...DEFAULT_OS_STATE },
       appTheme: deviceDef.theme,
-    } as any;
+    };
 
     if (appId) {
       if (!world.appState[appId]) {
         world.appState[appId] = { conversations: {} };
       }
-      const appState = world.appState[appId] as any;
+      const appState = world.appState[appId] as {
+        conversations: Record<
+          string,
+          {
+            id: string;
+            name: string;
+            type: string;
+            avatar?: string;
+            messages: unknown[];
+            typing: Record<string, unknown>;
+          }
+        >;
+      };
 
       for (const convDef of deviceDef.conversations || []) {
         appState.conversations[convDef.id] = {
@@ -130,8 +145,11 @@ export function deriveInitialWorld(
         if (!world.appState[deviceDef.id]) {
           world.appState[deviceDef.id] = {};
         }
-        (world.appState as any)[deviceDef.id][plugin.id] =
-          plugin.createInitialState();
+        const deviceAppState = world.appState[deviceDef.id] as Record<
+          string,
+          unknown
+        >;
+        deviceAppState[plugin.id] = plugin.createInitialState();
       }
     }
   }
@@ -349,8 +367,18 @@ export interface EpisodeDefinition {
     platform?: "ios" | "android";
     appId?: string;
     profileId?: string;
-    conversations?: any[];
-    beats?: any[];
+    conversations?: Array<{
+      id: string;
+      name?: string;
+      type?: "dm" | "group";
+      avatar?: string;
+    }>;
+    beats?: Array<{
+      id?: string;
+      at?: number;
+      duration?: number;
+      type?: string;
+    }>;
   }>;
 }
 
@@ -417,7 +445,7 @@ export function prepareEpisode(
     fps: input.fps || 30,
     initialWorld,
     events: sortedEvents,
-    eventIndex: createEventIndex(sortedEvents as any),
+    eventIndex: createEventIndex(sortedEvents),
     assets,
   };
 
@@ -455,11 +483,10 @@ export function runEpisode(
   options: RunOptions = { mode: "preview" },
 ): WorldState {
   // Run replay with events - let replay() handle the filtering
-  // Note: RuntimeEvent and TimelineEvent are structurally compatible
-  // The type systems diverged historically but both work with replay()
+  // RuntimeEvent is compatible with TimelineEvent by design
   return replay(
     episode.initialWorld,
-    episode.events as any,
+    episode.events,
     frame,
     { mode: options.mode },
     episode.eventIndex,

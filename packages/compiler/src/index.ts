@@ -3,17 +3,11 @@
  *
  * Episode compilation - converts DSL output to runtime events.
  *
- * V2 Track-based (RECOMMENDED):
+ * Track-based:
  * ```ts
  * import { prepareTrackEpisode } from "@tokovo/compiler";
  * const ir = episode(...).build();
  * const prepared = prepareTrackEpisode(ir, plugins);
- * ```
- *
- * V1 Beat-based (DEPRECATED):
- * ```ts
- * import { compile } from "@tokovo/compiler";
- * const { timeline } = compile(sceneIR);
  * ```
  */
 

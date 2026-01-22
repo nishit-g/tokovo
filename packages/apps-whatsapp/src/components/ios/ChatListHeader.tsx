@@ -26,13 +26,16 @@ const FilterChip: React.FC<{
     onClick={onClick}
     style={{
       padding: "6px 14px",
-      backgroundColor: isActive ? whatsappColors.bgTertiary : whatsappColors.bgSecondary,
+      backgroundColor: isActive
+        ? whatsappColors.bgTertiary
+        : whatsappColors.bgSecondary,
       borderRadius: spacing.filterChipRadius,
       ...typography.chip,
       fontWeight: isActive ? "600" : "400",
-      color: isActive ? whatsappColors.textPrimary : whatsappColors.textSecondary,
+      color: isActive
+        ? whatsappColors.textPrimary
+        : whatsappColors.textSecondary,
       cursor: "pointer",
-      transition: "background-color 0.15s ease",
       userSelect: "none",
     }}
   >
@@ -102,10 +105,14 @@ export const ChatListHeader: React.FC<ChatListHeaderProps> = ({
 
         {/* Right Actions */}
         <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+          <div
+            style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+          >
             <CameraFillIcon color={whatsappColors.iosBlue} />
           </div>
-          <div style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+          <div
+            style={{ cursor: "pointer", display: "flex", alignItems: "center" }}
+          >
             <ComposeIcon color={whatsappColors.iosBlue} size={24} />
           </div>
         </div>
