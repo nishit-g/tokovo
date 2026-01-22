@@ -22,24 +22,15 @@
 // =============================================================================
 
 export {
-    prepareTrackEpisode,
-    lowerTrackEvent,
-    lowerTrackEvents,
-    lowerEpisode,
-    createLoweringContext,
+  prepareTrackEpisode,
+  lowerTrackEvent,
+  lowerTrackEvents,
+  lowerEpisode,
+  createLoweringContext,
 } from "./v2";
 
 export type {
-    PreparedTrackEpisode,
-    PluginLowering,
-    LoweringContext,
+  PreparedTrackEpisode,
+  PluginLowering,
+  LoweringContext,
 } from "./v2";
-
-// =============================================================================
-// LEGACY (DEPRECATED)
-// =============================================================================
-
-// Re-export for backward compatibility
-export { compile, CompilerContext, Cursor } from "./legacy";
-export type { CompileResult, CompileOptions, CompilerConfig } from "./legacy";
-export * from "./legacy/passes";

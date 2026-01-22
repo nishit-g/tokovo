@@ -23,37 +23,37 @@
 // =============================================================================
 
 export {
-    episode,
-    EpisodeBuilder,
-    CameraTrackBuilder,
-    CameraPointBuilder,
-    CameraSpanBuilder,
-    AudioTrackBuilder,
-    AudioPointBuilder,
-    AudioSpanBuilder,
-    OSTrackBuilder,
-    OSPointBuilder,
+  episode,
+  EpisodeBuilder,
+  CameraTrackBuilder,
+  CameraPointBuilder,
+  CameraSpanBuilder,
+  AudioTrackBuilder,
+  AudioPointBuilder,
+  AudioSpanBuilder,
+  OSTrackBuilder,
+  OSPointBuilder,
 } from "./core";
 
 export type {
-    DeviceOptions,
-    TrackBuilder,
-    TrackFn,
-    CameraSetOptions,
-    CameraAnimateOptions,
-    CameraFocusOptions,
-    CameraTrackOptions,
-    CameraShakeOptions,
-    CameraResetOptions,
-    BgmOptions,
-    PlayOptions,
-    CrossfadeOptions,
-    FadeOutOptions,
-    NetworkType,
-    OSStateOptions,
-    BatteryOptions,
-    NetworkOptions,
-    NotificationOptions,
+  DeviceOptions,
+  TrackBuilder,
+  TrackFn,
+  CameraSetOptions,
+  CameraAnimateOptions,
+  CameraFocusOptions,
+  CameraTrackOptions,
+  CameraShakeOptions,
+  CameraResetOptions,
+  BgmOptions,
+  PlayOptions,
+  CrossfadeOptions,
+  FadeOutOptions,
+  NetworkType,
+  OSStateOptions,
+  BatteryOptions,
+  NetworkOptions,
+  NotificationOptions,
 } from "./core";
 
 // =============================================================================
@@ -61,10 +61,10 @@ export type {
 // =============================================================================
 
 export {
-    parseTimeToFrames,
-    parseDurationToFrames,
-    framesToSeconds,
-    framesToTimeString,
+  parseTimeToFrames,
+  parseDurationToFrames,
+  framesToSeconds,
+  framesToTimeString,
 } from "./utils";
 
 // =============================================================================
@@ -72,10 +72,10 @@ export {
 // =============================================================================
 
 export type {
-    TypingBuilder,
-    MessageHandle,
-    EpisodeConfig,
-    EpisodeDefinition,
+  TypingBuilder,
+  MessageHandle,
+  EpisodeConfig,
+  EpisodeDefinition,
 } from "./types";
 
 // =============================================================================
@@ -88,34 +88,12 @@ export { Tracer } from "./tracer";
 // HELPERS: Event factories (import from "@tokovo/dsl/helpers")
 // =============================================================================
 
-// Re-export common helpers at top level for convenience
-export {
-    keyboard,
-    generateTyping,
-    getTypingEndFrame,
-    TYPING_SPEEDS,
-    messages,
-    dsl,
-} from "./helpers";
-
-export type {
-    TypingSpeed,
-    TypingOptions,
-} from "./helpers";
+export { messages, dsl } from "./helpers";
 
 // =============================================================================
 // BACKWARD COMPATIBILITY: v2 namespace
 // =============================================================================
 
-// Re-export core as v2 for backward compatibility
 export * as v2 from "./core";
 
-// Alias for backward compatibility
 export { episode as trackEpisode } from "./core";
-
-// =============================================================================
-// LEGACY: Beat-based DSL (DEPRECATED)
-// =============================================================================
-
-// Legacy exports are available via "@tokovo/dsl/legacy"
-// Do not import legacy directly - it shows deprecation warnings

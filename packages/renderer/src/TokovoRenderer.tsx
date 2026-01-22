@@ -11,19 +11,19 @@
 
 import React from "react";
 import {
-    WorldState,
-    EventIndex,
-    PluginManager,
-    PluginManagerClass,
-    APP_IDS,
-    AppSurface
+  WorldState,
+  EventIndex,
+  PluginManager,
+  PluginManagerClass,
+  APP_IDS,
+  AppSurface,
+  TokovoProvider,
 } from "@tokovo/core";
 import {
-    NotificationScheduler,
-    HeadsUpNotification,
-    NotificationInstance
+  NotificationScheduler,
+  HeadsUpNotification,
+  NotificationInstance,
 } from "@tokovo/device-notifications";
-import { PhoneApp } from "@tokovo/device-calls";
 import { FrameRegistry, StatusBar, iPhone16Frame } from "@tokovo/devices";
 import { AppRegistry } from "./registry";
 import { NotificationOverlay } from "./overlays";
@@ -32,27 +32,26 @@ import { VisualDebugger } from "./VisualDebugger";
 import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
-import { KeyboardSurface } from "@tokovo/device-keyboard";
 
 // =============================================================================
 // TYPES
 // =============================================================================
 
 interface NotificationConfig {
-    headsUpDuration?: number;
-    showHeadsUpWhenAppOpen?: boolean;
+  headsUpDuration?: number;
+  showHeadsUpWhenAppOpen?: boolean;
 }
 
 interface TokovoRendererProps {
-    world: WorldState;
-    t: number;
-    debug?: boolean;
-    notificationConfig?: NotificationConfig;
-    focusDeviceId?: string;
-    eventIndex?: EventIndex;
-    directorEnabled?: boolean;
-    directorDebug?: boolean;
-    pluginManager?: PluginManagerClass;
+  world: WorldState;
+  t: number;
+  debug?: boolean;
+  notificationConfig?: NotificationConfig;
+  focusDeviceId?: string;
+  eventIndex?: EventIndex;
+  directorEnabled?: boolean;
+  directorDebug?: boolean;
+  pluginManager?: PluginManagerClass;
 }
 
 // =============================================================================
@@ -60,252 +59,239 @@ interface TokovoRendererProps {
 // =============================================================================
 
 export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
+  world,
+  t,
+  debug,
+  notificationConfig = {},
+  focusDeviceId,
+  eventIndex,
+  directorEnabled = true,
+  directorDebug = false,
+  pluginManager,
+}) => {
+  // Resolve Plugin Manager (Injectable > Global Fallback)
+  const pm = pluginManager || PluginManager;
+
+  const { headsUpDuration = 150, showHeadsUpWhenAppOpen = true } =
+    notificationConfig;
+
+  // ==========================================================================
+  // 1. LAYOUT ENGINE — Get layout blueprint
+  // ==========================================================================
+  const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+
+  // Handle error state (device not found)
+  if (layoutOutput.isError) {
+    return (
+      <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
+        <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
+          Device not found
+        </div>
+      </div>
+    );
+  }
+
+  const { deviceId, device, appId, viewKind, layout, profile, variant } =
+    layoutOutput;
+
+  // ==========================================================================
+  // 2. CAMERA ENGINE — Get camera transform
+  // ==========================================================================
+  const cameraOutput = useCameraEngine({
     world,
     t,
-    debug,
-    notificationConfig = {},
-    focusDeviceId,
+    layoutOutput,
     eventIndex,
-    directorEnabled = true,
-    directorDebug = false,
-    pluginManager,
-}) => {
-    // Resolve Plugin Manager (Injectable > Global Fallback)
-    const pm = pluginManager || PluginManager;
+    directorEnabled,
+    directorDebug,
+  });
 
-    const {
-        headsUpDuration = 150,
-        showHeadsUpWhenAppOpen = true,
-    } = notificationConfig;
+  const { cameraStyle, deviceStyle } = cameraOutput;
 
-    // ==========================================================================
-    // 1. LAYOUT ENGINE — Get layout blueprint
-    // ==========================================================================
-    const layoutOutput = useLayoutEngine({ world, t, focusDeviceId });
+  // ==========================================================================
+  // 3. HELPER: Find active heads-up notification
+  // ==========================================================================
+  // ==========================================================================
+  // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
+  // ==========================================================================
+  const notificationState = React.useMemo(() => {
+    return NotificationScheduler.schedule(device, t);
+  }, [device, t]);
 
-    // Handle error state (device not found)
-    if (layoutOutput.isError) {
-        return (
-            <div style={{ width: 430, height: 932, backgroundColor: "#000" }}>
-                <div style={{ color: "#666", padding: 20, fontSize: 14 }}>
-                    Device not found
-                </div>
-            </div>
-        );
-    }
+  const activeHeadsUp = notificationState.headsUp;
 
-    const {
-        deviceId,
-        device,
-        appId,
-        viewKind,
-        layout,
-        profile,
-        variant,
-    } = layoutOutput;
-
-    // ==========================================================================
-    // 2. CAMERA ENGINE — Get camera transform
-    // ==========================================================================
-    const cameraOutput = useCameraEngine({
-        world,
-        t,
-        layoutOutput,
-        eventIndex,
-        directorEnabled,
-        directorDebug,
+  // DEBUG: Notification State
+  if (debug && t % 30 === 0) {
+    console.log(`[TokovoRenderer] Frame ${t}:`, {
+      totalNotifs: device.os?.notifications?.length,
+      activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
+      isLocked: device.isLocked,
+      appId,
     });
+  }
 
-    const { cameraStyle, deviceStyle } = cameraOutput;
+  const hasActiveCall = device.call && device.call.status !== "ended";
 
-    // ==========================================================================
-    // 3. HELPER: Find active heads-up notification
-    // ==========================================================================
-    // ==========================================================================
-    // 3. LOGIC: NOTIFICATION SCHEDULER (Moved to Core)
-    // ==========================================================================
-    const notificationState = React.useMemo(() => {
-        return NotificationScheduler.schedule(device, t);
-    }, [device, t]);
+  // DEBUG: Call state
+  if (device.call) {
+    console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
+  }
+  if (hasActiveCall) {
+    console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
+  }
 
-    const activeHeadsUp = notificationState.headsUp;
+  // ==========================================================================
+  // 4. SELECT APP VIEW
+  // ==========================================================================
+  const AppView = appId ? pm.getView(appId) : null;
 
-    // DEBUG: Notification State
-    if (debug && t % 30 === 0) {
-        console.log(`[TokovoRenderer] Frame ${t}:`, {
-            totalNotifs: device.os?.notifications?.length,
-            activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
-            isLocked: device.isLocked,
-            appId
-        });
-    }
+  // 5. RENDER — Paint the blueprints
+  // ==========================================================================
 
-    const hasActiveCall = device.call && device.call.status !== "ended";
+  // Resolve Device Frame from registry (with fallback to iPhone16)
+  const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
 
-    // DEBUG: Call state
-    if (device.call) {
-        console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
-    }
-    if (hasActiveCall) {
-        console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
-    }
+  return (
+    <div
+      style={{
+        width: profile.dimensions.width,
+        height: profile.dimensions.height,
+        position: "relative",
+      }}
+    >
+      {/* Camera wrapper — applies cinematic transforms */}
+      <div style={cameraStyle}>
+        {/* Device wrapper — applies layout transforms */}
+        <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
+          {/* Extract statusBarTheme from foreground app's state */}
+          <FrameComponent
+            statusBar={
+              <StatusBar
+                os={device.os}
+                variant={variant}
+                theme={
+                  (appId && (world.appState?.[appId] as any))?.statusBarTheme ??
+                  "light"
+                }
+              />
+            }
+          >
+            {/* ========================================================================= */}
+            {/* LAYER 1: APP VIEW                                                        */}
+            {/* ========================================================================= */}
+            {(() => {
+              // Active App (Unlocked)
+              if (AppView && !device.isLocked) {
+                const meta = pm.get(appId!)?.metadata;
+                const designWidth = meta?.designWidth || 393;
 
-    // ==========================================================================
-    // 4. SELECT APP VIEW
-    // ==========================================================================
-    const AppView = appId ? pm.getView(appId) : null;
+                // Calculate scale factor explicitly to normalize props
+                const scale = profile.dimensions.width / designWidth;
 
-    // 5. RENDER — Paint the blueprints
-    // ==========================================================================
+                return (
+                  <AppSurface
+                    designWidth={designWidth}
+                    targetWidth={profile.dimensions.width}
+                    targetHeight={profile.dimensions.height}
+                    backgroundColor={meta?.themeColor}
+                  >
+                    <TokovoProvider
+                      world={world}
+                      deviceId={deviceId}
+                      appId={appId!}
+                      t={t}
+                      layout={layout}
+                      platform={variant}
+                      safeAreaInsets={{
+                        top: (profile.camera?.safeAreaTop || 0) / scale,
+                        bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                        left: 0,
+                        right: 0,
+                      }}
+                    >
+                      <AppView
+                        world={world}
+                        t={t}
+                        layout={layout}
+                        platform={variant}
+                        deviceId={deviceId}
+                        safeAreaInsets={{
+                          top: (profile.camera?.safeAreaTop || 0) / scale,
+                          bottom: (profile.camera?.safeAreaBottom || 0) / scale,
+                          left: 0,
+                          right: 0,
+                        }}
+                      />
+                    </TokovoProvider>
+                  </AppSurface>
+                );
+              }
 
-    // Resolve Device Frame from registry (with fallback to iPhone16)
-    const FrameComponent = FrameRegistry.get(device.profileId) || iPhone16Frame;
+              // C. Valid System States (Lockscreen / Home)
+              if (!device.isLocked && device.homeScreen) {
+                return (
+                  <HomeScreenView
+                    config={device.homeScreen}
+                    variant={variant}
+                  />
+                );
+              }
 
-    return (
-        <div style={{
-            width: profile.dimensions.width,
-            height: profile.dimensions.height,
-            position: "relative",
-        }}>
-            {/* Camera wrapper — applies cinematic transforms */}
-            <div style={cameraStyle}>
-                {/* Device wrapper — applies layout transforms */}
-                <div style={{ width: "100%", height: "100%", ...deviceStyle }}>
-                    {/* Extract statusBarTheme from foreground app's state */}
-                    <FrameComponent statusBar={
-                        <StatusBar
-                            os={device.os}
-                            variant={variant}
-                            theme={(appId && world.appState?.[appId] as any)?.statusBarTheme ?? "light"}
-                        />
-                    }>
+              if (device.isLocked) {
+                return (
+                  <LockscreenView
+                    notifications={device.os?.notifications || []}
+                    layout={layout}
+                    variant={variant}
+                    // TODO: Pass Metadata Registry for icon lookup?
+                    // LockscreenView already uses it (Step 642).
+                  />
+                );
+              }
 
-                        {/* ========================================================================= */}
-                        {/* LAYER 1: APP VIEW (or CALL VIEW)                                          */}
-                        {/* ========================================================================= */}
-                        {(() => {
-                            // A. Active Call takes precedence - use PhoneApp directly from device-calls
-                            if (hasActiveCall) {
-                                const designWidth = 393; // iPhone design width
+              // D. Blank Screen
+              return <div style={{ flex: 1, backgroundColor: "black" }} />;
+            })()}
 
-                                return (
-                                    <AppSurface
-                                        designWidth={designWidth}
-                                        targetWidth={profile.dimensions.width}
-                                        targetHeight={profile.dimensions.height}
-                                    >
-                                        <PhoneApp world={world} t={t} platform={variant} deviceId={deviceId} />
-                                    </AppSurface>
-                                );
-                            }
+            {/* ========================================================================= */}
+            {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
+            {/* ========================================================================= */}
 
-                            // B. Active App (Unlocked)
-                            if (AppView && !device.isLocked) {
-                                const meta = pm.get(appId!)?.metadata;
-                                const designWidth = meta?.designWidth || 393;
+            {/* Lockscreen Notification Overlay */}
+            <NotificationOverlay
+              notifications={device.os?.notifications || []}
+              variant={variant}
+              layout={layout}
+            />
 
-                                // Calculate scale factor explicitly to normalize props
-                                const scale = profile.dimensions.width / designWidth;
-
-                                return (
-                                    <AppSurface
-                                        designWidth={designWidth}
-                                        targetWidth={profile.dimensions.width}
-                                        targetHeight={profile.dimensions.height}
-                                        backgroundColor={meta?.themeColor} // Use brand color as splash/bg
-                                    >
-                                        <AppView
-                                            world={world}
-                                            t={t}
-                                            // layout={layout} // Not in AppViewProps standard interface, but might be useful?
-                                            // Ideally apps use hooks: useLayout()
-                                            platform={variant}
-                                            deviceId={deviceId}
-                                            // Normalize Safe Area to Logical Units
-                                            safeAreaInsets={{
-                                                top: (profile.camera?.safeAreaTop || 0) / scale,
-                                                bottom: (profile.camera?.safeAreaBottom || 0) / scale,
-                                                left: 0,
-                                                right: 0
-                                            }}
-                                        />
-                                    </AppSurface>
-                                );
-                            }
-
-                            // C. Valid System States (Lockscreen / Home)
-                            if (!device.isLocked && device.homeScreen) {
-                                return <HomeScreenView config={device.homeScreen} variant={variant} />;
-                            }
-
-                            if (device.isLocked) {
-                                return (
-                                    <LockscreenView
-                                        notifications={device.os?.notifications || []}
-                                        layout={layout}
-                                        variant={variant}
-                                    // TODO: Pass Metadata Registry for icon lookup? 
-                                    // LockscreenView already uses it (Step 642).
-                                    />
-                                );
-                            }
-
-                            // D. Blank Screen
-                            return <div style={{ flex: 1, backgroundColor: "black" }} />;
-                        })()}
-
-
-                        {/* ========================================================================= */}
-                        {/* LAYER 2: SYSTEM OVERLAYS                                                  */}
-                        {/* ========================================================================= */}
-
-                        {/* Lockscreen Notification Overlay */}
-                        <NotificationOverlay
-                            notifications={device.os?.notifications || []}
-                            variant={variant}
-                            layout={layout}
-                        />
-
-                        {/* Heads-Up Notification (Toast) */}
-                        {/* Note: Dynamic Island notification rendering not implemented yet, 
+            {/* Heads-Up Notification (Toast) */}
+            {/* Note: Dynamic Island notification rendering not implemented yet, 
                             so we always show HeadsUpNotification when there's an active heads-up */}
-                        {activeHeadsUp && !hasActiveCall && (
-                            <HeadsUpNotification
-                                key={activeHeadsUp.id}
-                                notification={activeHeadsUp}
-                                currentTime={t}
-                                variant={variant}
-                                autoDismissAfter={headsUpDuration}
-                                deviceWidth={profile.dimensions.width}
-                            />
-                        )}
+            {activeHeadsUp && !hasActiveCall && (
+              <HeadsUpNotification
+                key={activeHeadsUp.id}
+                notification={activeHeadsUp}
+                currentTime={t}
+                variant={variant}
+                autoDismissAfter={headsUpDuration}
+                deviceWidth={profile.dimensions.width}
+              />
+            )}
 
-                        {/* Dynamic Island (iOS) - Slot Based */}
-                        {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
-                            <DynamicIsland
-                                device={device}
-                                deviceProfile={profile}
-                                world={world}
-                                t={t}
-                            />
-                        )}
-
-                        {/* Virtual Keyboard (Unified Surface) */}
-                        {device.keyboard?.visible && (
-                            <KeyboardSurface
-                                keyboard={device.keyboard}
-                                platform={variant}
-                                variant={variant === "ios" ? "light" : "light"}
-                                t={t}
-                                width={profile.dimensions.width}
-                            />
-                        )}
-
-                    </FrameComponent>
-                </div>
-            </div>
-
-            {debug && <VisualDebugger world={world} t={t} />}
+            {/* Dynamic Island (iOS) - Slot Based */}
+            {profile.dynamicIsland && !device.isLocked && !hasActiveCall && (
+              <DynamicIsland
+                device={device}
+                deviceProfile={profile}
+                world={world}
+                t={t}
+              />
+            )}
+          </FrameComponent>
         </div>
-    );
+      </div>
+
+      {debug && <VisualDebugger world={world} t={t} />}
+    </div>
+  );
 };

@@ -1,23 +1,22 @@
 {
-    "name": "@tokovo/compiler",
-    "version": "0.0.1",
-    "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
-    "main": "src/index.ts",
-    "types": "src/index.ts",
-    "files": [
-        "dist"
-    ],
-    "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch"
-    },
-    "dependencies": {
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/device-camera": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0"
-    }
+  "name": "@tokovo/compiler",
+  "version": "0.0.1",
+  "description": "Tokovo Compiler - Scene IR to Timeline IR transformation",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/core": "workspace:*",
+    "@tokovo/device-camera": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
 }

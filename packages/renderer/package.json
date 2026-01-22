@@ -1,26 +1,24 @@
 {
-    "name": "@tokovo/renderer",
-    "version": "0.0.0",
-    "main": "./src/index.ts",
-    "types": "./src/index.ts",
-    "scripts": {
-        "lint": "eslint . --ext .ts,.tsx"
-    },
-    "dependencies": {
-        "@tokovo/core": "workspace:*",
-        "@tokovo/device-camera": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/device-calls": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*",
-        "@tokovo/device-notifications": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.211"
-    },
-    "devDependencies": {
-        "typescript": "^5.0.0",
-        "@types/node": "^20.0.0",
-        "@types/react": "18.2.0",
-        "@types/react-dom": "18.2.0"
-    }
+  "name": "@tokovo/renderer",
+  "version": "0.0.0",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint . --ext .ts,.tsx"
+  },
+  "dependencies": {
+    "@tokovo/core": "workspace:*",
+    "@tokovo/device-camera": "workspace:*",
+    "@tokovo/devices": "workspace:*",
+    "@tokovo/device-notifications": "workspace:*",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "remotion": "4.0.211"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "18.2.0",
+    "@types/react-dom": "18.2.0"
+  }
 }

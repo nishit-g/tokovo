@@ -8,16 +8,15 @@
  */
 
 import type {
-    TrackEvent,
-    TrackEpisodeIR,
-    CameraTrackEvent,
-    AudioTrackEvent,
-    OSTrackEvent,
-    MarkerTrackEvent,
+  TrackEvent,
+  TrackEpisodeIR,
+  CameraTrackEvent,
+  AudioTrackEvent,
+  OSTrackEvent,
+  MarkerTrackEvent,
 } from "@tokovo/ir";
 import type { RuntimeEvent, TokovoPlugin } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
-import { keyboardV2Lowering } from "@tokovo/device-keyboard";
 
 // =============================================================================
 // TYPES
@@ -27,16 +26,16 @@ import { keyboardV2Lowering } from "@tokovo/device-keyboard";
  * Plugin lowering interface - plugins implement this to lower their events.
  */
 export interface PluginLowering {
-    appId: string;
-    lower(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[];
+  appId: string;
+  lower(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[];
 }
 
 /**
  * Lowering context with registered plugin lowerers.
  */
 export interface LoweringContext {
-    pluginLowerers: Map<string, PluginLowering>;
-    fps: number;
+  pluginLowerers: Map<string, PluginLowering>;
+  fps: number;
 }
 
 // =============================================================================
@@ -48,129 +47,56 @@ export interface LoweringContext {
  * APP events are delegated to the appropriate plugin.
  */
 export function lowerTrackEvent(
-    event: TrackEvent,
-    ctx: LoweringContext
+  event: TrackEvent,
+  ctx: LoweringContext,
 ): RuntimeEvent[] {
-    // Cast to handle extended kinds like CALL that aren't in TrackEvent union
-    const kind = event.kind as string;
+  // Cast to handle extended kinds like CALL that aren't in TrackEvent union
+  const kind = event.kind as string;
 
-    switch (kind) {
-        case "CAMERA":
-            // Cast to unknown first to handle type incompatibility between device-camera and core RuntimeEvent
-            return cameraV2Lowering(event as unknown as Parameters<typeof cameraV2Lowering>[0], { fps: ctx.fps }) as unknown as RuntimeEvent[];
-        case "KEYBOARD":
-            return keyboardV2Lowering.lower(event as any, ctx) as unknown as RuntimeEvent[];
-        case "AUDIO":
-            return lowerAudioEvent(event as AudioTrackEvent);
-        case "OS":
-            return lowerOSEvent(event as OSTrackEvent);
-        case "MARKER":
-            return lowerMarkerEvent(event as MarkerTrackEvent);
-        case "DEVICE":
-            return lowerDeviceEvent(event);
-        case "CALL":
-            return lowerCallEvent(event);
-        default:
-            // APP events - delegate to plugin
-            return lowerAppEvent(event, ctx);
-    }
+  switch (kind) {
+    case "CAMERA":
+      return cameraV2Lowering(
+        event as unknown as Parameters<typeof cameraV2Lowering>[0],
+        { fps: ctx.fps },
+      ) as unknown as RuntimeEvent[];
+    case "AUDIO":
+      return lowerAudioEvent(event as AudioTrackEvent);
+    case "OS":
+      return lowerOSEvent(event as OSTrackEvent);
+    case "MARKER":
+      return lowerMarkerEvent(event as MarkerTrackEvent);
+    case "DEVICE":
+      return lowerDeviceEvent(event);
+    case "CALL":
+      return lowerCallEvent(event);
+    default:
+      return lowerAppEvent(event, ctx);
+  }
 }
 /**
  * Lower APP events by delegating to the appropriate plugin.
- * Falls back to built-in WhatsApp lowering for backward compatibility.
+ * Plugins MUST implement v2Lowering - no fallback.
  */
-function lowerAppEvent(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[] {
-    const appId = (event as { appId?: string }).appId;
-    if (!appId) {
-        console.warn(`[lowering] APP event missing appId:`, event);
-        return [];
-    }
-
-    // Try plugin lowerer first
-    const pluginLowerer = ctx.pluginLowerers.get(appId);
-    if (pluginLowerer) {
-        return pluginLowerer.lower(event, ctx);
-    }
-
-    // Fallback: built-in WhatsApp lowering for backward compatibility
-    if (appId === "app_whatsapp") {
-        return lowerWhatsAppEvent(event);
-    }
-
-    console.warn(`[lowering] No plugin lowerer for appId: ${appId}`);
+function lowerAppEvent(
+  event: TrackEvent,
+  ctx: LoweringContext,
+): RuntimeEvent[] {
+  const appId = (event as { appId?: string }).appId;
+  if (!appId) {
+    console.warn(`[lowering] APP event missing appId:`, event);
     return [];
-}
+  }
 
-/**
- * Built-in WhatsApp lowering (fallback until plugin adopts lowering interface).
- */
-function lowerWhatsAppEvent(event: TrackEvent): RuntimeEvent[] {
-    const e = event as any;
-    const base = {
-        at: e.at,
-        kind: "APP" as const,
-        appId: e.appId,
-        deviceId: e.deviceId,
-    };
+  // Plugin lowerer is required - no fallback
+  const pluginLowerer = ctx.pluginLowerers.get(appId);
+  if (pluginLowerer) {
+    return pluginLowerer.lower(event, ctx);
+  }
 
-    switch (e.type) {
-        case "MESSAGE_RECEIVED":
-            return [{
-                ...base,
-                type: "MESSAGE_RECEIVED",
-                conversationId: e.payload.conversationId,
-                from: e.payload.from,
-                text: e.payload.text,
-            } as any];
-
-        case "MESSAGE_SENT":
-            return [{
-                ...base,
-                type: "MESSAGE_SENT",
-                conversationId: e.payload.conversationId,
-                text: e.payload.text,
-            } as any];
-
-        case "TYPING_START":
-            return [{
-                ...base,
-                type: "TYPING_START",
-                conversationId: e.payload.conversationId,
-                from: e.payload.actor,
-            } as any];
-
-        case "TYPING_END":
-            return [{
-                ...base,
-                type: "TYPING_END",
-                conversationId: e.payload.conversationId,
-                from: e.payload.actor,
-            } as any];
-
-        case "IMAGE_RECEIVED":
-            return [{
-                ...base,
-                type: "RECEIVE_IMAGE",
-                payload: e.payload,
-            } as any];
-
-        case "REACT":
-            return [{
-                ...base,
-                type: "REACT",
-                payload: e.payload,
-            } as any];
-
-        case "READ":
-            return [{
-                ...base,
-                type: "READ_MESSAGES",
-                payload: { conversationId: e.payload.conversationId },
-            } as any];
-
-        default:
-            return [];
-    }
+  console.warn(
+    `[lowering] No plugin lowerer registered for appId: ${appId}. Event dropped.`,
+  );
+  return [];
 }
 
 // Camera lowering is now delegated to @tokovo/device-camera
@@ -180,102 +106,127 @@ function lowerWhatsAppEvent(event: TrackEvent): RuntimeEvent[] {
  * Lower audio events.
  */
 function lowerAudioEvent(event: AudioTrackEvent): RuntimeEvent[] {
-    const base = { at: event.at, kind: "AUDIO" as const };
+  const base = { at: event.at, kind: "AUDIO" as const };
 
-    switch (event.type) {
-        case "BGM_START":
-            return [{
-                ...base,
-                type: "PLAY",
-                payload: {
-                    soundId: event.payload.soundId,
-                    volume: event.payload.volume,
-                    fadeIn: event.payload.fadeIn,
-                    loop: true,
-                },
-            } as any];
+  switch (event.type) {
+    case "BGM_START":
+      return [
+        {
+          ...base,
+          type: "PLAY",
+          payload: {
+            soundId: event.payload.soundId,
+            volume: event.payload.volume,
+            fadeIn: event.payload.fadeIn,
+            loop: true,
+          },
+        } as any,
+      ];
 
-        case "BGM_END":
-            return [{
-                ...base,
-                type: "FADE_OUT",
-                payload: { duration: event.payload.fadeOut ?? 30 },
-            } as any];
+    case "BGM_END":
+      return [
+        {
+          ...base,
+          type: "FADE_OUT",
+          payload: { duration: event.payload.fadeOut ?? 30 },
+        } as any,
+      ];
 
-        case "PLAY":
-            return [{
-                ...base,
-                type: "PLAY",
-                payload: {
-                    soundId: event.payload.soundId,
-                    volume: event.payload.volume,
-                    loop: event.payload.loop,
-                },
-            } as any];
+    case "PLAY":
+      return [
+        {
+          ...base,
+          type: "PLAY",
+          payload: {
+            soundId: event.payload.soundId,
+            volume: event.payload.volume,
+            loop: event.payload.loop,
+          },
+        } as any,
+      ];
 
-        case "STOP":
-            return [{
-                ...base,
-                type: "STOP",
-                payload: { soundId: event.payload.soundId },
-            } as any];
+    case "STOP":
+      return [
+        {
+          ...base,
+          type: "STOP",
+          payload: { soundId: event.payload.soundId },
+        } as any,
+      ];
 
-        case "CROSSFADE":
-            return [{
-                ...base,
-                type: "CROSSFADE",
-                duration: event.payload.duration,
-                payload: { soundId: event.payload.soundId, volume: event.payload.volume },
-            } as any];
+    case "CROSSFADE":
+      return [
+        {
+          ...base,
+          type: "CROSSFADE",
+          duration: event.payload.duration,
+          payload: {
+            soundId: event.payload.soundId,
+            volume: event.payload.volume,
+          },
+        } as any,
+      ];
 
-        case "FADE_OUT":
-            return [{
-                ...base,
-                type: "FADE_OUT",
-                payload: { duration: event.payload.duration },
-            } as any];
+    case "FADE_OUT":
+      return [
+        {
+          ...base,
+          type: "FADE_OUT",
+          payload: { duration: event.payload.duration },
+        } as any,
+      ];
 
-        case "STOP_ALL":
-            return [{ ...base, type: "STOP_ALL", payload: {} } as any];
+    case "STOP_ALL":
+      return [{ ...base, type: "STOP_ALL", payload: {} } as any];
 
-        default:
-            return [];
-    }
+    default:
+      return [];
+  }
 }
 
 /**
  * Lower OS events.
  */
 function lowerOSEvent(event: OSTrackEvent): RuntimeEvent[] {
-    const base = { at: event.at, kind: "OS" as const, deviceId: event.deviceId };
+  const base = { at: event.at, kind: "OS" as const, deviceId: event.deviceId };
 
-    switch (event.type) {
-        case "SET_STATE":
-        case "SET_TIME":
-        case "SET_BATTERY":
-        case "SET_NETWORK":
-        case "SET_DND":
-            return [{ ...base, type: "SET_STATE", payload: event.payload } as any];
+  switch (event.type) {
+    case "SET_STATE":
+    case "SET_TIME":
+    case "SET_BATTERY":
+    case "SET_NETWORK":
+    case "SET_DND":
+      return [{ ...base, type: "SET_STATE", payload: event.payload } as any];
 
-        case "NOTIFICATION_SHOW":
-            return [{ ...base, type: "SHOW_NOTIFICATION", payload: event.payload } as any];
+    case "NOTIFICATION_SHOW":
+      return [
+        { ...base, type: "SHOW_NOTIFICATION", payload: event.payload } as any,
+      ];
 
-        case "NOTIFICATION_DISMISS":
-            return [{ ...base, type: "DISMISS_NOTIFICATION", payload: event.payload } as any];
+    case "NOTIFICATION_DISMISS":
+      return [
+        {
+          ...base,
+          type: "DISMISS_NOTIFICATION",
+          payload: event.payload,
+        } as any,
+      ];
 
-        case "NOTIFICATION_DISMISS_ALL":
-            return [{ ...base, type: "DISMISS_ALL_NOTIFICATIONS", payload: {} } as any];
+    case "NOTIFICATION_DISMISS_ALL":
+      return [
+        { ...base, type: "DISMISS_ALL_NOTIFICATIONS", payload: {} } as any,
+      ];
 
-        default:
-            return [];
-    }
+    default:
+      return [];
+  }
 }
 
 /**
  * Lower marker events (debugging only).
  */
 function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
-    return [];
+  return [];
 }
 
 /**
@@ -283,22 +234,24 @@ function lowerMarkerEvent(_event: MarkerTrackEvent): RuntimeEvent[] {
  * These come from CallTrackBuilder DSL.
  */
 function lowerCallEvent(event: TrackEvent): RuntimeEvent[] {
-    const e = event as any;
+  const e = event as any;
 
-    console.log("[lowerCallEvent] 📞 Lowering CALL event:", e.type, "at", e.at);
+  console.log("[lowerCallEvent] 📞 Lowering CALL event:", e.type, "at", e.at);
 
-    // CALL events are passed through 1:1 with kind: "CALL"
-    const { _declarationOrder, ...rest } = e;
-    const result = [{
-        ...rest,
-        at: e.at,
-        kind: "CALL" as const,
-        deviceId: e.deviceId,
-        type: e.type,
-    }];
+  // CALL events are passed through 1:1 with kind: "CALL"
+  const { _declarationOrder, ...rest } = e;
+  const result = [
+    {
+      ...rest,
+      at: e.at,
+      kind: "CALL" as const,
+      deviceId: e.deviceId,
+      type: e.type,
+    },
+  ];
 
-    console.log("[lowerCallEvent] 📤 Output:", result);
-    return result as any[];
+  console.log("[lowerCallEvent] 📤 Output:", result);
+  return result as any[];
 }
 
 /**
@@ -306,99 +259,117 @@ function lowerCallEvent(event: TrackEvent): RuntimeEvent[] {
  * These come from NotificationTrackBuilder and similar device-level DSLs.
  */
 function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
-    const e = event as any;
-    const base = {
-        at: e.at,
-        kind: "DEVICE" as const,
-        deviceId: e.deviceId,
-    };
+  const e = event as any;
+  const base = {
+    at: e.at,
+    kind: "DEVICE" as const,
+    deviceId: e.deviceId,
+  };
 
-    switch (e.type) {
-        // Notification events
-        case "NOTIFICATION_SHOW":
-            return [{
-                ...base,
-                type: "SHOW_NOTIFICATION",
-                id: e.id,
-                appId: e.appId,
-                title: e.title,
-                body: e.body,
-                mode: e.mode,
-                priority: e.priority,
-                icon: e.icon,
-                preview: e.preview,
-                actions: e.actions,
-                groupKey: e.groupKey,
-                threadId: e.threadId,
-            } as any];
+  switch (e.type) {
+    // Notification events
+    case "NOTIFICATION_SHOW":
+      return [
+        {
+          ...base,
+          type: "SHOW_NOTIFICATION",
+          id: e.id,
+          appId: e.appId,
+          title: e.title,
+          body: e.body,
+          mode: e.mode,
+          priority: e.priority,
+          icon: e.icon,
+          preview: e.preview,
+          actions: e.actions,
+          groupKey: e.groupKey,
+          threadId: e.threadId,
+        } as any,
+      ];
 
-        case "NOTIFICATION_DISMISS":
-            return [{
-                ...base,
-                type: "DISMISS_NOTIFICATION",
-                id: e.id,
-                groupKey: e.groupKey,
-                all: e.all,
-            } as any];
+    case "NOTIFICATION_DISMISS":
+      return [
+        {
+          ...base,
+          type: "DISMISS_NOTIFICATION",
+          id: e.id,
+          groupKey: e.groupKey,
+          all: e.all,
+        } as any,
+      ];
 
-        case "NOTIFICATION_TAP":
-            return [{
-                ...base,
-                type: "TAP_NOTIFICATION",
-                id: e.id,
-                actionId: e.actionId,
-            } as any];
+    case "NOTIFICATION_TAP":
+      return [
+        {
+          ...base,
+          type: "TAP_NOTIFICATION",
+          id: e.id,
+          actionId: e.actionId,
+        } as any,
+      ];
 
-        case "NOTIFICATION_SWIPE":
-            return [{
-                ...base,
-                type: "SWIPE_NOTIFICATION",
-                id: e.id,
-                direction: e.direction,
-                action: e.action,
-            } as any];
+    case "NOTIFICATION_SWIPE":
+      return [
+        {
+          ...base,
+          type: "SWIPE_NOTIFICATION",
+          id: e.id,
+          direction: e.direction,
+          action: e.action,
+        } as any,
+      ];
 
-        case "NOTIFICATION_DYNAMIC_ISLAND":
-            return [{
-                ...base,
-                type: "SET_DYNAMIC_ISLAND",
-                mode: e.mode,
-                appId: e.appId,
-                content: e.content,
-            } as any];
+    case "NOTIFICATION_DYNAMIC_ISLAND":
+      return [
+        {
+          ...base,
+          type: "SET_DYNAMIC_ISLAND",
+          mode: e.mode,
+          appId: e.appId,
+          content: e.content,
+        } as any,
+      ];
 
-        case "NOTIFICATION_OPEN_PANEL":
-            return [{
-                ...base,
-                type: "TOGGLE_NOTIFICATION_PANEL",
-                open: true,
-            } as any];
+    case "NOTIFICATION_OPEN_PANEL":
+      return [
+        {
+          ...base,
+          type: "TOGGLE_NOTIFICATION_PANEL",
+          open: true,
+        } as any,
+      ];
 
-        case "NOTIFICATION_CLOSE_PANEL":
-            return [{
-                ...base,
-                type: "TOGGLE_NOTIFICATION_PANEL",
-                open: false,
-            } as any];
+    case "NOTIFICATION_CLOSE_PANEL":
+      return [
+        {
+          ...base,
+          type: "TOGGLE_NOTIFICATION_PANEL",
+          open: false,
+        } as any,
+      ];
 
-        case "NOTIFICATION_CLEAR_ALL":
-            return [{
-                ...base,
-                type: "CLEAR_ALL_NOTIFICATIONS",
-            } as any];
+    case "NOTIFICATION_CLEAR_ALL":
+      return [
+        {
+          ...base,
+          type: "CLEAR_ALL_NOTIFICATIONS",
+        } as any,
+      ];
 
-        case "NOTIFICATION_REPLY":
-            return [{
-                ...base,
-                type: "REPLY_NOTIFICATION",
-                id: e.id,
-                text: e.text,
-            } as any];
+    case "NOTIFICATION_REPLY":
+      return [
+        {
+          ...base,
+          type: "REPLY_NOTIFICATION",
+          id: e.id,
+          text: e.text,
+        } as any,
+      ];
 
-        default:
-            console.warn(`[lowering] Unknown DEVICE event type: ${e.type}`);
-            return [];
-    }
+    default:
+      console.warn(`[lowering] Unknown DEVICE event type: ${e.type}`);
+      return [];
+  }
 }
 
 // =============================================================================
@@ -409,47 +380,52 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
  * Lower all track events to runtime events.
  */
 export function lowerTrackEvents(
-    events: TrackEvent[],
-    ctx: LoweringContext
+  events: TrackEvent[],
+  ctx: LoweringContext,
 ): RuntimeEvent[] {
-    const runtimeEvents: RuntimeEvent[] = [];
-    for (const event of events) {
-        runtimeEvents.push(...lowerTrackEvent(event, ctx));
-    }
-    return runtimeEvents.sort((a, b) => a.at - b.at);
+  const runtimeEvents: RuntimeEvent[] = [];
+  for (const event of events) {
+    runtimeEvents.push(...lowerTrackEvent(event, ctx));
+  }
+  return runtimeEvents.sort((a, b) => a.at - b.at);
 }
 
 /**
  * Create lowering context from plugins.
  * Plugins with a `v2Lowering` property will be used for APP event delegation.
  */
-export function createLoweringContext(plugins: TokovoPlugin[], fps: number = 30): LoweringContext {
-    const pluginLowerers = new Map<string, PluginLowering>();
+export function createLoweringContext(
+  plugins: TokovoPlugin[],
+  fps: number = 30,
+): LoweringContext {
+  const pluginLowerers = new Map<string, PluginLowering>();
 
-    for (const plugin of plugins) {
-        // Check if plugin has V2 lowering capability
-        const pluginWithV2Lowering = plugin as TokovoPlugin & {
-            v2Lowering?: { lower: (event: TrackEvent, ctx: LoweringContext) => RuntimeEvent[] };
-        };
+  for (const plugin of plugins) {
+    // Check if plugin has V2 lowering capability
+    const pluginWithV2Lowering = plugin as TokovoPlugin & {
+      v2Lowering?: {
+        lower: (event: TrackEvent, ctx: LoweringContext) => RuntimeEvent[];
+      };
+    };
 
-        if (pluginWithV2Lowering.v2Lowering) {
-            pluginLowerers.set(plugin.id, {
-                appId: plugin.id,
-                lower: pluginWithV2Lowering.v2Lowering.lower,
-            });
-        }
+    if (pluginWithV2Lowering.v2Lowering) {
+      pluginLowerers.set(plugin.id, {
+        appId: plugin.id,
+        lower: pluginWithV2Lowering.v2Lowering.lower,
+      });
     }
+  }
 
-    return { pluginLowerers, fps };
+  return { pluginLowerers, fps };
 }
 
 /**
  * Lower a full TrackEpisodeIR to runtime events.
  */
 export function lowerEpisode(
-    ir: TrackEpisodeIR,
-    plugins: TokovoPlugin[]
+  ir: TrackEpisodeIR,
+  plugins: TokovoPlugin[],
 ): RuntimeEvent[] {
-    const ctx = createLoweringContext(plugins, ir.fps);
-    return lowerTrackEvents(ir.events, ctx);
+  const ctx = createLoweringContext(plugins, ir.fps);
+  return lowerTrackEvents(ir.events, ctx);
 }

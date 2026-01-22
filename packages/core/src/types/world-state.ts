@@ -1,6 +1,6 @@
 /**
  * World State Types - Top-level state and touch
- * 
+ *
  * @description WorldState and TouchState definitions.
  */
 
@@ -13,13 +13,13 @@ import type { AudioState, VideoConfig } from "./audio";
 // =============================================================================
 
 export interface TouchState {
-    id: string;
-    x: number;
-    y: number;
-    startedAt: number;
-    type: "tap" | "long_press" | "drag";
-    endX?: number;
-    endY?: number;
+  id: string;
+  x: number;
+  y: number;
+  startedAt: number;
+  type: "tap" | "long_press" | "drag";
+  endX?: number;
+  endY?: number;
 }
 
 // =============================================================================
@@ -27,17 +27,20 @@ export interface TouchState {
 // =============================================================================
 
 export interface WorldState {
-    devices: Record<DeviceId, DeviceState>;
+  devices: Record<DeviceId, DeviceState>;
 
-    // App-specific data - apps cast to their own types
-    conversations: Record<string, unknown>;
-    appState: Record<string, unknown>;
+  /**
+   * Per-app state buckets.
+   * Each app manages its own state structure (including conversations).
+   * Example: appState["app_whatsapp"] = { conversations: {...}, screen: "chat" }
+   */
+  appState: Record<string, unknown>;
 
-    // Engine primitives
-    camera: CameraState;
-    audio: AudioState;
-    config?: VideoConfig;
+  // Engine primitives
+  camera: CameraState;
+  audio: AudioState;
+  config?: VideoConfig;
 
-    // Active touch points
-    touches?: TouchState[];
+  // Active touch points
+  touches?: TouchState[];
 }

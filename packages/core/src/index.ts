@@ -1,6 +1,6 @@
 /**
  * @tokovo/core - Enterprise Core Package
- * 
+ *
  * @description Central exports for the Tokovo engine runtime.
  * Domain-organized modules with clean barrel exports.
  */
@@ -20,28 +20,33 @@ export * from "./engine";
 // =============================================================================
 // CAMERA - Re-exports from device-camera (named exports only to avoid conflicts)
 // =============================================================================
-// Note: Camera types are already exported via ./types which imports from device-camera.
-// Only export utilities that aren't in types.ts:
 export {
-    cameraReducer,
-    cameraV2Lowering,
-    CAMERA_EVENT_TYPES,
-    processActiveEffects,
-    registerCameraProcessor,
-    applyEasing,
-    easingFunctions,
-    lerp,
-    seededRandom,
-    getPreset,
-    getShotPreset,
-    composeTimeline,
-    getPresetNames,
-    registerAnchorProvider,
-    getAnchorProvider,
-    getAnchorsForApp,
-    getAnchorFraming,
-    resolveAnchorWithFallback,
-    resolveAnchorFully,
+  cameraReducer,
+  cameraV2Lowering,
+  CAMERA_EVENT_TYPES,
+  processActiveEffects,
+  registerCameraProcessor,
+  applyEasing,
+  easingFunctions,
+  lerp,
+  seededRandom,
+  getPreset,
+  getShotPreset,
+  composeTimeline,
+  getPresetNames,
+  registerAnchorProvider,
+  getAnchorProvider,
+  getAnchorsForApp,
+  getAnchorFraming,
+  resolveAnchorWithFallback,
+  resolveAnchorFully,
+} from "./camera";
+export type {
+  CameraPreset,
+  CameraTarget,
+  CameraTimeline,
+  TimelineStep,
+  ShotPresetId,
 } from "./camera";
 
 // =============================================================================
@@ -54,17 +59,25 @@ export * from "./audio";
 // Named exports to avoid conflicts with ./plugin
 // =============================================================================
 export {
-    createRegistry,
-    AppRegistry,
-    SoundRegistry,
-    WidgetRegistry,
-    getDynamicIslandWidget,
-    getNotificationWidgets,
-    BehaviorRegistry,
-    AppMetadataRegistry,
-    LayoutRegistry,
+  createRegistry,
+  AppRegistry,
+  SoundRegistry,
+  WidgetRegistry,
+  getDynamicIslandWidget,
+  getNotificationWidgets,
+  BehaviorRegistry,
+  AppMetadataRegistry,
+  LayoutRegistry,
 } from "./registries";
-export type { Registry, AppViewProps, AppViewComponent, AppMetadata, LayoutStrategy } from "./registries";
+export type {
+  Registry,
+  AppViewProps,
+  AppViewComponent,
+  AppMetadata,
+  LayoutStrategy,
+  CameraIntent,
+  AppBehavior,
+} from "./registries";
 
 // =============================================================================
 // NOTIFICATIONS - Notification system
@@ -76,22 +89,22 @@ export * from "./notifications";
 // Named exports to avoid conflicts with ./registries
 // =============================================================================
 export {
-    PluginManager,
-    PluginManagerClass,
-    definePlugin,
-    registerPlugins,
+  PluginManager,
+  PluginManagerClass,
+  definePlugin,
+  registerPlugins,
 } from "./plugin";
 export type {
-    TokovoPluginContract,
-    PluginReducer,
-    PluginViews,
-    LoweringHandler,
-    DslExtension,
-    PluginAnchorRegistry,
-    PluginNotificationAdapter,
-    PluginTier,
-    TokovoPlugin,
-    ScreenComponent,
+  TokovoPluginContract,
+  PluginReducer,
+  PluginViews,
+  LoweringHandler,
+  DslExtension,
+  PluginAnchorRegistry,
+  PluginNotificationAdapter,
+  PluginTier,
+  TokovoPlugin,
+  ScreenComponent,
 } from "./plugin";
 
 // =============================================================================
@@ -117,6 +130,25 @@ export * from "./constants";
 export * from "./tokens";
 
 // =============================================================================
+// CONTEXT - React context and hooks for apps
+// =============================================================================
+export {
+  TokovoProvider,
+  TokovoContext,
+  useWorld,
+  useDevice,
+  useAppState,
+  useLayout,
+  useTime,
+  usePlatform,
+  useDeviceId,
+  useAppId,
+  useSafeAreaInsets,
+  useConversation,
+  useActiveConversation,
+} from "./context/TokovoContext";
+
+// =============================================================================
 // COMPONENTS
 // =============================================================================
 export * from "./components/AppSurface";
@@ -125,4 +157,3 @@ export * from "./components/AppSurface";
 // EPISODE PREPARATION
 // =============================================================================
 export * from "./prepare";
-

@@ -5,7 +5,7 @@ import { ChatListHeader } from "../../../components/ios/ChatListHeader";
 import { TabNavigation } from "../../../components/ios/TabNavigation";
 import { ChatListItem } from "../../../components/ios/ChatListItem";
 import { whatsappColors, spacing } from "../../../components/ios/theme";
-import { WhatsAppConversation } from "../../../types";
+import { WhatsAppConversation, WhatsAppState } from "../../../types";
 
 // =============================================================================
 // TYPES
@@ -110,21 +110,19 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
   const safeAreaTop = physicalSafeTop / scale;
   const safeAreaBottom = physicalSafeBottom / scale;
 
-  // Get conversations and sort by recency
+  const appState = (world.appState?.["app_whatsapp"] || {}) as WhatsAppState;
   const conversations = (
-    Object.values(world.conversations || {}) as WhatsAppConversation[]
+    Object.values(appState.conversations || {}) as WhatsAppConversation[]
   ).sort((a, b) => {
-    // Pinned chats first
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    // Then by timestamp (would need lastMessageAt in type)
     return 0;
   });
 
   // Calculate total unread for tab badge
   const totalUnread = conversations.reduce(
     (sum, conv) => sum + (conv.unreadCount || 0),
-    0
+    0,
   );
 
   // Count archived (mock - would need archived flag in data)
@@ -138,7 +136,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
         height: "100%",
         backgroundColor: whatsappColors.bgPrimary,
         position: "relative",
-        fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
+        fontFamily:
+          "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif",
       }}
     >
       {/* Header (Sticky) */}
@@ -168,10 +167,12 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   : null;
 
               // Determine media type
-              let mediaType: "photo" | "video" | "voice" | "document" | null = null;
+              let mediaType: "photo" | "video" | "voice" | "document" | null =
+                null;
               if (lastMsg?.imageUrl) mediaType = "photo";
               else if (lastMsg?.videoUrl) mediaType = "video";
-              else if (lastMsg?.voiceUrl || lastMsg?.audioUrl) mediaType = "voice";
+              else if (lastMsg?.voiceUrl || lastMsg?.audioUrl)
+                mediaType = "voice";
               else if (lastMsg?.fileUrl) mediaType = "document";
 
               // Determine sender name for groups
@@ -183,7 +184,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                   senderName = lastMsg.senderName;
                 } else if (lastMsg.from) {
                   // Try to get name from members
-                  const member = conv.members?.find((m: any) => m.id === lastMsg.from);
+                  const member = conv.members?.find(
+                    (m: any) => m.id === lastMsg.from,
+                  );
                   senderName = member?.name || lastMsg.from;
                 }
               } else if (lastMsg?.from === "me") {
@@ -199,7 +202,8 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               }
 
               // Check if someone is typing
-              const isTyping = conv.typing && Object.values(conv.typing).some(Boolean);
+              const isTyping =
+                conv.typing && Object.values(conv.typing).some(Boolean);
 
               return (
                 <ChatListItem
@@ -235,7 +239,9 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
               }}
             >
               <div style={{ fontSize: 48, marginBottom: 16 }}>💬</div>
-              <div style={{ fontSize: 17, fontWeight: "500" }}>No chats yet</div>
+              <div style={{ fontSize: 17, fontWeight: "500" }}>
+                No chats yet
+              </div>
               <div style={{ fontSize: 14, marginTop: 8 }}>
                 Start a conversation!
               </div>

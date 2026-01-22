@@ -29,7 +29,6 @@ import {
   processAudioEvent,
   handleAutoSounds,
   processOSEvent,
-  processNotificationEvent,
   processCallEvent,
   processTouchEvent,
   HandlerContext,
@@ -107,7 +106,6 @@ export function replay(
     console.warn("[Engine] Replay called with undefined initial state");
     return {
       devices: {},
-      conversations: {},
       appState: {},
       camera: { ...DEFAULT_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
@@ -145,75 +143,46 @@ export function replay(
       mode: ctx.mode,
     };
 
-    // === V2 NATIVE HANDLERS (@tokovo/ir) ===
-    if (event.kind === "MessageReceived") {
-      const e = event as any; // IR types have different field names
-      const reducer = ReducerRegistry.getAppReducer(e.appId);
-      const legacyEvent: any = {
-        at: e.at,
-        kind: "APP",
-        type: "MESSAGE_RECEIVED",
-        appId: e.appId,
-        conversationId: e.conversationId,
-        from: e.from,
-        text: e.text,
-        payload: {
-          from: e.from,
-          text: e.text,
-          conversationId: e.conversationId,
-        },
-      };
-      reducer?.(draft, legacyEvent);
-    }
+    // V2 IR App Events - dispatch directly to app reducers
+    const v2AppKinds = [
+      "MessageReceived",
+      "MessageSent",
+      "TypingStarted",
+      "TypingEnded",
+      "ImageReceived",
+      "ImageSent",
+      "VideoReceived",
+      "VideoSent",
+      "VoiceReceived",
+      "VoiceSent",
+      "GifReceived",
+      "GifSent",
+      "StickerReceived",
+      "StickerSent",
+      "DocumentReceived",
+      "DocumentSent",
+      "ContactReceived",
+      "ContactSent",
+      "LocationReceived",
+      "LocationSent",
+      "React",
+      "ReadMessages",
+      "MessageDeleted",
+      "MessageEdited",
+      "MessageForwarded",
+      "DateSeparator",
+      "ConversationOpened",
+      "NavigateScreen",
+    ];
 
-    if (event.kind === "MessageSent") {
+    if (v2AppKinds.includes(event.kind as string)) {
       const e = event as any;
       const reducer = ReducerRegistry.getAppReducer(e.appId);
-      const legacyEvent: any = {
-        at: e.at,
-        kind: "APP",
-        type: "MESSAGE_SENT",
-        appId: e.appId,
-        conversationId: e.conversationId,
-        text: e.text,
-        payload: { text: e.text, conversationId: e.conversationId },
-      };
-      reducer?.(draft, legacyEvent);
+      reducer?.(draft, event);
+      return;
     }
 
-    if (event.kind === "TypingStarted") {
-      const e = event as import("@tokovo/ir").TypingStartedOp;
-      const reducer = ReducerRegistry.getAppReducer(e.appId);
-      const legacyEvent: any = {
-        at: e.at,
-        kind: "APP",
-        type: "TYPING_START",
-        appId: e.appId,
-        conversationId: e.conversationId,
-        from: e.actor,
-        deviceId: e.deviceId, // Pass deviceId for keyboard visibility
-        payload: { actor: e.actor, conversationId: e.conversationId },
-      };
-      reducer?.(draft, legacyEvent);
-    }
-
-    if (event.kind === "TypingEnded") {
-      const e = event as import("@tokovo/ir").TypingEndedOp;
-      const reducer = ReducerRegistry.getAppReducer(e.appId);
-      const legacyEvent: any = {
-        at: e.at,
-        kind: "APP",
-        type: "TYPING_END",
-        appId: e.appId,
-        conversationId: e.conversationId,
-        from: e.actor,
-        deviceId: e.deviceId, // Pass deviceId for keyboard visibility
-        payload: { actor: e.actor, conversationId: e.conversationId },
-      };
-      reducer?.(draft, legacyEvent);
-    }
-
-    // Handle V2 Camera Ops
+    // V2 Camera Events - normalize kind to type
     if (
       typeof event.kind === "string" &&
       (event.kind.startsWith("Camera") || event.kind.startsWith("Anchor"))
@@ -224,26 +193,18 @@ export function replay(
           ? "ANCHOR_FOCUS"
           : type === "ANCHORTRACK"
             ? "ANCHOR_TRACK"
-            : type === "SHAKE"
-              ? "SHAKE"
-              : type;
+            : type;
 
-      const legacyEvent: any = {
+      const cameraEvent = {
         ...event,
-        kind: "CAMERA",
+        kind: "CAMERA" as const,
         type: normalizedType,
-        scale: (event as any).scale,
-        originX: (event as any).originX,
-        originY: (event as any).originY,
-        align: (event as any).align,
-        translateX:
-          (event as any).translateX ||
-          ((event as any).originX ? ((event as any).originX - 0.5) * 1000 : 0),
       };
-      processCameraEvent(draft, legacyEvent, handlerCtx);
+      processCameraEvent(draft, cameraEvent as any, handlerCtx);
+      return;
     }
 
-    // === V1 LEGACY HANDLERS ===
+    // System Events
     switch (event.kind) {
       case "DEVICE":
         if (ReducerRegistry.deviceReducer) {
@@ -260,20 +221,11 @@ export function replay(
             devType.startsWith("CLEAR_ALL") ||
             devType.includes("DYNAMIC_ISLAND"))
         ) {
-          // Try feature reducer first (from device-notifications plugin)
           const notifReducer = ReducerRegistry.getFeatureReducer(devType);
           if (notifReducer) {
             notifReducer(draft, event, index);
-          } else {
-            // Fallback to legacy handler (mostly no-op now)
-            processNotificationEvent(draft, event as any, handlerCtx);
           }
         }
-        break;
-
-      case "APP":
-        const reducer = ReducerRegistry.getAppReducer(event.appId);
-        reducer?.(draft, event);
         break;
 
       case "CAMERA":
@@ -380,7 +332,6 @@ export function createInitialWorld(
 ): WorldState {
   return {
     devices: {},
-    conversations: {},
     appState: {},
     camera: { ...DEFAULT_CAMERA_STATE },
     audio: { ...DEFAULT_AUDIO_STATE },

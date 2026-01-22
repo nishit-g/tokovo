@@ -309,6 +309,23 @@ export const MessageContent: React.FC<MessageContentProps> = ({
     case "system":
       return <SystemContent text={message.text} tokens={tokens} />;
 
+    case "deleted":
+      return (
+        <div
+          style={{
+            fontSize: 14,
+            lineHeight: "19px",
+            color: "var(--wa-text-secondary, #667781)",
+            fontFamily: FONT_FAMILY,
+            fontStyle: "italic",
+            opacity: 0.8,
+          }}
+        >
+          <span style={{ marginRight: 4 }}>🚫</span>
+          {message.text || "This message was deleted"}
+        </div>
+      );
+
     default:
       return (
         <TextContent

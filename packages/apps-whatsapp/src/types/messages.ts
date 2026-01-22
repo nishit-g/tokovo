@@ -103,6 +103,11 @@ export interface SystemMessage extends BaseMessage {
 
 export interface DeletedMessage extends BaseMessage {
   type: "deleted";
+  text?: string;
+  originalType?: WhatsAppMessageType;
+  originalText?: string;
+  deletedAt?: number;
+  deletedBy?: string;
 }
 
 export interface LinkMessage extends BaseMessage {

@@ -91,17 +91,15 @@ export function prepareTrackEpisode(
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
 function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
-  // Build devices map
   const devices: Record<string, any> = {};
   for (const device of ir.devices) {
     devices[device.id] = {
       id: device.id,
       profileId: device.profile,
-      foregroundAppId: device.app, // CRITICAL: Renderer checks this!
-      isLocked: false, // Device must be unlocked
+      foregroundAppId: device.app,
+      isLocked: false,
       platform: device.profile.includes("pixel") ? "android" : "ios",
       appTheme: device.theme,
-      // Initialize keyboard state per device
       keyboard: {
         visible: false,
         layout: "qwerty",
@@ -110,41 +108,18 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         inputText: "",
         cursorPosition: 0,
         cursorVisible: true,
-        visibilityChangedAt: -1, // Quiescent: no transition yet
+        visibilityChangedAt: -1,
         selectionStart: null,
         selectionEnd: null,
         suggestions: [],
         highlightedSuggestion: null,
         keyPressVisual: null,
-        typingSchedule: null, // Enterprise: derived animation
+        typingSchedule: null,
       },
     };
   }
 
-  // Build conversations map
-  const conversations: Record<string, any> = {};
-  for (const device of ir.devices) {
-    for (const conv of device.conversations || []) {
-      conversations[conv.id] = {
-        id: conv.id,
-        name: conv.name,
-        avatar: conv.avatar || "",
-        type: conv.type || "dm",
-        participants: (conv as any).participants || [],
-        messages: [],
-        typing: null,
-        unreadCount: conv.unreadCount ?? 0,
-        isMuted: conv.isMuted ?? false,
-        isPinned: conv.isPinned ?? false,
-        hasStatus: conv.hasStatus ?? false,
-      };
-    }
-  }
-
-  // Get OS config from first device (or defaults)
-  const firstDevice = ir.devices[0];
-  const osConfig = firstDevice?.os || {};
-
+  const osConfig = ir.devices[0]?.os || {};
   const os = {
     time: osConfig.time instanceof Date ? osConfig.time : new Date(),
     battery: osConfig.battery ?? 100,
@@ -155,7 +130,6 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     lowPowerMode: false,
   };
 
-  // Default camera state
   const camera = {
     scale: 1,
     translateX: 0,
@@ -166,9 +140,8 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     activeEffects: [],
   };
 
-  // Default audio state - MUST match AudioState expected by mixer
   const audio = {
-    activeSounds: {}, // Required by computeBusStates
+    activeSounds: {},
     buses: {
       music: { baseGain: 1.0 },
       ui: { baseGain: 1.0 },
@@ -179,33 +152,49 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     muted: false,
   };
 
-  // Notifications
   const notifications: any[] = [];
 
-  // Build appState map with viewMode for proper layout resolution
+  // Build per-app state with conversations nested inside
   const appState: Record<string, any> = {};
   for (const device of ir.devices) {
     if (device.app) {
-      // Apps with conversations should default to CHAT viewMode
       const hasConversations =
         device.conversations && device.conversations.length > 0;
       const firstConversation = device.conversations?.[0];
 
+      // Build conversations for this app
+      const conversations: Record<string, any> = {};
+      for (const conv of device.conversations || []) {
+        conversations[conv.id] = {
+          id: conv.id,
+          name: conv.name,
+          avatar: conv.avatar || "",
+          type: conv.type || "dm",
+          participants: (conv as any).participants || [],
+          messages: [],
+          typing: null,
+          unreadCount: conv.unreadCount ?? 0,
+          isMuted: conv.isMuted ?? false,
+          isPinned: conv.isPinned ?? false,
+          hasStatus: conv.hasStatus ?? false,
+        };
+      }
+
       appState[device.app] = {
         viewMode: hasConversations ? "CHAT" : "FEED",
         conversationId: firstConversation?.id,
+        conversations,
       };
     }
   }
 
   return {
     devices,
-    conversations,
     os,
     camera,
     audio,
     notifications,
     apps: {},
-    appState, // CRITICAL: Layout engine reads viewMode from here
+    appState,
   } as unknown as WorldState;
 }

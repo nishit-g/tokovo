@@ -37,17 +37,17 @@ export { NotificationShade } from "./os";
 // LAYOUT SYSTEM
 // ===========================================================================
 export { computeLayout } from "./layout";
-export type { LayoutState, ChatLayoutState, ChatMessageLayout } from "./layout/types";
+export type {
+  LayoutState,
+  ChatLayoutState,
+  ChatMessageLayout,
+} from "./layout/types";
 export * from "./layout";
-
-// ===========================================================================
-// LEGACY (deprecated)
-// ===========================================================================
-export { NowPlayingBar } from "./legacy";
 
 // ===========================================================================
 // UTILITIES
 // ===========================================================================
+export { NowPlayingBar } from "./NowPlayingBar";
 export { VisualDebugger } from "./VisualDebugger";
 export { UnlockTransition } from "./AppTransition";
 export { AppRegistry } from "./registry";
@@ -57,11 +57,21 @@ export { AppRegistry } from "./registry";
 // ===========================================================================
 export { useLayoutEngine, useCameraEngine, useAudioEngine } from "./engines";
 export { NULL_LAYOUT_OUTPUT, NULL_AUDIO_OUTPUT } from "./engines";
-export type { LayoutEngineInput, LayoutEngineOutput, CameraEngineInput, CameraEngineOutput, AudioEngineInput, AudioEngineOutput } from "./engines";
+export type {
+  LayoutEngineInput,
+  LayoutEngineOutput,
+  CameraEngineInput,
+  CameraEngineOutput,
+  AudioEngineInput,
+  AudioEngineOutput,
+} from "./engines";
 
 // ===========================================================================
 // ANCHOR SYSTEM
 // ===========================================================================
 // Note: getAnchorsForApp is in @tokovo/device-camera now.
 // Only export renderer-specific anchors:
-export { registerBuiltInAnchorProviders, getAllAnchors } from "./anchor-providers";
+export {
+  registerBuiltInAnchorProviders,
+  getAllAnchors,
+} from "./anchor-providers";

@@ -86,41 +86,45 @@ export function deriveInitialWorld(
   sceneIR: SceneIRLike,
   registry: PluginRegistry,
 ): WorldState {
-  // Start with minimal world using existing defaults
   const world: WorldState = {
     devices: {},
-    conversations: {},
     appState: {},
     camera: { ...DEFAULT_CAMERA_STATE },
     audio: { ...DEFAULT_AUDIO_STATE },
     touches: [],
   };
 
-  // Add devices from scene
   for (const deviceDef of sceneIR.devices || []) {
+    const appId = deviceDef.appId;
+
     world.devices[deviceDef.id] = {
       id: deviceDef.id,
       profileId: deviceDef.profileId || deviceDef.id,
       isLocked: false,
-      foregroundAppId: deviceDef.appId || undefined,
+      foregroundAppId: appId || undefined,
       platform: deviceDef.platform || "ios",
       os: { ...DEFAULT_OS_STATE },
       appTheme: deviceDef.theme,
     } as any;
 
-    // Add conversations
-    for (const convDef of deviceDef.conversations || []) {
-      world.conversations[convDef.id] = {
-        id: convDef.id,
-        name: convDef.name || convDef.id,
-        type: convDef.type || "dm",
-        avatar: convDef.avatar,
-        messages: [],
-        typing: {},
-      };
+    if (appId) {
+      if (!world.appState[appId]) {
+        world.appState[appId] = { conversations: {} };
+      }
+      const appState = world.appState[appId] as any;
+
+      for (const convDef of deviceDef.conversations || []) {
+        appState.conversations[convDef.id] = {
+          id: convDef.id,
+          name: convDef.name || convDef.id,
+          type: convDef.type || "dm",
+          avatar: convDef.avatar,
+          messages: [],
+          typing: {},
+        };
+      }
     }
 
-    // Initialize app state per plugin
     for (const plugin of registry.plugins) {
       if (plugin.createInitialState) {
         if (!world.appState[deviceDef.id]) {
@@ -333,16 +337,6 @@ function validateAssets(
 // PREPARE EPISODE
 // =============================================================================
 
-export interface EpisodeInput {
-  id: string;
-  durationInFrames: number;
-  fps: number;
-  events: RuntimeEvent[];
-  sceneIR?: SceneIRLike;
-  initialWorld?: WorldState;
-  title?: string;
-}
-
 /**
  * EpisodeDefinition - DSL episode output (from episode() call)
  */
@@ -361,28 +355,17 @@ export interface EpisodeDefinition {
 }
 
 /**
- * Check if input is an EpisodeDefinition (from DSL)
- */
-function isEpisodeDefinition(
-  input: EpisodeInput | EpisodeDefinition,
-): input is EpisodeDefinition {
-  return "episodeId" in input && Array.isArray((input as any).devices);
-}
-
-/**
  * prepareEpisode - The single entry point for creating a CompiledEpisode
  *
- * Accepts EITHER:
- * - EpisodeDefinition (from DSL) - compiles internally
- * - EpisodeInput (legacy) - uses pre-compiled events
+ * Accepts EpisodeDefinition (from DSL) and compiles it.
  *
- * @param input - Episode definition or pre-compiled input
+ * @param input - Episode definition from DSL
  * @param plugins - Array of plugins to register
  * @param options - Prepare options
  * @returns CompiledEpisode ready for rendering
  */
 export function prepareEpisode(
-  input: EpisodeInput | EpisodeDefinition,
+  input: EpisodeDefinition,
   plugins: TokovoPluginContract[] = [],
   options: PrepareOptions = {},
 ): CompiledEpisode {
@@ -392,51 +375,34 @@ export function prepareEpisode(
   // 1. Build plugin registry
   const registry = buildPluginRegistry(plugins);
 
-  // 2. Handle EpisodeDefinition vs EpisodeInput
-  let episodeInput: EpisodeInput;
-
-  if (isEpisodeDefinition(input)) {
-    // NEW: Compile internally
-    if (!compileEpisode) {
-      throw new Error(
-        "[prepareEpisode] EpisodeDefinition passed but @tokovo/compiler not available. " +
-          "Either install @tokovo/compiler or pass pre-compiled EpisodeInput.",
-      );
-    }
-
-    console.log("[prepareEpisode] Compiling episode internally...");
-    const { timeline } = compileEpisode(input);
-
-    episodeInput = {
-      id: input.episodeId,
-      fps: input.fps || 30,
-      durationInFrames: input.durationInFrames || 600,
-      events: timeline.ops as RuntimeEvent[],
-      sceneIR: {
-        id: input.episodeId,
-        fps: input.fps,
-        durationInFrames: input.durationInFrames,
-        devices: input.devices.map((d) => ({
-          id: d.deviceId,
-          platform: d.platform,
-          appId: d.appId,
-          profileId: d.profileId,
-          conversations: d.conversations,
-        })),
-      },
-    };
-  } else {
-    // Legacy: Already compiled
-    episodeInput = input;
+  // 2. Compile episode
+  if (!compileEpisode) {
+    throw new Error(
+      "[prepareEpisode] @tokovo/compiler not available. " +
+        "Call setCompiler() from entry point that has access to @tokovo/compiler.",
+    );
   }
 
-  // 3. Create or use initial world
-  const sceneIR: SceneIRLike = episodeInput.sceneIR || { id: episodeInput.id };
-  const initialWorld =
-    episodeInput.initialWorld || deriveInitialWorld(sceneIR, registry);
+  const { timeline } = compileEpisode(input);
+
+  const sceneIR: SceneIRLike = {
+    id: input.episodeId,
+    fps: input.fps,
+    durationInFrames: input.durationInFrames,
+    devices: input.devices.map((d) => ({
+      id: d.deviceId,
+      platform: d.platform,
+      appId: d.appId,
+      profileId: d.profileId,
+      conversations: d.conversations,
+    })),
+  };
+
+  // 3. Create initial world
+  const initialWorld = deriveInitialWorld(sceneIR, registry);
 
   // 4. Sort events
-  const sortedEvents = sortEvents(episodeInput.events);
+  const sortedEvents = sortEvents(timeline.ops as RuntimeEvent[]);
 
   // 5. Validate
   validateEpisode({ events: sortedEvents, initialWorld }, effectiveOptions);
@@ -446,10 +412,9 @@ export function prepareEpisode(
 
   // 7. Build compiled episode with event index for O(1) lookups
   const compiled: CompiledEpisode = {
-    id: episodeInput.id,
-    title: episodeInput.title,
-    durationInFrames: episodeInput.durationInFrames,
-    fps: episodeInput.fps,
+    id: input.episodeId,
+    durationInFrames: input.durationInFrames || 600,
+    fps: input.fps || 30,
     initialWorld,
     events: sortedEvents,
     eventIndex: createEventIndex(sortedEvents as any),
@@ -460,7 +425,7 @@ export function prepareEpisode(
   if (includeDebug) {
     compiled.debug = {
       buildTimestamp: Date.now(),
-      sourceEpisodeId: episodeInput.id,
+      sourceEpisodeId: input.episodeId,
     };
   }
 

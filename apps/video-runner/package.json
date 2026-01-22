@@ -1,38 +1,35 @@
 {
-    "name": "video-runner",
-    "version": "0.0.0",
-    "private": true,
-    "scripts": {
-        "start": "npx remotion studio",
-        "dev": "npx remotion studio",
-        "build": "npx remotion render",
-        "upgrade": "remotion upgrade",
-        "test": "eslint src --ext ts,tsx"
-    },
-    "dependencies": {
-        "@remotion/cli": "4.0.380",
-        "@tokovo/compiler": "workspace:*",
-        "@tokovo/device-calls": "workspace:*",
-        "@tokovo/apps-whatsapp": "workspace:*",
-        "@tokovo/apps-instagram": "workspace:*",
-        "@tokovo/core": "workspace:*",
-        "@tokovo/devices": "workspace:*",
-        "@tokovo/device-keyboard": "workspace:*",
-        "@tokovo/device-notifications": "workspace:*",
-        "@tokovo/dsl": "workspace:*",
-        "@tokovo/episodes": "workspace:*",
-        "@tokovo/ir": "workspace:*",
-        "@tokovo/renderer": "workspace:*",
-        "react": "18.2.0",
-        "react-dom": "18.2.0",
-        "remotion": "4.0.380",
-        "zod": "^3.0.0"
-    },
-    "devDependencies": {
-        "@types/react": "18.2.0",
-        "@types/web": "^0.0.61",
-        "eslint": "^8.0.0",
-        "prettier": "^3.0.0",
-        "typescript": "^5.0.0"
-    }
+  "name": "video-runner",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "npx remotion studio",
+    "dev": "npx remotion studio",
+    "build": "npx remotion render",
+    "upgrade": "remotion upgrade",
+    "test": "eslint src --ext ts,tsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.380",
+    "@tokovo/compiler": "workspace:*",
+    "@tokovo/apps-whatsapp": "workspace:*",
+    "@tokovo/core": "workspace:*",
+    "@tokovo/devices": "workspace:*",
+    "@tokovo/device-notifications": "workspace:*",
+    "@tokovo/dsl": "workspace:*",
+    "@tokovo/episodes": "workspace:*",
+    "@tokovo/ir": "workspace:*",
+    "@tokovo/renderer": "workspace:*",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "remotion": "4.0.380",
+    "zod": "^3.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.2.0",
+    "@types/web": "^0.0.61",
+    "eslint": "^8.0.0",
+    "prettier": "^3.0.0",
+    "typescript": "^5.0.0"
+  }
 }

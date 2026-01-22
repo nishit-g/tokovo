@@ -1,6 +1,6 @@
 /**
  * WhatsApp Package - Public API
- * 
+ *
  * This is the main entry point for the WhatsApp plugin.
  * All exports follow the Enterprise Gold Standard structure.
  */
@@ -10,10 +10,10 @@
 // =============================================================================
 
 export {
-    WhatsAppPluginV2,
-    WhatsAppPluginV2 as WhatsAppPlugin,
-    registerWhatsAppPlugin,
-    type WhatsAppDslApi,
+  WhatsAppPluginV2,
+  WhatsAppPluginV2 as WhatsAppPlugin,
+  registerWhatsAppPlugin,
+  type WhatsAppDslApi,
 } from "./plugin";
 
 // =============================================================================
@@ -27,14 +27,14 @@ export * from "./types";
 // =============================================================================
 
 export {
-    whatsappReducer,
-    createWhatsAppInitialState,
-    selectAppState,
-    selectConversations,
-    selectCurrentConversation,
-    selectMessages,
-    selectLastMessage,
-    selectTypingMembers,
+  whatsappReducer,
+  createWhatsAppInitialState,
+  selectAppState,
+  selectConversations,
+  selectCurrentConversation,
+  selectMessages,
+  selectLastMessage,
+  selectTypingMembers,
 } from "./runtime";
 
 // =============================================================================
@@ -55,20 +55,25 @@ export { isWhatsAppEvent, isWhatsAppGroupEvent } from "./ir";
 // LOWERING
 // =============================================================================
 
-export { whatsappLowering, whatsappV2Lowering, whatsappLegacyLowering } from "./lowering";
+export { whatsappLowering, whatsappV2Lowering } from "./lowering";
 
 // =============================================================================
 // DSL
 // =============================================================================
 
 export {
-    whatsappDsl,
-    WhatsAppTrackBuilder,
-    WhatsAppPointBuilder,
-    WhatsAppSpanBuilder,
-    createWhatsAppTrackBuilder,
+  whatsappDsl,
+  WhatsAppTrackBuilder,
+  WhatsAppPointBuilder,
+  WhatsAppSpanBuilder,
+  createWhatsAppTrackBuilder,
 } from "./dsl";
-export type { ReceiveOptions, SendOptions, ImageOptions, TypingOptions } from "./dsl";
+export type {
+  ReceiveOptions,
+  SendOptions,
+  ImageOptions,
+  TypingOptions,
+} from "./dsl";
 
 // =============================================================================
 // LAYOUT
@@ -80,7 +85,11 @@ export { computeChatLayout } from "./layout";
 // CAMERA
 // =============================================================================
 
-export { WhatsAppDirector, createWhatsAppDirector, WhatsAppBehavior } from "./camera";
+export {
+  WhatsAppDirector,
+  createWhatsAppDirector,
+  WhatsAppBehavior,
+} from "./camera";
 
 // =============================================================================
 // ASSETS
@@ -93,16 +102,23 @@ export { whatsappAudioRules } from "./assets/audio-rules";
 // =============================================================================
 
 import "./ui/strategies";
-import { AutoSoundRegistry, AppMetadataRegistry, SoundRegistry, registerAnchorProvider, LayoutRegistry, APP_IDS } from "@tokovo/core";
+import {
+  AutoSoundRegistry,
+  AppMetadataRegistry,
+  SoundRegistry,
+  registerAnchorProvider,
+  LayoutRegistry,
+  APP_IDS,
+} from "@tokovo/core";
 import { whatsappAudioRules } from "./assets/audio-rules";
 import { WhatsAppAnchors } from "./runtime/adapters/anchors";
 import { computeChatLayout } from "./layout";
 
 // WhatsApp sound paths
 const whatsappSounds = {
-    "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-    "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-    "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
+  "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
+  "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
+  "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
 };
 
 AutoSoundRegistry.register(whatsappAudioRules);
@@ -113,16 +129,16 @@ registerAnchorProvider(WhatsAppAnchors);
 
 // Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
 LayoutRegistry.register({
-    appId: APP_IDS.WHATSAPP,
-    viewKind: "CHAT",
-    computeLayout: computeChatLayout,
+  appId: APP_IDS.WHATSAPP,
+  viewKind: "CHAT",
+  computeLayout: computeChatLayout,
 });
 
 AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT",
+  displayName: "WhatsApp",
+  themeColor: "#25D366",
+  icon: "💬",
+  viewStrategy: "CHAT",
 });
 
 // =============================================================================

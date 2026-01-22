@@ -1,6 +1,6 @@
 /**
  * WhatsApp Conversation Types
- * 
+ *
  * Conversation and group member type definitions.
  */
 
@@ -11,11 +11,11 @@ import type { WhatsAppMessage } from "./messages";
 // =============================================================================
 
 export interface WhatsAppGroupMember {
-    id: string;
-    name: string;
-    avatar?: string;
-    phone?: string;
-    colorIndex?: number;
+  id: string;
+  name: string;
+  avatar?: string;
+  phone?: string;
+  colorIndex?: number;
 }
 
 // =============================================================================
@@ -23,21 +23,22 @@ export interface WhatsAppGroupMember {
 // =============================================================================
 
 export interface WhatsAppConversation {
-    id: string;
-    type?: "dm" | "group";
-    name?: string;
-    avatar?: string;
-    members?: WhatsAppGroupMember[];
-    admins?: string[];
-    messages: WhatsAppMessage[];
-    unreadCount?: number;
-    typing?: Record<string, boolean>;
-    draftText?: string;
-    
-    // Chat list display properties
-    isMuted?: boolean;
-    isPinned?: boolean;
-    hasStatus?: boolean;  // Whether the contact has a WhatsApp status
-    isArchived?: boolean;
-    lastMessageAt?: number;  // Timestamp for sorting
+  id: string;
+  type?: "dm" | "group";
+  name?: string;
+  avatar?: string;
+  members?: WhatsAppGroupMember[];
+  admins?: string[];
+  messages: WhatsAppMessage[];
+  messagesById?: Record<string, WhatsAppMessage>;
+  unreadCount?: number;
+  typing?: Record<string, boolean>;
+  draftText?: string;
+
+  // Chat list display properties
+  isMuted?: boolean;
+  isPinned?: boolean;
+  hasStatus?: boolean;
+  isArchived?: boolean;
+  lastMessageAt?: number;
 }

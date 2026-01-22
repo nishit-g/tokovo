@@ -34,14 +34,16 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
   width,
   height,
 }) => {
-  // 1. Resolve App State
   const appState = (world.appState?.["app_whatsapp"] ||
     world.appState?.["whatsapp"]) as WhatsAppState;
+  const conversations = (appState?.conversations ?? {}) as Record<
+    string,
+    WhatsAppConversation
+  >;
   const conversationId =
-    appState?.conversationId || Object.keys(world.conversations || {})[0];
+    appState?.conversationId || Object.keys(conversations)[0];
 
-  // Cast to WhatsApp conversation type
-  const conversation = world.conversations?.[conversationId] as
+  const conversation = conversations[conversationId] as
     | WhatsAppConversation
     | undefined;
 

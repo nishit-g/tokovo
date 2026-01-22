@@ -1,6 +1,6 @@
 /**
  * Registries Module - All registration systems
- * 
+ *
  * @description Consolidated registry pattern.
  */
 
@@ -16,10 +16,15 @@ export type { AppViewProps, AppViewComponent } from "./app";
 export { SoundRegistry } from "./sound";
 
 // Widget Registry
-export { WidgetRegistry, getDynamicIslandWidget, getNotificationWidgets } from "./widget";
+export {
+  WidgetRegistry,
+  getDynamicIslandWidget,
+  getNotificationWidgets,
+} from "./widget";
 
 // Behavior Registry
 export { BehaviorRegistry } from "./behavior";
+export type { CameraIntent, AppBehavior } from "./behavior";
 
 // App Metadata Registry
 export { AppMetadataRegistry } from "./metadata";
