@@ -104,14 +104,10 @@ export interface AutoSoundRule {
 // =============================================================================
 
 class AutoSoundRegistryClass {
-  // Index by kind for O(1) matching
   private rulesByKind = new Map<string, AutoSoundRule[]>();
-  // Keep flat list for legacy `getAll` (though we should deprecate usage)
+  private rulesByAppId = new Map<string, AutoSoundRule[]>();
   private allRules: AutoSoundRule[] = [];
 
-  /**
-   * Register new auto-sound rules (used by plugins)
-   */
   register(newRules: AutoSoundRule[]) {
     for (const rule of newRules) {
       const kind = rule.match.kind;
@@ -119,29 +115,42 @@ class AutoSoundRegistryClass {
         this.rulesByKind.set(kind, []);
       }
       this.rulesByKind.get(kind)!.push(rule);
+
+      if (rule.match.appId) {
+        if (!this.rulesByAppId.has(rule.match.appId)) {
+          this.rulesByAppId.set(rule.match.appId, []);
+        }
+        this.rulesByAppId.get(rule.match.appId)!.push(rule);
+      }
     }
     this.allRules.push(...newRules);
   }
 
-  /**
-   * Get rules for a specific event kind (Optimization)
-   */
+  unregisterByAppId(appId: string): void {
+    const appRules = this.rulesByAppId.get(appId) || [];
+    for (const rule of appRules) {
+      const kindRules = this.rulesByKind.get(rule.match.kind);
+      if (kindRules) {
+        const idx = kindRules.indexOf(rule);
+        if (idx !== -1) kindRules.splice(idx, 1);
+      }
+      const allIdx = this.allRules.indexOf(rule);
+      if (allIdx !== -1) this.allRules.splice(allIdx, 1);
+    }
+    this.rulesByAppId.delete(appId);
+  }
+
   getRulesForKind(kind: string): AutoSoundRule[] {
     return this.rulesByKind.get(kind) || [];
   }
 
-  /**
-   * Get all registered rules
-   */
   getAll(): AutoSoundRule[] {
     return this.allRules;
   }
 
-  /**
-   * Clear registry (useful for hot reload/testing)
-   */
   clear() {
     this.rulesByKind.clear();
+    this.rulesByAppId.clear();
     this.allRules = [];
   }
 }

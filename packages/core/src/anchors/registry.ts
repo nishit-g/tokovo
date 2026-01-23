@@ -7,7 +7,6 @@
  * @see docs-v2/DSL_REVAMP.md#anchors-system
  */
 
-// Import from device-camera (source of truth)
 import {
   registerAnchorProvider,
   getAnchorProvider,
@@ -20,79 +19,51 @@ import {
   type AnchorFraming,
 } from "@tokovo/device-camera";
 
-// Re-export types for convenience
 export type { AnchorProvider, AnchorSnapshot, AnchorFraming };
 
-// Legacy types (re-exported from types/anchor for backward compatibility)
-import type {
-  AnchorProvider as AnchorProviderFunc,
-  AnchorMap,
-  Rect,
-} from "../types/anchor";
+import type { Rect } from "../types/anchor";
 import type { WorldState } from "../types";
-export type { AnchorProviderFunc, AnchorMap, Rect };
-
-// =============================================================================
-// FUNCTION-BASED API
-// =============================================================================
-
-const globalFuncRegistry: Map<string, AnchorProviderFunc> = new Map();
+export type { Rect };
 
 export function clearAnchors(): void {
-  globalFuncRegistry.clear();
   clearAnchorProviders();
 }
-
-// =============================================================================
-// ANCHOR RESOLUTION (function-based)
-// =============================================================================
 
 export function resolveAnchor(
   anchorId: string,
   world: WorldState,
   deviceId: string,
 ): Rect | null {
-  const exactProvider = globalFuncRegistry.get(anchorId);
-  if (exactProvider) {
-    return exactProvider(world, deviceId);
-  }
+  const appId = extractAppIdFromAnchor(anchorId);
+  if (!appId) return null;
 
-  for (const [pattern, provider] of globalFuncRegistry.entries()) {
-    if (pattern.endsWith(":*")) {
-      const prefix = pattern.slice(0, -2);
-      if (anchorId.startsWith(prefix + ":")) {
-        const param = anchorId.slice(prefix.length + 1);
-        return provider(world, deviceId, param);
-      }
-    }
-  }
+  const provider = getAnchorProvider(appId);
+  if (!provider) return null;
 
+  const device = world.devices[deviceId];
+  if (!device) return null;
+
+  const snapshot = provider.getAnchors(world, device, deviceId);
+  return snapshot?.anchors?.[anchorId] || null;
+}
+
+function extractAppIdFromAnchor(anchorId: string): string | null {
+  const parts = anchorId.split(":");
+  if (parts.length >= 1 && parts[0].startsWith("app_")) {
+    return parts[0];
+  }
   return null;
 }
 
 export function hasAnchor(anchorId: string): boolean {
-  if (globalFuncRegistry.has(anchorId)) return true;
-
-  for (const pattern of globalFuncRegistry.keys()) {
-    if (pattern.endsWith(":*")) {
-      const prefix = pattern.slice(0, -2);
-      if (anchorId.startsWith(prefix + ":")) {
-        return true;
-      }
-    }
-  }
-
-  return false;
+  const appId = extractAppIdFromAnchor(anchorId);
+  if (!appId) return false;
+  return !!getAnchorProvider(appId);
 }
-
-// =============================================================================
-// CLASS-BASED REGISTRY (Facade - delegates to device-camera)
-// =============================================================================
 
 class AnchorRegistryFacade {
   register(provider: AnchorProvider): void {
     registerAnchorProvider(provider);
-    console.log(`[AnchorRegistry] Registered provider for: ${provider.appId}`);
   }
 
   get(appId: string): AnchorProvider | undefined {
@@ -104,15 +75,7 @@ class AnchorRegistryFacade {
   }
 
   getFraming(appId: string, anchorId: string): AnchorFraming | undefined {
-    const framing = getAnchorFraming(appId, anchorId);
-    if (
-      framing &&
-      framing.anchorPoint.x === 0.5 &&
-      framing.anchorPoint.y === 0.5
-    ) {
-      return framing;
-    }
-    return framing;
+    return getAnchorFraming(appId, anchorId);
   }
 
   has(appId: string): boolean {
@@ -125,10 +88,6 @@ class AnchorRegistryFacade {
 }
 
 export const AnchorRegistry = new AnchorRegistryFacade();
-
-// =============================================================================
-// MODERN API EXPORTS (re-exported from device-camera)
-// =============================================================================
 
 export {
   registerAnchorProvider,

@@ -9,6 +9,7 @@
  */
 
 import type { TrackEpisodeIR } from "@tokovo/ir";
+import { safeValidateTrackEpisodeIR } from "@tokovo/ir";
 import type {
   RuntimeEvent,
   WorldState,
@@ -52,7 +53,15 @@ export function prepareTrackEpisode(
   ir: TrackEpisodeIR,
   plugins: TokovoPlugin[],
 ): PreparedTrackEpisode {
-  // Lower TrackEvent[] to RuntimeEvent[] (delegates APP events to plugins)
+  const validation = safeValidateTrackEpisodeIR(ir);
+  if (!validation.success) {
+    console.error(
+      "[prepareTrackEpisode] IR validation failed:",
+      validation.error.format(),
+    );
+    throw new Error(`Invalid TrackEpisodeIR: ${validation.error.message}`);
+  }
+
   const runtimeEvents = lowerEpisode(ir, plugins) as RuntimeEvent[];
 
   // Build initial world state from device configs

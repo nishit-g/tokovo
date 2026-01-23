@@ -12,11 +12,7 @@
 import {
   PluginManager,
   type PluginReducer,
-  AutoSoundRegistry,
-  AppMetadataRegistry,
-  SoundRegistry,
   registerAnchorProvider,
-  LayoutRegistry,
 } from "@tokovo/core";
 import { WHATSAPP_APP_ID } from "./constants";
 import type {
@@ -198,22 +194,7 @@ export function registerWhatsAppPlugin(): void {
 
   PluginManager.register(WhatsAppPluginV2);
 
-  AutoSoundRegistry.register(whatsappAudioRules);
-  SoundRegistry.registerMany(WhatsAppPluginV2.sounds);
   registerAnchorProvider(WhatsAppAnchors);
-
-  LayoutRegistry.register({
-    appId: WHATSAPP_APP_ID,
-    viewKind: "CHAT",
-    computeLayout: computeChatLayout,
-  });
-
-  AppMetadataRegistry.register("app_whatsapp", {
-    displayName: "WhatsApp",
-    themeColor: "#25D366",
-    icon: "💬",
-    viewStrategy: "CHAT",
-  });
 }
 
 export type { WhatsAppDslApi };

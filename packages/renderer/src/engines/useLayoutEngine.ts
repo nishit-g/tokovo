@@ -130,9 +130,6 @@ export function useLayoutEngine(input: LayoutEngineInput): LayoutEngineOutput {
     if (device.isLocked) {
       viewKind = "LOCKSCREEN";
     } else if (appId) {
-      // GENERIC LAYOUT RESOLUTION
-      // 1. Check App Metadata for default strategy
-      const { AppMetadataRegistry } = require("@tokovo/core"); // Dynamic require to avoid cycle if any, or just import at top
       const meta = AppMetadataRegistry.get(appId);
       viewKind = meta.viewStrategy || "TRANSITION";
 

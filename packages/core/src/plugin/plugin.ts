@@ -33,6 +33,7 @@ import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
 import { AppRegistry } from "../registries/app";
 import { SoundRegistry } from "../registries/sound";
 import { NotificationAdapterRegistry } from "../notifications/adapter";
+import { AutoSoundRegistry } from "../audio/auto-sound";
 import { validatePlugin } from "../utils/validation";
 import { createScopedLogger } from "../logger";
 
@@ -256,6 +257,15 @@ export class PluginManagerClass {
     if (plugin.assets?.sounds) {
       SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
       cleanups.push(() => SoundRegistry.unregisterNamespaced(plugin.id));
+    }
+
+    if (plugin.audioRules) {
+      const rulesWithAppId = plugin.audioRules.map((rule) => ({
+        ...rule,
+        match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
+      }));
+      AutoSoundRegistry.register(rulesWithAppId);
+      cleanups.push(() => AutoSoundRegistry.unregisterByAppId(plugin.id));
     }
 
     if (plugin.notificationAdapter) {
