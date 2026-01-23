@@ -196,12 +196,44 @@ export function replay(
     ? getEventsUpTo(eventIndex, t)
     : events.filter((e) => e.at <= t);
 
-  // Apply all events in a single Immer produce (not per-event)
-  const stateAfterEvents = produce(initialWithCamera, (draft) => {
+  // Apply all events and finalize in a single Immer produce (perf: avoids double structural sharing)
+  const finalState = produce(initialWithCamera, (draft) => {
+    // Pre-allocate context objects once (perf: avoid allocation per event)
+    const handlerCtx: HandlerContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+      fps: ctx.fps ?? 30,
+    };
+    const registryCtx: EventHandlerContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+    };
+    const middlewareCtx: MiddlewareContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+    };
+
+    // Process all events
     for (let i = 0; i < relevant.length; i++) {
       const event = relevant[i];
+      // Mutate index only (perf: reuse context objects)
+      handlerCtx.eventIndex = i;
+      registryCtx.eventIndex = i;
+      middlewareCtx.eventIndex = i;
+
       try {
-        processEventWithMiddleware(draft, event, i, t, ctx);
+        processEventWithMiddleware(
+          draft,
+          event,
+          t,
+          ctx,
+          handlerCtx,
+          registryCtx,
+          middlewareCtx,
+        );
       } catch (error) {
         const eventWithAppId = event as TimelineEvent & { appId?: string };
         const pluginId = eventWithAppId.appId || event.kind;
@@ -228,9 +260,8 @@ export function replay(
         }
       }
     }
-  });
 
-  const finalState = produce(stateAfterEvents, (draft) => {
+    // Finalize state inline (merged from separate produce call)
     const config = getCachedConfig();
     draft.camera.activeEffects = draft.camera.activeEffects.filter(
       (ae) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
@@ -240,9 +271,12 @@ export function replay(
       draft.camera.deviceTransforms = {};
     }
 
-    for (const deviceId of Object.keys(draft.devices)) {
-      draft.camera.deviceTransforms[deviceId] =
-        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+    // Use for...in to avoid Object.keys() allocation
+    for (const deviceId in draft.devices) {
+      if (Object.hasOwn(draft.devices, deviceId)) {
+        draft.camera.deviceTransforms[deviceId] =
+          DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+      }
     }
 
     const activeDeviceId =
@@ -318,10 +352,39 @@ export function replayIncremental(
   }
 
   const stateAfterEvents = produce(startState, (draft) => {
+    const handlerCtx: HandlerContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+      fps: ctx.fps ?? 30,
+    };
+    const registryCtx: EventHandlerContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+    };
+    const middlewareCtx: MiddlewareContext = {
+      frame: t,
+      eventIndex: 0,
+      mode: ctx.mode,
+    };
+
     for (let i = 0; i < eventsToApply.length; i++) {
       const event = eventsToApply[i];
+      handlerCtx.eventIndex = i;
+      registryCtx.eventIndex = i;
+      middlewareCtx.eventIndex = i;
+
       try {
-        processEventWithMiddleware(draft, event, i, t, ctx);
+        processEventWithMiddleware(
+          draft,
+          event,
+          t,
+          ctx,
+          handlerCtx,
+          registryCtx,
+          middlewareCtx,
+        );
       } catch (error) {
         handleEventError(error, event, ctx);
       }
@@ -465,31 +528,22 @@ function processEventCore(
 function processEventWithMiddleware(
   draft: WorldState,
   event: TimelineEvent,
-  index: number,
   t: number,
   ctx: ReplayContext,
+  handlerCtx: HandlerContext,
+  registryCtx: EventHandlerContext,
+  middlewareCtx: MiddlewareContext,
 ): void {
-  const handlerCtx: HandlerContext = {
-    frame: t,
-    eventIndex: index,
-    mode: ctx.mode,
-    fps: ctx.fps ?? 30,
-  };
-
-  const registryCtx: EventHandlerContext = {
-    frame: t,
-    eventIndex: index,
-    mode: ctx.mode,
-  };
-
-  const middlewareCtx: MiddlewareContext = {
-    frame: t,
-    eventIndex: index,
-    mode: ctx.mode,
-  };
-
   MiddlewareRegistry.execute(event, draft, middlewareCtx, () => {
-    processEventCore(draft, event, index, t, ctx, handlerCtx, registryCtx);
+    processEventCore(
+      draft,
+      event,
+      handlerCtx.eventIndex,
+      t,
+      ctx,
+      handlerCtx,
+      registryCtx,
+    );
   });
 }
 

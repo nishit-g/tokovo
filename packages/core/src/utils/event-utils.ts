@@ -60,14 +60,16 @@ export function createKeyframedEventIndex(
 ): KeyframedEventIndex {
   const base = createEventIndex(events);
   const keyframes = new Map<number, TimelineEvent[]>();
-  let accumulated: TimelineEvent[] = [];
+  const accumulated: TimelineEvent[] = [];
 
   for (const frame of base.frames) {
-    const frameEvents = base.byFrame.get(frame) || [];
-    accumulated = [...accumulated, ...frameEvents];
+    const frameEvents = base.byFrame.get(frame);
+    if (frameEvents) {
+      accumulated.push(...frameEvents);
+    }
 
     if (frame % keyframeInterval === 0 || frame === base.maxFrame) {
-      keyframes.set(frame, [...accumulated]);
+      keyframes.set(frame, accumulated.slice());
     }
   }
 
@@ -78,12 +80,29 @@ export function createKeyframedEventIndex(
   };
 }
 
+/**
+ * Binary search for upper bound index in sorted array
+ */
+function binarySearchUpperBound(arr: number[], target: number): number {
+  let low = 0;
+  let high = arr.length;
+  while (low < high) {
+    const mid = (low + high) >>> 1;
+    if (arr[mid] <= target) {
+      low = mid + 1;
+    } else {
+      high = mid;
+    }
+  }
+  return low;
+}
+
 export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
+  const cutoffIdx = binarySearchUpperBound(index.frames, t);
   const result: TimelineEvent[] = [];
 
-  for (const frame of index.frames) {
-    if (frame > t) break;
-    const events = index.byFrame.get(frame);
+  for (let i = 0; i < cutoffIdx; i++) {
+    const events = index.byFrame.get(index.frames[i]);
     if (events) {
       result.push(...events);
     }
