@@ -41,6 +41,7 @@ class ReducerRegistryClass {
   private _deviceReducer: DeviceReducer | null = null;
   private _appReducers = new Map<string, AppReducer>();
   private _featureReducers = new Map<string, FeatureReducer>();
+  private _eventKindToAppId = new Map<string, string>();
 
   /**
    * Register a device reducer (handles DEVICE events)
@@ -99,6 +100,46 @@ class ReducerRegistryClass {
    */
   getRegisteredApps(): string[] {
     return Array.from(this._appReducers.keys());
+  }
+
+  /**
+   * Register event kinds for an app (used by engine to route events)
+   */
+  registerEventKinds(appId: string, kinds: readonly string[]): void {
+    for (const kind of kinds) {
+      if (this._eventKindToAppId.has(kind)) {
+        const existingApp = this._eventKindToAppId.get(kind);
+        EngineLogger.warn(
+          `Event kind "${kind}" already registered by ${existingApp}, overwriting with ${appId}`,
+        );
+      }
+      this._eventKindToAppId.set(kind, appId);
+    }
+  }
+
+  /**
+   * Check if an event kind is registered to any app
+   */
+  isAppEventKind(kind: string): boolean {
+    return this._eventKindToAppId.has(kind);
+  }
+
+  /**
+   * Get the app ID that handles a given event kind
+   */
+  getAppIdForEventKind(kind: string): string | undefined {
+    return this._eventKindToAppId.get(kind);
+  }
+
+  /**
+   * Get all registered event kinds for an app
+   */
+  getEventKindsForApp(appId: string): string[] {
+    const kinds: string[] = [];
+    for (const [kind, id] of this._eventKindToAppId) {
+      if (id === appId) kinds.push(kind);
+    }
+    return kinds;
   }
 
   /**

@@ -13,7 +13,7 @@
 
 /**
  * All supported event kinds in the enterprise system.
- * This includes both the core kinds and legacy/V2 kinds for compatibility.
+ * App-specific kinds are registered dynamically via PluginContract.eventKinds
  */
 export type RuntimeEventKind =
   | "APP"
@@ -25,23 +25,7 @@ export type RuntimeEventKind =
   | "CALL"
   | "TRANSITION"
   | "HIGHLIGHT"
-  // V2 Native ops (from @tokovo/ir)
-  | "MessageReceived"
-  | "MessageSent"
-  | "TypingStarted"
-  | "TypingEnded"
-  | "KeyboardType"
-  | "KeyboardInput"
-  | "AppOpened"
-  | "DeviceUnlocked"
-  | "ConversationOpened"
-  | "ScreenNavigated"
-  | "CameraZoom"
-  | "CameraShake"
-  | "POVSwitch"
-  | "SplitPOV"
-  | "AnchorFocus"
-  | "AnchorTrack";
+  | string;
 
 /**
  * Event trace for debugging - links back to DSL source

@@ -9,6 +9,31 @@ import type { CameraState } from "./camera";
 import type { AudioState, VideoConfig } from "./audio";
 
 // =============================================================================
+// APP STATE MAP - Extensible via module augmentation
+// =============================================================================
+
+/**
+ * Plugin state registry. Plugins extend this via module augmentation:
+ *
+ * @example
+ * declare module "@tokovo/core" {
+ *   interface AppStateMap {
+ *     app_whatsapp: WhatsAppState;
+ *   }
+ * }
+ */
+export interface AppStateMap {
+  // Plugins augment this interface
+}
+
+type AppStateKeys = keyof AppStateMap;
+type HasAppStateKeys = AppStateKeys extends never ? false : true;
+
+type ResolvedAppState = HasAppStateKeys extends true
+  ? { [K in AppStateKeys]: AppStateMap[K] } & Record<string, unknown>
+  : Record<string, unknown>;
+
+// =============================================================================
 // WORLD STATE
 // =============================================================================
 
@@ -16,11 +41,9 @@ export interface WorldState {
   devices: Record<DeviceId, DeviceState>;
 
   /**
-   * Per-app state buckets.
-   * Each app manages its own state structure (including conversations).
-   * Example: appState["app_whatsapp"] = { conversations: {...}, screen: "chat" }
+   * Per-app state buckets. Type-safe when plugins augment AppStateMap.
    */
-  appState: Record<string, unknown>;
+  appState: ResolvedAppState;
 
   // Engine primitives
   camera: CameraState;

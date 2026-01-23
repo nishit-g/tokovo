@@ -616,6 +616,7 @@ export const AnyWhatsAppEventSchema = z.union([
 // =============================================================================
 
 export type WhatsAppEvent = z.infer<typeof WhatsAppEventSchema>;
+export type WhatsAppEventKind = WhatsAppEvent["kind"];
 export type CustomEvent = z.infer<typeof CustomEventSchema>;
 export type AnyWhatsAppEvent = z.infer<typeof AnyWhatsAppEventSchema>;
 

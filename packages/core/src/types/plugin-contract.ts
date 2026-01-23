@@ -12,6 +12,44 @@
 import { RuntimeEvent, AppEventPayloads } from "./runtime-event";
 import type { Platform } from "../tokens";
 // =============================================================================
+// LAYOUT CONSTANTS - App-specific UI metrics
+// =============================================================================
+
+export interface PluginLayoutConstants {
+  headerHeight?: number;
+  footerHeight?: number;
+  safeAreaInsets?: { top: number; bottom: number };
+  statusBarHeight?: number;
+  navigationBarHeight?: number;
+}
+
+// =============================================================================
+// EVENT KIND REGISTRY - Extensible via module augmentation
+// =============================================================================
+
+export interface AppEventKindRegistry {
+  // Plugins augment this: app_whatsapp: "MessageReceived" | "MessageSent" | ...
+}
+
+type EventKindsForApp<AppId extends string> =
+  AppId extends keyof AppEventKindRegistry
+    ? readonly AppEventKindRegistry[AppId][]
+    : readonly string[];
+
+// =============================================================================
+// APP STATE REGISTRY - Extensible via module augmentation
+// =============================================================================
+
+export interface AppInitialStateRegistry {
+  // Plugins augment this: app_whatsapp: WhatsAppState
+}
+
+type InitialStateForApp<AppId extends string> =
+  AppId extends keyof AppInitialStateRegistry
+    ? AppInitialStateRegistry[AppId]
+    : unknown;
+
+// =============================================================================
 // PLUGIN REDUCER
 // =============================================================================
 
@@ -218,6 +256,9 @@ export interface TokovoPluginContract<AppId extends string = string> {
   reducer: PluginReducer<AppId>;
   views: PluginViews;
 
+  // === TIER A: Event Routing (REQUIRED for v2 apps) ===
+  eventKinds?: EventKindsForApp<AppId>;
+
   // === TIER A: Assets (RECOMMENDED) ===
   assets?: {
     sounds?: Record<string, string>;
@@ -229,8 +270,11 @@ export interface TokovoPluginContract<AppId extends string = string> {
   // === TIER A: Audio (RECOMMENDED) ===
   audioRules?: PluginAutoSoundRule[];
 
+  // === TIER A: Layout Constants (RECOMMENDED) ===
+  layoutConstants?: PluginLayoutConstants;
+
   // === TIER A: Initial State ===
-  createInitialState?: () => unknown;
+  createInitialState?: () => InitialStateForApp<AppId>;
 
   // === TIER B: Lowering (OPTIONAL) ===
   lowering?: LoweringHandler;

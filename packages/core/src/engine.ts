@@ -151,43 +151,12 @@ export function replay(
       mode: ctx.mode,
     };
 
-    // V2 IR App Events - dispatch directly to app reducers
-    const v2AppKinds = [
-      "MessageReceived",
-      "MessageSent",
-      "TypingStarted",
-      "TypingEnded",
-      "ImageReceived",
-      "ImageSent",
-      "VideoReceived",
-      "VideoSent",
-      "VoiceReceived",
-      "VoiceSent",
-      "GifReceived",
-      "GifSent",
-      "StickerReceived",
-      "StickerSent",
-      "DocumentReceived",
-      "DocumentSent",
-      "ContactReceived",
-      "ContactSent",
-      "LocationReceived",
-      "LocationSent",
-      "React",
-      "ReadMessages",
-      "MessageDeleted",
-      "MessageEdited",
-      "MessageForwarded",
-      "DateSeparator",
-      "ConversationOpened",
-      "NavigateScreen",
-    ];
-
-    if (v2AppKinds.includes(event.kind as string)) {
-      const e = event as TimelineEvent & { appId?: string };
-      const reducer = e.appId
-        ? ReducerRegistry.getAppReducer(e.appId)
-        : undefined;
+    // V2 IR App Events - dispatch to app reducers via registry
+    const appIdForKind = ReducerRegistry.getAppIdForEventKind(
+      event.kind as string,
+    );
+    if (appIdForKind) {
+      const reducer = ReducerRegistry.getAppReducer(appIdForKind);
       reducer?.(draft, event);
       return;
     }

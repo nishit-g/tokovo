@@ -121,6 +121,7 @@ export interface WidgetSlot {
 export class PluginManagerClass {
   private plugins = new Map<string, TokovoPlugin>();
   private viewRegistry = new Map<string, AppViewComponent>();
+  private initialStateCreators = new Map<string, () => unknown>();
 
   register<AppId extends string>(plugin: TokovoPluginContract<AppId>): void {
     try {
@@ -146,6 +147,19 @@ export class PluginManagerClass {
       ReducerRegistry.registerAppReducer(
         plugin.id,
         plugin.reducer as AppReducer,
+      );
+    }
+
+    // 1b. Auto-register Event Kinds (for engine routing)
+    if (plugin.eventKinds && plugin.eventKinds.length > 0) {
+      ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
+    }
+
+    // 1c. Store initial state creator for later use
+    if (plugin.createInitialState) {
+      this.initialStateCreators.set(
+        plugin.id,
+        plugin.createInitialState as () => unknown,
       );
     }
 
@@ -225,9 +239,9 @@ export class PluginManagerClass {
       });
     }
 
-    // 6. Auto-register Sounds
+    // 6. Auto-register Sounds (namespaced to prevent collisions)
     if (plugin.assets?.sounds) {
-      SoundRegistry.registerMany(plugin.assets.sounds);
+      SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
     }
 
     // 7. Auto-register Notification Adapter
@@ -288,6 +302,18 @@ export class PluginManagerClass {
   getSound(pluginId: string, soundKey: string): string | undefined {
     const plugin = this.plugins.get(pluginId);
     return plugin?.assets?.sounds?.[soundKey];
+  }
+
+  getInitialStateCreator(appId: string): (() => unknown) | undefined {
+    return this.initialStateCreators.get(appId);
+  }
+
+  createInitialAppState(): Record<string, unknown> {
+    const appState: Record<string, unknown> = {};
+    for (const [appId, creator] of this.initialStateCreators) {
+      appState[appId] = creator();
+    }
+    return appState;
   }
 }
 
