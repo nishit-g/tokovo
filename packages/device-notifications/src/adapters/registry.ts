@@ -76,7 +76,7 @@ class NotificationAdapterRegistryClass {
   handleAction(
     notification: NotificationInstance,
     actionId: string = "open",
-  ): any[] {
+  ): unknown[] {
     const adapter = this.adapters.get(notification.appId);
 
     if (adapter?.handleAction) {

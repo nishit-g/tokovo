@@ -26,10 +26,10 @@ export const cyberpunkStrategy: UIStrategy = {
   name: "WhatsApp Cyberpunk",
   platform: "custom",
 
-  Header: undefined as any,
+  Header: null,
   MessageBubble: IOSMessageBubble as React.FC<MessageBubbleProps>,
   TypingIndicator: CyberpunkTypingIndicator,
-  InputArea: undefined as any,
+  InputArea: null,
 
   tokens: {
     backgroundColor: "#0A0A12",

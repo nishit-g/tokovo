@@ -51,17 +51,15 @@ export interface DeviceOptions {
  * Track builders collect events and expose them via _events.
  */
 export interface TrackBuilder {
-  readonly _events: any[];
-  at: (time: string | number) => any;
-  span: (start: string | number, end: string | number) => any;
+  readonly _events: readonly { at: number; kind: string }[];
+  at: (time: string | number) => unknown;
+  span: (start: string | number, end: string | number) => unknown;
 }
 
 /**
  * Function type for track configuration callbacks.
  */
-export type TrackFn<T extends { readonly _events: TrackEvent[] }> = (
-  track: T,
-) => void;
+export type TrackFn<T extends TrackBuilder> = (track: T) => void;
 
 // =============================================================================
 // EPISODE BUILDER
@@ -157,10 +155,10 @@ export class EpisodeBuilder {
     factory: () => T,
     fn: TrackFn<T>,
   ): this {
-    void trackId; // trackId reserved for future use
+    void trackId;
     const builder = factory();
     fn(builder);
-    this._events.push(...builder._events);
+    this._events.push(...(builder._events as unknown as TrackEvent[]));
     return this;
   }
 

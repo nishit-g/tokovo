@@ -187,7 +187,22 @@ export const GroupInfoScreen: React.FC<GroupInfoScreenProps> = ({
   const physicalSafeTop = safeAreaInsets?.top ?? 177;
   const safeAreaTop = physicalSafeTop / scale;
 
-  const conversations = (world as any).conversations || {};
+  const appState = world.appState?.["app_whatsapp"] as
+    | {
+        conversations?: Record<
+          string,
+          {
+            name?: string;
+            description?: string;
+            avatar?: string;
+            createdAt?: string;
+            createdBy?: string;
+            members?: GroupMember[];
+          }
+        >;
+      }
+    | undefined;
+  const conversations = appState?.conversations || {};
   const conversation = conversations[conversationId] || {};
 
   const groupData: GroupData = {

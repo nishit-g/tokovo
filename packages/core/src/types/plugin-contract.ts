@@ -188,7 +188,7 @@ export interface PluginAutoSoundRule {
   action: "PLAY_ONE_SHOT" | "START_LOOP" | "STOP_SOUND";
   sound?: string;
   stopId?: string;
-  bus?: "voice" | "sfx" | "ui" | "music";
+  bus?: "voice" | "sfx" | "ui" | "music" | "master";
   volume?: number;
   idTemplate?: string;
   duckMusic?: boolean;

@@ -20,8 +20,8 @@ type WhatsAppTrackEvent = {
   kind: "APP";
   appId: "app_whatsapp";
   type: string;
-  conversationId: string;
-  payload: Record<string, any>;
+  conversationId?: string;
+  payload: Record<string, unknown>;
   _declarationOrder: number;
 };
 
@@ -63,7 +63,7 @@ export class WhatsAppPointBuilder {
     private _getOrder: GetDeclarationOrder,
   ) {}
 
-  private _push(type: string, payload: Record<string, any>): void {
+  private _push(type: string, payload: Record<string, unknown>): void {
     this._events.push({
       at: this._frame,
       deviceId: this._deviceId,
@@ -152,15 +152,15 @@ export class WhatsAppPointBuilder {
     messageRef: TrackMessageRef | { messageIndex: number } | { index: number },
     emoji: string,
   ): void {
-    let ref: { index: number };
+    let index: number;
     if ("messageIndex" in messageRef) {
-      ref = { index: (messageRef as any).messageIndex };
+      index = (messageRef as { messageIndex: number }).messageIndex;
     } else if ("index" in messageRef) {
-      ref = { index: (messageRef as any).index };
+      index = (messageRef as { index: number }).index;
     } else {
-      ref = messageRef as any;
+      index = 0;
     }
-    this._push("REACT", { messageRef: ref, emoji });
+    this._push("REACT", { messageRef: { index }, emoji });
   }
 
   read(): void {
@@ -418,13 +418,13 @@ export class WhatsAppTrackBuilder {
       kind: "APP",
       appId: "app_whatsapp",
       type: "CONVERSATION_OPENED",
+      conversationId,
       payload: {
         conversationId,
       },
       _declarationOrder: this._getOrder(),
-    } as any);
-    // Update internal conversation ID for subsequent methods
-    (this as any)._conversationId = conversationId;
+    });
+    this._conversationId = conversationId;
   }
 
   /**
@@ -443,7 +443,7 @@ export class WhatsAppTrackBuilder {
         screen: "chats",
       },
       _declarationOrder: this._getOrder(),
-    } as any);
+    });
   }
 
   /**
@@ -460,7 +460,7 @@ export class WhatsAppTrackBuilder {
       type: "GO_BACK",
       payload: {},
       _declarationOrder: this._getOrder(),
-    } as any);
+    });
   }
 
   /**
@@ -478,7 +478,7 @@ export class WhatsAppTrackBuilder {
         screen: "profile",
       },
       _declarationOrder: this._getOrder(),
-    } as any);
+    });
   }
 
   /**
@@ -492,12 +492,13 @@ export class WhatsAppTrackBuilder {
       kind: "APP",
       appId: "app_whatsapp",
       type: "DATE_SEPARATOR",
+      conversationId: this._conversationId,
       payload: {
         conversationId: this._conversationId,
         text,
       },
       _declarationOrder: this._getOrder(),
-    } as any);
+    });
   }
 }
 

@@ -66,26 +66,4 @@ export type {
 } from "./events";
 export { isWhatsAppEvent, getEventPayload, assertEventType } from "./events";
 
-export type {
-  WhatsAppRuntimeEvent,
-  WhatsAppRuntimeEventBase,
-  WhatsAppRuntimeEventKind,
-  MessageReceivedRuntimeEvent,
-  MessageSentRuntimeEvent,
-  ImageReceivedRuntimeEvent,
-  ImageSentRuntimeEvent,
-  VideoReceivedRuntimeEvent,
-  VideoSentRuntimeEvent,
-  TypingRuntimeEvent,
-  ReactRuntimeEvent,
-  NavigateScreenRuntimeEvent,
-  ConversationOpenedRuntimeEvent,
-  GenericWhatsAppRuntimeEvent,
-} from "./runtime-events";
-export {
-  isWhatsAppRuntimeEvent,
-  getPayloadSafe,
-  RUNTIME_KIND_TO_EVENT_TYPE,
-} from "./runtime-events";
-
 import "./module-augmentation";

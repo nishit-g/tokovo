@@ -114,30 +114,29 @@ export interface UIThemeTokens {
   linkColor: string;
 }
 
-/**
- * UI Strategy - Complete set of components for a platform/theme
- */
+export interface MessageListProps {
+  messages: MessageData[];
+  world: WorldState;
+  isGroupChat?: boolean;
+}
+
+export interface SystemMessageProps {
+  message: MessageData;
+}
+
 export interface UIStrategy {
-  /** Unique identifier */
   id: string;
-
-  /** Display name */
   name: string;
-
-  /** Platform this strategy targets */
   platform: "ios" | "android" | "custom";
 
-  // Component factory methods
-  Header: React.FC<HeaderProps>;
+  Header: React.FC<HeaderProps> | null;
   MessageBubble: React.FC<MessageBubbleProps>;
   TypingIndicator: React.FC<TypingIndicatorProps>;
-  InputArea: React.FC<InputAreaProps>;
+  InputArea: React.FC<InputAreaProps> | null;
 
-  // Optional: MessageList, SystemMessage, etc.
-  MessageList?: React.FC<any>;
-  SystemMessage?: React.FC<any>;
+  MessageList?: React.FC<MessageListProps>;
+  SystemMessage?: React.FC<SystemMessageProps>;
 
-  // Theme tokens (colors, spacing)
   tokens: UIThemeTokens;
 }
 
@@ -239,19 +238,25 @@ export interface ThemeConfig {
   tokens: Partial<UIThemeTokens>;
 }
 
-export function createTheme(config: ThemeConfig): UIStrategy {
+export function createTheme(config: ThemeConfig): Omit<
+  UIStrategy,
+  "Header" | "MessageBubble" | "TypingIndicator" | "InputArea"
+> & {
+  Header: React.FC<HeaderProps> | null;
+  MessageBubble: React.FC<MessageBubbleProps> | null;
+  TypingIndicator: React.FC<TypingIndicatorProps> | null;
+  InputArea: React.FC<InputAreaProps> | null;
+} {
   const tokens: UIThemeTokens = { ...DEFAULT_TOKENS, ...config.tokens };
 
-  const strategy: UIStrategy = {
+  return {
     id: config.id,
     name: config.name,
     platform: config.platform || "custom",
-    Header: undefined as any,
-    MessageBubble: undefined as any,
-    TypingIndicator: undefined as any,
-    InputArea: undefined as any,
+    Header: null,
+    MessageBubble: null,
+    TypingIndicator: null,
+    InputArea: null,
     tokens,
   };
-
-  return strategy;
 }

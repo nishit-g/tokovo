@@ -170,10 +170,10 @@ export interface WhatsAppReaction {
 }
 
 export interface ReplyToData {
-  messageId: string;
-  text: string;
-  from: string;
-  type?: "text" | "image" | "video" | "voice";
+  messageId?: string;
+  text?: string;
+  from?: string;
+  type?: WhatsAppMessageType;
   thumbnailUrl?: string;
 }
 
@@ -228,4 +228,13 @@ export interface WhatsAppMessage extends BaseMessage {
   locationName?: string;
   locationAddress?: string;
   mapThumbnailUrl?: string;
+  // Voice/Audio aliases for backward compatibility
+  voiceUrl?: string;
+  audioUrl?: string;
+  fileUrl?: string;
+  // Sender display name for group chats
+  senderName?: string;
+  // Delivery status timestamps
+  readAt?: number;
+  deliveredAt?: number;
 }

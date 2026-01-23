@@ -41,7 +41,7 @@ export class NotificationPointBuilder {
     this._events.push({
       kind: "DEVICE",
       deviceId: this._deviceId,
-      type: `NOTIFICATION_${type}` as any,
+      type: `NOTIFICATION_${type}`,
       at: this._frame,
       _declarationOrder: this._getOrder(),
       ...payload,
@@ -118,14 +118,14 @@ export class NotificationPointBuilder {
    * Open the notification shade/panel
    */
   openPanel(): this {
-    return this.emit("OPEN_PANEL", {} as any);
+    return this.emit("OPEN_PANEL", {});
   }
 
   /**
    * Close the notification shade/panel
    */
   closePanel(): this {
-    return this.emit("CLOSE_PANEL", {} as any);
+    return this.emit("CLOSE_PANEL", {});
   }
 
   // =========================================================================
@@ -136,7 +136,7 @@ export class NotificationPointBuilder {
    * Clear all notifications
    */
   clearAll(): this {
-    return this.emit("CLEAR_ALL", {} as any);
+    return this.emit("CLEAR_ALL", {});
   }
 
   // =========================================================================

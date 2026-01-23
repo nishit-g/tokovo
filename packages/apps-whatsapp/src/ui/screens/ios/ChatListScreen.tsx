@@ -160,7 +160,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
           {conversations.length > 0 ? (
             conversations.map((conv, i) => {
               // Get last message
-              const rawMessages = conv.messages as any[];
+              const rawMessages = conv.messages || [];
               const lastMsg =
                 rawMessages && rawMessages.length > 0
                   ? rawMessages[rawMessages.length - 1]
@@ -185,7 +185,7 @@ export const ChatListScreen: React.FC<ChatListScreenProps> = ({
                 } else if (lastMsg.from) {
                   // Try to get name from members
                   const member = conv.members?.find(
-                    (m: any) => m.id === lastMsg.from,
+                    (m) => m.id === lastMsg.from,
                   );
                   senderName = member?.name || lastMsg.from;
                 }

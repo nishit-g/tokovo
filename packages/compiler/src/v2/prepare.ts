@@ -91,7 +91,7 @@ export function prepareTrackEpisode(
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
 function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
-  const devices: Record<string, any> = {};
+  const devices: Record<string, unknown> = {};
   for (const device of ir.devices) {
     devices[device.id] = {
       id: device.id,
@@ -152,10 +152,10 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     muted: false,
   };
 
-  const notifications: any[] = [];
+  const notifications: unknown[] = [];
 
   // Build per-app state with conversations nested inside
-  const appState: Record<string, any> = {};
+  const appState: Record<string, unknown> = {};
   for (const device of ir.devices) {
     if (device.app) {
       const hasConversations =
@@ -163,14 +163,14 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
       const firstConversation = device.conversations?.[0];
 
       // Build conversations for this app
-      const conversations: Record<string, any> = {};
+      const conversations: Record<string, unknown> = {};
       for (const conv of device.conversations || []) {
         conversations[conv.id] = {
           id: conv.id,
           name: conv.name,
           avatar: conv.avatar || "",
           type: conv.type || "dm",
-          participants: (conv as any).participants || [],
+          participants: conv.participants || [],
           messages: [],
           typing: null,
           unreadCount: conv.unreadCount ?? 0,

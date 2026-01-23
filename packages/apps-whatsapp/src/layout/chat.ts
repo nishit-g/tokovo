@@ -22,6 +22,12 @@ import {
 } from "../config";
 import { MessageData, WhatsAppMessage, WhatsAppConversation } from "../types";
 
+type LayoutMessage = MessageData & {
+  replyTo?: { messageId: string; text: string; from: string };
+  reactions?: { emoji: string; count: number }[];
+  linkPreview?: { url: string; title?: string };
+};
+
 // =============================================================================
 // PRODUCTION-GRADE CHAT LAYOUT STRATEGY (PLUGIN)
 // =============================================================================
@@ -87,9 +93,8 @@ export function computeChatLayout(
   // SINGLE-PASS LAYOUT ALGORITHM
   // ==========================================================
   for (let i = 0; i < messages.length; i++) {
-    const msg = messages[i] as unknown as MessageData;
-    const prevMsg =
-      i > 0 ? (messages[i - 1] as unknown as MessageData) : undefined;
+    const msg = messages[i] as LayoutMessage;
+    const prevMsg = i > 0 ? (messages[i - 1] as LayoutMessage) : undefined;
     const msgType = (msg.type || "text") as MessageType;
 
     // Calculate gap from previous message
@@ -98,17 +103,17 @@ export function computeChatLayout(
         type: prevMsg.type as MessageType,
         from: prevMsg.from,
         at: prevMsg.at,
-        hasReply: (prevMsg as any).replyTo != null,
-        hasReactions: (prevMsg as any).reactions?.length > 0,
-        hasLinkPreview: (prevMsg as any).linkPreview != null,
+        hasReply: prevMsg.replyTo != null,
+        hasReactions: (prevMsg.reactions?.length ?? 0) > 0,
+        hasLinkPreview: prevMsg.linkPreview != null,
       };
       const nextForGap: MessageForGap = {
         type: msg.type as MessageType,
         from: msg.from,
         at: msg.at,
-        hasReply: (msg as any).replyTo != null,
-        hasReactions: (msg as any).reactions?.length > 0,
-        hasLinkPreview: (msg as any).linkPreview != null,
+        hasReply: msg.replyTo != null,
+        hasReactions: (msg.reactions?.length ?? 0) > 0,
+        hasLinkPreview: msg.linkPreview != null,
       };
 
       const gapContext: GapContext = {
@@ -123,25 +128,22 @@ export function computeChatLayout(
     // Calculate height using the config-based function
     const msgForHeight: MessageForHeight = {
       type: msgType,
-      text: (msg as any).text,
-      caption: (msg as any).caption,
+      text: "text" in msg ? msg.text : undefined,
+      caption: "caption" in msg ? msg.caption : undefined,
       from: msg.from,
-      // Enhanced Visual Run Logic: Find previous groupable message
-      // Enhanced Visual Run Logic: Determine previous groupable context
       prevFrom: (() => {
         const prev = i > 0 ? messages[i - 1] : undefined;
         if (!prev) return undefined;
 
         const prevType = (prev.type || "text") as MessageType;
-        // Policy A: Strict Grouping Reset
         if (doesMessageBreakGrouping(prevType, config)) return "BREAK";
 
         return prev.from;
       })(),
-      isGroupChat, // Pass group chat status
-      reactions: (msg as any).reactions,
-      replyTo: (msg as any).replyTo,
-      linkPreview: (msg as any).linkPreview,
+      isGroupChat,
+      reactions: msg.reactions,
+      replyTo: msg.replyTo,
+      linkPreview: msg.linkPreview,
     };
 
     const height = calculateMessageHeight(msgForHeight, viewportWidth, config);
@@ -249,14 +251,14 @@ export function computeChatLayout(
     const typingWidth = typingConfig.width.fixed || typingConfig.width.min;
 
     // Calculate gap before typing indicator
-    const lastMsg = messages[messages.length - 1];
+    const lastMsg = messages[messages.length - 1] as LayoutMessage | undefined;
     if (lastMsg) {
       const prevForGap: MessageForGap = {
         type: lastMsg.type as MessageType,
         from: lastMsg.from,
         at: lastMsg.at,
-        hasReply: (lastMsg as any).replyTo != null,
-        hasReactions: (lastMsg as any).reactions?.length > 0,
+        hasReply: lastMsg.replyTo != null,
+        hasReactions: (lastMsg.reactions?.length ?? 0) > 0,
       };
       const typingForGap: MessageForGap = {
         type: "typing",

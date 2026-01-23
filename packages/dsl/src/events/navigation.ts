@@ -31,7 +31,7 @@ export const navigation = {
         conversationId: options?.conversationId,
         transition: options?.transition,
         animationDuration: options?.duration
-    } as any), // Cast to any because NAVIGATE_APP might not be in core types yet, but runtime handles it
+    }) satisfies TimelineEvent
 
     /**
      * Navigate within current app
@@ -60,5 +60,5 @@ export const navigation = {
         screen: screen as string,
         transition: options?.transition,
         animationDuration: options?.duration
-    } as any)
+    }) satisfies TimelineEvent
 };

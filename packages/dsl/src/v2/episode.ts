@@ -47,12 +47,12 @@ export interface DeviceOptions {
   os?: OSConfig;
 }
 
-// Track builder base interface - implementations can have additional methods
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import type { TrackEvent } from "@tokovo/ir";
+
 export interface TrackBuilder {
-  _events: any[];
-  at: (time: string | number) => any;
-  span: (start: string | number, end: string | number) => any;
+  _events: TrackEvent[];
+  at: (time: string | number) => unknown;
+  span: (start: string | number, end: string | number) => unknown;
 }
 
 // Track factory function type - use any for factory to allow app-specific builders
@@ -153,7 +153,7 @@ export class EpisodeBuilder {
    * Add a generic track by ID.
    * Used for plugin tracks (e.g., "app_whatsapp").
    */
-  track<T extends { _events: any[]; at: any; span: any }>(
+  track<T extends TrackBuilder>(
     trackId: string,
     factory: () => T,
     fn: TrackFn<T>,

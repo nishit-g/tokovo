@@ -37,6 +37,6 @@ export interface EpisodeConfig {
  */
 export interface EpisodeDefinition {
   id: string;
-  flow: any;
+  flow: unknown;
   schemaVersion: string;
 }

@@ -10,6 +10,7 @@ import {
   WhatsAppState,
   MessageData,
   WhatsAppConversation,
+  SystemMessage,
 } from "../../../types";
 
 export interface ChatScreenProps {
@@ -58,19 +59,15 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
 
   // 3. Prepare Data
   const contactName = conversation?.name || "Unknown";
-  const rawMessages = (conversation?.messages || []) as any[];
+  const rawMessages = conversation?.messages || [];
 
-  // Map runtime messages to strict MessageData
-  // Runtime might have loose types, we ensure UI gets strict shape
-  // This mapping layer protects the UI from runtime messiness
-  const messages: MessageData[] = rawMessages.map((m) => {
+  const messages = rawMessages.map((m): MessageData => {
     const base = {
       id: m.id,
       from: m.from,
       timestamp: m.timestamp,
       status: m.status,
       at: m.at,
-      // Pass through reactions and replyTo for UI rendering
       reactions: m.reactions,
       replyTo: m.replyTo,
     };
@@ -79,57 +76,57 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       case "image":
         return {
           ...base,
-          type: "image",
-          imageUrl: m.imageUrl,
+          type: "image" as const,
+          imageUrl: m.imageUrl ?? "",
           caption: m.caption,
         };
       case "video":
         return {
           ...base,
-          type: "video",
-          videoUrl: m.videoUrl,
+          type: "video" as const,
+          videoUrl: m.videoUrl ?? "",
           thumbnailUrl: m.thumbnailUrl,
           duration: m.duration,
           caption: m.caption,
         };
       case "voice":
-        return { ...base, type: "voice", duration: m.duration || 0 };
+        return { ...base, type: "voice" as const, duration: m.duration || 0 };
       case "gif":
         return {
           ...base,
-          type: "gif",
-          gifUrl: m.gifUrl,
+          type: "gif" as const,
+          gifUrl: m.gifUrl ?? "",
         };
       case "sticker":
         return {
           ...base,
-          type: "sticker",
-          stickerUrl: m.stickerUrl,
+          type: "sticker" as const,
+          stickerUrl: m.stickerUrl ?? "",
         };
       case "document":
         return {
           ...base,
-          type: "document",
-          fileName: m.fileName,
-          fileSize: m.fileSize,
+          type: "document" as const,
+          fileName: m.fileName ?? "",
+          fileSize: m.fileSize ?? "",
           fileType: m.fileType,
-          documentUrl: m.documentUrl,
+          documentUrl: m.documentUrl ?? "",
           pageCount: m.pageCount,
         };
       case "contact":
         return {
           ...base,
-          type: "contact",
-          contactName: m.contactName,
+          type: "contact" as const,
+          contactName: m.contactName ?? "",
           contactPhone: m.contactPhone,
           contactAvatarUrl: m.contactAvatarUrl,
         };
       case "location":
         return {
           ...base,
-          type: "location",
-          latitude: m.latitude,
-          longitude: m.longitude,
+          type: "location" as const,
+          latitude: m.latitude ?? 0,
+          longitude: m.longitude ?? 0,
           locationName: m.locationName,
           locationAddress: m.locationAddress,
           mapThumbnailUrl: m.mapThumbnailUrl,
@@ -137,20 +134,20 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
       case "link":
         return {
           ...base,
-          type: "link",
-          text: m.text,
-          linkPreview: m.linkPreview,
+          type: "link" as const,
+          text: m.text ?? "",
+          linkPreview: m.linkPreview ?? { url: "", title: "" },
         };
       case "system":
         return {
           ...base,
-          type: "system",
-          text: m.text,
-          systemType: m.systemType,
+          type: "system" as const,
+          text: m.text ?? "",
+          systemType: m.systemType as SystemMessage["systemType"],
         };
       case "text":
       default:
-        return { ...base, type: "text", text: m.text || "" };
+        return { ...base, type: "text" as const, text: m.text || "" };
     }
   });
 

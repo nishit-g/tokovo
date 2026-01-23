@@ -28,10 +28,10 @@ export const ghibliStrategy: UIStrategy = {
   name: "WhatsApp Ghibli",
   platform: "custom",
 
-  Header: undefined as any,
+  Header: null,
   MessageBubble: IOSMessageBubble as React.FC<MessageBubbleProps>,
   TypingIndicator: GhibliTypingIndicator,
-  InputArea: undefined as any,
+  InputArea: null,
 
   tokens: {
     backgroundColor: "#F5EBD7",
