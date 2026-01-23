@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { Check, CheckCheck } from "lucide-react";
 import { MessageContent } from "./MessageContent";
 import { MessageData } from "../../types";
@@ -27,7 +27,7 @@ interface MessageBubbleProps {
   tokens?: UIThemeTokens;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble = memo(function MessageBubble({
   message,
   isMe,
   isFirst,
@@ -37,15 +37,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   senderColor,
   showSenderName = false,
   tokens,
-}) => {
+}: MessageBubbleProps) {
   const bubbleMyBg = tokens?.bubbleMyBg || DEFAULT_BUBBLE_COLORS.bubbleMyBg;
-  const bubbleMyText = tokens?.bubbleMyText || DEFAULT_BUBBLE_COLORS.bubbleMyText;
-  const bubbleOtherBg = tokens?.bubbleOtherBg || DEFAULT_BUBBLE_COLORS.bubbleOtherBg;
-  const bubbleOtherText = tokens?.bubbleOtherText || DEFAULT_BUBBLE_COLORS.bubbleOtherText;
-  const timestampColor = tokens?.timestampColor || DEFAULT_BUBBLE_COLORS.timestampColor;
+  const bubbleMyText =
+    tokens?.bubbleMyText || DEFAULT_BUBBLE_COLORS.bubbleMyText;
+  const bubbleOtherBg =
+    tokens?.bubbleOtherBg || DEFAULT_BUBBLE_COLORS.bubbleOtherBg;
+  const bubbleOtherText =
+    tokens?.bubbleOtherText || DEFAULT_BUBBLE_COLORS.bubbleOtherText;
+  const timestampColor =
+    tokens?.timestampColor || DEFAULT_BUBBLE_COLORS.timestampColor;
   const accentColor = tokens?.accentColor || DEFAULT_BUBBLE_COLORS.accentColor;
-  const backgroundColor = tokens?.backgroundColor || DEFAULT_BUBBLE_COLORS.backgroundColor;
-  const secondaryColor = tokens?.secondaryColor || DEFAULT_BUBBLE_COLORS.secondaryColor;
+  const backgroundColor =
+    tokens?.backgroundColor || DEFAULT_BUBBLE_COLORS.backgroundColor;
+  const secondaryColor =
+    tokens?.secondaryColor || DEFAULT_BUBBLE_COLORS.secondaryColor;
 
   const isSystem = message.type === "system";
   const isSticker = message.type === "sticker";
@@ -403,4 +409,4 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       )}
     </div>
   );
-};
+});

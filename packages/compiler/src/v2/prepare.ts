@@ -9,7 +9,13 @@
  */
 
 import type { TrackEpisodeIR } from "@tokovo/ir";
-import type { RuntimeEvent, WorldState, TokovoPlugin } from "@tokovo/core";
+import type {
+  RuntimeEvent,
+  WorldState,
+  TokovoPlugin,
+  DeviceState,
+} from "@tokovo/core";
+import { DEFAULT_CAMERA_STATE, DEFAULT_AUDIO_STATE } from "@tokovo/core";
 import { lowerEpisode } from "./lowering";
 
 // =============================================================================
@@ -91,7 +97,7 @@ export function prepareTrackEpisode(
  * Build initial WorldState from TrackEpisodeIR device configs.
  */
 function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
-  const devices: Record<string, unknown> = {};
+  const devices: Record<string, DeviceState> = {};
   for (const device of ir.devices) {
     devices[device.id] = {
       id: device.id,
@@ -100,6 +106,7 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
       isLocked: false,
       platform: device.profile.includes("pixel") ? "android" : "ios",
       appTheme: device.theme,
+      notifications: [],
       keyboard: {
         visible: false,
         layout: "qwerty",
@@ -116,45 +123,13 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
         keyPressVisual: null,
         typingSchedule: null,
       },
-    };
+    } as DeviceState;
   }
 
-  const osConfig = ir.devices[0]?.os || {};
-  const os = {
-    time: osConfig.time instanceof Date ? osConfig.time : new Date(),
-    battery: osConfig.battery ?? 100,
-    network: osConfig.network ?? "5G",
-    strength: 4,
-    dnd: false,
-    charging: false,
-    lowPowerMode: false,
-  };
+  const firstDeviceId = ir.devices[0]?.id || "main_phone";
+  const camera = { ...DEFAULT_CAMERA_STATE, activeDeviceId: firstDeviceId };
+  const audio = { ...DEFAULT_AUDIO_STATE };
 
-  const camera = {
-    scale: 1,
-    translateX: 0,
-    translateY: 0,
-    rotation: 0,
-    originX: 0.5,
-    originY: 0.5,
-    activeEffects: [],
-  };
-
-  const audio = {
-    activeSounds: {},
-    buses: {
-      music: { baseGain: 1.0 },
-      ui: { baseGain: 1.0 },
-      sfx: { baseGain: 1.0 },
-      voice: { baseGain: 1.0 },
-      master: { baseGain: 1.0 },
-    },
-    muted: false,
-  };
-
-  const notifications: unknown[] = [];
-
-  // Build per-app state with conversations nested inside
   const appState: Record<string, unknown> = {};
   for (const device of ir.devices) {
     if (device.app) {
@@ -188,13 +163,12 @@ function buildInitialWorld(ir: TrackEpisodeIR): WorldState {
     }
   }
 
-  return {
+  const worldState: WorldState = {
     devices,
-    os,
+    appState,
     camera,
     audio,
-    notifications,
-    apps: {},
-    appState,
-  } as unknown as WorldState;
+  };
+
+  return worldState;
 }

@@ -98,50 +98,6 @@ export {
 export { whatsappAudioRules } from "./assets/audio-rules";
 
 // =============================================================================
-// SIDE EFFECTS (Auto-registration)
-// =============================================================================
-
-import "./ui/strategies";
-import {
-  AutoSoundRegistry,
-  AppMetadataRegistry,
-  SoundRegistry,
-  registerAnchorProvider,
-  LayoutRegistry,
-} from "@tokovo/core";
-import { WHATSAPP_APP_ID } from "./constants";
-import { whatsappAudioRules } from "./assets/audio-rules";
-import { WhatsAppAnchors } from "./runtime/adapters/anchors";
-import { computeChatLayout } from "./layout/chat";
-
-// WhatsApp sound paths
-const whatsappSounds = {
-  "app_whatsapp.message_in": "plugins/whatsapp/received.wav",
-  "app_whatsapp.message_out": "plugins/whatsapp/sent.wav",
-  "app_whatsapp.typing_loop": "plugins/whatsapp/typing_loop.wav",
-};
-
-AutoSoundRegistry.register(whatsappAudioRules);
-SoundRegistry.registerMany(whatsappSounds);
-
-// Register anchor provider for camera system
-registerAnchorProvider(WhatsAppAnchors);
-
-// Register layout strategy for CHAT view (produces ChatLayoutState with semantic.regions)
-LayoutRegistry.register({
-  appId: WHATSAPP_APP_ID,
-  viewKind: "CHAT",
-  computeLayout: computeChatLayout,
-});
-
-AppMetadataRegistry.register("app_whatsapp", {
-  displayName: "WhatsApp",
-  themeColor: "#25D366",
-  icon: "💬",
-  viewStrategy: "CHAT",
-});
-
-// =============================================================================
 // LEGACY ALIASES
 // =============================================================================
 

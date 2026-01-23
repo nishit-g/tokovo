@@ -1,13 +1,8 @@
 /**
  * UI Strategies Index
  *
- * Auto-registers all available UI strategies on import.
+ * Exports all strategies. Registration is done via registerWhatsAppPlugin().
  */
-
-import "./ios";
-import "./android";
-import "./ghibli";
-import "./cyberpunk";
 
 export { iOSStrategy } from "./ios";
 export { androidStrategy } from "./android";

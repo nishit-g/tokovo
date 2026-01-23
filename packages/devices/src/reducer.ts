@@ -22,7 +22,8 @@ import { ReducerRegistry } from "@tokovo/core";
 // =============================================================================
 
 function generateNotificationId(event: TimelineEvent): string {
-  return `notif_${event.at}_${(event as { appId?: string }).appId}_${Math.random().toString(36).substr(2, 5)}`;
+  const appId = (event as { appId?: string }).appId || "unknown";
+  return `notif_${event.at}_${appId}_${event.at.toString(16)}`;
 }
 
 function computeGroups(

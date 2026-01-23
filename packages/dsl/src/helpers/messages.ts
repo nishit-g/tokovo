@@ -8,7 +8,6 @@ import { TimelineEvent } from "@tokovo/core";
 import { createTrace } from "@tokovo/ir";
 import { Tracer } from "../tracer";
 
-/** Message status for tick progression */
 export type MessageStatus =
   | "sending"
   | "sent"
@@ -16,9 +15,17 @@ export type MessageStatus =
   | "read"
   | "failed";
 
-/**
- * Message event factories
- */
+let messageCounter = 0;
+
+function generateMessageId(at: number, prefix = "msg"): string {
+  messageCounter++;
+  return `${prefix}_${at}_${messageCounter.toString(16).padStart(4, "0")}`;
+}
+
+export function resetMessageCounter(): void {
+  messageCounter = 0;
+}
+
 export const messages = {
   /**
    * Send a message (from device owner)
@@ -38,7 +45,7 @@ export const messages = {
       conversationId,
       silent: options.silent,
       message: {
-        id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+        id: generateMessageId(at),
         from: "me",
         text,
         timestamp: Date.now().toString(),
@@ -46,9 +53,6 @@ export const messages = {
       },
     }) as const,
 
-  /**
-   * Receive a message (from someone else)
-   */
   receive: (
     at: number,
     conversationId: string,
@@ -58,14 +62,14 @@ export const messages = {
   ) =>
     ({
       at,
-      kind: "MessageReceived", // V2 IR
+      kind: "MessageReceived",
       deviceId: options.deviceId || "primary",
       trace: createTrace(Tracer.capture()),
       appId: options.appId || "app_whatsapp",
       conversationId,
       silent: options.silent,
       message: {
-        id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+        id: generateMessageId(at),
         from,
         text,
         timestamp: Date.now().toString(),
@@ -132,7 +136,7 @@ export const messages = {
       appId,
       conversationId,
       message: {
-        id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+        id: generateMessageId(at, "img"),
         from: "me",
         text: caption || "",
         imageUrl,
@@ -141,9 +145,6 @@ export const messages = {
       },
     }) as const,
 
-  /**
-   * Receive an image
-   */
   receiveImage: (
     at: number,
     conversationId: string,
@@ -161,7 +162,7 @@ export const messages = {
       appId,
       conversationId,
       message: {
-        id: `msg_${Math.random().toString(36).substr(2, 9)}`,
+        id: generateMessageId(at, "img"),
         from,
         text: caption || "",
         imageUrl,

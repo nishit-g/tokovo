@@ -19,9 +19,19 @@ import {
 } from "./types";
 import type { CameraTransform } from "@tokovo/device-camera";
 import { TIMING } from "./constants";
-import { EventIndex, getEventsUpTo } from "./utils/event-utils";
+import {
+  EventIndex,
+  KeyframedEventIndex,
+  getEventsUpTo,
+  getEventsUpToKeyframed,
+  getEventsInRange,
+} from "./utils/event-utils";
+import {
+  StateCache,
+  getCachedStateForFrame,
+  cacheStateAtKeyframe,
+} from "./utils/state-cache";
 
-// Import directly from handler files (avoid circular imports)
 import { ReducerRegistry } from "./engine/registry";
 import { EngineConfig } from "./engine/config";
 import { EngineLogger } from "./engine/logger";
@@ -34,7 +44,6 @@ import {
   HandlerContext,
 } from "./engine/handlers";
 
-// Re-export for backward compatibility
 export { ReducerRegistry } from "./engine/registry";
 export type {
   DeviceReducer,
@@ -43,6 +52,19 @@ export type {
 } from "./engine/registry";
 export { EngineConfig } from "./engine/config";
 export { EngineLogger } from "./engine/logger";
+export {
+  createEventIndex,
+  createKeyframedEventIndex,
+  type KeyframedEventIndex,
+} from "./utils/event-utils";
+export {
+  createStateCache,
+  getCachedStateForFrame,
+  cacheStateAtKeyframe,
+  invalidateCacheAfter,
+  clearStateCache,
+  type StateCache,
+} from "./utils/state-cache";
 
 // =============================================================================
 // REPLAY CONTEXT
@@ -320,5 +342,238 @@ export function createInitialWorld(
   };
 }
 
-// Legacy export for handleAutoSounds (used in some places)
 export { handleAutoSounds };
+
+export function replayIncremental(
+  initial: WorldState,
+  events: TimelineEvent[],
+  t: number,
+  ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT,
+  eventIndex?: KeyframedEventIndex,
+  stateCache?: StateCache,
+): WorldState {
+  if (!eventIndex || !stateCache) {
+    return replay(initial, events, t, ctx, eventIndex);
+  }
+
+  const cached = getCachedStateForFrame(stateCache, t);
+  if (cached && cached.fromFrame === t) {
+    return cached.state;
+  }
+
+  let startState: WorldState;
+  let startFrame: number;
+  let eventsToApply: TimelineEvent[];
+
+  if (cached) {
+    startState = cached.state;
+    startFrame = cached.fromFrame;
+    eventsToApply = getEventsInRange(eventIndex, startFrame + 1, t);
+  } else {
+    startState = ensureInitialState(initial);
+    startFrame = -1;
+    eventsToApply = getEventsUpToKeyframed(eventIndex, t);
+  }
+
+  if (eventsToApply.length === 0 && cached) {
+    return finalizeState(cached.state, t);
+  }
+
+  const stateAfterEvents = eventsToApply.reduce((state, event, index) => {
+    return produce(state, (draft) => {
+      try {
+        handleEventInternal(draft, event, index, t, ctx);
+      } catch (error) {
+        handleEventError(error, event, ctx);
+      }
+    });
+  }, startState);
+
+  const finalState = finalizeState(stateAfterEvents, t);
+  cacheStateAtKeyframe(stateCache, t, finalState);
+
+  return finalState;
+}
+
+function ensureInitialState(initial: WorldState): WorldState {
+  if (!initial) {
+    return {
+      devices: {},
+      appState: {},
+      camera: { ...DEFAULT_CAMERA_STATE },
+      audio: { ...DEFAULT_AUDIO_STATE },
+    };
+  }
+
+  interface LegacyCameraConfig {
+    type?: string;
+    appId?: string;
+  }
+  const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
+
+  return {
+    ...initial,
+    camera:
+      initial.camera && "activeEffects" in initial.camera
+        ? initial.camera
+        : {
+            ...DEFAULT_CAMERA_STATE,
+            baseView: (legacyCamera?.type || "APP_VIEW") as
+              | "APP_VIEW"
+              | "TRANSITION",
+            appId: legacyCamera?.appId,
+          },
+    audio: initial.audio || { ...DEFAULT_AUDIO_STATE },
+  };
+}
+
+function handleEventInternal(
+  draft: WorldState,
+  event: TimelineEvent,
+  index: number,
+  t: number,
+  ctx: ReplayContext,
+): void {
+  const handlerCtx: HandlerContext = {
+    frame: t,
+    eventIndex: index,
+    mode: ctx.mode,
+  };
+
+  const appIdForKind = ReducerRegistry.getAppIdForEventKind(
+    event.kind as string,
+  );
+  if (appIdForKind) {
+    const reducer = ReducerRegistry.getAppReducer(appIdForKind);
+    reducer?.(draft, event);
+    return;
+  }
+
+  if (
+    typeof event.kind === "string" &&
+    (event.kind.startsWith("Camera") || event.kind.startsWith("Anchor"))
+  ) {
+    const type = event.kind.replace("Camera", "").toUpperCase();
+    const normalizedType =
+      type === "ANCHORFOCUS"
+        ? "ANCHOR_FOCUS"
+        : type === "ANCHORTRACK"
+          ? "ANCHOR_TRACK"
+          : type;
+
+    const cameraEvent = {
+      ...event,
+      kind: "CAMERA" as const,
+      type: normalizedType,
+    };
+    processCameraEvent(
+      draft,
+      cameraEvent as Parameters<typeof processCameraEvent>[1],
+      handlerCtx,
+    );
+    return;
+  }
+
+  switch (event.kind) {
+    case "DEVICE":
+      if (ReducerRegistry.deviceReducer) {
+        draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
+      }
+      const devEvent = event as TimelineEvent & { type?: string };
+      const devType = devEvent.type;
+      if (
+        devType &&
+        (devType.includes("NOTIFICATION") ||
+          devType.startsWith("SHOW_") ||
+          devType.startsWith("DISMISS_") ||
+          devType.startsWith("TAP_") ||
+          devType.startsWith("SWIPE_") ||
+          devType.startsWith("CLEAR_ALL") ||
+          devType.includes("DYNAMIC_ISLAND"))
+      ) {
+        const notifReducer = ReducerRegistry.getFeatureReducer(devType);
+        if (notifReducer) {
+          notifReducer(draft, event, index);
+        }
+      }
+      break;
+
+    case "CAMERA":
+      processCameraEvent(draft, event, handlerCtx);
+      break;
+
+    case "AUDIO":
+      processAudioEvent(draft, event, handlerCtx);
+      break;
+
+    case "KEYBOARD": {
+      const kbReducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
+      if (kbReducer) {
+        kbReducer(draft, event, index);
+      }
+      break;
+    }
+
+    case "OS":
+      processOSEvent(draft, event, handlerCtx);
+      break;
+
+    case "CALL":
+      processCallEvent(draft, event, handlerCtx);
+      break;
+  }
+
+  handleAutoSounds(draft, event, handlerCtx);
+}
+
+function handleEventError(
+  error: unknown,
+  event: TimelineEvent,
+  ctx: ReplayContext,
+): void {
+  const eventWithAppId = event as TimelineEvent & { appId?: string };
+  const pluginId = eventWithAppId.appId || event.kind;
+
+  if (ctx.mode === "render") {
+    throw new PluginError(
+      pluginId,
+      event,
+      error instanceof Error ? error : new Error(String(error)),
+    );
+  } else {
+    console.error(
+      `[Engine] Event handler failed at frame ${event.at}:`,
+      event,
+      error,
+    );
+    if (ctx.errors) {
+      ctx.errors.push({
+        event,
+        error: error instanceof Error ? error : new Error(String(error)),
+        frame: event.at,
+      });
+    }
+  }
+}
+
+function finalizeState(state: WorldState, t: number): WorldState {
+  return produce(state, (draft) => {
+    draft.camera.activeEffects = draft.camera.activeEffects.filter(
+      (ae) => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER,
+    );
+
+    if (!draft.camera.deviceTransforms) {
+      draft.camera.deviceTransforms = {};
+    }
+
+    for (const deviceId of Object.keys(draft.devices)) {
+      draft.camera.deviceTransforms[deviceId] =
+        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+    }
+
+    const activeDeviceId =
+      draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
+    draft.camera.transform =
+      draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM;
+  });
+}

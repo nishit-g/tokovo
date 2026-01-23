@@ -13,22 +13,19 @@ import React from "react";
 import { Composition, Folder } from "remotion";
 import { z } from "zod";
 import { PluginManager } from "@tokovo/core";
-import { WhatsApp } from "@tokovo/apps-whatsapp";
+import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
+import { registerDevicesPlugin } from "@tokovo/devices";
+import { registerNotificationPlugin } from "@tokovo/device-notifications";
 import { episodeRegistry, getFormat } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
 
 // =============================================================================
-// INITIALIZATION
+// INITIALIZATION (explicit registration - no side effects)
 // =============================================================================
 
-PluginManager.register(WhatsApp);
-
-// =============================================================================
-// PLUGIN IMPORTS (side-effect: auto-registers reducers)
-// =============================================================================
-
-// Device plugins auto-register their reducers on import
-import "@tokovo/device-notifications";
+registerDevicesPlugin();
+registerWhatsAppPlugin();
+registerNotificationPlugin();
 
 // =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)

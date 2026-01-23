@@ -11,7 +11,11 @@ import {
   type AnyWhatsAppEvent,
   type CustomEvent,
 } from "../schemas";
-import { getHandler, type HandlerContext } from "../handlers";
+import {
+  getHandler,
+  type HandlerContext,
+  registerAllWhatsAppHandlers,
+} from "../handlers";
 import {
   GROUP_EVENT_TYPES,
   isWhatsAppGroupEvent,
@@ -19,6 +23,8 @@ import {
   isGroupMemberRemovePayload,
   isGroupAdminChangePayload,
 } from "../ir/group-ops";
+
+registerAllWhatsAppHandlers();
 
 function getAppState(draft: WorldState): WhatsAppState {
   if (!draft.appState) {

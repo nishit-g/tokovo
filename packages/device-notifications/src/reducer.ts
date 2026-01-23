@@ -96,11 +96,8 @@ export function notificationReducer(
     // =====================================================================
     case "SHOW_NOTIFICATION":
     case "NOTIFICATION_SHOW": {
-      const id =
-        event.id ||
-        `notif_${event.at}_${Math.random().toString(36).slice(2, 8)}`;
+      const id = event.id || `notif_${event.at}_${targetDeviceId}`;
 
-      // ★ CANONICAL FLAT SHAPE - No ir nesting
       const instance: NotificationInstance = {
         id,
         deviceId: targetDeviceId,

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { memo } from "react";
 import { useCurrentFrame, interpolate } from "remotion";
 import { DoubleCheckIcon, MutedIcon, PinIcon } from "./Icons";
 import { whatsappColors, typography, spacing } from "./theme";
@@ -138,7 +138,7 @@ const getMediaPrefix = (mediaType: ChatListItemProps["mediaType"]): string => {
 // MAIN COMPONENT
 // =============================================================================
 
-export const ChatListItem: React.FC<ChatListItemProps> = ({
+export const ChatListItem = memo(function ChatListItem({
   name,
   avatarUrl,
   lastMessage,
@@ -152,7 +152,7 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
   hasStatus,
   mediaType,
   senderName,
-}) => {
+}: ChatListItemProps) {
   const hasUnread = unreadCount > 0;
 
   const buildMessagePreview = (): React.ReactNode => {
@@ -403,6 +403,6 @@ export const ChatListItem: React.FC<ChatListItemProps> = ({
       </div>
     </div>
   );
-};
+});
 
 export default ChatListItem;

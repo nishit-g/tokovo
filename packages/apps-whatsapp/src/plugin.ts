@@ -9,7 +9,15 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import { PluginManager, type PluginReducer } from "@tokovo/core";
+import {
+  PluginManager,
+  type PluginReducer,
+  AutoSoundRegistry,
+  AppMetadataRegistry,
+  SoundRegistry,
+  registerAnchorProvider,
+  LayoutRegistry,
+} from "@tokovo/core";
 import { WHATSAPP_APP_ID } from "./constants";
 import type {
   TokovoPluginContract,
@@ -169,8 +177,43 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 
 export { WhatsAppPluginV2 as WhatsAppPlugin };
 
+import { WhatsAppAnchors } from "./runtime/adapters/anchors";
+
+import { UIStrategyRegistry } from "./ui/ui-strategy";
+import { iOSStrategy } from "./ui/strategies/ios";
+import { androidStrategy } from "./ui/strategies/android";
+import { ghibliStrategy } from "./ui/strategies/ghibli";
+import { cyberpunkStrategy } from "./ui/strategies/cyberpunk";
+
+let _registered = false;
+
 export function registerWhatsAppPlugin(): void {
+  if (_registered) return;
+  _registered = true;
+
+  UIStrategyRegistry.register(iOSStrategy);
+  UIStrategyRegistry.register(androidStrategy);
+  UIStrategyRegistry.register(ghibliStrategy);
+  UIStrategyRegistry.register(cyberpunkStrategy);
+
   PluginManager.register(WhatsAppPluginV2);
+
+  AutoSoundRegistry.register(whatsappAudioRules);
+  SoundRegistry.registerMany(WhatsAppPluginV2.sounds);
+  registerAnchorProvider(WhatsAppAnchors);
+
+  LayoutRegistry.register({
+    appId: WHATSAPP_APP_ID,
+    viewKind: "CHAT",
+    computeLayout: computeChatLayout,
+  });
+
+  AppMetadataRegistry.register("app_whatsapp", {
+    displayName: "WhatsApp",
+    themeColor: "#25D366",
+    icon: "💬",
+    viewStrategy: "CHAT",
+  });
 }
 
 export type { WhatsAppDslApi };

@@ -1,7 +1,6 @@
 import React from "react";
 import {
   UIStrategy,
-  UIStrategyRegistry,
   HeaderProps,
   MessageBubbleProps,
   TypingIndicatorProps,
@@ -69,7 +68,5 @@ export const ghibliStrategy: UIStrategy = {
     linkColor: "#2D5A27",
   },
 };
-
-UIStrategyRegistry.register(ghibliStrategy);
 
 export default ghibliStrategy;

@@ -22,25 +22,17 @@ type IndexableEvent = TimelineEvent | RuntimeEvent;
  * their `at` value for O(1) lookup per unique frame.
  */
 export interface EventIndex {
-  /** Events indexed by frame number */
   byFrame: Map<number, TimelineEvent[]>;
-
-  /** Maximum frame number in the events */
   maxFrame: number;
-
-  /** Total event count */
   totalEvents: number;
-
-  /** Sorted unique frame numbers */
   frames: number[];
 }
 
-/**
- * Create an event index from a list of events
- *
- * @param events - Array of timeline events
- * @returns Indexed events for efficient lookup
- */
+export interface KeyframedEventIndex extends EventIndex {
+  keyframeInterval: number;
+  keyframes: Map<number, TimelineEvent[]>;
+}
+
 export function createEventIndex(events: TimelineEvent[]): EventIndex {
   const byFrame = new Map<number, TimelineEvent[]>();
   let maxFrame = 0;
@@ -62,13 +54,30 @@ export function createEventIndex(events: TimelineEvent[]): EventIndex {
   };
 }
 
-/**
- * Get all events up to and including frame t
- *
- * @param index - Pre-computed event index
- * @param t - Current frame number
- * @returns All events with `at <= t`
- */
+export function createKeyframedEventIndex(
+  events: TimelineEvent[],
+  keyframeInterval = 300,
+): KeyframedEventIndex {
+  const base = createEventIndex(events);
+  const keyframes = new Map<number, TimelineEvent[]>();
+  let accumulated: TimelineEvent[] = [];
+
+  for (const frame of base.frames) {
+    const frameEvents = base.byFrame.get(frame) || [];
+    accumulated = [...accumulated, ...frameEvents];
+
+    if (frame % keyframeInterval === 0 || frame === base.maxFrame) {
+      keyframes.set(frame, [...accumulated]);
+    }
+  }
+
+  return {
+    ...base,
+    keyframeInterval,
+    keyframes,
+  };
+}
+
 export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
   const result: TimelineEvent[] = [];
 
@@ -83,13 +92,35 @@ export function getEventsUpTo(index: EventIndex, t: number): TimelineEvent[] {
   return result;
 }
 
-/**
- * Get events that occur exactly at frame t
- *
- * @param index - Pre-computed event index
- * @param t - Frame number to query
- * @returns Events at frame t (or empty array)
- */
+export function getEventsUpToKeyframed(
+  index: KeyframedEventIndex,
+  t: number,
+): TimelineEvent[] {
+  const nearestKeyframe =
+    Math.floor(t / index.keyframeInterval) * index.keyframeInterval;
+  const cached = index.keyframes.get(nearestKeyframe);
+
+  if (!cached) {
+    return getEventsUpTo(index, t);
+  }
+
+  if (t === nearestKeyframe) {
+    return cached;
+  }
+
+  const additional: TimelineEvent[] = [];
+  for (const frame of index.frames) {
+    if (frame <= nearestKeyframe) continue;
+    if (frame > t) break;
+    const events = index.byFrame.get(frame);
+    if (events) {
+      additional.push(...events);
+    }
+  }
+
+  return [...cached, ...additional];
+}
+
 export function getEventsAt(index: EventIndex, t: number): TimelineEvent[] {
   return index.byFrame.get(t) || [];
 }

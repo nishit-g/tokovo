@@ -144,7 +144,7 @@ export class OSPointBuilder {
    * Show a notification.
    */
   notification(options: NotificationOptions): void {
-    const id = `notif_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const id = `notif_${this._frame}_${this._events.length}`;
     this._events.push({
       at: this._frame,
       kind: "OS",

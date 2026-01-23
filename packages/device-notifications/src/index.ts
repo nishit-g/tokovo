@@ -1,20 +1,20 @@
 /**
  * @tokovo/device-notifications
- * 
+ *
  * Enterprise-grade notification system for Tokovo.
- * 
+ *
  * @example
  * ```typescript
  * import { NotificationTrackBuilder } from "@tokovo/device-notifications";
- * 
+ *
  * const noti = new NotificationTrackBuilder(30, "phone", getOrder);
- * 
+ *
  * noti.at("2s").show({
  *     appId: "app_whatsapp",
  *     title: "Alex",
  *     body: "Hey! How are you?",
  * });
- * 
+ *
  * noti.at("5s").dismiss("notif_1");
  * ```
  */
@@ -24,24 +24,24 @@
 // =============================================================================
 
 export type {
-    NotificationIR,
-    NotificationInstance,
-    NotificationMode,
-    NotificationPriority,
-    DynamicIslandMode,
-    DynamicIslandState,
-    FormattedNotification,
-    NotificationAdapter,
+  NotificationIR,
+  NotificationInstance,
+  NotificationMode,
+  NotificationPriority,
+  DynamicIslandMode,
+  DynamicIslandState,
+  FormattedNotification,
+  NotificationAdapter,
 } from "./types";
 
 export type {
-    NotificationPayloads,
-    NotificationEventType,
-    ShowNotificationPayload,
-    DismissNotificationPayload,
-    TapNotificationPayload,
-    SwipeNotificationPayload,
-    DynamicIslandPayload,
+  NotificationPayloads,
+  NotificationEventType,
+  ShowNotificationPayload,
+  DismissNotificationPayload,
+  TapNotificationPayload,
+  SwipeNotificationPayload,
+  DynamicIslandPayload,
 } from "./types/payloads";
 
 // =============================================================================
@@ -49,8 +49,8 @@ export type {
 // =============================================================================
 
 export {
-    NotificationTrackBuilder,
-    NotificationPointBuilder,
+  NotificationTrackBuilder,
+  NotificationPointBuilder,
 } from "./dsl/track-builder";
 
 // =============================================================================
@@ -65,26 +65,23 @@ export { isNotificationEvent } from "./ir/track-event";
 // =============================================================================
 
 export {
-    notificationV2Lowering,
-    NOTIFICATION_EVENT_TYPES as LOWERING_EVENT_TYPES,
+  notificationV2Lowering,
+  NOTIFICATION_EVENT_TYPES as LOWERING_EVENT_TYPES,
 } from "./lowering/handler";
 
 // =============================================================================
 // REDUCER
 // =============================================================================
 
-export {
-    notificationReducer,
-    NOTIFICATION_EVENT_TYPES,
-} from "./reducer";
+export { notificationReducer, NOTIFICATION_EVENT_TYPES } from "./reducer";
 
 // =============================================================================
 // ADAPTERS
 // =============================================================================
 
 export {
-    NotificationAdapterRegistry,
-    DEFAULT_NOTIFICATION_HEIGHT,
+  NotificationAdapterRegistry,
+  DEFAULT_NOTIFICATION_HEIGHT,
 } from "./adapters/registry";
 
 // =============================================================================
@@ -92,18 +89,15 @@ export {
 // =============================================================================
 
 export {
-    notificationAudioRules,
-    defaultNotificationSounds,
+  notificationAudioRules,
+  defaultNotificationSounds,
 } from "./assets/audio-rules";
 
 // =============================================================================
 // PLUGIN
 // =============================================================================
 
-export {
-    NotificationPlugin,
-    registerNotificationPlugin,
-} from "./plugin";
+export { NotificationPlugin, registerNotificationPlugin } from "./plugin";
 
 // =============================================================================
 // SCHEDULER
@@ -124,19 +118,8 @@ export { AndroidNotificationStrategy } from "./strategies/AndroidNotificationStr
 // =============================================================================
 
 export {
-    NotificationStrategyRegistry,
-    registerDefaultStrategies,
-    type NotificationStrategyProps,
-    type NotificationStrategyComponent,
+  NotificationStrategyRegistry,
+  registerDefaultStrategies,
+  type NotificationStrategyProps,
+  type NotificationStrategyComponent,
 } from "./registries";
-
-// =============================================================================
-// AUTO-REGISTRATION
-// =============================================================================
-
-// Auto-register plugin and default strategies on import
-import { registerNotificationPlugin } from "./plugin";
-import { registerDefaultStrategies } from "./registries";
-
-registerNotificationPlugin();
-registerDefaultStrategies();

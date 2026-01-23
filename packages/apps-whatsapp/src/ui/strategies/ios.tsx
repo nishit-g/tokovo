@@ -8,7 +8,6 @@
 import React from "react";
 import {
   UIStrategy,
-  UIStrategyRegistry,
   HeaderProps,
   MessageBubbleProps,
   TypingIndicatorProps,
@@ -141,8 +140,5 @@ export const iOSStrategy: UIStrategy = {
     linkColor: "#027EB5",
   },
 };
-
-// Auto-register on import
-UIStrategyRegistry.register(iOSStrategy);
 
 export default iOSStrategy;

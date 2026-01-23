@@ -1,7 +1,6 @@
 import React from "react";
 import {
   UIStrategy,
-  UIStrategyRegistry,
   MessageBubbleProps,
   TypingIndicatorProps,
 } from "../ui-strategy";
@@ -67,7 +66,5 @@ export const cyberpunkStrategy: UIStrategy = {
     linkColor: "#00F0FF",
   },
 };
-
-UIStrategyRegistry.register(cyberpunkStrategy);
 
 export default cyberpunkStrategy;

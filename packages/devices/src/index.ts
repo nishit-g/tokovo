@@ -1,15 +1,15 @@
 /**
  * @tokovo/devices
- * 
+ *
  * Enterprise device profiles and OS features for Tokovo.
- * 
+ *
  * @example
  * ```typescript
  * import { DeviceRegistry, DeviceTrackBuilder, StatusBar } from "@tokovo/devices";
- * 
+ *
  * // Use registered profile
  * const profile = DeviceRegistry.get("iphone16");
- * 
+ *
  * // Use DSL for OS events
  * const device = new DeviceTrackBuilder(30, "phone", getOrder);
  * device.at("2s").lock();
@@ -24,7 +24,11 @@
 
 export * from "./types";
 export type { FrameProps, FrameComponent } from "./registries";
-export type { StatusBarStrategyProps, StatusBarStrategyComponent, StatusBarNotificationIcon } from "./registries";
+export type {
+  StatusBarStrategyProps,
+  StatusBarStrategyComponent,
+  StatusBarNotificationIcon,
+} from "./registries";
 export type { DeviceTrackEvent, DeviceEventType } from "./ir";
 
 // =============================================================================
@@ -32,9 +36,9 @@ export type { DeviceTrackEvent, DeviceEventType } from "./ir";
 // =============================================================================
 
 export {
-    DeviceRegistry,
-    FrameRegistry,
-    StatusBarStrategyRegistry,
+  DeviceRegistry,
+  FrameRegistry,
+  StatusBarStrategyRegistry,
 } from "./registries";
 
 // =============================================================================
@@ -94,14 +98,11 @@ export * from "./keyboards";
 // PLUGIN
 // =============================================================================
 
-export { DevicesPlugin, registerDevicesPlugin, type DevicesPluginContract } from "./plugin";
-
-// =============================================================================
-// AUTO-REGISTRATION
-// =============================================================================
-
-import { registerDevicesPlugin } from "./plugin";
-registerDevicesPlugin();
+export {
+  DevicesPlugin,
+  registerDevicesPlugin,
+  type DevicesPluginContract,
+} from "./plugin";
 
 // =============================================================================
 // DYNAMIC LOOKUP HELPER
@@ -117,5 +118,5 @@ import type { DeviceProfile } from "./types";
  * @returns DeviceProfile or default iPhone16Profile if not found
  */
 export function getDeviceProfile(profileId: string): DeviceProfile {
-    return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
+  return DeviceRegistry.getOrDefault(profileId, "iphone16") || iPhone16Profile;
 }

@@ -1,21 +1,5 @@
-/**
- * Media Message Bubbles
- *
- * High-fidelity WhatsApp iOS-style media bubbles:
- * - ImageMessageBubble
- * - VideoMessageBubble
- * - GifMessageBubble
- * - VoiceMessageBubble
- *
- * NOTE: Uses 1x logical pixels (matches iOS components)
- */
-
-import React from "react";
+import React, { memo } from "react";
 import { Platform } from "@tokovo/core";
-
-// =============================================================================
-// SHARED CONSTANTS
-// =============================================================================
 
 const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";
@@ -24,7 +8,6 @@ const WA_TEAL = "#128C7E";
 const WA_READ_BLUE = "#53BDEB";
 const WA_GRAY = "#8696A0";
 
-// iOS logical pixel values
 const BUBBLE_RADIUS = 18;
 const BUBBLE_TAIL_RADIUS = 4;
 const BUBBLE_PADDING = 6;
@@ -33,14 +16,187 @@ const TIMESTAMP_SIZE = 11;
 const SENDER_NAME_SIZE = 13;
 const MESSAGE_TEXT_SIZE = 16;
 
-// Colors
 const BUBBLE_MY_COLOR = "#DCF8C6";
 const BUBBLE_OTHER_COLOR = "#FFFFFF";
 const BUBBLE_SHADOW = "0 1px 0.5px rgba(0,0,0,0.13)";
 
-// =============================================================================
-// IMAGE MESSAGE BUBBLE
-// =============================================================================
+interface MediaBubbleBaseProps {
+  isMe: boolean;
+  senderName?: string;
+  timestamp?: string;
+  read?: boolean;
+  showTimestampOverlay?: boolean;
+  overlayTimestamp?: boolean;
+  noPadding?: boolean;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  width?: string | number;
+  minWidth?: number;
+  maxWidth?: number;
+}
+
+const MediaBubbleBase = memo(function MediaBubbleBase({
+  isMe,
+  senderName,
+  timestamp = "10:42",
+  read = false,
+  overlayTimestamp = false,
+  noPadding = false,
+  children,
+  footer,
+  width = "100%",
+  minWidth,
+  maxWidth,
+}: MediaBubbleBaseProps) {
+  return (
+    <div
+      style={{
+        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
+        borderRadius: BUBBLE_RADIUS,
+        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
+        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
+        boxShadow: BUBBLE_SHADOW,
+        overflow: "hidden",
+        width,
+        minWidth,
+        maxWidth,
+        padding: noPadding ? undefined : BUBBLE_PADDING_H,
+      }}
+    >
+      {senderName && !isMe && (
+        <div
+          style={{
+            padding: noPadding
+              ? `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`
+              : "0 0 2px",
+          }}
+        >
+          <span
+            style={{
+              fontSize: SENDER_NAME_SIZE,
+              fontWeight: 600,
+              color: WA_TEAL,
+              fontFamily: FONT_FAMILY,
+            }}
+          >
+            {senderName}
+          </span>
+        </div>
+      )}
+
+      {children}
+
+      {!overlayTimestamp && (
+        <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
+      )}
+
+      {footer}
+    </div>
+  );
+});
+
+const TimestampRow = memo(function TimestampRow({
+  timestamp,
+  isMe,
+  read,
+}: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "flex-end",
+        alignItems: "center",
+        gap: 3,
+        marginTop: 2,
+      }}
+    >
+      <span
+        style={{
+          fontSize: TIMESTAMP_SIZE,
+          color: WA_GRAY,
+          fontFamily: FONT_FAMILY,
+        }}
+      >
+        {timestamp}
+      </span>
+      {isMe && <DoubleCheckIcon read={read} />}
+    </div>
+  );
+});
+
+const TimestampOverlay = memo(function TimestampOverlay({
+  timestamp,
+  isMe,
+  read,
+}: {
+  timestamp: string;
+  isMe: boolean;
+  read: boolean;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        bottom: 4,
+        right: 4,
+        display: "flex",
+        alignItems: "center",
+        gap: 3,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        padding: "2px 4px",
+        borderRadius: 4,
+      }}
+    >
+      <span
+        style={{
+          fontSize: TIMESTAMP_SIZE,
+          color: "#FFFFFF",
+          fontFamily: FONT_FAMILY,
+        }}
+      >
+        {timestamp}
+      </span>
+      {isMe && <DoubleCheckIcon read={read} light />}
+    </div>
+  );
+});
+
+const DoubleCheckIcon = memo(function DoubleCheckIcon({
+  read = false,
+  light = false,
+}: {
+  read?: boolean;
+  light?: boolean;
+}) {
+  return (
+    <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+      <path
+        d="M1 5L4 8L10 2"
+        stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M5 5L8 8L14 2"
+        stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+});
+
+const formatDuration = (secs: number) => {
+  const mins = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${mins}:${String(s).padStart(2, "0")}`;
+};
 
 interface ImageMessageBubbleProps {
   imageUrl: string;
@@ -52,57 +208,24 @@ interface ImageMessageBubbleProps {
   platform?: Platform;
 }
 
-export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
+export const ImageMessageBubble = memo(function ImageMessageBubble({
   imageUrl,
   caption,
   isMe,
   senderName,
   timestamp = "10:42",
   read = false,
-}) => {
+}: ImageMessageBubbleProps) {
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        overflow: "hidden",
-        width: "100%",
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      overlayTimestamp={!caption}
+      noPadding
     >
-      {/* Sender Name (Group Chat) */}
-      {senderName && !isMe && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
-      {/* Image container */}
-      <div
-        style={{
-          position: "relative",
-          borderTopLeftRadius: senderName ? 0 : BUBBLE_RADIUS,
-          borderTopRightRadius: senderName ? 0 : BUBBLE_RADIUS,
-          borderBottomLeftRadius: caption ? 0 : BUBBLE_RADIUS,
-          borderBottomRightRadius: caption ? 0 : BUBBLE_RADIUS,
-          overflow: "hidden",
-        }}
-      >
+      <div style={{ position: "relative", overflow: "hidden" }}>
         <img
           src={imageUrl}
           style={{
@@ -114,43 +237,13 @@ export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
           }}
           alt=""
         />
-
-        {/* Timestamp overlay on image (when no caption) */}
         {!caption && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 4,
-              right: 4,
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              padding: "2px 4px",
-              borderRadius: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: TIMESTAMP_SIZE,
-                color: "#FFFFFF",
-                fontFamily: FONT_FAMILY,
-              }}
-            >
-              {timestamp}
-            </span>
-            {isMe && <DoubleCheckIcon read={read} light />}
-          </div>
+          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
         )}
       </div>
 
-      {/* Caption if present */}
       {caption && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px`,
-          }}
-        >
+        <div style={{ padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px` }}>
           <span
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
@@ -161,41 +254,16 @@ export const ImageMessageBubble: React.FC<ImageMessageBubbleProps> = ({
           >
             {caption}
           </span>
-
-          {/* Timestamp + Read receipts */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: 3,
-              marginTop: 2,
-            }}
-          >
-            <span
-              style={{
-                fontSize: TIMESTAMP_SIZE,
-                color: WA_GRAY,
-                fontFamily: FONT_FAMILY,
-              }}
-            >
-              {timestamp}
-            </span>
-            {isMe && <DoubleCheckIcon read={read} />}
-          </div>
+          <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
         </div>
       )}
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// VIDEO MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface VideoMessageBubbleProps {
   thumbnailUrl: string;
-  duration: number; // in seconds
+  duration: number;
   caption?: string;
   isMe: boolean;
   senderName?: string;
@@ -206,7 +274,7 @@ interface VideoMessageBubbleProps {
   platform?: Platform;
 }
 
-export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
+export const VideoMessageBubble = memo(function VideoMessageBubble({
   thumbnailUrl,
   duration,
   caption,
@@ -216,54 +284,17 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
   read = false,
   isPlaying = false,
   playProgress = 0,
-}) => {
-  const formatDuration = (secs: number) => {
-    const mins = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${mins}:${String(s).padStart(2, "0")}`;
-  };
-
+}: VideoMessageBubbleProps) {
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        overflow: "hidden",
-        width: "100%",
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      overlayTimestamp={!caption}
+      noPadding
     >
-      {/* Sender Name */}
-      {senderName && !isMe && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
-      {/* Video thumbnail container */}
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderTopLeftRadius: senderName ? 0 : BUBBLE_RADIUS,
-          borderTopRightRadius: senderName ? 0 : BUBBLE_RADIUS,
-        }}
-      >
+      <div style={{ position: "relative", overflow: "hidden" }}>
         <img
           src={thumbnailUrl}
           style={{
@@ -276,7 +307,6 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
           alt=""
         />
 
-        {/* Play button overlay */}
         {!isPlaying && (
           <div
             style={{
@@ -299,7 +329,6 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
           </div>
         )}
 
-        {/* Duration badge */}
         <div
           style={{
             position: "absolute",
@@ -327,35 +356,10 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
           </span>
         </div>
 
-        {/* Timestamp overlay (when no caption) */}
         {!caption && (
-          <div
-            style={{
-              position: "absolute",
-              bottom: 4,
-              right: 4,
-              display: "flex",
-              alignItems: "center",
-              gap: 3,
-              backgroundColor: "rgba(0,0,0,0.5)",
-              padding: "2px 4px",
-              borderRadius: 4,
-            }}
-          >
-            <span
-              style={{
-                fontSize: TIMESTAMP_SIZE,
-                color: "#FFFFFF",
-                fontFamily: FONT_FAMILY,
-              }}
-            >
-              {timestamp}
-            </span>
-            {isMe && <DoubleCheckIcon read={read} light />}
-          </div>
+          <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
         )}
 
-        {/* Progress bar during playback */}
         {isPlaying && (
           <div
             style={{
@@ -378,13 +382,8 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
         )}
       </div>
 
-      {/* Caption if present */}
       {caption && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px`,
-          }}
-        >
+        <div style={{ padding: `${BUBBLE_PADDING}px ${BUBBLE_PADDING_H}px` }}>
           <span
             style={{
               fontSize: MESSAGE_TEXT_SIZE,
@@ -395,36 +394,12 @@ export const VideoMessageBubble: React.FC<VideoMessageBubbleProps> = ({
           >
             {caption}
           </span>
-
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "flex-end",
-              alignItems: "center",
-              gap: 3,
-              marginTop: 2,
-            }}
-          >
-            <span
-              style={{
-                fontSize: TIMESTAMP_SIZE,
-                color: WA_GRAY,
-                fontFamily: FONT_FAMILY,
-              }}
-            >
-              {timestamp}
-            </span>
-            {isMe && <DoubleCheckIcon read={read} />}
-          </div>
+          <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
         </div>
       )}
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// GIF MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface GifMessageBubbleProps {
   gifUrl: string;
@@ -435,54 +410,23 @@ interface GifMessageBubbleProps {
   platform?: Platform;
 }
 
-export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
+export const GifMessageBubble = memo(function GifMessageBubble({
   gifUrl,
   isMe,
   senderName,
   timestamp = "10:42",
   read = false,
-}) => {
+}: GifMessageBubbleProps) {
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        overflow: "hidden",
-        width: "100%",
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      overlayTimestamp
+      noPadding
     >
-      {/* Sender Name */}
-      {senderName && !isMe && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
-      {/* GIF container */}
-      <div
-        style={{
-          position: "relative",
-          overflow: "hidden",
-          borderTopLeftRadius: senderName ? 0 : BUBBLE_RADIUS,
-          borderTopRightRadius: senderName ? 0 : BUBBLE_RADIUS,
-        }}
-      >
+      <div style={{ position: "relative", overflow: "hidden" }}>
         <img
           src={gifUrl}
           style={{
@@ -495,7 +439,6 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
           alt=""
         />
 
-        {/* GIF badge */}
         <div
           style={{
             position: "absolute",
@@ -519,39 +462,11 @@ export const GifMessageBubble: React.FC<GifMessageBubbleProps> = ({
           </span>
         </div>
 
-        {/* Timestamp overlay */}
-        <div
-          style={{
-            position: "absolute",
-            bottom: 4,
-            right: 4,
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-            backgroundColor: "rgba(0,0,0,0.5)",
-            padding: "2px 4px",
-            borderRadius: 4,
-          }}
-        >
-          <span
-            style={{
-              fontSize: TIMESTAMP_SIZE,
-              color: "#FFFFFF",
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {timestamp}
-          </span>
-          {isMe && <DoubleCheckIcon read={read} light />}
-        </div>
+        <TimestampOverlay timestamp={timestamp} isMe={isMe} read={read} />
       </div>
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// STICKER MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface StickerMessageBubbleProps {
   stickerUrl: string;
@@ -560,21 +475,14 @@ interface StickerMessageBubbleProps {
   read?: boolean;
 }
 
-export const StickerMessageBubble: React.FC<StickerMessageBubbleProps> = ({
+export const StickerMessageBubble = memo(function StickerMessageBubble({
   stickerUrl,
   isMe,
   timestamp = "10:42",
   read = false,
-}) => {
+}: StickerMessageBubbleProps) {
   return (
-    <div
-      style={{
-        position: "relative",
-        width: 136,
-        height: 136,
-        // No background, no shadow, no border radius needed on container
-      }}
-    >
+    <div style={{ position: "relative", width: 136, height: 136 }}>
       <img
         src={stickerUrl}
         style={{
@@ -582,13 +490,10 @@ export const StickerMessageBubble: React.FC<StickerMessageBubbleProps> = ({
           height: "100%",
           objectFit: "contain",
           display: "block",
-          // Add a subtle drop shadow to lift sticker off wallpaper
           filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.15))",
         }}
         alt="Sticker"
       />
-
-      {/* Timestamp overlay */}
       <div
         style={{
           position: "absolute",
@@ -597,7 +502,7 @@ export const StickerMessageBubble: React.FC<StickerMessageBubbleProps> = ({
           display: "flex",
           alignItems: "center",
           gap: 3,
-          backgroundColor: "rgba(0,0,0,0.3)", // Lighter background for sticker overlay
+          backgroundColor: "rgba(0,0,0,0.3)",
           padding: "2px 4px",
           borderRadius: 4,
         }}
@@ -615,24 +520,20 @@ export const StickerMessageBubble: React.FC<StickerMessageBubbleProps> = ({
       </div>
     </div>
   );
-};
-
-// =============================================================================
-// VOICE MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface VoiceMessageBubbleProps {
-  duration: number; // in seconds
+  duration: number;
   isMe: boolean;
   senderName?: string;
   timestamp?: string;
   read?: boolean;
   isPlaying?: boolean;
-  playProgress?: number; // 0-1
+  playProgress?: number;
   platform?: Platform;
 }
 
-export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
+export const VoiceMessageBubble = memo(function VoiceMessageBubble({
   duration,
   isMe,
   senderName,
@@ -640,14 +541,7 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
   read = false,
   isPlaying = false,
   playProgress = 0,
-}) => {
-  const formatDuration = (secs: number) => {
-    const mins = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${mins}:${String(s).padStart(2, "0")}`;
-  };
-
-  // Generate waveform bars (deterministic based on duration)
+}: VoiceMessageBubbleProps) {
   const waveformBars = Array.from({ length: 35 }, (_, i) => {
     const seed = (duration * 13 + i * 7) % 100;
     const baseHeight = 0.3 + 0.5 * Math.sin((i / 35) * Math.PI);
@@ -658,42 +552,15 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
   const playedBars = Math.floor(playProgress * waveformBars.length);
 
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        padding: BUBBLE_PADDING_H,
-        minWidth: 160,
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      overlayTimestamp
+      minWidth={160}
     >
-      {/* Sender Name */}
-      {senderName && !isMe && (
-        <div style={{ marginBottom: 3 }}>
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
-      {/* Voice message content */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-        }}
-      >
-        {/* Play/Pause button */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <div
           style={{
             width: 34,
@@ -718,16 +585,9 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
           )}
         </div>
 
-        {/* Waveform visualization */}
         <div
-          style={{
-            flex: 1,
-            display: "flex",
-            flexDirection: "column",
-            gap: 3,
-          }}
+          style={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}
         >
-          {/* Waveform bars */}
           <div
             style={{
               display: "flex",
@@ -756,7 +616,6 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
             ))}
           </div>
 
-          {/* Duration + Timestamp */}
           <div
             style={{
               display: "flex",
@@ -775,15 +634,7 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
                 ? formatDuration(Math.floor(playProgress * duration))
                 : formatDuration(duration)}
             </span>
-
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-              }}
-            >
-              {/* Microphone icon */}
+            <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
               <svg
                 width="10"
                 height="10"
@@ -792,7 +643,6 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
               >
                 <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15c-.08-.49-.49-.85-.98-.85-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
               </svg>
-
               <span
                 style={{
                   fontSize: TIMESTAMP_SIZE,
@@ -807,13 +657,9 @@ export const VoiceMessageBubble: React.FC<VoiceMessageBubbleProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// DOCUMENT MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface DocumentMessageBubbleProps {
   fileName: string;
@@ -827,7 +673,7 @@ interface DocumentMessageBubbleProps {
   platform?: Platform;
 }
 
-export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
+export const DocumentMessageBubble = memo(function DocumentMessageBubble({
   fileName,
   fileSize,
   fileType = "pdf",
@@ -836,7 +682,7 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
   senderName,
   timestamp = "10:42",
   read = false,
-}) => {
+}: DocumentMessageBubbleProps) {
   const getIconColor = () => {
     const type = fileType.toLowerCase();
     if (type.includes("pdf")) return "#F40F02";
@@ -849,35 +695,14 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
   const iconColor = getIconColor();
 
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        padding: BUBBLE_PADDING_H,
-        minWidth: 200,
-        maxWidth: 280,
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      minWidth={200}
+      maxWidth={280}
     >
-      {/* Sender Name */}
-      {senderName && !isMe && (
-        <div style={{ marginBottom: 3 }}>
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
-      {/* Document Content */}
       <div
         style={{
           display: "flex",
@@ -886,16 +711,9 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
           padding: "6px 0",
         }}
       >
-        {/* Document Icon (Left) */}
         <div
-          style={{
-            position: "relative",
-            width: 34,
-            height: 40,
-            flexShrink: 0,
-          }}
+          style={{ position: "relative", width: 34, height: 40, flexShrink: 0 }}
         >
-          {/* File Icon SVG */}
           <svg width="34" height="40" viewBox="0 0 34 40" fill="none">
             <path
               d="M4 0H20L34 14V36C34 38.2 32.2 40 30 40H4C1.8 40 0 38.2 0 36V4C0 1.8 1.8 0 4 0Z"
@@ -918,7 +736,6 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
           </svg>
         </div>
 
-        {/* File Info */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div
             style={{
@@ -946,7 +763,6 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
           </div>
         </div>
 
-        {/* Download Icon (Right) */}
         <div
           style={{
             width: 32,
@@ -964,61 +780,9 @@ export const DocumentMessageBubble: React.FC<DocumentMessageBubbleProps> = ({
           </svg>
         </div>
       </div>
-
-      {/* Timestamp Row */}
-      <div
-        style={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-          gap: 3,
-          marginTop: 2,
-        }}
-      >
-        <span
-          style={{
-            fontSize: TIMESTAMP_SIZE,
-            color: WA_GRAY,
-            fontFamily: FONT_FAMILY,
-          }}
-        >
-          {timestamp}
-        </span>
-        {isMe && <DoubleCheckIcon read={read} />}
-      </div>
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// SHARED: Double Check Icon for read receipts
-// =============================================================================
-
-const DoubleCheckIcon: React.FC<{ read?: boolean; light?: boolean }> = ({
-  read = false,
-  light = false,
-}) => (
-  <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
-    <path
-      d="M1 5L4 8L10 2"
-      stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <path
-      d="M5 5L8 8L14 2"
-      stroke={read ? WA_READ_BLUE : light ? "#FFFFFF" : WA_GRAY}
-      strokeWidth="1.5"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </svg>
-);
-
-// =============================================================================
-// CONTACT MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface ContactMessageBubbleProps {
   contactName: string;
@@ -1031,7 +795,7 @@ interface ContactMessageBubbleProps {
   platform?: Platform;
 }
 
-export const ContactMessageBubble: React.FC<ContactMessageBubbleProps> = ({
+export const ContactMessageBubble = memo(function ContactMessageBubble({
   contactName,
   contactPhone,
   contactAvatarUrl,
@@ -1039,39 +803,18 @@ export const ContactMessageBubble: React.FC<ContactMessageBubbleProps> = ({
   senderName,
   timestamp = "10:42",
   read = false,
-}) => {
+}: ContactMessageBubbleProps) {
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        overflow: "hidden",
-        minWidth: 200,
-        maxWidth: 280,
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      overlayTimestamp
+      noPadding
+      minWidth={200}
+      maxWidth={280}
     >
-      {senderName && !isMe && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
       <div
         style={{
           display: "flex",
@@ -1159,14 +902,7 @@ export const ContactMessageBubble: React.FC<ContactMessageBubbleProps> = ({
         >
           Message
         </span>
-
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 3,
-          }}
-        >
+        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
           <span
             style={{
               fontSize: TIMESTAMP_SIZE,
@@ -1179,13 +915,9 @@ export const ContactMessageBubble: React.FC<ContactMessageBubbleProps> = ({
           {isMe && <DoubleCheckIcon read={read} />}
         </div>
       </div>
-    </div>
+    </MediaBubbleBase>
   );
-};
-
-// =============================================================================
-// LOCATION MESSAGE BUBBLE
-// =============================================================================
+});
 
 interface LocationMessageBubbleProps {
   latitude: number;
@@ -1199,7 +931,7 @@ interface LocationMessageBubbleProps {
   read?: boolean;
 }
 
-export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
+export const LocationMessageBubble = memo(function LocationMessageBubble({
   locationName,
   locationAddress,
   mapThumbnailUrl,
@@ -1207,41 +939,17 @@ export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
   senderName,
   timestamp = "10:42",
   read = false,
-}) => {
-  const defaultMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=0,0&zoom=15&size=300x150&maptype=roadmap&key=DEMO`;
-
+}: LocationMessageBubbleProps) {
   return (
-    <div
-      style={{
-        backgroundColor: isMe ? BUBBLE_MY_COLOR : BUBBLE_OTHER_COLOR,
-        borderRadius: BUBBLE_RADIUS,
-        borderTopLeftRadius: isMe ? BUBBLE_RADIUS : BUBBLE_TAIL_RADIUS,
-        borderTopRightRadius: isMe ? BUBBLE_TAIL_RADIUS : BUBBLE_RADIUS,
-        boxShadow: BUBBLE_SHADOW,
-        overflow: "hidden",
-        minWidth: 240,
-        maxWidth: 300,
-      }}
+    <MediaBubbleBase
+      isMe={isMe}
+      senderName={senderName}
+      timestamp={timestamp}
+      read={read}
+      noPadding
+      minWidth={240}
+      maxWidth={300}
     >
-      {senderName && !isMe && (
-        <div
-          style={{
-            padding: `${BUBBLE_PADDING_H}px ${BUBBLE_PADDING_H}px 2px`,
-          }}
-        >
-          <span
-            style={{
-              fontSize: SENDER_NAME_SIZE,
-              fontWeight: 600,
-              color: WA_TEAL,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {senderName}
-          </span>
-        </div>
-      )}
-
       <div
         style={{
           width: "100%",
@@ -1255,11 +963,7 @@ export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
           <img
             src={mapThumbnailUrl}
             alt="Map"
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: "cover",
-            }}
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
         ) : (
           <div
@@ -1292,11 +996,7 @@ export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
         </div>
       </div>
 
-      <div
-        style={{
-          padding: BUBBLE_PADDING_H,
-        }}
-      >
+      <div style={{ padding: BUBBLE_PADDING_H }}>
         {locationName && (
           <div
             style={{
@@ -1310,7 +1010,6 @@ export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
             {locationName}
           </div>
         )}
-
         {locationAddress && (
           <div
             style={{
@@ -1323,27 +1022,8 @@ export const LocationMessageBubble: React.FC<LocationMessageBubbleProps> = ({
             {locationAddress}
           </div>
         )}
-
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            alignItems: "center",
-            gap: 3,
-          }}
-        >
-          <span
-            style={{
-              fontSize: TIMESTAMP_SIZE,
-              color: WA_GRAY,
-              fontFamily: FONT_FAMILY,
-            }}
-          >
-            {timestamp}
-          </span>
-          {isMe && <DoubleCheckIcon read={read} />}
-        </div>
+        <TimestampRow timestamp={timestamp} isMe={isMe} read={read} />
       </div>
-    </div>
+    </MediaBubbleBase>
   );
-};
+});

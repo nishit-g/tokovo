@@ -34,10 +34,6 @@ import {
 } from "@tokovo/episodes";
 import { ErrorBoundary } from "./ErrorBoundary";
 
-// Import plugins (side-effects - auto-register to PluginManager)
-import "@tokovo/apps-whatsapp";
-import "@tokovo/devices";
-
 // =============================================================================
 // TYPES
 // =============================================================================

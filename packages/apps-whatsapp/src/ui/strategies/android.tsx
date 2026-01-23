@@ -8,7 +8,6 @@
 import React from "react";
 import {
   UIStrategy,
-  UIStrategyRegistry,
   HeaderProps,
   MessageBubbleProps,
   TypingIndicatorProps,
@@ -107,8 +106,5 @@ export const androidStrategy: UIStrategy = {
     linkColor: "#53BDEB",
   },
 };
-
-// Auto-register on import
-UIStrategyRegistry.register(androidStrategy);
 
 export default androidStrategy;
