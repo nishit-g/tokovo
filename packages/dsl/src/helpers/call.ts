@@ -6,8 +6,7 @@
  */
 
 import type { CallType, CallDisplayMode, CallerMetadata } from "@tokovo/core";
-import { createTrace, Trace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
+
 
 // =============================================================================
 // CALL EVENT TYPES
@@ -25,7 +24,6 @@ export interface CallIncomingEvent {
     callType?: CallType;
     displayMode?: CallDisplayMode;
     callerMetadata?: CallerMetadata;
-    trace: Trace;
 }
 
 export interface CallAnswerEvent {
@@ -33,7 +31,6 @@ export interface CallAnswerEvent {
     kind: "CALL";
     type: "ANSWER";
     deviceId?: string;
-    trace: Trace;
 }
 
 export interface CallDeclineEvent {
@@ -41,7 +38,6 @@ export interface CallDeclineEvent {
     kind: "CALL";
     type: "DECLINE";
     deviceId?: string;
-    trace: Trace;
 }
 
 export interface CallEndEvent {
@@ -49,7 +45,6 @@ export interface CallEndEvent {
     kind: "CALL";
     type: "END";
     deviceId?: string;
-    trace: Trace;
 }
 
 export interface CallToggleMuteEvent {
@@ -57,7 +52,6 @@ export interface CallToggleMuteEvent {
     kind: "CALL";
     type: "TOGGLE_MUTE";
     deviceId?: string;
-    trace: Trace;
 }
 
 export interface CallToggleSpeakerEvent {
@@ -65,7 +59,6 @@ export interface CallToggleSpeakerEvent {
     kind: "CALL";
     type: "TOGGLE_SPEAKER";
     deviceId?: string;
-    trace: Trace;
 }
 
 export interface CallToggleHoldEvent {
@@ -73,7 +66,6 @@ export interface CallToggleHoldEvent {
     kind: "CALL";
     type: "TOGGLE_HOLD";
     deviceId?: string;
-    trace: Trace;
 }
 
 export type CallEvent =
@@ -119,7 +111,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "INCOMING",
-        trace: createTrace(Tracer.capture()),
         callerId,
         callerName,
         callerAvatar: opts?.callerAvatar,
@@ -144,7 +135,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "ANSWER",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -158,7 +148,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "DECLINE",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -172,7 +161,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "END",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -186,7 +174,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_MUTE",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -200,7 +187,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_SPEAKER",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 
@@ -214,7 +200,6 @@ export const call = {
         at,
         kind: "CALL",
         type: "TOGGLE_HOLD",
-        trace: createTrace(Tracer.capture()),
         deviceId,
     }),
 };

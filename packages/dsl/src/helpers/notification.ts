@@ -1,6 +1,5 @@
 import { NotificationIR } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
+
 
 let notificationCounter = 0;
 
@@ -43,7 +42,7 @@ export const notification = {
    * Schedule a notification to appear
    */
   schedule: (at: number, options: ScheduleNotificationOptions) => {
-    const id = options.id || generateId("notif");
+    const id = options.id || generateNotifId("notif");
 
     // Construct the IR payload
     // We use the "SHOW_NOTIFICATION" event which the Engine listens to.
@@ -53,7 +52,6 @@ export const notification = {
       kind: "DEVICE",
       deviceId: "primary", // Default to primary for now
       type: "SHOW_NOTIFICATION",
-      trace: createTrace(Tracer.capture()),
 
       // The IR fields
       id,
@@ -80,7 +78,6 @@ export const notification = {
       kind: "DEVICE",
       deviceId: "primary",
       type: "TAP_NOTIFICATION",
-      trace: createTrace(Tracer.capture()),
       notificationId,
       actionId,
     }) as const,
@@ -94,7 +91,6 @@ export const notification = {
       kind: "DEVICE",
       deviceId: "primary",
       type: "DISMISS_NOTIFICATION",
-      trace: createTrace(Tracer.capture()),
       notificationId,
     }) as const,
 
@@ -107,6 +103,5 @@ export const notification = {
       kind: "DEVICE",
       deviceId: "primary",
       type: "CLEAR_ALL_NOTIFICATIONS",
-      trace: createTrace(Tracer.capture()),
     }) as const,
 };

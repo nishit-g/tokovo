@@ -46,8 +46,6 @@ import {
 } from "./utils/state-cache";
 
 import { ReducerRegistry } from "./engine/registry";
-import { EngineConfig } from "./engine/config";
-import { EngineLogger } from "./engine/logger";
 import { createScopedLogger } from "./logger";
 import {
   processCameraEvent,
@@ -242,9 +240,6 @@ export function replay(
     }
 
     for (const deviceId of Object.keys(draft.devices)) {
-      const deviceEffects = draft.camera.activeEffects.filter(
-        (ae) => !ae.deviceId || ae.deviceId === deviceId,
-      );
       draft.camera.deviceTransforms[deviceId] =
         DEFAULT_CAMERA_TRANSFORM as CameraTransform;
     }
@@ -457,7 +452,7 @@ function processEventCore(
   }
 
   switch (event.kind) {
-    case "DEVICE":
+    case "DEVICE": {
       if (ReducerRegistry.deviceReducer) {
         draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
       }
@@ -479,6 +474,7 @@ function processEventCore(
         }
       }
       break;
+    }
 
     case "CAMERA":
       processCameraEvent(draft, event, handlerCtx);

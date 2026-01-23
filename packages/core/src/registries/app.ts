@@ -49,7 +49,6 @@ const _registry = createRegistry<string, AppViewComponent>("App");
 export const AppRegistry = {
   register(appId: string, component: AppViewComponent): void {
     _registry.register(appId, component);
-    console.log(`[AppRegistry] Registered view for: ${appId}`);
   },
 
   unregister(appId: string): void {

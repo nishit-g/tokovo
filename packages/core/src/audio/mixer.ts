@@ -8,15 +8,7 @@
  * - Per-frame volume computation
  */
 
-import {
-  SoundCue,
-  AudioBus,
-  AudioBusConfig,
-  AudioEnvelope,
-  DuckRule,
-  AudioState,
-  ActiveSound,
-} from "../types";
+import { SoundCue, AudioBus, AudioState, ActiveSound } from "../types";
 
 // =============================================================================
 // TYPES

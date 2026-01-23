@@ -56,9 +56,6 @@ export class SnapshotCache {
     if (!this.config.enabled) return null;
     if (this.snapshots.size === 0) return null;
 
-    const snapshotFrame =
-      Math.floor(targetFrame / this.config.interval) * this.config.interval;
-
     let closest: StateSnapshot | null = null;
     let closestFrame = -1;
 

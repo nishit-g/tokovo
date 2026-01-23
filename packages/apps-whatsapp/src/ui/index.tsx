@@ -1,5 +1,6 @@
 import React from "react";
-import { WorldState, AppSurface } from "@tokovo/core";
+import { WorldState } from "@tokovo/core";
+import { AppSurface } from "@tokovo/react";
 import { injectWhatsAppStyles } from "../styles";
 
 // Screens

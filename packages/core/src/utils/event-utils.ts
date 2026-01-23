@@ -9,7 +9,7 @@ import type { RuntimeEvent } from "../types/runtime-event";
 
 // RuntimeEvent and TimelineEvent are compatible for event indexing
 // They both have { at: number, kind: string, ... }
-type IndexableEvent = TimelineEvent | RuntimeEvent;
+type _IndexableEvent = TimelineEvent | RuntimeEvent;
 
 // =============================================================================
 // EVENT INDEXING

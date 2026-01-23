@@ -1,24 +1,21 @@
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
 
-interface NavigateAppEvent {
+
+export interface NavigateAppEvent {
   at: number;
   kind: "APP";
   appId: string;
   type: "NAVIGATE_APP";
-  _trace: ReturnType<typeof createTrace>;
   screen?: string;
   conversationId?: string;
   transition?: "push" | "pop" | "present";
   animationDuration?: number;
 }
 
-interface NavigateScreenEvent {
+export interface NavigateScreenEvent {
   at: number;
   kind: "APP";
   appId: string;
   type: "NAVIGATE_SCREEN";
-  _trace: ReturnType<typeof createTrace>;
   screen: string;
   transition?: "push" | "pop" | "present" | "dismiss";
   animationDuration?: number;
@@ -39,7 +36,6 @@ export const navigation = {
     kind: "APP",
     appId: targetAppId,
     type: "NAVIGATE_APP",
-    _trace: createTrace(Tracer.capture()),
     screen: options?.screen,
     conversationId: options?.conversationId,
     transition: options?.transition,
@@ -59,7 +55,6 @@ export const navigation = {
     kind: "APP",
     appId: appId as string,
     type: "NAVIGATE_SCREEN",
-    _trace: createTrace(Tracer.capture()),
     screen: screen as string,
     transition: options?.transition,
     animationDuration: options?.duration,

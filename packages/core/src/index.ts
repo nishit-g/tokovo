@@ -147,30 +147,6 @@ export * from "./constants";
 export * from "./tokens";
 
 // =============================================================================
-// CONTEXT - React context and hooks for apps
-// =============================================================================
-export {
-  TokovoProvider,
-  TokovoContext,
-  useWorld,
-  useDevice,
-  useAppState,
-  useLayout,
-  useTime,
-  usePlatform,
-  useDeviceId,
-  useAppId,
-  useSafeAreaInsets,
-  useConversation,
-  useActiveConversation,
-} from "./context/TokovoContext";
-
-// =============================================================================
-// COMPONENTS
-// =============================================================================
-export * from "./components/AppSurface";
-
-// =============================================================================
 // EPISODE PREPARATION
 // =============================================================================
 export * from "./prepare";

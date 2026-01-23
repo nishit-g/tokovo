@@ -5,8 +5,7 @@
  */
 
 import { TimelineEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
+
 
 export type MessageStatus =
   | "sending"
@@ -40,7 +39,6 @@ export const messages = {
       at,
       kind: "MessageSent", // V2 IR
       deviceId: options.deviceId || "primary",
-      trace: createTrace(Tracer.capture()),
       appId: options.appId || "app_whatsapp",
       conversationId,
       silent: options.silent,
@@ -64,7 +62,6 @@ export const messages = {
       at,
       kind: "MessageReceived",
       deviceId: options.deviceId || "primary",
-      trace: createTrace(Tracer.capture()),
       appId: options.appId || "app_whatsapp",
       conversationId,
       silent: options.silent,
@@ -91,7 +88,6 @@ export const messages = {
       at,
       kind: "TypingStarted",
       deviceId,
-      trace: createTrace(Tracer.capture()),
       appId,
       conversationId,
       actor: from,
@@ -111,7 +107,6 @@ export const messages = {
       at,
       kind: "TypingEnded",
       deviceId,
-      trace: createTrace(Tracer.capture()),
       appId,
       conversationId,
       actor: from,
@@ -132,7 +127,6 @@ export const messages = {
       at,
       kind: "MessageSent",
       deviceId,
-      trace: createTrace(Tracer.capture()),
       appId,
       conversationId,
       message: {
@@ -158,7 +152,6 @@ export const messages = {
       at,
       kind: "MessageReceived",
       deviceId,
-      trace: createTrace(Tracer.capture()),
       appId,
       conversationId,
       message: {
@@ -182,10 +175,11 @@ export const messages = {
       at,
       kind: "APP",
       type: "MESSAGE_STATUS",
-      trace: createTrace(Tracer.capture()),
       appId,
-      conversationId,
-      messageId,
-      status: "read",
+      payload: {
+        conversationId,
+        messageId,
+        status: "read",
+      },
     }) satisfies TimelineEvent,
 };

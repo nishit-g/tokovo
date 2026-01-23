@@ -60,7 +60,6 @@ class LayoutRegistryClass {
       console.warn(`[LayoutRegistry] Overwriting layout for: ${key}`);
     }
     this.strategies.set(key, strategy);
-    console.log(`[LayoutRegistry] Registered layout: ${key}`);
   }
 
   /**

@@ -1,6 +1,5 @@
 import type { AudioRuntimeEvent } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
+
 
 export interface PlayOptions {
   loop?: boolean;
@@ -13,11 +12,10 @@ export interface FadeOptions {
   easing?: string;
 }
 
-interface PlaySoundEvent {
+export interface PlaySoundEvent {
   at: number;
   kind: "AUDIO";
   type: "PLAY_SOUND";
-  _trace: ReturnType<typeof createTrace>;
   soundId: string;
   volume: number;
   loop?: boolean;
@@ -26,29 +24,26 @@ interface PlaySoundEvent {
   deviceId?: string;
 }
 
-interface StopSoundEvent {
+export interface StopSoundEvent {
   at: number;
   kind: "AUDIO";
   type: "STOP_SOUND";
-  _trace: ReturnType<typeof createTrace>;
   instanceId: string;
 }
 
-interface FadeVolumeEvent {
+export interface FadeVolumeEvent {
   at: number;
   kind: "AUDIO";
   type: "FADE_VOLUME";
-  _trace: ReturnType<typeof createTrace>;
   instanceId: string;
   toVolume: number;
   duration: number;
 }
 
-interface BackgroundMusicEvent {
+export interface BackgroundMusicEvent {
   at: number;
   kind: "AUDIO";
   type: "BACKGROUND_MUSIC";
-  _trace: ReturnType<typeof createTrace>;
   soundId: string;
   volume: number;
   loop: boolean;
@@ -64,7 +59,6 @@ export const audio = {
     at,
     kind: "AUDIO",
     type: "PLAY_SOUND",
-    _trace: createTrace(Tracer.capture()),
     soundId,
     volume,
     loop: opts.loop,
@@ -77,7 +71,6 @@ export const audio = {
     at,
     kind: "AUDIO",
     type: "STOP_SOUND",
-    _trace: createTrace(Tracer.capture()),
     instanceId,
   }),
 
@@ -90,7 +83,6 @@ export const audio = {
     at,
     kind: "AUDIO",
     type: "FADE_VOLUME",
-    _trace: createTrace(Tracer.capture()),
     instanceId,
     toVolume,
     duration,
@@ -105,7 +97,6 @@ export const audio = {
     at,
     kind: "AUDIO",
     type: "BACKGROUND_MUSIC",
-    _trace: createTrace(Tracer.capture()),
     soundId,
     volume,
     loop,

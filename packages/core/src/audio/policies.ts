@@ -7,7 +7,7 @@
  * - Priority-based sound selection
  */
 
-import { SoundCue, AudioBus, AudioBusConfig, ActiveSound } from "../types";
+import { SoundCue, AudioBus, ActiveSound } from "../types";
 
 // =============================================================================
 // TYPES

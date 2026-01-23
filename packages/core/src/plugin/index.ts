@@ -19,5 +19,20 @@ export type {
   AppInitialStateRegistry,
 } from "../types/plugin-contract";
 
+// Plugin Zod schemas for runtime validation
+export {
+  TokovoPluginContractSchema,
+  PluginIdSchema,
+  PluginVersionSchema,
+  PluginAssetsSchema,
+  PluginAutoSoundRuleSchema,
+  PluginLayoutStrategySchema,
+  PluginAnchorRegistrySchema,
+  validatePluginSchema,
+  assertPluginSchema,
+  type ParsedPluginContract,
+  type PluginValidationResult,
+} from "./schemas";
+
 export * from "./plugin";
 export { PluginRouter, type PluginAccessor } from "./router";

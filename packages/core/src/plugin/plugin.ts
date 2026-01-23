@@ -15,20 +15,14 @@ import { WorldState, BackgroundAppState, Notification } from "../types";
 import { AppReducer, ReducerRegistry } from "../engine";
 import { Platform } from "../tokens";
 import type { NotificationAdapter } from "../notifications/adapter";
-import type { RuntimeEvent } from "../types/runtime-event";
 import type {
   PluginNotificationAdapter,
   PluginAnchorRegistry,
   TokovoPluginContract,
   PluginViews,
-  PluginLayoutStrategy,
   PluginReducer,
 } from "../types/plugin-contract";
-import {
-  registerAnchorProvider,
-  type AnchorFraming,
-  type AnchorSnapshot,
-} from "../anchors";
+import { registerAnchorProvider } from "../anchors";
 import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
 import { AppRegistry } from "../registries/app";
 import { SoundRegistry } from "../registries/sound";

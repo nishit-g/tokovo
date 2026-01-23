@@ -51,7 +51,7 @@ export interface DeviceOptions {
  * Track builders collect events and expose them via _events.
  */
 export interface TrackBuilder {
-  readonly _events: readonly { at: number; kind: string }[];
+  readonly _events: readonly TrackEvent[];
   at: (time: string | number) => unknown;
   span: (start: string | number, end: string | number) => unknown;
 }

@@ -4,7 +4,6 @@
  * @description View kinds, layout configs, layout states, and semantic regions.
  */
 
-import type { Notification } from "./notification";
 import type { WorldState } from "./world-state";
 
 // =============================================================================
@@ -252,6 +251,7 @@ export interface NotificationLayout {
   translateY: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface LockscreenLayoutMeta {}
 
 // Transition Layout
@@ -265,4 +265,5 @@ export interface TransitionLayoutState extends BaseLayoutState {
   meta: TransitionLayoutMeta;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface TransitionLayoutMeta {}

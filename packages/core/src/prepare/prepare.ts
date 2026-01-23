@@ -295,7 +295,7 @@ interface AssetValidationResult {
  * In preview mode: logs warnings for missing assets
  * In render mode with strict: throws error if assets missing
  */
-function validateAssets(
+function _validateAssets(
   assets: AssetManifest,
   options: PrepareOptions,
 ): AssetValidationResult {

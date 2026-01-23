@@ -47,8 +47,6 @@ export interface DeviceOptions {
   os?: OSConfig;
 }
 
-import type { TrackEvent } from "@tokovo/ir";
-
 export interface TrackBuilder {
   _events: TrackEvent[];
   at: (time: string | number) => unknown;

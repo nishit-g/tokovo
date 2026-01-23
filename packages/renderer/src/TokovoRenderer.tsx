@@ -15,10 +15,9 @@ import {
   EventIndex,
   PluginManager,
   PluginManagerClass,
-  AppSurface,
-  TokovoProvider,
   createScopedLogger,
 } from "@tokovo/core";
+import { AppSurface, TokovoProvider } from "@tokovo/react";
 import {
   NotificationScheduler,
   HeadsUpNotification,

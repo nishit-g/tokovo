@@ -13,6 +13,8 @@ export type {
   AudioPayloads,
   OSPayloads,
   MarkerPayloads,
+  CallPayloads,
+  DevicePayloads,
   AppPayloadRegistry,
   SystemPayloads,
   AllPayloads,
@@ -29,6 +31,8 @@ export type {
   AudioTrackEvent,
   OSTrackEvent,
   MarkerTrackEvent,
+  CallTrackEvent,
+  DeviceTrackEvent,
   SystemTrackEvent,
   TrackEvent,
 } from "./track-event";
@@ -39,6 +43,8 @@ export {
   isOSEvent,
   isMarkerEvent,
   isAppEvent,
+  isCallEvent,
+  isDeviceEvent,
 } from "./track-event";
 
 // Episode IR

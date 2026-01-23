@@ -28,6 +28,14 @@ interface AudioEventPayload {
   toVolume?: number;
 }
 
+function deleteActiveSound(
+  activeSounds: Record<string, unknown>,
+  instanceId: string,
+): void {
+  // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+  delete activeSounds[instanceId];
+}
+
 interface ActiveSoundState {
   soundId: string;
   startFrame: number;
@@ -76,7 +84,7 @@ export function processAudioEvent(
 
     case "STOP_SOUND": {
       if (payload.instanceId) {
-        delete draft.audio!.activeSounds[payload.instanceId];
+        deleteActiveSound(draft.audio!.activeSounds, payload.instanceId);
       }
       break;
     }
@@ -125,7 +133,7 @@ export function cleanupExpiredSounds(
   }
 
   for (const instanceId of toDelete) {
-    delete draft.audio.activeSounds[instanceId];
+    deleteActiveSound(draft.audio.activeSounds, instanceId);
   }
 }
 
@@ -161,7 +169,7 @@ export function handleAutoSounds(
       }
     } else if (instruction.action === "STOP_SOUND") {
       if (instruction.instanceId) {
-        delete draft.audio!.activeSounds[instruction.instanceId];
+        deleteActiveSound(draft.audio!.activeSounds, instruction.instanceId);
       }
     }
   }

@@ -9,7 +9,7 @@
  * @see docs/FUCKING_MESS.md Section 6
  */
 
-import { RuntimeEvent, AppEventPayloads } from "./runtime-event";
+import { RuntimeEvent } from "./runtime-event";
 import type { Platform } from "../tokens";
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
@@ -27,6 +27,7 @@ export interface PluginLayoutConstants {
 // EVENT KIND REGISTRY - Extensible via module augmentation
 // =============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AppEventKindRegistry {
   // Plugins augment this: app_whatsapp: "MessageReceived" | "MessageSent" | ...
 }
@@ -40,6 +41,7 @@ type EventKindsForApp<AppId extends string> =
 // APP STATE REGISTRY - Extensible via module augmentation
 // =============================================================================
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AppInitialStateRegistry {
   // Plugins augment this: app_whatsapp: WhatsAppState
 }

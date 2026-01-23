@@ -1,18 +1,11 @@
 // NOTE: DeviceId, AppId, ConversationId, Platform are now in ./types/device.ts
 // Import for local use and re-export for backward compatibility
-import type {
-  DeviceId as _DeviceId,
-  AppId as _AppId,
-  ConversationId as _ConversationId,
-  Platform as _Platform,
-} from "./types/device";
+import type { DeviceId as _DeviceId, AppId as _AppId } from "./types/device";
 export type { DeviceId, AppId, ConversationId, Platform } from "./types/device";
 
 // Local aliases for use in this file
 type DeviceId = _DeviceId;
 type AppId = _AppId;
-type ConversationId = _ConversationId;
-type Platform = _Platform;
 
 // =============================================================================
 // NOTIFICATION IR (Intermediate Representation)

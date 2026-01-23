@@ -1,6 +1,6 @@
 import { ReducerRegistry } from "../engine/registry";
 import { SoundRegistry } from "../registries/sound";
-import { AnchorRegistry, resolveAnchor, type Rect } from "../anchors/registry";
+import { resolveAnchor, type Rect } from "../anchors/registry";
 import { PluginManager } from "./plugin";
 import type {
   TokovoPluginContract,

@@ -39,7 +39,7 @@ function normalizeLayoutMode(mode: string | undefined): ViewLayoutMode {
 export function processCameraEvent(
   draft: WorldState,
   event: CameraEvent,
-  ctx: HandlerContext,
+  _ctx: HandlerContext,
 ): void {
   if (!draft.camera || !draft.camera.activeEffects) {
     draft.camera = { ...DEFAULT_CAMERA_STATE };

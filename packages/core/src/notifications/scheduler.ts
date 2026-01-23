@@ -32,7 +32,6 @@ export const NotificationScheduler = {
     // - device.os.notifications (legacy)
     const notifications =
       device.notificationCenter?.items || device.os?.notifications || [];
-    const isLocked = device.isLocked;
 
     // Configuration
     const HEADS_UP_DURATION = 150; // 5 seconds @ 30fps

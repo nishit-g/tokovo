@@ -40,7 +40,7 @@ class EventHandlerRegistryClass {
       this.kindPriorities.set(kind, priority);
     }
 
-    handlers.sort((a, b) => {
+    handlers.sort((_a, _b) => {
       const aPriority = this.kindPriorities.get(kind) || 0;
       const bPriority = this.kindPriorities.get(kind) || 0;
       return bPriority - aPriority;

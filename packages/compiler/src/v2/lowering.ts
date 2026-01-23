@@ -14,6 +14,16 @@ import type {
   AudioTrackEvent,
   OSTrackEvent,
   MarkerTrackEvent,
+  CallTrackEvent,
+  DeviceTrackEvent,
+} from "@tokovo/ir";
+import {
+  isCameraEvent,
+  isAudioEvent,
+  isOSEvent,
+  isMarkerEvent,
+  isCallEvent,
+  isDeviceEvent,
 } from "@tokovo/ir";
 import type {
   AudioCrossfadeEvent,
@@ -65,28 +75,25 @@ export function lowerTrackEvent(
   event: TrackEvent,
   ctx: LoweringContext,
 ): RuntimeEvent[] {
-  // Cast to handle extended kinds like CALL that aren't in TrackEvent union
-  const kind = event.kind as string;
-
-  switch (kind) {
-    case "CAMERA":
-      return cameraV2Lowering(
-        event as unknown as Parameters<typeof cameraV2Lowering>[0],
-        { fps: ctx.fps },
-      ) as unknown as RuntimeEvent[];
-    case "AUDIO":
-      return lowerAudioEvent(event as AudioTrackEvent);
-    case "OS":
-      return lowerOSEvent(event as OSTrackEvent);
-    case "MARKER":
-      return lowerMarkerEvent(event as MarkerTrackEvent);
-    case "DEVICE":
-      return lowerDeviceEvent(event);
-    case "CALL":
-      return lowerCallEvent(event);
-    default:
-      return lowerAppEvent(event, ctx);
+  if (isCameraEvent(event)) {
+    return cameraV2Lowering(event, { fps: ctx.fps }) as RuntimeEvent[];
   }
+  if (isAudioEvent(event)) {
+    return lowerAudioEvent(event);
+  }
+  if (isOSEvent(event)) {
+    return lowerOSEvent(event);
+  }
+  if (isMarkerEvent(event)) {
+    return lowerMarkerEvent(event);
+  }
+  if (isDeviceEvent(event)) {
+    return lowerDeviceEvent(event);
+  }
+  if (isCallEvent(event)) {
+    return lowerCallEvent(event);
+  }
+  return lowerAppEvent(event, ctx);
 }
 /**
  * Lower APP events by delegating to the appropriate plugin.

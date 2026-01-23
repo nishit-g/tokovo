@@ -1,6 +1,4 @@
-import type { WorldState, TimelineEvent } from "../types";
-import type { KeyframedEventIndex } from "./event-utils";
-import { produce } from "immer";
+import type { WorldState } from "../types";
 
 export interface StateCache {
   keyframeStates: Map<number, WorldState>;

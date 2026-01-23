@@ -64,7 +64,10 @@ export function deviceReducer(
   return produce(devices, (draft) => {
     if (event.kind !== "DEVICE") return;
 
-    const device = draft[event.deviceId];
+    const deviceId = (event as { deviceId?: string }).deviceId;
+    if (!deviceId) return;
+
+    const device = draft[deviceId];
     if (!device) return;
 
     // Initialize notification center if needed with fresh mutable arrays

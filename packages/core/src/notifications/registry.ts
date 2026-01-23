@@ -29,14 +29,14 @@ export interface NotificationViewProps {
 
 export type NotificationViewComponent = React.FC<NotificationViewProps>;
 
-export class NotificationViewRegistry {
-  private static views: Record<string, NotificationViewComponent> = {};
+const notificationViews: Record<string, NotificationViewComponent> = {};
 
-  static register(appId: string, component: NotificationViewComponent) {
-    this.views[appId] = component;
-  }
+export const NotificationViewRegistry = {
+  register(appId: string, component: NotificationViewComponent) {
+    notificationViews[appId] = component;
+  },
 
-  static get(appId: string): NotificationViewComponent | undefined {
-    return this.views[appId];
-  }
-}
+  get(appId: string): NotificationViewComponent | undefined {
+    return notificationViews[appId];
+  },
+};

@@ -136,9 +136,12 @@ class ReducerRegistryClass {
     for (const kind of kinds) {
       if (this._eventKindToAppId.has(kind)) {
         const existingApp = this._eventKindToAppId.get(kind);
-        EngineLogger.warn(
-          `Event kind "${kind}" already registered by ${existingApp}, overwriting with ${appId}`,
-        );
+        if (existingApp !== appId) {
+          throw new Error(
+            `Plugin contract violation: Event kind "${kind}" is already registered by plugin "${existingApp}". ` +
+              `Plugin "${appId}" cannot register the same event kind. Each event kind must be unique across all plugins.`,
+          );
+        }
       }
       this._eventKindToAppId.set(kind, appId);
     }

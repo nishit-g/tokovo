@@ -14,8 +14,6 @@ import type {
   CameraShakeEvent,
   CameraZoomEvent,
 } from "@tokovo/core";
-import { createTrace } from "@tokovo/ir";
-import { Tracer } from "../tracer";
 
 export interface ZoomOptions {
   originX?: number;
@@ -43,7 +41,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "ANCHOR_FOCUS",
-    _trace: createTrace(Tracer.capture()),
     anchor: options.target,
     preset: "message",
     shake: 0,
@@ -58,7 +55,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "ANCHOR_TRACK",
-    _trace: createTrace(Tracer.capture()),
     anchor: options.target,
     preset: "operatorFollow",
     duration: options.duration ?? 35,
@@ -76,7 +72,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "ZOOM",
-    _trace: createTrace(Tracer.capture()),
     scale,
     duration,
     originX: opts.originX ?? 0.5,
@@ -94,7 +89,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "PAN",
-    _trace: createTrace(Tracer.capture()),
     translateX,
     translateY,
     duration,
@@ -110,7 +104,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "SHAKE",
-    _trace: createTrace(Tracer.capture()),
     intensity,
     duration,
     frequency: opts.frequency ?? 18,
@@ -125,7 +118,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "RESET",
-    _trace: createTrace(Tracer.capture()),
     duration,
     easing,
   }),
@@ -143,7 +135,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "ANCHOR_FOCUS",
-    _trace: createTrace(Tracer.capture()),
     anchor,
     preset,
     shake,
@@ -161,7 +152,6 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "ANCHOR_TRACK",
-    _trace: createTrace(Tracer.capture()),
     anchor,
     duration,
     smoothing,
@@ -173,18 +163,15 @@ export const camera = {
     at,
     kind: "CAMERA",
     type: "HOLD",
-    _trace: createTrace(Tracer.capture()),
     duration,
   }),
 
   punchGlide: (at: number, anchor: string): CameraRuntimeEvent[] => {
-    const trace = createTrace(Tracer.capture());
     return [
       {
         at,
         kind: "CAMERA",
         type: "ANCHOR_FOCUS",
-        _trace: trace,
         anchor,
         preset: "impactPunch",
         shake: 3,
@@ -195,7 +182,6 @@ export const camera = {
         at: at + 10,
         kind: "CAMERA",
         type: "ANCHOR_TRACK",
-        _trace: trace,
         anchor,
         duration: 35,
         smoothing: 0.18,

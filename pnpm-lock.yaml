@@ -102,6 +102,9 @@ importers:
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
       lucide-react:
         specifier: ^0.263.1
         version: 0.263.1(react@18.2.0)
@@ -171,6 +174,9 @@ importers:
 
   packages/device-camera:
     dependencies:
+      '@tokovo/ir':
+        specifier: workspace:*
+        version: link:../ir
       react:
         specifier: ^18.0.0
         version: 18.2.0
@@ -187,6 +193,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
       react:
         specifier: ^18.0.0
         version: 18.2.0
@@ -289,6 +298,19 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/react:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 18.2.0
+    devDependencies:
+      '@types/react':
+        specifier: ^18.0.0
+        version: 18.2.0
+
   packages/renderer:
     dependencies:
       '@tokovo/core':
@@ -303,6 +325,9 @@ importers:
       '@tokovo/devices':
         specifier: workspace:*
         version: link:../devices
+      '@tokovo/react':
+        specifier: workspace:*
+        version: link:../react
       react:
         specifier: 18.2.0
         version: 18.2.0

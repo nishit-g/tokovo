@@ -1,16 +1,8 @@
 import type { Platform } from "../tokens";
-import type {
-  WorldState,
-  RuntimeEvent,
-  LayoutContext,
-  LayoutState,
-} from "../types";
+import type { LayoutContext, LayoutState } from "../types";
 import type {
   PluginReducer,
   PluginViews,
-  PluginViewComponent,
-  PluginLayoutStrategy,
-  PluginAnchorRegistry,
   PluginAnchorProvider,
   PluginAutoSoundRule,
   PluginNotificationAdapter,

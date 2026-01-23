@@ -25,7 +25,8 @@ export type RuntimeEventKind =
   | "CALL"
   | "TRANSITION"
   | "HIGHLIGHT"
-  | string;
+  | "MARKER"
+  | "TOUCH";
 
 /**
  * Event trace for debugging - links back to DSL source
@@ -498,6 +499,40 @@ export interface HighlightRuntimeEvent extends BaseRuntimeEvent {
 }
 
 // =============================================================================
+// TOUCH EVENT
+// =============================================================================
+
+export type TouchEventType = "TAP" | "LONG_PRESS" | "DRAG" | "SCROLL" | "SWIPE";
+
+export interface TouchRuntimeEvent extends BaseRuntimeEvent {
+  kind: "TOUCH";
+  type: TouchEventType;
+  deviceId?: string;
+  x?: number;
+  y?: number;
+  startX?: number;
+  startY?: number;
+  endX?: number;
+  endY?: number;
+  duration?: number;
+  velocity?: number;
+}
+
+// =============================================================================
+// MARKER EVENT
+// =============================================================================
+
+export type MarkerEventType = "MARK" | "SECTION_START" | "SECTION_END";
+
+export interface MarkerRuntimeEvent extends BaseRuntimeEvent {
+  kind: "MARKER";
+  type: MarkerEventType;
+  label?: string;
+  sectionId?: string;
+  metadata?: Record<string, unknown>;
+}
+
+// =============================================================================
 // V2 NATIVE OPS (from @tokovo/ir)
 // =============================================================================
 
@@ -519,6 +554,8 @@ export type RuntimeEvent =
   | CallRuntimeEvent
   | TransitionRuntimeEvent
   | HighlightRuntimeEvent
+  | TouchRuntimeEvent
+  | MarkerRuntimeEvent
   | V2NativeOp;
 
 // =============================================================================
@@ -537,6 +574,7 @@ export type RuntimeEvent =
  *   }
  * }
  */
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface AppEventPayloads {
   // Plugins extend this via module augmentation
 }

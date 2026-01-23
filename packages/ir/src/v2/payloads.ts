@@ -19,13 +19,18 @@
 // COMMON TYPES
 // =============================================================================
 
-export type EasingType = "linear" | "easeIn" | "easeOut" | "easeInOut" | "cinematic";
+export type EasingType =
+  | "linear"
+  | "easeIn"
+  | "easeOut"
+  | "easeInOut"
+  | "cinematic";
 
 export interface TrackMessageRef {
-    id: string;
-    deviceId: string;
-    appId: string;
-    conversationId: string;
+  id: string;
+  deviceId: string;
+  appId: string;
+  conversationId: string;
 }
 
 // =============================================================================
@@ -33,46 +38,77 @@ export interface TrackMessageRef {
 // =============================================================================
 
 export interface CameraPayloads {
-    SET: {
-        x?: number;
-        y?: number;
-        scale?: number;
-        rotation?: number;
-        originX?: number;
-        originY?: number;
-    };
-    ANIMATE_START: {
-        x?: number;
-        y?: number;
-        scale?: number;
-        rotation?: number;
-        originX?: number;
-        originY?: number;
-        easing: EasingType;
-    };
-    ANIMATE_END: Record<string, never>;
-    FOCUS: {
-        anchorId: string;
-        scale?: number;
-        padding?: number;
-        easing?: EasingType;
-    };
-    TRACK_START: {
-        anchorId: string;
-        scale?: number;
-        lag?: number;
-    };
-    TRACK_END: Record<string, never>;
-    SHAKE_START: {
-        intensityX: number;
-        intensityY: number;
-        frequency?: number;
-        decay?: number;
-    };
-    SHAKE_END: Record<string, never>;
-    RESET: {
-        easing?: EasingType;
-    };
+  SET: {
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    originX?: number;
+    originY?: number;
+  };
+  ANIMATE_START: {
+    x?: number;
+    y?: number;
+    scale?: number;
+    rotation?: number;
+    originX?: number;
+    originY?: number;
+    easing: EasingType;
+  };
+  ANIMATE_END: Record<string, never>;
+  FOCUS: {
+    anchorId: string;
+    scale?: number;
+    padding?: number;
+    easing?: EasingType;
+  };
+  TRACK_START: {
+    anchorId: string;
+    scale?: number;
+    lag?: number;
+  };
+  TRACK_END: Record<string, never>;
+  SHAKE_START: {
+    intensityX: number;
+    intensityY: number;
+    frequency?: number;
+    decay?: number;
+  };
+  SHAKE_END: Record<string, never>;
+  RESET: {
+    easing?: EasingType;
+  };
+  ZOOM: {
+    scale: number;
+    duration?: number;
+    easing?: EasingType;
+  };
+  SHAKE: {
+    intensityX: number;
+    intensityY: number;
+    duration?: number;
+    frequency?: number;
+    decay?: number;
+  };
+  ANCHOR_FOCUS: {
+    anchorId: string;
+    scale?: number;
+    padding?: number;
+    easing?: EasingType;
+    duration?: number;
+  };
+  ANCHOR_TRACK: {
+    anchorId: string;
+    scale?: number;
+    lag?: number;
+    duration?: number;
+  };
+  CUT: {
+    x?: number;
+    y?: number;
+    scale?: number;
+    anchorId?: string;
+  };
 }
 
 // =============================================================================
@@ -80,31 +116,31 @@ export interface CameraPayloads {
 // =============================================================================
 
 export interface AudioPayloads {
-    BGM_START: {
-        soundId: string;
-        volume: number;
-        fadeIn?: number;
-    };
-    BGM_END: {
-        fadeOut?: number;
-    };
-    PLAY: {
-        soundId: string;
-        volume?: number;
-        loop?: boolean;
-    };
-    STOP: {
-        soundId: string;
-    };
-    CROSSFADE: {
-        soundId: string;
-        volume: number;
-        duration: number;
-    };
-    FADE_OUT: {
-        duration: number;
-    };
-    STOP_ALL: Record<string, never>;
+  BGM_START: {
+    soundId: string;
+    volume: number;
+    fadeIn?: number;
+  };
+  BGM_END: {
+    fadeOut?: number;
+  };
+  PLAY: {
+    soundId: string;
+    volume?: number;
+    loop?: boolean;
+  };
+  STOP: {
+    soundId: string;
+  };
+  CROSSFADE: {
+    soundId: string;
+    volume: number;
+    duration: number;
+  };
+  FADE_OUT: {
+    duration: number;
+  };
+  STOP_ALL: Record<string, never>;
 }
 
 // =============================================================================
@@ -112,41 +148,41 @@ export interface AudioPayloads {
 // =============================================================================
 
 export interface OSPayloads {
-    SET_STATE: {
-        time?: number;
-        battery?: number;
-        charging?: boolean;
-        network?: "wifi" | "5G" | "4G" | "3G" | "none";
-        strength?: number;
-        dnd?: boolean;
-        lowPowerMode?: boolean;
-    };
-    SET_TIME: {
-        time: number;
-    };
-    SET_BATTERY: {
-        level: number;
-        charging?: boolean;
-    };
-    SET_NETWORK: {
-        type: "wifi" | "5G" | "4G" | "3G" | "none";
-        strength?: number;
-    };
-    SET_DND: {
-        enabled: boolean;
-    };
-    NOTIFICATION_SHOW: {
-        id: string;
-        appId: string;
-        title: string;
-        body: string;
-        icon?: string;
-        mode?: "headsup" | "lockscreen" | "both";
-    };
-    NOTIFICATION_DISMISS: {
-        id: string;
-    };
-    NOTIFICATION_DISMISS_ALL: Record<string, never>;
+  SET_STATE: {
+    time?: number;
+    battery?: number;
+    charging?: boolean;
+    network?: "wifi" | "5G" | "4G" | "3G" | "none";
+    strength?: number;
+    dnd?: boolean;
+    lowPowerMode?: boolean;
+  };
+  SET_TIME: {
+    time: number;
+  };
+  SET_BATTERY: {
+    level: number;
+    charging?: boolean;
+  };
+  SET_NETWORK: {
+    type: "wifi" | "5G" | "4G" | "3G" | "none";
+    strength?: number;
+  };
+  SET_DND: {
+    enabled: boolean;
+  };
+  NOTIFICATION_SHOW: {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    icon?: string;
+    mode?: "headsup" | "lockscreen" | "both";
+  };
+  NOTIFICATION_DISMISS: {
+    id: string;
+  };
+  NOTIFICATION_DISMISS_ALL: Record<string, never>;
 }
 
 // =============================================================================
@@ -154,15 +190,77 @@ export interface OSPayloads {
 // =============================================================================
 
 export interface MarkerPayloads {
-    MARK: {
-        id: string;
-    };
-    SECTION_START: {
-        id: string;
-    };
-    SECTION_END: {
-        id: string;
-    };
+  MARK: {
+    id: string;
+  };
+  SECTION_START: {
+    id: string;
+  };
+  SECTION_END: {
+    id: string;
+  };
+}
+
+export interface CallPayloads {
+  INCOMING: {
+    callerId: string;
+    callerName?: string;
+    callerAvatar?: string;
+    isVideo?: boolean;
+  };
+  ANSWER: Record<string, never>;
+  DECLINE: Record<string, never>;
+  END: Record<string, never>;
+  TOGGLE_MUTE: Record<string, never>;
+  TOGGLE_SPEAKER: Record<string, never>;
+  TOGGLE_HOLD: Record<string, never>;
+}
+
+export interface DevicePayloads {
+  LOCK: Record<string, never>;
+  UNLOCK: Record<string, never>;
+  OPEN_APP: {
+    appId: string;
+  };
+  CLOSE_APP: Record<string, never>;
+  GO_HOME: Record<string, never>;
+  NOTIFICATION_SHOW: {
+    id: string;
+    appId: string;
+    title: string;
+    body: string;
+    icon?: string;
+    mode?: "headsup" | "lockscreen" | "both";
+    priority?: "HIGH" | "DEFAULT" | "LOW";
+  };
+  NOTIFICATION_DISMISS: {
+    id: string;
+  };
+  NOTIFICATION_TAP: {
+    id: string;
+  };
+  NOTIFICATION_SWIPE: {
+    id: string;
+    direction?: "left" | "right";
+  };
+  NOTIFICATION_REPLY: {
+    id: string;
+    text: string;
+  };
+  NOTIFICATION_DYNAMIC_ISLAND: {
+    mode: "idle" | "minimal" | "compact" | "expanded";
+  };
+  NOTIFICATION_OPEN_PANEL: Record<string, never>;
+  NOTIFICATION_CLOSE_PANEL: Record<string, never>;
+  NOTIFICATION_CLEAR_ALL: Record<string, never>;
+  SET_DYNAMIC_ISLAND: {
+    visible: boolean;
+    mode?: "idle" | "minimal" | "compact" | "expanded";
+  };
+  SET_BADGE: {
+    appId: string;
+    count: number;
+  };
 }
 
 // =============================================================================
@@ -183,7 +281,7 @@ export interface MarkerPayloads {
  * ```
  */
 export interface AppPayloadRegistry {
-    // Apps add their payloads here via module augmentation
+  // Apps add their payloads here via module augmentation
 }
 
 // =============================================================================
@@ -194,10 +292,12 @@ export interface AppPayloadRegistry {
  * System payloads - always available in IR.
  */
 export interface SystemPayloads {
-    camera: CameraPayloads;
-    audio: AudioPayloads;
-    os: OSPayloads;
-    marker: MarkerPayloads;
+  camera: CameraPayloads;
+  audio: AudioPayloads;
+  os: OSPayloads;
+  marker: MarkerPayloads;
+  call: CallPayloads;
+  device: DevicePayloads;
 }
 
 // =============================================================================

@@ -40,7 +40,6 @@ export type { PluginLifecycleHooks, LifecycleContext } from "./lifecycle";
 export * from "./handlers";
 
 // Engine Facade - unified API for engine initialization and control
-import { EngineConfig } from "./config";
 import { EventHandlerRegistry } from "./event-handlers";
 import { MiddlewareRegistry, builtInMiddlewares } from "./middleware";
 import { LifecycleManager } from "./lifecycle";

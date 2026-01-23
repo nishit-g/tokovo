@@ -1,4 +1,4 @@
-import { z, ZodError, ZodSchema, ZodIssue } from "zod";
+import { ZodError, ZodSchema, ZodIssue } from "zod";
 import { logger, createScopedLogger } from "../logger";
 
 const log = createScopedLogger("validation");

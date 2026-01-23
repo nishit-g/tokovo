@@ -23,7 +23,6 @@ class WidgetRegistryClass {
             console.warn(`[WidgetRegistry] Overwriting widgets for: ${appId}`);
         }
         this.slots.set(appId, widgets);
-        console.log(`[WidgetRegistry] Registered ${widgets.length} widgets for: ${appId}`);
     }
 
     /**

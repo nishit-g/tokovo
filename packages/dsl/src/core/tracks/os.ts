@@ -5,10 +5,8 @@
  * network, notifications, and DND mode.
  */
 
-import type { OSTrackEvent, DeviceTrackEvent } from "@tokovo/ir";
+import type { OSTrackEvent, DeviceTrackEvent, TrackEvent } from "@tokovo/ir";
 import { parseTimeToFrames } from "../../utils/time";
-
-type TrackEvent = OSTrackEvent | DeviceTrackEvent;
 
 // =============================================================================
 // TYPES
@@ -280,6 +278,11 @@ export class OSTrackBuilder {
 
   at(time: string | number): OSPointBuilder {
     const frame = parseTimeToFrames(time, this.fps);
+    return new OSPointBuilder(frame, this.fps, this._events, this.getOrder);
+  }
+
+  span(_start: string | number, _end: string | number): OSPointBuilder {
+    const frame = parseTimeToFrames(_start, this.fps);
     return new OSPointBuilder(frame, this.fps, this._events, this.getOrder);
   }
 }
