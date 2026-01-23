@@ -38,3 +38,66 @@ export type { PluginLifecycleHooks, LifecycleContext } from "./lifecycle";
 
 // Handlers
 export * from "./handlers";
+
+// Engine Facade - unified API for engine initialization and control
+import { EngineConfig } from "./config";
+import { EventHandlerRegistry } from "./event-handlers";
+import { MiddlewareRegistry, builtInMiddlewares } from "./middleware";
+import { LifecycleManager } from "./lifecycle";
+import { configureEngine, resetConfig, TokovoConfig } from "../config";
+
+export interface EngineInitOptions {
+  config?: Partial<typeof TokovoConfig>;
+  enableBuiltInMiddlewares?: boolean;
+  debug?: boolean;
+}
+
+class TokovoEngineFacade {
+  private initialized = false;
+
+  init(options: EngineInitOptions = {}): void {
+    if (this.initialized) return;
+
+    if (options.config) {
+      configureEngine(options.config);
+    }
+
+    if (options.enableBuiltInMiddlewares !== false) {
+      MiddlewareRegistry.use(builtInMiddlewares.errorRecovery);
+      if (options.debug) {
+        MiddlewareRegistry.use(builtInMiddlewares.logging);
+      }
+    }
+
+    LifecycleManager.initializeAll();
+    this.initialized = true;
+  }
+
+  destroy(): void {
+    if (!this.initialized) return;
+
+    LifecycleManager.destroyAll();
+    EventHandlerRegistry.clear();
+    MiddlewareRegistry.clear();
+    resetConfig();
+    this.initialized = false;
+  }
+
+  get isInitialized(): boolean {
+    return this.initialized;
+  }
+
+  get eventHandlers(): typeof EventHandlerRegistry {
+    return EventHandlerRegistry;
+  }
+
+  get middleware(): typeof MiddlewareRegistry {
+    return MiddlewareRegistry;
+  }
+
+  get lifecycle(): typeof LifecycleManager {
+    return LifecycleManager;
+  }
+}
+
+export const Engine = new TokovoEngineFacade();

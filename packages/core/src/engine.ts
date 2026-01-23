@@ -18,7 +18,7 @@ import {
   DEFAULT_AUDIO_STATE,
 } from "./types";
 import type { CameraTransform } from "@tokovo/device-camera";
-import { TIMING } from "./constants";
+import { getConfig } from "./config";
 import {
   EventIndex,
   KeyframedEventIndex,
@@ -44,6 +44,12 @@ import {
   processCallEvent,
   HandlerContext,
 } from "./engine/handlers";
+import {
+  EventHandlerRegistry,
+  EventHandlerContext,
+} from "./engine/event-handlers";
+import { MiddlewareRegistry, MiddlewareContext } from "./engine/middleware";
+import { LifecycleManager, LifecycleContext } from "./engine/lifecycle";
 
 const log = createScopedLogger("engine");
 
@@ -134,14 +140,19 @@ export function replay(
   ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT,
   eventIndex?: EventIndex,
 ): WorldState {
+  const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
+  LifecycleManager.notifyBeforeReplay(lifecycleCtx);
+
   if (!initial) {
     log.warn("Replay called with undefined initial state");
-    return {
+    const emptyState = {
       devices: {},
       appState: {},
       camera: { ...DEFAULT_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
+    LifecycleManager.notifyAfterReplay(emptyState, lifecycleCtx);
+    return emptyState;
   }
 
   // Ensure initial state has proper camera and audio state
@@ -171,8 +182,8 @@ export function replay(
     ? getEventsUpTo(eventIndex, t)
     : events.filter((e) => e.at <= t);
 
-  // Event handler dispatch
-  const handleEvent = (
+  // Core event handler that processes system and plugin events
+  const coreEventHandler = (
     draft: WorldState,
     event: TimelineEvent,
     index: number,
@@ -183,17 +194,33 @@ export function replay(
       mode: ctx.mode,
     };
 
-    // V2 IR App Events - dispatch to app reducers via registry
+    // Convert to EventHandlerContext for registry
+    const registryCtx: EventHandlerContext = {
+      frame: t,
+      eventIndex: index,
+      mode: ctx.mode,
+    };
+
+    // 1. First try EventHandlerRegistry (plugin-registered handlers)
+    if (EventHandlerRegistry.hasHandler(event.kind as string)) {
+      EventHandlerRegistry.handle(draft, event, registryCtx);
+      // AutoSound derivation still runs
+      handleAutoSounds(draft, event, handlerCtx);
+      return;
+    }
+
+    // 2. V2 IR App Events - dispatch to app reducers via legacy registry
     const appIdForKind = ReducerRegistry.getAppIdForEventKind(
       event.kind as string,
     );
     if (appIdForKind) {
       const reducer = ReducerRegistry.getAppReducer(appIdForKind);
       reducer?.(draft, event);
+      handleAutoSounds(draft, event, handlerCtx);
       return;
     }
 
-    // V2 Camera Events - normalize kind to type
+    // 3. V2 Camera Events - normalize kind to type
     if (
       typeof event.kind === "string" &&
       (event.kind.startsWith("Camera") || event.kind.startsWith("Anchor"))
@@ -216,10 +243,11 @@ export function replay(
         cameraEvent as Parameters<typeof processCameraEvent>[1],
         handlerCtx,
       );
+      handleAutoSounds(draft, event, handlerCtx);
       return;
     }
 
-    // System Events
+    // 4. System Events (built-in handlers)
     switch (event.kind) {
       case "DEVICE":
         if (ReducerRegistry.deviceReducer) {
@@ -273,6 +301,24 @@ export function replay(
     handleAutoSounds(draft, event, handlerCtx);
   };
 
+  // Wrapper that executes event through middleware pipeline
+  const handleEvent = (
+    draft: WorldState,
+    event: TimelineEvent,
+    index: number,
+  ): void => {
+    const middlewareCtx: MiddlewareContext = {
+      frame: t,
+      eventIndex: index,
+      mode: ctx.mode,
+    };
+
+    // Execute through middleware pipeline, with core handler as final step
+    MiddlewareRegistry.execute(event, draft, middlewareCtx, () => {
+      coreEventHandler(draft, event, index);
+    });
+  };
+
   // Apply events with error handling
   const stateAfterEvents = relevant.reduce((state, event, index) => {
     return produce(state, (draft) => {
@@ -306,10 +352,10 @@ export function replay(
     });
   }, initialWithCamera);
 
-  // Compute camera transforms
-  return produce(stateAfterEvents, (draft) => {
+  const finalState = produce(stateAfterEvents, (draft) => {
+    const config = getConfig();
     draft.camera.activeEffects = draft.camera.activeEffects.filter(
-      (ae) => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER,
+      (ae) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
     );
 
     if (!draft.camera.deviceTransforms) {
@@ -320,8 +366,6 @@ export function replay(
       const deviceEffects = draft.camera.activeEffects.filter(
         (ae) => !ae.deviceId || ae.deviceId === deviceId,
       );
-      // Camera transform is now computed in renderer using device-camera processors
-      // Here we just store the default transform
       draft.camera.deviceTransforms[deviceId] =
         DEFAULT_CAMERA_TRANSFORM as CameraTransform;
     }
@@ -331,6 +375,9 @@ export function replay(
     draft.camera.transform =
       draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM;
   });
+
+  LifecycleManager.notifyAfterReplay(finalState, lifecycleCtx);
+  return finalState;
 }
 
 // =============================================================================
@@ -366,8 +413,12 @@ export function replayIncremental(
     return replay(initial, events, t, ctx, eventIndex);
   }
 
+  const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
+  LifecycleManager.notifyBeforeReplay(lifecycleCtx);
+
   const cached = getCachedStateForFrame(stateCache, t);
   if (cached && cached.fromFrame === t) {
+    LifecycleManager.notifyAfterReplay(cached.state, lifecycleCtx);
     return cached.state;
   }
 
@@ -386,13 +437,15 @@ export function replayIncremental(
   }
 
   if (eventsToApply.length === 0 && cached) {
-    return finalizeState(cached.state, t);
+    const result = finalizeState(cached.state, t);
+    LifecycleManager.notifyAfterReplay(result, lifecycleCtx);
+    return result;
   }
 
   const stateAfterEvents = eventsToApply.reduce((state, event, index) => {
     return produce(state, (draft) => {
       try {
-        handleEventInternal(draft, event, index, t, ctx);
+        processEventWithMiddleware(draft, event, index, t, ctx);
       } catch (error) {
         handleEventError(error, event, ctx);
       }
@@ -402,6 +455,7 @@ export function replayIncremental(
   const finalState = finalizeState(stateAfterEvents, t);
   cacheStateAtKeyframe(stateCache, t, finalState);
 
+  LifecycleManager.notifyAfterReplay(finalState, lifecycleCtx);
   return finalState;
 }
 
@@ -437,7 +491,41 @@ function ensureInitialState(initial: WorldState): WorldState {
   };
 }
 
-function handleEventInternal(
+function handleEventError(
+  error: unknown,
+  event: TimelineEvent,
+  ctx: ReplayContext,
+): void {
+  const eventWithAppId = event as TimelineEvent & { appId?: string };
+  const pluginId = eventWithAppId.appId || event.kind;
+  const wrappedError =
+    error instanceof Error ? error : new Error(String(error));
+
+  if (ctx.mode === "render" && !ctx.gracefulDegradation) {
+    throw new PluginError(pluginId, event, wrappedError);
+  }
+
+  log.error(`Event handler failed at frame ${event.at}`, wrappedError, {
+    pluginId,
+    eventKind: event.kind,
+    frame: event.at,
+  });
+
+  if (ctx.errors) {
+    ctx.errors.push({
+      event,
+      error: wrappedError,
+      frame: event.at,
+      skipped: true,
+    });
+  }
+
+  if (ctx.stats) {
+    ctx.stats.skippedEvents++;
+  }
+}
+
+function processEventCore(
   draft: WorldState,
   event: TimelineEvent,
   index: number,
@@ -450,12 +538,25 @@ function handleEventInternal(
     mode: ctx.mode,
   };
 
+  const registryCtx: EventHandlerContext = {
+    frame: t,
+    eventIndex: index,
+    mode: ctx.mode,
+  };
+
+  if (EventHandlerRegistry.hasHandler(event.kind as string)) {
+    EventHandlerRegistry.handle(draft, event, registryCtx);
+    handleAutoSounds(draft, event, handlerCtx);
+    return;
+  }
+
   const appIdForKind = ReducerRegistry.getAppIdForEventKind(
     event.kind as string,
   );
   if (appIdForKind) {
     const reducer = ReducerRegistry.getAppReducer(appIdForKind);
     reducer?.(draft, event);
+    handleAutoSounds(draft, event, handlerCtx);
     return;
   }
 
@@ -481,6 +582,7 @@ function handleEventInternal(
       cameraEvent as Parameters<typeof processCameraEvent>[1],
       handlerCtx,
     );
+    handleAutoSounds(draft, event, handlerCtx);
     return;
   }
 
@@ -536,44 +638,29 @@ function handleEventInternal(
   handleAutoSounds(draft, event, handlerCtx);
 }
 
-function handleEventError(
-  error: unknown,
+function processEventWithMiddleware(
+  draft: WorldState,
   event: TimelineEvent,
+  index: number,
+  t: number,
   ctx: ReplayContext,
 ): void {
-  const eventWithAppId = event as TimelineEvent & { appId?: string };
-  const pluginId = eventWithAppId.appId || event.kind;
-  const wrappedError =
-    error instanceof Error ? error : new Error(String(error));
+  const middlewareCtx: MiddlewareContext = {
+    frame: t,
+    eventIndex: index,
+    mode: ctx.mode,
+  };
 
-  if (ctx.mode === "render" && !ctx.gracefulDegradation) {
-    throw new PluginError(pluginId, event, wrappedError);
-  }
-
-  log.error(`Event handler failed at frame ${event.at}`, wrappedError, {
-    pluginId,
-    eventKind: event.kind,
-    frame: event.at,
+  MiddlewareRegistry.execute(event, draft, middlewareCtx, () => {
+    processEventCore(draft, event, index, t, ctx);
   });
-
-  if (ctx.errors) {
-    ctx.errors.push({
-      event,
-      error: wrappedError,
-      frame: event.at,
-      skipped: true,
-    });
-  }
-
-  if (ctx.stats) {
-    ctx.stats.skippedEvents++;
-  }
 }
 
 function finalizeState(state: WorldState, t: number): WorldState {
   return produce(state, (draft) => {
+    const config = getConfig();
     draft.camera.activeEffects = draft.camera.activeEffects.filter(
-      (ae) => t <= ae.endFrame + TIMING.EFFECT_CLEANUP_BUFFER,
+      (ae) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
     );
 
     if (!draft.camera.deviceTransforms) {

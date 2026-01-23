@@ -285,3 +285,8 @@ export {
   definePlugin as createPlugin,
 } from "./plugin/builder";
 export type { PluginBuilder, PluginBuilderConfig } from "./plugin/builder";
+
+// =============================================================================
+// ENGINE FACADE - Unified engine initialization and control
+// =============================================================================
+export { Engine } from "./engine/index";
