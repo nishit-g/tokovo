@@ -67,6 +67,10 @@ class NotificationAdapterRegistryClass {
     log.info(`Registered notification adapter: ${adapter.appId}`);
   }
 
+  unregister(appId: string): void {
+    this.adapters.delete(appId);
+  }
+
   get(appId: string): NotificationAdapter | undefined {
     return this.adapters.get(appId);
   }

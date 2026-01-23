@@ -56,6 +56,8 @@ interface EffectBase {
   easing?: EasingType;
   /** Target device (undefined = apply to all/primary device) */
   deviceId?: string;
+  /** Persistent effects survive CUT events (e.g., ambient camera drift) */
+  persistent?: boolean;
 }
 
 // =============================================================================

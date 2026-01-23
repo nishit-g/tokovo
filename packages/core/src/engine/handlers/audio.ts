@@ -107,6 +107,28 @@ export function processAudioEvent(
   }
 }
 
+export function cleanupExpiredSounds(
+  draft: WorldState,
+  currentFrame: number,
+): void {
+  if (!draft.audio?.activeSounds) return;
+
+  const toDelete: string[] = [];
+  for (const [instanceId, sound] of Object.entries(draft.audio.activeSounds)) {
+    const s = sound as ActiveSoundState;
+    if (!s.loop && s.duration !== undefined) {
+      const endFrame = s.startFrame + s.duration;
+      if (currentFrame >= endFrame) {
+        toDelete.push(instanceId);
+      }
+    }
+  }
+
+  for (const instanceId of toDelete) {
+    delete draft.audio.activeSounds[instanceId];
+  }
+}
+
 export function handleAutoSounds(
   draft: WorldState,
   event: TimelineEvent,

@@ -54,23 +54,29 @@ export interface EngineInitOptions {
 
 class TokovoEngineFacade {
   private initialized = false;
+  private initializing = false;
 
-  init(options: EngineInitOptions = {}): void {
-    if (this.initialized) return;
+  async init(options: EngineInitOptions = {}): Promise<void> {
+    if (this.initialized || this.initializing) return;
+    this.initializing = true;
 
-    if (options.config) {
-      configureEngine(options.config);
-    }
-
-    if (options.enableBuiltInMiddlewares !== false) {
-      MiddlewareRegistry.use(builtInMiddlewares.errorRecovery);
-      if (options.debug) {
-        MiddlewareRegistry.use(builtInMiddlewares.logging);
+    try {
+      if (options.config) {
+        configureEngine(options.config);
       }
-    }
 
-    LifecycleManager.initializeAll();
-    this.initialized = true;
+      if (options.enableBuiltInMiddlewares !== false) {
+        MiddlewareRegistry.use(builtInMiddlewares.errorRecovery);
+        if (options.debug) {
+          MiddlewareRegistry.use(builtInMiddlewares.logging);
+        }
+      }
+
+      await LifecycleManager.initializeAll();
+      this.initialized = true;
+    } finally {
+      this.initializing = false;
+    }
   }
 
   destroy(): void {

@@ -20,6 +20,8 @@ export interface HandlerContext {
   eventIndex: number;
   /** Mode affects error handling (preview = continue, render = throw) */
   mode: "preview" | "render";
+  /** Frames per second for time-dependent calculations */
+  fps: number;
 }
 
 // =============================================================================

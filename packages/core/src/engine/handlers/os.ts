@@ -73,7 +73,8 @@ export function processOSEvent(
       break;
 
     case "DRAIN_BATTERY": {
-      const drain = (payload.rate ?? 0) / 30;
+      const fps = _ctx.fps ?? 30;
+      const drain = (payload.rate ?? 0) / fps;
       device.os.battery = Math.max(0, device.os.battery - drain);
       break;
     }

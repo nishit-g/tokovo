@@ -26,10 +26,11 @@ export interface MiddlewareDefinition {
 
 class MiddlewareRegistryClass {
   private middlewares: MiddlewareDefinition[] = [];
+  private needsSort = false;
 
   use(definition: MiddlewareDefinition): () => void {
     this.middlewares.push(definition);
-    this.middlewares.sort((a, b) => (a.order || 0) - (b.order || 0));
+    this.needsSort = true;
 
     log.debug(`Registered middleware: ${definition.name}`);
 
@@ -41,12 +42,26 @@ class MiddlewareRegistryClass {
     };
   }
 
+  private ensureSorted(): void {
+    if (this.needsSort) {
+      this.middlewares.sort((a, b) => (a.order || 0) - (b.order || 0));
+      this.needsSort = false;
+    }
+  }
+
   execute(
     event: TimelineEvent,
     draft: WorldState,
     ctx: MiddlewareContext,
     coreHandler: () => void,
   ): void {
+    this.ensureSorted();
+
+    if (this.middlewares.length === 0) {
+      coreHandler();
+      return;
+    }
+
     let index = 0;
 
     const executeNext = (): void => {
@@ -68,11 +83,13 @@ class MiddlewareRegistryClass {
   }
 
   getMiddlewares(): readonly MiddlewareDefinition[] {
+    this.ensureSorted();
     return this.middlewares;
   }
 
   clear(): void {
     this.middlewares = [];
+    this.needsSort = false;
   }
 }
 

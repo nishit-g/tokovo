@@ -27,14 +27,31 @@ interface RegisteredPlugin {
 class LifecycleManagerClass {
   private plugins = new Map<string, RegisteredPlugin>();
   private initialized = new Set<string>();
+  private beforeReplayHooks: RegisteredPlugin[] = [];
+  private afterReplayHooks: RegisteredPlugin[] = [];
 
   register(pluginId: string, hooks: PluginLifecycleHooks): () => void {
-    this.plugins.set(pluginId, { id: pluginId, hooks });
+    const plugin = { id: pluginId, hooks };
+    this.plugins.set(pluginId, plugin);
+
+    if (hooks.onBeforeReplay) {
+      this.beforeReplayHooks.push(plugin);
+    }
+    if (hooks.onAfterReplay) {
+      this.afterReplayHooks.push(plugin);
+    }
+
     log.debug(`Registered lifecycle hooks for plugin: ${pluginId}`);
 
     return () => {
       this.plugins.delete(pluginId);
       this.initialized.delete(pluginId);
+      this.beforeReplayHooks = this.beforeReplayHooks.filter(
+        (p) => p.id !== pluginId,
+      );
+      this.afterReplayHooks = this.afterReplayHooks.filter(
+        (p) => p.id !== pluginId,
+      );
     };
   }
 
@@ -65,6 +82,8 @@ class LifecycleManagerClass {
     }
     this.plugins.clear();
     this.initialized.clear();
+    this.beforeReplayHooks = [];
+    this.afterReplayHooks = [];
   }
 
   notifyMount(deviceId: string, appId: string): void {
@@ -90,25 +109,21 @@ class LifecycleManagerClass {
   }
 
   notifyBeforeReplay(ctx: LifecycleContext): void {
-    for (const plugin of this.plugins.values()) {
-      if (plugin.hooks.onBeforeReplay) {
-        try {
-          plugin.hooks.onBeforeReplay(ctx);
-        } catch (error) {
-          log.error(`onBeforeReplay failed for plugin: ${plugin.id}`, error);
-        }
+    for (const plugin of this.beforeReplayHooks) {
+      try {
+        plugin.hooks.onBeforeReplay!(ctx);
+      } catch (error) {
+        log.error(`onBeforeReplay failed for plugin: ${plugin.id}`, error);
       }
     }
   }
 
   notifyAfterReplay(state: WorldState, ctx: LifecycleContext): void {
-    for (const plugin of this.plugins.values()) {
-      if (plugin.hooks.onAfterReplay) {
-        try {
-          plugin.hooks.onAfterReplay(state, ctx);
-        } catch (error) {
-          log.error(`onAfterReplay failed for plugin: ${plugin.id}`, error);
-        }
+    for (const plugin of this.afterReplayHooks) {
+      try {
+        plugin.hooks.onAfterReplay!(state, ctx);
+      } catch (error) {
+        log.error(`onAfterReplay failed for plugin: ${plugin.id}`, error);
       }
     }
   }

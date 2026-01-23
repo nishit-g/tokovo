@@ -25,6 +25,19 @@ export const SoundRegistry = {
     });
   },
 
+  unregisterNamespaced(appId: string): void {
+    const keysToRemove: string[] = [];
+    const prefix = `${appId}:`;
+    for (const key of _registry.keys()) {
+      if (key.startsWith(prefix)) {
+        keysToRemove.push(key);
+      }
+    }
+    for (const key of keysToRemove) {
+      _registry.delete(key);
+    }
+  },
+
   getPath: _registry.get,
 
   getNamespaced(appId: string, soundId: string): string | undefined {

@@ -20,6 +20,12 @@ export type DeviceReducer = (
 /** App reducer type (mutates draft via Immer) */
 export type AppReducer = (draft: WorldState, event: TimelineEvent) => void;
 
+/** Scoped app reducer - only gets access to its own appState slice */
+export type ScopedAppReducer<TAppState = unknown> = (
+  appState: TAppState,
+  event: TimelineEvent,
+) => void;
+
 /** Feature reducer type */
 export type FeatureReducer = (
   draft: WorldState,
@@ -58,6 +64,27 @@ class ReducerRegistryClass {
       EngineLogger.warn(`Overwriting reducer for ${appId}`);
     }
     this._appReducers.set(appId, reducer);
+  }
+
+  /**
+   * Register a scoped app reducer that only has access to its own appState slice.
+   * This is the RECOMMENDED way to register reducers for plugin isolation.
+   */
+  registerScopedAppReducer<TAppState>(
+    appId: string,
+    reducer: ScopedAppReducer<TAppState>,
+    initialState: TAppState,
+  ): void {
+    const wrappedReducer: AppReducer = (draft, event) => {
+      if (!draft.appState) {
+        draft.appState = {};
+      }
+      if (draft.appState[appId] === undefined) {
+        draft.appState[appId] = initialState;
+      }
+      reducer(draft.appState[appId] as TAppState, event);
+    };
+    this.registerAppReducer(appId, wrappedReducer);
   }
 
   /**
@@ -140,6 +167,28 @@ class ReducerRegistryClass {
       if (id === appId) kinds.push(kind);
     }
     return kinds;
+  }
+
+  /**
+   * Unregister an app reducer
+   */
+  unregisterAppReducer(appId: string): void {
+    this._appReducers.delete(appId);
+  }
+
+  /**
+   * Unregister event kinds for an app
+   */
+  unregisterEventKinds(appId: string): void {
+    const kindsToRemove: string[] = [];
+    for (const [kind, id] of this._eventKindToAppId) {
+      if (id === appId) {
+        kindsToRemove.push(kind);
+      }
+    }
+    for (const kind of kindsToRemove) {
+      this._eventKindToAppId.delete(kind);
+    }
   }
 
   /**

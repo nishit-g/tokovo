@@ -76,6 +76,7 @@ class NotificationAdapterRegistryClass {
   handleAction(
     notification: NotificationInstance,
     actionId: string = "open",
+    currentFrame: number = 0,
   ): unknown[] {
     const adapter = this.adapters.get(notification.appId);
 
@@ -83,10 +84,9 @@ class NotificationAdapterRegistryClass {
       return adapter.handleAction(actionId, notification);
     }
 
-    // Default: open the app
     return [
       {
-        at: Date.now(),
+        at: currentFrame,
         kind: "DEVICE",
         deviceId: notification.deviceId,
         type: "OPEN_APP",

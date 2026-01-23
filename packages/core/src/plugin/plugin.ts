@@ -125,8 +125,11 @@ export class PluginManagerClass {
   private plugins = new Map<string, TokovoPlugin>();
   private viewRegistry = new Map<string, AppViewComponent>();
   private initialStateCreators = new Map<string, () => unknown>();
+  private cleanupFunctions = new Map<string, Array<() => void>>();
 
-  register<AppId extends string>(plugin: TokovoPluginContract<AppId>): void {
+  register<AppId extends string>(
+    plugin: TokovoPluginContract<AppId>,
+  ): () => void {
     try {
       validatePlugin(plugin);
     } catch (e: unknown) {
@@ -140,48 +143,52 @@ export class PluginManagerClass {
 
     if (this.plugins.has(plugin.id)) {
       log.warn(`Overwriting plugin: ${plugin.id}`);
+      this.unregister(plugin.id);
     }
 
+    const cleanups: Array<() => void> = [];
     const storedPlugin = plugin as unknown as TokovoPlugin;
     this.plugins.set(plugin.id, storedPlugin);
 
-    // 1. Auto-register Reducer
     if (plugin.reducer) {
       ReducerRegistry.registerAppReducer(
         plugin.id,
         plugin.reducer as AppReducer,
       );
+      cleanups.push(() => ReducerRegistry.unregisterAppReducer(plugin.id));
     }
 
-    // 1b. Auto-register Event Kinds (for engine routing)
     if (plugin.eventKinds && plugin.eventKinds.length > 0) {
       ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
+      cleanups.push(() => ReducerRegistry.unregisterEventKinds(plugin.id));
     }
 
-    // 1c. Store initial state creator for later use
     if (plugin.createInitialState) {
       this.initialStateCreators.set(
         plugin.id,
         plugin.createInitialState as () => unknown,
       );
+      cleanups.push(() => this.initialStateCreators.delete(plugin.id));
     }
 
-    // 2. Auto-register Views
     if (plugin.views?.AppRoot) {
       const appView = plugin.views.AppRoot as unknown as AppViewComponent;
       this.viewRegistry.set(plugin.id, appView);
       AppRegistry.register(plugin.id, appView);
+      cleanups.push(() => {
+        this.viewRegistry.delete(plugin.id);
+        AppRegistry.unregister(plugin.id);
+      });
     }
 
-    // 3. Auto-register Metadata
     const meta: AppMetadata = {
       displayName: plugin.displayName,
       themeColor: "#000000",
       icon: "📱",
     };
     AppMetadataRegistry.register(plugin.id, meta);
+    cleanups.push(() => AppMetadataRegistry.unregister(plugin.id));
 
-    // 4. Auto-register Anchors
     if (plugin.anchors && "providers" in plugin.anchors) {
       const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
       for (const [anchorName, provider] of Object.entries(
@@ -226,7 +233,6 @@ export class PluginManagerClass {
       }
     }
 
-    // 5. Auto-register Layouts
     if (plugin.layouts && plugin.layouts.length > 0) {
       import("../registries/layout").then(({ LayoutRegistry }) => {
         for (const layout of plugin.layouts!) {
@@ -240,14 +246,18 @@ export class PluginManagerClass {
           });
         }
       });
+      cleanups.push(() => {
+        import("../registries/layout").then(({ LayoutRegistry }) => {
+          LayoutRegistry.unregisterApp(plugin.id);
+        });
+      });
     }
 
-    // 6. Auto-register Sounds (namespaced to prevent collisions)
     if (plugin.assets?.sounds) {
       SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
+      cleanups.push(() => SoundRegistry.unregisterNamespaced(plugin.id));
     }
 
-    // 7. Auto-register Notification Adapter
     if (plugin.notificationAdapter) {
       const pluginAdapter =
         plugin.notificationAdapter as PluginNotificationAdapter;
@@ -263,7 +273,10 @@ export class PluginManagerClass {
           };
         },
       });
+      cleanups.push(() => NotificationAdapterRegistry.unregister(plugin.id));
     }
+
+    this.cleanupFunctions.set(plugin.id, cleanups);
 
     log.info(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
       hasReducer: !!plugin.reducer,
@@ -272,6 +285,27 @@ export class PluginManagerClass {
       hasSounds: !!plugin.assets?.sounds,
       hasNotificationAdapter: !!plugin.notificationAdapter,
     });
+
+    return () => this.unregister(plugin.id);
+  }
+
+  unregister(id: string): void {
+    const cleanups = this.cleanupFunctions.get(id);
+    if (cleanups) {
+      for (const cleanup of cleanups) {
+        try {
+          cleanup();
+        } catch (e) {
+          log.error(
+            `Cleanup failed for plugin ${id}`,
+            e instanceof Error ? e : new Error(String(e)),
+          );
+        }
+      }
+      this.cleanupFunctions.delete(id);
+    }
+    this.plugins.delete(id);
+    log.debug(`Unregistered plugin: ${id}`);
   }
 
   get(id: string): TokovoPluginContract<string> | undefined {

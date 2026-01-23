@@ -47,44 +47,27 @@ const _registry = createRegistry<string, AppViewComponent>("App");
  * AppRegistry - Maps app IDs to React view components
  */
 export const AppRegistry = {
-  /**
-   * Register an app view component
-   */
   register(appId: string, component: AppViewComponent): void {
     _registry.register(appId, component);
     console.log(`[AppRegistry] Registered view for: ${appId}`);
   },
 
-  /**
-   * Get an app view component by ID
-   */
+  unregister(appId: string): void {
+    _registry.delete(appId);
+  },
+
   getView: _registry.get,
 
-  /**
-   * Check if an app view is registered
-   */
   hasView: _registry.has,
 
-  /**
-   * Get all registered app IDs
-   */
   getRegisteredApps: _registry.keys,
 
-  /**
-   * Legacy compatibility - access views as object
-   */
   get views(): Record<string, AppViewComponent> {
     return _registry.entries() as Record<string, AppViewComponent>;
   },
 
-  /**
-   * Clear all apps (for testing)
-   */
   clear: _registry.clear,
 
-  /**
-   * Get count of registered apps
-   */
   get size() {
     return _registry.size;
   },
