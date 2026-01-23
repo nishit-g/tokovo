@@ -28,7 +28,10 @@ import type {
   RuntimeEvent,
   TokovoPlugin,
 } from "@tokovo/core";
+import { createScopedLogger } from "@tokovo/core";
 import { cameraV2Lowering } from "@tokovo/device-camera";
+
+const log = createScopedLogger("compiler");
 
 // =============================================================================
 // TYPES
@@ -95,19 +98,16 @@ function lowerAppEvent(
 ): RuntimeEvent[] {
   const appId = (event as { appId?: string }).appId;
   if (!appId) {
-    console.warn(`[lowering] APP event missing appId:`, event);
+    log.warn("APP event missing appId", { event });
     return [];
   }
 
-  // Plugin lowerer is required - no fallback
   const pluginLowerer = ctx.pluginLowerers.get(appId);
   if (pluginLowerer) {
     return pluginLowerer.lower(event, ctx);
   }
 
-  console.warn(
-    `[lowering] No plugin lowerer registered for appId: ${appId}. Event dropped.`,
-  );
+  log.warn(`No plugin lowerer registered for appId: ${appId}. Event dropped.`);
   return [];
 }
 
@@ -388,7 +388,8 @@ function lowerDeviceEvent(event: TrackEvent): RuntimeEvent[] {
       ];
 
     default:
-      console.warn(`[lowering] Unknown DEVICE event type: ${type}`);
+      log.warn(`Unknown DEVICE event type: ${type}`);
+      return [];
       return [];
   }
 }

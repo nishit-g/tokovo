@@ -1,11 +1,24 @@
 import { DeviceProfile, CameraDeviceConfig } from "../types";
 
-/**
- * iPhone 16 camera configuration
- * - Slow pan speed for cinematic feel on mobile
- * - High follow lag for smooth, less reactive tracking
- * - Tighter zoom range for portrait scrolling
- */
+const SCALE = 3;
+
+export const iPhone16Constants = {
+  SCALE,
+  CORNER_RADIUS: 55 * SCALE,
+  BEZEL_WIDTH: 30,
+  STATUS_BAR_HEIGHT: 150,
+  STATUS_BAR_PADDING_TOP: 40,
+  STATUS_BAR_PADDING_X: 60,
+  DYNAMIC_ISLAND_TOP: 11 * SCALE,
+  DYNAMIC_ISLAND_WIDTH: 126 * SCALE,
+  DYNAMIC_ISLAND_HEIGHT: 37 * SCALE,
+  DYNAMIC_ISLAND_RADIUS: 20 * SCALE,
+  HOME_INDICATOR_BOTTOM: 8 * SCALE,
+  HOME_INDICATOR_WIDTH: 135 * SCALE,
+  HOME_INDICATOR_HEIGHT: 5 * SCALE,
+  HOME_INDICATOR_RADIUS: 9,
+} as const;
+
 const iPhone16Camera: CameraDeviceConfig = {
   minZoom: 0.9,
   maxZoom: 1.15,

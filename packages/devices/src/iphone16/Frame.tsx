@@ -1,81 +1,104 @@
-import React from "react";
-import { iPhone16Profile } from "./profile";
+import React, { useMemo } from "react";
+import { iPhone16Profile, iPhone16Constants } from "./profile";
 
-export const iPhone16Frame: React.FC<{ children: React.ReactNode; statusBar?: React.ReactNode }> = ({ children, statusBar }) => {
-    const { width, height } = iPhone16Profile.dimensions;
+interface FrameProps {
+  children: React.ReactNode;
+  statusBar?: React.ReactNode;
+}
 
-    return (
-        <div style={{
-            width,
-            height,
-            backgroundColor: "black",
-            borderRadius: 165, // Scaled radius (55 * 3)
-            boxShadow: "0 0 0 30px #3a3a3a, 0 0 0 36px #000", // Scaled borders
-            position: "relative",
-            overflow: "hidden",
-            display: "flex",
-            flexDirection: "column",
-        }}>
-            {/* Dynamic Island Area */}
-            <div style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                right: 0,
-                height: 150, // Enough space for status bar
-                zIndex: 1000,
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "space-between",
-                padding: "40px 60px 0 60px"
-            }}>
-                {/* Status Bar Content (Time, Battery, etc.) */}
-                {statusBar}
-            </div>
+export const iPhone16Frame: React.FC<FrameProps> = ({
+  children,
+  statusBar,
+}) => {
+  const { width, height } = iPhone16Profile.dimensions;
+  const C = iPhone16Constants;
 
-            {/* Dynamic Island Cutout */}
-            <div style={{
-                position: "absolute",
-                top: 33, // 11 * 3
-                left: "50%",
-                transform: "translateX(-50%)",
-                width: 378, // 126 * 3
-                height: 111, // 37 * 3
-                backgroundColor: "black",
-                borderRadius: 60, // 20 * 3
-                zIndex: 1001
-            }} />
+  const containerStyle = useMemo(
+    () => ({
+      width,
+      height,
+      backgroundColor: "black",
+      borderRadius: C.CORNER_RADIUS,
+      boxShadow: `0 0 0 ${C.BEZEL_WIDTH}px #3a3a3a, 0 0 0 ${C.BEZEL_WIDTH + 6}px #000`,
+      position: "relative" as const,
+      overflow: "hidden" as const,
+      display: "flex" as const,
+      flexDirection: "column" as const,
+    }),
+    [width, height],
+  );
 
-            {/* Screen Content */}
-            <div style={{
-                flex: 1,
-                backgroundColor: "white",
-                display: "flex",
-                flexDirection: "column",
-                position: "relative",
-                // Strict clipping for transformed children (AppSurface)
-                overflow: "hidden",
-                borderRadius: 55 * 3, // Match the physical scaled radius
-                clipPath: "inset(0px round " + (55 * 3) + "px)", // Force browser masking
-                transform: "translateZ(0)", // New stacking context
-                willChange: "transform",
-            }}>
-                {children}
+  const statusBarAreaStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      height: C.STATUS_BAR_HEIGHT,
+      zIndex: 1000,
+      pointerEvents: "none" as const,
+      display: "flex" as const,
+      justifyContent: "space-between" as const,
+      padding: `${C.STATUS_BAR_PADDING_TOP}px ${C.STATUS_BAR_PADDING_X}px 0 ${C.STATUS_BAR_PADDING_X}px`,
+    }),
+    [],
+  );
 
-                {/* Home Indicator - The horizontal bar at the bottom */}
-                <div style={{
-                    position: "absolute",
-                    bottom: 24, // 8px * 3 scale
-                    left: "50%",
-                    transform: "translateX(-50%)",
-                    width: 405, // 135px * 3 scale (iOS spec ~134-140px)
-                    height: 15, // 5px * 3 scale
-                    backgroundColor: "rgba(0, 0, 0, 0.3)", // Semi-transparent black
-                    borderRadius: 9, // Rounded ends
-                    zIndex: 9999, // Always on top
-                    pointerEvents: "none",
-                }} />
-            </div>
-        </div>
-    );
+  const dynamicIslandStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      top: C.DYNAMIC_ISLAND_TOP,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: C.DYNAMIC_ISLAND_WIDTH,
+      height: C.DYNAMIC_ISLAND_HEIGHT,
+      backgroundColor: "black",
+      borderRadius: C.DYNAMIC_ISLAND_RADIUS,
+      zIndex: 1001,
+    }),
+    [],
+  );
+
+  const screenStyle = useMemo(
+    () => ({
+      flex: 1,
+      backgroundColor: "white",
+      display: "flex" as const,
+      flexDirection: "column" as const,
+      position: "relative" as const,
+      overflow: "hidden" as const,
+      borderRadius: C.CORNER_RADIUS,
+      clipPath: `inset(0px round ${C.CORNER_RADIUS}px)`,
+      transform: "translateZ(0)",
+      willChange: "transform" as const,
+    }),
+    [],
+  );
+
+  const homeIndicatorStyle = useMemo(
+    () => ({
+      position: "absolute" as const,
+      bottom: C.HOME_INDICATOR_BOTTOM,
+      left: "50%",
+      transform: "translateX(-50%)",
+      width: C.HOME_INDICATOR_WIDTH,
+      height: C.HOME_INDICATOR_HEIGHT,
+      backgroundColor: "rgba(0, 0, 0, 0.3)",
+      borderRadius: C.HOME_INDICATOR_RADIUS,
+      zIndex: 9999,
+      pointerEvents: "none" as const,
+    }),
+    [],
+  );
+
+  return (
+    <div style={containerStyle}>
+      <div style={statusBarAreaStyle}>{statusBar}</div>
+      <div style={dynamicIslandStyle} />
+      <div style={screenStyle}>
+        {children}
+        <div style={homeIndicatorStyle} />
+      </div>
+    </div>
+  );
 };

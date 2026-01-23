@@ -35,6 +35,7 @@ import {
 import { ReducerRegistry } from "./engine/registry";
 import { EngineConfig } from "./engine/config";
 import { EngineLogger } from "./engine/logger";
+import { createScopedLogger } from "./logger";
 import {
   processCameraEvent,
   processAudioEvent,
@@ -43,6 +44,8 @@ import {
   processCallEvent,
   HandlerContext,
 } from "./engine/handlers";
+
+const log = createScopedLogger("engine");
 
 export { ReducerRegistry } from "./engine/registry";
 export type {
@@ -75,11 +78,18 @@ export {
  */
 export interface ReplayContext {
   mode: "preview" | "render";
+  gracefulDegradation?: boolean;
   errors?: Array<{
     event: TimelineEvent;
     error: Error;
     frame: number;
+    skipped: boolean;
   }>;
+  stats?: {
+    totalEvents: number;
+    processedEvents: number;
+    skippedEvents: number;
+  };
 }
 
 /**
@@ -125,7 +135,7 @@ export function replay(
   eventIndex?: EventIndex,
 ): WorldState {
   if (!initial) {
-    console.warn("[Engine] Replay called with undefined initial state");
+    log.warn("Replay called with undefined initial state");
     return {
       devices: {},
       appState: {},
@@ -272,23 +282,23 @@ export function replay(
         const eventWithAppId = event as TimelineEvent & { appId?: string };
         const pluginId = eventWithAppId.appId || event.kind;
 
-        if (ctx.mode === "render") {
+        if (ctx.mode === "render" && !ctx.gracefulDegradation) {
           throw new PluginError(
             pluginId,
             event,
             error instanceof Error ? error : new Error(String(error)),
           );
         } else {
-          console.error(
-            `[Engine] Event handler failed at frame ${event.at}:`,
-            event,
-            error,
-          );
+          log.error(`Event handler failed at frame ${event.at}`, error, {
+            pluginId,
+            eventKind: event.kind,
+          });
           if (ctx.errors) {
             ctx.errors.push({
               event,
               error: error instanceof Error ? error : new Error(String(error)),
               frame: event.at,
+              skipped: true,
             });
           }
         }
@@ -533,26 +543,30 @@ function handleEventError(
 ): void {
   const eventWithAppId = event as TimelineEvent & { appId?: string };
   const pluginId = eventWithAppId.appId || event.kind;
+  const wrappedError =
+    error instanceof Error ? error : new Error(String(error));
 
-  if (ctx.mode === "render") {
-    throw new PluginError(
-      pluginId,
+  if (ctx.mode === "render" && !ctx.gracefulDegradation) {
+    throw new PluginError(pluginId, event, wrappedError);
+  }
+
+  log.error(`Event handler failed at frame ${event.at}`, wrappedError, {
+    pluginId,
+    eventKind: event.kind,
+    frame: event.at,
+  });
+
+  if (ctx.errors) {
+    ctx.errors.push({
       event,
-      error instanceof Error ? error : new Error(String(error)),
-    );
-  } else {
-    console.error(
-      `[Engine] Event handler failed at frame ${event.at}:`,
-      event,
-      error,
-    );
-    if (ctx.errors) {
-      ctx.errors.push({
-        event,
-        error: error instanceof Error ? error : new Error(String(error)),
-        frame: event.at,
-      });
-    }
+      error: wrappedError,
+      frame: event.at,
+      skipped: true,
+    });
+  }
+
+  if (ctx.stats) {
+    ctx.stats.skippedEvents++;
   }
 }
 

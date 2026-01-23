@@ -1,4 +1,4 @@
-import type { WorldState } from "@tokovo/core";
+import type { WorldState } from "../types";
 
 export interface StateSnapshot {
   frame: number;

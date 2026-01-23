@@ -174,3 +174,114 @@ export * from "./components/AppSurface";
 // EPISODE PREPARATION
 // =============================================================================
 export * from "./prepare";
+
+// =============================================================================
+// CONTAINER - Dependency Injection for testability
+// =============================================================================
+export {
+  createContainer,
+  globalContainer,
+  resetGlobalContainer,
+} from "./container";
+export type {
+  TokovoContainer,
+  SoundRegistryInterface,
+  LayoutRegistryInterface,
+} from "./container";
+
+// =============================================================================
+// COMPOSABLES - Micro-plugin pattern for composable plugin capabilities
+// =============================================================================
+export {
+  defineReducer,
+  defineViews,
+  defineAnchors,
+  defineLayouts,
+  defineAudioRules,
+  defineNotificationAdapter,
+  defineInitialState,
+  composePlugin,
+  getCapability,
+  hasCapability,
+} from "./plugin/composables";
+export type {
+  ReducerCapability,
+  ViewsCapability,
+  AnchorsCapability,
+  LayoutsCapability,
+  AudioCapability,
+  NotificationsCapability,
+  InitialStateCapability,
+  PluginCapability,
+  ComposedPlugin,
+  AnchorFramingConfig,
+  PluginLayoutDefinition,
+} from "./plugin/composables";
+
+// =============================================================================
+// LOGGER - Structured logging for debugging AI-generated content
+// =============================================================================
+export {
+  logger,
+  createScopedLogger,
+  LogCollector,
+  TokovoLogger,
+} from "./logger";
+export type {
+  LogLevel,
+  LogComponent,
+  LogEntry,
+  LogSubscriber,
+  LoggerConfig,
+} from "./logger";
+
+// =============================================================================
+// VALIDATION - Enterprise validation utilities for AI input
+// =============================================================================
+export {
+  validate,
+  validateBatch,
+  formatValidationIssues,
+  formatValidationResult,
+  createValidator,
+  withGracefulDegradation,
+  validateWithPartialSuccess,
+  ValidationError,
+  assertValid,
+} from "./validation";
+export type {
+  ValidationSeverity,
+  ValidationIssue,
+  ValidationResult,
+  BatchValidationResult,
+  PartialValidationResult,
+} from "./validation";
+
+// =============================================================================
+// CONFIG - Centralized configuration
+// =============================================================================
+export {
+  TokovoConfig,
+  configureEngine,
+  getConfig,
+  resetConfig,
+  getTimingConfig,
+  getKeyboardConfig,
+  getAnimationConfig,
+  getRenderingConfig,
+  getAudioConfig,
+  getCameraConfig,
+  isDebugEnabled,
+  enableDebug,
+  disableDebug,
+} from "./config";
+export type { TokovoConfigType } from "./config";
+
+// =============================================================================
+// PLUGIN BUILDER - Fluent API for plugin creation
+// =============================================================================
+export {
+  createPluginBuilder,
+  definePlugin as createPlugin,
+} from "./plugin/builder";
+export type { PluginBuilder, PluginBuilderConfig } from "./plugin/builder";

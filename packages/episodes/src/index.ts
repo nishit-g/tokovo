@@ -1,22 +1,22 @@
 /**
  * @tokovo/episodes
- * 
+ *
  * Enterprise episode management with auto-discovery.
- * 
+ *
  * @example
  * // Create episodes using defineEpisode (auto-registers)
  * import { defineEpisode } from "@tokovo/episodes";
- * 
+ *
  * export default defineEpisode({
  *     meta: { id: "demo", title: "Demo", category: "production" },
  *     config: { format: "1080x1920", durationInFrames: 300, apps: [] },
  *     build: () => episode(...).build(),
  * });
- * 
+ *
  * // Access all registered episodes
  * import { episodeRegistry } from "@tokovo/episodes";
  * const all = episodeRegistry.all();
- * 
+ *
  * @see docs-v2/EPISODE-ARCH.md
  */
 
@@ -30,26 +30,26 @@ export { episodeRegistry, EpisodeRegistry } from "./registry/index";
 // =============================================================================
 export { defineEpisode } from "./types/index";
 export type {
-    EpisodeMeta,
-    EpisodeConfig,
-    EpisodeDefinition,
-    FormatId,
-    CustomFormat,
+  EpisodeMeta,
+  EpisodeConfig,
+  EpisodeDefinition,
+  FormatId,
+  CustomFormat,
 } from "./types/index";
 export {
-    EpisodeMetaSchema,
-    EpisodeConfigSchema,
-    EpisodeDefinitionSchema,
+  EpisodeMetaSchema,
+  EpisodeConfigSchema,
+  EpisodeDefinitionSchema,
 } from "./types/index";
 
 // =============================================================================
 // FORMAT TEMPLATES
 // =============================================================================
 export {
-    FORMATS,
-    getFormat,
-    listFormats,
-    getFormatsByAspectRatio
+  FORMATS,
+  getFormat,
+  listFormats,
+  getFormatsByAspectRatio,
 } from "./templates/index";
 export type { VideoFormat } from "./templates/index";
 
@@ -57,6 +57,29 @@ export type { VideoFormat } from "./templates/index";
 // SCHEMA (Zod validators for episode content)
 // =============================================================================
 export * from "./schema";
+
+// =============================================================================
+// DRY-RUN & VALIDATION
+// =============================================================================
+export {
+  dryRun,
+  formatDryRunResult,
+  validateEpisode,
+  validateEvents,
+} from "./dry-run";
+export type { DryRunResult, DryRunOptions } from "./dry-run";
+
+// =============================================================================
+// JSON SCHEMA EXPORT (For AI prompt documentation)
+// =============================================================================
+export {
+  generateJsonSchemas,
+  getEpisodeJsonSchema,
+  getTimelineEventJsonSchema,
+  formatSchemaForPrompt,
+  generatePromptDocumentation,
+} from "./json-schema";
+export type { SchemaExport } from "./json-schema";
 
 // =============================================================================
 // LEGACY EPISODES

@@ -34,6 +34,9 @@ import { AppRegistry } from "../registries/app";
 import { SoundRegistry } from "../registries/sound";
 import { NotificationAdapterRegistry } from "../notifications/adapter";
 import { validatePlugin } from "../utils/validation";
+import { createScopedLogger } from "../logger";
+
+const log = createScopedLogger("plugin");
 
 export type { NotificationAdapter };
 
@@ -128,15 +131,15 @@ export class PluginManagerClass {
       validatePlugin(plugin);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
-      console.error(
-        `[PluginManager] Failed to register plugin ${plugin.id}:`,
-        message,
+      log.error(
+        `Failed to register plugin ${plugin.id}`,
+        e instanceof Error ? e : new Error(message),
       );
-      console.warn("Continuing despite validation error (Migration Mode)");
+      log.warn("Continuing despite validation error (Migration Mode)");
     }
 
     if (this.plugins.has(plugin.id)) {
-      console.warn(`[PluginManager] Overwriting plugin: ${plugin.id}`);
+      log.warn(`Overwriting plugin: ${plugin.id}`);
     }
 
     const storedPlugin = plugin as unknown as TokovoPlugin;
@@ -262,9 +265,13 @@ export class PluginManagerClass {
       });
     }
 
-    console.log(
-      `[PluginManager] Registered plugin: ${plugin.displayName} (${plugin.id})`,
-    );
+    log.info(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
+      hasReducer: !!plugin.reducer,
+      hasViews: !!plugin.views?.AppRoot,
+      hasLayouts: !!(plugin.layouts && plugin.layouts.length > 0),
+      hasSounds: !!plugin.assets?.sounds,
+      hasNotificationAdapter: !!plugin.notificationAdapter,
+    });
   }
 
   get(id: string): TokovoPluginContract<string> | undefined {

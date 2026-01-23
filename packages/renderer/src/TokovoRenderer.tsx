@@ -17,6 +17,7 @@ import {
   PluginManagerClass,
   AppSurface,
   TokovoProvider,
+  createScopedLogger,
 } from "@tokovo/core";
 import {
   NotificationScheduler,
@@ -31,6 +32,9 @@ import { VisualDebugger } from "./VisualDebugger";
 import { DynamicIsland } from "./os";
 import { useLayoutEngine } from "./engines/useLayoutEngine";
 import { useCameraEngine } from "./engines/useCameraEngine";
+import { AppErrorBoundary } from "./ErrorBoundary";
+
+const log = createScopedLogger("renderer");
 
 // =============================================================================
 // TYPES
@@ -119,9 +123,8 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
   const activeHeadsUp = notificationState.headsUp;
 
-  // DEBUG: Notification State
   if (debug && t % 30 === 0) {
-    console.log(`[TokovoRenderer] Frame ${t}:`, {
+    log.debug(`Frame ${t}`, {
       totalNotifs: device.os?.notifications?.length,
       activeHeadsUp: activeHeadsUp ? activeHeadsUp.id : "none",
       isLocked: device.isLocked,
@@ -131,12 +134,11 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
 
   const hasActiveCall = device.call && device.call.status !== "ended";
 
-  // DEBUG: Call state
-  if (device.call) {
-    console.log(`[TokovoRenderer] Frame ${t} CALL STATE:`, device.call);
+  if (debug && device.call) {
+    log.debug(`Frame ${t} CALL STATE`, { call: device.call });
   }
-  if (hasActiveCall) {
-    console.log(`[TokovoRenderer] 📞 hasActiveCall = true, showing call UI`);
+  if (debug && hasActiveCall) {
+    log.debug("hasActiveCall = true, showing call UI");
   }
 
   // ==========================================================================
@@ -188,45 +190,47 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
                 const pluginAssets = pm.get(appId!)?.assets;
                 const designWidth = pluginAssets?.designWidth || 393;
 
-                // Calculate scale factor explicitly to normalize props
                 const scale = profile.dimensions.width / designWidth;
 
                 return (
-                  <AppSurface
-                    designWidth={designWidth}
-                    targetWidth={profile.dimensions.width}
-                    targetHeight={profile.dimensions.height}
-                    backgroundColor={undefined}
-                  >
-                    <TokovoProvider
-                      world={world}
-                      deviceId={deviceId}
-                      appId={appId!}
-                      t={t}
-                      layout={layout}
-                      platform={variant}
-                      safeAreaInsets={{
-                        top: (profile.camera?.safeAreaTop || 0) / scale,
-                        bottom: (profile.camera?.safeAreaBottom || 0) / scale,
-                        left: 0,
-                        right: 0,
-                      }}
+                  <AppErrorBoundary appId={appId!}>
+                    <AppSurface
+                      designWidth={designWidth}
+                      targetWidth={profile.dimensions.width}
+                      targetHeight={profile.dimensions.height}
+                      backgroundColor={undefined}
                     >
-                      <AppView
+                      <TokovoProvider
                         world={world}
+                        deviceId={deviceId}
+                        appId={appId!}
                         t={t}
                         layout={layout}
                         platform={variant}
-                        deviceId={deviceId}
                         safeAreaInsets={{
                           top: (profile.camera?.safeAreaTop || 0) / scale,
                           bottom: (profile.camera?.safeAreaBottom || 0) / scale,
                           left: 0,
                           right: 0,
                         }}
-                      />
-                    </TokovoProvider>
-                  </AppSurface>
+                      >
+                        <AppView
+                          world={world}
+                          t={t}
+                          layout={layout}
+                          platform={variant}
+                          deviceId={deviceId}
+                          safeAreaInsets={{
+                            top: (profile.camera?.safeAreaTop || 0) / scale,
+                            bottom:
+                              (profile.camera?.safeAreaBottom || 0) / scale,
+                            left: 0,
+                            right: 0,
+                          }}
+                        />
+                      </TokovoProvider>
+                    </AppSurface>
+                  </AppErrorBoundary>
                 );
               }
 

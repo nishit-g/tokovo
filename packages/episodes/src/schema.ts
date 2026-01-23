@@ -1,5 +1,197 @@
 import { z } from "zod";
 
+// =============================================================================
+// STRICT METADATA & PAYLOAD SCHEMAS
+// =============================================================================
+// These replace z.any() with explicit, validated types for AI-generated content.
+// AI output MUST conform to these schemas or be rejected.
+
+/**
+ * JSON-serializable primitive values.
+ * Used for metadata and custom payloads that need to be flexible but type-safe.
+ */
+const JsonPrimitiveSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+]);
+
+/**
+ * Recursive JSON value schema.
+ * Allows nested objects/arrays while maintaining type safety.
+ */
+const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    JsonPrimitiveSchema,
+    z.array(JsonValueSchema),
+    z.record(z.string(), JsonValueSchema),
+  ]),
+);
+
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
+/**
+ * Strict metadata schema for message metadata.
+ * Defines known fields explicitly while allowing extension.
+ */
+export const MessageMetadataSchema = z
+  .object({
+    // Common metadata fields
+    senderName: z.string().optional(),
+    senderAvatar: z.string().optional(),
+    timestamp: z.number().optional(),
+    isForwarded: z.boolean().optional(),
+    forwardCount: z.number().optional(),
+    isStarred: z.boolean().optional(),
+    replyCount: z.number().optional(),
+    viewOnce: z.boolean().optional(),
+    expiresAt: z.number().optional(),
+    // Link preview
+    linkPreview: z
+      .object({
+        url: z.string(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        image: z.string().optional(),
+        siteName: z.string().optional(),
+      })
+      .optional(),
+    // Location sharing
+    location: z
+      .object({
+        latitude: z.number(),
+        longitude: z.number(),
+        name: z.string().optional(),
+        address: z.string().optional(),
+      })
+      .optional(),
+    // Contact sharing
+    contact: z
+      .object({
+        name: z.string(),
+        phone: z.string().optional(),
+        email: z.string().optional(),
+      })
+      .optional(),
+    // Document/file metadata
+    document: z
+      .object({
+        filename: z.string(),
+        mimeType: z.string().optional(),
+        size: z.number().optional(),
+      })
+      .optional(),
+    // Poll metadata
+    poll: z
+      .object({
+        question: z.string(),
+        options: z.array(
+          z.object({
+            text: z.string(),
+            votes: z.number().optional(),
+            voters: z.array(z.string()).optional(),
+          }),
+        ),
+        totalVotes: z.number().optional(),
+        isAnonymous: z.boolean().optional(),
+        allowMultiple: z.boolean().optional(),
+      })
+      .optional(),
+  })
+  .passthrough(); // Allow additional fields for forward compatibility
+
+/**
+ * Custom event payload schema.
+ * Defines structure for CUSTOM app events from AI.
+ */
+export const CustomEventPayloadSchema = z
+  .object({
+    // Navigation actions
+    navigateTo: z.string().optional(),
+    scrollTo: z
+      .object({
+        target: z.string(),
+        position: z.enum(["top", "center", "bottom"]).optional(),
+        animated: z.boolean().optional(),
+      })
+      .optional(),
+    // UI state changes
+    showModal: z
+      .object({
+        id: z.string(),
+        type: z.string().optional(),
+        data: z.record(z.string(), JsonValueSchema).optional(),
+      })
+      .optional(),
+    hideModal: z.string().optional(),
+    // Form interactions
+    formInput: z
+      .object({
+        fieldId: z.string(),
+        value: z.union([z.string(), z.number(), z.boolean()]),
+      })
+      .optional(),
+    formSubmit: z
+      .object({
+        formId: z.string(),
+        data: z.record(z.string(), JsonValueSchema).optional(),
+      })
+      .optional(),
+    // Generic state update
+    setState: z.record(z.string(), JsonValueSchema).optional(),
+    // Animation triggers
+    animate: z
+      .object({
+        target: z.string(),
+        animation: z.string(),
+        duration: z.number().optional(),
+      })
+      .optional(),
+  })
+  .passthrough(); // Allow additional fields for app-specific payloads
+
+/**
+ * Per-app state schema.
+ * Defines known app state structures while allowing extension.
+ */
+export const AppStateSchema = z.record(
+  z.string(), // appId
+  z
+    .object({
+      // Common app state fields
+      currentScreen: z.string().optional(),
+      isLoading: z.boolean().optional(),
+      error: z.string().optional(),
+      // Screen-specific data (flexible but typed)
+      screenData: z.record(z.string(), JsonValueSchema).optional(),
+      // Navigation state
+      navigationStack: z.array(z.string()).optional(),
+      // Modal/overlay state
+      activeModal: z.string().optional(),
+      // Form state
+      forms: z
+        .record(
+          z.string(),
+          z.object({
+            values: z.record(z.string(), JsonValueSchema).optional(),
+            errors: z.record(z.string(), z.string()).optional(),
+            isSubmitting: z.boolean().optional(),
+          }),
+        )
+        .optional(),
+      // App-specific extensions
+      custom: z.record(z.string(), JsonValueSchema).optional(),
+    })
+    .passthrough(), // Allow additional fields per app
+);
+
 // --- App Icon & Home Screen ---
 export const AppIconSchema = z.object({
   appId: z.string(),
@@ -118,7 +310,7 @@ export const AppEventSchema = z.discriminatedUnion("type", [
     messageType: z
       .enum(["text", "system", "call_missed", "screenshot_alert"])
       .optional(),
-    metadata: z.record(z.any()).optional(),
+    metadata: MessageMetadataSchema.optional(),
   }),
   // Media Message events
   z.object({
@@ -240,7 +432,7 @@ export const AppEventSchema = z.discriminatedUnion("type", [
     appId: z.string(),
     type: z.literal("CUSTOM"),
     name: z.string(),
-    payload: z.any().optional(),
+    payload: CustomEventPayloadSchema.optional(),
   }),
 ]);
 
@@ -335,7 +527,7 @@ export const MessageSchema = z.object({
   actorName: z.string().optional(),
 
   // Flexible metadata
-  metadata: z.record(z.any()).optional(),
+  metadata: MessageMetadataSchema.optional(),
 });
 
 // --- Group Member Schema ---
@@ -407,21 +599,28 @@ export const EpisodeMetaSchema = z
   })
   .optional();
 
-// --- Episode Schema ---
-export const EpisodeSchema = z.object({
+// --- Episode Schema V1 (Current) ---
+export const EpisodeSchemaV1 = z.object({
+  version: z.literal(1).default(1),
   meta: EpisodeMetaSchema,
   initialWorld: z.object({
     devices: z.record(DeviceStateSchema),
     conversations: z.record(ConversationStateSchema),
-    appState: z.record(z.any()).optional(),
+    appState: AppStateSchema.optional(),
     camera: CameraViewSchema,
   }),
   events: z.array(TimelineEventSchema),
 });
 
+export const EpisodeSchema = EpisodeSchemaV1;
+
 // Type exports
-export type Episode = z.infer<typeof EpisodeSchema>;
+export type EpisodeV1 = z.infer<typeof EpisodeSchemaV1>;
+export type Episode = EpisodeV1;
 export type TimelineEvent = z.infer<typeof TimelineEventSchema>;
 export type DeviceState = z.infer<typeof DeviceStateSchema>;
 export type ConversationState = z.infer<typeof ConversationStateSchema>;
 export type Message = z.infer<typeof MessageSchema>;
+export type MessageMetadata = z.infer<typeof MessageMetadataSchema>;
+export type CustomEventPayload = z.infer<typeof CustomEventPayloadSchema>;
+export type AppState = z.infer<typeof AppStateSchema>;

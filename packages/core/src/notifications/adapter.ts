@@ -5,6 +5,9 @@
  */
 
 import { Notification, TimelineEvent } from "../types";
+import { createScopedLogger } from "../logger";
+
+const log = createScopedLogger("notification");
 
 // =============================================================================
 // FORMATTED NOTIFICATION
@@ -61,9 +64,7 @@ class NotificationAdapterRegistryClass {
 
   register(adapter: NotificationAdapter): void {
     this.adapters.set(adapter.appId, adapter);
-    console.log(
-      `[NotificationAdapters] Registered adapter for: ${adapter.appId}`,
-    );
+    log.info(`Registered notification adapter: ${adapter.appId}`);
   }
 
   get(appId: string): NotificationAdapter | undefined {
