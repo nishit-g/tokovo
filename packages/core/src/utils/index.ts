@@ -13,3 +13,5 @@ export * from "./validation";
 export { SeededRNG, deterministicId, hashBasedId, resetIdCounter } from "./rng";
 
 export * from "./state-cache";
+
+export * from "./result";

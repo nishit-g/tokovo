@@ -49,11 +49,8 @@ import { ReducerRegistry } from "./engine/registry";
 import { createScopedLogger } from "./logger";
 import {
   processCameraEvent,
-  processAudioEvent,
   handleAutoSounds,
   cleanupExpiredSounds,
-  processOSEvent,
-  processCallEvent,
   HandlerContext,
 } from "./engine/handlers";
 import {
@@ -62,6 +59,10 @@ import {
 } from "./engine/event-handlers";
 import { MiddlewareRegistry, MiddlewareContext } from "./engine/middleware";
 import { LifecycleManager, LifecycleContext } from "./engine/lifecycle";
+import {
+  hasBuiltInHandler,
+  getBuiltInHandler,
+} from "./engine/built-in-handlers";
 
 const log = createScopedLogger("engine");
 
@@ -451,54 +452,11 @@ function processEventCore(
     return;
   }
 
-  switch (event.kind) {
-    case "DEVICE": {
-      if (ReducerRegistry.deviceReducer) {
-        draft.devices = ReducerRegistry.deviceReducer(draft.devices, event);
-      }
-      const devEvent = event as TimelineEvent & { type?: string };
-      const devType = devEvent.type;
-      if (
-        devType &&
-        (devType.includes("NOTIFICATION") ||
-          devType.startsWith("SHOW_") ||
-          devType.startsWith("DISMISS_") ||
-          devType.startsWith("TAP_") ||
-          devType.startsWith("SWIPE_") ||
-          devType.startsWith("CLEAR_ALL") ||
-          devType.includes("DYNAMIC_ISLAND"))
-      ) {
-        const notifReducer = ReducerRegistry.getFeatureReducer(devType);
-        if (notifReducer) {
-          notifReducer(draft, event, index);
-        }
-      }
-      break;
-    }
-
-    case "CAMERA":
-      processCameraEvent(draft, event, handlerCtx);
-      break;
-
-    case "AUDIO":
-      processAudioEvent(draft, event, handlerCtx);
-      break;
-
-    case "KEYBOARD": {
-      const kbReducer = ReducerRegistry.getFeatureReducer("KEYBOARD");
-      if (kbReducer) {
-        kbReducer(draft, event, index);
-      }
-      break;
-    }
-
-    case "OS":
-      processOSEvent(draft, event, handlerCtx);
-      break;
-
-    case "CALL":
-      processCallEvent(draft, event, handlerCtx);
-      break;
+  if (hasBuiltInHandler(event.kind as string)) {
+    const handler = getBuiltInHandler(event.kind as string)!;
+    handler(draft, event, index, handlerCtx);
+    handleAutoSounds(draft, event, handlerCtx);
+    return;
   }
 
   handleAutoSounds(draft, event, handlerCtx);

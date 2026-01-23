@@ -34,10 +34,8 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   safeAreaInsets,
 }) => {
   // 1. Resolve App State & Screen
-  const appState = (world.appState?.["app_whatsapp"] ||
-    world.appState?.["whatsapp"]) as WhatsAppState;
-  // CRITICAL: Core navigation.ts sets 'currentScreen', not 'screen'!
-  const currentScreen = appState?.currentScreen || appState?.screen || "chat";
+  const appState = world.appState?.["app_whatsapp"] as WhatsAppState;
+  const currentScreen = appState?.currentScreen || "chat";
 
   // 2. Resolve Dimensions (Resolution Independence)
   // Receive logical dimensions from parent (TokovoRenderer's AppSurface)

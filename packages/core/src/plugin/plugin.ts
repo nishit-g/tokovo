@@ -22,7 +22,7 @@ import type {
   PluginViews,
   PluginReducer,
 } from "../types/plugin-contract";
-import { registerAnchorProvider } from "../anchors";
+import { registerAnchorProvider, unregisterAnchorProvider } from "../anchors";
 import { AppMetadata, AppMetadataRegistry } from "../registries/metadata";
 import { AppRegistry } from "../registries/app";
 import { SoundRegistry } from "../registries/sound";
@@ -226,6 +226,7 @@ export class PluginManagerClass {
           },
         });
       }
+      cleanups.push(() => unregisterAnchorProvider(plugin.id));
     }
 
     if (plugin.layouts && plugin.layouts.length > 0) {

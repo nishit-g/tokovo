@@ -1,13 +1,13 @@
 /**
  * Anchor Registry - Self-contained anchor provider registry
- * 
+ *
  * This module provides anchor registration and resolution WITHOUT
  * depending on @tokovo/core to avoid cyclic dependencies.
- * 
+ *
  * USAGE:
  * - Apps register providers using `registerAnchorProvider()`
  * - useCameraEngine calls `getAnchorsForApp()` to get anchors
- * 
+ *
  * @module device-camera/anchors/registry
  */
 
@@ -27,7 +27,7 @@ const providerRegistry = new Map<string, AnchorProvider>();
 
 /**
  * Register an anchor provider for an app.
- * 
+ *
  * @example
  * ```typescript
  * registerAnchorProvider({
@@ -44,21 +44,25 @@ const providerRegistry = new Map<string, AnchorProvider>();
  * ```
  */
 export function registerAnchorProvider(provider: AnchorProvider): void {
-    providerRegistry.set(provider.appId, provider);
+  providerRegistry.set(provider.appId, provider);
+}
+
+export function unregisterAnchorProvider(appId: string): boolean {
+  return providerRegistry.delete(appId);
 }
 
 /**
  * Get anchor provider for an app.
  */
 export function getAnchorProvider(appId: string): AnchorProvider | undefined {
-    return providerRegistry.get(appId);
+  return providerRegistry.get(appId);
 }
 
 /**
  * Check if an anchor provider is registered for an app.
  */
 export function hasAnchorProvider(appId: string): boolean {
-    return providerRegistry.has(appId);
+  return providerRegistry.has(appId);
 }
 
 /**
@@ -66,49 +70,49 @@ export function hasAnchorProvider(appId: string): boolean {
  * This is the main entry point for useCameraEngine.
  */
 export function getAnchorsForApp(
-    appId: string,
-    world: unknown,
-    layout: unknown,
-    deviceId: string
+  appId: string,
+  world: unknown,
+  layout: unknown,
+  deviceId: string,
 ): AnchorSnapshot {
-    const provider = providerRegistry.get(appId);
-    if (!provider) {
-        return EMPTY_SNAPSHOT;
-    }
-    return provider.getAnchors(world, layout, deviceId);
+  const provider = providerRegistry.get(appId);
+  if (!provider) {
+    return EMPTY_SNAPSHOT;
+  }
+  return provider.getAnchors(world, layout, deviceId);
 }
 
 /**
  * Get framing configuration for a specific anchor in an app.
  */
 export function getAnchorFraming(
-    appId: string,
-    anchorName: string
+  appId: string,
+  anchorName: string,
 ): AnchorFraming {
-    const provider = providerRegistry.get(appId);
-    if (!provider?.framing[anchorName]) {
-        return DEFAULT_FRAMING;
-    }
-    return provider.framing[anchorName];
+  const provider = providerRegistry.get(appId);
+  if (!provider?.framing[anchorName]) {
+    return DEFAULT_FRAMING;
+  }
+  return provider.framing[anchorName];
 }
 
 /**
  * Get all registered app IDs.
  */
 export function getRegisteredAppIds(): string[] {
-    return Array.from(providerRegistry.keys());
+  return Array.from(providerRegistry.keys());
 }
 
 /**
  * Clear all registered providers (for testing).
  */
 export function clearAnchorProviders(): void {
-    providerRegistry.clear();
+  providerRegistry.clear();
 }
 
 /**
  * Get the count of registered providers.
  */
 export function getProviderCount(): number {
-    return providerRegistry.size;
+  return providerRegistry.size;
 }

@@ -9,6 +9,7 @@
 
 import {
   registerAnchorProvider,
+  unregisterAnchorProvider,
   getAnchorProvider,
   getAnchorsForApp,
   getAnchorFraming,
@@ -82,6 +83,10 @@ class AnchorRegistryFacade {
     return !!getAnchorProvider(appId);
   }
 
+  unregister(appId: string): boolean {
+    return unregisterAnchorProvider(appId);
+  }
+
   clear(): void {
     clearAnchorProviders();
   }
@@ -91,6 +96,7 @@ export const AnchorRegistry = new AnchorRegistryFacade();
 
 export {
   registerAnchorProvider,
+  unregisterAnchorProvider,
   getAnchorProvider,
   getAnchorsForApp,
   getAnchorFraming,

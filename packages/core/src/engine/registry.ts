@@ -200,6 +200,22 @@ class ReducerRegistryClass {
   get appReducers(): Record<string, AppReducer> {
     return Object.fromEntries(this._appReducers);
   }
+
+  /**
+   * Reset all registrations - useful for tests
+   */
+  reset(): void {
+    this._deviceReducer = null;
+    this._appReducers.clear();
+    this._featureReducers.clear();
+    this._eventKindToAppId.clear();
+  }
 }
 
 export const ReducerRegistry = new ReducerRegistryClass();
+
+export function createReducerRegistry(): ReducerRegistryClass {
+  return new ReducerRegistryClass();
+}
+
+export { ReducerRegistryClass };

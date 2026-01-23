@@ -39,4 +39,19 @@ export { LayoutRegistry } from "./layout";
 export type { LayoutStrategy } from "./layout";
 // Note: LayoutContext, LayoutState are exported from ../types/layout (not re-exported here)
 
+// Runtime Context (for DI and testing)
+export {
+  createRuntimeContext,
+  getDefaultContext,
+  resetDefaultContext,
+  type TokovoRuntimeContext,
+} from "./context";
+
+// Unified Plugin Registry Facade
+export {
+  UnifiedPluginRegistry,
+  createIsolatedPluginRegistry,
+  type UnifiedRegistryState,
+} from "./unified";
+
 // Note: AnchorRegistry is exported from ../anchors (not duplicated here)
