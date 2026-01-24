@@ -22,9 +22,13 @@ export interface EventHandlerDefinition {
   priority?: number;
 }
 
+interface RegisteredHandler {
+  handler: EventHandler;
+  priority: number;
+}
+
 class EventHandlerRegistryClass {
-  private handlers = new Map<string, EventHandler[]>();
-  private kindPriorities = new Map<string, number>();
+  private handlers = new Map<string, RegisteredHandler[]>();
 
   register(definition: EventHandlerDefinition): () => void {
     const { kind, handler, priority = 0 } = definition;
@@ -34,22 +38,15 @@ class EventHandlerRegistryClass {
     }
 
     const handlers = this.handlers.get(kind)!;
-    handlers.push(handler);
+    const registered: RegisteredHandler = { handler, priority };
+    handlers.push(registered);
 
-    if (priority > (this.kindPriorities.get(kind) || 0)) {
-      this.kindPriorities.set(kind, priority);
-    }
-
-    handlers.sort((_a, _b) => {
-      const aPriority = this.kindPriorities.get(kind) || 0;
-      const bPriority = this.kindPriorities.get(kind) || 0;
-      return bPriority - aPriority;
-    });
+    handlers.sort((a, b) => b.priority - a.priority);
 
     log.debug(`Registered handler for event kind: ${kind}`);
 
     return () => {
-      const idx = handlers.indexOf(handler);
+      const idx = handlers.findIndex((h) => h.handler === handler);
       if (idx > -1) {
         handlers.splice(idx, 1);
       }
@@ -73,7 +70,7 @@ class EventHandlerRegistryClass {
       return false;
     }
 
-    for (const handler of handlers) {
+    for (const { handler } of handlers) {
       try {
         handler(draft, event, ctx);
       } catch (error) {
@@ -98,7 +95,6 @@ class EventHandlerRegistryClass {
 
   clear(): void {
     this.handlers.clear();
-    this.kindPriorities.clear();
   }
 }
 

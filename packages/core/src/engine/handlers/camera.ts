@@ -93,21 +93,11 @@ export function processCameraEvent(
       }
       break;
 
-    case "ZOOM":
-    case "PAN":
-    case "SHAKE":
-    case "focus":
-    case "FOCUS":
-    case "ANCHOR_FOCUS":
-    case "track":
-    case "TRACK":
-    case "ANCHOR_TRACK":
-    case "RESET": {
+    default:
       cameraReducer(
         draft as unknown as Parameters<typeof cameraReducer>[0],
         event as unknown as Parameters<typeof cameraReducer>[1],
       );
       break;
-    }
   }
 }

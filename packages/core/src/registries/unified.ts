@@ -5,6 +5,10 @@ import { LayoutRegistry } from "./layout";
 import { AutoSoundRegistry } from "../audio/auto-sound";
 import { AnchorRegistry } from "../anchors";
 import { createRuntimeContext, type TokovoRuntimeContext } from "./context";
+import { MiddlewareRegistry } from "../engine/middleware";
+import { EventHandlerRegistry } from "../engine/event-handlers";
+import { LifecycleManager } from "../engine/lifecycle";
+import { resetConfig } from "../config";
 
 export interface UnifiedRegistryState {
   plugins: Set<string>;
@@ -41,6 +45,10 @@ class UnifiedPluginRegistryClass {
     LayoutRegistry.clear();
     AutoSoundRegistry.clear();
     AnchorRegistry.clear();
+    MiddlewareRegistry.clear();
+    EventHandlerRegistry.clear();
+    LifecycleManager.destroyAll();
+    resetConfig();
     this.registeredPlugins.clear();
   }
 

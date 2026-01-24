@@ -13,6 +13,10 @@ import {
   FocusEffect,
   TrackEffect,
   ResetEffect,
+  PunchZoomEffect,
+  DutchTiltEffect,
+  FlashEffect,
+  WhipPanEffect,
   CameraState,
   DEFAULT_CAMERA_STATE,
   DEFAULT_TRANSFORM,
@@ -53,11 +57,13 @@ export function cameraReducer(
   const duration = (event.duration as number) ?? 30;
   const easing = (event.easing as EasingType) ?? "ease-out";
 
-  switch (event.type) {
+  const normalizedType = event.type.toLowerCase().replace(/_/g, "-");
+
+  switch (normalizedType) {
     // =================================================================
     // ZOOM - Scale and translate
     // =================================================================
-    case "ZOOM": {
+    case "zoom": {
       const effect: ZoomEffect = {
         type: "zoom",
         id: `zoom_${at}`,
@@ -77,7 +83,7 @@ export function cameraReducer(
     // =================================================================
     // SHAKE - Screen shake
     // =================================================================
-    case "SHAKE": {
+    case "shake": {
       const effect: ShakeEffect = {
         type: "shake",
         id: `shake_${at}`,
@@ -95,11 +101,10 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // focus/FOCUS/ANCHOR_FOCUS - Semantic anchor focus (one-time)
+    // focus - Semantic anchor focus (one-time)
     // =================================================================
     case "focus":
-    case "FOCUS":
-    case "ANCHOR_FOCUS": {
+    case "anchor-focus": {
       const effect: FocusEffect = {
         type: "focus",
         id: `focus_${at}`,
@@ -116,11 +121,10 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // track/TRACK/ANCHOR_TRACK - Continuous anchor following
+    // track - Continuous anchor following
     // =================================================================
     case "track":
-    case "TRACK":
-    case "ANCHOR_TRACK": {
+    case "anchor-track": {
       const effect: TrackEffect = {
         type: "track",
         id: `track_${at}`,
@@ -137,14 +141,33 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // RESET - Return to neutral
+    // reset - Return to neutral
     // =================================================================
-    case "RESET": {
+    case "reset": {
       const effect: ResetEffect = {
         type: "reset",
         id: `reset_${at}`,
         startFrame: at,
         endFrame: at + duration,
+        easing,
+        spring: event.spring as string | undefined,
+      };
+      draft.camera.activeEffects.push(effect);
+      break;
+    }
+
+    // =================================================================
+    // punch-zoom - Quick zoom with spring bounce
+    // =================================================================
+    case "punch-zoom": {
+      const effect: PunchZoomEffect = {
+        type: "punch-zoom",
+        id: `punch-zoom_${at}`,
+        startFrame: at,
+        endFrame: at + duration,
+        intensity: (event.intensity as number) ?? 0.15,
+        direction: (event.direction as "in" | "out") ?? "in",
+        spring: (event.spring as string) ?? "punch",
         easing,
       };
       draft.camera.activeEffects.push(effect);
@@ -152,9 +175,61 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // CUT - Instant camera change
+    // dutch-tilt - Z-axis rotation for tension
     // =================================================================
-    case "CUT": {
+    case "dutch-tilt": {
+      const effect: DutchTiltEffect = {
+        type: "dutch-tilt",
+        id: `dutch-tilt_${at}`,
+        startFrame: at,
+        endFrame: at + duration,
+        angle: (event.angle as number) ?? 5,
+        spring: (event.spring as string) ?? "dramatic",
+        easing,
+      };
+      draft.camera.activeEffects.push(effect);
+      break;
+    }
+
+    // =================================================================
+    // flash - Screen flash effect
+    // =================================================================
+    case "flash": {
+      const effect: FlashEffect = {
+        type: "flash",
+        id: `flash_${at}`,
+        startFrame: at,
+        endFrame: at + duration,
+        color: (event.color as string) ?? "white",
+        intensity: (event.intensity as number) ?? 1,
+        easing,
+      };
+      draft.camera.activeEffects.push(effect);
+      break;
+    }
+
+    // =================================================================
+    // whip-pan - Fast pan transition
+    // =================================================================
+    case "whip-pan": {
+      const effect: WhipPanEffect = {
+        type: "whip-pan",
+        id: `whip-pan_${at}`,
+        startFrame: at,
+        endFrame: at + duration,
+        direction:
+          (event.direction as "left" | "right" | "up" | "down") ?? "left",
+        blur: (event.blur as number) ?? 20,
+        easing,
+      };
+      draft.camera.activeEffects.push(effect);
+      break;
+    }
+
+    // =================================================================
+    // cut - Instant camera change
+    // =================================================================
+    case "cut": {
       // Clear non-persistent effects only (preserve ambient effects)
       draft.camera.activeEffects = draft.camera.activeEffects.filter(
         (effect) => effect.persistent === true,
@@ -169,9 +244,9 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // SET_VIEW - Legacy view change
+    // set-view - Legacy view change
     // =================================================================
-    case "SET_VIEW": {
+    case "set-view": {
       const view = event.view as { type?: string; appId?: string } | undefined;
       if (view) {
         draft.camera.baseView = view.type;
@@ -181,9 +256,9 @@ export function cameraReducer(
     }
 
     // =================================================================
-    // LAYOUT - Change view layout mode
+    // layout - Change view layout mode
     // =================================================================
-    case "LAYOUT": {
+    case "layout": {
       draft.camera.layout = {
         mode: (event.mode as "SINGLE" | "PIP" | "SPLIT") ?? "SINGLE",
         primaryDeviceId: event.primaryDeviceId as string | undefined,

@@ -143,155 +143,176 @@ export class PluginManagerClass {
 
     const cleanups: Array<() => void> = [];
     const storedPlugin = plugin as unknown as TokovoPlugin;
-    this.plugins.set(plugin.id, storedPlugin);
 
-    if (plugin.reducer) {
-      ReducerRegistry.registerAppReducer(
-        plugin.id,
-        plugin.reducer as AppReducer,
-      );
-      cleanups.push(() => ReducerRegistry.unregisterAppReducer(plugin.id));
-    }
-
-    if (plugin.eventKinds && plugin.eventKinds.length > 0) {
-      ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
-      cleanups.push(() => ReducerRegistry.unregisterEventKinds(plugin.id));
-    }
-
-    if (plugin.createInitialState) {
-      this.initialStateCreators.set(
-        plugin.id,
-        plugin.createInitialState as () => unknown,
-      );
-      cleanups.push(() => this.initialStateCreators.delete(plugin.id));
-    }
-
-    if (plugin.views?.AppRoot) {
-      const appView = plugin.views.AppRoot as unknown as AppViewComponent;
-      this.viewRegistry.set(plugin.id, appView);
-      AppRegistry.register(plugin.id, appView);
-      cleanups.push(() => {
-        this.viewRegistry.delete(plugin.id);
-        AppRegistry.unregister(plugin.id);
-      });
-    }
-
-    const meta: AppMetadata = {
-      displayName: plugin.displayName,
-      themeColor: "#000000",
-      icon: "📱",
+    const rollback = () => {
+      for (let i = cleanups.length - 1; i >= 0; i--) {
+        try {
+          cleanups[i]();
+        } catch (cleanupErr) {
+          log.error(`Rollback cleanup failed for ${plugin.id}`, cleanupErr);
+        }
+      }
+      this.plugins.delete(plugin.id);
     };
-    AppMetadataRegistry.register(plugin.id, meta);
-    cleanups.push(() => AppMetadataRegistry.unregister(plugin.id));
 
-    if (plugin.anchors && "providers" in plugin.anchors) {
-      const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
-      for (const [anchorName, provider] of Object.entries(
-        anchorRegistry.providers,
-      )) {
-        registerAnchorProvider({
-          appId: plugin.id,
-          framing: {
-            [anchorName]: {
-              anchorPoint: { x: 0.5, y: 0.5 },
-              paddingPx: 50,
-            },
-          },
-          getAnchors: (
-            world: WorldState,
-            _layout: unknown,
-            deviceId: string,
-          ) => {
-            const bounds = provider(world, deviceId);
-            if (!bounds) {
-              return { anchors: {}, deviceId, appId: plugin.id };
-            }
-            const device = world.devices?.[deviceId];
-            const dims = device?.screenDimensions ?? {
-              width: 430,
-              height: 932,
-            };
-            return {
-              anchors: {
-                [anchorName]: {
-                  x: bounds.x * dims.width,
-                  y: bounds.y * dims.height,
-                  width: bounds.width * dims.width,
-                  height: bounds.height * dims.height,
-                },
-              },
-              deviceId,
-              appId: plugin.id,
-            };
-          },
+    try {
+      this.plugins.set(plugin.id, storedPlugin);
+
+      if (plugin.reducer) {
+        ReducerRegistry.registerAppReducer(
+          plugin.id,
+          plugin.reducer as AppReducer,
+        );
+        cleanups.push(() => ReducerRegistry.unregisterAppReducer(plugin.id));
+      }
+
+      if (plugin.eventKinds && plugin.eventKinds.length > 0) {
+        ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
+        cleanups.push(() => ReducerRegistry.unregisterEventKinds(plugin.id));
+      }
+
+      if (plugin.createInitialState) {
+        this.initialStateCreators.set(
+          plugin.id,
+          plugin.createInitialState as () => unknown,
+        );
+        cleanups.push(() => this.initialStateCreators.delete(plugin.id));
+      }
+
+      if (plugin.views?.AppRoot) {
+        const appView = plugin.views.AppRoot as unknown as AppViewComponent;
+        this.viewRegistry.set(plugin.id, appView);
+        AppRegistry.register(plugin.id, appView);
+        cleanups.push(() => {
+          this.viewRegistry.delete(plugin.id);
+          AppRegistry.unregister(plugin.id);
         });
       }
-      cleanups.push(() => unregisterAnchorProvider(plugin.id));
-    }
 
-    if (plugin.layouts && plugin.layouts.length > 0) {
-      import("../registries/layout").then(({ LayoutRegistry }) => {
-        for (const layout of plugin.layouts!) {
-          LayoutRegistry.register({
+      const meta: AppMetadata = {
+        displayName: plugin.displayName,
+        themeColor: "#000000",
+        icon: "📱",
+      };
+      AppMetadataRegistry.register(plugin.id, meta);
+      cleanups.push(() => AppMetadataRegistry.unregister(plugin.id));
+
+      if (plugin.anchors && "providers" in plugin.anchors) {
+        const anchorRegistry = plugin.anchors as PluginAnchorRegistry;
+        for (const [anchorName, provider] of Object.entries(
+          anchorRegistry.providers,
+        )) {
+          registerAnchorProvider({
             appId: plugin.id,
-            viewKind: layout.viewKind,
-            platforms: layout.platforms ?? [],
-            computeLayout: layout.computeLayout as (
-              ctx: import("../types/layout").LayoutContext,
-            ) => import("../types/layout").LayoutState,
+            framing: {
+              [anchorName]: {
+                anchorPoint: { x: 0.5, y: 0.5 },
+                paddingPx: 50,
+              },
+            },
+            getAnchors: (
+              world: WorldState,
+              _layout: unknown,
+              deviceId: string,
+            ) => {
+              const bounds = provider(world, deviceId);
+              if (!bounds) {
+                return { anchors: {}, deviceId, appId: plugin.id };
+              }
+              const device = world.devices?.[deviceId];
+              const dims = device?.screenDimensions ?? {
+                width: 430,
+                height: 932,
+              };
+              return {
+                anchors: {
+                  [anchorName]: {
+                    x: bounds.x * dims.width,
+                    y: bounds.y * dims.height,
+                    width: bounds.width * dims.width,
+                    height: bounds.height * dims.height,
+                  },
+                },
+                deviceId,
+                appId: plugin.id,
+              };
+            },
           });
         }
-      });
-      cleanups.push(() => {
+        cleanups.push(() => unregisterAnchorProvider(plugin.id));
+      }
+
+      if (plugin.layouts && plugin.layouts.length > 0) {
         import("../registries/layout").then(({ LayoutRegistry }) => {
-          LayoutRegistry.unregisterApp(plugin.id);
+          for (const layout of plugin.layouts!) {
+            LayoutRegistry.register({
+              appId: plugin.id,
+              viewKind: layout.viewKind,
+              platforms: layout.platforms ?? [],
+              computeLayout: layout.computeLayout as (
+                ctx: import("../types/layout").LayoutContext,
+              ) => import("../types/layout").LayoutState,
+            });
+          }
         });
+        cleanups.push(() => {
+          import("../registries/layout").then(({ LayoutRegistry }) => {
+            LayoutRegistry.unregisterApp(plugin.id);
+          });
+        });
+      }
+
+      if (plugin.assets?.sounds) {
+        SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
+        cleanups.push(() => SoundRegistry.unregisterNamespaced(plugin.id));
+      }
+
+      if (plugin.audioRules) {
+        const rulesWithAppId = plugin.audioRules.map((rule) => ({
+          ...rule,
+          match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
+        }));
+        AutoSoundRegistry.register(rulesWithAppId);
+        cleanups.push(() => AutoSoundRegistry.unregisterByAppId(plugin.id));
+      }
+
+      if (plugin.notificationAdapter) {
+        const pluginAdapter =
+          plugin.notificationAdapter as PluginNotificationAdapter;
+        NotificationAdapterRegistry.register({
+          appId: plugin.id,
+          format: (notification: Notification) => {
+            const formatted = pluginAdapter.format(notification);
+            return {
+              title: formatted.title,
+              body: formatted.body,
+              icon: formatted.icon,
+              accentColor: formatted.color,
+            };
+          },
+        });
+        cleanups.push(() => NotificationAdapterRegistry.unregister(plugin.id));
+      }
+
+      this.cleanupFunctions.set(plugin.id, cleanups);
+
+      log.info(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
+        hasReducer: !!plugin.reducer,
+        hasViews: !!plugin.views?.AppRoot,
+        hasLayouts: !!(plugin.layouts && plugin.layouts.length > 0),
+        hasSounds: !!plugin.assets?.sounds,
+        hasNotificationAdapter: !!plugin.notificationAdapter,
       });
+
+      return () => this.unregister(plugin.id);
+    } catch (error) {
+      log.error(
+        `Failed during plugin registration: ${plugin.id}`,
+        error instanceof Error ? error : new Error(String(error)),
+      );
+      rollback();
+      throw error;
     }
-
-    if (plugin.assets?.sounds) {
-      SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
-      cleanups.push(() => SoundRegistry.unregisterNamespaced(plugin.id));
-    }
-
-    if (plugin.audioRules) {
-      const rulesWithAppId = plugin.audioRules.map((rule) => ({
-        ...rule,
-        match: { ...rule.match, appId: rule.match.appId ?? plugin.id },
-      }));
-      AutoSoundRegistry.register(rulesWithAppId);
-      cleanups.push(() => AutoSoundRegistry.unregisterByAppId(plugin.id));
-    }
-
-    if (plugin.notificationAdapter) {
-      const pluginAdapter =
-        plugin.notificationAdapter as PluginNotificationAdapter;
-      NotificationAdapterRegistry.register({
-        appId: plugin.id,
-        format: (notification: Notification) => {
-          const formatted = pluginAdapter.format(notification);
-          return {
-            title: formatted.title,
-            body: formatted.body,
-            icon: formatted.icon,
-            accentColor: formatted.color,
-          };
-        },
-      });
-      cleanups.push(() => NotificationAdapterRegistry.unregister(plugin.id));
-    }
-
-    this.cleanupFunctions.set(plugin.id, cleanups);
-
-    log.info(`Registered plugin: ${plugin.displayName} (${plugin.id})`, {
-      hasReducer: !!plugin.reducer,
-      hasViews: !!plugin.views?.AppRoot,
-      hasLayouts: !!(plugin.layouts && plugin.layouts.length > 0),
-      hasSounds: !!plugin.assets?.sounds,
-      hasNotificationAdapter: !!plugin.notificationAdapter,
-    });
-
-    return () => this.unregister(plugin.id);
   }
 
   unregister(id: string): void {

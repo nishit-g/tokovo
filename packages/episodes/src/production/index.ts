@@ -19,3 +19,4 @@ import "./cheating-exposed.episode";
 import "./feature-showcase.episode";
 import "./ghibli-showcase.episode";
 import "./cyberpunk-showcase.episode";
+import "./camera-showcase.episode";

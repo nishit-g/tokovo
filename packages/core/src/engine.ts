@@ -66,6 +66,11 @@ import {
 
 const log = createScopedLogger("engine");
 
+interface LegacyCameraConfig {
+  type?: string;
+  appId?: string;
+}
+
 export { ReducerRegistry } from "./engine/registry";
 export type {
   DeviceReducer,
@@ -154,6 +159,15 @@ export function replay(
   ctx: ReplayContext = DEFAULT_REPLAY_CONTEXT,
   eventIndex?: EventIndex,
 ): WorldState {
+  if (t < 0) {
+    log.warn(`Replay called with negative t: ${t}, using t=0`);
+    t = 0;
+  }
+
+  if (!events || events.length === 0) {
+    return ensureInitialState(initial);
+  }
+
   const lifecycleCtx: LifecycleContext = { frame: t, mode: ctx.mode };
   LifecycleManager.notifyBeforeReplay(lifecycleCtx);
 
@@ -171,10 +185,6 @@ export function replay(
 
   // Ensure initial state has proper camera and audio state
   // Handle legacy camera format { type, appId } vs new CameraState
-  interface LegacyCameraConfig {
-    type?: string;
-    appId?: string;
-  }
   const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
   const initialWithCamera: WorldState = {
     ...initial,
@@ -272,17 +282,20 @@ export function replay(
     }
 
     // Use for...in to avoid Object.keys() allocation
+    let firstDeviceId: string | undefined;
     for (const deviceId in draft.devices) {
       if (Object.hasOwn(draft.devices, deviceId)) {
+        if (!firstDeviceId) firstDeviceId = deviceId;
         draft.camera.deviceTransforms[deviceId] =
           DEFAULT_CAMERA_TRANSFORM as CameraTransform;
       }
     }
 
-    const activeDeviceId =
-      draft.camera.activeDeviceId || Object.keys(draft.devices)[0];
-    draft.camera.transform =
-      draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM;
+    const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
+    draft.camera.transform = activeDeviceId
+      ? draft.camera.deviceTransforms[activeDeviceId] ||
+        DEFAULT_CAMERA_TRANSFORM
+      : DEFAULT_CAMERA_TRANSFORM;
   });
 
   LifecycleManager.notifyAfterReplay(finalState, lifecycleCtx);
@@ -318,6 +331,15 @@ export function replayIncremental(
   eventIndex?: KeyframedEventIndex,
   stateCache?: StateCache,
 ): WorldState {
+  if (t < 0) {
+    log.warn(`replayIncremental called with negative t: ${t}, using t=0`);
+    t = 0;
+  }
+
+  if (!events || events.length === 0) {
+    return ensureInitialState(initial);
+  }
+
   if (!eventIndex || !stateCache) {
     return replay(initial, events, t, ctx, eventIndex);
   }
@@ -408,10 +430,6 @@ function ensureInitialState(initial: WorldState): WorldState {
     };
   }
 
-  interface LegacyCameraConfig {
-    type?: string;
-    appId?: string;
-  }
   const legacyCamera = initial.camera as LegacyCameraConfig | undefined;
 
   return {
@@ -522,6 +540,10 @@ function processEventCore(
     return;
   }
 
+  log.debug(`No handler registered for event kind: ${event.kind}`, {
+    frame: t,
+    eventIndex: index,
+  });
   handleAutoSounds(draft, event, handlerCtx);
 }
 
@@ -560,14 +582,18 @@ function finalizeState(state: WorldState, t: number): WorldState {
       draft.camera.deviceTransforms = {};
     }
 
-    const deviceIds = Object.keys(draft.devices);
-    for (const deviceId of deviceIds) {
-      draft.camera.deviceTransforms[deviceId] =
-        DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+    let firstDeviceId: string | undefined;
+    for (const deviceId in draft.devices) {
+      if (Object.hasOwn(draft.devices, deviceId)) {
+        if (!firstDeviceId) firstDeviceId = deviceId;
+        draft.camera.deviceTransforms[deviceId] =
+          DEFAULT_CAMERA_TRANSFORM as CameraTransform;
+      }
     }
 
-    const activeDeviceId = draft.camera.activeDeviceId || deviceIds[0];
+    const activeDeviceId = draft.camera.activeDeviceId || firstDeviceId;
     draft.camera.transform =
-      draft.camera.deviceTransforms[activeDeviceId] || DEFAULT_CAMERA_TRANSFORM;
+      draft.camera.deviceTransforms[activeDeviceId!] ||
+      DEFAULT_CAMERA_TRANSFORM;
   });
 }

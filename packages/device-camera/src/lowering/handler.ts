@@ -136,6 +136,61 @@ export function cameraV2Lowering(
         {
           ...baseEvent,
           type: "RESET",
+          spring: payload?.spring,
+          easing: payload?.easing ?? "ease-out",
+        },
+      ];
+
+    // =================================================================
+    // PUNCH_ZOOM → punch-zoom
+    // =================================================================
+    case "PUNCH_ZOOM":
+      return [
+        {
+          ...baseEvent,
+          type: "punch-zoom",
+          intensity: payload?.intensity ?? 0.15,
+          direction: payload?.direction ?? "in",
+          spring: payload?.spring ?? "punch",
+        },
+      ];
+
+    // =================================================================
+    // DUTCH_TILT → dutch-tilt
+    // =================================================================
+    case "DUTCH_TILT":
+      return [
+        {
+          ...baseEvent,
+          type: "dutch-tilt",
+          angle: payload?.angle ?? 5,
+          spring: payload?.spring ?? "dramatic",
+        },
+      ];
+
+    // =================================================================
+    // FLASH → flash
+    // =================================================================
+    case "FLASH":
+      return [
+        {
+          ...baseEvent,
+          type: "flash",
+          color: payload?.color ?? "white",
+          intensity: payload?.intensity ?? 1,
+        },
+      ];
+
+    // =================================================================
+    // WHIP_PAN → whip-pan
+    // =================================================================
+    case "WHIP_PAN":
+      return [
+        {
+          ...baseEvent,
+          type: "whip-pan",
+          direction: payload?.direction ?? "left",
+          blur: payload?.blur ?? 20,
         },
       ];
 
@@ -170,10 +225,18 @@ export const CAMERA_EVENT_TYPES = [
   "TRACK_START",
   "TRACK_END",
   "RESET",
+  "PUNCH_ZOOM",
+  "DUTCH_TILT",
+  "FLASH",
+  "WHIP_PAN",
   // Runtime types
   "ZOOM",
   "SHAKE",
   "ANCHOR_FOCUS",
   "ANCHOR_TRACK",
   "CUT",
+  "punch-zoom",
+  "dutch-tilt",
+  "flash",
+  "whip-pan",
 ] as const;

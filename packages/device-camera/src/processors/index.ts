@@ -16,10 +16,37 @@ import {
   FocusEffect,
   TrackEffect,
   ResetEffect,
+  PanEffect,
+  DollyEffect,
+  KenBurnsEffect,
+  PunchZoomEffect,
+  DutchTiltEffect,
+  FlashEffect,
+  WhipPanEffect,
+  SpringConfig,
+  SPRING_PRESETS,
 } from "../types";
 import { AnchorSnapshot } from "../anchors/types";
 import { resolveAnchorFully } from "../anchors/resolver";
-import { applyEasing, lerp, seededRandom } from "../utils";
+import {
+  applyEasing,
+  lerp,
+  springValue,
+  fbm,
+  clamp,
+  seededRandom,
+} from "../utils";
+
+function resolveSpring(
+  spring: SpringConfig | string | undefined,
+  fallback: SpringConfig,
+): SpringConfig {
+  if (!spring) return fallback;
+  if (typeof spring === "string") {
+    return SPRING_PRESETS[spring] ?? fallback;
+  }
+  return spring;
+}
 
 // =============================================================================
 // PROCESSOR INTERFACE
@@ -54,20 +81,38 @@ export interface EffectProcessor {
 // PROCESSOR IMPLEMENTATIONS
 // =============================================================================
 
+const DEFAULT_FPS = 30;
+
 function getProgress(t: number, startFrame: number, endFrame: number): number {
   const duration = endFrame - startFrame;
   if (duration <= 0) return 1;
   return Math.max(0, Math.min(1, (t - startFrame) / duration));
 }
 
+function getAnimatedProgress(
+  t: number,
+  effect: CameraEffect,
+  fps: number = DEFAULT_FPS,
+): number {
+  const elapsed = t - effect.startFrame;
+  if (elapsed <= 0) return 0;
+
+  if (effect.spring) {
+    const springConfig = resolveSpring(effect.spring, SPRING_PRESETS.default);
+    return springValue(elapsed, fps, springConfig);
+  }
+
+  const progress = getProgress(t, effect.startFrame, effect.endFrame);
+  return applyEasing(progress, effect.easing ?? "ease-out");
+}
+
 const zoomProcessor: EffectProcessor = {
   type: "zoom",
   process(ctx): CameraTransform {
     const e = ctx.effect as ZoomEffect;
-    const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-    const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+    const animProgress = getAnimatedProgress(ctx.t, e);
 
-    const effectScale = lerp(1, e.targetScale, easedProgress);
+    const effectScale = lerp(1, e.targetScale, animProgress);
     const currentDelta = ctx.transform.scale - 1;
     const effectDelta = effectScale - 1;
     const maxDelta = Math.max(currentDelta, effectDelta);
@@ -76,9 +121,9 @@ const zoomProcessor: EffectProcessor = {
       ...ctx.transform,
       scale: 1 + maxDelta,
       translateX:
-        ctx.transform.translateX + lerp(0, e.targetX ?? 0, easedProgress),
+        ctx.transform.translateX + lerp(0, e.targetX ?? 0, animProgress),
       translateY:
-        ctx.transform.translateY + lerp(0, e.targetY ?? 0, easedProgress),
+        ctx.transform.translateY + lerp(0, e.targetY ?? 0, animProgress),
       originX: e.originX ?? ctx.transform.originX,
       originY: e.originY ?? ctx.transform.originY,
     };
@@ -90,32 +135,38 @@ const shakeProcessor: EffectProcessor = {
   process(ctx): CameraTransform {
     const e = ctx.effect as ShakeEffect;
     const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+    const elapsed = ctx.t - e.startFrame;
+    const frequency = e.frequency ?? 12;
 
-    // Procedural shake using frame as seed
-    const seed = e.startFrame + (ctx.t - e.startFrame);
-    const rand = seededRandom(seed);
+    const trauma = Math.pow(e.decay ?? 0.85, elapsed / 3);
+    const traumaSquared = trauma * trauma;
 
-    // Frequency-based oscillation
-    const phase = ((ctx.t - e.startFrame) * (e.frequency ?? 15)) / 30;
-
-    // Decay over time
-    const decayFactor = Math.pow(e.decay ?? 0.8, progress * 10);
-
-    // Calculate shake offsets
     const baseX = e.intensityX ?? e.intensity;
     const baseY = e.intensityY ?? e.intensity;
 
-    const shakeX =
-      Math.sin(phase * Math.PI * 2 + rand() * Math.PI) * baseX * decayFactor;
-    const shakeY =
-      Math.cos(phase * Math.PI * 2 * 1.3 + rand() * Math.PI) *
-      baseY *
-      decayFactor;
+    const noiseX = fbm(elapsed * frequency * 0.1, e.startFrame, 3, 0.5);
+    const noiseY = fbm(
+      elapsed * frequency * 0.1 + 100,
+      e.startFrame + 1000,
+      3,
+      0.5,
+    );
+    const noiseRot = fbm(
+      elapsed * frequency * 0.08 + 200,
+      e.startFrame + 2000,
+      2,
+      0.6,
+    );
+
+    const shakeX = noiseX * baseX * traumaSquared;
+    const shakeY = noiseY * baseY * traumaSquared;
+    const shakeRot = noiseRot * (e.intensity * 0.5) * traumaSquared;
 
     return {
       ...ctx.transform,
       shakeX: ctx.transform.shakeX + shakeX,
       shakeY: ctx.transform.shakeY + shakeY,
+      rotation: ctx.transform.rotation + shakeRot,
     };
   },
 };
@@ -124,10 +175,8 @@ const focusProcessor: EffectProcessor = {
   type: "focus",
   process(ctx): CameraTransform {
     const e = ctx.effect as FocusEffect;
-    const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-    const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+    const animProgress = getAnimatedProgress(ctx.t, e);
 
-    // Resolve anchor to origin
     let originX = 0.5;
     let originY = 0.5;
     let targetScale = e.scale ?? 1.15;
@@ -146,7 +195,7 @@ const focusProcessor: EffectProcessor = {
       }
     }
 
-    const effectScale = lerp(1, targetScale, easedProgress);
+    const effectScale = lerp(1, targetScale, animProgress);
     const currentDelta = ctx.transform.scale - 1;
     const effectDelta = effectScale - 1;
     const maxDelta = Math.max(currentDelta, effectDelta);
@@ -154,8 +203,8 @@ const focusProcessor: EffectProcessor = {
     return {
       ...ctx.transform,
       scale: 1 + maxDelta,
-      originX: lerp(0.5, originX, easedProgress),
-      originY: lerp(0.5, originY, easedProgress),
+      originX: lerp(0.5, originX, animProgress),
+      originY: lerp(0.5, originY, animProgress),
     };
   },
 };
@@ -167,7 +216,6 @@ const trackProcessor: EffectProcessor = {
     const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
     const smoothing = e.smoothing ?? 0.18;
 
-    // Resolve current anchor position
     let originX = ctx.transform.originX;
     let originY = ctx.transform.originY;
 
@@ -178,14 +226,12 @@ const trackProcessor: EffectProcessor = {
         ctx.anchorSnapshot.appId,
         ctx.viewport,
       );
-      // Smooth follow - interpolate toward anchor
       originX = lerp(ctx.transform.originX, resolved.originX, smoothing);
       originY = lerp(ctx.transform.originY, resolved.originY, smoothing);
     }
 
-    // Ease in/out of tracking
-    const easeIn = Math.min(1, progress * 5); // First 20% eases in
-    const easeOut = Math.min(1, (1 - progress) * 5); // Last 20% eases out
+    const easeIn = Math.min(1, progress * 5);
+    const easeOut = Math.min(1, (1 - progress) * 5);
     const trackStrength = Math.min(easeIn, easeOut);
 
     const effectScale = lerp(1, e.scale ?? 1.05, trackStrength);
@@ -206,19 +252,139 @@ const resetProcessor: EffectProcessor = {
   type: "reset",
   process(ctx): CameraTransform {
     const e = ctx.effect as ResetEffect;
-    const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
-    const easedProgress = applyEasing(progress, e.easing ?? "ease-out");
+    const animProgress = getAnimatedProgress(ctx.t, e);
 
-    // Interpolate all values toward neutral (default state)
     return {
-      scale: lerp(ctx.transform.scale, 1, easedProgress),
-      translateX: lerp(ctx.transform.translateX, 0, easedProgress),
-      translateY: lerp(ctx.transform.translateY, 0, easedProgress),
-      originX: lerp(ctx.transform.originX, 0.5, easedProgress),
-      originY: lerp(ctx.transform.originY, 0.5, easedProgress),
-      rotation: lerp(ctx.transform.rotation, 0, easedProgress),
-      shakeX: lerp(ctx.transform.shakeX, 0, easedProgress),
-      shakeY: lerp(ctx.transform.shakeY, 0, easedProgress),
+      scale: lerp(ctx.transform.scale, 1, animProgress),
+      translateX: lerp(ctx.transform.translateX, 0, animProgress),
+      translateY: lerp(ctx.transform.translateY, 0, animProgress),
+      originX: lerp(ctx.transform.originX, 0.5, animProgress),
+      originY: lerp(ctx.transform.originY, 0.5, animProgress),
+      rotation: lerp(ctx.transform.rotation, 0, animProgress),
+      shakeX: lerp(ctx.transform.shakeX, 0, animProgress),
+      shakeY: lerp(ctx.transform.shakeY, 0, animProgress),
+    };
+  },
+};
+
+const panProcessor: EffectProcessor = {
+  type: "pan",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as PanEffect;
+    const animProgress = getAnimatedProgress(ctx.t, e);
+
+    return {
+      ...ctx.transform,
+      translateX: ctx.transform.translateX + lerp(0, e.deltaX, animProgress),
+      translateY: ctx.transform.translateY + lerp(0, e.deltaY, animProgress),
+    };
+  },
+};
+
+const dollyProcessor: EffectProcessor = {
+  type: "dolly",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as DollyEffect;
+    const animProgress = getAnimatedProgress(ctx.t, e);
+
+    return {
+      ...ctx.transform,
+      scale: lerp(e.startScale, e.endScale, animProgress),
+      translateY: lerp(e.startTranslateY, e.endTranslateY, animProgress),
+    };
+  },
+};
+
+const kenBurnsProcessor: EffectProcessor = {
+  type: "ken-burns",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as KenBurnsEffect;
+    const animProgress = getAnimatedProgress(ctx.t, e);
+
+    return {
+      ...ctx.transform,
+      scale: lerp(e.startScale, e.endScale, animProgress),
+      originX: lerp(e.startOriginX, e.endOriginX, animProgress),
+      originY: lerp(e.startOriginY, e.endOriginY, animProgress),
+    };
+  },
+};
+
+const punchZoomProcessor: EffectProcessor = {
+  type: "punch-zoom",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as PunchZoomEffect;
+    const elapsed = ctx.t - e.startFrame;
+    const springConfig = resolveSpring(e.spring, SPRING_PRESETS.punch);
+
+    const springProgress = springValue(elapsed, DEFAULT_FPS, springConfig);
+    const punchScale =
+      e.direction === "in"
+        ? 1 + e.intensity * (1 - springProgress)
+        : 1 - e.intensity * (1 - springProgress);
+
+    return {
+      ...ctx.transform,
+      scale: ctx.transform.scale * punchScale,
+    };
+  },
+};
+
+const dutchTiltProcessor: EffectProcessor = {
+  type: "dutch-tilt",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as DutchTiltEffect;
+    const elapsed = ctx.t - e.startFrame;
+    const springConfig = resolveSpring(e.spring, SPRING_PRESETS.dramatic);
+
+    const springProgress = springValue(elapsed, DEFAULT_FPS, springConfig);
+    const tiltAngle = e.angle * springProgress;
+
+    return {
+      ...ctx.transform,
+      rotation: ctx.transform.rotation + tiltAngle,
+    };
+  },
+};
+
+const flashProcessor: EffectProcessor = {
+  type: "flash",
+  process(ctx): CameraTransform {
+    return ctx.transform;
+  },
+};
+
+const whipPanProcessor: EffectProcessor = {
+  type: "whip-pan",
+  process(ctx): CameraTransform {
+    const e = ctx.effect as WhipPanEffect;
+    const progress = getProgress(ctx.t, e.startFrame, e.endFrame);
+
+    const whipCurve = Math.sin(progress * Math.PI);
+    const intensity = 200;
+
+    let deltaX = 0;
+    let deltaY = 0;
+
+    switch (e.direction) {
+      case "left":
+        deltaX = -intensity * whipCurve;
+        break;
+      case "right":
+        deltaX = intensity * whipCurve;
+        break;
+      case "up":
+        deltaY = -intensity * whipCurve;
+        break;
+      case "down":
+        deltaY = intensity * whipCurve;
+        break;
+    }
+
+    return {
+      ...ctx.transform,
+      translateX: ctx.transform.translateX + deltaX,
+      translateY: ctx.transform.translateY + deltaY,
     };
   },
 };
@@ -235,11 +401,23 @@ processorRegistry.set("shake", shakeProcessor);
 processorRegistry.set("focus", focusProcessor);
 processorRegistry.set("track", trackProcessor);
 processorRegistry.set("reset", resetProcessor);
+processorRegistry.set("pan", panProcessor);
+processorRegistry.set("dolly", dollyProcessor);
+processorRegistry.set("ken-burns", kenBurnsProcessor);
+processorRegistry.set("punch-zoom", punchZoomProcessor);
+processorRegistry.set("dutch-tilt", dutchTiltProcessor);
+processorRegistry.set("flash", flashProcessor);
+processorRegistry.set("whip-pan", whipPanProcessor);
 
-// Uppercase aliases for direct camera events (e.g., from engine handler)
 processorRegistry.set("ZOOM", zoomProcessor);
 processorRegistry.set("SHAKE", shakeProcessor);
 processorRegistry.set("RESET", resetProcessor);
+processorRegistry.set("PAN", panProcessor);
+processorRegistry.set("DOLLY", dollyProcessor);
+processorRegistry.set("PUNCH_ZOOM", punchZoomProcessor);
+processorRegistry.set("DUTCH_TILT", dutchTiltProcessor);
+processorRegistry.set("FLASH", flashProcessor);
+processorRegistry.set("WHIP_PAN", whipPanProcessor);
 
 /**
  * Register a custom effect processor.

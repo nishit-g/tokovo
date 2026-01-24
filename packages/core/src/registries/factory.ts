@@ -16,15 +16,35 @@
  * AppRegistry.register("whatsapp", config);
  * const app = AppRegistry.get("whatsapp");
  */
-export function createRegistry<K extends string | symbol, V>(name: string) {
+export interface RegistryOptions {
+  strict?: boolean;
+}
+
+let globalStrictMode = false;
+
+export function setRegistryStrictMode(strict: boolean): void {
+  globalStrictMode = strict;
+}
+
+export function getRegistryStrictMode(): boolean {
+  return globalStrictMode;
+}
+
+export function createRegistry<K extends string | symbol, V>(
+  name: string,
+  options: RegistryOptions = {},
+) {
   const items = new Map<K, V>();
 
   return {
-    /**
-     * Register an item
-     */
     register(key: K, value: V): void {
       if (items.has(key)) {
+        const isStrict = options.strict ?? globalStrictMode;
+        if (isStrict) {
+          throw new Error(
+            `[${name}Registry] Duplicate key: ${String(key)}. Use unregister first or disable strict mode.`,
+          );
+        }
         console.warn(`[${name}Registry] Overwriting ${String(key)}`);
       }
       items.set(key, value);

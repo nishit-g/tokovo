@@ -11,19 +11,7 @@
  */
 
 import type { TrackMessageRef } from "@tokovo/ir";
-
-// Local type for WhatsApp track events
-type WhatsAppTrackEvent = {
-  at: number;
-  duration?: number;
-  deviceId: string;
-  kind: "APP";
-  appId: "app_whatsapp";
-  type: string;
-  conversationId?: string;
-  payload: Record<string, unknown>;
-  _declarationOrder: number;
-};
+import type { WhatsAppTrackEvent, WhatsAppEventType } from "../types/events";
 
 // =============================================================================
 // TYPES
@@ -63,7 +51,10 @@ export class WhatsAppPointBuilder {
     private _getOrder: GetDeclarationOrder,
   ) {}
 
-  private _push(type: string, payload: Record<string, unknown>): void {
+  private _push<T extends WhatsAppEventType>(
+    type: T,
+    payload: Record<string, unknown>,
+  ): void {
     this._events.push({
       at: this._frame,
       deviceId: this._deviceId,
@@ -73,7 +64,7 @@ export class WhatsAppPointBuilder {
       conversationId: this._conversationId,
       payload: { conversationId: this._conversationId, ...payload },
       _declarationOrder: this._getOrder(),
-    });
+    } as WhatsAppTrackEvent);
   }
 
   receive(from: string, text: string, options: ReceiveOptions = {}): void {

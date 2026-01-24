@@ -1,3 +1,54 @@
+import { z } from "zod";
+
+// Validation schema for config - prevents invalid values that cause runtime errors
+const TokovoConfigSchema = z.object({
+  timing: z.object({
+    effectCleanupBuffer: z.number().int().min(1),
+    defaultTransitionDuration: z.number().int().min(1),
+    keyboardAnimationDuration: z.number().int().min(1),
+  }),
+  keyboard: z.object({
+    ios: z.object({
+      height: z.number().int().min(1),
+      animationDuration: z.number().int().min(1),
+    }),
+    android: z.object({
+      height: z.number().int().min(1),
+      animationDuration: z.number().int().min(1),
+    }),
+  }),
+  animation: z.object({
+    defaultDuration: z.number().int().min(1),
+    easing: z.object({
+      default: z.string(),
+      spring: z.string(),
+      smooth: z.string(),
+    }),
+  }),
+  rendering: z.object({
+    defaultFps: z.number().int().min(1).max(120),
+    maxEventsPerFrame: z.number().int().min(1),
+    cacheKeyframeInterval: z.number().int().min(1),
+  }),
+  audio: z.object({
+    defaultVolume: z.number().min(0).max(1),
+    duckedVolume: z.number().min(0).max(1),
+    fadeOutDuration: z.number().int().min(0),
+  }),
+  camera: z.object({
+    defaultZoom: z.number().min(0.1),
+    minZoom: z.number().min(0.1),
+    maxZoom: z.number().min(0.1),
+    panSpeed: z.number().min(0),
+    followLag: z.number().min(0).max(1),
+  }),
+  debug: z.object({
+    logEvents: z.boolean(),
+    logPerformance: z.boolean(),
+    showBoundingBoxes: z.boolean(),
+  }),
+});
+
 export const TokovoConfig = {
   timing: {
     effectCleanupBuffer: 30,
@@ -86,10 +137,30 @@ function deepMerge<T extends object>(base: T, override: DeepPartial<T>): T {
 
 let currentConfig = { ...TokovoConfig };
 
+export class ConfigValidationError extends Error {
+  constructor(
+    message: string,
+    public readonly issues: z.ZodIssue[],
+  ) {
+    super(message);
+    this.name = "ConfigValidationError";
+  }
+}
+
 export function configureEngine(
   overrides: DeepPartial<TokovoConfigType>,
 ): void {
-  currentConfig = deepMerge(TokovoConfig, overrides);
+  const merged = deepMerge(TokovoConfig, overrides);
+
+  const result = TokovoConfigSchema.safeParse(merged);
+  if (!result.success) {
+    throw new ConfigValidationError(
+      `Invalid config: ${result.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join(", ")}`,
+      result.error.issues,
+    );
+  }
+
+  currentConfig = merged;
 }
 
 export function getConfig(): TokovoConfigType {

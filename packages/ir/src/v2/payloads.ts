@@ -77,6 +77,7 @@ export interface CameraPayloads {
   SHAKE_END: Record<string, never>;
   RESET: {
     easing?: EasingType;
+    spring?: string;
   };
   ZOOM: {
     scale: number;
@@ -108,6 +109,23 @@ export interface CameraPayloads {
     y?: number;
     scale?: number;
     anchorId?: string;
+  };
+  PUNCH_ZOOM: {
+    intensity: number;
+    direction: "in" | "out";
+    spring?: string;
+  };
+  DUTCH_TILT: {
+    angle: number;
+    spring?: string;
+  };
+  FLASH: {
+    color?: string;
+    intensity?: number;
+  };
+  WHIP_PAN: {
+    direction: "left" | "right" | "up" | "down";
+    blur?: number;
   };
 }
 

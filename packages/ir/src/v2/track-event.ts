@@ -83,6 +83,10 @@ export type CameraTrackEvent = TrackEventBase & {
     | { type: "ANCHOR_FOCUS"; payload: CameraPayloads["ANCHOR_FOCUS"] }
     | { type: "ANCHOR_TRACK"; payload: CameraPayloads["ANCHOR_TRACK"] }
     | { type: "CUT"; payload: CameraPayloads["CUT"] }
+    | { type: "PUNCH_ZOOM"; payload: CameraPayloads["PUNCH_ZOOM"] }
+    | { type: "DUTCH_TILT"; payload: CameraPayloads["DUTCH_TILT"] }
+    | { type: "FLASH"; payload: CameraPayloads["FLASH"] }
+    | { type: "WHIP_PAN"; payload: CameraPayloads["WHIP_PAN"] }
   );
 
 /**
