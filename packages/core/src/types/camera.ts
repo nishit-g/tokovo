@@ -61,19 +61,11 @@ export type HighlightStyle =
 
 // =============================================================================
 // MULTI-DEVICE LAYOUT (stays in core - not camera-specific)
+// Note: ViewLayoutMode and PIPPosition are defined in types/layout.ts
 // =============================================================================
 
-export type ViewLayoutMode =
-  | "SINGLE"
-  | "SPLIT_HORIZONTAL"
-  | "SPLIT_VERTICAL"
-  | "PIP";
-
-export type PIPPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+import type { ViewLayoutMode, PIPPosition } from "./layout";
+export type { ViewLayoutMode, PIPPosition };
 
 export interface ViewLayout {
   mode: ViewLayoutMode;

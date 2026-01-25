@@ -20,6 +20,22 @@ export type ViewKind =
   | "TRANSITION";
 
 // =============================================================================
+// MULTI-DEVICE LAYOUT
+// =============================================================================
+
+export type ViewLayoutMode =
+  | "SINGLE"
+  | "SPLIT_HORIZONTAL"
+  | "SPLIT_VERTICAL"
+  | "PIP";
+
+export type PIPPosition =
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
+// =============================================================================
 // LAYOUT RECT
 // =============================================================================
 

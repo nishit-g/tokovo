@@ -636,17 +636,8 @@ export type HighlightStyle =
 // MULTI-DEVICE / POV TYPES (stays in core)
 // =============================================================================
 
-export type ViewLayoutMode =
-  | "SINGLE"
-  | "SPLIT_HORIZONTAL"
-  | "SPLIT_VERTICAL"
-  | "PIP";
-
-export type PIPPosition =
-  | "top-left"
-  | "top-right"
-  | "bottom-left"
-  | "bottom-right";
+import type { ViewLayoutMode, PIPPosition } from "./types/layout";
+export type { ViewLayoutMode, PIPPosition };
 
 export interface ViewLayout {
   mode: ViewLayoutMode;

@@ -9,6 +9,9 @@
 // TYPES - All type definitions (includes camera types from device-camera)
 // =============================================================================
 export * from "./types";
+export type { ViewLayoutMode, PIPPosition } from "./types";
+export type { CameraState } from "./types";
+export { DEFAULT_CAMERA_STATE } from "./types";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 // types.ts re-exports needed types from types/layout.ts for compatibility.
 
