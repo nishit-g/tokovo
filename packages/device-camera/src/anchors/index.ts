@@ -23,3 +23,6 @@ export {
   calculateFillScale,
   resolveAnchorFully,
 } from "./resolver";
+
+// Registry
+export * from "./registry";
