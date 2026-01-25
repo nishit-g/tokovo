@@ -235,7 +235,7 @@ export function cameraReducer(
     case "cut": {
       // Clear non-persistent effects only (preserve ambient effects)
       draft.camera.activeEffects = draft.camera.activeEffects.filter(
-        (effect) => effect.persistent === true,
+        (effect: CameraEffect) => effect.persistent === true,
       );
       draft.camera.transform = { ...DEFAULT_TRANSFORM };
 
@@ -287,7 +287,7 @@ export function cleanupExpiredEffects(
 ): void {
   // Keep effects that end after current frame (still active or future)
   state.activeEffects = state.activeEffects.filter(
-    (effect) => effect.endFrame > currentFrame,
+    (effect: CameraEffect) => effect.endFrame > currentFrame,
   );
 }
 
@@ -299,6 +299,7 @@ export function getActiveEffects(
   frame: number,
 ): CameraEffect[] {
   return state.activeEffects.filter(
-    (effect) => frame >= effect.startFrame && frame < effect.endFrame,
+    (effect: CameraEffect) =>
+      frame >= effect.startFrame && frame < effect.endFrame,
   );
 }
