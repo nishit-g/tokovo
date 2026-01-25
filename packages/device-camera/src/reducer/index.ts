@@ -23,6 +23,8 @@ import {
   EasingType,
 } from "../types";
 
+import type { ViewLayoutMode } from "@tokovo/core";
+
 // =============================================================================
 // EVENT TYPES
 // =============================================================================
@@ -57,6 +59,7 @@ export function cameraReducer(
   const duration = (event.duration as number) ?? 30;
   const easing = (event.easing as EasingType) ?? "ease-out";
 
+  // TODO: Remove toLowerCase() after verifying all producers use lowercase
   const normalizedType = event.type.toLowerCase().replace(/_/g, "-");
 
   switch (normalizedType) {
@@ -248,8 +251,8 @@ export function cameraReducer(
     // =================================================================
     case "set-view": {
       const view = event.view as { type?: string; appId?: string } | undefined;
-      if (view) {
-        draft.camera.baseView = view.type;
+      if (view?.type) {
+        draft.camera.baseView = view.type as "APP_VIEW" | "TRANSITION";
         draft.camera.appId = view.appId;
       }
       break;
@@ -260,8 +263,9 @@ export function cameraReducer(
     // =================================================================
     case "layout": {
       draft.camera.layout = {
-        mode: (event.mode as "SINGLE" | "PIP" | "SPLIT") ?? "SINGLE",
-        primaryDeviceId: event.primaryDeviceId as string | undefined,
+        mode: (event.mode as ViewLayoutMode) ?? "SINGLE",
+        primaryDeviceId: (event.primaryDeviceId ??
+          draft.camera.activeDeviceId) as string,
         secondaryDeviceId: event.secondaryDeviceId as string | undefined,
       };
       break;

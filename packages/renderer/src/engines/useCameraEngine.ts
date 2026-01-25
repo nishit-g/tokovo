@@ -8,8 +8,7 @@
  * 1. Get effects from world.camera.activeEffects (typed)
  * 2. Get anchors from registered providers
  * 3. Process all effects through processor registry
- * 4. Apply DirectorLite if no manual effects
- * 5. Build CSS styles
+ * 4. Build CSS styles
  *
  * @module device-camera
  */
@@ -31,11 +30,6 @@ import {
   // Anchors
   AnchorSnapshot,
   getAnchorsForApp,
-
-  // Director-Lite
-  deriveDirectorEffects,
-  extractSignals,
-  convertToEffects,
 
   // Utils
   lerp,
@@ -63,12 +57,6 @@ export interface CameraEngineInput {
 
   /** Event index for signal extraction */
   eventIndex?: EventIndex;
-
-  /** Enable DirectorLite auto-camera */
-  directorEnabled?: boolean;
-
-  /** Debug mode for DirectorLite */
-  directorDebug?: boolean;
 }
 
 export interface CameraEngineOutput {
@@ -93,14 +81,7 @@ export interface CameraEngineOutput {
 // =============================================================================
 
 export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
-  const {
-    world,
-    t,
-    layoutOutput,
-    eventIndex,
-    directorEnabled = false,
-    directorDebug = false,
-  } = input;
+  const { world, t, layoutOutput, eventIndex } = input;
 
   // Tracking state for smooth transitions
   const prevTransformRef = useRef<CameraTransform>(DEFAULT_TRANSFORM);
@@ -146,57 +127,9 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     let directorSkipped: string | undefined;
 
     // =====================================================================
-    // 4. DIRECTOR-LITE (if no manual effects active)
+    // 4. SMOOTH DECAY TO NEUTRAL (when no effects)
     // =====================================================================
-    if (directorEnabled && activeManualEffects.length === 0 && eventIndex) {
-      // Extract signals from recent events
-      const windowStart = Math.max(0, t - 90);
-      const windowEnd = t + 15;
-      const eventsInWindow = getEventsInRange(
-        eventIndex,
-        windowStart,
-        windowEnd,
-      );
-      const signals = extractSignals(eventsInWindow, t, 90);
-
-      // Derive camera effects from signals
-      const directorResult = deriveDirectorEffects({
-        t,
-        signals,
-        layoutModel: {
-          messageRects: {},
-          viewport,
-        },
-        seed: 42,
-        debug: directorDebug,
-        manualCameraEffects: effects,
-      });
-
-      if (directorResult.skipped) {
-        directorSkipped = directorResult.skipped;
-      }
-
-      // Apply director effects through processor registry
-      if (!directorResult.skipped && directorResult.effects.length > 0) {
-        // Convert DerivedCameraEffect to CameraEffect for processors
-        const directorEffects = convertToEffects(directorResult.effects, t);
-
-        // Process through the same processor registry as manual effects
-        transform = processActiveEffects(
-          t,
-          directorEffects,
-          transform, // Use current transform as base
-          anchorSnapshot,
-          viewport,
-        );
-      }
-    }
-
-    // =====================================================================
-    // 5. SMOOTH DECAY TO NEUTRAL (when no effects)
-    // =====================================================================
-    const hasActiveEffect =
-      activeManualEffects.length > 0 || (directorEnabled && !directorSkipped);
+    const hasActiveEffect = activeManualEffects.length > 0;
 
     if (!hasActiveEffect) {
       // Smoothly return to neutral
@@ -228,7 +161,7 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
       directorSkipped,
       anchorSnapshot,
     };
-  }, [world, t, layoutOutput, eventIndex, directorEnabled, directorDebug]);
+  }, [world, t, layoutOutput, eventIndex]);
 }
 
 // =============================================================================

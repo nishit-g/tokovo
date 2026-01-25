@@ -7,8 +7,8 @@
 
 import type { WorldState, ViewLayoutMode, PIPPosition } from "../../types";
 import type { CameraEvent, HandlerContext } from "./types";
-import { cameraReducer } from "@tokovo/device-camera";
 import { DEFAULT_CAMERA_STATE, DEFAULT_CAMERA_TRANSFORM } from "../../types";
+import { PluginManager } from "../../plugin/plugin";
 
 interface CameraEventPayload {
   view?: { type: string; appId?: string };
@@ -94,10 +94,13 @@ export function processCameraEvent(
       break;
 
     default:
-      cameraReducer(
-        draft as unknown as Parameters<typeof cameraReducer>[0],
-        event as unknown as Parameters<typeof cameraReducer>[1],
-      );
+      const cameraPlugin = PluginManager.get("camera");
+      if (!cameraPlugin) {
+        throw new Error(
+          "Camera plugin not registered. Ensure DeviceCameraPlugin is registered before engine initialization.",
+        );
+      }
+      cameraPlugin.reducer(draft as any, event as any);
       break;
   }
 }

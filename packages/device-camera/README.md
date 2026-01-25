@@ -4,8 +4,7 @@ Enterprise-grade cinematic camera system for Tokovo video generation.
 
 ## Features
 
-- **Manual Camera (God Mode)** - Exact control over scale, position, rotation
-- **DirectorLite** - AI-driven automatic camera based on event signals  
+- **Manual Camera Control** - Exact control over scale, position, rotation
 - **Semantic Anchors** - Focus on "lastMessage", "inputArea", etc.
 - **Effect Processors** - Extensible registry for camera effects
 - **Remotion Compatible** - Frame-based, deterministic animation
@@ -30,10 +29,6 @@ import { CameraTrackBuilder } from "@tokovo/device-camera";
     cam.at("10s").reset({ duration: "1s" });
 })
 ```
-
-### DirectorLite (Auto Camera)
-
-When no `.camera()` track is defined, DirectorLite automatically generates camera moves based on event signals.
 
 ## Architecture
 

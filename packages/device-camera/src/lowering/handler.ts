@@ -74,7 +74,7 @@ export function cameraV2Lowering(
       return [
         {
           ...baseEvent,
-          type: "ZOOM",
+          type: "zoom",
           scale: payload?.scale ?? 1,
           translateX: payload?.x ?? 0,
           translateY: payload?.y ?? 0,
@@ -91,7 +91,7 @@ export function cameraV2Lowering(
       return [
         {
           ...baseEvent,
-          type: "SHAKE",
+          type: "shake",
           intensity: (payload?.intensityX as number) ?? 5,
           intensityX: payload?.intensityX,
           intensityY: payload?.intensityY,
@@ -135,7 +135,7 @@ export function cameraV2Lowering(
       return [
         {
           ...baseEvent,
-          type: "RESET",
+          type: "reset",
           spring: payload?.spring,
           easing: payload?.easing ?? "ease-out",
         },

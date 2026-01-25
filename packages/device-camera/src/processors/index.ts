@@ -409,16 +409,6 @@ processorRegistry.set("dutch-tilt", dutchTiltProcessor);
 processorRegistry.set("flash", flashProcessor);
 processorRegistry.set("whip-pan", whipPanProcessor);
 
-processorRegistry.set("ZOOM", zoomProcessor);
-processorRegistry.set("SHAKE", shakeProcessor);
-processorRegistry.set("RESET", resetProcessor);
-processorRegistry.set("PAN", panProcessor);
-processorRegistry.set("DOLLY", dollyProcessor);
-processorRegistry.set("PUNCH_ZOOM", punchZoomProcessor);
-processorRegistry.set("DUTCH_TILT", dutchTiltProcessor);
-processorRegistry.set("FLASH", flashProcessor);
-processorRegistry.set("WHIP_PAN", whipPanProcessor);
-
 /**
  * Register a custom effect processor.
  */

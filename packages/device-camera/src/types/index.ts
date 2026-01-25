@@ -314,31 +314,5 @@ export type CameraEffect =
 // CAMERA STATE
 // =============================================================================
 
-export interface CameraState {
-  /** Active effects (processed each frame) */
-  activeEffects: CameraEffect[];
-
-  /** Current computed transform (updated by engine) */
-  transform: CameraTransform;
-
-  /** Active device ID */
-  activeDeviceId?: string;
-
-  /** Base view mode */
-  baseView?: string;
-
-  /** Current app being viewed */
-  appId?: string;
-
-  /** Layout mode */
-  layout?: {
-    mode: "SINGLE" | "PIP" | "SPLIT";
-    primaryDeviceId?: string;
-    secondaryDeviceId?: string;
-  };
-}
-
-export const DEFAULT_CAMERA_STATE: CameraState = {
-  activeEffects: [],
-  transform: DEFAULT_TRANSFORM,
-};
+export type { CameraState } from "@tokovo/core";
+export { DEFAULT_CAMERA_STATE } from "@tokovo/core";

@@ -11,6 +11,7 @@
 
 import { RuntimeEvent } from "./runtime-event";
 import type { Platform } from "../tokens";
+import type { AnchorFraming } from "./anchor";
 // =============================================================================
 // LAYOUT CONSTANTS - App-specific UI metrics
 // =============================================================================
@@ -194,6 +195,7 @@ export type PluginAnchorProvider = (
  */
 export interface PluginAnchorRegistry {
   providers: Record<string, PluginAnchorProvider>;
+  framing?: Record<string, AnchorFraming>;
 }
 
 // =============================================================================

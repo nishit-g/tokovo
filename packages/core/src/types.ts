@@ -662,28 +662,15 @@ export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
 };
 
 // =============================================================================
-// CAMERA STATE (uses flat CameraEffect[] from device-camera)
+// CAMERA STATE (re-exported from canonical source)
 // =============================================================================
 
-export interface CameraState {
-  baseView: "APP_VIEW" | "TRANSITION";
-  appId?: AppId;
-  activeDeviceId: string;
-  layout: ViewLayout;
-  /** Flat typed effects - no wrapper needed */
-  activeEffects: CameraEffect[];
-  transform: CameraTransform;
-  deviceTransforms: Record<DeviceId, CameraTransform>;
-}
+import type { CameraState as _CameraState } from "./types/camera";
+export type { CameraState } from "./types/camera";
+export { DEFAULT_CAMERA_STATE } from "./types/camera";
 
-export const DEFAULT_CAMERA_STATE: CameraState = {
-  baseView: "APP_VIEW",
-  activeDeviceId: "main_phone",
-  layout: { ...DEFAULT_VIEW_LAYOUT },
-  activeEffects: [],
-  transform: { ...DEFAULT_TRANSFORM },
-  deviceTransforms: {},
-};
+// Local alias for use in this file
+type CameraState = _CameraState;
 
 // =============================================================================
 // AUDIO SYSTEM TYPES (Production-Grade)

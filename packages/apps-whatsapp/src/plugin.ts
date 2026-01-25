@@ -9,11 +9,7 @@
  * @see docs/ARCHITECTURE.md
  */
 
-import {
-  PluginManager,
-  type PluginReducer,
-  registerAnchorProvider,
-} from "@tokovo/core";
+import { PluginManager, type PluginReducer } from "@tokovo/core";
 import { WHATSAPP_APP_ID } from "./constants";
 import type {
   TokovoPluginContract,
@@ -165,6 +161,9 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
 
   // === TIER C: DSL ===
   dsl: whatsappDsl,
+
+  // === Anchors ===
+  anchors: WhatsAppAnchors as any,
 };
 
 // =============================================================================
@@ -193,8 +192,6 @@ export function registerWhatsAppPlugin(): void {
   UIStrategyRegistry.register(cyberpunkStrategy);
 
   PluginManager.register(WhatsAppPluginV2);
-
-  registerAnchorProvider(WhatsAppAnchors);
 }
 
 export type { WhatsAppDslApi };

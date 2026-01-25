@@ -1,46 +1,46 @@
 /**
- * Device Camera Plugin
- * 
- * Plugin contract for the camera system.
- * Registers reducer and provides camera capabilities.
- * 
+ * Device Camera Plugin - TokovoPluginContract Implementation
+ *
+ * Implements the full enterprise plugin contract for the camera system.
+ * The camera plugin is a CONSUMER of anchors (provided by apps like WhatsApp),
+ * not a PROVIDER. Therefore, anchors is set to undefined.
+ *
  * @module device-camera/plugin
  */
 
+import type { TokovoPluginContract } from "@tokovo/core/src/types/plugin-contract";
 import { cameraReducer } from "./reducer";
+import { cameraV2Lowering, CAMERA_EVENT_TYPES } from "./lowering";
 
-// =============================================================================
-// PLUGIN DEFINITION
-// =============================================================================
-
-export interface DeviceCameraPluginContract {
-    id: "camera";
-    version: string;
-    displayName: string;
-    reducer: typeof cameraReducer;
-}
-
-export const DeviceCameraPlugin: DeviceCameraPluginContract = {
-    id: "camera",
-    version: "1.0.0",
-    displayName: "Device Camera",
-    reducer: cameraReducer,
+const cameraViews = {
+  AppRoot: () => null,
 };
 
-// =============================================================================
-// REGISTRATION
-// =============================================================================
+export const DeviceCameraPlugin: TokovoPluginContract<"camera"> = {
+  id: "camera",
+  version: "1.0.0",
+  displayName: "Device Camera",
 
-type ReducerRegistry = {
-    register: (kind: string, reducer: typeof cameraReducer) => void;
+  reducer: cameraReducer as any,
+  views: cameraViews,
+
+  lowering: {
+    handles: CAMERA_EVENT_TYPES as unknown as string[],
+    lower: cameraV2Lowering as any,
+  },
+
+  anchors: undefined,
 };
 
-/**
- * Register the camera plugin with the core engine.
- * 
- * @param reducerRegistry - The reducer registry from @tokovo/core
- */
-export function registerCameraPlugin(reducerRegistry: ReducerRegistry): void {
-    reducerRegistry.register("CAMERA", cameraReducer);
-    console.log("[device-camera] Registered camera reducer");
+export { DeviceCameraPlugin as default };
+
+import { PluginManager } from "@tokovo/core";
+
+let _registered = false;
+
+export function registerCameraPlugin(): void {
+  if (_registered) return;
+  _registered = true;
+
+  PluginManager.register(DeviceCameraPlugin);
 }

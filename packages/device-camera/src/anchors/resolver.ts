@@ -5,7 +5,7 @@
  */
 
 import { Rect, ResolvedAnchor, AnchorSnapshot, AnchorFraming } from "./types";
-import { getAnchorFraming } from "./registry";
+import { PluginManager } from "@tokovo/core";
 
 // =============================================================================
 // FALLBACK CHAINS
@@ -134,6 +134,25 @@ export function calculateFillScale(
 }
 
 /**
+ * Get anchor framing configuration from plugin.
+ * Falls back to sensible defaults if plugin/anchor not found.
+ */
+function getAnchorFramingFromPlugin(
+  appId: string,
+  anchorName: string,
+): AnchorFraming {
+  const appPlugin = PluginManager.get(appId);
+  const framing = appPlugin?.anchors?.framing?.[anchorName];
+  return (
+    framing ?? {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 20,
+      targetFill: 0.6,
+    }
+  );
+}
+
+/**
  * Full anchor resolution: name → transform origin + suggested scale.
  */
 export function resolveAnchorFully(
@@ -153,7 +172,7 @@ export function resolveAnchorFully(
     snapshot.anchors,
     viewport,
   );
-  const framing = getAnchorFraming(appId, anchorName);
+  const framing = getAnchorFramingFromPlugin(appId, anchorName);
   const origin = anchorToOrigin(resolved, framing, viewport);
   const suggestedScale = calculateFillScale(
     resolved.rect,

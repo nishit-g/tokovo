@@ -11,6 +11,7 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@tokovo/core": "workspace:*",
     "@tokovo/ir": "workspace:*"
   },
   "devDependencies": {

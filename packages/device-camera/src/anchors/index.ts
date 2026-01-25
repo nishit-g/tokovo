@@ -16,19 +16,6 @@ export type {
 
 export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "./types";
 
-// Registry
-export {
-  registerAnchorProvider,
-  unregisterAnchorProvider,
-  getAnchorProvider,
-  hasAnchorProvider,
-  getAnchorsForApp,
-  getAnchorFraming,
-  getRegisteredAppIds,
-  clearAnchorProviders,
-  getProviderCount,
-} from "./registry";
-
 // Resolver
 export {
   resolveAnchorWithFallback,

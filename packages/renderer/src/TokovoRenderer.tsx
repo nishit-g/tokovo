@@ -51,8 +51,6 @@ interface TokovoRendererProps {
   notificationConfig?: NotificationConfig;
   focusDeviceId?: string;
   eventIndex?: EventIndex;
-  directorEnabled?: boolean;
-  directorDebug?: boolean;
   pluginManager?: PluginManagerClass;
 }
 
@@ -67,8 +65,6 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
   notificationConfig = {},
   focusDeviceId,
   eventIndex,
-  directorEnabled = true,
-  directorDebug = false,
   pluginManager,
 }) => {
   // Resolve Plugin Manager (Injectable > Global Fallback)
@@ -104,8 +100,6 @@ export const TokovoRenderer: React.FC<TokovoRendererProps> = ({
     t,
     layoutOutput,
     eventIndex,
-    directorEnabled,
-    directorDebug,
   });
 
   const { cameraStyle, deviceStyle } = cameraOutput;

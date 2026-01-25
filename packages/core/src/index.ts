@@ -115,26 +115,6 @@ export type {
 export * from "./utils";
 
 // =============================================================================
-// DIRECTOR LITE - Automatic camera (from device-camera)
-// =============================================================================
-export {
-  deriveDirectorEffects,
-  extractSignals,
-  ViralDramaV1,
-} from "@tokovo/device-camera";
-export type {
-  DirectorSignal,
-  DirectorSignalType,
-  DirectorLayoutModel,
-  DirectorOutput,
-  DerivedCameraEffect,
-  DirectorDebug,
-  DeriveContext,
-  DirectorStrategy,
-  Rule,
-} from "@tokovo/device-camera";
-
-// =============================================================================
 // ANCHORS - Semantic positioning
 // =============================================================================
 export * from "./anchors";
