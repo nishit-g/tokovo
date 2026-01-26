@@ -2,7 +2,6 @@ import React, { useEffect, useRef } from "react";
 import { MessageBubble } from "./MessageBubble";
 import { useMessageGrouping } from "../hooks/useMessageGrouping";
 import { MessageData } from "../types";
-import { UIThemeTokens } from "../ui/ui-strategy";
 import { TypingIndicator } from "./TypingIndicator";
 
 const DEFAULT_BG = "#ECE5DD";
@@ -12,7 +11,6 @@ interface MessageListProps {
   ownerName?: string;
   isTyping?: boolean;
   isGroupChat?: boolean;
-  tokens?: UIThemeTokens;
 }
 
 export const MessageList: React.FC<MessageListProps> = ({
@@ -20,11 +18,10 @@ export const MessageList: React.FC<MessageListProps> = ({
   ownerName = "me",
   isTyping,
   isGroupChat = false,
-  tokens,
 }) => {
-  const backgroundColor = tokens?.backgroundColor || DEFAULT_BG;
-  const doodlePattern = tokens?.doodlePattern || "";
-  const doodleOpacity = tokens?.doodleOpacity ?? 0.04;
+  const backgroundColor = DEFAULT_BG;
+  const doodlePattern = "";
+  const doodleOpacity = 0.04;
 
   const groups = useMessageGrouping(messages, ownerName);
   const containerRef = useRef<HTMLDivElement>(null);

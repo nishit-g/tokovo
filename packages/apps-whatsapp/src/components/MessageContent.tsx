@@ -1,6 +1,5 @@
 import React from "react";
 import { MessageData, LinkPreviewData } from "../types";
-import { UIThemeTokens } from "../ui/ui-strategy";
 import {
   VoiceMessageBubble,
   ImageMessageBubble,
@@ -160,18 +159,17 @@ const LinkContent: React.FC<{
 
 interface SystemContentProps {
   text: string;
-  tokens?: Partial<UIThemeTokens>;
 }
 
-const SystemContent: React.FC<SystemContentProps> = ({ text, tokens }) => (
+const SystemContent: React.FC<SystemContentProps> = ({ text }) => (
   <div
     style={{
       alignSelf: "center",
-      backgroundColor: tokens?.systemMessageBg || "var(--wa-system-message-bg)",
+      backgroundColor: "var(--wa-system-message-bg)",
       borderRadius: 8,
       padding: "6px 12px",
       fontSize: 12,
-      color: tokens?.systemMessageText || "var(--wa-system-message-text)",
+      color: "var(--wa-system-message-text)",
       marginBottom: 8,
       marginTop: 8,
       textAlign: "center",
@@ -188,7 +186,6 @@ export interface MessageContentProps {
   isMe?: boolean;
   timestamp?: string;
   read?: boolean;
-  tokens?: Partial<UIThemeTokens>;
 }
 
 export const MessageContent: React.FC<MessageContentProps> = ({
@@ -196,7 +193,6 @@ export const MessageContent: React.FC<MessageContentProps> = ({
   isMe = false,
   timestamp,
   read = false,
-  tokens,
 }) => {
   switch (message.type) {
     case "text":
@@ -307,7 +303,7 @@ export const MessageContent: React.FC<MessageContentProps> = ({
       );
 
     case "system":
-      return <SystemContent text={message.text} tokens={tokens} />;
+      return <SystemContent text={message.text} />;
 
     case "deleted":
       return (

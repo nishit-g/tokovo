@@ -174,22 +174,11 @@ export { WhatsAppPluginV2 as WhatsAppPlugin };
 
 import { WhatsAppAnchors } from "./runtime/adapters/anchors";
 
-import { UIStrategyRegistry } from "./ui/ui-strategy";
-import { iOSStrategy } from "./ui/strategies/ios";
-import { androidStrategy } from "./ui/strategies/android";
-import { ghibliStrategy } from "./ui/strategies/ghibli";
-import { cyberpunkStrategy } from "./ui/strategies/cyberpunk";
-
 let _registered = false;
 
 export function registerWhatsAppPlugin(): void {
   if (_registered) return;
   _registered = true;
-
-  UIStrategyRegistry.register(iOSStrategy);
-  UIStrategyRegistry.register(androidStrategy);
-  UIStrategyRegistry.register(ghibliStrategy);
-  UIStrategyRegistry.register(cyberpunkStrategy);
 
   PluginManager.register(WhatsAppPluginV2);
 }
