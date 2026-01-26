@@ -5,32 +5,6 @@
  */
 
 // =============================================================================
-// CORE TRANSFORM
-// =============================================================================
-
-export interface CameraTransform {
-  scale: number;
-  translateX: number;
-  translateY: number;
-  originX: number;
-  originY: number;
-  rotation: number;
-  shakeX: number;
-  shakeY: number;
-}
-
-export const DEFAULT_TRANSFORM: CameraTransform = {
-  scale: 1,
-  translateX: 0,
-  translateY: 0,
-  originX: 0.5,
-  originY: 0.5,
-  rotation: 0,
-  shakeX: 0,
-  shakeY: 0,
-};
-
-// =============================================================================
 // EASING
 // =============================================================================
 
@@ -311,8 +285,9 @@ export type CameraEffect =
   | WhipPanEffect;
 
 // =============================================================================
-// CAMERA STATE
+// RE-EXPORTS FROM CORE (for backward compatibility)
 // =============================================================================
 
 export type { CameraState } from "@tokovo/core";
 export { DEFAULT_CAMERA_STATE } from "@tokovo/core";
+

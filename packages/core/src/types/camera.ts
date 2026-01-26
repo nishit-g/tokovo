@@ -11,7 +11,49 @@
 
 import type { DeviceId, AppId } from "./device";
 
-// Re-export all camera types from device-camera
+// =============================================================================
+// CAMERA TRANSFORM (moved from device-camera to break circular dependency)
+// =============================================================================
+
+/**
+ * CameraTransform - Core camera transformation properties.
+ * This is the OUTPUT of the camera system that renderer needs.
+ *
+ * Moved to core to break circular dependency:
+ * - device-camera imports CameraState from core
+ * - CameraState uses CameraTransform
+ * - If CameraTransform was in device-camera, we'd have a cycle
+ */
+export interface CameraTransform {
+  scale: number;
+  translateX: number;
+  translateY: number;
+  originX: number;
+  originY: number;
+  rotation: number;
+  shakeX: number;
+  shakeY: number;
+}
+
+export const DEFAULT_TRANSFORM: CameraTransform = {
+  scale: 1,
+  translateX: 0,
+  translateY: 0,
+  originX: 0.5,
+  originY: 0.5,
+  rotation: 0,
+  shakeX: 0,
+  shakeY: 0,
+};
+
+// Alias for backward compatibility
+export const DEFAULT_CAMERA_TRANSFORM = DEFAULT_TRANSFORM;
+
+// =============================================================================
+// RE-EXPORTS FROM DEVICE-CAMERA (type-only to avoid runtime dependency)
+// =============================================================================
+
+// Re-export all camera effect types from device-camera (type-only)
 export type {
   CameraEffect,
   CameraEffectType,
@@ -20,18 +62,11 @@ export type {
   FocusEffect,
   TrackEffect,
   ResetEffect,
-  CameraTransform,
   EasingType,
 } from "@tokovo/device-camera";
 
-export { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
-
-// Alias for backward compatibility
-export { DEFAULT_TRANSFORM as DEFAULT_CAMERA_TRANSFORM } from "@tokovo/device-camera";
-
-// Import types for use in CameraState
-import type { CameraEffect, CameraTransform } from "@tokovo/device-camera";
-import { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
+// Import types for use in CameraState (type-only)
+import type { CameraEffect } from "@tokovo/device-camera";
 
 // =============================================================================
 // TRANSITION TYPES (not camera-specific, stays in core)

@@ -7,10 +7,10 @@
  * @module device-camera/processors
  */
 
+import type { CameraTransform } from "@tokovo/core";
+import { DEFAULT_CAMERA_TRANSFORM as DEFAULT_TRANSFORM } from "@tokovo/core";
 import {
   CameraEffect,
-  CameraTransform,
-  DEFAULT_TRANSFORM,
   ZoomEffect,
   ShakeEffect,
   FocusEffect,

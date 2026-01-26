@@ -7,7 +7,8 @@
  */
 
 import type { EffectProcessor, EffectProcessorContext } from "./types";
-import type { ZoomEffect, CameraTransform } from "../types";
+import type { ZoomEffect } from "../types";
+import type { CameraTransform } from "@tokovo/core";
 import { applyEasing, lerp, getProgress } from "../utils";
 
 export const zoomProcessor: EffectProcessor = {
