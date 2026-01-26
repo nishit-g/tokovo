@@ -257,3 +257,5 @@ export function getThemeForDevice(
     deviceId.toLowerCase().includes("galaxy");
   return getTheme(isAndroid ? "android" : "ios", darkMode);
 }
+
+export { WhatsAppThemeProvider, useTheme } from "./context";
