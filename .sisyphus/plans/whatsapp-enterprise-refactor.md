@@ -573,7 +573,7 @@ Phase 1 (Anchors) → Phase 2 (Theme) → Phase 3 (Components) → Phase 4 (Scre
 
 ---
 
-- [ ] 11. Delete Legacy Components and Strategy Files
+- [x] 11. Delete Legacy Components and Strategy Files
 
   **What to do**:
   - Delete `src/components/ChatsListScreen.tsx` (legacy, verified no imports)

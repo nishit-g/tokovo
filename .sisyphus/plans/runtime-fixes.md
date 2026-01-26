@@ -109,7 +109,7 @@ Make `npm run dev` work without runtime errors.
 
 ---
 
-- [ ] 4. Verify runtime works
+- [x] 4. Verify runtime works
 
   **What to do**:
   - Run `npm run dev`
@@ -118,9 +118,9 @@ Make `npm run dev` work without runtime errors.
   - Verify no module resolution errors
 
   **Acceptance Criteria**:
-  - [ ] Dev server starts cleanly
-  - [ ] App loads in browser without errors
-  - [ ] Console is clean (no TypeError, no module errors)
+  - [x] Dev server starts cleanly
+  - [x] App loads in browser without errors
+  - [x] Console is clean (no TypeError, no module errors)
 
 ---
 

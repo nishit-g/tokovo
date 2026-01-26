@@ -42,7 +42,6 @@ export {
 // =============================================================================
 
 export * from "./ui";
-// Note: ./views re-exports from ./ui, so we don't export it again
 
 // =============================================================================
 // IR (Intermediate Representation)
