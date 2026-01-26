@@ -1,118 +1,36 @@
 /**
- * Anchor Registry - Self-contained anchor provider registry
+ * Anchor Registry - Re-exports from @tokovo/core
  *
- * This module provides anchor registration and resolution WITHOUT
- * depending on @tokovo/core to avoid cyclic dependencies.
+ * This module re-exports anchor functionality from @tokovo/core to ensure
+ * there's a SINGLE source of truth for anchor providers.
  *
- * USAGE:
- * - Apps register providers using `registerAnchorProvider()`
- * - useCameraEngine calls `getAnchorsForApp()` to get anchors
+ * Previously, device-camera had its own Map instance, causing a "split brain"
+ * where PluginManager registered providers in core but useCameraEngine read
+ * from device-camera. This has been fixed by re-exporting from core.
  *
  * @module device-camera/anchors/registry
  */
 
-import type { AnchorProvider, AnchorSnapshot, AnchorFraming } from "./types";
-import { EMPTY_SNAPSHOT, DEFAULT_FRAMING } from "./types";
+// Re-export all anchor registry functions from core
+export {
+  registerAnchorProvider,
+  unregisterAnchorProvider,
+  getAnchorProvider,
+  hasAnchorProvider,
+  getRegisteredAppIds,
+  getProviderCount,
+  getAnchorsForApp,
+  getAnchorFraming,
+  clearAnchorProviders,
+  AnchorRegistry,
+} from "@tokovo/core";
 
-// =============================================================================
-// REGISTRY STATE (self-contained, not delegating to core)
-// =============================================================================
+// Re-export types
+export type {
+  AnchorProvider,
+  AnchorSnapshot,
+  AnchorFraming,
+  Rect,
+} from "@tokovo/core";
 
-/** Map of appId → AnchorProvider */
-const providerRegistry = new Map<string, AnchorProvider>();
-
-// =============================================================================
-// PUBLIC API
-// =============================================================================
-
-/**
- * Register an anchor provider for an app.
- *
- * @example
- * ```typescript
- * registerAnchorProvider({
- *     appId: "app_whatsapp",
- *     framing: {
- *         lastMessage: { anchorPoint: { x: 0.5, y: 0.5 }, targetFill: 0.6 },
- *         inputArea: { anchorPoint: { x: 0.5, y: 0.8 }, targetFill: 0.9 },
- *     },
- *     getAnchors(world, layout, deviceId) {
- *         // Extract rects from layout
- *         return { anchors: {...}, deviceId, appId: "app_whatsapp" };
- *     }
- * });
- * ```
- */
-export function registerAnchorProvider(provider: AnchorProvider): void {
-  providerRegistry.set(provider.appId, provider);
-}
-
-export function unregisterAnchorProvider(appId: string): boolean {
-  return providerRegistry.delete(appId);
-}
-
-/**
- * Get anchor provider for an app.
- */
-export function getAnchorProvider(appId: string): AnchorProvider | undefined {
-  return providerRegistry.get(appId);
-}
-
-/**
- * Check if an anchor provider is registered for an app.
- */
-export function hasAnchorProvider(appId: string): boolean {
-  return providerRegistry.has(appId);
-}
-
-/**
- * Get anchors for an app using its registered provider.
- * This is the main entry point for useCameraEngine.
- */
-export function getAnchorsForApp(
-  appId: string,
-  world: unknown,
-  layout: unknown,
-  deviceId: string,
-): AnchorSnapshot {
-  const provider = providerRegistry.get(appId);
-  if (!provider) {
-    return EMPTY_SNAPSHOT;
-  }
-  return provider.getAnchors(world, layout, deviceId);
-}
-
-/**
- * Get framing configuration for a specific anchor in an app.
- */
-export function getAnchorFraming(
-  appId: string,
-  anchorName: string,
-): AnchorFraming {
-  const provider = providerRegistry.get(appId);
-  if (!provider?.framing[anchorName]) {
-    return DEFAULT_FRAMING;
-  }
-  return provider.framing[anchorName];
-}
-
-/**
- * Get all registered app IDs.
- */
-export function getRegisteredAppIds(): string[] {
-  return Array.from(providerRegistry.keys());
-}
-
-/**
- * Clear all registered providers (for testing).
- */
-export function clearAnchorProviders(): void {
-  providerRegistry.clear();
-}
-
-/**
- * Get the count of registered providers.
- */
-export function getProviderCount(): number {
-  return providerRegistry.size;
-}
+export { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "@tokovo/core";
