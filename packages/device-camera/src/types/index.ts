@@ -285,9 +285,26 @@ export type CameraEffect =
   | WhipPanEffect;
 
 // =============================================================================
-// RE-EXPORTS FROM CORE (for backward compatibility)
+// RE-EXPORTS FROM CORE
 // =============================================================================
 
-export type { CameraState } from "@tokovo/core";
-export { DEFAULT_CAMERA_STATE } from "@tokovo/core";
+export type {
+  CameraTransform,
+  ViewLayout,
+  TransitionType,
+  HighlightStyle,
+} from "@tokovo/core";
 
+export { DEFAULT_CAMERA_TRANSFORM, DEFAULT_VIEW_LAYOUT } from "@tokovo/core";
+
+import type { BaseCameraState, CameraTransform } from "@tokovo/core";
+import { DEFAULT_BASE_CAMERA_STATE, DEFAULT_TRANSFORM } from "@tokovo/core";
+
+export interface CameraState extends BaseCameraState {
+  activeEffects: CameraEffect[];
+}
+
+export const DEFAULT_CAMERA_STATE: CameraState = {
+  ...DEFAULT_BASE_CAMERA_STATE,
+  activeEffects: [],
+};

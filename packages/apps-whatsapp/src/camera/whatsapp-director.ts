@@ -19,9 +19,8 @@ import {
   composeTimeline,
   TimelineStep,
   CameraTarget,
-  ChatLayoutState,
-  ChatMessageLayout,
-} from "@tokovo/core";
+} from "@tokovo/device-camera";
+import type { ChatLayoutState, ChatMessageLayout } from "@tokovo/core";
 import { WhatsAppMessage } from "../types";
 
 // =============================================================================

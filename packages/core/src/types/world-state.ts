@@ -5,7 +5,7 @@
  */
 
 import type { DeviceId, DeviceState } from "./device";
-import type { CameraState } from "./camera";
+import type { BaseCameraState } from "./camera";
 import type { AudioState, VideoConfig } from "./audio";
 
 // =============================================================================
@@ -47,7 +47,7 @@ export interface WorldState {
   appState: ResolvedAppState;
 
   // Engine primitives
-  camera: CameraState;
+  camera: BaseCameraState;
   audio: AudioState;
   config?: VideoConfig;
 }

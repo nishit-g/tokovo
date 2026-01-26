@@ -13,11 +13,11 @@ import { produce } from "immer";
 import {
   TimelineEvent,
   WorldState,
-  DEFAULT_CAMERA_STATE,
+  DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_CAMERA_TRANSFORM,
   DEFAULT_AUDIO_STATE,
 } from "./types";
-import type { CameraTransform } from "@tokovo/device-camera";
+import type { CameraTransform } from "./types/camera";
 import { getConfig, TokovoConfigType } from "./config";
 
 let cachedConfig: TokovoConfigType | null = null;
@@ -176,7 +176,7 @@ export function replay(
     const emptyState = {
       devices: {},
       appState: {},
-      camera: { ...DEFAULT_CAMERA_STATE },
+      camera: { ...DEFAULT_BASE_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
     LifecycleManager.notifyAfterReplay(emptyState, lifecycleCtx);
@@ -192,7 +192,7 @@ export function replay(
       initial.camera && "activeEffects" in initial.camera
         ? initial.camera
         : {
-            ...DEFAULT_CAMERA_STATE,
+            ...DEFAULT_BASE_CAMERA_STATE,
             baseView: (legacyCamera?.type || "APP_VIEW") as
               | "APP_VIEW"
               | "TRANSITION",
@@ -273,9 +273,17 @@ export function replay(
 
     // Finalize state inline (merged from separate produce call)
     const config = getCachedConfig();
-    draft.camera.activeEffects = draft.camera.activeEffects.filter(
-      (ae) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
-    );
+    // Only filter activeEffects if it exists (extended CameraState from device-camera)
+    if (
+      "activeEffects" in draft.camera &&
+      Array.isArray(draft.camera.activeEffects)
+    ) {
+      (draft.camera as any).activeEffects = (
+        draft.camera as any
+      ).activeEffects.filter(
+        (ae: any) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
+      );
+    }
 
     if (!draft.camera.deviceTransforms) {
       draft.camera.deviceTransforms = {};
@@ -315,7 +323,7 @@ export function createInitialWorld(
   return {
     devices: {},
     appState: {},
-    camera: { ...DEFAULT_CAMERA_STATE },
+    camera: { ...DEFAULT_BASE_CAMERA_STATE },
     audio: { ...DEFAULT_AUDIO_STATE },
     ...partial,
   };
@@ -425,7 +433,7 @@ function ensureInitialState(initial: WorldState): WorldState {
     return {
       devices: {},
       appState: {},
-      camera: { ...DEFAULT_CAMERA_STATE },
+      camera: { ...DEFAULT_BASE_CAMERA_STATE },
       audio: { ...DEFAULT_AUDIO_STATE },
     };
   }
@@ -438,7 +446,7 @@ function ensureInitialState(initial: WorldState): WorldState {
       initial.camera && "activeEffects" in initial.camera
         ? initial.camera
         : {
-            ...DEFAULT_CAMERA_STATE,
+            ...DEFAULT_BASE_CAMERA_STATE,
             baseView: (legacyCamera?.type || "APP_VIEW") as
               | "APP_VIEW"
               | "TRANSITION",
@@ -572,9 +580,17 @@ function processEventWithMiddleware(
 function finalizeState(state: WorldState, t: number): WorldState {
   return produce(state, (draft) => {
     const config = getCachedConfig();
-    draft.camera.activeEffects = draft.camera.activeEffects.filter(
-      (ae) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
-    );
+    // Only filter activeEffects if it exists (extended CameraState from device-camera)
+    if (
+      "activeEffects" in draft.camera &&
+      Array.isArray(draft.camera.activeEffects)
+    ) {
+      (draft.camera as any).activeEffects = (
+        draft.camera as any
+      ).activeEffects.filter(
+        (ae: any) => t <= ae.endFrame + config.timing.effectCleanupBuffer,
+      );
+    }
 
     cleanupExpiredSounds(draft, t);
 

@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@tokovo/core": "workspace:*",
+    "@tokovo/device-camera": "workspace:*",
     "@tokovo/ir": "workspace:*",
     "@tokovo/react": "workspace:*",
     "lucide-react": "^0.263.1",

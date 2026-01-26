@@ -584,27 +584,16 @@ export interface AppFolder {
 // =============================================================================
 
 // =============================================================================
-// CAMERA SYSTEM TYPES (imported from @tokovo/device-camera)
+// CAMERA SYSTEM TYPES (core owns base types, device-camera extends them)
 // =============================================================================
 
-// Re-export camera types from device-camera (single source of truth)
-export type {
-  EasingType,
-  CameraEffect,
-  CameraEffectType,
-  ZoomEffect,
-  ShakeEffect,
-  FocusEffect,
-  TrackEffect,
-  ResetEffect,
-  CameraTransform,
-} from "@tokovo/device-camera";
-
-export { DEFAULT_TRANSFORM as DEFAULT_CAMERA_TRANSFORM } from "@tokovo/device-camera";
-
-// Import for use in CameraState
-import type { CameraEffect, CameraTransform } from "@tokovo/device-camera";
-import { DEFAULT_TRANSFORM } from "@tokovo/device-camera";
+// Core camera types (no device-camera dependency)
+export type { CameraTransform, BaseCameraState } from "./types/camera";
+export {
+  DEFAULT_TRANSFORM,
+  DEFAULT_CAMERA_TRANSFORM,
+  DEFAULT_BASE_CAMERA_STATE,
+} from "./types/camera";
 
 // =============================================================================
 // TRANSITION SYSTEM TYPES (not camera-specific, stays in core)
@@ -656,12 +645,9 @@ export const DEFAULT_VIEW_LAYOUT: ViewLayout = {
 // CAMERA STATE (re-exported from canonical source)
 // =============================================================================
 
-import type { CameraState as _CameraState } from "./types/camera";
-export type { CameraState } from "./types/camera";
-export { DEFAULT_CAMERA_STATE } from "./types/camera";
+import type { BaseCameraState as _BaseCameraState } from "./types/camera";
 
-// Local alias for use in this file
-type CameraState = _CameraState;
+type BaseCameraState = _BaseCameraState;
 
 // =============================================================================
 // AUDIO SYSTEM TYPES (Production-Grade)
@@ -857,7 +843,7 @@ export interface WorldState {
   appState: Record<string, unknown>;
 
   // Engine primitives
-  camera: CameraState;
+  camera: BaseCameraState;
   audio: AudioState;
   config?: VideoConfig;
 

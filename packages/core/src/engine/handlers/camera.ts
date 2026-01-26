@@ -7,7 +7,10 @@
 
 import type { WorldState, ViewLayoutMode, PIPPosition } from "../../types";
 import type { CameraEvent, HandlerContext } from "./types";
-import { DEFAULT_CAMERA_STATE, DEFAULT_CAMERA_TRANSFORM } from "../../types";
+import {
+  DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
+  DEFAULT_CAMERA_TRANSFORM,
+} from "../../types";
 import { PluginManager } from "../../plugin/plugin";
 
 interface CameraEventPayload {
@@ -42,7 +45,7 @@ export function processCameraEvent(
   _ctx: HandlerContext,
 ): void {
   if (!draft.camera || !draft.camera.activeEffects) {
-    draft.camera = { ...DEFAULT_CAMERA_STATE };
+    draft.camera = { ...DEFAULT_BASE_CAMERA_STATE };
   }
   if (!draft.camera.layout) {
     draft.camera.layout = {

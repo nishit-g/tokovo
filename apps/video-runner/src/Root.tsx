@@ -16,6 +16,7 @@ import { PluginManager } from "@tokovo/core";
 import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
 import { registerDevicesPlugin } from "@tokovo/devices";
 import { registerNotificationPlugin } from "@tokovo/device-notifications";
+import { registerCameraPlugin } from "@tokovo/device-camera";
 import { episodeRegistry, getFormat } from "@tokovo/episodes";
 import { EpisodeRenderer } from "./EpisodeRenderer";
 
@@ -26,6 +27,7 @@ import { EpisodeRenderer } from "./EpisodeRenderer";
 registerDevicesPlugin();
 registerWhatsAppPlugin();
 registerNotificationPlugin();
+registerCameraPlugin();
 
 // =============================================================================
 // EPISODE IMPORTS (side-effect: auto-registers with registry)

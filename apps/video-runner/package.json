@@ -14,6 +14,7 @@
     "@tokovo/compiler": "workspace:*",
     "@tokovo/apps-whatsapp": "workspace:*",
     "@tokovo/core": "workspace:*",
+    "@tokovo/device-camera": "workspace:*",
     "@tokovo/devices": "workspace:*",
     "@tokovo/device-notifications": "workspace:*",
     "@tokovo/dsl": "workspace:*",

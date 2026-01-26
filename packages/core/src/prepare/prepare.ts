@@ -17,7 +17,7 @@ import { TokovoPluginContract } from "../types/plugin-contract";
 import { createEventIndex } from "../utils/event-utils";
 import {
   WorldState,
-  DEFAULT_CAMERA_STATE,
+  DEFAULT_BASE_CAMERA_STATE as DEFAULT_BASE_CAMERA_STATE,
   DEFAULT_AUDIO_STATE,
   DEFAULT_OS_STATE,
 } from "../types";
@@ -92,7 +92,7 @@ export function deriveInitialWorld(
   const world: WorldState = {
     devices: {},
     appState: {},
-    camera: { ...DEFAULT_CAMERA_STATE },
+    camera: { ...DEFAULT_BASE_CAMERA_STATE },
     audio: { ...DEFAULT_AUDIO_STATE },
     touches: [],
   };

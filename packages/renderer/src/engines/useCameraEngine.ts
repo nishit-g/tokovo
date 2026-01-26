@@ -20,9 +20,6 @@ import type { CSSProperties } from "react";
 import {
   // Types
   CameraEffect,
-  CameraTransform,
-  DEFAULT_TRANSFORM,
-  CameraState,
 
   // Processors
   processActiveEffects,
@@ -36,8 +33,13 @@ import {
 } from "@tokovo/device-camera";
 
 // Core imports for world/layout types
-import type { WorldState, EventIndex } from "@tokovo/core";
-import { getEventsInRange } from "@tokovo/core";
+import type {
+  WorldState,
+  EventIndex,
+  CameraState,
+  CameraTransform,
+} from "@tokovo/core";
+import { getEventsInRange, DEFAULT_TRANSFORM } from "@tokovo/core";
 
 import { LayoutEngineOutput } from "./useLayoutEngine";
 
@@ -105,7 +107,12 @@ export function useCameraEngine(input: CameraEngineInput): CameraEngineOutput {
     // =====================================================================
     // 2. GET EFFECTS FROM STATE (flat CameraEffect[] - no wrapper)
     // =====================================================================
-    const effects: CameraEffect[] = world.camera?.activeEffects ?? [];
+    // Note: world.camera is BaseCameraState in core, but may be extended with activeEffects by device-camera
+    const effects: CameraEffect[] =
+      "activeEffects" in world.camera &&
+      Array.isArray(world.camera.activeEffects)
+        ? (world.camera as any).activeEffects
+        : [];
 
     // Filter to active manual effects
     const activeManualEffects = effects.filter(

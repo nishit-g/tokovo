@@ -1,30 +1,80 @@
-/**
- * Anchor Registry Facade
- *
- * Delegates all operations to @tokovo/device-camera.
- * Backward compatible - apps can still use AnchorRegistry.register()
- *
- * @see docs-v2/DSL_REVAMP.md#anchors-system
- */
-
-import {
-  registerAnchorProvider,
-  unregisterAnchorProvider,
-  getAnchorProvider,
-  getAnchorsForApp,
-  getAnchorFraming,
-  getRegisteredAppIds,
-  clearAnchorProviders,
-  type AnchorProvider,
-  type AnchorSnapshot,
-  type AnchorFraming,
-} from "@tokovo/device-camera";
-
-export type { AnchorProvider, AnchorSnapshot, AnchorFraming };
-
-import type { Rect } from "../types/anchor";
+import type {
+  AnchorProvider,
+  AnchorSnapshot,
+  AnchorFraming,
+  Rect,
+  ResolvedAnchor,
+} from "../types/anchor";
+import { DEFAULT_FRAMING, EMPTY_SNAPSHOT } from "../types/anchor";
 import type { WorldState } from "../types";
-export type { Rect };
+
+export type {
+  AnchorProvider,
+  AnchorSnapshot,
+  AnchorFraming,
+  Rect,
+  ResolvedAnchor,
+};
+export { DEFAULT_FRAMING, EMPTY_SNAPSHOT };
+
+const providerRegistry = new Map<string, AnchorProvider>();
+
+export function registerAnchorProvider(provider: AnchorProvider): void {
+  providerRegistry.set(provider.appId, provider);
+}
+
+export function unregisterAnchorProvider(appId: string): boolean {
+  return providerRegistry.delete(appId);
+}
+
+export function getAnchorProvider(appId: string): AnchorProvider | undefined {
+  return providerRegistry.get(appId);
+}
+
+export function hasAnchorProvider(appId: string): boolean {
+  return providerRegistry.has(appId);
+}
+
+export function getRegisteredAppIds(): string[] {
+  return Array.from(providerRegistry.keys());
+}
+
+export function getProviderCount(): number {
+  return providerRegistry.size;
+}
+
+export function getAnchorsForApp(
+  appId: string,
+  world: unknown,
+  layout: unknown,
+  deviceId: string,
+): AnchorSnapshot {
+  const provider = providerRegistry.get(appId);
+  if (!provider) {
+    return EMPTY_SNAPSHOT;
+  }
+  return provider.getAnchors(world, layout, deviceId);
+}
+
+export function getAnchorFraming(
+  appId: string,
+  anchorId: string,
+): AnchorFraming {
+  const provider = providerRegistry.get(appId);
+  if (!provider) {
+    return DEFAULT_FRAMING;
+  }
+
+  const anchorName = anchorId.includes(":")
+    ? anchorId.split(":").slice(1).join(":")
+    : anchorId;
+
+  return provider.framing[anchorName] || DEFAULT_FRAMING;
+}
+
+export function clearAnchorProviders(): void {
+  providerRegistry.clear();
+}
 
 export function clearAnchors(): void {
   clearAnchorProviders();
@@ -75,7 +125,7 @@ class AnchorRegistryFacade {
     return getRegisteredAppIds();
   }
 
-  getFraming(appId: string, anchorId: string): AnchorFraming | undefined {
+  getFraming(appId: string, anchorId: string): AnchorFraming {
     return getAnchorFraming(appId, anchorId);
   }
 
@@ -93,13 +143,3 @@ class AnchorRegistryFacade {
 }
 
 export const AnchorRegistry = new AnchorRegistryFacade();
-
-export {
-  registerAnchorProvider,
-  unregisterAnchorProvider,
-  getAnchorProvider,
-  getAnchorsForApp,
-  getAnchorFraming,
-  getRegisteredAppIds,
-  clearAnchorProviders,
-};

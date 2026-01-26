@@ -10,8 +10,8 @@
 // =============================================================================
 export * from "./types";
 export type { ViewLayoutMode, PIPPosition } from "./types";
-export type { CameraState } from "./types";
-export { DEFAULT_CAMERA_STATE } from "./types";
+export type { BaseCameraState as CameraState } from "./types";
+export { DEFAULT_BASE_CAMERA_STATE as DEFAULT_CAMERA_STATE } from "./types";
 // Note: types/index.ts exists but is NOT exported here to avoid duplicate exports.
 // types.ts re-exports needed types from types/layout.ts for compatibility.
 
@@ -21,36 +21,30 @@ export { DEFAULT_CAMERA_STATE } from "./types";
 export * from "./engine";
 
 // =============================================================================
-// CAMERA - Re-exports from device-camera (named exports only to avoid conflicts)
+// ANCHOR REGISTRY - Anchor registration and resolution
 // =============================================================================
 export {
-  cameraReducer,
-  cameraV2Lowering,
-  CAMERA_EVENT_TYPES,
-  processActiveEffects,
-  registerCameraProcessor,
-  applyEasing,
-  easingFunctions,
-  lerp,
-  seededRandom,
-  getPreset,
-  getShotPreset,
-  composeTimeline,
-  getPresetNames,
   registerAnchorProvider,
+  unregisterAnchorProvider,
   getAnchorProvider,
+  hasAnchorProvider,
   getAnchorsForApp,
   getAnchorFraming,
-  resolveAnchorWithFallback,
-  resolveAnchorFully,
-} from "@tokovo/device-camera";
+  getRegisteredAppIds,
+  getProviderCount,
+  clearAnchorProviders,
+  clearAnchors,
+  resolveAnchor,
+  hasAnchor,
+  AnchorRegistry,
+} from "./anchors/registry";
+
 export type {
-  CameraPreset,
-  CameraTarget,
-  CameraTimeline,
-  TimelineStep,
-  ShotPresetId,
-} from "@tokovo/device-camera";
+  AnchorProvider,
+  AnchorSnapshot,
+  AnchorFraming,
+  Rect,
+} from "./anchors/registry";
 
 // =============================================================================
 // AUDIO - Sound system

@@ -5,7 +5,8 @@
  * Apps reference global presets by name, with optional delta overrides.
  */
 
-import type { AppBehavior, CameraIntent, ShotPresetId } from "@tokovo/core";
+import type { AppBehavior, CameraIntent } from "@tokovo/core";
+import type { ShotPresetId } from "@tokovo/device-camera";
 
 const APP_ID = "app_whatsapp";
 

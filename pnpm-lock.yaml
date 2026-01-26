@@ -47,6 +47,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@tokovo/device-camera':
+        specifier: workspace:*
+        version: link:../../packages/device-camera
       '@tokovo/device-notifications':
         specifier: workspace:*
         version: link:../../packages/device-notifications
@@ -99,6 +102,9 @@ importers:
       '@tokovo/core':
         specifier: workspace:*
         version: link:../core
+      '@tokovo/device-camera':
+        specifier: workspace:*
+        version: link:../device-camera
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
@@ -146,9 +152,6 @@ importers:
 
   packages/core:
     dependencies:
-      '@tokovo/device-camera':
-        specifier: workspace:*
-        version: link:../device-camera
       '@tokovo/ir':
         specifier: workspace:*
         version: link:../ir
