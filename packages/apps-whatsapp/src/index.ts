@@ -85,11 +85,7 @@ export { computeChatLayout } from "./layout/chat";
 // CAMERA
 // =============================================================================
 
-export {
-  WhatsAppDirector,
-  createWhatsAppDirector,
-  WhatsAppBehavior,
-} from "./camera";
+export { WhatsAppBehavior } from "./camera";
 
 // =============================================================================
 // ASSETS

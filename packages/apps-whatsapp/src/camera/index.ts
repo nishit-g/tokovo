@@ -1,8 +1,7 @@
 /**
  * WhatsApp Camera Module
- * 
- * Exports the WhatsApp-specific camera director and behaviors.
+ *
+ * Exports the WhatsApp-specific camera behaviors.
  */
 
-export * from "./whatsapp-director";
 export * from "./behaviors";

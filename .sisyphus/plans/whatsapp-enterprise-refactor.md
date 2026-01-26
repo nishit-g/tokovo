@@ -545,7 +545,7 @@ Phase 1 (Anchors) → Phase 2 (Theme) → Phase 3 (Components) → Phase 4 (Scre
 
 ### Phase 5: Delete Dead Code
 
-- [ ] 10. Delete Dead Camera Code
+- [x] 10. Delete Dead Camera Code
 
   **What to do**:
   - Delete `packages/apps-whatsapp/src/camera/whatsapp-director.ts`
