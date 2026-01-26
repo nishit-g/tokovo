@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { MessageBubble } from "../MessageBubble";
-import { useMessageGrouping } from "../../hooks/useMessageGrouping";
-import { MessageData } from "../../types";
-import { UIThemeTokens } from "../../ui/ui-strategy";
-import { TypingIndicator } from "../TypingIndicator";
+import { MessageBubble } from "./MessageBubble";
+import { useMessageGrouping } from "../hooks/useMessageGrouping";
+import { MessageData } from "../types";
+import { UIThemeTokens } from "../ui/ui-strategy";
+import { TypingIndicator } from "./TypingIndicator";
 
 const DEFAULT_BG = "#ECE5DD";
 

@@ -1,6 +1,6 @@
 import React from "react";
-import { MessageData, LinkPreviewData } from "../../types";
-import { UIThemeTokens } from "../../ui/ui-strategy";
+import { MessageData, LinkPreviewData } from "../types";
+import { UIThemeTokens } from "../ui/ui-strategy";
 import {
   VoiceMessageBubble,
   ImageMessageBubble,
@@ -10,8 +10,8 @@ import {
   DocumentMessageBubble,
   ContactMessageBubble,
   LocationMessageBubble,
-} from "../MediaBubbles";
-import { LinkPreview } from "../LinkPreview";
+} from "./MediaBubbles";
+import { LinkPreview } from "./LinkPreview";
 
 const FONT_FAMILY =
   "-apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif";

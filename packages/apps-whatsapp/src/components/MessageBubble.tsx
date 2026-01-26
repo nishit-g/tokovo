@@ -1,6 +1,6 @@
 import React, { memo } from "react";
 import { Check, CheckCheck } from "lucide-react";
-import { MessageContent } from "./ios/MessageContent";
+import { MessageContent } from "./MessageContent";
 import { MessageData } from "../types";
 import { useTheme } from "../theme/context";
 
