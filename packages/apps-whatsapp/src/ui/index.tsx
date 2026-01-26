@@ -2,6 +2,7 @@ import React from "react";
 import { WorldState } from "@tokovo/core";
 import { AppSurface } from "@tokovo/react";
 import { injectWhatsAppStyles } from "../styles";
+import { WhatsAppThemeProvider } from "../theme/context";
 
 // Screens
 import { ChatScreen } from "../components/screens/ChatScreen";
@@ -82,9 +83,11 @@ export const WhatsappChatView: React.FC<WhatsappChatViewProps> = ({
   }, []);
 
   return (
-    <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
-      {activeScreenContent}
-    </div>
+    <WhatsAppThemeProvider platform={platform}>
+      <div style={{ width: "100%", height: "100%", backgroundColor: "#000" }}>
+        {activeScreenContent}
+      </div>
+    </WhatsAppThemeProvider>
   );
 };
 
