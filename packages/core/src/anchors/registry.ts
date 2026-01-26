@@ -112,34 +112,12 @@ export function hasAnchor(anchorId: string): boolean {
   return !!getAnchorProvider(appId);
 }
 
-class AnchorRegistryFacade {
-  register(provider: AnchorProvider): void {
-    registerAnchorProvider(provider);
-  }
-
-  get(appId: string): AnchorProvider | undefined {
-    return getAnchorProvider(appId);
-  }
-
-  getRegisteredApps(): string[] {
-    return getRegisteredAppIds();
-  }
-
-  getFraming(appId: string, anchorId: string): AnchorFraming {
-    return getAnchorFraming(appId, anchorId);
-  }
-
-  has(appId: string): boolean {
-    return !!getAnchorProvider(appId);
-  }
-
-  unregister(appId: string): boolean {
-    return unregisterAnchorProvider(appId);
-  }
-
-  clear(): void {
-    clearAnchorProviders();
-  }
-}
-
-export const AnchorRegistry = new AnchorRegistryFacade();
+export const AnchorRegistry = {
+  register: registerAnchorProvider,
+  unregister: unregisterAnchorProvider,
+  get: getAnchorProvider,
+  has: hasAnchorProvider,
+  getRegisteredApps: getRegisteredAppIds,
+  getFraming: getAnchorFraming,
+  clear: clearAnchorProviders,
+} as const;

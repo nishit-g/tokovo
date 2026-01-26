@@ -1,7 +1,3 @@
-/**
- * Camera Types - Core owns base types, device-camera extends them
- */
-
 import type { DeviceId, AppId } from "./device";
 import type { ViewLayoutMode, PIPPosition } from "./layout";
 export type { ViewLayoutMode, PIPPosition };

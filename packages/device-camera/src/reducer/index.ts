@@ -60,7 +60,6 @@ export function cameraReducer(
   const duration = (event.duration as number) ?? 30;
   const easing = (event.easing as EasingType) ?? "ease-out";
 
-  // TODO: Remove toLowerCase() after verifying all producers use lowercase
   const normalizedType = event.type.toLowerCase().replace(/_/g, "-");
 
   switch (normalizedType) {

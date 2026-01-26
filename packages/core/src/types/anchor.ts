@@ -45,8 +45,7 @@ export type SemanticAnchorId =
   | "compose"
   | "keyboard"
   | "headsUpNotification"
-  | "dynamicIsland"
-  | string;
+  | "dynamicIsland";
 
 export const DEFAULT_FRAMING: AnchorFraming = {
   anchorPoint: { x: 0.5, y: 0.5 },
