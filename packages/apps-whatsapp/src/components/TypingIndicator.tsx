@@ -1,9 +1,9 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig, interpolate } from "remotion";
-import { getTheme } from "./theme";
+import { useTheme } from "../theme/context";
 
 export const TypingIndicator: React.FC = () => {
-  const theme = getTheme("ios");
+  const theme = useTheme();
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -40,7 +40,7 @@ export const TypingIndicator: React.FC = () => {
     width: 7,
     height: 7,
     borderRadius: "50%",
-    backgroundColor: "#B6B6BB",
+    backgroundColor: theme.colors.timestamp,
     margin: "0 1.5px",
   };
 
@@ -51,7 +51,7 @@ export const TypingIndicator: React.FC = () => {
         display: "flex",
         alignItems: "center",
         padding: "10px 18px",
-        backgroundColor: theme.colors.bubbleOtherBg,
+        backgroundColor: theme.colors.receivedBubble,
         borderRadius: 18,
         borderBottomLeftRadius: 4,
         width: "fit-content",
@@ -92,7 +92,7 @@ export const TypingIndicator: React.FC = () => {
           position: "absolute",
           left: -6,
           bottom: 0,
-          fill: theme.colors.bubbleOtherBg,
+          fill: theme.colors.receivedBubble,
           transform: "scaleX(-1)", // Flip for left side
           zIndex: -1,
         }}

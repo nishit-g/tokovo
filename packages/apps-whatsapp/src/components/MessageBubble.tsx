@@ -1,186 +1,399 @@
-/**
- * WhatsApp Message Bubble Component
- *
- * Authentic iOS WhatsApp message styling with:
- * - Timestamps and read receipts
- * - Reply/Quote UI for quoted messages
- * - Reactions (tapbacks) display
- */
-
-import React from "react";
-import { ChatMessageLayout } from "@tokovo/core";
-import { Check, CheckCheck, Clock } from "lucide-react";
-import { ReplyQuote, ReplyToData } from "./ReplyQuote";
-import { ReactionsBar, Reaction } from "./Reactions";
-import { LAYOUT_CONSTANTS } from "../config/layout-config";
-
-// =============================================================================
-// TYPES
-// =============================================================================
-
-export interface MessageData {
-  id: string;
-  from: string;
-  text?: string;
-  timestamp?: string;
-  read?: boolean;
-  status?: "sent" | "delivered" | "read" | "pending";
-  type?: "text" | "image" | "voice" | "system" | "video" | "gif";
-  replyTo?: ReplyToData;
-  reactions?: Reaction[];
-}
+import React, { memo } from "react";
+import { Check, CheckCheck } from "lucide-react";
+import { MessageContent } from "./ios/MessageContent";
+import { MessageData } from "../types";
+import { useTheme } from "../theme/context";
 
 export interface MessageBubbleProps {
-  msg: MessageData;
-  layout: ChatMessageLayout;
+  message: MessageData;
+  isMe: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  isGroupChat?: boolean;
+  senderName?: string;
+  senderColor?: string;
+  showSenderName?: boolean;
 }
 
-// =============================================================================
-// STATUS ICON HELPER
-// =============================================================================
-
-const StatusIcon = ({
-  status,
-  read,
+export const MessageBubble = memo(function MessageBubble({
+  message,
   isMe,
-}: {
-  status?: string;
-  read?: boolean;
-  isMe: boolean;
-}) => {
-  if (!isMe) return null;
+  isFirst,
+  isLast,
+  isGroupChat = false,
+  senderName,
+  senderColor,
+  showSenderName = false,
+}: MessageBubbleProps) {
+  const theme = useTheme();
 
-  // Legacy support for 'read' boolean
-  const effectiveStatus = status || (read ? "read" : "delivered");
+  const isSystem = message.type === "system";
+  const isSticker = message.type === "sticker";
+  const isSelfContainedMedia = [
+    "voice",
+    "image",
+    "video",
+    "document",
+    "contact",
+    "location",
+    "gif",
+  ].includes(message.type);
 
-  const iconProps = { size: 16, strokeWidth: 2 };
+  const shouldShowSender = showSenderName && isGroupChat && !isMe && senderName;
 
-  switch (effectiveStatus) {
-    case "pending":
-      return <Clock {...iconProps} color="var(--wa-text-secondary)" />;
-    case "sent":
-      return <Check {...iconProps} color="var(--wa-text-secondary)" />;
-    case "delivered":
-      return <CheckCheck {...iconProps} color="var(--wa-text-secondary)" />;
-    case "read":
-      return <CheckCheck {...iconProps} color="var(--wa-color-primary)" />;
-    default:
-      return null;
+  if (isSystem) {
+    // System messages render outside the bubble flow directly
+    return <MessageContent message={message} />;
   }
-};
 
-// =============================================================================
-// MESSAGE BUBBLE
-// =============================================================================
+  if (isSticker || isSelfContainedMedia) {
+    return (
+      <div
+        data-anchor="message"
+        data-message-id={message.id}
+        style={{
+          alignSelf: isMe ? "flex-end" : "flex-start",
+          maxWidth: "75%",
+          marginBottom: 2,
+          display: "flex",
+          flexDirection: "column",
+          position: "relative",
+        }}
+      >
+        {shouldShowSender && (
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: senderColor || theme.colors.accent,
+              marginBottom: 2,
+              marginLeft: 4,
+              display: "block",
+              fontFamily: theme.typography.fontFamily,
+            }}
+          >
+            {senderName}
+          </span>
+        )}
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
-  msg,
-  layout,
-}) => {
-  const isMe = msg.from === "me";
-  const { opacity, translateX, translateY, rect } = layout;
+        {message.isForwarded && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              marginBottom: 2,
+              marginLeft: 4,
+            }}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.timestamp}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="15 17 20 12 15 7" />
+              <path d="M4 18v-2a4 4 0 0 1 4-4h12" />
+            </svg>
+            <span
+              style={{
+                fontSize: theme.typography.timestampFontSize,
+                fontStyle: "italic",
+                color: theme.colors.timestamp,
+              }}
+            >
+              Forwarded
+            </span>
+          </div>
+        )}
 
-  if (!rect) return null;
+        <MessageContent
+          message={message}
+          isMe={isMe}
+          timestamp={message.timestamp}
+          read={message.status === "read"}
+        />
 
-  const hasReactions = msg.reactions && msg.reactions.length > 0;
+        {message.reactions && message.reactions.length > 0 && (
+          <div
+            style={{
+              position: "absolute",
+              bottom: -8,
+              right: isMe ? 8 : undefined,
+              left: isMe ? undefined : 8,
+              display: "flex",
+              gap: 2,
+              zIndex: 1,
+            }}
+          >
+            {message.reactions.map((reaction, idx) => (
+              <span
+                key={`${reaction.emoji}_${idx}`}
+                style={{
+                  background: theme.colors.background,
+                  borderRadius: 10,
+                  padding: "2px 6px",
+                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 2,
+                  boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                  border: "1px solid rgba(0,0,0,0.1)",
+                }}
+              >
+                {reaction.emoji}
+                {reaction.count > 1 && (
+                  <span style={{ fontSize: 10, color: theme.colors.timestamp }}>
+                    {reaction.count}
+                  </span>
+                )}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
 
-  // Border Radius Logic
-  // iOS bubbles have large radius (18px) usually.
-  // Tails are handled by reducing ONE corner to a small radius (e.g. 6px) OR using a specialized SVG tail.
-  // For CSS-only approach:
-  // Me: TopRight is small (6px), rest are large (18px).
-  // Other: TopLeft is small (6px), rest are large (18px).
-  // Note: In real WhatsApp, the tail is distinct from the corner, but this approximation is standard for web.
+  // Only show tail for the FIRST message in a group (Visual Run)
+  const showTail = isFirst;
 
-  const radiusL = "var(--wa-corner-radius-l)"; // 18px
-  const radiusS = "var(--wa-corner-radius-s)"; // 6px
+  // Corner Radius Logic (Visual Run)
+  // Top-Left: Sharp if Receiver & First
+  // Top-Right: Sharp if Sender & First
+  const borderTopLeft = !isMe && isFirst ? 0 : theme.spacing.bubbleRadius;
+  const borderTopRight = isMe && isFirst ? 0 : theme.spacing.bubbleRadius;
 
-  const borderRadius = isMe
-    ? `${radiusL} ${radiusS} ${radiusL} ${radiusL}`
-    : `${radiusS} ${radiusL} ${radiusL} ${radiusL}`;
+  // Bottoms are rounded unless it's a middle/first message in a run, then we might want smaller radius?
+  // standard WhatsApp iOS:
+  // First: Rounded except corner
+  // Middle: Rounded
+  // Last: Rounded
+  // Actually, usually in rapid succession they look 'stacked'.
+  // For now keeping simple logic: 16px everywhere else.
+
+  // ANCHOR DATA
+  // We attach data-anchor="message" and data-message-id={id}
+  // so the camera system can find this element.
 
   return (
     <div
-      // Anchor ID for Camera System
-      data-anchor-id={msg.id}
+      data-anchor="message"
+      data-message-id={message.id}
       style={{
-        position: "absolute",
-        top: rect.y,
-        left: rect.x,
-        width: rect.width,
-        opacity,
-        transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
-        zIndex: 1,
+        alignSelf: isMe ? "flex-end" : "flex-start",
+        maxWidth: "75%", // Standard width constraint
+        position: "relative",
+        // Visual Run Spacing:
+        // If isLast (of group), we rely on parent margin.
+        // Inside group, we use small margin.
+        marginBottom: 2,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Main Bubble Container */}
       <div
-        className={hasReactions ? "wa-bubble-has-reactions" : ""}
         style={{
-          position: "relative",
           backgroundColor: isMe
-            ? "var(--wa-bubble-out-bg)"
-            : "var(--wa-bubble-in-bg)",
-          padding: `${LAYOUT_CONSTANTS.BUBBLE_PADDING_V}px ${LAYOUT_CONSTANTS.BUBBLE_PADDING_H}px`,
-          borderRadius: borderRadius,
-          boxShadow: "var(--wa-shadow-sm)",
+            ? theme.colors.sentBubble
+            : theme.colors.receivedBubble,
+          borderRadius: theme.spacing.bubbleRadius,
+          borderTopLeftRadius: borderTopLeft,
+          borderTopRightRadius: borderTopRight,
+          padding: `${theme.spacing.messagePaddingVertical}px ${theme.spacing.messagePaddingHorizontal}px`,
+          boxShadow: "0 1px 1px rgba(0,0,0,0.1)",
           display: "flex",
           flexDirection: "column",
-          gap: 6,
-          marginBottom: hasReactions ? 24 : 0,
-          // If no reactions, we still need to respect layout height, which includes margin if calculated
+          minWidth: 80,
         }}
       >
-        {/* Reply/Quote */}
-        {msg.replyTo && <ReplyQuote replyTo={msg.replyTo} isMyMessage={isMe} />}
+        {/* Sender Name (Group Chats Only) */}
+        {shouldShowSender && (
+          <span
+            style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: senderColor || theme.colors.accent, // Fallback color
+              marginBottom: 2,
+              display: "block",
+            }}
+          >
+            {senderName}
+          </span>
+        )}
 
-        {/* Message Text */}
-        <span
+        {/* Forwarded Label */}
+        {message.isForwarded && (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 2,
+              marginBottom: 2,
+              marginLeft: -1,
+            }}
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke={theme.colors.timestamp}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ display: "block" }}
+            >
+              <polyline points="15 17 20 12 15 7" />
+              <path d="M4 18v-2a4 4 0 0 1 4-4h12" />
+            </svg>
+            <span
+              style={{
+                fontSize: theme.typography.timestampFontSize,
+                fontStyle: "italic",
+                color: theme.colors.timestamp,
+              }}
+            >
+              Forwarded
+            </span>
+          </div>
+        )}
+
+        {/* Reply-To Preview */}
+        {message.replyTo && (
+          <div
+            style={{
+              backgroundColor: "rgba(0, 0, 0, 0.06)",
+              borderLeft: `3px solid ${theme.colors.accent}`,
+              borderRadius: theme.spacing.bubbleRadiusTail,
+              padding: "4px 8px",
+              marginBottom: 4,
+              fontSize: 12,
+              cursor: "pointer",
+            }}
+          >
+            <div
+              style={{
+                color: theme.colors.accent,
+                fontWeight: 500,
+                marginBottom: 2,
+              }}
+            >
+              {message.replyTo.from || "You"}
+            </div>
+            <div
+              style={{
+                color: isMe
+                  ? theme.colors.sentBubbleText
+                  : theme.colors.receivedBubbleText,
+                opacity: 0.7,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: 200,
+              }}
+            >
+              {message.replyTo.text || "📷 Photo"}
+            </div>
+          </div>
+        )}
+
+        <div
           style={{
-            fontSize: LAYOUT_CONSTANTS.FONT_SIZE,
-            lineHeight: `${LAYOUT_CONSTANTS.LINE_HEIGHT}px`,
-            color: "var(--wa-text-primary)",
-            fontFamily:
-              "var(--wa-font-family, -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif)",
-            wordWrap: "break-word",
-            whiteSpace: "pre-wrap", // Preserve formatting
+            color: isMe
+              ? theme.colors.sentBubbleText
+              : theme.colors.receivedBubbleText,
           }}
         >
-          {msg.text}
-        </span>
+          <MessageContent message={message} />
+        </div>
 
-        {/* Footer: Time + Status */}
         <div
           style={{
             display: "flex",
             justifyContent: "flex-end",
             alignItems: "center",
-            gap: 6,
-            marginTop: 4, // Slight separation from text
-            height: LAYOUT_CONSTANTS.TIMESTAMP_HEIGHT - 10, // Adjust for visual alignment
+            gap: 4,
+            marginTop: 2,
           }}
         >
           <span
             style={{
-              fontSize: 33, // 11px visual
-              color: isMe
-                ? "var(--wa-bubble-time)"
-                : "var(--wa-text-secondary)",
-              fontFamily: "var(--wa-font-family)",
-              marginBottom: 1, // Visual tweak
+              fontSize: theme.typography.timestampFontSize,
+              color: theme.colors.timestamp,
             }}
           >
-            {msg.timestamp || "10:42"}
+            {message.timestamp || "10:00"}
           </span>
-
-          <StatusIcon status={msg.status} read={msg.read} isMe={isMe} />
+          {isMe &&
+            (message.status === "read" ? (
+              <CheckCheck size={14} color={theme.colors.checkmarkRead} />
+            ) : (
+              <Check size={14} color={theme.colors.checkmark} />
+            ))}
         </div>
       </div>
 
-      {/* Reactions Bar */}
-      {hasReactions && (
-        <ReactionsBar reactions={msg.reactions!} isMyMessage={isMe} />
+      {/* Reactions - Floating pill at bottom-right like WhatsApp */}
+      {message.reactions && message.reactions.length > 0 && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: -8,
+            right: isMe ? 8 : undefined,
+            left: isMe ? undefined : 8,
+            display: "flex",
+            gap: 2,
+            zIndex: 1,
+          }}
+        >
+          {message.reactions.map((reaction, idx) => (
+            <span
+              key={`${reaction.emoji}_${idx}`}
+              style={{
+                background: theme.colors.background,
+                borderRadius: 10,
+                padding: "2px 6px",
+                fontSize: 12,
+                display: "flex",
+                alignItems: "center",
+                gap: 2,
+                boxShadow: "0 1px 2px rgba(0,0,0,0.15)",
+                border: "1px solid rgba(0,0,0,0.1)",
+              }}
+            >
+              {reaction.emoji}
+              {reaction.count > 1 && (
+                <span style={{ fontSize: 10, color: theme.colors.timestamp }}>
+                  {reaction.count}
+                </span>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {showTail && (
+        <svg
+          width="12"
+          height="20"
+          viewBox="0 0 12 20"
+          style={{
+            position: "absolute",
+            [isMe ? "right" : "left"]: -6,
+            top: 0,
+            fill: isMe ? theme.colors.sentBubble : theme.colors.receivedBubble,
+            transform: isMe ? "scaleX(1)" : "scaleX(-1)",
+            zIndex: -1,
+          }}
+        >
+          <path d="M0 0 C0 0 5 0 8 5 C11 10 9 15 9 15 L0 15 Z" />
+        </svg>
       )}
     </div>
   );
-};
+});

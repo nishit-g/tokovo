@@ -1,10 +1,10 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { AppSurface } from "@tokovo/react";
-import { Header as DefaultHeader } from "../../../components/ios/Header";
+import { Header as DefaultHeader } from "../../../components/Header";
 import { MessageList } from "../../../components/ios/MessageList";
-import { InputArea as DefaultInputArea } from "../../../components/ios/InputArea";
-import { TypingIndicator } from "../../../components/ios/TypingIndicator";
+import { InputArea as DefaultInputArea } from "../../../components/InputArea";
+import { TypingIndicator } from "../../../components/TypingIndicator";
 import { UIStrategyRegistry } from "../../ui-strategy";
 import {
   WhatsAppState,
@@ -185,7 +185,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           avatarUrl={conversation?.avatar}
           status="online"
           safeAreaTop={safeAreaTop}
-          tokens={tokens}
         />
       )}
 
@@ -211,7 +210,6 @@ export const ChatScreen: React.FC<ChatScreenProps> = ({
           text=""
           showCursor={false}
           safeAreaBottom={safeAreaBottom}
-          tokens={tokens}
         />
       )}
     </div>

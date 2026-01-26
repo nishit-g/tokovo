@@ -1,36 +1,16 @@
 import React from "react";
 import { useCurrentFrame, useVideoConfig } from "remotion";
 import { Keyboard, Camera, Mic, Send } from "lucide-react";
-import { UIThemeTokens } from "../../ui/ui-strategy";
-
-const DEFAULT_INPUT_COLORS = {
-  inputBg: "#F6F6F6",
-  inputFieldBg: "#FFFFFF",
-  inputText: "#000000",
-  inputPlaceholder: "#C7C7CC",
-  inputIcon: "#000000",
-  inputButtonBg: "#007AFF",
-  inputButtonIcon: "#FFFFFF",
-  accentColor: "#007AFF",
-};
+import { useTheme } from "../theme/context";
 
 export const InputArea: React.FC<{
   text?: string;
   showCursor?: boolean;
   safeAreaBottom?: number;
-  tokens?: UIThemeTokens;
-}> = ({ text = "", showCursor = false, safeAreaBottom = 34, tokens }) => {
+}> = ({ text = "", showCursor = false, safeAreaBottom = 34 }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
-
-  const inputBg = tokens?.inputBg || DEFAULT_INPUT_COLORS.inputBg;
-  const inputFieldBg = tokens?.inputFieldBg || DEFAULT_INPUT_COLORS.inputFieldBg;
-  const inputText = tokens?.inputText || DEFAULT_INPUT_COLORS.inputText;
-  const inputPlaceholder = tokens?.inputPlaceholder || DEFAULT_INPUT_COLORS.inputPlaceholder;
-  const inputIcon = tokens?.inputIcon || DEFAULT_INPUT_COLORS.inputIcon;
-  const inputButtonBg = tokens?.inputButtonBg || DEFAULT_INPUT_COLORS.inputButtonBg;
-  const inputButtonIcon = tokens?.inputButtonIcon || DEFAULT_INPUT_COLORS.inputButtonIcon;
-  const accentColor = tokens?.accentColor || DEFAULT_INPUT_COLORS.accentColor;
+  const theme = useTheme();
 
   const hasContent = text.length > 0;
   const cursorVisible = Math.floor(frame / (fps * 0.5)) % 2 === 0;
@@ -40,7 +20,7 @@ export const InputArea: React.FC<{
     <div
       data-anchor="input"
       style={{
-        backgroundColor: inputBg,
+        backgroundColor: theme.colors.inputBackground,
         borderTop: "none",
         padding: `6px 16px ${paddingBottom}px 10px`,
         display: "flex",
@@ -54,16 +34,16 @@ export const InputArea: React.FC<{
       }}
     >
       <div style={{ paddingBottom: 8, cursor: "pointer" }}>
-        <Keyboard size={28} color={inputIcon} strokeWidth={1.5} />
+        <Keyboard size={28} color={theme.colors.inputText} strokeWidth={1.5} />
       </div>
 
       <div
         data-anchor="typing"
         style={{
           flex: 1,
-          backgroundColor: inputFieldBg,
+          backgroundColor: theme.colors.background,
           borderRadius: 24,
-          border: tokens?.inputBorder ? `1px solid ${tokens.inputBorder}` : "1px solid rgba(0,0,0,0.05)",
+          border: `1px solid ${theme.colors.divider}`,
           padding: "4px 4px 4px 12px",
           minHeight: 38,
           display: "flex",
@@ -76,8 +56,10 @@ export const InputArea: React.FC<{
           <span
             style={{
               fontSize: 16,
-              fontFamily: tokens?.fontFamily || "-apple-system, BlinkMacSystemFont, sans-serif",
-              color: hasContent ? inputText : inputPlaceholder,
+              fontFamily: theme.typography.fontFamily,
+              color: hasContent
+                ? theme.colors.inputText
+                : theme.colors.inputPlaceholder,
               lineHeight: "20px",
               display: "block",
             }}
@@ -89,7 +71,7 @@ export const InputArea: React.FC<{
                   display: "inline-block",
                   width: 2,
                   height: 18,
-                  backgroundColor: accentColor,
+                  backgroundColor: theme.colors.accent,
                   marginLeft: 1,
                   verticalAlign: "middle",
                 }}
@@ -113,24 +95,24 @@ export const InputArea: React.FC<{
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
             <path
               d="M19 19L22 22"
-              stroke={inputIcon}
+              stroke={theme.colors.inputText}
               strokeWidth={1.5}
               strokeLinecap="round"
             />
             <path
               d="M12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z"
-              stroke={inputIcon}
+              stroke={theme.colors.inputText}
               strokeWidth={1.5}
             />
             <path
               d="M9 10L9.01 10"
-              stroke={inputIcon}
+              stroke={theme.colors.inputText}
               strokeWidth={2}
               strokeLinecap="round"
             />
             <path
               d="M15 10L15.01 10"
-              stroke={inputIcon}
+              stroke={theme.colors.inputText}
               strokeWidth={2}
               strokeLinecap="round"
             />
@@ -144,7 +126,7 @@ export const InputArea: React.FC<{
             style={{
               width: 34,
               height: 34,
-              backgroundColor: inputButtonBg,
+              backgroundColor: theme.colors.accent,
               borderRadius: "50%",
               display: "flex",
               alignItems: "center",
@@ -153,8 +135,8 @@ export const InputArea: React.FC<{
           >
             <Send
               size={18}
-              color={inputButtonIcon}
-              fill={inputButtonIcon}
+              color={theme.colors.background}
+              fill={theme.colors.background}
               style={{ marginLeft: 2 }}
             />
           </div>
@@ -168,8 +150,8 @@ export const InputArea: React.FC<{
             alignItems: "center",
           }}
         >
-          <Camera size={26} color={inputIcon} strokeWidth={1.5} />
-          <Mic size={24} color={inputIcon} strokeWidth={1.5} />
+          <Camera size={26} color={theme.colors.inputText} strokeWidth={1.5} />
+          <Mic size={24} color={theme.colors.inputText} strokeWidth={1.5} />
         </div>
       )}
     </div>

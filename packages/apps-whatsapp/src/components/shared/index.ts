@@ -6,5 +6,3 @@ export {
   SystemMessage,
   UnreadBadge,
 } from "./primitives";
-
-export { TypingIndicator } from "./TypingIndicator";

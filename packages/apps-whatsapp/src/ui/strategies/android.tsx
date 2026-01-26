@@ -13,10 +13,10 @@ import {
   TypingIndicatorProps,
   InputAreaProps,
 } from "../ui-strategy";
-import { Header as AndroidHeader } from "../../components/android/Header";
-import { MessageBubble as AndroidMessageBubble } from "../../components/android/MessageBubble";
-import { TypingIndicator as AndroidTypingIndicator } from "../../components/android/TypingIndicator";
-import { InputArea as AndroidInputArea } from "../../components/android/InputArea";
+import { Header as AndroidHeader } from "../../components/Header";
+import { MessageBubble as AndroidMessageBubble } from "../../components/MessageBubble";
+import { TypingIndicator as AndroidTypingIndicator } from "../../components/TypingIndicator";
+import { InputArea as AndroidInputArea } from "../../components/InputArea";
 
 // =============================================================================
 // ANDROID STRATEGY WRAPPER COMPONENTS
@@ -40,7 +40,6 @@ const AndroidHeaderWrapper: React.FC<HeaderProps> = ({
           : "online"
       }
       safeAreaTop={safeAreaTop}
-      onBack={onBack}
     />
   );
 };
@@ -52,7 +51,11 @@ const AndroidTypingWrapper: React.FC<TypingIndicatorProps> = ({
   typingMembers,
   isGroupChat,
 }) => {
-  return <AndroidTypingIndicator isTyping={typingMembers.length > 0} />;
+  // Don't render if no one is typing
+  if (typingMembers.length === 0) {
+    return null;
+  }
+  return <AndroidTypingIndicator />;
 };
 
 // =============================================================================

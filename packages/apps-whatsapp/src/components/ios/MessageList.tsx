@@ -1,9 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { MessageBubble } from "./MessageBubble";
+import { MessageBubble } from "../MessageBubble";
 import { useMessageGrouping } from "../../hooks/useMessageGrouping";
 import { MessageData } from "../../types";
 import { UIThemeTokens } from "../../ui/ui-strategy";
-import { TypingIndicator } from "./TypingIndicator";
+import { TypingIndicator } from "../TypingIndicator";
 
 const DEFAULT_BG = "#ECE5DD";
 
@@ -93,7 +93,6 @@ export const MessageList: React.FC<MessageListProps> = ({
                 isGroupChat={isGroupChat}
                 senderName={item.data.from}
                 showSenderName={isGroupChat && !group.isMe && item.isFirst}
-                tokens={tokens}
               />
             ))}
           </div>
