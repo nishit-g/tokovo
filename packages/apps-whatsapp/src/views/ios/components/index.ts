@@ -1,16 +1,16 @@
 /**
- * WhatsApp Views iOS Components - Re-export from components/ios/
+ * WhatsApp Views iOS Components - Re-export from components/
  */
 
 export * from "../../../components/Header";
-export * from "../../../components/ios/GroupHeader";
+export * from "../../../components/GroupHeader";
 export { MessageBubble } from "../../../components/MessageBubble";
-export * from "../../../components/ios/MessageContent";
-export * from "../../../components/ios/MessageList";
+export * from "../../../components/MessageContent";
+export * from "../../../components/MessageList";
 export * from "../../../components/InputArea";
 export * from "../../../components/TypingIndicator";
-export * from "../../../components/ios/GroupTypingIndicator";
-export * from "../../../components/ios/ChatListHeader";
-export * from "../../../components/ios/ChatListItem";
-export * from "../../../components/ios/TabNavigation";
-export * from "../../../components/ios/Icons";
+export * from "../../../components/GroupTypingIndicator";
+export * from "../../../components/ChatListHeader";
+export * from "../../../components/ChatListItem";
+export * from "../../../components/TabNavigation";
+export * from "../../../components/Icons";

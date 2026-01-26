@@ -6,7 +6,7 @@ import {
 } from "../ui-strategy";
 import { MessageBubble as IOSMessageBubble } from "../../components/MessageBubble";
 import { TypingIndicator as IOSTypingIndicator } from "../../components/TypingIndicator";
-import { GroupTypingIndicator } from "../../components/ios/GroupTypingIndicator";
+import { GroupTypingIndicator } from "../../components/GroupTypingIndicator";
 
 const CYBERPUNK_DOODLE_PATTERN = `url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%2300F0FF' stroke-opacity='0.15' stroke-width='0.5'%3E%3Cpath d='M0 20h100M0 40h100M0 60h100M0 80h100'/%3E%3Cpath d='M20 0v100M40 0v100M60 0v100M80 0v100'/%3E%3Crect x='10' y='10' width='15' height='15'/%3E%3Crect x='75' y='25' width='10' height='10'/%3E%3Crect x='45' y='70' width='20' height='8'/%3E%3Ccircle cx='30' cy='70' r='5'/%3E%3Ccircle cx='85' cy='85' r='8'/%3E%3Cpath d='M5 50l10-5 10 5 10-5'/%3E%3Cpath d='M60 15l5 10h-10z'/%3E%3Cpath d='M70 55h20l-5 10h-20z'/%3E%3C/g%3E%3C/svg%3E")`;
 

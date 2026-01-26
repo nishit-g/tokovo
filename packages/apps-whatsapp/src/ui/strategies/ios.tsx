@@ -2,7 +2,7 @@
  * iOS UI Strategy for WhatsApp
  *
  * Implements the iOS-specific look and feel for WhatsApp.
- * Uses components from components/ios/ folder.
+ * Uses components from components/ folder.
  */
 
 import React from "react";
@@ -14,10 +14,10 @@ import {
   InputAreaProps,
 } from "../ui-strategy";
 import { Header } from "../../components/Header";
-import { GroupHeader } from "../../components/ios/GroupHeader";
+import { GroupHeader } from "../../components/GroupHeader";
 import { MessageBubble as IOSMessageBubble } from "../../components/MessageBubble";
 import { TypingIndicator as IOSTypingIndicator } from "../../components/TypingIndicator";
-import { GroupTypingIndicator } from "../../components/ios/GroupTypingIndicator";
+import { GroupTypingIndicator } from "../../components/GroupTypingIndicator";
 import { InputArea as IOSInputArea } from "../../components/InputArea";
 import { WhatsAppGroupMember } from "../../types";
 

@@ -5,8 +5,8 @@
 // Strategy - re-export from ui/strategies/
 export * from "../../ui/strategies/ios";
 
-// Theme - re-export from components/ios/
-export * from "../../components/ios/theme";
+// Theme - re-export from components/
+export * from "../../components/theme";
 
 // Screens
 export * from "./screens";
