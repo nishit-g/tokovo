@@ -163,7 +163,7 @@ export const WhatsAppPluginV2: TokovoPluginContract<"app_whatsapp"> & {
   dsl: whatsappDsl,
 
   // === Anchors ===
-  anchors: WhatsAppAnchors as any,
+  anchors: WhatsAppAnchors,
 };
 
 // =============================================================================

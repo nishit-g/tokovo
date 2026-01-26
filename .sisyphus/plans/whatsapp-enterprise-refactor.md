@@ -608,7 +608,7 @@ Phase 1 (Anchors) → Phase 2 (Theme) → Phase 3 (Components) → Phase 4 (Scre
 
 ### Phase 6: Clean Plugin Contract
 
-- [ ] 12. Remove as any Casts and Clean Exports
+- [x] 12. Remove as any Casts and Clean Exports
 
   **What to do**:
   - In `plugin.ts`:
