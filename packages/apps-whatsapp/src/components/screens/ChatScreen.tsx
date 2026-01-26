@@ -1,17 +1,17 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
 import { AppSurface } from "@tokovo/react";
-import { Header as DefaultHeader } from "../../../components/Header";
-import { MessageList } from "../../../components/MessageList";
-import { InputArea as DefaultInputArea } from "../../../components/InputArea";
-import { TypingIndicator } from "../../../components/TypingIndicator";
-import { UIStrategyRegistry } from "../../ui-strategy";
+import { Header as DefaultHeader } from "../Header";
+import { MessageList } from "../MessageList";
+import { InputArea as DefaultInputArea } from "../InputArea";
+import { TypingIndicator } from "../TypingIndicator";
+import { UIStrategyRegistry } from "../../ui/ui-strategy";
 import {
   WhatsAppState,
   MessageData,
   WhatsAppConversation,
   SystemMessage,
-} from "../../../types";
+} from "../../types";
 
 export interface ChatScreenProps {
   world: WorldState;

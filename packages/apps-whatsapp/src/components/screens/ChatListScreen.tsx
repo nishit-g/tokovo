@@ -1,11 +1,11 @@
 import React from "react";
 import { WorldState } from "@tokovo/core";
-import { ArchiveIcon, ChevronRightIcon } from "../../../components/Icons";
-import { ChatListHeader } from "../../../components/ChatListHeader";
-import { TabNavigation } from "../../../components/TabNavigation";
-import { ChatListItem } from "../../../components/ChatListItem";
-import { whatsappColors, spacing } from "../../../components/theme";
-import { WhatsAppConversation, WhatsAppState } from "../../../types";
+import { ArchiveIcon, ChevronRightIcon } from "../Icons";
+import { ChatListHeader } from "../ChatListHeader";
+import { TabNavigation } from "../TabNavigation";
+import { ChatListItem } from "../ChatListItem";
+import { whatsappColors, spacing } from "../theme";
+import { WhatsAppConversation, WhatsAppState } from "../../types";
 
 // =============================================================================
 // TYPES

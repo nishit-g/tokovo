@@ -4,8 +4,8 @@ import { AppSurface } from "@tokovo/react";
 import { injectWhatsAppStyles } from "../styles";
 
 // Screens
-import { ChatScreen } from "./screens/ios/ChatScreen";
-import { ChatListScreen } from "./screens/ios/ChatListScreen";
+import { ChatScreen } from "../components/screens/ChatScreen";
+import { ChatListScreen } from "../components/screens/ChatListScreen";
 
 import { WhatsAppState } from "../types";
 
