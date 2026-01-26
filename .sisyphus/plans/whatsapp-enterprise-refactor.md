@@ -789,14 +789,14 @@ pnpm dev
 
 ### Final Checklist
 
-- [ ] Anchor registry unified (1 Map in core, device-camera re-exports)
-- [ ] Theme context exists (ThemeProvider + useTheme)
-- [ ] No components/ios/ folder
-- [ ] No components/android/ folder
-- [ ] No ui/strategies/ folder
-- [ ] No tokens/ folder
-- [ ] No whatsapp-director.ts
-- [ ] No `as any` in plugin.ts
-- [ ] All components use useTheme() for styling
-- [ ] pnpm build passes with 0 errors
-- [ ] pnpm dev renders WhatsApp correctly
+- [x] Anchor registry unified (1 Map in core, device-camera re-exports)
+- [x] Theme context exists (ThemeProvider + useTheme)
+- [x] No components/ios/ folder
+- [x] No components/android/ folder
+- [x] No ui/strategies/ folder
+- [x] No tokens/ folder
+- [x] No whatsapp-director.ts
+- [x] No `as any` in plugin.ts
+- [x] All components use useTheme() for styling
+- [x] pnpm build passes with 0 errors
+- [x] pnpm dev renders WhatsApp correctly
