@@ -1,5 +1,885 @@
 # @tokovo/react
 
-> Placeholder content - to be written
+> **Priority: P2** — React utilities and components for building custom Tokovo players, editors, and integrations.
 
-This page will document the @tokovo/react package.
+---
+
+## Overview
+
+`@tokovo/react` provides the **React primitives** for working with Tokovo's state system in your custom applications. Unlike `@tokovo/renderer` (which is a complete rendering solution for video generation), this package gives you the **building blocks** to create your own Tokovo-powered experiences.
+
+The package is:
+
+- **Lightweight**: Minimal abstractions over core state
+- **Context-based**: React Context for accessing WorldState and device info
+- **Composable**: Mix and match hooks and components
+- **Framework-friendly**: Works with Next.js, Remix, Vite, Remotion
+
+### Installation
+
+```bash
+npm install @tokovo/react
+# or
+pnpm add @tokovo/react
+```
+
+### Role in Architecture
+
+`@tokovo/react` sits **between core and renderer**, providing React-specific utilities:
+
+```
+@tokovo/core → @tokovo/react → Your Custom App
+                    ↓
+              @tokovo/renderer (uses @tokovo/react internally)
+```
+
+---
+
+## When to Use @tokovo/react
+
+Use `@tokovo/react` when:
+
+- ✅ Building a **custom episode player** with your own UI
+- ✅ Creating an **episode editor** or preview tool
+- ✅ Embedding Tokovo episodes in a **React/Next.js app**
+- ✅ Building **Tokovo Studio** or other authoring tools
+- ✅ Creating **custom app plugins** that need React hooks
+
+Use `@tokovo/renderer` instead when:
+
+- ❌ You just want to **render episodes to video** (use in `video-runner`)
+- ❌ You need a **complete, batteries-included** rendering solution
+- ❌ You don't need custom UI or player controls
+
+---
+
+## Core Components
+
+### `<TokovoProvider>`
+
+The root context provider that makes Tokovo state available to all child components.
+
+**Props:**
+
+- `world: WorldState` — Current world state snapshot
+- `deviceId: string` — Which device is being rendered
+- `appId: string` — Which app is active
+- `t: number` — Current frame/time
+- `layout?: LayoutState` — Optional layout information
+- `platform?: 'ios' | 'android'` — Platform variant (default: `'ios'`)
+- `safeAreaInsets?` — Safe area insets for device chrome
+
+**Example:**
+
+```tsx
+import { TokovoProvider } from "@tokovo/react";
+import { runEpisode } from "@tokovo/core";
+
+function CustomPlayer({ episode, frame }) {
+  const world = runEpisode(episode, frame);
+
+  return (
+    <TokovoProvider
+      world={world}
+      deviceId="main_phone"
+      appId="app_whatsapp"
+      t={frame}
+      platform="ios"
+    >
+      <YourCustomUI />
+    </TokovoProvider>
+  );
+}
+```
+
+---
+
+### `<AppSurface>`
+
+A scaling container that automatically maps **logical design resolution** to **physical target resolution**.
+
+This allows you to build app UIs using standard CSS units (e.g., `16px` font size) while rendering at high DPI resolutions (e.g., 1290px wide for iPhone).
+
+**Props:**
+
+- `designWidth?: number` — Logical design width (default: `393` for iPhone 14/15/16 Pro)
+- `targetWidth?: number` — Physical target width (default: same as `designWidth`)
+- `targetHeight?: number` — Physical target height (default: `852`)
+- `backgroundColor?: string` — Background color (default: `'#000'`)
+- `style?: CSSProperties` — Additional container styles
+
+**Example:**
+
+```tsx
+import { AppSurface } from "@tokovo/react";
+
+function WhatsAppView() {
+  return (
+    <AppSurface designWidth={393} targetWidth={1290} targetHeight={2796}>
+      <div style={{ padding: 16, fontSize: 16 }}>
+        {/* This renders at 1290x2796 but you write CSS as if it's 393x852 */}
+        <h1>WhatsApp</h1>
+      </div>
+    </AppSurface>
+  );
+}
+```
+
+**Why use AppSurface?**
+
+- Write UI at **1x logical resolution** (easier math, standard design values)
+- Automatically scale to **3x physical resolution** (crisp rendering for video)
+- Avoid manual transform calculations
+
+---
+
+## Core Hooks
+
+All hooks must be used inside a `<TokovoProvider>` component.
+
+### `useWorld()`
+
+Returns the full `WorldState` snapshot.
+
+```tsx
+import { useWorld } from "@tokovo/react";
+
+function DeviceList() {
+  const world = useWorld();
+
+  return (
+    <ul>
+      {Object.keys(world.devices).map((deviceId) => (
+        <li key={deviceId}>{deviceId}</li>
+      ))}
+    </ul>
+  );
+}
+```
+
+---
+
+### `useDevice()`
+
+Returns the current `DeviceState` for the active device.
+
+```tsx
+import { useDevice } from "@tokovo/react";
+
+function LockIndicator() {
+  const device = useDevice();
+
+  return <div>{device.isLocked ? "🔒 Locked" : "🔓 Unlocked"}</div>;
+}
+```
+
+**Returns:**
+
+- `id: string`
+- `profileId: string`
+- `isLocked: boolean`
+- `foregroundAppId: string | null`
+- `notifications: Notification[]`
+- `keyboard: KeyboardState`
+- `os: DeviceOSState`
+
+**Throws:** If `deviceId` is not found in `world.devices`.
+
+---
+
+### `useAppState<T>()`
+
+Returns the app state for the current app.
+
+```tsx
+import { useAppState } from "@tokovo/react";
+
+type WhatsAppState = {
+  messages: Message[];
+  activeConversationId: string;
+  typingIndicators: Record<string, boolean>;
+};
+
+function MessageList() {
+  const appState = useAppState<WhatsAppState>();
+
+  return (
+    <div>
+      {appState.messages.map((msg) => (
+        <div key={msg.id}>{msg.text}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Generic Type Parameter:**
+
+- `T = unknown` — Type of your app's state
+
+**Returns:** The value of `world.appState[appId]` cast to type `T`.
+
+---
+
+### `useLayout<T>()`
+
+Returns the computed layout state (if provided to `TokovoProvider`).
+
+```tsx
+import { useLayout } from "@tokovo/react";
+
+type ChatLayout = {
+  messages: Array<{ id: string; y: number; height: number }>;
+  scrollY: number;
+};
+
+function ChatBubbles() {
+  const layout = useLayout<ChatLayout>();
+
+  if (!layout) return null;
+
+  return (
+    <>
+      {layout.messages.map((msg) => (
+        <div
+          key={msg.id}
+          style={{
+            position: "absolute",
+            top: msg.y,
+            height: msg.height,
+          }}
+        />
+      ))}
+    </>
+  );
+}
+```
+
+**Returns:** `T | undefined`
+
+---
+
+### `useTime()`
+
+Returns the current frame/time.
+
+```tsx
+import { useTime } from "@tokovo/react";
+
+function FrameCounter() {
+  const t = useTime();
+
+  return <div>Frame: {t}</div>;
+}
+```
+
+---
+
+### `usePlatform()`
+
+Returns the current platform (`'ios'` or `'android'`).
+
+```tsx
+import { usePlatform } from "@tokovo/react";
+
+function PlatformBadge() {
+  const platform = usePlatform();
+
+  return <div>Platform: {platform}</div>;
+}
+```
+
+---
+
+### `useDeviceId()`
+
+Returns the current device ID.
+
+```tsx
+import { useDeviceId } from "@tokovo/react";
+
+function DeviceDebug() {
+  const deviceId = useDeviceId();
+
+  return <div>Device: {deviceId}</div>;
+}
+```
+
+---
+
+### `useAppId()`
+
+Returns the current app ID.
+
+```tsx
+import { useAppId } from "@tokovo/react";
+
+function AppTitle() {
+  const appId = useAppId();
+
+  return <h1>{appId}</h1>;
+}
+```
+
+---
+
+### `useSafeAreaInsets()`
+
+Returns the device's safe area insets (for notch, camera cutout, etc.).
+
+```tsx
+import { useSafeAreaInsets } from "@tokovo/react";
+
+function SafeContainer({ children }) {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <div
+      style={{
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
+        paddingLeft: insets.left,
+        paddingRight: insets.right,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+**Returns:**
+
+```typescript
+{
+  top: number;
+  bottom: number;
+  left: number;
+  right: number;
+}
+```
+
+---
+
+### `useConversation<T>(conversationId)`
+
+Returns a specific conversation by ID from the app state.
+
+```tsx
+import { useConversation } from "@tokovo/react";
+
+type Conversation = {
+  id: string;
+  name: string;
+  messages: Message[];
+};
+
+function ChatHeader({ conversationId }) {
+  const conversation = useConversation<Conversation>(conversationId);
+
+  if (!conversation) return null;
+
+  return <h2>{conversation.name}</h2>;
+}
+```
+
+**Constraint:** Your app state must have a `conversations` array.
+
+---
+
+### `useActiveConversation<T>()`
+
+Returns the currently active conversation (based on `activeConversationId` in app state).
+
+```tsx
+import { useActiveConversation } from "@tokovo/react";
+
+type Conversation = {
+  id: string;
+  name: string;
+  messages: Message[];
+};
+
+function ActiveChat() {
+  const conversation = useActiveConversation<Conversation>();
+
+  if (!conversation) return <div>No active chat</div>;
+
+  return (
+    <div>
+      <h2>{conversation.name}</h2>
+      {conversation.messages.map((msg) => (
+        <div key={msg.id}>{msg.text}</div>
+      ))}
+    </div>
+  );
+}
+```
+
+**Constraint:** Your app state must have:
+
+- `activeConversationId?: string`
+- `conversations?: T[]`
+
+---
+
+## Building Custom Players
+
+Here's how to build a custom episode player with your own UI controls:
+
+```tsx
+import { useState } from "react";
+import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
+import { runEpisode, prepareEpisode } from "@tokovo/core";
+
+function CustomPlayer({ episodeJSON }) {
+  const [frame, setFrame] = useState(0);
+  const [playing, setPlaying] = useState(false);
+
+  const prepared = prepareEpisode(episodeJSON);
+  const world = runEpisode(prepared, frame);
+
+  return (
+    <div>
+      <TokovoProvider
+        world={world}
+        deviceId="main_phone"
+        appId="app_whatsapp"
+        t={frame}
+      >
+        <PhonePreview />
+      </TokovoProvider>
+
+      <div className="controls">
+        <button onClick={() => setPlaying(!playing)}>
+          {playing ? "⏸️ Pause" : "▶️ Play"}
+        </button>
+        <input
+          type="range"
+          min={0}
+          max={prepared.durationInFrames}
+          value={frame}
+          onChange={(e) => setFrame(Number(e.target.value))}
+        />
+        <span>Frame: {frame}</span>
+      </div>
+    </div>
+  );
+}
+
+function PhonePreview() {
+  const device = useDevice();
+  const appState = useAppState();
+
+  return (
+    <div className="phone-frame">
+      {device.isLocked ? <LockScreen /> : <AppView appState={appState} />}
+    </div>
+  );
+}
+```
+
+---
+
+## Remotion Integration
+
+`@tokovo/react` components work seamlessly with Remotion for custom video compositions:
+
+```tsx
+import { Composition, useCurrentFrame } from "remotion";
+import { TokovoProvider, useDevice } from "@tokovo/react";
+import { runEpisode } from "@tokovo/core";
+
+function MyEpisode({ episode }) {
+  const frame = useCurrentFrame();
+  const world = runEpisode(episode, frame);
+
+  return (
+    <TokovoProvider
+      world={world}
+      deviceId="main_phone"
+      appId="app_whatsapp"
+      t={frame}
+    >
+      <CustomVideoLayout />
+    </TokovoProvider>
+  );
+}
+
+// In your Remotion root:
+<Composition
+  id="custom-episode"
+  component={MyEpisode}
+  durationInFrames={300}
+  fps={30}
+  width={1080}
+  height={1920}
+/>;
+```
+
+**Why use @tokovo/react with Remotion?**
+
+- Access to **Tokovo hooks** inside your Remotion components
+- Build **custom video layouts** beyond what `@tokovo/renderer` provides
+- Create **multi-device compositions** with custom positioning
+- Add **custom overlays, annotations, or effects**
+
+---
+
+## vs @tokovo/renderer
+
+| Feature            | @tokovo/react                         | @tokovo/renderer                              |
+| ------------------ | ------------------------------------- | --------------------------------------------- |
+| **Purpose**        | Building blocks for custom apps       | Complete rendering solution                   |
+| **Use Case**       | Custom players, editors, integrations | Video generation (video-runner)               |
+| **Components**     | `TokovoProvider`, `AppSurface`        | `TokovoRenderer`, `DeviceFrame`, `AudioLayer` |
+| **Hooks**          | `useWorld()`, `useDevice()`, etc.     | Internal layout/camera engines                |
+| **Layout Engine**  | ❌ You provide your own               | ✅ Built-in (chat, feed, lockscreen)          |
+| **Camera System**  | ❌ You implement                      | ✅ Built-in (zoom, pan, transitions)          |
+| **Audio**          | ❌ You handle                         | ✅ Built-in (`AudioLayer`)                    |
+| **Device Frames**  | ❌ You render                         | ✅ Built-in (`DeviceFrame`)                   |
+| **Learning Curve** | Lower-level, more control             | Higher-level, less control                    |
+
+**Rule of thumb:**
+
+- **@tokovo/renderer** = "Just render my episode to video"
+- **@tokovo/react** = "I want to build something custom with Tokovo state"
+
+---
+
+## Common Use Cases
+
+### 1. Custom Episode Player with Branding
+
+```tsx
+import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
+
+function BrandedPlayer({ episode, brand }) {
+  const [frame, setFrame] = useState(0);
+  const world = runEpisode(episode, frame);
+
+  return (
+    <div className="branded-player" style={{ borderColor: brand.color }}>
+      <div className="brand-logo">
+        <img src={brand.logo} alt={brand.name} />
+      </div>
+
+      <TokovoProvider
+        world={world}
+        deviceId="main_phone"
+        appId="app_whatsapp"
+        t={frame}
+      >
+        <PhoneView />
+      </TokovoProvider>
+
+      <CustomControls
+        frame={frame}
+        onSeek={setFrame}
+        brandColor={brand.color}
+      />
+    </div>
+  );
+}
+```
+
+---
+
+### 2. Episode Editor / Preview Tool
+
+```tsx
+import { TokovoProvider, useWorld } from "@tokovo/react";
+
+function EpisodeEditor({ episode }) {
+  const [frame, setFrame] = useState(0);
+  const [selectedEvent, setSelectedEvent] = useState(null);
+
+  const world = runEpisode(episode, frame);
+
+  return (
+    <div className="editor-layout">
+      <div className="preview-panel">
+        <TokovoProvider
+          world={world}
+          deviceId="main_phone"
+          appId="app_whatsapp"
+          t={frame}
+        >
+          <LivePreview />
+        </TokovoProvider>
+      </div>
+
+      <div className="timeline-panel">
+        <Timeline
+          events={episode.events}
+          currentFrame={frame}
+          onSeek={setFrame}
+          onEventSelect={setSelectedEvent}
+        />
+      </div>
+
+      <div className="inspector-panel">
+        <EventInspector event={selectedEvent} world={world} />
+      </div>
+    </div>
+  );
+}
+
+function LivePreview() {
+  const world = useWorld();
+
+  return (
+    <div>
+      <DeviceCount count={Object.keys(world.devices).length} />
+      <WorldStateDebugger state={world} />
+    </div>
+  );
+}
+```
+
+---
+
+### 3. Embedding Episodes in Next.js Apps
+
+```tsx
+// app/episodes/[id]/page.tsx
+import { TokovoProvider } from "@tokovo/react";
+import { getEpisode } from "@/lib/episodes";
+import { runEpisode } from "@tokovo/core";
+
+export default async function EpisodePage({ params }) {
+  const episode = await getEpisode(params.id);
+
+  return (
+    <div className="container">
+      <h1>{episode.meta.title}</h1>
+
+      <EpisodePlayer episode={episode} />
+    </div>
+  );
+}
+
+("use client");
+
+function EpisodePlayer({ episode }) {
+  const [frame, setFrame] = useState(0);
+  const world = runEpisode(episode, frame);
+
+  return (
+    <TokovoProvider
+      world={world}
+      deviceId="main_phone"
+      appId="app_whatsapp"
+      t={frame}
+    >
+      <InteractivePhone onTap={(x, y) => console.log("Tapped at", x, y)} />
+    </TokovoProvider>
+  );
+}
+```
+
+---
+
+### 4. Building Tokovo Studio Interface
+
+```tsx
+import { TokovoProvider, useDevice, useAppState } from "@tokovo/react";
+
+function TokovoStudio() {
+  const [project, setProject] = useState(null);
+  const [frame, setFrame] = useState(0);
+
+  if (!project) return <ProjectPicker onSelect={setProject} />;
+
+  const world = runEpisode(project.episode, frame);
+
+  return (
+    <div className="studio">
+      <Sidebar project={project} />
+
+      <main className="canvas">
+        <TokovoProvider
+          world={world}
+          deviceId="main_phone"
+          appId="app_whatsapp"
+          t={frame}
+        >
+          <StudioCanvas />
+        </TokovoProvider>
+      </main>
+
+      <PropertiesPanel world={world} frame={frame} />
+    </div>
+  );
+}
+
+function StudioCanvas() {
+  const device = useDevice();
+  const appState = useAppState();
+
+  return (
+    <div className="canvas-content">
+      <DeviceInspector device={device} />
+      <AppStateInspector state={appState} />
+    </div>
+  );
+}
+```
+
+---
+
+## Best Practices
+
+### Do ✅
+
+- **Wrap your app in `<TokovoProvider>`** before using hooks
+- **Use `AppSurface`** for high-DPI rendering with logical design units
+- **Type your app state** with `useAppState<YourType>()`
+- **Memoize expensive computations** (e.g., `runEpisode` calls)
+- **Handle loading states** before world state is ready
+
+### Don't ❌
+
+- **Use hooks outside `<TokovoProvider>`** — will throw an error
+- **Mutate `WorldState`** — it's immutable, derive new state instead
+- **Store frame state in app state** — use React state for player controls
+- **Mix @tokovo/react and @tokovo/renderer** — pick one approach
+
+---
+
+## Examples
+
+### Minimal Player
+
+```tsx
+import { TokovoProvider, useDevice } from "@tokovo/react";
+import { runEpisode } from "@tokovo/core";
+import { useCurrentFrame } from "remotion";
+
+export function MinimalPlayer({ episode }) {
+  const frame = useCurrentFrame();
+  const world = runEpisode(episode, frame);
+
+  return (
+    <TokovoProvider
+      world={world}
+      deviceId="main_phone"
+      appId="app_whatsapp"
+      t={frame}
+    >
+      <SimplePhone />
+    </TokovoProvider>
+  );
+}
+
+function SimplePhone() {
+  const device = useDevice();
+
+  return (
+    <div className="phone">
+      <div className="status-bar">
+        {device.os.clock} | {device.os.battery}%
+      </div>
+      {device.isLocked ? <LockScreen /> : <HomeScreen />}
+    </div>
+  );
+}
+```
+
+---
+
+### Multi-Device Composition
+
+```tsx
+import { TokovoProvider } from "@tokovo/react";
+import { runEpisode } from "@tokovo/core";
+
+function DualPhoneComposition({ episode }) {
+  const frame = useCurrentFrame();
+  const world = runEpisode(episode, frame);
+
+  return (
+    <div className="dual-phone-layout">
+      <TokovoProvider
+        world={world}
+        deviceId="phone_alice"
+        appId="app_whatsapp"
+        t={frame}
+      >
+        <PhoneView label="Alice" />
+      </TokovoProvider>
+
+      <TokovoProvider
+        world={world}
+        deviceId="phone_bob"
+        appId="app_whatsapp"
+        t={frame}
+      >
+        <PhoneView label="Bob" />
+      </TokovoProvider>
+    </div>
+  );
+}
+```
+
+---
+
+## Links
+
+### Related Packages
+
+- [@tokovo/core](/packages/core) — The engine that produces WorldState
+- [@tokovo/renderer](/packages/renderer) — Complete rendering solution for video
+- [@tokovo/devices](/packages/devices) — Device profiles and frames
+
+### Related Concepts
+
+- [WorldState](/concepts/world-state) — Understanding state structure
+- [Deterministic Rendering](/concepts/determinism) — Why purity matters
+- [Plugin System](/concepts/plugins) — Building custom apps
+
+### Applications
+
+- [Video Runner](/apps/video-runner) — See `@tokovo/react` used in Remotion
+- [Episode Editor](/apps/editor) — Custom editor built with `@tokovo/react`
+
+---
+
+## API Reference
+
+For complete API documentation, see:
+
+- [TokovoProvider API](/api/react/tokovo-provider)
+- [Hooks API](/api/react/hooks)
+- [AppSurface API](/api/react/app-surface)
+
+---
+
+## Summary
+
+`@tokovo/react` provides **React primitives** for working with Tokovo:
+
+- **`<TokovoProvider>`** — Context provider for Tokovo state
+- **`<AppSurface>`** — Scaling container for high-DPI rendering
+- **Hooks** — Access world state, device info, app state, layout, etc.
+
+Use it when:
+
+- Building **custom players** with your own controls
+- Creating **episode editors** or preview tools
+- Embedding episodes in **React/Next.js apps**
+- Building **Tokovo Studio** or authoring tools
+
+Use `@tokovo/renderer` instead when:
+
+- You just want to **render episodes to video**
+- You need **batteries-included** rendering (layout, camera, audio)
+
+---
+
+## Next Steps
+
+- [Learn about @tokovo/core](/packages/core)
+- [Explore @tokovo/renderer](/packages/renderer)
+- [Build your first custom player](/guides/custom-player)
+- [Remotion integration guide](/guides/remotion)
