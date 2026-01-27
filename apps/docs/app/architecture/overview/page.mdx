@@ -1,5 +1,477 @@
-# Overview
+# System Overview
 
-> Placeholder content - to be written
+Tokovo is a **programmable phone-simulation engine** built for cinematic storytelling. At its core, Tokovo transforms structured data (episodes) into high-fidelity phone UI videos through a deterministic, layered architecture.
 
-This page will document the overall architecture of Tokovo.
+This page explains Tokovo's architectural foundation: the four-layer design, how data flows through the system, and the design principles that make it scalable and AI-friendly.
+
+---
+
+## What is Tokovo Architecturally?
+
+Tokovo is **not** a monolithic renderer. It's a modular pipeline that separates concerns across four distinct layers:
+
+1. **Content Layer** — Define what happens (episodes, DSL, events)
+2. **Engine Layer** — Compute state at any time (pure replay logic)
+3. **Layout Layer** — Calculate positions and geometry (visual math)
+4. **Render Layer** — Draw pixels (React + Remotion)
+
+Each layer has a **single responsibility** and knows nothing about layers below it. This separation enables:
+
+- **Determinism**: Same input → same output, always
+- **Extensibility**: Add new devices/apps without touching core
+- **Testability**: Each layer can be validated independently
+- **AI-Friendliness**: Episodes are data, not code
+
+---
+
+## Why Layered Architecture?
+
+Traditional video editing tools bake everything together — animation, state, and visuals. Tokovo separates these concerns:
+
+| Traditional Approach            | Tokovo Approach                   |
+| ------------------------------- | --------------------------------- |
+| Manually keyframe animations    | Declare events at timestamps      |
+| Hardcode UI states in timelines | Derive state from event history   |
+| Mix logic with rendering        | Pure functions → React components |
+| Not reproducible                | Fully deterministic               |
+
+This architecture makes Tokovo a **data-driven video engine** — perfect for generating hundreds of videos from structured data or AI-generated storylines.
+
+---
+
+## The Four Layers
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     TOKOVO ARCHITECTURE                          │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LAYER 4: CONTENT                                          │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
+│  │  │   Episode   │  │     DSL     │  │   Compiler  │        │  │
+│  │  │    JSON     │  │  (fluent)   │  │  (lowering) │        │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘        │  │
+│  └─────────┼────────────────┼────────────────┼────────────────┘  │
+│            │                │                │                   │
+│            └────────────────┼────────────────┘                   │
+│                             ▼                                    │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LAYER 3: ENGINE                                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
+│  │  │   replay()  │  │   Plugin    │  │  Registries │        │  │
+│  │  │   (pure)    │  │   System    │  │  (App/Sound)│        │  │
+│  │  └──────┬──────┘  └─────────────┘  └─────────────┘        │  │
+│  └─────────┼──────────────────────────────────────────────────┘  │
+│            │ WorldState @ t                                      │
+│            ▼                                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LAYER 2: LAYOUT                                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
+│  │  │   Layout    │  │   Anchor    │  │   Camera    │        │  │
+│  │  │   Engine    │  │   Registry  │  │   System    │        │  │
+│  │  └──────┬──────┘  └─────────────┘  └─────────────┘        │  │
+│  └─────────┼──────────────────────────────────────────────────┘  │
+│            │ Geometry + Positions                                │
+│            ▼                                                     │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  LAYER 1: RENDER                                           │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │  │
+│  │  │    React    │  │  Remotion   │  │    Video    │        │  │
+│  │  │ Components  │  │   Player    │  │   Output    │        │  │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘        │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Layer 4: Content Layer
+
+**Packages**: `@tokovo/dsl`, `@tokovo/compiler`, `@tokovo/ir`, `@tokovo/episodes`
+
+The Content Layer is where **stories are authored**. It provides three ways to define episodes:
+
+#### 1. Episodes (JSON/TypeScript)
+
+Raw episode definitions containing:
+
+- `initialWorld` — Starting device state, conversation state, camera view
+- `events[]` — Timeline events (messages, typing, unlocking, app open, etc.)
+
+```ts
+{
+  "initialWorld": { /* ... */ },
+  "events": [
+    { "at": 0.0, "kind": "DEVICE", "type": "UNLOCK" },
+    { "at": 1.0, "kind": "APP", "type": "MESSAGE_RECEIVED", "text": "Hey!" }
+  ]
+}
+```
+
+#### 2. DSL (Fluent API)
+
+A TypeScript-first authoring experience with autocomplete and type safety:
+
+```ts
+episode("my-story", { fps: 30, duration: 20 })
+  .device("phone", "iphone16", (d) =>
+    d.app("app_whatsapp", { conversationId: "chat_alice" }),
+  )
+  .track("app_whatsapp", (t) =>
+    t
+      .at("1s")
+      .receive("Alice", "Hey!")
+      .at("3s")
+      .typing("Alice")
+      .at("4s")
+      .receive("Alice", "What's up?"),
+  )
+  .camera((c) => c.at("0s").focus("lastMessage"));
+```
+
+#### 3. Compiler (Lowering to IR)
+
+The compiler **lowers** high-level DSL code into Intermediate Representation (IR) — a normalized JSON format that the engine consumes.
+
+**Why IR?**
+
+- **Decouples authoring from execution**: DSL can evolve without breaking the engine
+- **Validation layer**: Zod schemas validate episodes before rendering
+- **AI-friendly**: LLMs can generate IR directly without understanding DSL internals
+
+---
+
+### Layer 3: Engine Layer
+
+**Packages**: `@tokovo/core`, `@tokovo/devices`, `@tokovo/apps-*`
+
+The Engine Layer is **pure logic**. It knows nothing about React, Remotion, or rendering. Its sole job: **compute the world state at any given time `t`**.
+
+#### `replay()` Function
+
+The heart of Tokovo's determinism:
+
+```ts
+function replay(
+  initialWorld: WorldState,
+  events: TimelineEvent[],
+  t: number,
+): WorldState;
+```
+
+**How it works:**
+
+1. Filter events where `event.at <= t`
+2. Sort events by time
+3. Reduce them into state using Immer-based reducers
+4. Return the world snapshot at time `t`
+
+This is how Remotion asks Tokovo: _"At frame 148, what should the phone look like?"_  
+Tokovo answers **deterministically** by replaying all events up to that moment.
+
+#### Plugin System
+
+Tokovo's plugin system allows **composable functionality** without modifying core:
+
+- **App Plugins** (WhatsApp, Instagram, Gmail)
+- **Device Plugins** (iPhone, Pixel, custom devices)
+- **Sound Plugins** (notification sounds, typing sounds)
+- **Camera Plugins** (zoom, focus, transitions)
+
+Plugins contribute:
+
+- **Reducers** (how events modify state)
+- **UI Components** (how state is rendered)
+- **Anchors** (layout reference points)
+- **Sounds** (audio cues)
+
+#### Registries
+
+Central lookup tables that map IDs to implementations:
+
+- **App Registry**: `appId` → runtime reducer + React view
+- **Sound Registry**: `soundId` → audio file
+- **Device Registry**: `deviceId` → device profile
+
+This makes multi-app/multi-device episodes trivial — just reference the ID, and Tokovo knows what to do.
+
+#### WorldState Generation
+
+`WorldState` represents **everything visible in the video** at time `t`:
+
+```ts
+type WorldState = {
+  devices: Record<DeviceId, DeviceState>; // Phone states
+  conversations: Record<ConvoId, ConvoState>; // Chat messages
+  camera: CameraViewConfig; // Camera position/zoom
+};
+```
+
+**Key principle**: WorldState is **never mutated**. It's always derived from events.
+
+---
+
+### Layer 2: Layout Layer
+
+**Packages**: `@tokovo/renderer` (layout engine), `@tokovo/device-camera` (anchor system)
+
+The Layout Layer **separates data from geometry**. It takes `WorldState` and computes:
+
+- Bubble sizes
+- Y-positions
+- Scroll offsets
+- Animation curves
+
+This separation enables smooth animations and predictable behavior without polluting the core engine with visual concerns.
+
+#### Layout Engine
+
+Computes visual properties from state:
+
+```ts
+function computeLayout(worldState: WorldState, t: number): LayoutData {
+  // Calculate message bubble heights
+  // Compute scroll position for chat view
+  // Determine anchor positions for camera
+  return { bubbles, scrollOffset, anchors };
+}
+```
+
+**Why separate layout?**
+
+- **Performance**: Layout can be cached/optimized independently
+- **Flexibility**: Swap layout algorithms without touching state logic
+- **Cinematic control**: Smooth scrolling, easing, camera transitions
+
+#### Anchor Registry
+
+Anchors are **named positions** in the UI that the camera can reference:
+
+- `lastMessage` → Y-position of the most recent chat bubble
+- `typingIndicator` → Position of typing dots
+- `notificationBadge` → App icon badge position
+
+Camera movements reference anchors, not hardcoded coordinates:
+
+```ts
+camera.at("2s").focus("lastMessage").zoom(1.5);
+```
+
+This makes episodes **resolution-independent** and **device-agnostic**.
+
+#### Camera System
+
+Controls what the viewer sees:
+
+- **Focus**: Move camera to an anchor
+- **Zoom**: Magnify a region
+- **Transitions**: Smooth panning/zooming between states
+
+Camera state is part of `WorldState`, so camera movements are deterministic too.
+
+---
+
+### Layer 1: Render Layer
+
+**Packages**: `@tokovo/renderer`, `@tokovo/react`, `apps/video-runner`
+
+The Render Layer is **pure presentation**. It receives `WorldState` + `LayoutData` and draws pixels using React + Remotion.
+
+#### React Components
+
+Stateless UI components that render based on props:
+
+- `<DeviceFrame>` — Phone chassis, notch, insets
+- `<WhatsAppChatView>` — Message bubbles, typing indicator
+- `<CameraController>` — Viewport transform (zoom/pan)
+
+All components are **dumb** — they don't manage state, they just render it.
+
+#### Remotion Player
+
+Remotion provides:
+
+- Frame-by-frame rendering
+- MP4 export
+- Preview player
+- Audio synchronization
+
+Tokovo hooks into Remotion's `useCurrentFrame()` to compute `t`, then calls `replay(t)` to get state.
+
+#### Video Output
+
+Final output:
+
+- **MP4 video** (1080p, 30fps default)
+- **Audio track** (synced sounds)
+- **Metadata** (episode name, duration, etc.)
+
+---
+
+## Data Flow
+
+How data moves through the system:
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                      EPISODE TO VIDEO FLOW                       │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  1. AUTHOR                  2. COMPILE                           │
+│  ┌────────────────┐         ┌────────────────┐                   │
+│  │  DSL Episode   │────────▶│  IR (JSON)     │                   │
+│  │  episode(...)  │         │  events[]      │                   │
+│  └────────────────┘         └───────┬────────┘                   │
+│                                     │                            │
+│  3. REPLAY                          ▼                            │
+│  ┌────────────────────────────────────────────────────┐          │
+│  │                    replay(t)                        │          │
+│  │  ┌──────────┐    ┌──────────┐    ┌──────────┐     │          │
+│  │  │ events   │───▶│ reducers │───▶│ WorldState│     │          │
+│  │  │ at ≤ t   │    │ (Immer)  │    │ @ time t │     │          │
+│  │  └──────────┘    └──────────┘    └──────────┘     │          │
+│  └───────────────────────────┬────────────────────────┘          │
+│                              │                                   │
+│  4. LAYOUT                   ▼                                   │
+│  ┌────────────────────────────────────────────────────┐          │
+│  │              Layout Engine                          │          │
+│  │  WorldState ──▶ Geometry ──▶ Positions ──▶ Sizes   │          │
+│  └───────────────────────────┬────────────────────────┘          │
+│                              │                                   │
+│  5. RENDER                   ▼                                   │
+│  ┌────────────────────────────────────────────────────┐          │
+│  │              React + Remotion                       │          │
+│  │  Layout ──▶ JSX Components ──▶ Frame ──▶ MP4       │          │
+│  └────────────────────────────────────────────────────┘          │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Step-by-step:**
+
+1. **Author**: Write episode using DSL or JSON
+2. **Compile**: DSL → IR (validated with Zod schemas)
+3. **Replay**: For each frame, compute `WorldState` at time `t`
+4. **Layout**: Calculate geometry from state
+5. **Render**: Draw React components, export video
+
+Every step is **deterministic** — same episode = same video, always.
+
+---
+
+## Design Principles
+
+### 1. Determinism
+
+**Same input → same output.**
+
+At any time `t`, the world is fully reproducible from the initial state and event history. No hidden runtime state, no randomness, no race conditions.
+
+**Why it matters:**
+
+- Reproducible builds (critical for production pipelines)
+- Frame-perfect rendering (no "render it again, it might work")
+- Debugging is trivial (replay to any frame, inspect state)
+- AI-generated episodes work reliably
+
+### 2. Composability
+
+**Modules don't know about each other.**
+
+New devices or apps never require core changes. The engine doesn't have `if (device === "iphone")` logic — it just calls the registered reducer.
+
+**Why it matters:**
+
+- Add new apps without touching existing code
+- Swap devices without breaking episodes
+- Plugin ecosystem can grow independently
+- Future-proof architecture
+
+### 3. Single Source of Truth
+
+**Episodes define everything.**
+
+No hidden configuration files, no global state, no "magic values." If it affects the video, it's in the episode.
+
+**Why it matters:**
+
+- Episodes are portable (copy JSON, get same video)
+- AI can generate complete episodes without side effects
+- Version control works (diff episodes, see what changed)
+- No "works on my machine" issues
+
+### 4. Separation of Concerns
+
+**Each layer has one job.**
+
+- Content Layer: **What happens**
+- Engine Layer: **When it happens**
+- Layout Layer: **Where it appears**
+- Render Layer: **How it looks**
+
+Layers communicate through **data**, not dependencies.
+
+**Why it matters:**
+
+- Test layers independently
+- Swap implementations (e.g., replace React with another renderer)
+- Clear mental model for contributors
+- Easier to reason about complexity
+
+### 5. Plugin Architecture
+
+**Extensibility without core changes.**
+
+Core packages (`@tokovo/core`, `@tokovo/compiler`) are **stable**. New functionality is added via plugins:
+
+- WhatsApp? Plugin.
+- Instagram? Plugin.
+- Custom brand app? Plugin.
+- Android device? Plugin.
+
+**Why it matters:**
+
+- Core stays small and stable
+- Community can build custom plugins
+- Brand collaborations don't require forking
+- Complexity lives at the edges, not the center
+
+---
+
+## Next Steps
+
+This overview covers Tokovo's high-level architecture. For deeper dives:
+
+- **[Package Documentation](/packages)** — Detailed guides for each package
+- **[Core Concepts](/concepts)** — WorldState, TimelineEvents, Plugins, Anchors
+- **[API Reference](/api)** — Type signatures and usage examples
+- **[Getting Started](/getting-started)** — Build your first episode
+
+---
+
+## Summary
+
+Tokovo is a **four-layer, deterministic video engine**:
+
+1. **Content Layer** — Episodes (JSON/DSL) → IR
+2. **Engine Layer** — `replay(t)` → WorldState
+3. **Layout Layer** — WorldState → Geometry
+4. **Render Layer** — Geometry → Video
+
+This architecture makes Tokovo:
+
+- **Deterministic**: Reproducible builds
+- **Composable**: Plugin-friendly
+- **Scalable**: AI-ready content pipelines
+- **Maintainable**: Clear separation of concerns
+
+From this foundation, Tokovo can scale into:
+
+- AI story factories
+- Horror/romance/teen drama chat series
+- Branded storytelling
+- Multi-device cinematic narratives
+
+The architecture is intentionally simple — complexity lives in plugins, not the core.
