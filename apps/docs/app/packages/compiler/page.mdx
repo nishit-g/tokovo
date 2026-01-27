@@ -1,5 +1,564 @@
 # @tokovo/compiler
 
-> Placeholder content - to be written
+> **Priority: P1** — Transforms Track-based IR into runtime-executable events.
 
-This page will document the @tokovo/compiler package.
+`@tokovo/compiler` is the **compilation pipeline** that bridges episode authoring and execution. It transforms Track-based Intermediate Representation (IR) from the DSL into runtime events that the engine can execute frame-by-frame.
+
+## Installation
+
+```bash
+npm install @tokovo/compiler
+# or
+pnpm add @tokovo/compiler
+```
+
+## What is @tokovo/compiler?
+
+The compiler is responsible for the **IR → RuntimeEvent transformation**. It:
+
+- ✅ **Validates episode IR** — Ensures structural correctness via Zod schemas
+- ✅ **Lowers track events** — Transforms high-level events into runtime-executable format
+- ✅ **Delegates to plugins** — App-specific events are processed by plugin lowering functions
+- ✅ **Sorts timeline** — Orders events chronologically for deterministic replay
+- ✅ **Builds initial world** — Constructs starting state from device configurations
+- ✅ **Checks integrity** — Validates device references, timestamps, and payloads
+
+**The compiler's role:** Bridge the gap between what you _author_ (IR) and what the _engine executes_ (RuntimeEvents).
+
+---
+
+## Compilation Pipeline
+
+<ASCIIDiagram>
+  {`
+┌──────────────────────────────────────────────────────────┐
+│                  COMPILATION PIPELINE                     │
+├──────────────────────────────────────────────────────────┤
+│                                                           │
+│  INPUT: Track Episode IR (JSON)                          │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ {                                              │      │
+│  │   "id": "story",                               │      │
+│  │   "fps": 30,                                   │      │
+│  │   "durationInFrames": 300,                     │      │
+│  │   "devices": [...],                            │      │
+│  │   "events": [                                  │      │
+│  │     {                                          │      │
+│  │       "at": 30,                                │      │
+│  │       "kind": "APP",                           │      │
+│  │       "appId": "app_whatsapp",                 │      │
+│  │       "type": "MESSAGE_RECEIVED",              │      │
+│  │       "payload": { ... }                       │      │
+│  │     }                                          │      │
+│  │   ]                                            │      │
+│  │ }                                              │      │
+│  └──────────────┬─────────────────────────────────┘      │
+│                 │                                         │
+│                 ▼ VALIDATION (Zod)                        │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ • Check episode structure                      │      │
+│  │ • Validate device configs                      │      │
+│  │ • Verify event schemas                         │      │
+│  │ • Ensure timestamp integrity                   │      │
+│  └──────────────┬─────────────────────────────────┘      │
+│                 │                                         │
+│                 ▼ LOWERING (Plugin Delegation)            │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ • Camera events → Runtime camera events        │      │
+│  │ • Audio events → Runtime audio events          │      │
+│  │ • OS events → Runtime OS events                │      │
+│  │ • APP events → Plugin lowerers                 │      │
+│  │ • Device events → Runtime device events        │      │
+│  │ • Call events → Runtime call events            │      │
+│  └──────────────┬─────────────────────────────────┘      │
+│                 │                                         │
+│                 ▼ SORTING                                 │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ • Sort events by timestamp (at)                │      │
+│  │ • Ensure chronological order                   │      │
+│  └──────────────┬─────────────────────────────────┘      │
+│                 │                                         │
+│                 ▼ WORLD BUILDING                          │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ • Create initial WorldState                    │      │
+│  │ • Build device states from configs             │      │
+│  │ • Initialize app states                        │      │
+│  │ • Set camera/audio defaults                    │      │
+│  └──────────────┬─────────────────────────────────┘      │
+│                 │                                         │
+│                 ▼                                         │
+│  OUTPUT: Prepared Episode                                │
+│  ┌────────────────────────────────────────────────┐      │
+│  │ {                                              │      │
+│  │   id: "story",                                 │      │
+│  │   fps: 30,                                     │      │
+│  │   durationInFrames: 300,                       │      │
+│  │   events: RuntimeEvent[],  // Lowered+sorted   │      │
+│  │   initialWorld: WorldState, // Ready to run    │      │
+│  │   plugins: TokovoPlugin[], // Registered       │      │
+│  │   metadata: { markers, sections }              │      │
+│  │ }                                              │      │
+│  └────────────────────────────────────────────────┘      │
+│                                                           │
+└──────────────────────────────────────────────────────────┘
+`}
+</ASCIIDiagram>
+
+---
+
+## How Compiler Works
+
+The compilation process follows these steps:
+
+### 1. **Parse and Validate IR**
+
+The compiler receives a `TrackEpisodeIR` (from DSL's `.build()` or loaded JSON) and validates it using Zod schemas:
+
+```typescript
+import { safeValidateTrackEpisodeIR } from "@tokovo/ir";
+
+const validation = safeValidateTrackEpisodeIR(ir);
+if (!validation.success) {
+  throw new Error(`Invalid IR: ${validation.error.message}`);
+}
+```
+
+**What's validated:**
+
+- Episode structure (id, fps, durationInFrames)
+- Device configurations (profile, app, conversations)
+- Event schemas (at, kind, type, payload)
+- Timestamp constraints (at ≥ 0, at ≤ durationInFrames)
+
+### 2. **Lower Track Events**
+
+Each `TrackEvent` is transformed into one or more `RuntimeEvent`s:
+
+```typescript
+function lowerTrackEvent(
+  event: TrackEvent,
+  ctx: LoweringContext,
+): RuntimeEvent[];
+```
+
+**Event routing:**
+
+- **CAMERA events** → `cameraV2Lowering()` from `@tokovo/device-camera`
+- **AUDIO events** → `lowerAudioEvent()` (BGM_START, PLAY, CROSSFADE, etc.)
+- **OS events** → `lowerOSEvent()` (SET_TIME, SET_BATTERY, SET_NETWORK)
+- **DEVICE events** → `lowerDeviceEvent()` (notifications, lock/unlock)
+- **CALL events** → `lowerCallEvent()` (incoming, answer, end)
+- **APP events** → **Plugin lowering** (delegated to registered plugins)
+
+### 3. **Plugin Delegation**
+
+APP events are **delegated to plugins** via the lowering context:
+
+```typescript
+const pluginLowerer = ctx.pluginLowerers.get(appId);
+if (pluginLowerer) {
+  return pluginLowerer.lower(event, ctx);
+}
+```
+
+Plugins implement a `v2Lowering` interface:
+
+```typescript
+{
+  v2Lowering: {
+    lower: (event: TrackEvent, ctx: LoweringContext) => RuntimeEvent[]
+  }
+}
+```
+
+This makes the compiler **app-agnostic** — new apps can be added without modifying compiler code.
+
+### 4. **Sort Timeline**
+
+All lowered runtime events are sorted by timestamp:
+
+```typescript
+runtimeEvents.sort((a, b) => a.at - b.at);
+```
+
+This ensures **chronological order** for deterministic replay.
+
+### 5. **Build Initial World**
+
+The compiler constructs the starting `WorldState` from device configurations:
+
+```typescript
+function buildInitialWorld(ir: TrackEpisodeIR): WorldState;
+```
+
+**What's built:**
+
+- Device states (id, profileId, foregroundAppId, keyboard, notifications)
+- App states (viewMode, conversationId, conversations)
+- Camera state (activeDeviceId, transform)
+- Audio state (empty buses)
+
+### 6. **Prepare Metadata**
+
+Markers and sections are extracted for navigation:
+
+```typescript
+{
+  markers: [{ id: 'intro', frame: 0 }, { id: 'climax', frame: 150 }],
+  sections: [{ id: 'setup', start: 0, end: 90 }]
+}
+```
+
+---
+
+## Using the Compiler
+
+### Basic Usage
+
+```typescript
+import { prepareTrackEpisode } from "@tokovo/compiler";
+import { whatsappPlugin } from "@tokovo/apps-whatsapp";
+import type { TrackEpisodeIR } from "@tokovo/ir";
+
+// Load or build IR
+const episodeIR: TrackEpisodeIR = myEpisode.build();
+
+// Prepare for execution
+const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
+
+// Result structure:
+// {
+//   id: string
+//   fps: number
+//   durationInFrames: number
+//   events: RuntimeEvent[]          ← Lowered and sorted
+//   initialWorld: WorldState         ← Ready for replay()
+//   plugins: TokovoPlugin[]
+//   metadata: { markers, sections }
+// }
+```
+
+### With runEpisode()
+
+```typescript
+import { runEpisode } from "@tokovo/core";
+import { prepareTrackEpisode } from "@tokovo/compiler";
+
+const prepared = prepareTrackEpisode(episodeIR, [whatsappPlugin]);
+
+// Execute in Remotion
+export const MyComposition = () => {
+  return runEpisode(prepared);
+};
+```
+
+### Saving Compiled Output
+
+```typescript
+import fs from "fs";
+import { prepareTrackEpisode } from "@tokovo/compiler";
+
+const prepared = prepareTrackEpisode(episodeIR, plugins);
+
+// Save runtime events to file
+fs.writeFileSync(
+  "episode-compiled.json",
+  JSON.stringify(
+    {
+      id: prepared.id,
+      fps: prepared.fps,
+      durationInFrames: prepared.durationInFrames,
+      events: prepared.events,
+    },
+    null,
+    2,
+  ),
+);
+```
+
+---
+
+## Compilation Errors
+
+Common errors and how to fix them:
+
+### Invalid Episode IR
+
+**Error:**
+
+```
+Invalid TrackEpisodeIR: id is required
+```
+
+**Fix:**
+
+```typescript
+// ❌ Missing id
+episode({ duration: "10s" });
+
+// ✅ Provide id
+episode("my-story", { duration: "10s" });
+```
+
+### Plugin Not Registered
+
+**Error:**
+
+```
+No plugin lowerer registered for appId: app_whatsapp. Event dropped.
+```
+
+**Fix:**
+
+```typescript
+// ❌ Forgot to pass plugin
+prepareTrackEpisode(ir, []);
+
+// ✅ Pass required plugins
+prepareTrackEpisode(ir, [whatsappPlugin]);
+```
+
+### Invalid Timestamp
+
+**Error:**
+
+```
+Event timestamp exceeds episode duration
+```
+
+**Fix:**
+
+```typescript
+// Episode is 10s (300 frames at 30fps)
+episode("story", { duration: "10s" }).device("phone", "iphone16", (d) => {
+  // ❌ at: 400 frames > 300 frames
+  d.at(400).unlock();
+
+  // ✅ at: 90 frames < 300 frames
+  d.at(90).unlock();
+});
+```
+
+### Device Reference Missing
+
+**Error:**
+
+```
+Event references device 'phone_2' but no such device is configured
+```
+
+**Fix:**
+
+```typescript
+// ❌ Device not defined
+episode('story', { duration: '10s' })
+  .camera((cam) => {
+    cam.at(0).focus('phone_2'); // ← 'phone_2' doesn't exist
+  })
+
+// ✅ Define device first
+episode('story', { duration: '10s' })
+  .device('phone_2', 'pixel8', (d) => { ... })
+  .camera((cam) => {
+    cam.at(0).focus('phone_2'); // ← Now valid
+  })
+```
+
+### Invalid App Plugin
+
+**Error:**
+
+```
+App 'app_custom' is not a registered plugin
+```
+
+**Fix:**
+
+```typescript
+// ❌ App plugin not registered
+prepareTrackEpisode(ir, [whatsappPlugin]);
+
+// ✅ Register custom plugin
+import { customAppPlugin } from "./my-custom-app";
+prepareTrackEpisode(ir, [whatsappPlugin, customAppPlugin]);
+```
+
+---
+
+## Validation
+
+The compiler validates:
+
+### Episode Structure
+
+- ✅ `id` is a non-empty string
+- ✅ `fps` is > 0 (typically 30 or 60)
+- ✅ `durationInFrames` is ≥ 0
+- ✅ `devices` array has at least one device
+
+### Device Configuration
+
+- ✅ Each device has a unique `id`
+- ✅ `profile` is a valid device profile ('iphone16', 'pixel8', etc.)
+- ✅ `app` (if specified) is a valid app ID
+- ✅ `conversations` (if specified) have unique IDs
+
+### Event Integrity
+
+- ✅ `at` is a non-negative number
+- ✅ `at` ≤ `durationInFrames`
+- ✅ `kind` is a valid event category
+- ✅ `type` is a valid event type for that kind
+- ✅ `payload` matches the expected schema for that event type
+
+### Timeline Consistency
+
+- ✅ Events are chronologically sortable
+- ✅ No duplicate timestamps with conflicting operations
+- ✅ Device references are valid
+
+---
+
+## Compile-time vs Runtime
+
+Understanding what happens when:
+
+### Compile-Time (This Package)
+
+**What:** Transform IR → RuntimeEvents
+
+**When:** Before rendering, typically in build process or Remotion's `registerRoot()`
+
+**Responsibilities:**
+
+- Validate episode structure
+- Lower track events to runtime events
+- Build initial world state
+- Sort timeline
+- Check integrity
+
+**Output:** `PreparedTrackEpisode`
+
+**Example:**
+
+```typescript
+// Compile-time (happens once)
+const prepared = prepareTrackEpisode(episodeIR, plugins);
+```
+
+### Runtime (@tokovo/core)
+
+**What:** Execute RuntimeEvents → WorldState
+
+**When:** During video rendering, frame-by-frame in Remotion
+
+**Responsibilities:**
+
+- Replay events at current frame
+- Compute world state
+- Apply reducers
+- Generate layout
+- Render UI
+
+**Input:** `PreparedTrackEpisode`
+
+**Example:**
+
+```typescript
+// Runtime (happens every frame)
+const worldState = replay(prepared.initialWorld, prepared.events, currentFrame);
+```
+
+---
+
+## Advanced: Plugin Lowering
+
+Apps can implement custom lowering logic:
+
+### Defining a Plugin Lowerer
+
+```typescript
+import type { PluginLowering, LoweringContext } from "@tokovo/compiler";
+import type { TrackEvent, RuntimeEvent } from "@tokovo/core";
+
+const whatsappLowering: PluginLowering = {
+  appId: "app_whatsapp",
+
+  lower(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[] {
+    if (event.type === "MESSAGE_RECEIVED") {
+      return [
+        {
+          at: event.at,
+          kind: "APP",
+          type: "MESSAGE_RECEIVED",
+          deviceId: event.deviceId,
+          payload: {
+            conversationId: event.payload.conversationId,
+            from: event.payload.from,
+            content: event.payload.content,
+          },
+        },
+      ];
+    }
+
+    return [];
+  },
+};
+```
+
+### Registering in Plugin
+
+```typescript
+import { definePlugin } from '@tokovo/core';
+
+export const whatsappPlugin = definePlugin({
+  id: 'app_whatsapp',
+  displayName: 'WhatsApp',
+
+  // V2 lowering integration
+  v2Lowering: whatsappLowering,
+
+  reducer: (draft, event) => { ... },
+  views: { AppRoot: WhatsAppView },
+});
+```
+
+### Multi-Event Expansion
+
+Some track events expand into multiple runtime events:
+
+```typescript
+lower(event: TrackEvent, ctx: LoweringContext): RuntimeEvent[] {
+  if (event.type === 'SEND_WITH_TYPING') {
+    return [
+      // 1. Start typing
+      { at: event.at, kind: 'APP', type: 'TYPING_START', ... },
+
+      // 2. Send message (after typing duration)
+      { at: event.at + 60, kind: 'APP', type: 'MESSAGE_SENT', ... },
+
+      // 3. End typing
+      { at: event.at + 60, kind: 'APP', type: 'TYPING_END', ... },
+    ];
+  }
+}
+```
+
+---
+
+## Related Documentation
+
+- [Package: @tokovo/ir](/packages/ir) — Track Episode IR format (input)
+- [Package: @tokovo/core](/packages/core) — Runtime engine (uses output)
+- [Package: @tokovo/dsl](/packages/dsl) — TypeScript authoring DSL
+- [Concepts: Timeline Events](/concepts/timeline-events) — Event architecture
+- [Concepts: Determinism](/concepts/determinism) — Why compilation ensures reproducibility
+- [API Reference: @tokovo/compiler](/api/compiler) — Full type reference
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/tokovo/tokovo/tree/main/packages/compiler)
+- [npm Package](https://www.npmjs.com/package/@tokovo/compiler)
+- [API Reference](/api/compiler)
