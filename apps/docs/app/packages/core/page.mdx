@@ -1,5 +1,473 @@
 # @tokovo/core
 
-> Placeholder content - to be written
+> **Priority: P0** — The deterministic phone simulation engine at the heart of Tokovo.
 
-This page will document the @tokovo/core package.
+`@tokovo/core` is the foundational package that powers Tokovo's deterministic phone simulation. It provides the pure state engine, plugin system, and runtime infrastructure that transforms timeline events into immersive phone UI videos.
+
+## Installation
+
+```bash
+npm install @tokovo/core
+# or
+pnpm add @tokovo/core
+```
+
+## What is @tokovo/core?
+
+`@tokovo/core` is **pure logic** — no React, no Remotion, no rendering. It defines:
+
+- **Event-driven state management** — Transform timeline events into world state
+- **Plugin architecture** — Self-contained apps register reducers, views, and assets
+- **Type system** — WorldState, TimelineEvent, and 250+ TypeScript exports
+- **Registries** — App, Sound, Layout, Anchor, and Widget registration systems
+- **Deterministic replay** — Given the same events and initial state, output is identical
+
+The core engine is framework-agnostic and optimized for:
+
+- **AI-generated content** — LLMs generate JSON events, Tokovo renders videos
+- **Deterministic rendering** — No side effects, fully reproducible
+- **Extensibility** — Add devices, apps, and behaviors without modifying core
+
+---
+
+## Architecture Overview
+
+<ASCIIDiagram>
+  {`
+┌─────────────────────────────────────────────────────────────────┐
+│                        @tokovo/core                              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                        ENGINE                              │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐          │  │
+│  │  │  replay()  │  │ applyEvent │  │  prepare   │          │  │
+│  │  │            │  │            │  │  Episode   │          │  │
+│  │  └────────────┘  └────────────┘  └────────────┘          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                      REGISTRIES                            │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │  │
+│  │  │   App    │  │  Sound   │  │  Anchor  │  │  Layout  │  │  │
+│  │  │ Registry │  │ Registry │  │ Registry │  │ Registry │  │  │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                    PLUGIN SYSTEM                           │  │
+│  │  ┌────────────┐  ┌────────────┐  ┌────────────┐          │  │
+│  │  │  define    │  │  compose   │  │  Plugin    │          │  │
+│  │  │  Plugin    │  │  Plugin    │  │  Manager   │          │  │
+│  │  └────────────┘  └────────────┘  └────────────┘          │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │                       TYPES                                │  │
+│  │  WorldState, TimelineEvent, DeviceState, CameraConfig     │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  250+ exports across 14 domain categories                        │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+`}
+</ASCIIDiagram>
+
+---
+
+## Major Subsystems
+
+### 1. Engine — Deterministic Replay
+
+The core engine is a **pure function** that computes `WorldState` at any point in time:
+
+```typescript
+function replay(
+  initial: WorldState,
+  events: TimelineEvent[],
+  t: number,
+): WorldState;
+```
+
+**How it works:**
+
+1. Filter events where `event.at <= t`
+2. Apply events sequentially using registered reducers
+3. Return immutable state snapshot
+
+**Key features:**
+
+- ✅ **Deterministic** — Same input always produces same output
+- ✅ **Pure** — No side effects, no hidden state
+- ✅ **Immer-based** — Clean immutable updates with structural sharing
+- ✅ **Performance-optimized** — Caching, event indexing, incremental replay
+
+**Example:**
+
+```typescript
+import { replay, createInitialWorld } from "@tokovo/core";
+
+const initialWorld = createInitialWorld({
+  devices: {
+    main_phone: {
+      id: "main_phone",
+      profileId: "iphone16",
+      isLocked: true,
+      notifications: [],
+    },
+  },
+});
+
+const events = [
+  { at: 0, kind: "OS", type: "UNLOCK" },
+  { at: 30, kind: "OS", type: "OPEN_APP", payload: { appId: "app_whatsapp" } },
+];
+
+// Get state at frame 45
+const worldAt45 = replay(initialWorld, events, 45);
+// worldAt45.devices.main_phone.isLocked === false
+// worldAt45.devices.main_phone.foregroundAppId === 'app_whatsapp'
+```
+
+---
+
+### 2. Registries — Centralized Lookup Systems
+
+`@tokovo/core` provides **five core registries** for managing plugins and resources:
+
+#### **App Registry**
+
+Maps `appId` → React view component
+
+```typescript
+import { AppRegistry } from "@tokovo/core";
+
+AppRegistry.register("app_whatsapp", WhatsAppView);
+const view = AppRegistry.get("app_whatsapp");
+```
+
+#### **Sound Registry**
+
+Manages sound asset URLs with namespacing
+
+```typescript
+import { SoundRegistry } from "@tokovo/core";
+
+SoundRegistry.registerNamespaced("app_whatsapp", {
+  notification: "/sounds/whatsapp-notification.mp3",
+  sent: "/sounds/whatsapp-sent.mp3",
+});
+
+const url = SoundRegistry.get("app_whatsapp:notification");
+```
+
+#### **Anchor Registry**
+
+Resolves semantic positions (e.g., "message bubble", "send button")
+
+```typescript
+import { resolveAnchor } from "@tokovo/core";
+
+const bounds = resolveAnchor(
+  worldState,
+  layout,
+  "app_whatsapp",
+  "send_button",
+  "main_phone",
+);
+// Returns { x, y, width, height } in screen coordinates
+```
+
+#### **Layout Registry**
+
+Platform-specific layout computation strategies
+
+```typescript
+import { LayoutRegistry } from "@tokovo/core";
+
+LayoutRegistry.register({
+  appId: "app_whatsapp",
+  viewKind: "CHAT",
+  platforms: ["ios", "android"],
+  computeLayout: (ctx) => {
+    // Compute bubble positions, scroll offset, etc.
+    return layoutState;
+  },
+});
+```
+
+#### **Widget Registry**
+
+Dynamic Island, status bar, and lockscreen widgets
+
+```typescript
+import { WidgetRegistry } from "@tokovo/core";
+
+WidgetRegistry.register({
+  appId: "app_music",
+  mode: "dynamicIsland",
+  platforms: ["ios"],
+  component: MusicNowPlayingWidget,
+});
+```
+
+---
+
+### 3. Plugin System — Self-Contained Apps
+
+Plugins are **batteries-included app modules** that bundle everything an app needs:
+
+- **Reducer** — State update logic
+- **Views** — React components
+- **Sounds** — Audio assets
+- **Layouts** — Platform-specific rendering
+- **Anchors** — Semantic positioning
+- **Notification adapters** — OS notification formatting
+
+**Defining a plugin:**
+
+```typescript
+import { definePlugin } from "@tokovo/core";
+
+export const whatsappPlugin = definePlugin({
+  id: "app_whatsapp",
+  displayName: "WhatsApp",
+
+  // State reducer
+  reducer: (draft, event) => {
+    if (event.type === "MESSAGE_RECEIVED") {
+      draft.appState.app_whatsapp.messages.push(event.payload.message);
+    }
+  },
+
+  // UI component
+  views: {
+    AppRoot: WhatsAppView,
+  },
+
+  // Sound effects
+  assets: {
+    sounds: {
+      notification: "/sounds/whatsapp-notification.mp3",
+      sent: "/sounds/whatsapp-sent.mp3",
+    },
+  },
+
+  // Layout strategy
+  layouts: [
+    {
+      viewKind: "CHAT",
+      platforms: ["ios"],
+      computeLayout: (ctx) => ({
+        /* layout state */
+      }),
+    },
+  ],
+
+  // Semantic anchors
+  anchors: {
+    providers: {
+      send_button: (world, deviceId) => ({
+        x: 0.85,
+        y: 0.92,
+        width: 0.1,
+        height: 0.05,
+      }),
+    },
+  },
+
+  // Notification formatting
+  notificationAdapter: {
+    format: (notification) => ({
+      title: notification.title,
+      body: notification.body,
+      icon: "/icons/whatsapp.png",
+      color: "#25D366",
+    }),
+  },
+});
+```
+
+**Registering plugins:**
+
+```typescript
+import { PluginManager } from "@tokovo/core";
+
+PluginManager.register(whatsappPlugin);
+```
+
+**Composing plugins:**
+
+```typescript
+import { composePlugin, defineReducer, defineViews } from "@tokovo/core";
+
+const myPlugin = composePlugin(
+  defineReducer({
+    /* reducer */
+  }),
+  defineViews({ AppRoot: MyView }),
+  defineLayouts([
+    /* layouts */
+  ]),
+);
+```
+
+---
+
+### 4. Type System — 250+ Exports
+
+`@tokovo/core` exports **14 domain categories** of types:
+
+| Category          | Key Types                                           | Purpose                   |
+| ----------------- | --------------------------------------------------- | ------------------------- |
+| **World State**   | `WorldState`, `DeviceState`, `AppState`             | Core state representation |
+| **Events**        | `TimelineEvent`, `RuntimeEvent`, `CameraEvent`      | Event definitions         |
+| **Camera**        | `CameraState`, `CameraTransform`, `ViewLayout`      | Camera control            |
+| **Audio**         | `AudioState`, `SoundCue`, `MusicBed`                | Audio mixing              |
+| **Notifications** | `NotificationIR`, `NotificationInstance`            | Notification system       |
+| **Keyboard**      | `KeyboardState`, `TypingSchedule`                   | Virtual keyboard          |
+| **Layout**        | `LayoutState`, `ChatLayoutState`, `FeedLayoutState` | Layout computation        |
+| **Anchors**       | `AnchorProvider`, `AnchorFraming`                   | Semantic positioning      |
+| **Plugin**        | `TokovoPlugin`, `PluginReducer`, `PluginViews`      | Plugin contracts          |
+| **Validation**    | `ValidationResult`, `ValidationIssue`               | Schema validation         |
+| **Logger**        | `LogEntry`, `LogLevel`, `LogCollector`              | Structured logging        |
+| **Config**        | `TokovoConfig`, `TimingConfig`                      | Engine configuration      |
+| **Registry**      | `Registry`, `AppMetadata`, `LayoutStrategy`         | Registry interfaces       |
+| **Container**     | `TokovoContainer`, `DependencyInjection`            | Testability               |
+
+**Example: WorldState**
+
+```typescript
+import type { WorldState } from "@tokovo/core";
+
+const world: WorldState = {
+  devices: {
+    main_phone: {
+      id: "main_phone",
+      profileId: "iphone16",
+      isLocked: false,
+      foregroundAppId: "app_whatsapp",
+      notifications: [],
+      keyboard: { visible: true, inputText: "Hello" },
+    },
+  },
+  appState: {
+    app_whatsapp: {
+      messages: [
+        /* ... */
+      ],
+      typingIndicators: {},
+    },
+  },
+  camera: {
+    baseView: "APP_VIEW",
+    appId: "app_whatsapp",
+    transform: { scale: 1.0, x: 0, y: 0 },
+  },
+  audio: {
+    activeSounds: {},
+    buses: { music: {}, ui: {}, sfx: {}, voice: {} },
+  },
+};
+```
+
+---
+
+## Most-Used APIs
+
+### `replay()` — Compute World State
+
+```typescript
+import { replay } from "@tokovo/core";
+
+const worldState = replay(initialWorld, events, currentFrame);
+```
+
+### `definePlugin()` — Create Plugin
+
+```typescript
+import { definePlugin } from "@tokovo/core";
+
+export const myPlugin = definePlugin({
+  id: "app_myapp",
+  displayName: "My App",
+  reducer: (draft, event) => {
+    /* ... */
+  },
+  views: { AppRoot: MyView },
+});
+```
+
+### `PluginManager.register()` — Register Plugin
+
+```typescript
+import { PluginManager } from "@tokovo/core";
+
+PluginManager.register(myPlugin);
+```
+
+### `prepareEpisode()` — Validate and Prepare
+
+```typescript
+import { prepareEpisode } from "@tokovo/core";
+
+const prepared = prepareEpisode(episodeJSON);
+// Returns: { initial, events, metadata, warnings }
+```
+
+### `resolveAnchor()` — Get Semantic Position
+
+```typescript
+import { resolveAnchor } from "@tokovo/core";
+
+const bounds = resolveAnchor(
+  world,
+  layout,
+  "app_whatsapp",
+  "send_button",
+  "main_phone",
+);
+// Returns: { x: 365, y: 850, width: 43, height: 43 }
+```
+
+---
+
+## Determinism Guarantee
+
+`@tokovo/core` guarantees **bit-for-bit determinism**:
+
+> Given the same `initial` state, `events` array, and frame number `t`, the `replay()` function will **always** produce identical output.
+
+**What this means:**
+
+- ✅ Reproducible renders across machines
+- ✅ AI-generated episodes render predictably
+- ✅ Time-travel debugging (rewind/fast-forward)
+- ✅ State snapshots for performance optimization
+
+**How it's enforced:**
+
+- ❌ No `Math.random()` — Use seeded RNG
+- ❌ No `Date.now()` — Use `os.clock` from DeviceOSState
+- ❌ No network calls — All data in events
+- ❌ No external state — Pure functions only
+
+---
+
+## Related Documentation
+
+- [Concepts: WorldState](/concepts/world-state) — Understanding state structure
+- [Concepts: Plugins](/concepts/plugins) — Plugin architecture deep-dive
+- [Concepts: Determinism](/concepts/determinism) — Determinism design principles
+- [API Reference: @tokovo/core](/api/core) — Full API documentation
+- [Package: @tokovo/ir](/packages/ir) — Episode IR and event schemas
+- [Package: @tokovo/renderer](/packages/renderer) — React rendering layer
+
+---
+
+## Links
+
+- [GitHub Repository](https://github.com/tokovo/tokovo/tree/main/packages/core)
+- [npm Package](https://www.npmjs.com/package/@tokovo/core)
+- [API Reference](/api/core)
+- [Migration Guide](/guides/migration)
