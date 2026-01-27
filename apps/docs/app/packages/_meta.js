@@ -1,0 +1,14 @@
+export default {
+  core: "@tokovo/core",
+  ir: "@tokovo/ir",
+  compiler: "@tokovo/compiler",
+  dsl: "@tokovo/dsl",
+  devices: "@tokovo/devices",
+  "device-camera": "@tokovo/device-camera",
+  "device-notifications": "@tokovo/device-notifications",
+  "apps-whatsapp": "@tokovo/apps-whatsapp",
+  renderer: "@tokovo/renderer",
+  react: "@tokovo/react",
+  episodes: "@tokovo/episodes",
+  studio: "@tokovo/studio",
+};
