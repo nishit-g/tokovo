@@ -1,5 +1,724 @@
+---
+title: Timeline Events
+---
+
 # Timeline Events
 
-> Placeholder content - to be written
+> **The declarative building blocks that define what happens and when**
 
-This page will document Timeline Events in Tokovo.
+Timeline Events are the fundamental units of change in Tokovo episodes. They describe everything that happens during your video — from messages arriving to devices unlocking to cameras zooming. Events are the **input** to the replay engine, which processes them to build WorldState at any given time.
+
+---
+
+## What are Timeline Events?
+
+A Timeline Event is a **declarative statement** about something that occurs at a specific point in time. Instead of manually animating UI changes, you declare _what_ should happen at time `t`, and Tokovo figures out _how_ to make it happen.
+
+```typescript
+{
+  at: 2.5,                           // Time in seconds
+  kind: "APP",                        // Event category
+  appId: "app_whatsapp",              // Which app
+  type: "MESSAGE_RECEIVED",           // What happened
+  payload: {                          // Event-specific data
+    from: "Alice",
+    text: "Hey! What's up?"
+  }
+}
+```
+
+### Key Characteristics
+
+**Declarative**: You describe the _what_, not the _how_
+
+- "At 2.5 seconds, Alice sends a message" ← Declarative ✅
+- "Animate bubble in from right over 0.3s" ← Imperative ❌
+
+**Time-stamped**: Every event has an `at` field (in seconds)
+
+- Tokovo processes events in chronological order
+- Same timestamp = order determined by `_declarationOrder`
+
+**Immutable**: Events never change once created
+
+- Episodes are data, not state machines
+- Reproducible rendering guaranteed
+
+**Typed**: Discriminated unions with full TypeScript support
+
+- Autocomplete for event types and payloads
+- Compile-time validation of event structure
+
+---
+
+## Event Structure
+
+All Timeline Events share a common base structure, with event-specific details in the `payload`:
+
+<ASCIIDiagram title="Timeline Event Anatomy">
+  {`┌─────────────────────────────────────────────────────────────┐
+│                  TIMELINE EVENT STRUCTURE                    │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  Base Fields (All Events)                          │     │
+│  │  ┌──────────────────────────────────────────────┐  │     │
+│  │  │  at: number        // Time in seconds        │  │     │
+│  │  │  kind: string      // Event category         │  │     │
+│  │  │  _trace?: {...}    // Debug info (optional)  │  │     │
+│  │  │  _signal?: {...}   // Semantic signal        │  │     │
+│  │  └──────────────────────────────────────────────┘  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  Routing Fields (Context-Specific)                 │     │
+│  │  ┌──────────────────────────────────────────────┐  │     │
+│  │  │  deviceId?: string   // Which device         │  │     │
+│  │  │  appId?: string      // Which app            │  │     │
+│  │  └──────────────────────────────────────────────┘  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  Event-Specific Data                               │     │
+│  │  ┌──────────────────────────────────────────────┐  │     │
+│  │  │  type: string      // Specific event type   │  │     │
+│  │  │  payload: {...}    // Event data            │  │     │
+│  │  └──────────────────────────────────────────────┘  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+### TypeScript Interface
+
+```typescript
+// Base event interface
+interface BaseRuntimeEvent {
+  at: number; // Timestamp in seconds
+  kind: RuntimeEventKind; // Event category
+  _trace?: EventTrace; // Debug trace (optional)
+  _signal?: EventSignal; // Semantic signal for directors
+  silent?: boolean; // Suppress side effects
+}
+
+// Example: APP event
+interface AppRuntimeEvent<AppId, Type, Payload> extends BaseRuntimeEvent {
+  kind: "APP";
+  appId: AppId; // Which app (e.g., "app_whatsapp")
+  type: Type; // Event type (e.g., "MESSAGE_RECEIVED")
+  deviceId?: string; // Target device
+  payload: Payload; // App-specific data
+}
+
+// Example: DEVICE event
+interface DeviceRuntimeEvent<Type, Payload> extends BaseRuntimeEvent {
+  kind: "DEVICE";
+  deviceId: string; // Which device
+  type: Type; // Event type (e.g., "UNLOCK")
+  payload: Payload; // Device-specific data
+}
+```
+
+### Core Fields
+
+#### `at` (required)
+
+Time in seconds when the event occurs. Supports decimals for precise timing:
+
+```typescript
+{
+  at: 0.0;
+} // Frame 0 (start)
+{
+  at: 2.5;
+} // 2.5 seconds in
+{
+  at: 10.333;
+} // Frame 310 @ 30fps
+```
+
+#### `kind` (required)
+
+Event category that determines how it's processed:
+
+- `APP` — App-specific events (messages, typing, etc.)
+- `DEVICE` — Device-level events (lock, unlock, notifications)
+- `CAMERA` — Camera movements (zoom, focus, transitions)
+- `AUDIO` — Sound events (play, stop, crossfade)
+- `OS` — Operating system state (battery, time, network)
+- `CALL` — Phone call events (incoming, answer, end)
+
+#### `type` (required)
+
+Specific event type within the category. Each `kind` has its own set of valid types.
+
+#### `payload` (varies)
+
+Event-specific data structure. Keeps event types clean and extensible:
+
+```typescript
+// ✅ Good: Plugin-specific data in payload
+{
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  payload: { from: "Alice", text: "Hey!", timestamp: 1234567890 }
+}
+
+// ❌ Bad: Polluting top-level event
+{
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  from: "Alice",        // Should be in payload
+  text: "Hey!"          // Should be in payload
+}
+```
+
+---
+
+## Event Types
+
+Tokovo supports events across multiple categories. Here are the most common ones:
+
+### APP Events
+
+App-specific events handled by plugin reducers:
+
+```typescript
+// Message received
+{
+  at: 2.0,
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  deviceId: "phone_1",
+  payload: { from: "Alice", text: "Hey!", conversationId: "chat_1" }
+}
+
+// Typing indicator
+{
+  at: 3.5,
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "TYPING_START",
+  deviceId: "phone_1",
+  payload: { conversationId: "chat_1", participant: "Bob" }
+}
+
+// Typing stopped
+{
+  at: 5.0,
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "TYPING_STOP",
+  deviceId: "phone_1",
+  payload: { conversationId: "chat_1", participant: "Bob" }
+}
+```
+
+### DEVICE Events
+
+Device-level operations:
+
+```typescript
+// Unlock device
+{
+  at: 1.0,
+  kind: "DEVICE",
+  type: "UNLOCK",
+  deviceId: "phone_1",
+  payload: {}
+}
+
+// Lock device
+{
+  at: 10.0,
+  kind: "DEVICE",
+  type: "LOCK",
+  deviceId: "phone_1",
+  payload: {}
+}
+
+// Open app
+{
+  at: 1.5,
+  kind: "DEVICE",
+  type: "OPEN_APP",
+  deviceId: "phone_1",
+  payload: { appId: "app_whatsapp" }
+}
+
+// Show notification
+{
+  at: 0.5,
+  kind: "DEVICE",
+  type: "SHOW_NOTIFICATION",
+  deviceId: "phone_1",
+  payload: {
+    id: "notif_1",
+    appId: "app_whatsapp",
+    title: "Alice",
+    body: "Hey! What's up?",
+    priority: "HIGH"
+  }
+}
+```
+
+### CAMERA Events
+
+Camera movements and effects:
+
+```typescript
+// Focus on anchor
+{
+  at: 2.0,
+  kind: "CAMERA",
+  type: "FOCUS",
+  payload: { anchorId: "lastMessage", duration: 30 }
+}
+
+// Zoom
+{
+  at: 3.0,
+  kind: "CAMERA",
+  type: "ZOOM",
+  payload: { scale: 1.5, duration: 20, easing: "easeInOut" }
+}
+
+// Camera shake
+{
+  at: 5.0,
+  kind: "CAMERA",
+  type: "SHAKE",
+  payload: { intensity: 0.8, duration: 10 }
+}
+```
+
+### AUDIO Events
+
+Sound playback:
+
+```typescript
+// Play sound
+{
+  at: 2.0,
+  kind: "AUDIO",
+  type: "PLAY",
+  payload: { soundId: "notification_ping", volume: 0.8 }
+}
+
+// Background music
+{
+  at: 0.0,
+  kind: "AUDIO",
+  type: "BGM_START",
+  payload: { soundId: "ambient_tension", volume: 0.3, fadeIn: 30 }
+}
+
+// Crossfade
+{
+  at: 10.0,
+  kind: "AUDIO",
+  type: "CROSSFADE",
+  payload: { soundId: "new_track", duration: 60, volume: 0.5 }
+}
+```
+
+### OS Events
+
+Operating system state changes:
+
+```typescript
+// Set time
+{
+  at: 0.0,
+  kind: "OS",
+  type: "SET_TIME",
+  deviceId: "phone_1",
+  payload: { time: new Date("2024-01-15T14:30:00") }
+}
+
+// Set battery
+{
+  at: 0.0,
+  kind: "OS",
+  type: "SET_BATTERY",
+  deviceId: "phone_1",
+  payload: { level: 0.85, charging: false }
+}
+
+// Set network
+{
+  at: 5.0,
+  kind: "OS",
+  type: "SET_NETWORK",
+  deviceId: "phone_1",
+  payload: { network: "5G", strength: 4 }
+}
+```
+
+**See also**: [Full API Reference](/api/events) for complete event type catalog.
+
+---
+
+## Event Ordering
+
+Timeline Events are processed in **chronological order** by their `at` timestamp:
+
+```typescript
+const events = [
+  { at: 1.0, kind: "DEVICE", type: "UNLOCK", ... },
+  { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", ... },
+  { at: 2.0, kind: "CAMERA", type: "FOCUS", ... },      // Same timestamp!
+  { at: 3.5, kind: "APP", type: "TYPING_START", ... },
+];
+
+replay(events, 2.5);
+// ✅ UNLOCK applied (at 1.0 <= 2.5)
+// ✅ MESSAGE_RECEIVED applied (at 2.0 <= 2.5)
+// ✅ FOCUS applied (at 2.0 <= 2.5)
+// ❌ TYPING_START not applied (at 3.5 > 2.5)
+```
+
+### Same-Timestamp Events
+
+When multiple events occur at the same `at` value, order is determined by:
+
+1. **Declaration order** (order they appear in the events array)
+2. **`_declarationOrder` field** (if explicitly set)
+
+```typescript
+// These both fire at t=2.0
+[
+  { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", _declarationOrder: 1 },
+  { at: 2.0, kind: "CAMERA", type: "FOCUS", _declarationOrder: 2 },
+];
+// Message received THEN camera focuses
+```
+
+### Best Practice: Explicit Sequencing
+
+For clarity, use slightly different timestamps when order matters:
+
+```typescript
+// ✅ Good: Clear sequence
+{ at: 2.0,   kind: "APP", type: "MESSAGE_RECEIVED" }
+{ at: 2.001, kind: "CAMERA", type: "FOCUS" }
+
+// ⚠️ Unclear: Relies on declaration order
+{ at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED" }
+{ at: 2.0, kind: "CAMERA", type: "FOCUS" }
+```
+
+---
+
+## Creating Events with the DSL
+
+While you _can_ write Timeline Events manually, the **DSL** (Domain-Specific Language) provides a fluent API that compiles to events:
+
+### DSL to Timeline Events
+
+The DSL's track builders generate Timeline Events under the hood:
+
+```typescript
+// DSL code
+episode("my-story", { fps: 30, duration: 10 })
+  .track("app_whatsapp", (t) =>
+    t
+      .at("2s")
+      .receive("Alice", "Hey!")
+      .at("3s")
+      .typing("Alice")
+      .at("5s")
+      .receive("Alice", "What's up?"),
+  )
+  .build();
+
+// Compiles to these Timeline Events:
+[
+  {
+    at: 2,
+    kind: "APP",
+    appId: "app_whatsapp",
+    type: "MESSAGE_RECEIVED",
+    deviceId: "device_1",
+    payload: { from: "Alice", text: "Hey!", conversationId: "default" },
+  },
+  {
+    at: 3,
+    kind: "APP",
+    appId: "app_whatsapp",
+    type: "TYPING_START",
+    deviceId: "device_1",
+    payload: { conversationId: "default", participant: "Alice" },
+  },
+  {
+    at: 5,
+    kind: "APP",
+    appId: "app_whatsapp",
+    type: "MESSAGE_RECEIVED",
+    deviceId: "device_1",
+    payload: { from: "Alice", text: "What's up?", conversationId: "default" },
+  },
+];
+```
+
+### Compilation Pipeline
+
+<ASCIIDiagram title="DSL to Timeline Events Flow">
+  {`┌─────────────────────────────────────────────────────────────┐
+│                  TIMELINE EVENT FLOW                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  EPISODE (DSL)                                               │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ episode("story", ...)                              │     │
+│  │   .track("app_whatsapp", t =>                      │     │
+│  │     t.at("1s").receive("Alice", "Hey!")            │     │
+│  │      .at("3s").typing("Alice")                     │     │
+│  │      .at("5s").receive("Alice", "What's up?")      │     │
+│  │   )                                                │     │
+│  │   .build()                                         │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │ COMPILER (Lowering)                    │
+│                     ▼                                        │
+│  TIMELINE EVENTS (IR)                                        │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ [                                                  │     │
+│  │   { at: 1, kind: "APP",                            │     │
+│  │     type: "MESSAGE_RECEIVED",                      │     │
+│  │     payload: { from: "Alice", text: "Hey!" } },    │     │
+│  │   { at: 3, kind: "APP",                            │     │
+│  │     type: "TYPING_START",                          │     │
+│  │     payload: { participant: "Alice" } },           │     │
+│  │   { at: 5, kind: "APP",                            │     │
+│  │     type: "MESSAGE_RECEIVED",                      │     │
+│  │     payload: { from: "Alice",                      │     │
+│  │               text: "What's up?" } }               │     │
+│  │ ]                                                  │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │ replay(events, t)                      │
+│                     ▼                                        │
+│  WORLDSTATE @ t                                              │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ {                                                  │     │
+│  │   devices: { phone_1: { ... } },                   │     │
+│  │   appState: {                                      │     │
+│  │     app_whatsapp: {                                │     │
+│  │       messages: [                                  │     │
+│  │         { from: "Alice", text: "Hey!" },           │     │
+│  │         { from: "Alice", text: "What's up?" }      │     │
+│  │       ],                                           │     │
+│  │       typing: { Alice: false }                     │     │
+│  │     }                                              │     │
+│  │   }                                                │     │
+│  │ }                                                  │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+**See also**: [DSL Documentation](/packages/dsl) for full DSL syntax and features.
+
+---
+
+## Relationship to WorldState
+
+Timeline Events and WorldState form a **unidirectional data flow**:
+
+**Events are the input** → **WorldState is the output**
+
+```typescript
+function replay(episode: CompiledEpisode, t: number): WorldState {
+  let world = episode.initialWorld;
+
+  // Filter events up to time t
+  const relevantEvents = episode.events.filter((e) => e.at <= t);
+
+  // Apply each event to build state
+  for (const event of relevantEvents) {
+    world = applyEvent(world, event);
+  }
+
+  return world;
+}
+```
+
+### Events Describe What Happens
+
+Events are **commands** — declarative instructions:
+
+```typescript
+{
+  at: 2.0,
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MESSAGE_RECEIVED",
+  payload: { from: "Alice", text: "Hey!" }
+}
+```
+
+This says: _"At 2.0 seconds, Alice sends a WhatsApp message saying 'Hey!'"_
+
+### WorldState Describes What Exists
+
+WorldState is the **result** — the accumulated state after all events:
+
+```typescript
+{
+  appState: {
+    app_whatsapp: {
+      messages: [
+        { id: "msg_1", from: "Alice", text: "Hey!", timestamp: 2.0 }
+      ],
+      typing: {},
+      conversationId: "chat_alice"
+    }
+  }
+}
+```
+
+This says: _"The WhatsApp app now has one message from Alice in its state."_
+
+### Key Insight
+
+- **Events** = imperative commands ("do this")
+- **WorldState** = declarative snapshot ("this exists")
+
+The renderer only sees WorldState — it never knows which events created it.
+
+**See also**: [WorldState Documentation](/concepts/world-state) for state structure and usage.
+
+---
+
+## Common Patterns
+
+### Sequential Events
+
+Build narrative sequences by chaining events:
+
+```typescript
+const conversationFlow = [
+  { at: 0.0, kind: "DEVICE", type: "UNLOCK", ... },
+  { at: 1.0, kind: "APP", type: "MESSAGE_RECEIVED", payload: { from: "Alice", text: "Hey!" } },
+  { at: 2.5, kind: "APP", type: "TYPING_START", payload: { participant: "User" } },
+  { at: 4.0, kind: "APP", type: "TYPING_STOP", payload: { participant: "User" } },
+  { at: 4.1, kind: "APP", type: "MESSAGE_SENT", payload: { text: "Hi!" } },
+];
+```
+
+### Parallel Events
+
+Multiple things happening simultaneously:
+
+```typescript
+// At 2.0s: Message arrives + notification shows + sound plays
+[
+  { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", ... },
+  { at: 2.0, kind: "DEVICE", type: "SHOW_NOTIFICATION", ... },
+  { at: 2.0, kind: "AUDIO", type: "PLAY", payload: { soundId: "notification_ping" } },
+]
+```
+
+### Delayed Reactions
+
+Camera responds to message arrival:
+
+```typescript
+[
+  { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED", ... },
+  { at: 2.1, kind: "CAMERA", type: "FOCUS", payload: { anchorId: "lastMessage" } },
+]
+```
+
+### State Transitions
+
+Device state changes:
+
+```typescript
+[
+  { at: 0.0, kind: "DEVICE", type: "LOCK", ... },
+  { at: 1.0, kind: "DEVICE", type: "UNLOCK", ... },
+  { at: 2.0, kind: "DEVICE", type: "OPEN_APP", payload: { appId: "app_whatsapp" } },
+  { at: 10.0, kind: "DEVICE", type: "CLOSE_APP", ... },
+  { at: 11.0, kind: "DEVICE", type: "LOCK", ... },
+]
+```
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- **Use the DSL** for authoring (cleaner, type-safe, less error-prone)
+- **Explicit timestamps** when order matters (avoid same-timestamp ambiguity)
+- **Small time increments** for natural pacing (0.1s, 0.5s intervals)
+- **Consistent naming** for IDs (conversationId, deviceId, appId)
+
+### ❌ Don't
+
+- **Mutate events** after creation (they're immutable by design)
+- **Rely on declaration order** for same-timestamp events (use explicit sequencing)
+- **Put logic in events** (events are data, logic lives in reducers)
+- **Skip validation** (use Zod schemas to catch errors early)
+
+---
+
+## Debugging Events
+
+### Event Traces
+
+Events can include trace metadata for debugging:
+
+```typescript
+{
+  at: 2.0,
+  kind: "APP",
+  type: "MESSAGE_RECEIVED",
+  _trace: {
+    file: "my-episode.ts",
+    line: 42,
+    beat: "conversation_start",
+    episodeId: "ep_breakup_01"
+  }
+}
+```
+
+### Event Signals
+
+Semantic signals for auto-directors:
+
+```typescript
+{
+  at: 2.0,
+  kind: "APP",
+  type: "MESSAGE_RECEIVED",
+  _signal: {
+    type: "NewMessage",
+    mood: "romantic",
+    intensity: 0.8,
+    pacing: "slow"
+  }
+}
+```
+
+---
+
+## Related Concepts
+
+- **[WorldState](/concepts/world-state)**: The state built from Timeline Events
+- **[DSL](/packages/dsl)**: High-level API for creating events
+- **[Compiler](/packages/compiler)**: Lowering DSL to Timeline Events
+- **[Plugins](/concepts/plugins)**: How apps define custom event types
+
+---
+
+## API Reference
+
+For complete TypeScript definitions:
+
+- [`packages/core/src/types/runtime-event.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/runtime-event.ts) — RuntimeEvent types
+- [`packages/ir/src/v2/track-event.ts`](https://github.com/yourusername/tokovo/blob/main/packages/ir/src/v2/track-event.ts) — TrackEvent IR types
+- [`packages/compiler/src/v2/lowering.ts`](https://github.com/yourusername/tokovo/blob/main/packages/compiler/src/v2/lowering.ts) — Event lowering logic

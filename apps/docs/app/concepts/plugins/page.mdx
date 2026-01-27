@@ -1,5 +1,718 @@
-# Plugins
+---
+title: Plugin System
+---
 
-> Placeholder content - to be written
+# Plugin System
 
-This page will document the Plugin system in Tokovo.
+> **Modular extensions that bring apps, devices, and behaviors to life**
+
+Tokovo's plugin system is the foundation for extensibility. Instead of hardcoding behaviors into the core engine, plugins encapsulate everything an app or device feature needs: UI components, state reducers, sound effects, event handlers, and more.
+
+---
+
+## What are Plugins?
+
+A **plugin** is a self-contained module that extends Tokovo's core engine with new capabilities. Plugins follow the **TokovoPluginContract** interface, registering themselves with the engine at runtime.
+
+### Plugin Philosophy
+
+- **Self-Contained**: Plugins bundle all dependencies (views, reducers, sounds, layouts)
+- **Registered, Not Hardcoded**: Core engine discovers plugins via registration
+- **Type-Safe**: Full TypeScript support with module augmentation
+- **Isolated**: Plugins don't communicate directly—they only interact through WorldState
+
+### What Plugins Provide
+
+Each plugin can include:
+
+- **Reducers**: Event handlers that update WorldState
+- **Views**: React components for rendering UI
+- **Layouts**: Platform-specific layout strategies (iOS, Android)
+- **Assets**: Sounds, icons, images
+- **Audio Rules**: Automatic sound playback on events
+- **Notification Adapters**: Custom notification formatting
+- **Anchors**: Camera framing targets (semantic anchors)
+- **DSL Extensions**: Authoring API for beat builders
+
+---
+
+## Plugin Types
+
+Tokovo has three main categories of plugins:
+
+### App Plugins
+
+**App plugins** represent phone applications like WhatsApp, Instagram, or Gmail.
+
+```typescript
+// packages/apps-whatsapp/src/plugin.ts
+import { definePlugin } from "@tokovo/core/plugin";
+
+export const WhatsAppPlugin = definePlugin({
+  id: "app_whatsapp",
+  version: "1.0.0",
+  displayName: "WhatsApp",
+
+  // State management
+  reducer: whatsappReducer,
+  eventKinds: ["MessageReceived", "TypingStart", "TypingEnd"] as const,
+  createInitialState: () => ({ messages: [], typing: {} }),
+
+  // UI
+  views: {
+    AppRoot: WhatsAppChatView,
+  },
+
+  // Assets
+  assets: {
+    sounds: {
+      notification: "/sounds/whatsapp-notification.mp3",
+      send: "/sounds/whatsapp-send.mp3",
+    },
+    icons: {
+      app: "https://...",
+    },
+  },
+
+  // Auto-play sounds on events
+  audioRules: [
+    {
+      match: { kind: "APP", type: "MessageReceived", appId: "app_whatsapp" },
+      action: "PLAY_ONE_SHOT",
+      sound: "notification",
+      volume: 0.8,
+    },
+  ],
+});
+```
+
+**Available App Plugins:**
+
+- `@tokovo/apps-whatsapp` — WhatsApp chat simulation
+
+### Device Plugins
+
+**Device plugins** provide OS-level features and device profiles (iPhone, Android, etc.).
+
+```typescript
+// packages/devices/src/plugin.ts
+import { definePlugin } from "@tokovo/core/plugin";
+
+export const DevicesPlugin = definePlugin({
+  id: "devices",
+  version: "2.0.0",
+  displayName: "Device Profiles & OS Features",
+
+  // Device event handling (lock, unlock, open app)
+  reducer: deviceReducer,
+  eventKinds: ["DeviceLock", "DeviceUnlock", "OpenApp", "CloseApp"],
+
+  // Platform-specific status bar
+  views: {
+    AppRoot: StatusBar,
+  },
+
+  // Layouts for different platforms
+  layouts: [
+    {
+      viewKind: "STATUS_BAR",
+      platforms: ["ios"],
+      computeLayout: iosStatusBarLayout,
+    },
+  ],
+});
+```
+
+### Device Feature Plugins
+
+**Device feature plugins** add capabilities like camera, notifications, or calls.
+
+```typescript
+// packages/device-camera/src/plugin.ts
+export const CameraPlugin = definePlugin({
+  id: "device_camera",
+  version: "1.0.0",
+  displayName: "Device Camera",
+
+  reducer: cameraReducer,
+  eventKinds: ["CameraOpen", "CameraShutter", "CameraClose"],
+
+  views: {
+    AppRoot: CameraView,
+  },
+
+  // Define camera anchors for framing
+  anchors: {
+    providers: {
+      shutter_button: (world, deviceId) => ({
+        x: 0.5, // Center X
+        y: 0.9, // Bottom Y
+        width: 0.15,
+        height: 0.08,
+      }),
+    },
+  },
+});
+```
+
+**Available Feature Plugins:**
+
+- `@tokovo/device-camera` — Camera app simulation
+- `@tokovo/device-notifications` — Notification system
+
+---
+
+## Plugin Architecture
+
+<ASCIIDiagram title="Plugin Architecture">
+  {`┌─────────────────────────────────────────────────────────────┐
+│                   PLUGIN ARCHITECTURE                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  EPISODE                                                     │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ .device(...).app('app_whatsapp', ...)              │     │
+│  │                        │                           │     │
+│  │                        ▼                           │     │
+│  │              Plugin ID: "app_whatsapp"            │     │
+│  └────────────────────────┬───────────────────────────┘     │
+│                           │                                  │
+│                           ▼                                  │
+│  CORE ENGINE                                                 │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │  PluginManager.get('app_whatsapp')                 │     │
+│  │    │                                                │     │
+│  │    ▼                                                │     │
+│  │  ┌─────────────────────────────────────────┐       │     │
+│  │  │  WhatsAppPlugin                         │       │     │
+│  │  │  ┌───────────────────────────────────┐  │       │     │
+│  │  │  │ id: 'app_whatsapp'                │  │       │     │
+│  │  │  │ reducer: fn                       │  │       │     │
+│  │  │  │ views: { AppRoot: Component }     │  │       │     │
+│  │  │  │ eventKinds: [...]                 │  │       │     │
+│  │  │  │ audioRules: [...]                 │  │       │     │
+│  │  │  └───────────────────────────────────┘  │       │     │
+│  │  └─────────────────────────────────────────┘       │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+│  ISOLATED PLUGINS (No cross-communication)                   │
+│  ┌──────────────────┐  ┌──────────────────┐                │
+│  │ Device Camera     │  │ Device Notifs    │                │
+│  │ Plugin            │  │ Plugin           │                │
+│  └──────────────────┘  └──────────────────┘                │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+### Registration with Core Registries
+
+When a plugin registers, the PluginManager distributes its pieces to specialized registries:
+
+```typescript
+// Internally, PluginManager.register() does this:
+
+// 1. Register reducer for event handling
+ReducerRegistry.registerAppReducer(plugin.id, plugin.reducer);
+
+// 2. Register event kinds for routing
+ReducerRegistry.registerEventKinds(plugin.id, plugin.eventKinds);
+
+// 3. Register views for rendering
+AppRegistry.register(plugin.id, plugin.views.AppRoot);
+
+// 4. Register sounds by namespace
+SoundRegistry.registerNamespaced(plugin.id, plugin.assets.sounds);
+
+// 5. Register audio rules for auto-playback
+AutoSoundRegistry.register(plugin.audioRules);
+
+// 6. Register notification adapter
+NotificationAdapterRegistry.register(plugin.notificationAdapter);
+
+// 7. Register layout strategies
+LayoutRegistry.register(plugin.layouts);
+```
+
+This design ensures **clean separation**: each subsystem owns its registry, plugins just provide the data.
+
+---
+
+## How Plugins Work
+
+### 1. Episode References Plugin by ID
+
+Episodes reference plugins using their string ID:
+
+```typescript
+const episode = createEpisode((b) => {
+  b.device("main_phone").unlock().openApp("app_whatsapp"); // ← Plugin ID
+
+  b.use("app_whatsapp") // ← Plugin DSL
+    .receive("Alice", "Hey there!");
+});
+```
+
+### 2. Engine Looks Up Plugin in Registry
+
+When an event targets a plugin, the engine routes it:
+
+```typescript
+// Event arrives
+const event = {
+  at: 2.0,
+  kind: "APP",
+  appId: "app_whatsapp", // ← Plugin ID
+  type: "MessageReceived",
+  payload: { from: "Alice", text: "Hey!" },
+};
+
+// Engine retrieves plugin reducer
+const reducer = ReducerRegistry.getAppReducer("app_whatsapp");
+
+// Apply event to state
+const nextWorld = produce(currentWorld, (draft) => {
+  reducer(draft, event);
+});
+```
+
+### 3. Events Routed to Plugin Handlers
+
+Each plugin reducer handles only its own events:
+
+```typescript
+// whatsapp/reducer.ts
+export const whatsappReducer: PluginReducer<"app_whatsapp"> = (
+  draft,
+  event,
+) => {
+  const appState = draft.appState.app_whatsapp;
+  if (!appState) return;
+
+  switch (event.type) {
+    case "MessageReceived":
+      appState.messages.push({
+        id: generateId(),
+        from: event.payload.from,
+        text: event.payload.text,
+        timestamp: event.at,
+      });
+      break;
+
+    case "TypingStart":
+      appState.typing[event.payload.user] = true;
+      break;
+
+    case "TypingEnd":
+      delete appState.typing[event.payload.user];
+      break;
+  }
+};
+```
+
+### 4. Plugin Returns New State Slice
+
+Plugins use **Immer** for clean immutable updates:
+
+```typescript
+// Inside reducer (draft is Immer draft)
+draft.appState.app_whatsapp.messages.push(newMessage);
+// ✅ Mutations are safe inside Immer produce()
+```
+
+The engine produces a new WorldState with the updated app slice.
+
+### 5. Renderer Uses Plugin Views
+
+When rendering a frame, the renderer queries the plugin for its UI:
+
+```typescript
+// renderer/AppView.tsx
+function AppView({ world, appId }: Props) {
+  const AppComponent = AppRegistry.get(appId);
+
+  if (!AppComponent) return null;
+
+  return <AppComponent world={world} deviceId="main_phone" />;
+}
+```
+
+---
+
+## Event Routing
+
+Tokovo v2 introduces **type-safe event routing** via `eventKinds`:
+
+```typescript
+// Plugin declares which event types it handles
+export const WhatsAppPlugin = definePlugin({
+  id: "app_whatsapp",
+  eventKinds: ["MessageReceived", "TypingStart", "TypingEnd"] as const,
+  reducer: whatsappReducer,
+});
+```
+
+This enables:
+
+- **Type checking**: Unknown event types caught at compile time
+- **Auto-completion**: IDEs suggest valid events for each plugin
+- **Runtime validation**: Engine validates events against registered kinds
+
+```typescript
+// TypeScript knows valid events for app_whatsapp
+declare module "@tokovo/core" {
+  interface AppEventKindRegistry {
+    app_whatsapp: "MessageReceived" | "TypingStart" | "TypingEnd";
+  }
+}
+```
+
+---
+
+## Plugin Isolation
+
+Plugins are **isolated by design**:
+
+- ✅ Plugins can read WorldState
+- ✅ Plugins update their own state slice
+- ❌ Plugins cannot call each other directly
+- ❌ Plugins cannot access other plugins' internals
+
+### Why Isolation?
+
+1. **Predictability**: No hidden dependencies between plugins
+2. **Testability**: Test plugins in isolation
+3. **Modularity**: Remove/replace plugins without breaking others
+4. **Composability**: Mix and match plugins freely
+
+### Communication via WorldState
+
+If plugins need to "communicate", they do so through shared WorldState:
+
+```typescript
+// WhatsApp plugin writes a notification
+draft.appState.app_whatsapp.unreadCount = 5;
+
+// Notification plugin reads it (separate event)
+const unread = world.appState.app_whatsapp?.unreadCount ?? 0;
+```
+
+---
+
+## Creating a Plugin
+
+### Minimum Viable Plugin
+
+A Tier A plugin requires only:
+
+```typescript
+import { definePlugin } from "@tokovo/core/plugin";
+
+export const MyPlugin = definePlugin({
+  // Identity
+  id: "app_myapp",
+  version: "1.0.0",
+  displayName: "My Custom App",
+
+  // Reducer
+  reducer: (draft, event) => {
+    // Handle events and mutate draft
+  },
+
+  // Views
+  views: {
+    AppRoot: MyAppView,
+  },
+});
+```
+
+### Registration
+
+Register your plugin in the episode entrypoint:
+
+```typescript
+import { PluginManager } from "@tokovo/core/plugin";
+import { MyPlugin } from "./plugins/my-plugin";
+
+// Register before creating episodes
+PluginManager.register(MyPlugin);
+```
+
+Or use the helper:
+
+```typescript
+import { registerPlugins } from "@tokovo/core/plugin";
+
+registerPlugins([MyPlugin, WhatsAppPlugin, CameraPlugin]);
+```
+
+### Full Example
+
+See the [Creating a Plugin Guide](/guides/creating-plugins) for a complete walkthrough including:
+
+- Defining custom state types
+- Implementing reducers with Immer
+- Creating React views
+- Adding sounds and assets
+- Writing DSL extensions
+- Testing plugins in isolation
+
+---
+
+## Plugin Tiers
+
+The TokovoPluginContract supports **four tiers** of functionality:
+
+### Tier A: Runtime (Required)
+
+- `id`, `version`, `displayName`
+- `reducer`: Event handler
+- `views`: React components
+- `assets`: Sounds, icons, images (optional)
+- `audioRules`: Auto-playback rules (optional)
+
+**Example**: `@tokovo/apps-whatsapp`
+
+### Tier B: Lowering (Optional)
+
+- `lowering`: Converts DSL track events to runtime events
+- `layouts`: Platform-specific layout strategies
+
+**Example**: Plugins with custom authoring formats
+
+### Tier C: DSL (Optional)
+
+- `dsl`: Authoring API for beat builders
+
+**Example**: Plugins that add `.use("plugin_id")` API
+
+```typescript
+// DSL extension
+b.use("app_whatsapp").receive("Alice", "Hello!");
+```
+
+### Tier D: Compiler (Advanced)
+
+- `compileHandlers`: Advanced compile-time validators
+
+**Example**: Plugins with complex multi-step event sequences
+
+Most plugins are **Tier A** only. Higher tiers are opt-in.
+
+---
+
+## Built-in Plugins
+
+Tokovo ships with core plugins:
+
+| Plugin              | Package                        | Description                                          |
+| ------------------- | ------------------------------ | ---------------------------------------------------- |
+| **WhatsApp**        | `@tokovo/apps-whatsapp`        | Chat simulation with typing, messages, notifications |
+| **Device Profiles** | `@tokovo/devices`              | iPhone, Android profiles and OS features             |
+| **Camera**          | `@tokovo/device-camera`        | Camera app simulation with shutter, preview          |
+| **Notifications**   | `@tokovo/device-notifications` | Notification system with banners, badges             |
+
+### Using Built-in Plugins
+
+```typescript
+import { PluginManager } from "@tokovo/core/plugin";
+import { WhatsAppPlugin } from "@tokovo/apps-whatsapp";
+import { CameraPlugin } from "@tokovo/device-camera";
+
+PluginManager.register(WhatsAppPlugin);
+PluginManager.register(CameraPlugin);
+
+const episode = createEpisode((b) => {
+  b.use("app_whatsapp").receive("Sarah", "Check this out!");
+  b.use("device_camera").open().shutter();
+});
+```
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- **Keep plugins self-contained**: Bundle all dependencies
+- **Use module augmentation**: Register types for AppStateMap
+- **Follow naming conventions**: `app_*` for apps, `device_*` for device features
+- **Use Immer in reducers**: Safe mutations in draft
+- **Version your plugins**: Follow semver for compatibility
+
+### ❌ Don't
+
+- **Don't mutate WorldState directly**: Only mutate Immer drafts
+- **Don't access other plugins**: Stay isolated
+- **Don't hardcode device IDs**: Accept `deviceId` as prop
+- **Don't store React state**: Derive everything from WorldState
+- **Don't skip type augmentation**: Extend AppStateMap for type safety
+
+---
+
+## Advanced Features
+
+### Audio Rules
+
+Auto-play sounds when events match:
+
+```typescript
+audioRules: [
+  {
+    match: { kind: "APP", type: "MessageReceived", from: "*" },
+    action: "PLAY_ONE_SHOT",
+    sound: "notification",
+    volume: 0.8,
+    bus: "sfx",
+  },
+];
+```
+
+### Semantic Anchors
+
+Define camera targets for framing:
+
+```typescript
+anchors: {
+  providers: {
+    chat_input: (world, deviceId) => {
+      // Return normalized bounds (0-1 coordinates)
+      return { x: 0.5, y: 0.95, width: 0.9, height: 0.08 };
+    },
+  },
+};
+
+// In episodes
+b.camera().focusOn("chat_input", { duration: 1.0 });
+```
+
+### Platform-Specific Views
+
+Provide different components per platform:
+
+```typescript
+views: {
+  AppRoot: GenericWhatsAppView,
+  strategies: {
+    ios: {
+      ChatView: iOSWhatsAppChatView,
+    },
+    android: {
+      ChatView: AndroidWhatsAppChatView,
+    },
+  },
+};
+```
+
+---
+
+## Type Safety
+
+Plugins leverage TypeScript's advanced types for full type safety:
+
+### Module Augmentation
+
+```typescript
+// Extend WorldState with plugin state
+declare module "@tokovo/core" {
+  interface AppStateMap {
+    app_whatsapp: WhatsAppState;
+  }
+}
+
+// Now TypeScript knows
+world.appState.app_whatsapp.messages; // ✅ Type-safe
+```
+
+### Event Kind Registry
+
+```typescript
+// Register event kinds for your plugin
+declare module "@tokovo/core" {
+  interface AppEventKindRegistry {
+    app_whatsapp: "MessageReceived" | "TypingStart";
+  }
+}
+
+// TypeScript validates events
+const event: AppEvent<"app_whatsapp"> = {
+  kind: "APP",
+  appId: "app_whatsapp",
+  type: "MessageReceived", // ✅ Valid
+  // type: "InvalidType", // ❌ Compile error
+};
+```
+
+---
+
+## Performance Considerations
+
+### Lazy Registration
+
+Plugins are registered once at startup, not per-frame:
+
+```typescript
+// ✅ Register once
+PluginManager.register(MyPlugin);
+
+// ❌ Don't register per-frame
+function render() {
+  PluginManager.register(MyPlugin); // SLOW!
+}
+```
+
+### State Size
+
+Keep plugin state minimal. Large state trees slow down Immer:
+
+```typescript
+// ✅ Good: Only essential state
+interface WhatsAppState {
+  messages: Message[];
+  typing: Record<string, boolean>;
+}
+
+// ❌ Bad: Cached/derived state
+interface WhatsAppState {
+  messages: Message[];
+  messageById: Map<string, Message>; // Derive this!
+  sortedMessages: Message[]; // Derive this!
+}
+```
+
+### Memoization
+
+Derive computed values outside the plugin:
+
+```typescript
+// In your view component
+const sortedMessages = useMemo(
+  () => [...messages].sort((a, b) => a.timestamp - b.timestamp),
+  [messages],
+);
+```
+
+---
+
+## Related Concepts
+
+- **[WorldState](/concepts/world-state)**: The state container plugins modify
+- **[Timeline Events](/concepts/timeline-events)**: Events plugins handle
+- **[Determinism](/concepts/determinism)**: How plugin isolation enables predictability
+
+---
+
+## API Reference
+
+For complete plugin contract and types:
+
+- [`packages/core/src/types/plugin-contract.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/plugin-contract.ts)
+- [`packages/core/src/plugin/plugin.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/plugin/plugin.ts)
+- [`packages/core/src/plugin/router.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/plugin/router.ts)
+
+---
+
+## Next Steps
+
+- **[Create Your First Plugin](/guides/creating-plugins)**: Step-by-step guide
+- **[WhatsApp Plugin Source](https://github.com/yourusername/tokovo/tree/main/packages/apps-whatsapp)**: Reference implementation
+- **[Plugin API Reference](/api/plugin)**: Complete TypeScript definitions

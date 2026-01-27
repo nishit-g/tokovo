@@ -1,5 +1,498 @@
-# World State
+---
+title: WorldState
+---
 
-> Placeholder content - to be written
+# WorldState
 
-This page will document the World State concept in Tokovo.
+> **The immutable snapshot of your phone simulation at any point in time**
+
+WorldState is the central data structure in Tokovo that represents the complete state of your phone simulation at time `t`. It's the single source of truth that determines what appears on screen for any given frame.
+
+---
+
+## What is WorldState?
+
+WorldState is an **immutable snapshot** of everything in your simulation at a specific moment:
+
+- Which apps are running and their internal state
+- Device properties (locked, unlocked, battery, notifications)
+- Camera configuration (zoom, pan, focus)
+- Audio state and active sounds
+
+```typescript
+// WorldState at t = 3.5 seconds
+const worldAtTime = replay(episode, 3.5);
+// → Complete snapshot of simulation at 3.5s
+```
+
+Every frame of your video is rendered from a fresh WorldState computed by the `replay()` function.
+
+---
+
+## WorldState Structure
+
+<ASCIIDiagram title="WorldState Anatomy">
+  {`┌─────────────────────────────────────────────────────────────┐
+│                    WORLDSTATE STRUCTURE                      │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  WorldState @ t=3.5s                                        │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  devices: Map<deviceId, DeviceState>                │    │
+│  │  ┌───────────────────────────────────────────────┐  │    │
+│  │  │  "phone": {                                     │  │    │
+│  │  │    locked: false,                               │  │    │
+│  │  │    screen: "on",                                │  │    │
+│  │  │    currentApp: "app_whatsapp"                   │  │    │
+│  │  │  }                                               │  │    │
+│  │  └───────────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  appState: Record<appId, AppState>                   │    │
+│  │  ┌───────────────────────────────────────────────┐  │    │
+│  │  │  "app_whatsapp": {                              │  │    │
+│  │  │    messages: [...],                             │  │    │
+│  │  │    typing: { Alice: true },                     │  │    │
+│  │  │    lastMessageId: "msg_003"                     │  │    │
+│  │  │  }                                               │  │    │
+│  │  └───────────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  camera: CameraState                                 │    │
+│  │  ┌───────────────────────────────────────────────┐  │    │
+│  │  │  baseView: "APP_VIEW",                          │  │    │
+│  │  │  transform: { scale: 1.2, ... },                │  │    │
+│  │  │  layout: { mode: "SINGLE", ... }                │  │    │
+│  │  └───────────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+│  ┌─────────────────────────────────────────────────────┐    │
+│  │  audio: AudioState                                   │    │
+│  │  ┌───────────────────────────────────────────────┐  │    │
+│  │  │  activeSounds: ["notification_ping"],           │  │    │
+│  │  │  volume: 0.8                                    │  │    │
+│  │  └───────────────────────────────────────────────┘  │    │
+│  └─────────────────────────────────────────────────────┘    │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+### TypeScript Interface
+
+```typescript
+interface WorldState {
+  // Device states by device ID
+  devices: Record<DeviceId, DeviceState>;
+
+  // App states - plugins extend this via module augmentation
+  appState: {
+    app_whatsapp?: WhatsAppState;
+    app_instagram?: InstagramState;
+    // ... more apps
+  } & Record<string, unknown>;
+
+  // Camera configuration
+  camera: BaseCameraState;
+
+  // Audio state
+  audio: AudioState;
+
+  // Optional video configuration
+  config?: VideoConfig;
+}
+```
+
+### Core Fields
+
+#### `devices`
+
+Map of device states keyed by device ID. Each `DeviceState` includes:
+
+- Lock status (`locked: boolean`)
+- Screen state (`screenOn: boolean`)
+- Active app (`foregroundAppId?: string`)
+- Notifications, battery, network status
+- OS-level properties
+
+#### `appState`
+
+App-specific state buckets. Plugins extend this via TypeScript module augmentation:
+
+```typescript
+declare module "@tokovo/core" {
+  interface AppStateMap {
+    app_whatsapp: WhatsAppState;
+  }
+}
+```
+
+This enables type-safe access: `world.appState.app_whatsapp.messages`
+
+#### `camera`
+
+Camera view configuration including:
+
+- Base view type (`APP_VIEW`, `TRANSITION`)
+- Transform properties (scale, pan, rotation)
+- Layout mode (single device, split-screen, PIP)
+- Active effects (shake, blur, vignette)
+
+#### `audio`
+
+Audio system state:
+
+- Active sounds and their playback state
+- Volume levels
+- Crossfade timings
+
+---
+
+## Immutability Principle
+
+WorldState is **never mutated**. Every state change creates a new WorldState object.
+
+### Why Immutable?
+
+1. **Deterministic Rendering**: Same events + same time = identical WorldState
+2. **Frame Independence**: Each frame can be rendered in isolation
+3. **Time Travel**: Jump to any timestamp without side effects
+4. **Debugging**: Compare states across time easily
+
+```typescript
+// ❌ NEVER DO THIS
+world.devices.phone.locked = false;
+
+// ✅ State changes happen through events
+const newWorld = applyEvent(world, unlockEvent);
+```
+
+### How It Works
+
+Tokovo uses **Immer** under the hood for clean immutable updates:
+
+```typescript
+import { produce } from "immer";
+
+const nextWorld = produce(currentWorld, (draft) => {
+  draft.devices.phone.locked = false;
+  // Mutations are safe inside produce()
+});
+
+// currentWorld unchanged
+// nextWorld is a new immutable object
+```
+
+---
+
+## Time-Based Generation
+
+WorldState is generated by the `replay()` function, which applies all events up to time `t`:
+
+```typescript
+function replay(episode: CompiledEpisode, t: number): WorldState {
+  // 1. Start with initial world
+  let world = episode.initialWorld;
+
+  // 2. Get all events at or before time t
+  const relevantEvents = episode.events.filter((e) => e.at <= t);
+
+  // 3. Apply each event sequentially
+  for (const event of relevantEvents) {
+    world = applyEvent(world, event);
+  }
+
+  // 4. Return immutable snapshot
+  return world;
+}
+```
+
+### Key Properties
+
+**Frame Independence**: Every frame computes its WorldState from scratch:
+
+```typescript
+// Frame 0 (t = 0.0s)
+const world0 = replay(episode, 0.0);
+
+// Frame 90 (t = 3.0s)
+const world90 = replay(episode, 3.0);
+
+// No shared state between frames
+```
+
+**Causality**: Only events at `t ≤ currentTime` affect the state:
+
+```typescript
+const events = [
+  { at: 1.0, kind: "DEVICE", type: "UNLOCK" },
+  { at: 2.0, kind: "APP", type: "MESSAGE_RECEIVED" },
+  { at: 3.0, kind: "CAMERA", type: "ZOOM", scale: 1.5 },
+];
+
+replay(episode, 2.5);
+// ✅ UNLOCK applied
+// ✅ MESSAGE_RECEIVED applied
+// ❌ ZOOM not applied (at=3.0 > 2.5)
+```
+
+---
+
+## Relationship to Timeline Events
+
+WorldState and Timeline Events form a **unidirectional data flow**:
+
+<ASCIIDiagram title="Events → State Flow">
+  {`┌────────────────────────────────────────────────────────────┐
+│                    EVENTS → STATE FLOW                     │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│  TIMELINE EVENTS (Input)                                   │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  [                                               │      │
+│  │    { at: 1.0, kind: "DEVICE", type: "UNLOCK" }, │      │
+│  │    { at: 2.0, kind: "APP", type: "MESSAGE" },   │      │
+│  │    { at: 3.0, kind: "CAMERA", type: "ZOOM" }    │      │
+│  │  ]                                               │      │
+│  └──────────────────────────────────────────────────┘      │
+│                          │                                 │
+│                          │  replay(events, t)              │
+│                          ▼                                 │
+│  WORLDSTATE (Output)                                       │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  {                                               │      │
+│  │    devices: { ... },                             │      │
+│  │    appState: { ... },                            │      │
+│  │    camera: { ... },                              │      │
+│  │    audio: { ... }                                │      │
+│  │  }                                               │      │
+│  └──────────────────────────────────────────────────┘      │
+│                          │                                 │
+│                          │  <Renderer />                   │
+│                          ▼                                 │
+│  RENDERED FRAME                                            │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │                                                  │      │
+│  │         📱 [Visual Phone Output]                 │      │
+│  │                                                  │      │
+│  └──────────────────────────────────────────────────┘      │
+│                                                            │
+└────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+**Events are commands** — they describe what happens:
+
+```typescript
+{ at: 2.0, kind: "APP", appId: "app_whatsapp", type: "MESSAGE_RECEIVED", payload: { from: "Alice", text: "Hey!" } }
+```
+
+**WorldState is the result** — it describes what exists:
+
+```typescript
+{
+  appState: {
+    app_whatsapp: {
+      messages: [{ from: "Alice", text: "Hey!", timestamp: 2.0 }];
+    }
+  }
+}
+```
+
+The renderer only sees WorldState, never the events that created it.
+
+**See also**: [Timeline Events](/concepts/timeline-events) for event structure and types.
+
+---
+
+## Working with WorldState
+
+### Reading State
+
+Access state through the typed interface:
+
+```typescript
+function getActiveApp(world: WorldState, deviceId: string): string | undefined {
+  return world.devices[deviceId]?.foregroundAppId;
+}
+
+function getWhatsAppMessages(world: WorldState) {
+  return world.appState.app_whatsapp?.messages ?? [];
+}
+```
+
+### Plugin State Registration
+
+Plugins extend WorldState via module augmentation:
+
+```typescript
+// In your plugin package
+declare module "@tokovo/core" {
+  interface AppStateMap {
+    app_custom: CustomAppState;
+  }
+}
+
+// Now TypeScript knows about your state
+function render(world: WorldState) {
+  const customState = world.appState.app_custom;
+  // ✅ Type-safe access
+}
+```
+
+### Initial WorldState
+
+Episodes define the starting state:
+
+```typescript
+const episode = {
+  initialWorld: {
+    devices: {
+      main_phone: {
+        locked: true,
+        screenOn: false,
+      },
+    },
+    appState: {},
+    camera: DEFAULT_CAMERA_STATE,
+    audio: DEFAULT_AUDIO_STATE,
+  },
+  events: [
+    // Events build on initial state
+  ],
+};
+```
+
+---
+
+## Common Patterns
+
+### Conditional Rendering Based on State
+
+```typescript
+function WhatsAppView({ world }: { world: WorldState }) {
+  const app = world.appState.app_whatsapp;
+
+  if (!app) return null;
+
+  return (
+    <div>
+      {app.messages.map((msg) => (
+        <Message key={msg.id} {...msg} />
+      ))}
+      {app.typing && <TypingIndicator />}
+    </div>
+  );
+}
+```
+
+### Device-Aware Components
+
+```typescript
+function DeviceFrame({ world, deviceId }: Props) {
+  const device = world.devices[deviceId];
+  const isLocked = device.locked;
+  const activeApp = device.foregroundAppId;
+
+  return (
+    <Frame locked={isLocked}>
+      {isLocked ? <LockScreen /> : <AppView appId={activeApp} />}
+    </Frame>
+  );
+}
+```
+
+### Multi-Device State
+
+```typescript
+function SplitScreenView({ world }: { world: WorldState }) {
+  const phone1 = world.devices.phone_1;
+  const phone2 = world.devices.phone_2;
+
+  return (
+    <div style={{ display: "flex" }}>
+      <DeviceFrame world={world} deviceId="phone_1" />
+      <DeviceFrame world={world} deviceId="phone_2" />
+    </div>
+  );
+}
+```
+
+---
+
+## Best Practices
+
+### ✅ Do
+
+- **Access state immutably**: Read from WorldState, never mutate
+- **Use type augmentation**: Register plugin state in AppStateMap
+- **Derive computed values**: Calculate what you need from WorldState
+- **Keep reducers pure**: Event handlers should only transform state
+
+### ❌ Don't
+
+- **Store local state**: Don't mix React state with WorldState
+- **Mutate directly**: Never modify WorldState properties
+- **Cache between frames**: Don't assume state persists across renders
+- **Access events directly**: Renderer only needs WorldState
+
+---
+
+## Performance Considerations
+
+### Snapshot Optimization
+
+Tokovo includes snapshot caching to avoid recomputing identical states:
+
+```typescript
+// Internally, replay() caches states at key timestamps
+const world_t3 = replay(episode, 3.0); // Computed
+const world_t3_again = replay(episode, 3.0); // Cached ✨
+```
+
+### Lazy Evaluation
+
+Not all state is computed eagerly. Some derived state is calculated on-demand:
+
+```typescript
+// Layout state computed only when needed
+const layout = computeLayout(world, deviceId);
+// Not stored in WorldState
+```
+
+---
+
+## Type Safety
+
+WorldState leverages TypeScript's advanced types for plugin extensibility:
+
+```typescript
+// Automatic type inference
+interface AppStateMap {
+  app_whatsapp: WhatsAppState;
+  app_instagram: InstagramState;
+}
+
+// TypeScript knows:
+world.appState.app_whatsapp; // ✅ WhatsAppState | undefined
+world.appState.app_unknown; // ✅ unknown
+world.appState.app_whatsapp.messages; // ✅ Type-safe
+```
+
+---
+
+## Related Concepts
+
+- **[Timeline Events](/concepts/timeline-events)**: The events that create WorldState
+- **[Determinism](/concepts/determinism)**: How immutability enables predictable rendering
+- **[Plugins](/concepts/plugins)**: How plugins extend WorldState with custom state
+
+---
+
+## API Reference
+
+For complete TypeScript definitions, see:
+
+- [`packages/core/src/types/world-state.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/world-state.ts)
+- [`packages/core/src/types/device.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/device.ts)
+- [`packages/core/src/types/camera.ts`](https://github.com/yourusername/tokovo/blob/main/packages/core/src/types/camera.ts)

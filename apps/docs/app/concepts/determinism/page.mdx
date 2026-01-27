@@ -1,5 +1,501 @@
+import { ASCIIDiagram } from "@/components/ASCIIDiagram";
+
 # Determinism
 
-> Placeholder content - to be written
+**Determinism** is the foundational design principle that makes Tokovo reliable, testable, and AI-friendly. It guarantees that given the same inputs, the engine will always produce identical outputs—no matter how many times you run it.
 
-This page will document Determinism in Tokovo.
+---
+
+## What is Determinism?
+
+In Tokovo, determinism means:
+
+**Same input → Same output, always.**
+
+Given an **episode** (initial world state + timeline events) and a **time `t`**, Tokovo will compute the exact same `WorldState` every single time.
+
+```ts
+replay(episode, (t = 3.5)) === replay(episode, (t = 3.5)); // Always true
+```
+
+This means:
+
+- **No randomness** — No `Math.random()` inside reducers or event handlers
+- **No side effects** — No network calls, file I/O, or external state mutations
+- **No unpredictable timing** — No `Date.now()` or wall-clock dependencies
+- **Pure computation** — Output depends solely on episode data and time `t`
+
+The entire video rendering pipeline is a **pure function** from episode JSON to video frames.
+
+---
+
+## Why Determinism Matters
+
+Determinism isn't just a theoretical nicety—it delivers concrete benefits:
+
+### **1. Reproducibility**
+
+Render the same episode twice, and you'll get **pixel-perfect identical videos**.
+
+```ts
+// Render 1
+const video1 = renderEpisode(episode);
+
+// Render 2 (weeks later, different machine)
+const video2 = renderEpisode(episode);
+
+// Result: video1 === video2 (byte-for-byte)
+```
+
+This is crucial for:
+
+- **Version control** — Episodes as code, reproducible across teams
+- **CI/CD pipelines** — Automated rendering with predictable outputs
+- **Debugging** — If frame 148 looks wrong, it will _always_ look wrong until you fix the episode
+
+### **2. Debugging & Development**
+
+When debugging, you can ask: "What is the state at `t=3.5s`?"—and get the same answer every time.
+
+```ts
+const state = replay(episode, 3.5);
+console.log(state.devices.phone1.foregroundAppId);
+// Always prints the same value for this episode + time
+```
+
+No race conditions. No "it worked on my machine." No heisenbug timing issues.
+
+### **3. Testing**
+
+Determinism makes testing trivial:
+
+```ts
+test("message appears at correct time", () => {
+  const state = replay(episode, 2.0);
+  expect(state.appState.whatsapp.messages).toHaveLength(0);
+
+  const stateAfter = replay(episode, 2.5);
+  expect(stateAfter.appState.whatsapp.messages).toHaveLength(1);
+  expect(stateAfter.appState.whatsapp.messages[0].text).toBe("Hey!");
+});
+```
+
+No mocking. No flakiness. Just pure input/output assertions.
+
+### **4. AI-Friendly Generation**
+
+LLMs can generate episodes programmatically because the format is **pure data**.
+
+```json
+{
+  "events": [
+    { "at": 0, "kind": "DEVICE", "type": "UNLOCK" },
+    { "at": 1.5, "kind": "APP", "type": "MESSAGE_RECEIVED", "text": "Hello!" }
+  ]
+}
+```
+
+The AI doesn't need to understand rendering internals—it just generates event sequences, and Tokovo deterministically renders them.
+
+### **5. Version Control for Videos**
+
+Since episodes are JSON, you can:
+
+- **Track changes** in Git
+- **Review episodes** like code (diffs, pull requests)
+- **Collaborate** on narrative structure without video files
+
+```diff
+  {
+    "at": 2.5,
+    "kind": "APP",
+    "type": "MESSAGE_RECEIVED",
+-   "text": "Hey, what's up?"
++   "text": "Hey, are you free tonight?"
+  }
+```
+
+A small change in the episode → predictable change in the video.
+
+---
+
+## How Tokovo Achieves Determinism
+
+Tokovo's architecture enforces determinism at every layer:
+
+### **1. Pure `replay()` Function**
+
+The core engine is a **pure function**:
+
+```ts
+function replay(
+  initial: WorldState,
+  events: TimelineEvent[],
+  t: number,
+): WorldState {
+  // Filter events up to time t
+  const relevantEvents = events.filter((e) => e.at <= t);
+
+  // Reduce events into state
+  return relevantEvents.reduce((state, event) => {
+    return produce(state, (draft) => {
+      // Apply event handlers (all pure)
+      applyEvent(draft, event);
+    });
+  }, initial);
+}
+```
+
+**Contract:**
+
+> Given the same `initial`, `events`, and `t`, `replay()` always returns the exact same `WorldState`.
+
+No side effects. No hidden state. No I/O.
+
+### **2. Immutable WorldState**
+
+`WorldState` is **never mutated**. We use [Immer](https://immerjs.github.io/) to ensure immutable updates:
+
+```ts
+const nextState = produce(currentState, (draft) => {
+  draft.devices.phone1.isLocked = false; // Immer creates new state
+});
+```
+
+This prevents accidental shared state bugs and makes time-travel debugging trivial.
+
+### **3. Event-Driven Architecture**
+
+All changes to the world come from **timeline events**:
+
+```ts
+type TimelineEvent =
+  | { at: number; kind: "DEVICE"; type: "UNLOCK"; deviceId: string }
+  | { at: number; kind: "APP"; type: "MESSAGE_RECEIVED"; text: string }
+  | { at: number; kind: "CAMERA"; type: "SET_VIEW"; view: CameraView };
+```
+
+Events are:
+
+- **Sorted by time** — Processing order is deterministic
+- **Data-only** — No functions, callbacks, or closures
+- **Serializable** — Can be stored as JSON
+
+### **4. No Randomness or I/O in Reducers**
+
+Tokovo **forbids** non-deterministic operations inside event handlers:
+
+❌ **NEVER do this:**
+
+```ts
+// DON'T: Math.random() breaks determinism
+const randomDelay = Math.random() * 1000;
+
+// DON'T: Date.now() depends on wall clock
+const timestamp = Date.now();
+
+// DON'T: Network calls are non-deterministic
+const data = await fetch("/api/data");
+```
+
+✅ **Instead:**
+
+```ts
+// DO: All variability comes from episode data
+const delay = event.customDelay || 500;
+const timestamp = event.at;
+const data = episode.initialWorld.preloadedData;
+```
+
+All inputs must come from the episode or be derived from `t`.
+
+---
+
+## Deterministic Components
+
+Tokovo's deterministic layers:
+
+<ASCIIDiagram title="Deterministic Pipeline">
+  {`┌─────────────────────────────────────────────────────────────┐
+│               DETERMINISTIC PIPELINE                         │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  INPUT (Immutable)                                           │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Episode IR: { events: [...], duration: 10, ... }   │     │
+│  │ Time: t = 3.5s                                     │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  PURE FUNCTION                                               │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ replay(ir, t) {                                    │     │
+│  │   // No randomness                                 │     │
+│  │   // No I/O                                        │     │
+│  │   // No side effects                               │     │
+│  │   return WorldState                                │     │
+│  │ }                                                  │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  OUTPUT (Always Same)                                        │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ WorldState @ 3.5s                                  │     │
+│  │ { devices: {...}, appState: {...}, ... }           │     │
+│  │                                                    │     │
+│  │ SAME INPUT → SAME OUTPUT (ALWAYS)                 │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘`}
+</ASCIIDiagram>
+
+### **Episode IR (Intermediate Representation)**
+
+The episode JSON is **immutable data**:
+
+```json
+{
+  "initialWorld": {
+    "devices": { "phone1": { "isLocked": true } },
+    "appState": { "whatsapp": { "messages": [] } },
+    "camera": { "baseView": "APP_VIEW", "appId": "whatsapp" }
+  },
+  "events": [
+    { "at": 0, "kind": "DEVICE", "deviceId": "phone1", "type": "UNLOCK" },
+    {
+      "at": 1.5,
+      "kind": "APP",
+      "appId": "whatsapp",
+      "type": "MESSAGE_RECEIVED",
+      "text": "Hi!"
+    }
+  ]
+}
+```
+
+No functions. No callbacks. Just data.
+
+### **`replay()` — The Pure Engine**
+
+```ts
+export function replay(
+  initial: WorldState,
+  events: TimelineEvent[],
+  t: number,
+  ctx: ReplayContext = { mode: "preview" },
+): WorldState {
+  // Deterministic filter
+  const relevantEvents = events.filter((e) => e.at <= t);
+
+  // Deterministic reduce
+  return relevantEvents.reduce((state, event) => {
+    return produce(state, (draft) => {
+      // All handlers are pure
+      EventHandlerRegistry.handle(draft, event, { frame: t });
+    });
+  }, initial);
+}
+```
+
+**Key properties:**
+
+- Input: `initial`, `events`, `t`
+- Output: `WorldState`
+- No side effects (except optional dev logging)
+- Always returns the same output for the same inputs
+
+### **Reducers — Pure State Transformations**
+
+Event handlers are **pure functions**:
+
+```ts
+function handleDeviceUnlock(
+  draft: WorldState,
+  event: DeviceEvent,
+  ctx: EventHandlerContext,
+): void {
+  const device = draft.devices[event.deviceId];
+  if (device) {
+    device.isLocked = false; // Immer handles immutability
+  }
+}
+```
+
+No I/O. No randomness. Just `event` → `draft mutation`.
+
+### **Layout Engine — Pure Geometry**
+
+Even layout calculations are deterministic:
+
+```ts
+function computeMessageBubbleLayout(
+  messages: Message[],
+  viewportHeight: number,
+): BubbleLayout[] {
+  return messages.map((msg, i) => ({
+    y: i * 80,
+    height: msg.text.length > 50 ? 120 : 80,
+    width: 300,
+  }));
+}
+```
+
+Given the same messages, you always get the same layout.
+
+---
+
+## Non-Deterministic Boundaries
+
+Tokovo isolates non-deterministic operations **outside** the core engine:
+
+### **1. User Input (Out of Scope)**
+
+Tokovo doesn't handle live user input—episodes are pre-authored. User interaction is **upstream** of Tokovo (e.g., in an episode editor).
+
+### **2. Asset Loading (Build-Time)**
+
+Image/font loading happens at **build time**, not during `replay()`:
+
+```ts
+// Assets loaded before rendering
+const assets = await loadAssets(episode.assetManifest);
+
+// Then passed as props to renderer
+<TokovoRenderer worldState={state} assets={assets} />
+```
+
+The renderer receives pre-loaded assets, so `replay()` stays pure.
+
+### **3. Rendering (Remotion's Responsibility)**
+
+Remotion handles video encoding, which involves:
+
+- Frame-by-frame rendering
+- FFmpeg encoding
+- File I/O
+
+But **Remotion's rendering is also deterministic**—given the same React tree at frame `t`, it renders the same pixels.
+
+Tokovo's determinism + Remotion's determinism = **fully reproducible videos**.
+
+---
+
+## Best Practices for Plugin Developers
+
+When extending Tokovo, follow these rules to preserve determinism:
+
+### ✅ **DO:**
+
+1. **Derive all data from episode or `t`**
+
+```ts
+const messageDelay = event.delay || 1.5; // From event
+const currentFrame = ctx.frame; // From context
+```
+
+2. **Use pure functions**
+
+```ts
+function computeTypingDuration(text: string): number {
+  return text.length * 0.05; // Deterministic
+}
+```
+
+3. **Store all variability in episode data**
+
+```json
+{
+  "at": 2.5,
+  "kind": "APP",
+  "type": "MESSAGE_RECEIVED",
+  "text": "Hello!",
+  "delay": 1.2, // Custom delay per event
+  "variant": "fast" // Custom behavior flag
+}
+```
+
+### ❌ **DON'T:**
+
+1. **Don't use `Math.random()`**
+
+```ts
+// BAD: Random delay
+const delay = Math.random() * 2000;
+
+// GOOD: Deterministic delay from event
+const delay = event.delay;
+```
+
+2. **Don't use `Date.now()` or wall-clock time**
+
+```ts
+// BAD: Depends on system clock
+const timestamp = Date.now();
+
+// GOOD: Use frame time
+const timestamp = ctx.frame;
+```
+
+3. **Don't fetch external data during replay**
+
+```ts
+// BAD: Network call during replay
+const data = await fetch("/api/messages");
+
+// GOOD: Preload data and include in episode
+const data = episode.initialWorld.messages;
+```
+
+4. **Don't use browser APIs that depend on environment**
+
+```ts
+// BAD: Depends on viewport size
+const width = window.innerWidth;
+
+// GOOD: Use device profile dimensions
+const width = deviceProfile.dimensions.width;
+```
+
+---
+
+## Debugging Determinism Issues
+
+If you suspect non-deterministic behavior:
+
+1. **Run the same episode twice**
+
+```bash
+pnpm render episode.json --output video1.mp4
+pnpm render episode.json --output video2.mp4
+diff video1.mp4 video2.mp4  # Should be identical
+```
+
+2. **Check for non-deterministic code**
+
+Search for:
+
+- `Math.random()`
+- `Date.now()`
+- `fetch()`
+- `window.*`
+- `navigator.*`
+
+3. **Enable determinism debugging**
+
+```ts
+window.__TOKOVO_LOG_EVENTS = true;
+```
+
+This logs every event processed by `replay()`, helping you spot timing inconsistencies.
+
+---
+
+## Further Reading
+
+- [WorldState](/concepts/world-state) — The immutable state model
+- [Timeline Events](/concepts/timeline-events) — Event-driven architecture
+- [Immer Documentation](https://immerjs.github.io/) — How immutability works
+
+---
+
+**Determinism is not optional in Tokovo—it's the foundation that enables everything else.**
