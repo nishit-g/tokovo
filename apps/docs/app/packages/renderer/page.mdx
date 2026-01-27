@@ -1,5 +1,784 @@
 # @tokovo/renderer
 
-> Placeholder content - to be written
+> **Priority: P0** — The React rendering layer that transforms WorldState into visual components for Remotion.
 
-This page will document the @tokovo/renderer package.
+---
+
+## Overview
+
+`@tokovo/renderer` is Tokovo's **P0 (critical)** rendering package that bridges the gap between pure state and visual output. It takes a `WorldState` snapshot at any given frame and renders it as React components for Remotion video generation.
+
+The renderer is:
+
+- **Stateless**: Same `WorldState` → Same UI (deterministic)
+- **Pure**: No side effects, no mutations
+- **Frame-based**: Designed for Remotion's frame-by-frame rendering model
+- **Modular**: Device-agnostic, app-agnostic architecture
+
+### Installation
+
+```bash
+npm install @tokovo/renderer
+```
+
+### Role in Architecture
+
+The renderer sits at **Layer 1** in Tokovo's architecture, consuming the output from `@tokovo/core` and feeding it to Remotion:
+
+```
+Episode (JSON) → Core Engine → WorldState → Renderer → Remotion → Video
+```
+
+---
+
+## Architecture
+
+<ASCIIDiagram>
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   @tokovo/renderer                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                              │
+│  INPUT: WorldState @ frame t                                 │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ { devices: {...}, appState: {...}, camera: {...} } │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  LAYOUT ENGINE                                               │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ • Compute message positions                        │     │
+│  │ • Calculate scroll offsets                         │     │
+│  │ • Apply animations (fade, slide)                   │     │
+│  │ → LayoutState (chat/feed/lockscreen)               │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  CAMERA ENGINE                                               │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ • Apply zoom/pan transforms                        │     │
+│  │ • Cinematic transitions                            │     │
+│  │ → CameraStyle + DeviceStyle                        │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  REACT COMPONENTS                                            │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ <TokovoRenderer>                                   │     │
+│  │   <DeviceFrame>                                    │     │
+│  │     <StatusBar />                                  │     │
+│  │     <AppView state={worldState.appState} />        │     │
+│  │     <NotificationOverlay />                        │     │
+│  │     <DynamicIsland />                              │     │
+│  │   </DeviceFrame>                                   │     │
+│  │ </TokovoRenderer>                                  │     │
+│  └──────────────────┬─────────────────────────────────┘     │
+│                     │                                        │
+│                     ▼                                        │
+│  OUTPUT: JSX for Remotion                                    │
+│  ┌────────────────────────────────────────────────────┐     │
+│  │ Frame-by-frame video rendering                     │     │
+│  └────────────────────────────────────────────────────┘     │
+│                                                              │
+└─────────────────────────────────────────────────────────────┘
+```
+</ASCIIDiagram>
+
+---
+
+## How Rendering Works
+
+The rendering pipeline follows this sequence at every frame:
+
+### 1. Frame to Time Conversion
+
+Remotion calls your component with a frame number. The renderer converts this to time:
+
+```typescript
+const frame = useCurrentFrame();
+const { fps } = useVideoConfig();
+const t = frame; // Tokovo uses frames directly
+```
+
+### 2. Compute WorldState
+
+The episode runner calls `runEpisode()` to replay all events up to frame `t`:
+
+```typescript
+import { runEpisode } from "@tokovo/core";
+
+const world = runEpisode(preparedEpisode, frame);
+```
+
+This produces a `WorldState` snapshot containing:
+
+- Device states (locked, foreground app, notifications)
+- App states (messages, typing indicators, scroll positions)
+- Camera configuration (zoom, pan, focus)
+
+### 3. Layout Calculation
+
+The renderer passes `WorldState` to the **Layout Engine**, which computes:
+
+```typescript
+const layout = useLayoutEngine({ world, t, focusDeviceId });
+```
+
+Layout output includes:
+
+- Message bubble positions (x, y, height)
+- Scroll offsets
+- Animation states (opacity, translateY)
+- Typing indicator position
+
+**Critical**: All layout is **deterministic** — no DOM measurement, no CSS transitions.
+
+### 4. Camera Transforms
+
+The **Camera Engine** applies cinematic effects:
+
+```typescript
+const camera = useCameraEngine({ world, t, layoutOutput });
+```
+
+Returns CSS transforms for:
+
+- Device zoom (scale)
+- Pan (translateX, translateY)
+- Transitions (unlock, app open)
+
+### 5. React Rendering
+
+Finally, `<TokovoRenderer>` paints the computed layout:
+
+```tsx
+<TokovoRenderer world={world} t={t} debug={false} />
+```
+
+This renders:
+
+- Device frame (from `@tokovo/devices`)
+- Status bar
+- Active app view (from plugin registry)
+- System overlays (notifications, Dynamic Island)
+
+---
+
+## Core Components
+
+### `<TokovoRenderer>`
+
+The main orchestrator component.
+
+**Props:**
+
+- `world: WorldState` — The current world state
+- `t: number` — Current frame
+- `debug?: boolean` — Enable visual debugger
+- `focusDeviceId?: string` — Which device to render (multi-device support)
+- `eventIndex?: EventIndex` — Event index for camera transitions
+
+**Example:**
+
+```tsx
+import { TokovoRenderer } from "@tokovo/renderer";
+import { runEpisode } from "@tokovo/core";
+
+function MyVideo() {
+  const frame = useCurrentFrame();
+  const world = runEpisode(episode, frame);
+
+  return <TokovoRenderer world={world} t={frame} />;
+}
+```
+
+### `<DeviceFrame>`
+
+Renders the device chrome (bezels, notch, camera cutout).
+
+Automatically selected based on `device.profileId`:
+
+- iPhone 16 Pro
+- Pixel 9
+- Custom devices from registry
+
+**Features:**
+
+- Safe area insets
+- Status bar integration
+- Dynamic Island support (iOS)
+- Camera cutout rendering (Android)
+
+### App Views
+
+Apps register their UI components via the plugin system:
+
+```typescript
+import { PluginManager } from "@tokovo/core";
+
+PluginManager.register({
+  appId: "app_whatsapp",
+  view: WhatsAppView,
+  // ... runtime, reducers, etc.
+});
+```
+
+The renderer automatically loads the correct view based on `device.foregroundAppId`.
+
+**App View Props:**
+
+- `world: WorldState`
+- `t: number`
+- `layout: LayoutState`
+- `platform: 'ios' | 'android'`
+- `deviceId: string`
+- `safeAreaInsets: { top, bottom, left, right }`
+
+---
+
+## Layout System
+
+The Layout System is the secret sauce that makes Tokovo's rendering deterministic.
+
+### Why Not CSS?
+
+CSS animations and transitions are **non-deterministic** in Remotion:
+
+- Frame N might render before CSS finishes calculating
+- Different machines produce different results
+- SSR breaks completely
+
+### Deterministic Layout
+
+Instead, Tokovo calculates **exact pixel positions** at each frame:
+
+```typescript
+// For each message, compute:
+{
+  id: 'msg_1',
+  y: 120,           // Exact Y position
+  height: 80,       // Exact height
+  opacity: 1,       // Fade-in state
+  translateY: 0,    // Slide-in offset
+  scale: 1,         // Appearance scale
+}
+```
+
+### Layout Strategies
+
+Different view types use different layout strategies:
+
+**Chat Layout** (WhatsApp, iMessage):
+
+- Stack messages vertically
+- Auto-scroll to follow conversation
+- Typing indicator at bottom
+- Appearance animations (fade + slide)
+
+**Feed Layout** (Instagram, TikTok):
+
+- Variable-height cards
+- Scroll position tracking
+- Parallax effects
+- Focus on specific items
+
+**Lockscreen Layout**:
+
+- Stacked notifications
+- Height based on content length
+- Fade-in animations
+- Max notification limit
+
+**Story Layout** (Instagram Stories):
+
+- Full-screen pages
+- Progress bar
+- Swipe transitions
+- Auto-advance timing
+
+### Layout Configuration
+
+Override layout behavior via config:
+
+```typescript
+const layout = useLayoutEngine({
+  world,
+  t,
+  config: {
+    chat: {
+      lockToBottom: true,
+      messageAppearDuration: 20,
+      scrollEasingDuration: 30,
+    },
+  },
+});
+```
+
+---
+
+## Stateless Rendering
+
+The renderer is **completely stateless** and **pure**:
+
+### Same Input → Same Output
+
+```typescript
+// Frame 100 will ALWAYS produce the same UI
+const world1 = runEpisode(episode, 100);
+const world2 = runEpisode(episode, 100);
+
+// These are identical (deep equality)
+assert.deepEqual(world1, world2);
+```
+
+This is critical for:
+
+- **Remotion SSR**: Server-side rendering must match client
+- **Deterministic videos**: Same episode → same video, every time
+- **Frame-perfect scrubbing**: Seek to any frame instantly
+- **Parallel rendering**: Render frames in any order
+
+### No Internal State
+
+The renderer **never** stores state:
+
+```typescript
+// ❌ BAD: Internal state
+const [scrollY, setScrollY] = useState(0);
+
+// ✅ GOOD: Derive from WorldState
+const scrollY = computeScrollY(world, t);
+```
+
+All state comes from:
+
+1. `WorldState` (from core engine)
+2. `t` (current frame)
+3. `config` (layout configuration)
+
+### Remotion Compatibility
+
+The renderer follows Remotion's strict rules:
+
+- ✅ Only `useCurrentFrame()` and `useVideoConfig()`
+- ✅ All animations are pure functions of `t`
+- ✅ Inline styles (no CSS transitions)
+- ✅ Deterministic calculations
+- ❌ No `useState` for animation
+- ❌ No `useEffect` for transitions
+- ❌ No `setTimeout` or `setInterval`
+- ❌ No DOM measurement
+
+---
+
+## Working with the Renderer
+
+### Basic Usage (Video Runner)
+
+```tsx
+import { Composition } from "remotion";
+import { EpisodeRenderer } from "./EpisodeRenderer";
+
+export const RemotionRoot = () => (
+  <Composition
+    id="my-episode"
+    component={EpisodeRenderer}
+    durationInFrames={300}
+    fps={30}
+    width={1080}
+    height={1920}
+    defaultProps={{ episodeId: "episode_001" }}
+  />
+);
+```
+
+### Custom Renderer
+
+If you need more control:
+
+```tsx
+import { TokovoRenderer } from "@tokovo/renderer";
+import { runEpisode, createEventIndex } from "@tokovo/core";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+
+export const CustomVideo = ({ episode }) => {
+  const frame = useCurrentFrame();
+
+  // 1. Compute world state
+  const world = useMemo(() => runEpisode(episode, frame), [episode, frame]);
+
+  // 2. Create event index (for camera)
+  const eventIndex = useMemo(() => createEventIndex(episode.events), [episode]);
+
+  // 3. Render
+  return (
+    <AbsoluteFill style={{ background: "#000" }}>
+      <TokovoRenderer
+        world={world}
+        t={frame}
+        eventIndex={eventIndex}
+        debug={false}
+      />
+    </AbsoluteFill>
+  );
+};
+```
+
+### Multi-Device Rendering
+
+Render multiple devices in one composition:
+
+```tsx
+import { MultiDeviceRenderer } from "@tokovo/renderer";
+
+<MultiDeviceRenderer
+  world={world}
+  t={t}
+  layout="side-by-side" // or "picture-in-picture"
+/>;
+```
+
+---
+
+## Engines
+
+The renderer is powered by three internal engines:
+
+### Layout Engine (`useLayoutEngine`)
+
+Computes positions and animations.
+
+**Input:**
+
+- `world: WorldState`
+- `t: number`
+- `focusDeviceId?: string`
+- `config?: LayoutConfig`
+
+**Output:**
+
+- `deviceId: string`
+- `device: DeviceState`
+- `appId: string | null`
+- `viewKind: 'CHAT' | 'FEED' | 'LOCKSCREEN' | ...`
+- `layout: LayoutState` (positions, animations, scroll)
+- `profile: DeviceProfile`
+- `variant: 'ios' | 'android'`
+
+### Camera Engine (`useCameraEngine`)
+
+Applies cinematic transforms.
+
+**Input:**
+
+- `world: WorldState`
+- `t: number`
+- `layoutOutput: LayoutEngineOutput`
+- `eventIndex?: EventIndex`
+
+**Output:**
+
+- `cameraStyle: CSSProperties` (composition-level transforms)
+- `deviceStyle: CSSProperties` (device-level transforms)
+
+### Audio Engine (`useAudioEngine`)
+
+Schedules audio playback (voices, sounds, music).
+
+**Input:**
+
+- `world: WorldState`
+- `t: number`
+
+**Output:**
+
+- `tracks: AudioTrack[]` (active audio at frame t)
+
+---
+
+## Advanced Features
+
+### Visual Debugger
+
+Enable during development:
+
+```tsx
+<TokovoRenderer world={world} t={t} debug={true} />
+```
+
+Shows:
+
+- Current frame
+- Active device
+- Foreground app
+- Event timeline
+- Layout measurements
+
+### Error Boundaries
+
+Apps are wrapped in error boundaries automatically:
+
+```tsx
+<AppErrorBoundary appId="app_whatsapp">
+  <WhatsAppView {...props} />
+</AppErrorBoundary>
+```
+
+Errors are caught and displayed without crashing the entire video.
+
+### Custom Overlays
+
+Add system overlays:
+
+```tsx
+import { NotificationOverlay, TouchOverlay } from "@tokovo/renderer";
+
+<TokovoRenderer>
+  {/* ... */}
+  <TouchOverlay touches={world.touches} />
+</TokovoRenderer>;
+```
+
+### Dynamic Island (iOS)
+
+Automatically rendered on supported devices:
+
+```tsx
+import { DynamicIsland } from '@tokovo/renderer';
+
+// Configured via device.os.dynamicIsland
+{
+  kind: 'timer',
+  endTime: 600,
+  label: 'Recording'
+}
+```
+
+---
+
+## Integration with Other Packages
+
+### Dependencies
+
+The renderer depends on:
+
+- **@tokovo/core**: `WorldState`, `runEpisode()`, plugin system
+- **@tokovo/devices**: Device profiles, frames, status bar
+- **@tokovo/react**: `<AppSurface>`, `<TokovoProvider>` context
+- **@tokovo/device-notifications**: Notification scheduling, heads-up UI
+- **@tokovo/device-camera**: Anchor system for camera focusing
+
+### Links to Concepts
+
+- [WorldState](/concepts/world-state) — The state snapshot
+- [Deterministic Rendering](/concepts/determinism) — Why purity matters
+- [Layout System](/concepts/layout-system) — How positions are calculated
+- [Plugin System](/concepts/plugins) — Registering apps and devices
+
+### Links to Packages
+
+- [@tokovo/core](/packages/core) — The engine that produces WorldState
+- [@tokovo/devices](/packages/devices) — Device profiles and frames
+- [@tokovo/react](/packages/react) — React utilities and context
+- [Video Runner](/apps/video-runner) — Example Remotion app
+
+---
+
+## API Reference
+
+For complete API documentation, see:
+
+- [TokovoRenderer API](/api/renderer/tokovo-renderer)
+- [Layout Engine API](/api/renderer/layout-engine)
+- [Camera Engine API](/api/renderer/camera-engine)
+
+---
+
+## Best Practices
+
+### Do ✅
+
+- **Derive everything from `world` and `t`**: No state, no effects
+- **Use layout engine output**: Don't recalculate positions
+- **Trust the engines**: Let layout/camera handle complexity
+- **Profile on slow machines**: Remotion rendering is CPU-intensive
+- **Use debug mode during development**: Catch issues early
+
+### Don't ❌
+
+- **Use CSS animations**: Non-deterministic in Remotion
+- **Measure DOM elements**: Results vary by machine
+- **Store animation state**: Breaks frame-seeking
+- **Call `Math.random()`**: Unless seeded (use `world.seed`)
+- **Fetch data during render**: All data must be in `WorldState`
+
+---
+
+## Performance
+
+The renderer is optimized for Remotion's rendering model:
+
+### Memoization
+
+All expensive calculations are memoized:
+
+```typescript
+const layout = useMemo(
+  () => computeLayout(world, t, config),
+  [world, t, config],
+);
+```
+
+### Lazy Loading
+
+App views are only loaded when needed:
+
+```typescript
+const AppView = appId ? PluginManager.getView(appId) : null;
+```
+
+### Efficient Diffing
+
+React efficiently re-renders only changed components frame-to-frame.
+
+### Typical Performance
+
+On M1 MacBook Pro:
+
+- **Preview**: 30fps (real-time)
+- **Render**: ~2-5fps (depending on complexity)
+- **Frame time**: ~200-500ms per frame
+
+For a 10-second video (300 frames at 30fps):
+
+- Render time: ~1.5-2.5 minutes
+
+---
+
+## Troubleshooting
+
+### "Device not found"
+
+Ensure `world.devices` contains the expected device:
+
+```typescript
+console.log(Object.keys(world.devices));
+```
+
+### Blank screen
+
+Check that:
+
+1. Device is unlocked OR lockscreen is configured
+2. Foreground app is registered in plugin system
+3. No errors in console
+
+### Layout looks wrong
+
+Enable debug mode to inspect layout calculations:
+
+```tsx
+<TokovoRenderer debug={true} />
+```
+
+### Non-deterministic rendering
+
+If frames look different on re-render:
+
+- Check for `Math.random()` without seed
+- Check for `Date.now()` or `performance.now()`
+- Check for CSS transitions
+- Check for DOM measurement
+
+---
+
+## Examples
+
+### Simple Episode
+
+```tsx
+import { defineEpisode } from "@tokovo/episodes";
+
+export const simpleChat = defineEpisode({
+  meta: {
+    id: "simple-chat",
+    title: "Simple Chat",
+  },
+  config: {
+    format: "instagram-story",
+    durationInFrames: 300,
+    apps: ["app_whatsapp"],
+  },
+  build: (t) => ({
+    initialWorld: {
+      devices: {
+        dev_main: {
+          profileId: "iphone16",
+          isLocked: false,
+          foregroundAppId: "app_whatsapp",
+        },
+      },
+      appState: {
+        app_whatsapp: {
+          activeConversationId: "conv_1",
+        },
+      },
+    },
+    events: [
+      t.message({ at: 30, text: "Hey!", from: "them" }),
+      t.message({ at: 90, text: "How are you?", from: "you" }),
+    ],
+  }),
+});
+```
+
+### Custom Layout Config
+
+```tsx
+const world = runEpisode(episode, frame);
+
+<TokovoRenderer
+  world={world}
+  t={frame}
+  config={{
+    chat: {
+      lockToBottom: false,
+      messageAppearDuration: 30,
+      scrollEasingDuration: 45,
+    },
+  }}
+/>;
+```
+
+---
+
+## Summary
+
+`@tokovo/renderer` is the bridge between state and pixels:
+
+1. **Input**: `WorldState` (from `@tokovo/core`)
+2. **Process**: Layout calculation + camera transforms
+3. **Output**: React components for Remotion
+
+Key principles:
+
+- **Stateless**: No internal state
+- **Pure**: Same input → same output
+- **Deterministic**: Frame-perfect rendering
+- **Modular**: Device and app agnostic
+
+This makes Tokovo videos:
+
+- Reproducible across machines
+- Seekable to any frame
+- Renderable in parallel
+- Compatible with Remotion SSR
+
+---
+
+## Next Steps
+
+- [Learn about @tokovo/core](/packages/core)
+- [Explore device profiles](/packages/devices)
+- [Deep dive into layout](/concepts/layout-system)
+- [Run your first episode](/apps/video-runner)
