@@ -1,5 +1,262 @@
 # Quickstart
 
-> Placeholder content - to be written
+Build your first Tokovo episode in 10 minutes. You'll create a simple WhatsApp conversation, add it to the episode registry, and preview it in the video runner.
 
-This page will document getting started quickly with Tokovo.
+## What You'll Create
+
+A minimal episode featuring:
+
+- One device (iPhone)
+- One app (WhatsApp)
+- Three messages exchanging between two people
+- A 10-second video preview
+
+By the end, you'll understand the basic flow: **write episode → register → render**.
+
+---
+
+## Prerequisites
+
+Make sure you've completed the [installation](/getting-started/installation) and have the monorepo set up.
+
+---
+
+## Step 1: Create the Episode File
+
+Navigate to the episodes package and create a new file:
+
+```bash
+touch packages/episodes/src/production/hello-world.episode.ts
+```
+
+This `.episode.ts` suffix is a convention that makes episodes easy to identify.
+
+---
+
+## Step 2: Define Your Episode
+
+Open `packages/episodes/src/production/hello-world.episode.ts` and add the following code:
+
+```typescript
+import { defineEpisode } from "../types/episode-definition";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+
+// Counter for event ordering
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+export default defineEpisode({
+  meta: {
+    id: "hello-world",
+    title: "Hello World 👋",
+    description: "Your first Tokovo episode",
+    category: "production",
+    tags: ["tutorial", "whatsapp", "hello-world"],
+  },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 300, // 10 seconds at 30fps
+    apps: ["app_whatsapp"],
+  },
+  build: () =>
+    episode("hello-world", {
+      fps: 30,
+      duration: "10s",
+      title: "Hello World",
+    })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        conversations: [
+          {
+            id: "dm_alice",
+            name: "Alice",
+            avatar: "/avatars/default-avatar.jpg",
+          },
+        ],
+        os: {
+          time: new Date("2024-12-20T14:00:00"),
+          battery: 85,
+          network: "5G",
+        },
+      })
+      .track(
+        "app_whatsapp",
+        () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+        (wa) => {
+          wa.at("1s").receive("Alice", "Hey!");
+          wa.at("3s").receive("Alice", "How are you?");
+          wa.at("5s").receive("Alice", "Want to grab coffee?");
+        },
+      )
+      .build(),
+});
+```
+
+### What's Happening Here?
+
+- **`defineEpisode()`** - Auto-registers the episode when imported
+- **`meta`** - Display information for the episode browser
+- **`config`** - Video format and duration settings
+- **`build()`** - Creates the actual episode content using the DSL
+
+The episode uses the **track-based DSL** where you:
+
+1. Define a device with WhatsApp installed
+2. Create a WhatsApp track with timed messages
+3. Build the intermediate representation (IR)
+
+---
+
+## Step 3: Register the Episode
+
+Add the episode to the production barrel file so it gets auto-imported:
+
+```bash
+echo 'import "./hello-world.episode";' >> packages/episodes/src/production/index.ts
+```
+
+This allows the video-runner to discover your episode automatically.
+
+---
+
+## Step 4: Run the Episode
+
+Navigate to the video-runner app and start the development server:
+
+```bash
+cd apps/video-runner
+pnpm dev
+```
+
+Open your browser to the URL shown (typically `http://localhost:3000`).
+
+You should see your episode listed in the Remotion Studio under the **Production** folder.
+
+### What You'll See
+
+1. **Remotion Studio UI** with your "Hello World 👋" episode
+2. Click the episode to open the preview
+3. Press play to see:
+   - An iPhone 16 displaying WhatsApp
+   - Three messages from Alice appearing at 1s, 3s, and 5s
+   - A smooth 10-second video clip
+
+---
+
+## Understanding the Code
+
+Let's break down the key parts:
+
+### Episode Metadata
+
+```typescript
+meta: {
+  id: "hello-world",           // Unique identifier
+  title: "Hello World 👋",      // Display name
+  category: "production",       // Organizes into folders
+}
+```
+
+### Video Configuration
+
+```typescript
+config: {
+  format: "1080x1920",          // Portrait HD (TikTok/Reels/Shorts)
+  durationInFrames: 300,        // 10s × 30fps
+  apps: ["app_whatsapp"],       // Required app plugins
+}
+```
+
+### Device Setup
+
+```typescript
+.device("phone", "iphone16", {
+  app: "app_whatsapp",           // Active app
+  conversations: [...],          // Conversation metadata
+  os: { time, battery, network } // OS state
+})
+```
+
+### WhatsApp Track
+
+```typescript
+.track("app_whatsapp", () => new WhatsAppTrackBuilder(...), (wa) => {
+  wa.at("1s").receive("Alice", "Hey!");
+  wa.at("3s").receive("Alice", "How are you?");
+  wa.at("5s").receive("Alice", "Want to grab coffee?");
+})
+```
+
+- **`at("1s")`** - Execute at specific time
+- **`.receive()`** - Incoming message
+- **`.send()`** - Outgoing message (not used here)
+
+---
+
+## Next Steps
+
+Congratulations! You've created your first Tokovo episode. 🎉
+
+Now explore more features:
+
+- **[First Episode Deep Dive](/guides/first-episode)** - Learn about typing indicators, camera movements, and audio
+- **[DSL API Reference](/api/dsl-reference)** - Complete API for episode building
+- **[Camera Guide](/guides/camera-movements)** - Add cinematic camera effects
+
+### Try These Enhancements
+
+1. **Add typing indicators:**
+
+   ```typescript
+   wa.span("2s", "3s").typing("them");
+   wa.at("3s").receive("Alice", "How are you?");
+   ```
+
+2. **Add a response:**
+
+   ```typescript
+   wa.span("6s", "7s").typing("me");
+   wa.at("7s").send("Coffee sounds great!");
+   ```
+
+3. **Add camera movement:**
+   ```typescript
+   .camera((cam) => {
+     cam.at("0s").set({ scale: 1 });
+     cam.at("5s").animate({ scale: 1.1, duration: "0.5s" });
+   })
+   ```
+
+---
+
+## Troubleshooting
+
+### Episode Not Showing Up?
+
+- Make sure you added the import to `packages/episodes/src/production/index.ts`
+- Restart the dev server: `Ctrl+C` then `pnpm dev`
+
+### TypeScript Errors?
+
+- Run `pnpm install` from the root to ensure dependencies are installed
+- Check that all package names match (`@tokovo/dsl`, `@tokovo/apps-whatsapp`)
+
+### Video Not Rendering?
+
+- Check the browser console for errors
+- Verify the episode ID is unique
+- Ensure `durationInFrames` matches your timeline (fps × duration in seconds)
+
+---
+
+## What's Next?
+
+You now understand the core Tokovo workflow:
+
+1. **Create** an episode file using the DSL
+2. **Register** it via the barrel import
+3. **Preview** it in Remotion Studio
+4. **Render** to video when ready
+
+Continue to the **[First Episode Deep Dive](/guides/first-episode)** to learn how to build more complex, cinematic phone-based stories.

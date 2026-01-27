@@ -1,5 +1,626 @@
-# First Episode
+# Your First Episode - Deep Dive
 
-> Placeholder content - to be written
+After completing the quickstart, you understand the basics of creating a Tokovo episode. Let's dive deeper into how episodes work, what each piece does, and how to craft engaging phone-based stories.
 
-This page will document creating your first episode with Tokovo.
+---
+
+## Episode Anatomy
+
+Every Tokovo episode follows a structured pattern. Here's the complete anatomy:
+
+```
+┌────────────────────────────────────────────────────────┐
+│                    EPISODE ANATOMY                      │
+├────────────────────────────────────────────────────────┤
+│                                                         │
+│  episode("my-story", options)                          │
+│    │                                                    │
+│    ├── .device("phone", "iphone16", callback)          │
+│    │     │                                              │
+│    │     ├── Device configuration                       │
+│    │     └── App setup                                  │
+│    │                                                    │
+│    ├── .camera(callback)                                │
+│    │     │                                              │
+│    │     └── Camera movements                           │
+│    │         .at("2s").focus("lastMessage")            │
+│    │         .at("5s").zoom(1.5)                        │
+│    │                                                    │
+│    └── .track("app_whatsapp", callback)                │
+│          │                                              │
+│          └── App events                                 │
+│              .at("1s").receive("Alice", "Hey!")        │
+│              .at("3s").typing("Alice")                 │
+│              .at("4s").receive("Alice", "What's up?")  │
+│                                                         │
+└────────────────────────────────────────────────────────┘
+```
+
+Let's understand each component.
+
+---
+
+## 1. Episode Structure Overview
+
+### The `episode()` Function
+
+The `episode()` function is your entry point. It takes two arguments:
+
+```typescript
+episode("episode-id", {
+  fps: 30, // Frames per second
+  duration: "30s", // Total duration
+  title: "My Story", // Optional display title
+});
+```
+
+**Key Points:**
+
+- **ID**: Must be unique and kebab-case (e.g., `"first-conversation"`)
+- **FPS**: Standard is 30fps for web, 60fps for high-quality
+- **Duration**: Can be a string (`"30s"`, `"2m"`) or frames (`900`)
+
+### Method Chaining Pattern
+
+Episodes use a **fluent API** - each method returns `this`, allowing you to chain methods:
+
+```typescript
+episode("demo", { fps: 30, duration: "30s" })
+  .device("phone", "iphone16", { ... })
+  .camera((cam) => { ... })
+  .track("app_whatsapp", factory, (wa) => { ... })
+  .build(); // Always end with .build()
+```
+
+### Required Methods
+
+Every episode needs:
+
+1. **At least one `.device()`** - What phone to render
+2. **At least one `.track()`** - What happens in the app
+3. **`.build()`** at the end - Finalizes the episode
+
+### Optional Methods
+
+- `.camera()` - Camera movements and focus
+- `.audio()` - Background music and sound effects
+- `.os()` - System-level events (time changes, battery)
+- `.mark()` - Named points in timeline for reference
+- `.section()` - Named regions for organization
+
+---
+
+## 2. Understanding DSL Structure
+
+### Device Callbacks
+
+The `.device()` method configures your phone:
+
+```typescript
+.device("phone", "iphone16", {
+  app: "app_whatsapp",           // Which app to show
+  conversations: [                // Pre-configured conversations
+    {
+      id: "dm_alice",
+      name: "Alice",
+      avatar: "/avatars/alice.jpg"
+    }
+  ],
+  os: {                           // System state
+    time: new Date("2024-12-20T14:00:00"),
+    battery: 85,
+    network: "5G"
+  },
+  theme: "default"                // Optional UI theme
+})
+```
+
+**Device Parameters:**
+
+- **First argument** (`"phone"`): Device ID (referenced by other methods)
+- **Second argument** (`"iphone16"`): Device profile (determines appearance)
+- **Third argument**: Configuration object
+
+### App Setup
+
+The `conversations` array pre-populates the app with contacts. Each conversation needs:
+
+- `id` - Unique identifier used in track events
+- `name` - Display name
+- `avatar` - (Optional) Profile picture path
+
+### Event Timing with `.at()`
+
+All events in Tokovo happen at specific times using `.at()`:
+
+```typescript
+.track("app_whatsapp", factory, (wa) => {
+  wa.at("1s").receive("Alice", "Hello!");    // At 1 second
+  wa.at("3s").send("Hi there!");             // At 3 seconds
+  wa.at("5.5s").receive("Alice", "How are you?"); // At 5.5 seconds
+})
+```
+
+**Time Formats:**
+
+- Seconds: `"1s"`, `"3.5s"`, `"10s"`
+- Milliseconds: `"500ms"`, `"1500ms"`
+- Minutes: `"1m"`, `"2m30s"`
+- Frames: `30`, `90`, `180` (raw numbers)
+
+### Duration Management
+
+Episode duration is set globally:
+
+```typescript
+episode("demo", { duration: "30s" });
+```
+
+All events must occur within `0s` to `30s`. Events outside this range will be ignored.
+
+---
+
+## 3. Timeline Events Explained
+
+### What `.at()` Means
+
+`.at("2s")` tells Tokovo: **"At 2 seconds into the video, make this happen"**.
+
+```typescript
+wa.at("2s").receive("Alice", "Hey!");
+```
+
+At the 2-second mark (frame 60 at 30fps), a message from Alice appears.
+
+### Event Ordering
+
+Events are executed in **chronological order**, regardless of how you write them:
+
+```typescript
+// These will execute in time order, not code order
+wa.at("5s").send("Third message");
+wa.at("1s").receive("Alice", "First message");
+wa.at("3s").send("Second message");
+
+// Tokovo automatically sorts to: 1s → 3s → 5s
+```
+
+**Best Practice:** Write events in chronological order for readability.
+
+### Overlapping Events
+
+Multiple things can happen at the same time:
+
+```typescript
+.track("app_whatsapp", factory, (wa) => {
+  wa.at("2s").receive("Alice", "Message appears");
+})
+.camera((cam) => {
+  cam.at("2s").focus("lastMessage"); // Camera moves simultaneously
+})
+.audio((audio) => {
+  audio.at("2s").sfx("notification"); // Sound plays simultaneously
+})
+```
+
+All three events fire at exactly 2 seconds.
+
+### Duration vs Timeline
+
+Don't confuse:
+
+- **Episode duration**: Total video length (set in `episode()`)
+- **Event duration**: How long an effect lasts (set per-event)
+
+```typescript
+// Episode is 30 seconds long
+episode("demo", { duration: "30s" }).camera((cam) => {
+  // This animation takes 2 seconds, starting at 5s
+  cam.at("5s").animate({ scale: 1.2, duration: "2s" });
+  // Animation runs from 5s to 7s
+});
+```
+
+---
+
+## 4. Camera Basics
+
+The camera controls what the viewer sees and how they see it.
+
+### `.focus()` - What to Focus On
+
+Focus automatically moves the camera to a specific element:
+
+```typescript
+cam.at("2s").focus("lastMessage", {
+  scale: 1.2, // Zoom level
+  padding: 20, // Space around element
+  duration: "0.5s", // Animation duration
+  easing: "easeOut", // Animation curve
+});
+```
+
+**Common Focus Targets:**
+
+- `"lastMessage"` - Most recent message bubble
+- `"typing"` - Typing indicator
+- `"header"` - Chat header
+- Custom anchor IDs (advanced)
+
+### `.zoom()` - Zoom Levels
+
+For manual zoom control:
+
+```typescript
+cam.at("3s").set({ scale: 1.5 }); // Instant zoom
+cam.at("5s").animate({ scale: 1.2, duration: "1s" }); // Smooth zoom
+```
+
+**Scale Values:**
+
+- `1.0` - Normal view (100%)
+- `1.2` - Slight zoom (120%)
+- `1.5` - Medium zoom (150%)
+- `0.8` - Zoomed out (80%)
+
+### Camera Timing
+
+Camera movements happen independently of app events:
+
+```typescript
+.track("app_whatsapp", factory, (wa) => {
+  wa.at("1s").receive("Alice", "Check this out!");
+  wa.at("3s").receiveImage("Alice", "/photo.jpg");
+})
+.camera((cam) => {
+  cam.at("1s").focus("lastMessage");     // Focus on text
+  cam.at("3s").focus("lastMessage", {    // Focus on image
+    scale: 1.3,
+    duration: "0.8s"
+  });
+})
+```
+
+### Camera Views (Preview)
+
+Tokovo supports multiple camera types (covered in depth in Camera Guide):
+
+- **Manual control** - Full x/y/scale positioning
+- **Focus tracking** - Follow specific elements
+- **Cinematic effects** - Shake, zoom punches, Dutch tilt
+- **Auto-director** - AI-assisted camera (coming soon)
+
+---
+
+## 5. Customizing Messages
+
+### Different Message Types
+
+#### Receiving Messages
+
+```typescript
+wa.at("1s").receive("Alice", "Hey there!");
+```
+
+Messages from others appear on the **left side** with their name.
+
+#### Sending Messages
+
+```typescript
+wa.at("2s").send("Hi Alice!");
+```
+
+Your messages appear on the **right side** in blue (WhatsApp default).
+
+#### Images
+
+```typescript
+wa.at("3s").receiveImage("Alice", "/images/photo.jpg", {
+  caption: "Check out this photo!",
+});
+
+wa.at("5s").sendImage("/images/my-photo.jpg");
+```
+
+#### Voice Messages
+
+```typescript
+wa.at("6s").receiveVoice("Alice", 8); // 8 seconds long
+wa.at("9s").sendVoice(5); // 5 seconds long
+```
+
+### Typing Indicators
+
+Show someone is typing using `.span()`:
+
+```typescript
+wa.span("2s", "4s").typing("Alice");
+// Alice is typing from 2s to 4s
+
+wa.at("4s").receive("Alice", "Here's my message!");
+```
+
+**Pattern:**
+
+```typescript
+wa.span("2s", "4s").typing("me"); // You're typing
+wa.at("4s").send("Your message"); // Then send
+```
+
+### Multi-Character Conversations
+
+Set up multiple contacts:
+
+```typescript
+.device("phone", "iphone16", {
+  app: "app_whatsapp",
+  conversations: [
+    { id: "dm_alice", name: "Alice", avatar: "/avatars/alice.jpg" },
+    { id: "dm_bob", name: "Bob", avatar: "/avatars/bob.jpg" }
+  ]
+})
+.track("app_whatsapp", factoryAlice, (wa) => {
+  wa.at("1s").receive("Alice", "Hey!");
+  wa.at("3s").receive("Alice", "What's up?");
+})
+// You can add multiple tracks for different conversations
+```
+
+### Message Content
+
+Messages support:
+
+- **Plain text**: `"Hello world!"`
+- **Emojis**: `"That's amazing! 🎉"`
+- **Line breaks**: Use `\n` for multi-line messages
+- **Special characters**: Fully Unicode-compatible
+
+```typescript
+wa.at("1s").receive("Alice", "Hey! 👋\nHow are you doing today?");
+```
+
+---
+
+## 6. Timing and Duration
+
+### Episode Duration
+
+Set the total length of your video:
+
+```typescript
+episode("demo", { fps: 30, duration: "30s" });
+```
+
+This creates a 30-second video (900 frames at 30fps).
+
+### Event Timing Precision
+
+Tokovo works in **frames**, but you can use human-readable time:
+
+```typescript
+// All equivalent at 30fps:
+wa.at("2s"); // 2 seconds
+wa.at("2000ms"); // 2000 milliseconds
+wa.at(60); // 60 frames
+```
+
+**Frame Calculation:** `frames = seconds × fps`
+
+- At 30fps: `"2s"` = 60 frames
+- At 60fps: `"2s"` = 120 frames
+
+### Sequencing Events
+
+Create natural conversation flow with proper timing:
+
+```typescript
+.track("app_whatsapp", factory, (wa) => {
+  // Alice sends message
+  wa.at("1s").receive("Alice", "Hey! How are you?");
+
+  // Brief pause (1 second)
+
+  // You start typing
+  wa.span("2s", "4s").typing("me");
+
+  // You send response
+  wa.at("4s").send("I'm great! How about you?");
+
+  // Alice starts typing
+  wa.span("5s", "7s").typing("Alice");
+
+  // Alice responds
+  wa.at("7s").receive("Alice", "Doing well, thanks!");
+})
+```
+
+### Timing Best Practices
+
+**For Natural Conversations:**
+
+- **Read time**: 1-2 seconds per short message
+- **Typing time**: 2-3 seconds for longer messages
+- **Reaction time**: 0.5-1 second between message received and typing starts
+
+**Example Timeline:**
+
+```typescript
+wa.at("0s").receive("Alice", "Quick question?");
+// [Reader has 1.5s to read]
+wa.span("1.5s", "3.5s").typing("me"); // 2s typing
+wa.at("3.5s").send("Sure, what's up?");
+// [Reader has 1.5s to read]
+wa.span("5s", "8s").typing("Alice"); // 3s typing (longer message)
+wa.at("8s").receive("Alice", "Can you send me that document we discussed?");
+```
+
+**For Camera Movements:**
+
+- **Quick snap**: `duration: "0.3s"` (instant feel)
+- **Smooth pan**: `duration: "1s"` (cinematic)
+- **Slow reveal**: `duration: "2s"` (dramatic)
+
+```typescript
+cam.at("2s").focus("lastMessage", { duration: "0.3s" }); // Snappy
+cam.at("5s").animate({ scale: 1.2, duration: "1s" }); // Smooth
+```
+
+**Avoid Common Mistakes:**
+
+```typescript
+// ❌ Too fast - reader can't keep up
+wa.at("1s").receive("Alice", "Message 1");
+wa.at("1.5s").receive("Alice", "Message 2");
+wa.at("2s").receive("Alice", "Message 3");
+
+// ✅ Better pacing
+wa.at("1s").receive("Alice", "Message 1");
+wa.at("3s").receive("Alice", "Message 2");
+wa.at("5s").receive("Alice", "Message 3");
+```
+
+---
+
+## Complete Example
+
+Let's put it all together into a complete episode:
+
+```typescript
+import { defineEpisode } from "@tokovo/episodes";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+
+let order = 0;
+const getOrder = () => order++;
+
+export default defineEpisode({
+  meta: {
+    id: "first-conversation",
+    title: "First Conversation",
+    category: "production",
+  },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 600, // 20 seconds at 30fps
+    apps: ["app_whatsapp"],
+  },
+  build: () =>
+    episode("first-conversation", {
+      fps: 30,
+      duration: "20s",
+      title: "First Conversation",
+    })
+      // Device setup
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        conversations: [
+          {
+            id: "dm_sarah",
+            name: "Sarah",
+            avatar: "/avatars/sarah.jpg",
+          },
+        ],
+        os: {
+          time: new Date("2024-12-20T14:30:00"),
+          battery: 75,
+          network: "5G",
+        },
+      })
+
+      // App events
+      .track(
+        "app_whatsapp",
+        () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+        (wa) => {
+          // Opening message
+          wa.at("1s").receive("Sarah", "Hey! Did you see the news? 📰");
+
+          // Camera focuses
+          // User reads (2 seconds)
+
+          // User starts typing
+          wa.span("3s", "5s").typing("me");
+          wa.at("5s").send("Not yet, what happened?");
+
+          // Sarah starts typing
+          wa.span("6s", "9s").typing("Sarah");
+          wa.at("9s").receive(
+            "Sarah",
+            "They announced the new product launch! So exciting! 🎉",
+          );
+
+          // User reacts quickly
+          wa.span("10s", "11s").typing("me");
+          wa.at("11s").send("Wow! 😮");
+
+          // Sarah sends more details
+          wa.span("12s", "14s").typing("Sarah");
+          wa.at("14s").receive("Sarah", "I'll send you the link...");
+
+          // Brief pause
+          wa.at("16s").receive("Sarah", "https://example.com/announcement");
+
+          // User responds
+          wa.span("17s", "19s").typing("me");
+          wa.at("19s").send("Thanks! Reading it now 🙌");
+        },
+      )
+
+      // Camera movements
+      .camera((cam) => {
+        // Start with normal view
+        cam.at("0s").set({ scale: 1 });
+
+        // Focus on first message
+        cam.at("1s").focus("lastMessage", {
+          scale: 1.1,
+          duration: "0.5s",
+        });
+
+        // Pull back when user sends
+        cam.at("5s").animate({ scale: 1, duration: "0.3s" });
+
+        // Focus on Sarah's long message
+        cam.at("9s").focus("lastMessage", {
+          scale: 1.15,
+          duration: "0.6s",
+        });
+
+        // Return to normal for final exchange
+        cam.at("14s").animate({ scale: 1, duration: "0.5s" });
+      })
+
+      .build(),
+});
+```
+
+---
+
+## What's Next?
+
+Now you understand:
+
+- ✅ Episode structure and anatomy
+- ✅ Device configuration and app setup
+- ✅ Timeline events and timing
+- ✅ Camera basics and focus
+- ✅ Message types and customization
+- ✅ Duration management and sequencing
+
+**Next Steps:**
+
+1. **[Camera Effects Guide](/guides/camera-effects)** - Advanced camera techniques
+2. **[WhatsApp Features](/guides/whatsapp-features)** - Full message type reference
+3. **[Audio & Music](/guides/audio)** - Adding sound to your episodes
+4. **[Episode Patterns](/guides/patterns)** - Common storytelling structures
+
+**Try It Yourself:**
+
+Create an episode with:
+
+- At least 3 back-and-forth messages
+- Typing indicators before each sent message
+- A camera focus on an important message
+- Natural conversation pacing (2-3 seconds between messages)
+
+Happy storytelling! 🎬

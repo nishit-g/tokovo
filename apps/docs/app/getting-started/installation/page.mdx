@@ -1,5 +1,247 @@
 # Installation
 
-> Placeholder content - to be written
+Get Tokovo up and running on your machine in under 5 minutes.
 
-This page will document installation instructions for Tokovo.
+## Prerequisites
+
+Before installing Tokovo, ensure you have the following:
+
+- **Node.js 18+** — Required for running the monorepo and Remotion
+
+  ```bash
+  node --version  # Should show v18.0.0 or higher
+  ```
+
+- **pnpm 9.0.0** — Tokovo uses pnpm for workspace management
+
+  ```bash
+  npm install -g pnpm@9.0.0
+  pnpm --version  # Should show 9.0.0
+  ```
+
+- **Git** — For cloning the repository
+  ```bash
+  git --version
+  ```
+
+## Cloning the Repository
+
+Clone the Tokovo monorepo to your local machine:
+
+```bash
+git clone https://github.com/your-org/tokovo.git
+cd tokovo
+```
+
+The repository structure follows a modular architecture:
+
+```
+tokovo/
+├── apps/
+│   ├── docs/              # Documentation site
+│   └── video-runner/      # Remotion rendering app
+│
+└── packages/
+    ├── core/              # WorldState, replay() engine
+    ├── devices/           # Device profiles
+    ├── apps-whatsapp/     # WhatsApp runtime + UI
+    ├── renderer/          # React rendering layer
+    ├── compiler/          # DSL compiler
+    ├── dsl/               # High-level scripting
+    ├── ir/                # Intermediate representation
+    └── ... (8 more packages)
+```
+
+## Installing Dependencies
+
+Install all monorepo dependencies with a single command:
+
+```bash
+pnpm install
+```
+
+This will:
+
+- Install dependencies for all packages and apps
+- Link internal workspace packages automatically
+- Set up Turbo for monorepo task orchestration
+- Prepare TypeScript build configurations
+
+**Common Issues:**
+
+- **`pnpm: command not found`** — Install pnpm globally: `npm install -g pnpm@9.0.0`
+- **Permission errors** — Avoid using `sudo`; configure npm prefix if needed
+- **Network timeouts** — Try `pnpm install --network-timeout 100000`
+
+## Package Overview
+
+Tokovo consists of 14 packages organized into logical layers:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  TOKOVO PACKAGES                         │
+├─────────────────────────────────────────────────────────┤
+│                                                          │
+│  FOUNDATION               RUNTIME              OUTPUT    │
+│  ┌────────────┐          ┌──────────┐        ┌───────┐  │
+│  │ @tokovo/ir │          │ @tokovo/ │        │ video │  │
+│  │ @tokovo/   │─────────▶│   core   │───────▶│runner │  │
+│  │  compiler  │          │ @tokovo/ │        │       │  │
+│  │ @tokovo/   │          │ renderer │        └───────┘  │
+│  │    dsl     │          └──────────┘                   │
+│  └────────────┘               │                         │
+│                               ▼                         │
+│  PLUGINS                 ┌──────────┐                   │
+│  ┌────────────┐          │ @tokovo/ │                   │
+│  │ @tokovo/   │─────────▶│  react   │                   │
+│  │ apps-*     │          │ @tokovo/ │                   │
+│  │ @tokovo/   │          │  studio  │                   │
+│  │ device-*   │          └──────────┘                   │
+│  └────────────┘                                         │
+│                                                          │
+└─────────────────────────────────────────────────────────┘
+```
+
+### Core Packages (P0 — Required)
+
+- **`@tokovo/core`** — The heart of Tokovo. Contains `WorldState`, `TimelineEvent`, and the deterministic `replay()` engine
+- **`@tokovo/renderer`** — React rendering layer with `TokovoRenderer`, `DeviceFrame`, and `AppViewRegistry`
+- **`@tokovo/devices`** — Device profiles (iPhone 16, Pixel) and device state management
+- **`@tokovo/apps-whatsapp`** — WhatsApp runtime reducer and React UI components
+
+### Language and Compilation (P1 — Recommended)
+
+- **`@tokovo/dsl`** — High-level scripting language for writing episodes naturally
+- **`@tokovo/compiler`** — Transforms DSL scripts into IR with validation and optimization
+- **`@tokovo/ir`** — Intermediate representation format
+
+### Content and Tooling (P2 — Optional)
+
+- **`@tokovo/episodes`** — Example episode definitions for testing and learning
+- **`@tokovo/react`** — React primitives and hooks for custom components
+- **`@tokovo/studio`** — Visual episode editor (future)
+
+### Device Plugins (P3 — Extensions)
+
+- **`@tokovo/device-camera`** — Camera device plugin
+- **`@tokovo/device-notifications`** — Notification system plugin
+
+### Applications
+
+- **`video-runner`** — Remotion app for rendering episodes to MP4
+- **`docs`** — Documentation site built with Next.js and Nextra
+
+## Development Commands
+
+### Run the Remotion Preview
+
+Start the Remotion video preview server:
+
+```bash
+pnpm dev --filter=video-runner
+```
+
+Opens `http://localhost:3000` with an interactive preview. Changes hot-reload automatically.
+
+### Build All Packages
+
+Build the entire monorepo:
+
+```bash
+pnpm build
+```
+
+Uses Turborepo to build packages in dependency order.
+
+### Run the Documentation Site
+
+Preview this documentation locally:
+
+```bash
+pnpm dev --filter=docs
+```
+
+Opens `http://localhost:3001` with live-reloading documentation.
+
+### Render a Video
+
+Render an episode to MP4:
+
+```bash
+cd apps/video-runner
+pnpm render
+```
+
+Output appears in `apps/video-runner/out/video.mp4`.
+
+### Lint and Format
+
+Check code quality:
+
+```bash
+pnpm lint:check    # Run ESLint
+pnpm format        # Auto-format all files
+```
+
+### Validate Episodes
+
+Validate all episodes against Zod schemas:
+
+```bash
+pnpm validate
+```
+
+### Package-Specific Commands
+
+Run commands in a specific package:
+
+```bash
+pnpm --filter=@tokovo/core build
+pnpm --filter=@tokovo/episodes test
+pnpm --filter=video-runner dev
+```
+
+## What's Next?
+
+You've successfully installed Tokovo! Here's what to explore next:
+
+- [Architecture Overview](/architecture/overview) — Understand Tokovo's layered design
+- [Quickstart Tutorial](/getting-started/quickstart) — Build your first episode
+- [Core Package Documentation](/packages/core) — Deep dive into the engine
+
+## Troubleshooting
+
+### Remotion fails to start
+
+**Error:** `Cannot find module '@remotion/player'`
+
+**Solution:** Rebuild packages and clear cache:
+
+```bash
+pnpm build
+rm -rf node_modules/.remotion
+pnpm dev --filter=video-runner
+```
+
+### TypeScript errors in IDE
+
+**Error:** "Cannot find module '@tokovo/core'"
+
+**Solution:** Restart TypeScript server:
+
+```bash
+pnpm install
+# In VS Code: Cmd+Shift+P → "Restart TS Server"
+```
+
+### Build fails with circular dependency
+
+**Error:** `Circular dependency detected`
+
+**Solution:** Force rebuild:
+
+```bash
+pnpm build --force
+```
+
+For more help, see the [Troubleshooting Guide](/troubleshooting) or [open an issue](https://github.com/your-org/tokovo/issues).
