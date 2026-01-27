@@ -1,5 +1,494 @@
 # @tokovo/devices
 
-> Placeholder content - to be written
+**Priority:** P2
 
-This page will document the @tokovo/devices package.
+Device profiles and OS-level behavior for Tokovo's phone simulation engine.
+
+`@tokovo/devices` provides device geometry definitions, camera configurations, and OS event handling for different phone models. It separates device physics from rendering, enabling consistent device behavior across episodes.
+
+## Installation
+
+```bash
+npm install @tokovo/devices
+# or
+pnpm add @tokovo/devices
+```
+
+## Purpose
+
+The devices package handles:
+
+- **Device Profiles**: Screen dimensions, safe areas, camera behavior
+- **OS Event System**: Lock/unlock, app management, notifications, calls
+- **Device Frame Components**: Visual rendering of device bezels and shells
+- **Platform Strategies**: iOS vs Android status bar, navigation, system UI
+
+## Supported Devices
+
+### iPhone Models
+
+- **iPhone 16 Pro Max** (`iphone16`)
+  - Resolution: 1290 × 2796 px (460 ppi)
+  - Super Retina XDR Display
+  - Dynamic Island support
+  - Platform: iOS
+  - Safe area: Top 110px (Dynamic Island + status bar), Bottom 102px (home indicator)
+
+### Android Models
+
+- **Pixel 7 Pro** (`pixel`)
+  - Resolution: 1080 × 2400 px (512 ppi)
+  - LTPO AMOLED Display
+  - Status bar widget indicators
+  - Platform: Android
+  - Safe area: Top 90px (status bar), Bottom 48px (gesture area)
+
+## Device Specifications
+
+Each device profile includes:
+
+### Dimensions
+
+- **Screen**: Width, height, pixel density (ppi)
+- **Frame**: Physical device size including bezel
+- **Corner Radius**: Screen corner rounding
+
+### Safe Areas
+
+- **Top Inset**: Status bar, notch, or Dynamic Island
+- **Bottom Inset**: Home indicator or navigation bar
+- **Left/Right Insets**: Edge-to-edge display margins
+
+### Camera Behavior
+
+- **Zoom Range**: Min/max zoom levels (e.g., 0.9-1.15x)
+- **Pan Speed**: How fast camera moves (slow, medium, fast)
+- **Follow Lag**: Cinematic tracking delay (high, medium, low)
+- **Snap Threshold**: Distance in pixels before instant snap vs animation
+
+### Platform Features
+
+- **Dynamic Island** (iOS): Live activity display, pill dimensions
+- **Status Bar Widget** (Android): Background app indicators
+- **System Sounds**: Lock, unlock, notification, keyboard sounds
+
+## Using Devices in Episodes
+
+### Basic Usage
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("demo", { duration: 10 }).device("phone", "iphone16", (device) => {
+  // Device profile automatically applied
+  device.at("1s").unlock();
+  device.at("2s").openApp("app_whatsapp");
+});
+```
+
+### Multiple Devices
+
+```typescript
+episode("multi-device", { duration: 15 })
+  .device("alice", "iphone16", (device) => {
+    device.at("1s").unlock();
+  })
+  .device("bob", "pixel", (device) => {
+    device.at("2s").unlock();
+  });
+```
+
+## Device Registry API
+
+### Registering Devices
+
+```typescript
+import { DeviceRegistry, iPhone16Profile } from "@tokovo/devices";
+
+// Register a device profile
+DeviceRegistry.register("iphone16", iPhone16Profile);
+
+// Get a registered profile
+const profile = DeviceRegistry.get("iphone16");
+// {
+//   id: "iphone16",
+//   name: "iPhone 16 Pro Max",
+//   platform: "ios",
+//   dimensions: { width: 1290, height: 2796 },
+//   screen: { width: 1290, height: 2796, ppi: 460, cornerRadius: 55 },
+//   safeArea: { top: 110, bottom: 102, left: 0, right: 0 },
+//   camera: { ... },
+//   dynamicIsland: { ... }
+// }
+```
+
+### Profile Lookup
+
+```typescript
+import { getDeviceProfile } from "@tokovo/devices";
+
+// Get profile by ID (with fallback to default)
+const profile = getDeviceProfile("iphone16");
+
+// List all registered devices
+const devices = DeviceRegistry.list();
+// ["iphone16", "pixel"]
+```
+
+## Device Event DSL
+
+### Lock/Unlock
+
+```typescript
+device.at("0s").lock();
+device.at("2s").unlock();
+```
+
+### App Management
+
+```typescript
+// Open an app
+device.at("3s").openApp("app_whatsapp");
+
+// Close current app
+device.at("10s").closeApp();
+
+// Return to home screen
+device.at("15s").goHome();
+```
+
+### OS State
+
+```typescript
+// Set battery level
+device.at("0s").setBattery(85, true); // 85%, charging
+
+// Set network type
+device.at("0s").setNetwork("5g", 4); // 5G, full strength (4 bars)
+
+// Enable Do Not Disturb
+device.at("0s").setDND(true);
+```
+
+### App Badges
+
+```typescript
+// Set badge count on app icon
+device.at("5s").setBadge("app_whatsapp", 3);
+device.at("8s").setBadge("app_whatsapp", 0); // Clear badge
+```
+
+### Phone Calls
+
+```typescript
+// Incoming call
+device.at("10s").incomingCall({
+  callerId: "+1234567890",
+  callerName: "Mom",
+  callerAvatar: "https://...",
+  isVideo: false,
+});
+
+// Answer call
+device.at("12s").answerCall();
+
+// End call
+device.at("30s").endCall();
+```
+
+### Dynamic Island (iOS)
+
+```typescript
+// Show Dynamic Island with Now Playing
+device.at("5s").setDynamicIsland({
+  visible: true,
+  mode: "compact", // idle | minimal | compact | expanded
+});
+
+// Hide Dynamic Island
+device.at("15s").setDynamicIsland({ visible: false });
+```
+
+### Background Apps
+
+```typescript
+// Start background music
+device.at("2s").startBackgroundApp({
+  appId: "app_music",
+  indicator: "music",
+  label: "Playing: Summer Vibes",
+});
+
+// Stop background app
+device.at("20s").stopBackgroundApp("app_music");
+```
+
+## Device Layouts & Camera
+
+### Camera Configuration
+
+Each device profile defines camera behavior:
+
+```typescript
+const iPhone16Camera = {
+  minZoom: 0.9, // Allow 10% zoom out
+  maxZoom: 1.15, // Allow 15% zoom in
+  panSpeed: "slow", // Cinematic movement
+  followLag: "high", // Smooth tracking delay
+  snapThreshold: 40, // Snap if < 40px from target
+  safeAreaTop: 110, // Status bar exclusion
+  safeAreaBottom: 102, // Home indicator exclusion
+  followLagFactor: 0.7, // 0.1 (tight) to 0.9 (loose)
+  panSpeedMultiplier: 0.6, // Speed scaling
+};
+```
+
+### Responsive Layout Effects
+
+Device geometry affects:
+
+- **App Content Rendering**: Apps adapt to screen size and safe areas
+- **Camera Framing**: Zoom and pan constraints based on device
+- **Anchor Positioning**: UI elements respect Dynamic Island and home indicator
+- **Safe Areas**: Content avoids notches, status bars, rounded corners
+
+### Frame Rendering
+
+```typescript
+import { iPhone16Frame, PixelFrame } from '@tokovo/devices'
+
+// Render device frame
+<iPhone16Frame>
+  <AppContent />
+</iPhone16Frame>
+
+// Or use registry
+import { FrameRegistry } from '@tokovo/devices'
+
+const Frame = FrameRegistry.get('iphone16')
+<Frame>
+  <AppContent />
+</Frame>
+```
+
+## Device Reducer
+
+The device reducer processes OS-level events:
+
+```typescript
+import { deviceReducer } from '@tokovo/devices'
+import type { DeviceState } from '@tokovo/core'
+
+// Initial device state
+const devices = {
+  phone: {
+    id: 'phone',
+    profileId: 'iphone16',
+    isLocked: true,
+    foregroundAppId: undefined,
+    homeScreen: { ... },
+    notificationCenter: { ... }
+  }
+}
+
+// Process a device event
+const event = {
+  kind: 'DEVICE',
+  deviceId: 'phone',
+  type: 'UNLOCK',
+  at: 60
+}
+
+const nextDevices = deviceReducer(devices, event)
+// { phone: { ...devices.phone, isLocked: false } }
+```
+
+### Event Types
+
+The reducer handles:
+
+- `LOCK` / `UNLOCK` - Device lock state
+- `OPEN_APP` / `CLOSE_APP` / `GO_HOME` - App lifecycle
+- `SET_BADGE` - App icon badges
+- `SET_BATTERY` / `SET_NETWORK` / `SET_DND` - OS state
+- `INCOMING_CALL` / `CALL_ANSWERED` / `CALL_ENDED` - Phone calls
+- `SET_DYNAMIC_ISLAND` - iOS Live Activities
+- `START_BACKGROUND_APP` / `STOP_BACKGROUND_APP` - Background tasks
+
+## Custom Device Layouts
+
+To add a new device profile:
+
+### 1. Define the Profile
+
+```typescript
+import type { DeviceProfile } from "@tokovo/devices";
+
+export const MyPhoneProfile: DeviceProfile = {
+  id: "myphone",
+  name: "My Custom Phone",
+  type: "phone",
+  platform: "ios", // or 'android'
+  dimensions: {
+    width: 1170,
+    height: 2532,
+  },
+  screen: {
+    width: 1170,
+    height: 2532,
+    ppi: 460,
+    cornerRadius: 47,
+  },
+  pixelDensity: 3,
+  safeArea: {
+    top: 94,
+    bottom: 34,
+    left: 0,
+    right: 0,
+  },
+  camera: {
+    minZoom: 0.9,
+    maxZoom: 1.15,
+    panSpeed: "medium",
+    followLag: "medium",
+    snapThreshold: 45,
+    safeAreaTop: 94,
+    safeAreaBottom: 34,
+    followLagFactor: 0.5,
+    panSpeedMultiplier: 1.0,
+  },
+  sounds: {
+    "device.lock": "os/custom/lock.wav",
+    "device.unlock": "os/custom/unlock.wav",
+  },
+};
+```
+
+### 2. Register the Profile
+
+```typescript
+import { DeviceRegistry } from "@tokovo/devices";
+import { MyPhoneProfile } from "./my-phone-profile";
+
+DeviceRegistry.register("myphone", MyPhoneProfile);
+```
+
+### 3. Use in Episodes
+
+```typescript
+episode("demo", { duration: 10 }).device("phone", "myphone", (device) => {
+  device.at("1s").unlock();
+});
+```
+
+## Platform Strategies
+
+### Status Bar Strategies
+
+Different platforms render status bars differently:
+
+```typescript
+import { IOSStatusBarStrategy, AndroidStatusBarStrategy } from '@tokovo/devices'
+
+// iOS: Dynamic Island + cellular/wifi/battery
+<IOSStatusBarStrategy
+  time="9:41"
+  network="5g"
+  batteryPercent={85}
+  charging={true}
+/>
+
+// Android: Notifications + system icons
+<AndroidStatusBarStrategy
+  time="9:41"
+  network="wifi"
+  batteryPercent={92}
+  notifications={['app_whatsapp', 'app_email']}
+/>
+```
+
+### Frame Strategies
+
+Render device-specific frames:
+
+```typescript
+import { FrameRegistry } from '@tokovo/devices'
+
+// Get frame component for device
+const Frame = FrameRegistry.get('iphone16')
+
+// Render with children
+<Frame>
+  <DeviceScreen />
+</Frame>
+```
+
+## Adding New Devices
+
+Contributors can expand device support:
+
+1. **Create Device Profile**: Define specifications in `packages/devices/src/[model]/profile.ts`
+2. **Create Frame Component**: Build React frame in `packages/devices/src/[model]/Frame.tsx`
+3. **Register Profile**: Add to `DeviceRegistry` in plugin initialization
+4. **Add Shell Component** (optional): Create shell UI if needed
+5. **Test Episode**: Verify device works in a test episode
+
+See the [Contribution Guide](../contributing) for details on adding devices.
+
+## Links
+
+- [@tokovo/core](../core) - Device state types and event system
+- [@tokovo/renderer](../renderer) - Device frame rendering
+- [@tokovo/dsl](../dsl) - `.device()` method documentation
+- [Camera System](../../concepts/camera) - How device profiles affect camera behavior
+
+## TypeScript Types
+
+```typescript
+import type {
+  DeviceProfile,
+  SafeAreaInsets,
+  CameraDeviceConfig,
+  DynamicIslandConfig,
+  StatusBarWidgetConfig,
+} from "@tokovo/devices";
+```
+
+## Example: Complete Device Setup
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("phone-demo", { duration: 30 }).device(
+  "phone",
+  "iphone16",
+  (device) => {
+    // Initial state
+    device.at("0s").setBattery(85, true);
+    device.at("0s").setNetwork("5g", 4);
+
+    // Unlock and open app
+    device.at("2s").unlock();
+    device.at("3s").openApp("app_whatsapp");
+
+    // Background music
+    device.at("5s").startBackgroundApp({
+      appId: "app_music",
+      indicator: "music",
+      label: "Summer Vibes",
+    });
+
+    // Incoming call
+    device.at("15s").incomingCall({
+      callerId: "555-0123",
+      callerName: "Alice",
+    });
+    device.at("18s").answerCall();
+    device.at("28s").endCall();
+  },
+);
+```
+
+---
+
+**Next:** Learn about [App Packages](../apps-whatsapp) to build interactive app experiences on these devices.
