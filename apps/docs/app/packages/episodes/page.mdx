@@ -1,5 +1,571 @@
 # @tokovo/episodes
 
-> Placeholder content - to be written
+> **Example Episodes & Learning Resources**
 
-This page will document the @tokovo/episodes package.
+Priority: **P2** (Examples, Templates, Learning)
+
+`@tokovo/episodes` is Tokovo's collection of production-ready example episodes, feature showcases, and episode templates. Use these to learn Tokovo's DSL, understand best practices, and jumpstart your own video projects.
+
+---
+
+## Installation
+
+```bash
+npm install @tokovo/episodes
+# or
+pnpm add @tokovo/episodes
+# or
+yarn add @tokovo/episodes
+```
+
+---
+
+## What's Inside
+
+The package contains three categories of content:
+
+### 1. **Production Episodes**
+
+Real, polished episodes demonstrating complete narratives:
+
+- `track-demo-v2` - Sarah's Big News 💕
+- `bakchodi-bros` - Indian friends planning midnight adventure
+- `camera-showcase` - Complete camera effects demo
+- `notification-demo` - Enterprise notification system
+- `feature-showcase` - All WhatsApp message types
+
+### 2. **Showcases**
+
+Technical demonstrations of specific Tokovo features.
+
+### 3. **Tests**
+
+Quality assurance episodes for testing rendering and features.
+
+---
+
+## Featured Episodes
+
+### `track-demo-v2` — Sarah's Big News 💕
+
+**What it demonstrates:**
+
+- WhatsApp conversation with dramatic pacing
+- Typing indicators for natural conversation flow
+- Camera movements synced to message reveals
+- Audio track with BGM and crossfades
+- OS track for realistic time progression
+- Message reactions and read receipts
+
+**Duration:** 45 seconds  
+**Perfect for:** Understanding track-based DSL structure
+
+```typescript
+import { trackDemoV2 } from "@tokovo/episodes/production";
+import { replay } from "@tokovo/core";
+
+// Get world state at 22.5 seconds
+const worldState = replay(trackDemoV2, 22.5);
+```
+
+**Key Pattern:** Opening → Suspense → Reveal → Celebration
+
+- Messages build tension with typing delays
+- Camera zooms on dramatic reveals (20s mark)
+- Camera shake adds impact to big news
+- Smooth resolution with camera reset
+
+---
+
+### `bakchodi-bros` — Midnight Maggi Adventure 🤪
+
+**What it demonstrates:**
+
+- **All WhatsApp message types:**
+  - Text messages (rapid-fire spam)
+  - Stickers and GIFs
+  - Voice notes
+  - Images with captions
+  - Location cards
+  - Contact cards
+  - Document sharing
+  - Message forwarding
+  - Message editing
+  - Reactions
+
+- **Advanced features:**
+  - Multiple message bursts
+  - Character personality through pacing
+  - Comedy timing with camera shake
+  - Battery drain over 90 seconds
+  - Time progression
+
+**Duration:** 90 seconds  
+**Perfect for:** Learning all WhatsApp features in action
+
+**Key Pattern:** Spam → Pitch → Twist → Acceptance
+
+- Rapid messages create urgency (1s, 1.5s, 2s, 2.5s)
+- Camera shake on shocking moments
+- Voice note demo at 58s
+- Location sharing at 45s
+- Edit message demonstration at 77s
+
+---
+
+### `camera-showcase` — Cinematic Camera System
+
+**What it demonstrates:**
+
+- Spring physics zoom (bouncy, natural motion)
+- Focus with spring animation
+- Camera shake with Perlin noise + trauma decay
+- Punch zoom for impact
+- Dutch tilt for tension
+- Flash effect
+- Camera reset with smooth spring
+
+**Duration:** 40 seconds  
+**Perfect for:** Learning camera animation techniques
+
+**Camera Effects Showcased:**
+
+1. **Spring Zoom** (3s) - Bouncy organic motion
+2. **Spring Focus** (9s) - Smooth message focus
+3. **Shake** (15s) - Perlin noise with frequency control
+4. **Punch Zoom** (20s) - Quick impact zoom
+5. **Dutch Tilt** (23s, 26s) - Tension with rotation
+6. **Flash** (29s) - White flash effect
+7. **Reset** (31s) - Smooth return to baseline
+
+```typescript
+// Example camera patterns from the episode
+.camera(cam => {
+  cam.at("3s").animate({
+    scale: 1.3,
+    duration: "1s",
+    easing: "easeOut"
+  });
+
+  cam.at("15s").shake({
+    intensityX: 8,
+    intensityY: 6,
+    frequency: 15,
+    decay: 0.85,
+    duration: "1.5s"
+  });
+
+  cam.at("20s").punchZoom({
+    intensity: 0.2,
+    direction: "in",
+    duration: "0.5s",
+    spring: "punch"
+  });
+})
+```
+
+---
+
+### `notification-demo` — Enterprise Notification System 🔔
+
+**What it demonstrates:**
+
+- NotificationTrackBuilder DSL
+- WhatsApp notifications with heads-up display
+- Notification dismiss/tap flows
+- Dynamic Island integration
+- Notification previews (text, image)
+- Background message synchronization
+
+**Duration:** 20 seconds  
+**Perfect for:** Learning notification system patterns
+
+**Key Features:**
+
+- Heads-up notifications appear at top
+- Tap notification to open app
+- Swipe to dismiss
+- Dynamic Island for background activities
+- Clear all notifications
+
+```typescript
+.track("notifications", () => {
+  return new NotificationTrackBuilder(30, "phone", getOrder);
+}, noti => {
+  noti.at("1s").show({
+    id: "notif_1",
+    appId: "app_whatsapp",
+    title: "Alex 👋",
+    body: "Hey! Are you free tonight?",
+    mode: "headsup",
+    preview: { kind: "text", value: "Hey! Are you free tonight?" }
+  });
+
+  noti.at("6s").dismiss("notif_1");
+  noti.at("8s").tap("notif_2");
+})
+```
+
+---
+
+### `feature-showcase` — Complete WhatsApp API Demo
+
+**What it demonstrates:**
+Every single WhatsApp message type and action in one comprehensive demo.
+
+**Message Types:**
+
+- Text messages (send/receive)
+- Images with captions
+- Videos with duration
+- Voice messages
+- GIFs
+- Stickers
+- Documents (PDF, DOCX)
+- Contact cards
+- Location cards
+
+**Message Actions:**
+
+- Edit message
+- Delete message
+- Forward message
+- React with emoji
+- Read receipts
+- Typing indicators
+
+**Duration:** 60 seconds  
+**Perfect for:** Reference guide for all WhatsApp features
+
+---
+
+## Using Episodes in Your Code
+
+### Import and Use
+
+```typescript
+import { trackDemoV2, bakchodiBros, cameraShowcase } from '@tokovo/episodes/production'
+import { replay } from '@tokovo/core'
+
+// Get state at specific time
+const worldAt15s = replay(bakchodiBros, 15)
+
+// Render in Remotion
+import { TokovoRenderer } from '@tokovo/renderer'
+
+function MyComposition() {
+  const frame = useCurrentFrame()
+  const fps = useVideoConfig().fps
+  const t = frame / fps
+
+  const worldState = replay(bakchodiBros, t)
+
+  return <TokovoRenderer worldState={worldState} />
+}
+```
+
+### Access Episode Metadata
+
+```typescript
+import { episodeRegistry } from "@tokovo/episodes";
+
+// Get all production episodes
+const productionEpisodes = episodeRegistry.filter({
+  category: "production",
+});
+
+// Get specific episode
+const episode = episodeRegistry.get("bakchodi-bros");
+
+console.log(episode.meta.title); // "Bakchodi Bros 🤪"
+console.log(episode.config.durationInFrames); // 2700
+console.log(episode.config.format); // "1080x1920"
+```
+
+---
+
+## Learning Path
+
+**Recommended learning sequence:**
+
+1. **Start with `track-demo-v2`**  
+   Understand basic track structure, message flow, camera basics.
+
+2. **Study `camera-showcase`**  
+   Learn all camera effects and when to use them.
+
+3. **Explore `feature-showcase`**  
+   See every WhatsApp message type in action.
+
+4. **Analyze `bakchodi-bros`**  
+   Study pacing, comedy timing, and character personality.
+
+5. **Review `notification-demo`**  
+   Understand notification system integration.
+
+6. **Create your own**  
+   Apply patterns from examples to build original episodes.
+
+---
+
+## Episode Patterns
+
+Common patterns found across production episodes:
+
+### 1. **Opening Shot Pattern**
+
+```typescript
+.camera(cam => {
+  cam.at("0s").set({ scale: 1 });
+  cam.at("1s").animate({
+    scale: 1.08,
+    duration: "0.5s",
+    easing: "easeOut"
+  });
+})
+```
+
+Wide view → subtle zoom to draw attention.
+
+### 2. **Message Reveal Pattern**
+
+```typescript
+// Typing indicator
+wa.span("7s", "10s").typing("them");
+
+// Dramatic message
+wa.at("10s").receive("Sarah", "I have something important to tell you...");
+
+// Camera focus on reveal
+cam.at("10s").focus("lastMessage", { scale: 1.15, duration: "0.4s" });
+```
+
+Build suspense with typing, then focus camera on reveal.
+
+### 3. **Shock/Impact Pattern**
+
+```typescript
+// Big news arrives
+wa.at("20s").receive("Sarah", "I GOT THE JOB! 🎉");
+
+// Camera punch zoom + shake
+cam.at("20s").animate({
+  scale: 1.3,
+  y: -40,
+  duration: "0.8s",
+  easing: "cinematic",
+});
+cam.at("20.5s").shake({
+  intensityX: 5,
+  intensityY: 4,
+  frequency: 20,
+  decay: 0.85,
+  duration: "0.4s",
+});
+```
+
+Zoom + shake for dramatic emphasis.
+
+### 4. **Conversation Pacing Pattern**
+
+```typescript
+// Message received
+wa.at("1s").receive("Alex", "Hey!");
+
+// User thinks (2 second pause)
+
+// User types
+wa.span("3s", "5s").typing("me");
+
+// User sends
+wa.at("5s").send("Hi there!");
+```
+
+Natural conversation rhythm: receive → pause → typing → send.
+
+### 5. **Closing Pattern**
+
+```typescript
+// Final exchange
+wa.at("36s").receive("Sarah", "Can't wait! 💋❤️");
+
+// Read receipt
+wa.at("38s").read();
+
+// Camera reset
+cam.at("40s").reset({
+  duration: "2s",
+  easing: "easeOut",
+});
+```
+
+Gentle resolution with smooth camera return to baseline.
+
+---
+
+## Episode Structure Template
+
+All production episodes follow this structure:
+
+```typescript
+import { defineEpisode } from "@tokovo/episodes";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp";
+
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+export default defineEpisode({
+  // 1. Metadata
+  meta: {
+    id: "episode-id",
+    title: "Display Title",
+    description: "What this episode shows",
+    category: "production",
+    tags: ["whatsapp", "drama"],
+  },
+
+  // 2. Video config
+  config: {
+    format: "1080x1920",
+    durationInFrames: 900, // 30s * 30fps
+    apps: ["app_whatsapp"],
+  },
+
+  // 3. Content builder
+  build: () =>
+    episode("episode-id", {
+      fps: 30,
+      duration: "30s",
+    })
+      // Device setup
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        conversations: [
+          { id: "dm_contact", name: "Contact", avatar: "/avatar.jpg" },
+        ],
+        os: {
+          time: new Date("2024-12-17T19:30:00"),
+          battery: 87,
+          network: "5G",
+        },
+      })
+
+      // WhatsApp messages
+      .track(
+        "app_whatsapp",
+        () => new WhatsAppTrackBuilder(30, "phone", "dm_contact", getOrder),
+        (wa) => {
+          wa.at("1s").receive("Contact", "Message here");
+          wa.span("3s", "5s").typing("me");
+          wa.at("5s").send("Reply here");
+        },
+      )
+
+      // Camera movements
+      .camera((cam) => {
+        cam.at("0s").set({ scale: 1 });
+        cam.at("1s").animate({ scale: 1.1, duration: "0.5s" });
+      })
+
+      // Audio
+      .audio((audio) => {
+        audio.span("0s", "30s").bgm("track", { volume: 0.12 });
+      })
+
+      // Markers for navigation
+      .mark("intro", "1s")
+      .mark("reveal", "15s")
+      .section("opening", "0s", "15s")
+      .section("conclusion", "15s", "30s")
+
+      .build(),
+});
+```
+
+---
+
+## Source Code
+
+All episodes are open source. Read the code to understand patterns:
+
+```
+packages/episodes/src/
+├── production/
+│   ├── track-demo.episode.ts
+│   ├── bakchodi-bros.episode.ts
+│   ├── camera-showcase.episode.ts
+│   ├── notification-demo.episode.ts
+│   ├── feature-showcase.episode.ts
+│   ├── ghibli-showcase.episode.ts
+│   ├── cyberpunk-showcase.episode.ts
+│   ├── cheating-exposed.episode.ts
+│   └── profile-focus-demo.episode.ts
+├── showcases/
+│   └── (showcase episodes)
+└── tests/
+    └── test.episode.ts
+```
+
+View on GitHub: `packages/episodes/src/`
+
+---
+
+## Related Documentation
+
+- **[DSL Reference](/docs/dsl)** - Complete DSL API for writing episodes
+- **[Getting Started](/docs/getting-started)** - Your first episode tutorial
+- **[WhatsApp App](/packages/apps-whatsapp)** - WhatsApp-specific features
+- **[Camera System](/docs/camera)** - Camera effects reference
+- **[Episode Architecture](https://github.com/yourusername/tokovo/blob/main/docs-v2/EPISODE-ARCH.md)** - Deep dive into episode system
+
+---
+
+## CLI Validation
+
+Validate your custom episodes:
+
+```bash
+pnpm --filter @tokovo/episodes validate
+```
+
+Uses the built-in `tokovo-validate` CLI to check:
+
+- Episode schema validity
+- Event timing correctness
+- Type safety
+- Missing required fields
+
+---
+
+## Contributing
+
+Found a bug in an example episode? Have a suggestion for a new showcase?
+
+1. Episodes are in `packages/episodes/src/`
+2. Follow existing patterns
+3. Submit a PR with clear description
+
+---
+
+## What's NOT in This Package
+
+❌ **Tutorial on writing episodes** → See [Getting Started Guide](/docs/getting-started)  
+❌ **DSL API reference** → See [DSL Reference](/docs/dsl)  
+❌ **Full episode source in docs** → Read code directly in `/src`  
+❌ **Advanced composition techniques** → See [Advanced Guide](/docs/advanced)
+
+This package is for **examples and learning**, not comprehensive documentation.
+
+---
+
+## Key Takeaways
+
+✅ `@tokovo/episodes` provides real, working examples  
+✅ Start with `track-demo-v2` to learn the basics  
+✅ Study `camera-showcase` for cinematic techniques  
+✅ Use `bakchodi-bros` as a full-featured reference  
+✅ All episode source code is readable and well-commented  
+✅ Follow the patterns, then create your own unique stories
+
+**Next:** [Build your first episode →](/docs/getting-started)
