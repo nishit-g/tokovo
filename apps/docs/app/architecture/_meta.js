@@ -1,5 +1,5 @@
 export default {
   overview: "Overview",
-  packages: "Packages",
+  "package-structure": "Package Structure",
   "data-flow": "Data Flow",
 };

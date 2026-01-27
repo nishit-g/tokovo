@@ -1,5 +1,5 @@
 export default {
-  page: {
+  index: {
     title: "Home",
     type: "page",
   },
@@ -7,6 +7,4 @@ export default {
   architecture: "Architecture",
   concepts: "Concepts",
   packages: "Packages",
-  api: "API Reference",
-  guides: "Guides",
 };

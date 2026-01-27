@@ -1,16 +1,137 @@
-# Tokovo Documentation
+---
+title: Tokovo
+---
+
+# Tokovo
 
 > **Programmable phone simulation for cinematic storytelling**
 
-Welcome to the Tokovo documentation. This site provides comprehensive guides, API references, and tutorials for building phone-based narrative videos.
+Tokovo transforms structured episode definitions into high-fidelity phone UI videos using React and Remotion. Instead of manually animating fake chats in editing tools, describe your story as **events over time**, and Tokovo renders the entire episode deterministically.
 
-## Quick Links
-
-- **Getting Started** - Installation and your first episode
-- **Architecture** - How Tokovo works under the hood
-- **Packages** - Documentation for all 12 packages
-- **API Reference** - Detailed API documentation
+Built for **content creators**, **AI-driven storytelling**, and **modular mobile OS simulations** — from scripted narratives to brand collaborations and experimental formats.
 
 ---
 
-_Documentation site powered by Nextra_
+## System Architecture
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│                         TOKOVO ARCHITECTURE                        │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐            │
+│  │   Episode   │    │    Core     │    │   Layout    │            │
+│  │    (DSL)    │ ──▶│  (Engine)   │ ──▶│  (Geometry) │            │
+│  └─────────────┘    └─────────────┘    └─────────────┘            │
+│         │                  │                  │                    │
+│         │                  │                  ▼                    │
+│         │                  │           ┌─────────────┐            │
+│         │                  │           │  Renderer   │            │
+│         │                  │           │   (React)   │            │
+│         │                  │           └─────────────┘            │
+│         │                  │                  │                    │
+│         │                  │                  ▼                    │
+│         │                  │           ┌─────────────┐            │
+│         │                  │           │  Remotion   │            │
+│         │                  │           │   (Video)   │            │
+│         │                  │           └─────────────┘            │
+│         │                  │                                       │
+│         │    ┌─────────────▼──────────────────────┐               │
+│         │    │         PLUGIN SYSTEM               │               │
+│         │    ├─────────────────────────────────────┤               │
+│         │    │  Apps     Devices    Camera   Sound │               │
+│         │    │  ┌───┐    ┌───┐      ┌───┐   ┌───┐ │               │
+│         │    │  │WA │    │iOS│      │FX │   │🔊│ │               │
+│         │    │  └───┘    └───┘      └───┘   └───┘ │               │
+│         └───▶└─────────────────────────────────────┘               │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Start Here
+
+Tokovo serves three audiences with distinct needs:
+
+### 📹 Content Creators
+
+Build phone-based narrative videos without manual animation.  
+**[Get Started →](/getting-started/installation)**
+
+### 🔧 SDK Developers
+
+Extend Tokovo with custom devices, apps, and plugins.  
+**[Explore Packages →](/packages/core)**
+
+### 🏗 Contributors
+
+Understand the architecture and contribute to the engine.  
+**[Learn Architecture →](/architecture/overview)**
+
+---
+
+## Key Features
+
+**Deterministic Simulation**  
+Every frame is reproducible from episode data. No runtime surprises.
+
+**Event-Driven Storytelling**  
+Messages, typing indicators, notifications, app transitions—all timeline events.
+
+**Modular Plugin Architecture**  
+Add new devices (iPhone, Pixel), apps (WhatsApp, Instagram), or effects without touching core.
+
+**React + Remotion Rendering**  
+Leverage the full power of React components with Remotion's video engine.
+
+**AI-Friendly Episode Format**  
+Structured JSON/TypeScript episodes make it easy for LLMs to generate storylines.
+
+---
+
+## Quick Example
+
+Here's how simple it is to create a phone conversation:
+
+```typescript
+import { episode } from "@tokovo/dsl";
+
+episode("my-story", { duration: 10 })
+  .device("phone", "iphone16", (device) => {
+    device.app("app_whatsapp", (wa) => {
+      wa.at("1s").receive("Alice", "Hey! How are you?");
+      wa.at("3s").typing("Alice");
+      wa.at("5s").receive("Alice", "Want to grab coffee?");
+    });
+  })
+  .camera((cam) => {
+    cam.at("0s").focus("lastMessage");
+    cam.at("4s").zoom(1.2);
+  });
+```
+
+This episode produces a fully-rendered video with typing animations, message bubbles, and camera movements—all from declarative code.
+
+---
+
+## What Makes Tokovo Different
+
+- **Data-driven**: Episodes are data, not code. Perfect for batch generation and AI workflows.
+- **Layered architecture**: Core engine stays pure and minimal. Complexity lives in devices/apps.
+- **Composable**: New devices or apps never require core changes.
+- **Cinematic focus**: Optimized for video rendering, not interactive apps.
+
+---
+
+## Ready to Build?
+
+**[Install Tokovo →](/getting-started/installation)**
+
+**[See Architecture →](/architecture/overview)**
+
+**[Browse Examples →](/packages/episodes)**
+
+---
+
+_Tokovo is a modular, deterministic, extensible storytelling engine for phone-based narratives._
