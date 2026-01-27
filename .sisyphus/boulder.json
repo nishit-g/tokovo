@@ -1,6 +1,9 @@
 {
-  "active_plan": "/Users/nishit.gupta/personal/tokovo/.sisyphus/plans/whatsapp-enterprise-refactor.md",
-  "started_at": "2026-01-26T08:55:34.186Z",
-  "session_ids": ["ses_40709d35affemgWhVVZfnLzga7"],
-  "plan_name": "whatsapp-enterprise-refactor"
+  "active_plan": "/Users/nishit.gupta/personal/tokovo/.sisyphus/plans/tokovo-documentation.md",
+  "started_at": "2026-01-26T12:39:48.601Z",
+  "session_ids": [
+    "ses_40709d35affemgWhVVZfnLzga7",
+    "ses_3fff85f9bffeG3oN5WZM5k6fXm"
+  ],
+  "plan_name": "tokovo-documentation"
 }
