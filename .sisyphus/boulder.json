@@ -1,9 +1,6 @@
 {
-  "active_plan": "/Users/nishit.gupta/personal/tokovo/.sisyphus/plans/tokovo-documentation.md",
-  "started_at": "2026-01-26T12:39:48.601Z",
-  "session_ids": [
-    "ses_40709d35affemgWhVVZfnLzga7",
-    "ses_3fff85f9bffeG3oN5WZM5k6fXm"
-  ],
-  "plan_name": "tokovo-documentation"
+  "active_plan": "/Users/nishit.gupta/personal/tokovo/.sisyphus/plans/turbo-plugin-generator.md",
+  "started_at": "2026-01-27T21:11:08.562Z",
+  "session_ids": ["ses_3fff85f9bffeG3oN5WZM5k6fXm"],
+  "plan_name": "turbo-plugin-generator"
 }
