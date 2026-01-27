@@ -131,6 +131,19 @@ importers:
         specifier: ^5.0.0
         version: 5.9.3
 
+  packages/apps-demo:
+    dependencies:
+      '@tokovo/core':
+        specifier: workspace:*
+        version: link:../core
+      immer:
+        specifier: ^10.0.0
+        version: 10.2.0
+    devDependencies:
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.25)(terser@5.44.1)
+
   packages/apps-whatsapp:
     dependencies:
       '@tokovo/core':

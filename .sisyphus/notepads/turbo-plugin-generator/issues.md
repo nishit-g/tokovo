@@ -32,3 +32,25 @@ Previous tasks (1-10) were not completed. The plan shows tasks 1-11 should creat
 2. Then retry Task 12 verification
 
 **Status**: BLOCKED - Prerequisites not met
+
+## Issue: Immer Dependency Missing from package.json Template
+
+**Date**: 2026-01-28
+**Found During**: Task 12 End-to-End Verification
+
+**Problem**:
+- Reducer tests import `immer` for `produce()` helper
+- package.json template didn't include immer in dependencies
+- Tests fail with "Cannot find module 'immer'"
+
+**Root Cause**:
+- Template at `turbo/generators/templates/plugin/package.json.hbs` line 7 was missing immer
+
+**Fix Applied**:
+- Added `"immer": "^10.0.0"` to dependencies in package.json.hbs template
+- This matches the pattern in reducer.test.ts.hbs which imports `produce` from immer
+
+**Verification**:
+- Will regenerate test plugin after template fix
+- Tests should pass once immer is available
+

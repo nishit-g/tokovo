@@ -1,0 +1,59 @@
+// Transforms TrackEvents (PascalCase) → RuntimeEvents (UPPERCASE_SNAKE)
+import type { TrackEvent, RuntimeEvent } from "@tokovo/core";
+
+export interface DemoLoweringHandler {
+  lower: (event: TrackEvent) => RuntimeEvent[];
+}
+
+// Helper to build RuntimeEvent with all required fields
+function createRuntimeEvent(
+  event: TrackEvent,
+  type: string,
+  payload: unknown
+): RuntimeEvent {
+  return {
+    at: event.at,
+    kind: "APP",
+    appId: "app_demo",
+    type: type,
+    payload: payload,
+    deviceId: event.deviceId,
+  };
+}
+
+export const demoLowering: DemoLoweringHandler = {
+  lower: (event: TrackEvent): RuntimeEvent[] => {
+    switch (event.kind) {
+      case "CreateNote":
+        return [
+          createRuntimeEvent(event, "ADD_NOTE", {
+            id: (event as any).id,
+            title: (event as any).title,
+            content: (event as any).content,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }),
+        ];
+      case "ViewNote":
+        return [
+          createRuntimeEvent(event, "SET_ACTIVE_NOTE", { noteId: (event as any).noteId }),
+          createRuntimeEvent(event, "SET_SCREEN", { screen: "detail" }),
+        ];
+      case "EditNote":
+        return [
+          createRuntimeEvent(event, "UPDATE_NOTE", {
+            noteId: (event as any).noteId,
+            title: (event as any).title,
+            content: (event as any).content,
+            updatedAt: Date.now(),
+          }),
+        ];
+      case "DeleteNote":
+        return [
+          createRuntimeEvent(event, "DELETE_NOTE", { noteId: (event as any).noteId }),
+        ];
+      default:
+        return [];
+    }
+  },
+};

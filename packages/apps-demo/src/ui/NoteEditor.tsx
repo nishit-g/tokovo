@@ -1,14 +1,14 @@
 import React from "react";
-import type { {{ pascalCase name }}State } from "../runtime/state";
-import { get{{ pascalCase name }}Theme } from "../config/theme";
-import { {{ camelCase name }}Spacing } from "../components/tokens";
+import type { DemoState } from "../runtime/state";
+import { getDemoTheme } from "../config/theme";
+import { demoSpacing } from "../components/tokens";
 
 interface NoteEditorProps {
-  appState: {{ pascalCase name }}State | undefined;
+  appState: DemoState | undefined;
 }
 
 export const NoteEditor: React.FC<NoteEditorProps> = ({ appState }) => {
-  const theme = get{{ pascalCase name }}Theme("light");
+  const theme = getDemoTheme("light");
   const activeNoteId = appState?.activeNoteId;
   const note = appState?.notes.find((n) => n.id === activeNoteId);
 
@@ -17,16 +17,16 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ appState }) => {
 
   return (
     <div
-      style=\{{
+      style={{
         backgroundColor: theme.colors.noteEditorBackground,
         color: theme.colors.text,
-        padding: \{{ camelCase name }}Spacing.editorPadding,
+        padding: {{ camelCase name }}Spacing.editorPadding,
         minHeight: "100vh",
       }}
     >
-      <div style=\{{ marginBottom: 20, display: "flex", gap: 12 }}>
+      <div style={{ marginBottom: 20, display: "flex", gap: 12 }}>
         <button
-          style=\{{
+          style={{
             ...theme.typography.body,
             padding: "8px 16px",
             backgroundColor: theme.colors.primary,
@@ -39,7 +39,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ appState }) => {
           Save
         </button>
         <button
-          style=\{{
+          style={{
             ...theme.typography.body,
             padding: "8px 16px",
             backgroundColor: "#ddd",
@@ -52,13 +52,13 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ appState }) => {
           Cancel
         </button>
       </div>
-      <div style=\{{ marginBottom: 16 }}>
+      <div style={{ marginBottom: 16 }}>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Note title"
-          style=\{{
+          style={{
             ...theme.typography.title,
             width: "100%",
             padding: 12,
@@ -75,7 +75,7 @@ export const NoteEditor: React.FC<NoteEditorProps> = ({ appState }) => {
           onChange={(e) => setContent(e.target.value)}
           placeholder="Note content"
           rows={15}
-          style=\{{
+          style={{
             ...theme.typography.body,
             width: "100%",
             padding: 12,
