@@ -1,0 +1,53 @@
+// =====================================================
+// THEME CONFIGURATION - Light/Dark mode support
+// =====================================================
+
+import { {{ camelCase name }}Colors, {{ camelCase name }}Typography, {{ camelCase name }}Spacing } from "../components/tokens";
+
+export interface {{ pascalCase name }}ThemeColors {
+  primary: string;
+  background: string;
+  text: string;
+  noteCard: string;
+  border: string;
+}
+
+export interface {{ pascalCase name }}Theme {
+  mode: "light" | "dark";
+  colors: {{ pascalCase name }}ThemeColors;
+  typography: typeof {{ camelCase name }}Typography;
+  spacing: typeof {{ camelCase name }}Spacing;
+}
+
+// Light mode theme
+export const {{ constantCase name }}_LIGHT: {{ pascalCase name }}Theme = {
+  mode: "light",
+  colors: {
+    primary: {{ camelCase name }}Colors.primary,
+    background: {{ camelCase name }}Colors.background,
+    text: {{ camelCase name }}Colors.textPrimary,
+    noteCard: {{ camelCase name }}Colors.noteCardBackground,
+    border: {{ camelCase name }}Colors.noteCardBorder,
+  },
+  typography: {{ camelCase name }}Typography,
+  spacing: {{ camelCase name }}Spacing,
+};
+
+// Dark mode theme
+export const {{ constantCase name }}_DARK: {{ pascalCase name }}Theme = {
+  mode: "dark",
+  colors: {
+    primary: {{ camelCase name }}Colors.primaryLight,
+    background: "#1C1C1E",
+    text: "#FFFFFF",
+    noteCard: "#2C2C2E",
+    border: "#3A3A3C",
+  },
+  typography: {{ camelCase name }}Typography,
+  spacing: {{ camelCase name }}Spacing,
+};
+
+// Theme getter
+export function get{{ pascalCase name }}Theme(mode: "light" | "dark"): {{ pascalCase name }}Theme {
+  return mode === "dark" ? {{ constantCase name }}_DARK : {{ constantCase name }}_LIGHT;
+}

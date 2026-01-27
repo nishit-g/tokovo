@@ -1,0 +1,53 @@
+import type { WorldState, PluginReducer, RuntimeEvent } from "@tokovo/core";
+import type { {{ pascalCase name }}State, Note } from "./state";
+import { create{{ pascalCase name }}InitialState } from "./state";
+
+// Helper to access plugin state from WorldState
+function getAppState(draft: WorldState): {{ pascalCase name }}State {
+  if (!draft.appState) {
+    draft.appState = {};
+  }
+  if (!draft.appState["app_{{ name }}"]) {
+    draft.appState["app_{{ name }}"] = create{{ pascalCase name }}InitialState();
+  }
+  return draft.appState["app_{{ name }}"] as {{ pascalCase name }}State;
+}
+
+// Reducer - receives WorldState and event, mutates draft via Immer
+export const {{ camelCase name }}Reducer: PluginReducer<"app_{{ name }}"> = (
+  draft: WorldState,
+  event: RuntimeEvent & { kind: "APP"; appId: "app_{{ name }}" }
+) => {
+  const appState = getAppState(draft);
+
+  switch (event.type) {
+    case "ADD_NOTE":
+      appState.notes.push(event.payload as Note);
+      break;
+    case "UPDATE_NOTE": {
+      const payload = event.payload as { noteId: string; title?: string; content?: string; updatedAt: number };
+      const noteToUpdate = appState.notes.find((n) => n.id === payload.noteId);
+      if (noteToUpdate) {
+        if (payload.title) noteToUpdate.title = payload.title;
+        if (payload.content) noteToUpdate.content = payload.content;
+        noteToUpdate.updatedAt = payload.updatedAt;
+      }
+      break;
+    }
+    case "DELETE_NOTE": {
+      const payload = event.payload as { noteId: string };
+      appState.notes = appState.notes.filter((n) => n.id !== payload.noteId);
+      break;
+    }
+    case "SET_ACTIVE_NOTE": {
+      const payload = event.payload as { noteId: string };
+      appState.activeNoteId = payload.noteId;
+      break;
+    }
+    case "SET_SCREEN": {
+      const payload = event.payload as { screen: "list" | "detail" | "editor" };
+      appState.currentScreen = payload.screen;
+      break;
+    }
+  }
+};

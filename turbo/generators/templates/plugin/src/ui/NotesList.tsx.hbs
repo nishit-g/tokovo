@@ -1,0 +1,55 @@
+import React from "react";
+import type { {{ pascalCase name }}State } from "../runtime/state";
+import { get{{ pascalCase name }}Theme } from "../config/theme";
+import { {{ camelCase name }}Spacing } from "../components/tokens";
+
+interface NotesListProps {
+  appState: {{ pascalCase name }}State | undefined;
+}
+
+export const NotesList: React.FC<NotesListProps> = ({ appState }) => {
+  const theme = get{{ pascalCase name }}Theme("light");
+  const notes = appState?.notes ?? [];
+
+  return (
+    <div
+      style={{
+        backgroundColor: theme.colors.background,
+        color: theme.colors.text,
+        padding: {{ camelCase name }}Spacing.noteCardPadding,
+        minHeight: "100vh",
+      }}
+    >
+      <h1 style={{ ...theme.typography.title, marginBottom: 20 }}>
+        {{ displayName }}
+      </h1>
+      <div style={{ display: "flex", flexDirection: "column", gap: {{ camelCase name }}Spacing.listItemGap }}>
+        {notes.map((note) => (
+          <div
+            key={note.id}
+            style={{
+              backgroundColor: theme.colors.noteCard,
+              border: `1px solid ${theme.colors.border}`,
+              borderRadius: 8,
+              padding: {{ camelCase name }}Spacing.noteCardPadding,
+              cursor: "pointer",
+            }}
+          >
+            <h3 style={{ ...theme.typography.headline, margin: 0 }}>
+              {note.title}
+            </h3>
+            <p style={{ ...theme.typography.body, margin: "8px 0 0 0", color: theme.colors.text }}>
+              {note.content.substring(0, 100)}
+              {note.content.length > 100 ? "..." : ""}
+            </p>
+          </div>
+        ))}
+        {notes.length === 0 && (
+          <p style={{ ...theme.typography.body, textAlign: "center", marginTop: 40 }}>
+            No notes yet. Create one to get started!
+          </p>
+        )}
+      </div>
+    </div>
+  );
+};

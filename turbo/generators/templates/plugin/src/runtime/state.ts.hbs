@@ -1,0 +1,24 @@
+// State types for {{ displayName }} plugin
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface {{ pascalCase name }}State {
+  notes: Note[];
+  currentScreen: "list" | "detail" | "editor";
+  activeNoteId: string | null;
+}
+
+// Initial state function
+export function create{{ pascalCase name }}InitialState(): {{ pascalCase name }}State {
+  return {
+    notes: [],
+    currentScreen: "list",
+    activeNoteId: null,
+  };
+}

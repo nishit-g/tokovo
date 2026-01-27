@@ -1,0 +1,46 @@
+// =====================================================
+// CAMERA ANCHORS - Defines where camera frames for UI regions
+// =====================================================
+//
+// Each region specifies:
+//   - anchorPoint: {x, y} normalized coordinates (0-1)
+//   - paddingPx: margin around the target
+//   - targetFill: how much of the screen the target should fill
+//
+
+import type { PluginAnchorRegistry } from "@tokovo/core";
+
+export const {{ camelCase name }}Anchors: PluginAnchorRegistry = {
+  // Provider functions (optional - return null for default behavior)
+  providers: {
+    default: (world, deviceId) => null,
+  },
+
+  // Framing configurations for each UI region
+  framing: {
+    // Note card in list view - center of screen
+    note_card: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 16,
+      targetFill: 0.8,
+    },
+    // Header region - top of screen
+    header: {
+      anchorPoint: { x: 0.5, y: 0.15 },
+      paddingPx: 8,
+      targetFill: 0.9,
+    },
+    // Editor input area - bottom portion
+    editor: {
+      anchorPoint: { x: 0.5, y: 0.7 },
+      paddingPx: 20,
+      targetFill: 0.85,
+    },
+    // Full device view
+    device: {
+      anchorPoint: { x: 0.5, y: 0.5 },
+      paddingPx: 0,
+      targetFill: 1.0,
+    },
+  },
+};

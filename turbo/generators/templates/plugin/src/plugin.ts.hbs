@@ -1,0 +1,34 @@
+import type { TokovoPluginContract, PluginViews } from "@tokovo/core";
+import { PluginManager } from "@tokovo/core";
+import { {{ pascalCase name }}View } from "./ui";
+import { {{ camelCase name }}Reducer } from "./runtime/reducer";
+import { {{ camelCase name }}Lowering } from "./lowering";
+import { {{ camelCase name }}Dsl } from "./dsl";
+import { {{ camelCase name }}LayoutStrategies } from "./layout";
+import { {{ camelCase name }}Anchors } from "./runtime/adapters/anchors";
+
+// Assemble views object
+const {{ camelCase name }}Views: PluginViews = {
+  AppRoot: {{ pascalCase name }}View,
+};
+
+// Plugin contract definition
+export const {{ pascalCase name }}Plugin: TokovoPluginContract<"app_{{ name }}"> = {
+  id: "app_{{ name }}",
+  displayName: "{{ displayName }}",
+  views: {{ camelCase name }}Views,
+  reducer: {{ camelCase name }}Reducer,
+  lowering: {{ camelCase name }}Lowering,
+  dsl: {{ camelCase name }}Dsl,
+  layout: {{ camelCase name }}LayoutStrategies,
+  anchors: {{ camelCase name }}Anchors,
+};
+
+// Registration function with guard
+let _registered = false;
+
+export function register{{ pascalCase name }}Plugin(): void {
+  if (_registered) return;
+  _registered = true;
+  PluginManager.register({{ pascalCase name }}Plugin);
+}
