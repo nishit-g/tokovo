@@ -17,9 +17,36 @@ Ready to extend Tokovo with your own custom app? This guide walks you through bu
 
 ---
 
+## Quick Start: Use the Generator ⚡
+
+**Recommended for most developers:** Generate a complete plugin scaffold in seconds.
+
+```bash
+pnpm turbo gen plugin
+```
+
+This creates a production-ready plugin with:
+
+- ✅ Runtime (state, reducer, selectors, anchors)
+- ✅ UI (4 React views with routing)
+- ✅ DSL (fluent chain API)
+- ✅ Lowering + Layout
+- ✅ Theme system + design tokens
+- ✅ Tests (9 tests ready to run)
+
+**After generation**, register in `apps/video-runner/src/Root.tsx` and use immediately.
+
+**Full generator docs:** `turbo/generators/README.md`
+
+---
+
+_The manual guide below is for developers who want to deeply understand the architecture or customize beyond the template._
+
+---
+
 ## Overview
 
-By the end of this guide, you'll have a working app plugin with:
+By the end of this manual guide, you'll have a working app plugin with:
 
 - ✅ Event handlers for messages and typing
 - ✅ Immutable state management with Immer
