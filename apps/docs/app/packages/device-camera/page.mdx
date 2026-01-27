@@ -1,5 +1,546 @@
 # @tokovo/device-camera
 
-> Placeholder content - to be written
+> **Priority: P0** — Essential cinematic camera system for phone simulations
 
-This page will document the @tokovo/device-camera package.
+The camera is the **director's eye** in Tokovo. While devices handle what appears on screen and apps manage content, the camera controls _how_ the story is told visually—from subtle focus shifts to dramatic zoom punches.
+
+## Installation
+
+```bash
+npm install @tokovo/device-camera
+```
+
+## Core Concepts
+
+### Camera as Cinematic Tool
+
+In Tokovo, the camera isn't just a viewport—it's a **storytelling device**. Like a film director choosing when to push in on an actor's face or pull back for context, Tokovo's camera system gives you precise control over visual emphasis, pacing, and emotional impact.
+
+The camera system is built on three foundational concepts:
+
+1. **Semantic Anchors** — Focus on meaningful UI elements ("lastMessage", "inputArea") instead of pixel coordinates
+2. **Effect Processors** — Composable camera effects that can be layered and combined
+3. **Frame-Based Determinism** — Every camera movement is reproducible at any point in the timeline
+
+### Camera Transform
+
+Every camera state is described by a `CameraTransform`:
+
+```typescript
+interface CameraTransform {
+  scale: number; // Zoom level (1.0 = normal, 1.5 = 1.5x zoom)
+  translateX: number; // Horizontal pan (pixels)
+  translateY: number; // Vertical pan (pixels)
+  rotate: number; // Z-axis rotation (degrees)
+}
+```
+
+The camera renderer applies these transforms to create the final view:
+
+```typescript
+transform: `
+  scale(${scale})
+  translate(${translateX}px, ${translateY}px)
+  rotate(${rotate}deg)
+`;
+```
+
+## Camera API
+
+### Basic Camera Control
+
+The `.camera()` builder provides a fluent API for camera movements:
+
+```typescript
+import { episode } from '@tokovo/dsl'
+
+episode('story', { duration: '30s', fps: 30 })
+  .device('phone', 'iphone16', { ... })
+  .camera((cam) => {
+    // Set initial camera state
+    cam.at('0s').set({ scale: 1 })
+
+    // Animate to new position
+    cam.at('2s').animate({
+      scale: 1.2,
+      y: -40,
+      duration: '1s',
+      easing: 'easeOut'
+    })
+
+    // Reset to neutral
+    cam.at('10s').reset({ duration: '0.5s' })
+  })
+  .build()
+```
+
+### Focus on Anchors
+
+Focus semantically on UI elements using the Anchor System:
+
+```typescript
+.camera((cam) => {
+  // Wide shot showing full chat
+  cam.at('0s').set({ scale: 1 })
+
+  // Focus on the most recent message
+  cam.at('2s').focus('lastMessage', {
+    scale: 1.15,
+    duration: '0.4s',
+    easing: 'easeOut'
+  })
+
+  // Focus on notification banner
+  cam.at('5s').focus('notification', {
+    scale: 1.2,
+    duration: '0.5s'
+  })
+
+  // Focus on typing indicator
+  cam.at('8s').focus('inputArea', {
+    scale: 1.05,
+    duration: '0.3s'
+  })
+})
+```
+
+**Available Anchors** (app-dependent):
+
+- `deviceScreen` — Full device viewport
+- `lastMessage` — Most recent message in chat
+- `inputArea` — Message input field
+- `notification` — Notification banner
+- `appIcon` — Specific app icon (multi-device)
+- `profileHeader` — Profile/chat header
+
+See [Anchor System](/concepts/anchors) for complete documentation.
+
+### Continuous Tracking
+
+Track an anchor continuously as it moves:
+
+```typescript
+.camera((cam) => {
+  // Start tracking the input area as user types
+  cam.span('3s', '8s').track('inputArea', {
+    scale: 1.05,
+    smoothing: 0.15  // 0 = instant, 1 = very smooth
+  })
+
+  // Track last message as new messages arrive
+  cam.span('10s', '20s').track('lastMessage', {
+    scale: 1.1,
+    smoothing: 0.2
+  })
+})
+```
+
+### Zoom Effects
+
+Manual zoom control with various styles:
+
+```typescript
+.camera((cam) => {
+  // Smooth zoom in
+  cam.at('1s').animate({
+    scale: 1.3,
+    duration: '1s',
+    easing: 'easeOut'
+  })
+
+  // Zoom with spring physics (bouncy)
+  cam.at('5s').animate({
+    scale: 1.5,
+    duration: '0.8s',
+    spring: 'bouncy'  // Uses spring physics instead of easing
+  })
+
+  // Punch zoom (quick zoom with bounce back)
+  cam.at('10s').punchZoom({
+    intensity: 0.2,
+    direction: 'in',
+    duration: '0.5s',
+    spring: 'punch'
+  })
+})
+```
+
+### Camera Shake
+
+Add impact with procedural shake effects:
+
+```typescript
+.camera((cam) => {
+  // Dramatic shake on message received
+  cam.at('5s').shake({
+    intensityX: 8,      // Horizontal shake intensity
+    intensityY: 6,      // Vertical shake intensity
+    frequency: 15,      // Shake speed
+    decay: 0.85,        // Trauma decay rate (0-1)
+    duration: '1.5s'
+  })
+
+  // Quick subtle shake
+  cam.at('10s').shake({
+    intensityX: 3,
+    intensityY: 2,
+    frequency: 20,
+    decay: 0.8,
+    duration: '0.3s'
+  })
+})
+```
+
+Shake uses **Perlin noise** with trauma-based decay for realistic camera movement.
+
+### Advanced Effects
+
+#### Dutch Tilt
+
+Add tension with Z-axis rotation:
+
+```typescript
+.camera((cam) => {
+  // Tilt 8 degrees for unease
+  cam.at('5s').dutchTilt({
+    angle: 8,
+    duration: '1s',
+    spring: 'dramatic'
+  })
+
+  // Reverse tilt
+  cam.at('8s').dutchTilt({
+    angle: -5,
+    duration: '0.8s',
+    spring: 'cinematic'
+  })
+
+  // Return to level
+  cam.at('10s').reset({ duration: '1s' })
+})
+```
+
+#### Flash Effect
+
+Quick color flash overlay:
+
+```typescript
+.camera((cam) => {
+  // White flash
+  cam.at('3s').flash({
+    color: 'white',
+    intensity: 1,
+    duration: '0.2s'
+  })
+
+  // Red flash for alert
+  cam.at('7s').flash({
+    color: '#ff0000',
+    intensity: 0.7,
+    duration: '0.15s'
+  })
+})
+```
+
+#### Whip Pan
+
+Fast directional blur transition:
+
+```typescript
+.camera((cam) => {
+  cam.at('5s').whipPan({
+    direction: 'left',
+    blur: 20,
+    duration: '0.3s'
+  })
+})
+```
+
+## Spring Physics
+
+Tokovo uses **spring physics** (via Remotion's `spring()`) for organic camera motion:
+
+```typescript
+.camera((cam) => {
+  cam.at('2s').animate({
+    scale: 1.2,
+    duration: '1s',
+    spring: 'bouncy'  // Use spring preset
+  })
+
+  // Custom spring config
+  cam.at('5s').animate({
+    scale: 1.0,
+    duration: '0.8s',
+    spring: {
+      damping: 15,      // Resistance (higher = less bounce)
+      stiffness: 100,   // Speed (higher = faster)
+      mass: 1,          // Weight (higher = slower, more momentum)
+    }
+  })
+})
+```
+
+### Spring Presets
+
+| Preset      | Feel                  | Use Case                              |
+| ----------- | --------------------- | ------------------------------------- |
+| `smooth`    | No bounce, gentle     | Subtle reveals, calm moments          |
+| `snappy`    | Quick, minimal bounce | UI focus, fast transitions            |
+| `bouncy`    | Playful overshoot     | Emphasis, excitement                  |
+| `dramatic`  | Heavy, weighty        | Dramatic moments, tension             |
+| `punch`     | Quick with settle     | Impacts, reactions                    |
+| `cinematic` | Film-like motion      | Establishing shots, professional feel |
+
+### Camera Feels
+
+Camera **feels** combine spring, framing, and shake for complete mood presets:
+
+```typescript
+const CAMERA_FEELS = {
+  calm: {
+    spring: "smooth",
+    framing: "loose", // Wide breathing room
+    shakeMultiplier: 0.3, // Minimal shake
+  },
+  dramatic: {
+    spring: "dramatic",
+    framing: "tight", // Close framing
+    shakeMultiplier: 1.5, // Enhanced shake
+  },
+  action: {
+    spring: "punch",
+    framing: "medium",
+    shakeMultiplier: 2.0, // Strong shake
+  },
+  intense: {
+    spring: "snappy",
+    framing: "extreme", // Very tight closeup
+    shakeMultiplier: 2.5, // Maximum shake
+  },
+};
+```
+
+## Common Patterns
+
+### Opening Establishing Shot
+
+```typescript
+.camera((cam) => {
+  // Start wide, showing full device
+  cam.at('0s').set({ scale: 0.85 })
+
+  // Push in to app view
+  cam.at('1s').animate({
+    scale: 1.0,
+    duration: '2s',
+    easing: 'cinematic'
+  })
+})
+```
+
+### Focus on Last Message
+
+```typescript
+.camera((cam) => {
+  // Normal view
+  cam.at('0s').set({ scale: 1 })
+
+  // Message arrives - focus on it
+  cam.at('5s').focus('lastMessage', {
+    scale: 1.15,
+    duration: '0.4s',
+    easing: 'easeOut'
+  })
+
+  // Hold for 2 seconds
+  // Return to normal
+  cam.at('7.5s').reset({ duration: '0.5s' })
+})
+```
+
+### Zoom During Dramatic Moment
+
+```typescript
+.camera((cam) => {
+  // Message reveals shocking news
+  cam.at('10s').animate({
+    scale: 1.3,
+    y: -40,              // Pan up slightly
+    duration: '0.8s',
+    easing: 'cinematic'
+  })
+
+  // Add shake for impact
+  cam.at('10.5s').shake({
+    intensityX: 5,
+    intensityY: 4,
+    frequency: 20,
+    decay: 0.85,
+    duration: '0.4s'
+  })
+})
+```
+
+### Pan Between Elements
+
+```typescript
+.camera((cam) => {
+  // Focus on notification
+  cam.at('2s').focus('notification', {
+    scale: 1.1,
+    duration: '0.5s'
+  })
+
+  // Pan down to message
+  cam.at('4s').focus('lastMessage', {
+    scale: 1.15,
+    duration: '0.8s',
+    easing: 'easeInOut'
+  })
+
+  // Pan to input area
+  cam.at('7s').focus('inputArea', {
+    scale: 1.05,
+    duration: '0.6s'
+  })
+})
+```
+
+## Integration with Anchors
+
+The camera system is tightly integrated with the [Anchor System](/concepts/anchors):
+
+1. **Apps register anchors** via `AnchorProvider` interface
+2. **Camera resolves anchors** at render time to get current positions
+3. **Camera calculates transform** to frame the anchor with desired scale/framing
+
+```typescript
+// WhatsApp provides anchors
+const anchorProvider: AnchorProvider = {
+  getAnchors(world, deviceId, appId) {
+    return {
+      lastMessage: { x: 100, y: 500, width: 300, height: 80 },
+      inputArea: { x: 50, y: 1200, width: 400, height: 60 },
+    };
+  },
+};
+
+// Camera uses anchors
+cam.at("2s").focus("lastMessage");
+// → Camera calculates transform to center lastMessage with scale 1.15
+```
+
+See [Anchor System](/concepts/anchors) for implementation details.
+
+## Camera Timeline Events
+
+Camera movements are stored in the Timeline as events:
+
+```typescript
+// Focus effect → CAMERA_FOCUS event
+{
+  at: 2.0,
+  kind: 'CAMERA',
+  deviceId: 'phone',
+  effect: {
+    type: 'focus',
+    anchorId: 'lastMessage',
+    scale: 1.15,
+    startFrame: 60,
+    endFrame: 72
+  }
+}
+
+// Zoom effect → CAMERA_ZOOM event
+{
+  at: 5.0,
+  kind: 'CAMERA',
+  deviceId: 'phone',
+  effect: {
+    type: 'zoom',
+    targetScale: 1.3,
+    targetX: 0,
+    targetY: -40,
+    startFrame: 150,
+    endFrame: 174
+  }
+}
+```
+
+The renderer processes these events using **Effect Processors**.
+
+## Effect Processor System
+
+Camera effects are handled by a **processor registry**:
+
+```typescript
+interface EffectProcessor {
+  type: CameraEffectType;
+  process(ctx: EffectProcessorContext): CameraTransform;
+}
+
+// Example: Shake processor
+const shakeProcessor: EffectProcessor = {
+  type: "shake",
+  process(ctx) {
+    const { t, effect, transform } = ctx;
+    const progress =
+      (t - effect.startFrame) / (effect.endFrame - effect.startFrame);
+
+    // Perlin noise + trauma decay
+    const trauma = Math.pow(1 - progress, effect.decay || 0.8);
+    const offsetX = perlin(t, effect.seed) * effect.intensityX * trauma;
+    const offsetY = perlin(t, effect.seed + 1000) * effect.intensityY * trauma;
+
+    return {
+      ...transform,
+      translateX: transform.translateX + offsetX,
+      translateY: transform.translateY + offsetY,
+    };
+  },
+};
+
+// Register processor
+registerCameraProcessor(shakeProcessor);
+```
+
+**Built-in Processors:**
+
+- `zoom` — Scale and translate
+- `focus` — Anchor-based framing
+- `track` — Continuous anchor following
+- `shake` — Perlin noise shake
+- `punchZoom` — Spring-based impact zoom
+- `dutchTilt` — Z-axis rotation
+- `flash` — Color overlay
+- `whipPan` — Directional blur
+- `reset` — Return to neutral
+
+## Links
+
+- **Concepts:**
+  - [Anchor System](/concepts/anchors) — Semantic UI targeting
+  - [Timeline Events](/concepts/timeline-events) — Event system architecture
+  - [Effect Processors](/concepts/effect-processors) — Camera effect pipeline
+
+- **Packages:**
+  - [@tokovo/core](/packages/core) — Core types and state
+  - [@tokovo/dsl](/packages/dsl) — Episode DSL API
+  - [@tokovo/renderer](/packages/renderer) — Rendering system
+
+- **Examples:**
+  - [camera-showcase.episode.ts](https://github.com/tokovoteam/tokovo/blob/main/packages/episodes/src/production/camera-showcase.episode.ts) — All camera effects demo
+  - [track-demo.episode.ts](https://github.com/tokovoteam/tokovo/blob/main/packages/episodes/src/production/track-demo.episode.ts) — Focus and tracking patterns
+
+## API Reference
+
+For complete API details, see the [Camera API Reference](/api/camera).
+
+---
+
+**Next Steps:**
+
+- Learn about [Anchor System](/concepts/anchors) for semantic targeting
+- Explore [Timeline Events](/concepts/timeline-events) for event architecture
+- Build your first episode with the [DSL Guide](/guides/dsl)
