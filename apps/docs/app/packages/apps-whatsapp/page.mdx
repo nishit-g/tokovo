@@ -1,5 +1,662 @@
 # @tokovo/apps-whatsapp
 
-> Placeholder content - to be written
+**Priority: P1** | **Category:** Example App Plugin
 
-This page will document the @tokovo/apps-whatsapp package.
+WhatsApp messaging app plugin for Tokovo's phone simulation engine. Provides a high-fidelity WhatsApp chat interface with message sending/receiving, typing indicators, media sharing, and rich interaction capabilities.
+
+---
+
+## Installation
+
+```bash
+npm install @tokovo/apps-whatsapp
+```
+
+## Quick Start
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+episode("my-chat", { fps: 30, duration: "30s" })
+  .device("phone", "iphone16", {
+    app: "app_whatsapp",
+    conversations: [
+      { id: "dm_alice", name: "Alice", avatar: "/avatars/alice.png" },
+    ],
+  })
+  .track(
+    "app_whatsapp",
+    () => new WhatsAppTrackBuilder(30, "phone", "dm_alice", getOrder),
+    (wa) => {
+      // Receive message
+      wa.at("1s").receive("Alice", "Hey! How are you?");
+
+      // Show typing indicator
+      wa.span("3s", "5s").typing("Alice");
+
+      // Another message
+      wa.at("5s").receive("Alice", "Want to grab coffee?");
+
+      // Send message
+      wa.span("7s", "9s").typing("me");
+      wa.at("9s").send("Sure! When?");
+    },
+  )
+  .build();
+```
+
+---
+
+## Overview
+
+The `@tokovo/apps-whatsapp` plugin is a **P1 (example app plugin)** that demonstrates Tokovo's plugin architecture. It provides a complete WhatsApp chat simulation including:
+
+- **Realistic UI** - High-fidelity WhatsApp interface matching iOS design patterns
+- **Message Types** - Text, images, videos, voice notes, GIFs, stickers, documents, contacts, locations
+- **Interactions** - Typing indicators, read receipts, reactions, message forwarding
+- **Group Chats** - Member management, admin controls
+- **Navigation** - Chat screens, conversation list
+- **Animations** - Smooth message transitions, typing indicators, scroll behavior
+
+The plugin follows Tokovo's **three-tier plugin contract**:
+
+1. **Tier A** - Core runtime (reducer, state, views)
+2. **Tier B** - Lowering and layouts
+3. **Tier C** - DSL extension (`wa.receive()`, `wa.send()`)
+
+---
+
+## Features
+
+### Message Types
+
+#### Text Messages
+
+```typescript
+wa.at("1s").receive("Alice", "Hello!");
+wa.at("3s").send("Hi there!");
+```
+
+#### Image Messages
+
+```typescript
+wa.at("5s").receiveImage("Alice", "/images/photo.jpg", {
+  caption: "Check this out! 📸",
+});
+wa.at("7s").sendImage("/images/reply.jpg");
+```
+
+#### Video Messages
+
+```typescript
+wa.at("10s").receiveVideo("Alice", "/videos/clip.mp4", {
+  duration: 15,
+  caption: "Amazing video! 🎥",
+});
+```
+
+#### Voice Notes
+
+```typescript
+// Duration in seconds
+wa.at("15s").receiveVoice("Alice", 8);
+wa.at("20s").sendVoice(5);
+```
+
+#### GIFs and Stickers
+
+```typescript
+wa.at("25s").receiveGif("Alice", "/gifs/hello.gif");
+wa.at("30s").receiveSticker("Alice", "/stickers/thumbs-up.webp");
+wa.at("32s").sendSticker("/stickers/heart.webp");
+```
+
+#### Documents
+
+```typescript
+wa.at("35s").receiveDocument("Alice", {
+  fileName: "Report.pdf",
+  fileSize: "4.2 MB",
+  fileType: "pdf",
+});
+wa.at("38s").sendDocument({
+  fileName: "Notes.docx",
+  fileSize: "1.1 MB",
+  fileType: "docx",
+});
+```
+
+#### Contacts
+
+```typescript
+wa.at("40s").receiveContact("Alice", {
+  contactName: "John Smith",
+  contactPhone: "+1 555-123-4567",
+  contactAvatarUrl: "/avatars/john.jpg",
+});
+```
+
+#### Locations
+
+```typescript
+wa.at("45s").receiveLocation("Alice", {
+  latitude: 37.7749,
+  longitude: -122.4194,
+  locationName: "San Francisco",
+  locationAddress: "California, USA",
+  mapThumbnailUrl: "/maps/sf.png",
+});
+```
+
+### Typing Indicators
+
+```typescript
+// Using span() for typing duration
+wa.span("3s", "5s").typing("Alice");
+
+// Manual typing control
+wa.at("3s").startTyping("Alice");
+wa.at("5s").stopTyping("Alice");
+
+// Convenience method with duration
+wa.typing("Alice", "2s");
+```
+
+### Reactions
+
+```typescript
+wa.at("10s").react(messageId, "❤️", "Alice");
+```
+
+### Navigation
+
+```typescript
+// Navigate to chat screen
+wa.navigate("chat", "dm_alice");
+
+// Navigate to chats list
+wa.navigate("chats");
+```
+
+### Group Chats
+
+```typescript
+wa.group.addMember("bob_id", "Alice");
+wa.group.removeMember("charlie_id", "Alice");
+wa.group.changeAdmin("bob_id", true);
+```
+
+---
+
+## API Reference
+
+### Core Methods
+
+#### `.receive(from, text, options?)`
+
+Receive an incoming message from a contact.
+
+```typescript
+wa.at("1s").receive("Alice", "Hello!");
+
+// With options
+wa.at("1s").receive("Alice", "Reply to this", {
+  messageType: "text",
+  silent: false,
+});
+```
+
+**Parameters:**
+
+- `from: string` - Contact name
+- `text: string` - Message content
+- `options?: MessageOptions` - Optional configuration
+
+#### `.send(text, options?)`
+
+Send an outgoing message from "me".
+
+```typescript
+wa.at("3s").send("Hi there!");
+
+// With reply
+wa.at("5s").send("Got it!", {
+  replyTo: messageId,
+});
+```
+
+**Parameters:**
+
+- `text: string` - Message content
+- `options?: MessageOptions` - Optional configuration
+
+#### `.typing(from, duration?)`
+
+Show typing indicator for a contact, then hide it after duration.
+
+```typescript
+// Default 2s duration
+wa.at("3s").typing("Alice");
+
+// Custom duration
+wa.at("5s").typing("Alice", "3s");
+```
+
+**Parameters:**
+
+- `from: string` - Contact name
+- `duration?: string` - How long to show typing (default: "2s")
+
+#### `.react(messageId, emoji, from?)`
+
+Add a reaction to a message.
+
+```typescript
+wa.at("10s").react("msg_123", "❤️", "Alice");
+```
+
+**Parameters:**
+
+- `messageId: string` - Target message ID
+- `emoji: string` - Reaction emoji
+- `from?: string` - Who reacted (default: "me")
+
+#### `.navigate(screen, conversationId?)`
+
+Navigate to a screen within WhatsApp.
+
+```typescript
+wa.at("5s").navigate("chat", "dm_alice");
+wa.at("10s").navigate("chats");
+```
+
+**Parameters:**
+
+- `screen: 'chats' | 'chat' | 'story'` - Target screen
+- `conversationId?: string` - Conversation to open (for 'chat' screen)
+
+### Media Methods
+
+#### `.receiveImage(from, imagePath, options?)`
+
+```typescript
+wa.at("5s").receiveImage("Alice", "/images/photo.jpg", {
+  caption: "Beautiful sunset 🌅",
+});
+```
+
+#### `.sendImage(imagePath, options?)`
+
+```typescript
+wa.at("7s").sendImage("/images/reply.jpg");
+```
+
+#### `.receiveVideo(from, videoPath, options)`
+
+```typescript
+wa.at("10s").receiveVideo("Alice", "/videos/clip.mp4", {
+  duration: 15,
+  caption: "Check this out!",
+});
+```
+
+#### `.receiveVoice(from, duration)`
+
+```typescript
+wa.at("15s").receiveVoice("Alice", 8); // 8 seconds
+```
+
+#### `.sendVoice(duration)`
+
+```typescript
+wa.at("20s").sendVoice(5); // 5 seconds
+```
+
+#### `.receiveGif(from, gifPath)`
+
+```typescript
+wa.at("25s").receiveGif("Alice", "/gifs/wave.gif");
+```
+
+#### `.receiveSticker(from, stickerPath)`
+
+```typescript
+wa.at("30s").receiveSticker("Alice", "/stickers/thumbs-up.webp");
+```
+
+#### `.sendSticker(stickerPath)`
+
+```typescript
+wa.at("32s").sendSticker("/stickers/heart.webp");
+```
+
+#### `.receiveDocument(from, document)`
+
+```typescript
+wa.at("35s").receiveDocument("Alice", {
+  fileName: "Report.pdf",
+  fileSize: "4.2 MB",
+  fileType: "pdf",
+});
+```
+
+#### `.receiveContact(from, contact)`
+
+```typescript
+wa.at("40s").receiveContact("Alice", {
+  contactName: "John Smith",
+  contactPhone: "+1 555-123-4567",
+});
+```
+
+#### `.receiveLocation(from, location)`
+
+```typescript
+wa.at("45s").receiveLocation("Alice", {
+  latitude: 37.7749,
+  longitude: -122.4194,
+  locationName: "San Francisco",
+});
+```
+
+### Group Methods
+
+#### `.group.addMember(memberId, addedBy?)`
+
+```typescript
+wa.group.addMember("bob_id", "Alice");
+```
+
+#### `.group.removeMember(memberId, removedBy?)`
+
+```typescript
+wa.group.removeMember("charlie_id", "Alice");
+```
+
+#### `.group.changeAdmin(memberId, isAdmin)`
+
+```typescript
+wa.group.changeAdmin("bob_id", true);
+```
+
+---
+
+## State Management
+
+The WhatsApp plugin manages state through Immer-based reducers:
+
+```typescript
+interface WhatsAppState {
+  conversationId: string;
+  messages: Message[];
+  typingIndicators: Map<string, boolean>;
+  lastMessageId: string | null;
+  contacts: Contact[];
+  currentScreen: "chats" | "chat" | "story";
+  // ... additional state
+}
+```
+
+### Event Handling
+
+The plugin handles events through registered handlers:
+
+```typescript
+export const whatsappHandlers = {
+  MessageReceived: (state, event) => {
+    /* ... */
+  },
+  MessageSent: (state, event) => {
+    /* ... */
+  },
+  TypingStarted: (state, event) => {
+    /* ... */
+  },
+  TypingEnded: (state, event) => {
+    /* ... */
+  },
+  // ... more handlers
+};
+```
+
+All state updates are immutable using Immer's `produce()`.
+
+---
+
+## Plugin Architecture
+
+### Plugin Contract
+
+The WhatsApp plugin implements Tokovo's full plugin contract:
+
+```typescript
+export const WhatsAppPlugin: TokovoPluginContract<"app_whatsapp"> = {
+  // === TIER A: Identity ===
+  id: "app_whatsapp",
+  version: "2.0.0",
+  displayName: "WhatsApp",
+
+  // === TIER A: Runtime ===
+  reducer: whatsappReducer,
+  views: whatsappViews,
+  createInitialState: createWhatsAppInitialState,
+
+  // === TIER A: Event Routing ===
+  eventKinds: [
+    "MessageReceived",
+    "MessageSent",
+    "TypingStarted",
+    "TypingEnded",
+    // ... 30+ event types
+  ],
+
+  // === TIER B: Lowering ===
+  v2Lowering: whatsappV2Lowering,
+
+  // === TIER B: Layouts ===
+  layouts: [
+    {
+      viewKind: "CHAT",
+      computeLayout: computeChatLayout,
+    },
+  ],
+
+  // === TIER C: DSL ===
+  dsl: whatsappDsl,
+
+  // === Assets ===
+  assets: whatsappAssets,
+  audioRules: whatsappAudioRules,
+};
+```
+
+### Registration
+
+```typescript
+import { registerWhatsAppPlugin } from "@tokovo/apps-whatsapp";
+
+// Register plugin with Tokovo
+registerWhatsAppPlugin();
+```
+
+---
+
+## Anchors
+
+WhatsApp registers the following anchors for camera framing:
+
+| Anchor          | Description         | Anchor Point | Use Case                  |
+| --------------- | ------------------- | ------------ | ------------------------- |
+| `message`       | Generic message     | (0.5, 0.5)   | Frame any message         |
+| `message_me`    | Outgoing message    | (0.6, 0.5)   | Frame sent messages       |
+| `message_other` | Incoming message    | (0.4, 0.5)   | Frame received messages   |
+| `typing`        | Typing indicator    | (0.35, 0.5)  | Frame typing bubbles      |
+| `input`         | Message input field | (0.5, 0.8)   | Frame text input          |
+| `header`        | Chat header         | (0.5, 0.15)  | Frame contact name/avatar |
+| `profile`       | Profile picture     | (0.2, 0.15)  | Frame avatar              |
+| `device`        | Full device         | (0.5, 0.5)   | Frame entire phone        |
+
+### Using Anchors
+
+```typescript
+episode("chat", { fps: 30, duration: "30s" }).camera((cam) => {
+  // Frame the last message
+  cam.at("5s").frameTo("message", {
+    duration: "0.5s",
+    easing: "easeInOut",
+  });
+
+  // Frame typing indicator
+  cam.at("10s").frameTo("typing", {
+    duration: "0.3s",
+  });
+
+  // Frame full device
+  cam.at("15s").frameTo("device", {
+    duration: "0.5s",
+  });
+});
+```
+
+---
+
+## Complete Example
+
+```typescript
+import { defineEpisode } from "@tokovo/episodes";
+import { episode } from "@tokovo/dsl";
+import { WhatsAppTrackBuilder } from "@tokovo/apps-whatsapp/src/dsl/track-builder";
+
+let orderCounter = 0;
+const getOrder = () => orderCounter++;
+
+export default defineEpisode({
+  meta: {
+    id: "coffee-chat",
+    title: "Coffee Plans",
+    category: "production",
+  },
+  config: {
+    format: "1080x1920",
+    durationInFrames: 900,
+    apps: ["app_whatsapp"],
+  },
+  build: () =>
+    episode("coffee-chat", {
+      fps: 30,
+      duration: "30s",
+      title: "Coffee Plans",
+    })
+      .device("phone", "iphone16", {
+        app: "app_whatsapp",
+        conversations: [
+          { id: "dm_sarah", name: "Sarah ☕", avatar: "/avatars/sarah.png" },
+        ],
+        os: {
+          time: new Date("2024-12-20T09:00:00"),
+          battery: 85,
+          network: "5G",
+        },
+      })
+      .track(
+        "app_whatsapp",
+        () => new WhatsAppTrackBuilder(30, "phone", "dm_sarah", getOrder),
+        (wa) => {
+          // Opening message
+          wa.at("1s").receive("Sarah", "Hey! Coffee later? ☕");
+
+          // Show typing
+          wa.span("3s", "5s").typing("me");
+
+          // Reply
+          wa.at("5s").send("Perfect! Where?");
+
+          // Typing + response
+          wa.span("7s", "9s").typing("Sarah");
+          wa.at("9s").receive("Sarah", "The usual spot?");
+
+          // Quick reply
+          wa.span("10.5s", "11.5s").typing("me");
+          wa.at("11.5s").send("Sounds good! 👍");
+
+          // Send location
+          wa.at("14s").receiveLocation("Sarah", {
+            latitude: 37.7749,
+            longitude: -122.4194,
+            locationName: "Blue Bottle Coffee",
+            locationAddress: "66 Mint St, San Francisco",
+          });
+
+          // React to location
+          wa.at("16s").react("location_msg", "❤️", "me");
+
+          // Final message
+          wa.span("18s", "19s").typing("Sarah");
+          wa.at("19s").receive("Sarah", "See you at 3pm!");
+        },
+      )
+      .camera((cam) => {
+        // Frame opening message
+        cam.at("1s").frameTo("message", { duration: "0.5s" });
+
+        // Frame typing indicator
+        cam.at("7s").frameTo("typing", { duration: "0.3s" });
+
+        // Frame location message
+        cam.at("14s").frameTo("message", { duration: "0.5s" });
+
+        // Zoom out to device
+        cam.at("19s").frameTo("device", { duration: "0.5s" });
+      })
+      .build(),
+});
+```
+
+---
+
+## Extending WhatsApp
+
+The WhatsApp plugin is designed to be extended. You can:
+
+1. **Add Custom Message Types** - Implement new message handlers
+2. **Create Custom Screens** - Add new UI views beyond chat
+3. **Enhance Animations** - Customize layout and transitions
+4. **Add Audio Rules** - Define custom sound effects
+
+See [Building Plugins](/docs/guides/building-plugins) for more details.
+
+---
+
+## Related Documentation
+
+### Core Concepts
+
+- [Plugin Architecture](/docs/concepts/plugins) - Understanding Tokovo's plugin system
+- [Anchors](/docs/concepts/anchors) - Camera framing and anchors
+- [State Management](/docs/concepts/state) - How Tokovo manages state
+
+### Packages
+
+- [@tokovo/core](/packages/core) - Core plugin system and types
+- [@tokovo/dsl](/packages/dsl) - Episode DSL API
+- [@tokovo/episodes](/packages/episodes) - Episode definitions
+
+### Guides
+
+- [Building Plugins](/docs/guides/building-plugins) - Create custom app plugins
+- [Writing Episodes](/docs/guides/writing-episodes) - Authoring episodes with DSL
+
+---
+
+## Source Code
+
+View the complete implementation on GitHub:
+
+- [Plugin Definition](https://github.com/tokovo/tokovo/tree/main/packages/apps-whatsapp/src/plugin.ts)
+- [DSL Extension](https://github.com/tokovo/tokovo/tree/main/packages/apps-whatsapp/src/dsl/extension.ts)
+- [Event Handlers](https://github.com/tokovo/tokovo/tree/main/packages/apps-whatsapp/src/handlers)
+- [UI Components](https://github.com/tokovo/tokovo/tree/main/packages/apps-whatsapp/src/components)
