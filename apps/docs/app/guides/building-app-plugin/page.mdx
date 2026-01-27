@@ -1,0 +1,900 @@
+# Building Your First App Plugin
+
+> **Learn to create custom app plugins from scratch**
+
+Ready to extend Tokovo with your own custom app? This guide walks you through building a complete messaging app plugin from the ground up, teaching you the core concepts and patterns used throughout Tokovo's plugin system.
+
+**What you'll build:** A simple messaging app plugin with message sending/receiving, typing indicators, and camera anchors.
+
+**Prerequisites:**
+
+- TypeScript fundamentals
+- React basics
+- Understanding of [Plugins](/concepts/plugins) concept
+- Familiarity with [episode structure](/getting-started/first-episode)
+
+**Time estimate:** 30-45 minutes
+
+---
+
+## Overview
+
+By the end of this guide, you'll have a working app plugin with:
+
+- ✅ Event handlers for messages and typing
+- ✅ Immutable state management with Immer
+- ✅ React UI components
+- ✅ Camera anchor registration
+- ✅ DSL builder for episode authoring
+- ✅ Complete plugin registration
+
+We'll use the WhatsApp plugin as a reference, but build something simpler to focus on core concepts.
+
+---
+
+## Step 1: Set Up Plugin Structure
+
+First, create the file structure for your plugin:
+
+```
+packages/apps-myapp/
+├── src/
+│   ├── index.ts              # Public exports
+│   ├── plugin.ts             # Plugin definition
+│   ├── types.ts              # State and event types
+│   ├── reducer.ts            # Event handlers
+│   ├── dsl/
+│   │   └── track-builder.ts  # DSL authoring API
+│   └── ui/
+│       └── MyAppUI.tsx       # React components
+├── package.json
+└── tsconfig.json
+```
+
+### Create package.json
+
+```json
+{
+  "name": "@tokovo/apps-myapp",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "dependencies": {
+    "@tokovo/core": "workspace:*",
+    "@tokovo/dsl": "workspace:*",
+    "immer": "^10.0.0",
+    "react": "^18.3.1"
+  }
+}
+```
+
+### Create tsconfig.json
+
+```json
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./src"
+  },
+  "include": ["src/**/*"]
+}
+```
+
+---
+
+## Step 2: Define State and Event Types
+
+Define what your app's state looks like and what events it handles.
+
+**`src/types.ts`**
+
+```typescript
+// State stored in WorldState
+export interface MyAppState {
+  messages: Message[];
+  typing: Record<string, boolean>; // username -> isTyping
+}
+
+export interface Message {
+  id: string;
+  from: "user" | "other";
+  sender: string; // Name of sender
+  content: string;
+  timestamp: number;
+}
+
+// Events your plugin handles
+export type MyAppEvent =
+  | {
+      type: "APP_SEND_MESSAGE";
+      payload: {
+        content: string;
+      };
+    }
+  | {
+      type: "APP_RECEIVE_MESSAGE";
+      payload: {
+        from: string;
+        content: string;
+      };
+    }
+  | {
+      type: "APP_TYPING_START";
+      payload: {
+        user: string;
+      };
+    }
+  | {
+      type: "APP_TYPING_END";
+      payload: {
+        user: string;
+      };
+    };
+```
+
+**Key Concepts:**
+
+- **State is minimal** - Only store what's essential; derive everything else
+- **Events are discriminated unions** - TypeScript helps catch errors
+- **Messages track both directions** - `from` field distinguishes sender vs receiver
+
+---
+
+## Step 3: Implement Event Handlers with Immer
+
+Event handlers update your app's state immutably using Immer.
+
+**`src/reducer.ts`**
+
+```typescript
+import { produce } from "immer";
+import type { MyAppState, MyAppEvent, Message } from "./types";
+
+// Helper to generate unique IDs
+let messageIdCounter = 0;
+const generateId = () => `msg_${messageIdCounter++}`;
+
+export function createInitialState(): MyAppState {
+  return {
+    messages: [],
+    typing: {},
+  };
+}
+
+export function myAppReducer(
+  state: MyAppState,
+  event: MyAppEvent,
+  eventTimestamp: number,
+): MyAppState {
+  return produce(state, (draft) => {
+    switch (event.type) {
+      case "APP_SEND_MESSAGE": {
+        const newMessage: Message = {
+          id: generateId(),
+          from: "user",
+          sender: "You",
+          content: event.payload.content,
+          timestamp: eventTimestamp,
+        };
+        draft.messages.push(newMessage);
+        break;
+      }
+
+      case "APP_RECEIVE_MESSAGE": {
+        const newMessage: Message = {
+          id: generateId(),
+          from: "other",
+          sender: event.payload.from,
+          content: event.payload.content,
+          timestamp: eventTimestamp,
+        };
+        draft.messages.push(newMessage);
+        break;
+      }
+
+      case "APP_TYPING_START": {
+        draft.typing[event.payload.user] = true;
+        break;
+      }
+
+      case "APP_TYPING_END": {
+        delete draft.typing[event.payload.user];
+        break;
+      }
+    }
+  });
+}
+```
+
+**Key Patterns:**
+
+- **Immer's `produce()`** - Allows safe mutations on `draft`
+- **Switch on event type** - Handle each event distinctly
+- **Generate IDs deterministically** - Ensures reproducibility
+- **Use event timestamp** - Store timing info from the event
+
+---
+
+## Step 4: Create React UI Components
+
+Build the UI that renders your app's state.
+
+**`src/ui/MyAppUI.tsx`**
+
+```typescript
+import React from "react";
+import type { MyAppState } from "../types";
+
+interface MyAppUIProps {
+  state: MyAppState;
+}
+
+export function MyAppUI({ state }: MyAppUIProps) {
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        backgroundColor: "#f5f5f5",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+    >
+      {/* Chat Header */}
+      <div
+        style={{
+          padding: "16px",
+          backgroundColor: "#075e54",
+          color: "white",
+          fontSize: "18px",
+          fontWeight: "600",
+        }}
+      >
+        My App Chat
+      </div>
+
+      {/* Messages */}
+      <div
+        style={{
+          flex: 1,
+          padding: "16px",
+          overflowY: "auto",
+          display: "flex",
+          flexDirection: "column",
+          gap: "12px",
+        }}
+      >
+        {state.messages.map((msg) => (
+          <div
+            key={msg.id}
+            style={{
+              alignSelf: msg.from === "user" ? "flex-end" : "flex-start",
+              maxWidth: "70%",
+            }}
+          >
+            {msg.from === "other" && (
+              <div
+                style={{
+                  fontSize: "12px",
+                  color: "#666",
+                  marginBottom: "4px",
+                }}
+              >
+                {msg.sender}
+              </div>
+            )}
+            <div
+              style={{
+                padding: "10px 14px",
+                borderRadius: "8px",
+                backgroundColor: msg.from === "user" ? "#dcf8c6" : "white",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.1)",
+              }}
+            >
+              {msg.content}
+            </div>
+          </div>
+        ))}
+
+        {/* Typing Indicators */}
+        {Object.keys(state.typing).length > 0 && (
+          <div
+            style={{
+              alignSelf: "flex-start",
+              padding: "10px 14px",
+              borderRadius: "8px",
+              backgroundColor: "white",
+              color: "#666",
+              fontSize: "14px",
+              fontStyle: "italic",
+            }}
+          >
+            {Object.keys(state.typing).join(", ")} typing...
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+```
+
+**Key Concepts:**
+
+- **Pure component** - Only receives state as props
+- **No local state** - Everything derived from `MyAppState`
+- **Simple styling** - WhatsApp-inspired but minimal
+- **Typing indicators** - Show who's currently typing
+
+---
+
+## Step 5: Register Anchors for Camera Framing
+
+Anchors allow the camera to focus on specific UI elements.
+
+**Update `src/ui/MyAppUI.tsx`:**
+
+```typescript
+import React, { useLayoutEffect } from "react";
+import type { MyAppState } from "../types";
+
+interface MyAppUIProps {
+  state: MyAppState;
+  deviceId: string; // NEW: Device ID for anchor registration
+}
+
+export function MyAppUI({ state, deviceId }: MyAppUIProps) {
+  // Register anchor for the last message
+  useLayoutEffect(() => {
+    const lastMsg = state.messages[state.messages.length - 1];
+    if (lastMsg) {
+      // Register anchor for camera framing
+      // (Simplified - in real plugin, use AnchorRegistry from @tokovo/core)
+      window.registerAnchor?.(`${deviceId}:lastMessage`, {
+        x: 0.5, // Centered horizontally
+        y: 0.6, // Slightly below center
+        width: 0.7, // 70% of screen width
+        height: 0.15, // 15% of screen height
+      });
+    }
+  }, [state.messages, deviceId]);
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        height: "100%",
+        backgroundColor: "#f5f5f5",
+        fontFamily: "system-ui, -apple-system, sans-serif",
+      }}
+    >
+      {/* ...rest of UI... */}
+    </div>
+  );
+}
+```
+
+**Anchor Concepts:**
+
+- **Normalized coordinates** - x, y, width, height in range 0-1
+- **Device-scoped anchors** - Prefix with deviceId for uniqueness
+- **Layout-driven** - Register in `useLayoutEffect` before paint
+- **Common anchors** - `lastMessage`, `typing`, `header`, `device`
+
+In production, you'd use Tokovo's `AnchorRegistry` API:
+
+```typescript
+import { AnchorRegistry } from "@tokovo/core/anchors";
+
+AnchorRegistry.register(`${deviceId}:lastMessage`, {
+  x: 0.5,
+  y: 0.6,
+  width: 0.7,
+  height: 0.15,
+});
+```
+
+---
+
+## Step 6: Create DSL Builder for Authoring
+
+The DSL builder provides a fluent API for authoring episodes.
+
+**`src/dsl/track-builder.ts`**
+
+```typescript
+import type { TimelineEvent } from "@tokovo/core";
+import type { MyAppEvent } from "../types";
+
+export class MyAppTrackBuilder {
+  private events: TimelineEvent[] = [];
+
+  constructor(
+    private fps: number,
+    private deviceId: string,
+    private getOrder: () => number,
+  ) {}
+
+  /**
+   * Schedule an event at a specific time
+   */
+  at(time: string) {
+    const seconds = this.parseTime(time);
+    const frame = Math.round(seconds * this.fps);
+
+    return {
+      send: (content: string) => {
+        this.addEvent(frame, {
+          type: "APP_SEND_MESSAGE",
+          payload: { content },
+        });
+        return this;
+      },
+
+      receive: (from: string, content: string) => {
+        this.addEvent(frame, {
+          type: "APP_RECEIVE_MESSAGE",
+          payload: { from, content },
+        });
+        return this;
+      },
+
+      startTyping: (user: string) => {
+        this.addEvent(frame, {
+          type: "APP_TYPING_START",
+          payload: { user },
+        });
+        return this;
+      },
+
+      stopTyping: (user: string) => {
+        this.addEvent(frame, {
+          type: "APP_TYPING_END",
+          payload: { user },
+        });
+        return this;
+      },
+    };
+  }
+
+  /**
+   * Convenience method for typing + auto-end
+   */
+  span(startTime: string, endTime: string) {
+    return {
+      typing: (user: string) => {
+        this.at(startTime).startTyping(user);
+        this.at(endTime).stopTyping(user);
+        return this;
+      },
+    };
+  }
+
+  /**
+   * Get all scheduled events
+   */
+  build(): TimelineEvent[] {
+    return this.events.sort((a, b) => a.t - b.t);
+  }
+
+  // --- Private helpers ---
+
+  private addEvent(frame: number, event: MyAppEvent) {
+    this.events.push({
+      t: frame,
+      kind: "APP",
+      deviceId: this.deviceId,
+      appId: "app_myapp",
+      order: this.getOrder(),
+      ...event,
+    });
+  }
+
+  private parseTime(time: string): number {
+    if (time.endsWith("s")) {
+      return parseFloat(time);
+    }
+    if (time.endsWith("ms")) {
+      return parseFloat(time) / 1000;
+    }
+    // Assume frames if no unit
+    return parseInt(time) / this.fps;
+  }
+}
+```
+
+**DSL Patterns:**
+
+- **Fluent API** - Methods return `this` for chaining
+- **Time parsing** - Accept `"1s"`, `"500ms"`, or raw frames
+- **Automatic ordering** - Use `getOrder()` for deterministic event sequence
+- **Type safety** - TypeScript ensures valid event payloads
+
+---
+
+## Step 7: Define the Plugin
+
+Bundle everything together into a plugin definition.
+
+**`src/plugin.ts`**
+
+```typescript
+import type { TokovoPlugin } from "@tokovo/core/plugin";
+import { myAppReducer, createInitialState } from "./reducer";
+import { MyAppUI } from "./ui/MyAppUI";
+import type { MyAppState, MyAppEvent } from "./types";
+
+export const MyAppPlugin: TokovoPlugin = {
+  // Identity
+  id: "app_myapp",
+  version: "1.0.0",
+  displayName: "My Messaging App",
+
+  // Runtime: State management
+  createInitialState,
+  reducer: myAppReducer,
+
+  // Runtime: UI
+  views: {
+    AppRoot: MyAppUI,
+  },
+
+  // Event routing (optional but recommended)
+  eventKinds: [
+    "APP_SEND_MESSAGE",
+    "APP_RECEIVE_MESSAGE",
+    "APP_TYPING_START",
+    "APP_TYPING_END",
+  ] as const,
+
+  // Optional: Register audio rules, layouts, etc.
+};
+```
+
+**Export the plugin:**
+
+**`src/index.ts`**
+
+```typescript
+export { MyAppPlugin } from "./plugin";
+export { MyAppTrackBuilder } from "./dsl/track-builder";
+export type { MyAppState, MyAppEvent, Message } from "./types";
+```
+
+---
+
+## Step 8: Register and Use Your Plugin
+
+Now you can use your plugin in episodes!
+
+**Register the plugin:**
+
+```typescript
+// In your episode file or app entrypoint
+import { PluginManager } from "@tokovo/core/plugin";
+import { MyAppPlugin } from "@tokovo/apps-myapp";
+
+PluginManager.register(MyAppPlugin);
+```
+
+**Use it in an episode:**
+
+```typescript
+import { episode } from "@tokovo/dsl";
+import { MyAppTrackBuilder } from "@tokovo/apps-myapp";
+
+let order = 0;
+const getOrder = () => order++;
+
+episode("test-myapp", { fps: 30, duration: "20s" })
+  .device("phone", "iphone16", {
+    app: "app_myapp",
+  })
+  .track(
+    "app_myapp",
+    () => new MyAppTrackBuilder(30, "phone", getOrder),
+    (app) => {
+      // First message arrives
+      app.at("1s").receive("Alice", "Hey! How's it going?");
+
+      // Show typing indicator
+      app.span("3s", "5s").typing("You");
+
+      // Send a reply
+      app.at("5s").send("Great! Just working on a new plugin.");
+
+      // Alice starts typing
+      app.span("7s", "10s").typing("Alice");
+
+      // Alice responds
+      app.at("10s").receive("Alice", "Cool! What does it do?");
+
+      // Quick reply
+      app.span("12s", "14s").typing("You");
+      app.at("14s").send("It's a messaging app for Tokovo!");
+
+      // Alice reacts
+      app.at("16s").receive("Alice", "Nice! 🎉");
+    },
+  )
+  .camera((cam) => {
+    // Focus on messages as they arrive
+    cam.at("1s").focus("lastMessage", { duration: "0.5s" });
+    cam.at("10s").focus("lastMessage", { duration: "0.5s" });
+    cam.at("16s").focus("lastMessage", { duration: "0.5s" });
+  })
+  .build();
+```
+
+---
+
+## Common Patterns
+
+### State Immutability
+
+Always use Immer's `produce()` for state updates:
+
+```typescript
+// ✅ Good - Immer draft mutations
+return produce(state, (draft) => {
+  draft.messages.push(newMessage);
+  draft.typing[user] = true;
+});
+
+// ❌ Bad - Direct mutations
+state.messages.push(newMessage); // NEVER mutate directly!
+```
+
+### Anchor Registration Best Practices
+
+- **Register in `useLayoutEffect`** - Before browser paint
+- **Use device-scoped IDs** - Prefix with `deviceId`
+- **Provide semantic names** - `lastMessage`, `typing`, `header`
+- **Normalized coordinates** - 0-1 range for x, y, width, height
+
+```typescript
+// ✅ Good
+AnchorRegistry.register(`${deviceId}:lastMessage`, {
+  x: 0.5, // 50% from left
+  y: 0.6, // 60% from top
+  width: 0.7, // 70% of screen width
+  height: 0.15, // 15% of screen height
+});
+
+// ❌ Bad - pixel coordinates (non-responsive)
+AnchorRegistry.register("lastMessage", {
+  x: 540, // Breaks on different screen sizes
+  y: 1200,
+  width: 700,
+  height: 150,
+});
+```
+
+### Event Type Naming Conventions
+
+Follow Tokovo's naming patterns:
+
+- **APP\_** prefix for app-level events
+- **SCREAMING_SNAKE_CASE** for consistency
+- **Verb-based names** - `SEND_MESSAGE`, `TYPING_START`
+
+```typescript
+// ✅ Good
+"APP_SEND_MESSAGE";
+"APP_TYPING_START";
+"APP_RECEIVE_MESSAGE";
+
+// ❌ Bad
+"sendMessage"; // Wrong case
+"MESSAGE"; // Missing verb
+"send_msg"; // Inconsistent abbreviation
+```
+
+---
+
+## Testing Your Plugin
+
+### Unit Test the Reducer
+
+```typescript
+import { describe, it, expect } from "vitest";
+import { myAppReducer, createInitialState } from "./reducer";
+
+describe("MyApp Reducer", () => {
+  it("handles APP_SEND_MESSAGE", () => {
+    const state = createInitialState();
+    const event = {
+      type: "APP_SEND_MESSAGE" as const,
+      payload: { content: "Hello" },
+    };
+
+    const nextState = myAppReducer(state, event, 1000);
+
+    expect(nextState.messages).toHaveLength(1);
+    expect(nextState.messages[0].content).toBe("Hello");
+    expect(nextState.messages[0].from).toBe("user");
+  });
+
+  it("handles APP_TYPING_START and END", () => {
+    let state = createInitialState();
+
+    state = myAppReducer(
+      state,
+      { type: "APP_TYPING_START", payload: { user: "Alice" } },
+      1000,
+    );
+
+    expect(state.typing["Alice"]).toBe(true);
+
+    state = myAppReducer(
+      state,
+      { type: "APP_TYPING_END", payload: { user: "Alice" } },
+      2000,
+    );
+
+    expect(state.typing["Alice"]).toBeUndefined();
+  });
+});
+```
+
+### Integration Test in Episode
+
+```typescript
+import { renderEpisode } from "@tokovo/test-utils";
+
+it("renders full conversation", async () => {
+  const result = await renderEpisode(
+    episode("test", { fps: 30, duration: "10s" })
+      .device("phone", "iphone16", { app: "app_myapp" })
+      .track("app_myapp", factory, (app) => {
+        app.at("1s").receive("Alice", "Hello");
+        app.at("3s").send("Hi!");
+      })
+      .build(),
+  );
+
+  expect(result.frames).toMatchSnapshot();
+});
+```
+
+---
+
+## Common Pitfalls to Avoid
+
+### ❌ Storing Derived State
+
+```typescript
+// ❌ Bad - messageCount can be derived
+interface MyAppState {
+  messages: Message[];
+  messageCount: number; // Redundant!
+}
+
+// ✅ Good - derive in component
+const messageCount = state.messages.length;
+```
+
+### ❌ Direct State Mutations
+
+```typescript
+// ❌ Bad - mutating outside Immer
+function reducer(state, event) {
+  state.messages.push(newMessage); // BREAKS IMMUTABILITY!
+  return state;
+}
+
+// ✅ Good - use Immer's produce
+function reducer(state, event) {
+  return produce(state, (draft) => {
+    draft.messages.push(newMessage);
+  });
+}
+```
+
+### ❌ Hardcoding Device IDs
+
+```typescript
+// ❌ Bad - breaks multi-device support
+AnchorRegistry.register("lastMessage", { ... });
+
+// ✅ Good - device-scoped
+AnchorRegistry.register(`${deviceId}:lastMessage`, { ... });
+```
+
+### ❌ Missing Event Ordering
+
+```typescript
+// ❌ Bad - events may execute out of order
+this.events.push({ t: frame, ...event });
+
+// ✅ Good - include order for determinism
+this.events.push({ t: frame, order: this.getOrder(), ...event });
+```
+
+---
+
+## Next Steps
+
+You now have a fully functional app plugin! Here's how to expand it:
+
+### 1. Add Media Support
+
+```typescript
+// Add image messages
+app.at("5s").receiveImage("Alice", "/images/photo.jpg");
+
+// Add voice notes
+app.at("10s").receiveVoice("Alice", 8); // 8 seconds
+```
+
+### 2. Implement Read Receipts
+
+```typescript
+interface Message {
+  id: string;
+  // ...
+  status: "sent" | "delivered" | "read";
+}
+```
+
+### 3. Add Typing Indicators
+
+Already done! But you could enhance:
+
+```typescript
+// Multi-user typing
+draft.typing["Alice"] = true;
+draft.typing["Bob"] = true;
+
+// Show "Alice and Bob are typing..."
+```
+
+### 4. Support Group Chats
+
+```typescript
+interface MyAppState {
+  // ...
+  participants: string[];
+  groupName?: string;
+}
+```
+
+---
+
+## Learn More
+
+### Related Concepts
+
+- **[Plugins](/concepts/plugins)** - Deep dive into plugin architecture
+- **[Anchors](/concepts/anchors)** - Camera framing and semantic anchors
+- **[Timeline Events](/concepts/timeline-events)** - Event system fundamentals
+- **[WorldState](/concepts/world-state)** - State management overview
+
+### Reference Implementations
+
+- **[WhatsApp Plugin Source](https://github.com/tokovo/tokovo/tree/main/packages/apps-whatsapp)** - Full production example
+- **[Device Camera Plugin](https://github.com/tokovo/tokovo/tree/main/packages/device-camera)** - Device feature plugin
+- **[Notification Plugin](https://github.com/tokovo/tokovo/tree/main/packages/device-notifications)** - System-level plugin
+
+### API Documentation
+
+- **[@tokovo/core](/packages/core)** - Plugin system types and utilities
+- **[@tokovo/dsl](/packages/dsl)** - DSL builder API reference
+- **[@tokovo/apps-whatsapp](/packages/apps-whatsapp)** - WhatsApp plugin API
+
+---
+
+## Congratulations! 🎉
+
+You've built your first Tokovo app plugin with:
+
+- ✅ Type-safe event handlers
+- ✅ Immutable state management with Immer
+- ✅ React UI components
+- ✅ Camera anchor registration
+- ✅ Fluent DSL API for authoring
+- ✅ Complete plugin registration
+
+Your plugin is now ready to be used in episodes, extended with new features, and shared with the Tokovo community.
+
+Happy building! 🚀
